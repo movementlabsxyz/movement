@@ -1,0 +1,3 @@
+[submodule "move"]
+	path = vendors/move
+	url = https://github.com/move-language/move
