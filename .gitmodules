@@ -1,3 +1,5 @@
-[submodule "move"]
-	path = vendors/move
-	url = https://github.com/move-language/move
+
+[submodule "zkfp/vendors/move"]
+	path = zkfp/vendors/move
+	url = https://github.com/movemntdev/move
+	branch = zkp
