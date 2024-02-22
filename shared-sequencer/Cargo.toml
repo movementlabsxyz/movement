@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "tests/e2e",
+    "movement-sequencer",
+]
+
+resolver = "2"
+

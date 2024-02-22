@@ -1,0 +1,44 @@
+[package]
+name = "movement-sequencer"
+version = "0.0.18" # https://crates.io/crates/timestampvm
+edition = "2021"
+rust-version = "1.70"
+publish = true
+description = "Timestamp VM in Rust"
+documentation = "https://docs.rs/timestampvm"
+license = "BSD-3-Clause"
+repository = "https://github.com/ava-labs/timestampvm-rs"
+readme = "../README.md"
+
+[dependencies]
+avalanche-types = { version = "0.1.4", features = ["subnet", "codec_base64"] } # https://crates.io/crates/avalanche-types
+base64 = { version = "0.21.7" }
+bytes = "1.4.0"
+chrono = "0.4.34"
+clap = { version = "4.5.0", features = ["cargo", "derive"] } # https://github.com/clap-rs/clap/releases
+derivative = "2.2.0"
+env_logger = "0.10.2"
+http-manager = { version = "0.0.14" }
+jsonrpc-core = "18.0.0"
+jsonrpc-core-client = { version = "18.0.0" }
+jsonrpc-derive = "18.0.0"
+log = "0.4.19"
+semver = "1.0.21"
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113" # https://github.com/serde-rs/json/releases
+serde_with = { version = "3.6.1", features = ["hex"] }
+tokio = { version = "1.36.0", features = ["fs", "rt-multi-thread"] }
+tonic = { version = "0.11.0", features = ["gzip"] }
+
+# new deps
+anyhow = "1.0"
+rocksdb = { version = "0.22.0", features = [
+  "snappy",
+  "lz4",
+  "zstd",
+  "zlib",
+  "multi-threaded-cf",
+], default-features = false }
+
+[dev-dependencies]
+random-manager = "0.0.5"
