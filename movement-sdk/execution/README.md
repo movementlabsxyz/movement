@@ -1,0 +1,2 @@
+# `execution`
+This directory contains the source code for the `execution` layers in the Movement SDK. In the future, these crates should generally export a struct implementing the `ExecutionLayer` trait, however, in early development they will often be used simply for organization 
