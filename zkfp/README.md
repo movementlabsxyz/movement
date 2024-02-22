@@ -20,7 +20,7 @@ cargo run
 ### Organization
 - RISC0 host code is located in the [`host`](./host) directory.
 - RISC0 guest code, i.e. code that runs on the ZKVM, is located in the [`zkvm`](.guest) directory.
-- A submodule for a modified version of the `move` is located in the [`vendors/move](./vendors/move) directory. This submodule is the `zkp` branch of our fork of the `move` repository.
+- A submodule for a modified version of the `move` is located in the [`vendors/move`](./vendors/move) directory. This submodule is the `zkp` branch of our fork of the `move` repository.
 
 ### Toy Example
 
