@@ -1,0 +1,26 @@
+[package]
+name = "hive"
+version = "0.1.0"
+edition = "2021"
+description = "Testing environment for Zero Konwledge Fraud Proofs on Movement"
+
+# We can't inherit workspace.dependencies because this crate is currently excluded 
+# from the workspace.
+
+[dependencies]
+anyhow = "1.0"
+risc0-zkvm = { version = "0.20.1",  features = ["std"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tempfile = "3.2.0"
+serde = "1.0"
+
+methods = { path = "../methods" }
+
+# Move dependencies. 
+move-vm-runtime = { path = "./vendors/move/language/move-vm/runtime" }
+move-vm-test-utils = { path = "./vendors/move/language/move-vm/test-utils" }
+move-binary-format = { path = "./vendors/move/language/move-binary-format" }
+move-vm-types = { path = "./vendors/move/language/move-vm/types" }
+move-core-types = { path= "./vendors/move/language/move-core/types" }
+move-compiler = { path= "./vendors/move/language/move-compiler" }
+move-stdlib = { path= "./vendors/move/language/move-stdlib" }
