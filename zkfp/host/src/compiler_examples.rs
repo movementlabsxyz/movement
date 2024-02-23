@@ -43,5 +43,5 @@ pub fn make_foo(
 
 /// Uses make foo to make a very simple function that returns a u64 (42)
 pub fn return_u64() -> Vec<u8> {
-    make_foo(&[], "(): u64", "42")
+    make_foo(&[], "(): u64", "16")
 }

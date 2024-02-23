@@ -22,5 +22,7 @@ fn main() {
         vec![],
     ).unwrap();
 
+    env::log(format!("The move program output {:#?} ", output).as_str());
+
     env::commit(&output);
 }

@@ -44,7 +44,7 @@ fn main() {
     // TODO: Implement code for retrieving receipt journal here.
 
     // For example:
-    let output: Vec<u8> = receipt.journal.decode().unwrap();
+    let output: Vec<Vec<u8>> = receipt.journal.decode().unwrap();
     println!("The move program output {:#?} ", output);
 
     // The receipt was verified at the end of proving, but the below code is an
