@@ -1,6 +1,6 @@
 // Copyright (c) The Diem Core Contributors
 // Copyright (c) The Move Contributors
-// SPDX-License-Identifier: Apache-3.0
+// SPDX-License-Identifier: Apache-2.0
 
 use anyhow::{bail, Result};
 use move_binary_format::file_format::{CompiledModule, CompiledScript};
