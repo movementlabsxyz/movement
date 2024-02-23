@@ -1,6 +1,6 @@
 
-[submodule "zkfp/vendors/move"]
-	path = zkfp/vendors/move
+[submodule "zkfpp/vendors/move"]
+	path = zkfpp/vendors/move
 	url = https://github.com/movemntdev/move
 	branch = zkp
 [submodule "movement-sdk/vendors/aptos-core"]
