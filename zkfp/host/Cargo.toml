@@ -1,0 +1,27 @@
+[package]
+name = "host"
+version = "0.0.0"
+edition = "2021"
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = { workspace = true }
+
+risc0-zkvm = { workspace = true }
+tracing-subscriber = { workspace = true }
+tempfile = { workspace = true }
+serde = { workspace = true } 
+
+methods = { path = "../methods" }
+
+move-compiler = { workspace = true }
+move-binary-format = { workspace = true }
+move-core-types = { workspace = true }
+move-vm-types = { workspace = true }
+move-vm-runtime = { workspace = true }
+move-vm-test-utils = { workspace = true }
+move-stdlib = { workspace = true }

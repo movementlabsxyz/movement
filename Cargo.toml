@@ -7,20 +7,23 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
-    "zkfpp/host",
+    "zkfp/host",
+    "zkfp/methods"
 ]
 
 [workspace.dependencies]
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
+anyhow = "1.0"
 risc0-zkvm = { version = "0.20.1", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
-move-vm-runtime = { path = "./zkfpp/vendors/move/language/move-vm/runtime" }
-move-vm-test-utils = { path = "./zkfpp/vendors/move/language/move-vm/test-utils" }
-move-binary-format = { path = "./zkfpp/vendors/move/language/move-binary-format" }
-move-vm-types = { path ="./zkfpp/vendors/move/language/move-vm/types"}
-move-core-types = { path="./zkfpp/vendors/move/language/move-core/types" }
-move-compiler = { path="./zkfpp/vendors/move/language/move-compiler" }
+move-vm-runtime = { path = "./zkfp/vendors/move/language/move-vm/runtime" }
+move-vm-test-utils = { path = "./zkfp/vendors/move/language/move-vm/test-utils" }
+move-binary-format = { path = "./zkfp/vendors/move/language/move-binary-format" }
+move-vm-types = { path ="./zkfp/vendors/move/language/move-vm/types"}
+move-core-types = { path="./zkfp/vendors/move/language/move-core/types" }
+move-compiler = { path="./zkfp/vendors/move/language/move-compiler" }
+move-stdlib = { path="./zkfp/vendors/move/language/move-stdlib" }
 
 # ! this will not work only here to help debugging
 tempfile = "3.2.0"
