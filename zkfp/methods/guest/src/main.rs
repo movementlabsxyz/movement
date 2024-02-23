@@ -2,8 +2,6 @@
 // If you want to try std support, also update the guest Cargo.toml file
 
 pub mod move_vm_integration_run;
-pub mod compiler;
-
 
 use risc0_zkvm::guest::env;
 

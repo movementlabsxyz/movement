@@ -7,14 +7,22 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
+    "shared-sequencer/movement-sequencer",
+]
+
+# We exclude the zkfp crate because it involves system dependencies, these 
+# should be managed by the nix.flake
+# To build with the zkfp crate `cargo build -p zkfp`
+exclude = [
     "zkfp/host",
-    "zkfp/methods"
+    "zkfp/methods",
+    "zkfp/methods/guest",
 ]
 
 [workspace.dependencies]
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 anyhow = "1.0"
-risc0-zkvm = { version = "0.20.1", default-features = false, features = ["std"] }
+risc0-zkvm = { version = "0.20.1",  features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
 move-vm-runtime = { path = "./zkfp/vendors/move/language/move-vm/runtime" }
