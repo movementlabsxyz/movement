@@ -13,7 +13,7 @@ move-vm-test-utils = { path = "../../vendors/move/language/move-vm/test-utils" }
 move-binary-format = { path = "../../vendors/move/language/move-binary-format" }
 move-vm-types = { path ="../../vendors/move/language/move-vm/types"}
 move-core-types = { path="../../vendors/move/language/move-core/types" }
-move-compiler = { path="../../vendors/move/language/move-compiler" }
+# move-compiler = { path="../../vendors/move/language/move-compiler" }
 
 # ! this will not work only here to help debugging
 tempfile = "3.2.0"

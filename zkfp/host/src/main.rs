@@ -45,7 +45,7 @@ fn main() {
 
     // For example:
     let output: Vec<u8> = receipt.journal.decode().unwrap();
-    println!("The move program output {} ", output);
+    println!("The move program output {:#?} ", output);
 
     // The receipt was verified at the end of proving, but the below code is an
     // example of how someone else could verify this receipt.

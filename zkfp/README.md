@@ -14,7 +14,7 @@ To build all methods and execute the method within the zkVM, run the following
 command:
 
 ```bash
-cargo run
+cargo run --bin host
 ```
 
 ### Organization
@@ -34,7 +34,7 @@ During development, faster iteration upon code changes can be achieved by levera
 Put together, the command to run your project in development mode while getting execution statistics is:
 
 ```bash
-RUST_LOG="[executor]=info" RISC0_DEV_MODE=1 cargo run
+RUST_LOG="[executor]=info" RISC0_DEV_MODE=1 cargo run --bin host
 ```
 
 ### Running proofs remotely on Bonsai

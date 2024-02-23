@@ -10,7 +10,7 @@ use move_vm_runtime::{move_vm::MoveVM, session::SerializedReturnValues};
 use move_vm_test_utils::InMemoryStorage;
 use move_vm_types::gas::UnmeteredGasMeter;
 
-TEST_ADDR: AccountAddress = AccountAddress::new([42; AccountAddress::LENGTH]);
+pub const TEST_ADDR: AccountAddress = AccountAddress::new([42; AccountAddress::LENGTH]);
 
 /// Makes a foo function that is compatible with the expectations of the guest code. 
 pub fn make_foo(
@@ -37,6 +37,8 @@ pub fn make_foo(
     let m = as_module(units.pop().unwrap());
     let mut blob = vec![];
     m.serialize(&mut blob).unwrap();
+
+    blob
 }
 
 /// Uses make foo to make a very simple function that returns a u64 (42)
