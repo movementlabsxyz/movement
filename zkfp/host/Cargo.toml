@@ -2,29 +2,26 @@
 name = "host"
 version = "0.0.0"
 edition = "2021"
-authors.workspace = true
-repository.workspace = true
-license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-zkfp = []
+# We can't inherit workspace.dependencies because this crate is currently excluded 
+# from the workspace.
 
 [dependencies]
-anyhow = { workspace = true }
-
-risc0-zkvm = { workspace = true }
-tracing-subscriber = { workspace = true }
-tempfile = { workspace = true }
-serde = { workspace = true } 
+anyhow = "1.0"
+risc0-zkvm = { version = "0.20.1",  features = ["std"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tempfile = "3.2.0"
+serde = "1.0"
 
 methods = { path = "../methods" }
 
-move-compiler = { workspace = true }
-move-binary-format = { workspace = true }
-move-core-types = { workspace = true }
-move-vm-types = { workspace = true }
-move-vm-runtime = { workspace = true }
-move-vm-test-utils = { workspace = true }
-move-stdlib = { workspace = true }
+# Move dependencies. 
+move-vm-runtime = { path = "../vendors/move/language/move-vm/runtime" }
+move-vm-test-utils = { path = "../vendors/move/language/move-vm/test-utils" }
+move-binary-format = { path = "../vendors/move/language/move-binary-format" }
+move-vm-types = { path = "../vendors/move/language/move-vm/types" }
+move-core-types = { path= "../vendors/move/language/move-core/types" }
+move-compiler = { path= "../vendors/move/language/move-compiler" }
+move-stdlib = { path= "../vendors/move/language/move-stdlib" }

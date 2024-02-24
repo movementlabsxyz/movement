@@ -7,6 +7,18 @@ description = "Testing environment for Zero Konwledge Fraud Proofs on Movement"
 # We can't inherit workspace.dependencies because this crate is currently excluded 
 # from the workspace.
 
+[[bin]]
+name = "host"
+path = "host/src/main.rs"
+
+[[bin]]
+name = "methods"
+path = "methods/src/main.rs"
+
+[[bin]]
+name = "guest"
+path = "methods/guest/src/main.rs"
+
 [dependencies]
 anyhow = "1.0"
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }

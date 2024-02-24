@@ -1,13 +1,10 @@
 [package]
-name = "hello_guest"
+name = "guest"
 version = "0.1.0"
 edition = "2021"
 
 [features]
 zkfp = []
-
-[build-dependencies]
-risc0-build = { version = "0.20.1" }
 
 [dependencies]
 # If you want to try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm

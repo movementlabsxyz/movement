@@ -7,16 +7,11 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
+    "build-utils",
     "shared-sequencer/movement-sequencer",
-]
-
-# We exclude the zkfp crate because it involves system dependencies, these 
-# should be managed by the nix.flake
-# To build with the zkfp crate `cargo build -p zkfp`
-exclude = [
     "zkfp/host",
     "zkfp/methods",
-    "zkfp/methods/guest",
+    "zkfp/methods/guest"
 ]
 
 [workspace.dependencies]
