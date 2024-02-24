@@ -3,7 +3,6 @@ name = "build-utils"
 version = "0.1.0"
 edition = "2021"
 
-# This is optional and only needed if you are providing shared Rust code.
 [lib]
 path = "src/lib.rs"
 
