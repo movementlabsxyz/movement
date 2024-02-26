@@ -4,21 +4,21 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0"
-risc0-zkvm = { version = "0.20.1",  features = ["std"] }
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tempfile = "3.2.0"
-serde = "1.0"
+anyhow = { workspace = true } 
+risc0-zkvm = { workspace = true }
+tracing-subscriber = { workspace = true }
+tempfile = { workspace = true }
+serde = { workspace = true } 
 
 methods = { path = "../methods" }
 
 # Move dependencies. 
-move-vm-runtime = { path = "../vendors/move/language/move-vm/runtime" }
-move-vm-test-utils = { path = "../vendors/move/language/move-vm/test-utils" }
-move-binary-format = { path = "../vendors/move/language/move-binary-format" }
-move-vm-types = { path = "../vendors/move/language/move-vm/types" }
-move-core-types = { path= "../vendors/move/language/move-core/types" }
-move-compiler = { path= "../vendors/move/language/move-compiler" }
-move-stdlib = { path= "../vendors/move/language/move-stdlib" }
+move-vm-runtime = { workspace = true }
+move-vm-test-utils = { workspace = true }
+move-binary-format = { workspace = true}
+move-vm-types = { workspace = true }
+move-core-types = { workspace = true }
+move-compiler = { workspace = true }
+move-stdlib = { workspace = true }
 
 
