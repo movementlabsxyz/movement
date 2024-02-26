@@ -7,11 +7,13 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
-    "build-utils",
-    "shared-sequencer/movement-sequencer",
     "zkfp/host",
     "zkfp/methods",
     "zkfp/methods/guest"
+]
+
+exclude = [
+    "shared-sequencer/movement-sequencer"
 ]
 
 [workspace.dependencies]
@@ -30,3 +32,17 @@ move-stdlib = { path="./zkfp/vendors/move/language/move-stdlib" }
 
 # ! this will not work only here to help debugging
 tempfile = "3.2.0"
+
+# Always optimize; building and running the guest takes much longer without optimization.
+[profile.dev]
+opt-level = 3
+
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.release]
+debug = 1
+lto = true
+
+[profile.release.build-override]
+opt-level = 3

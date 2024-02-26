@@ -20,3 +20,5 @@ move-vm-types = { path = "../vendors/move/language/move-vm/types" }
 move-core-types = { path= "../vendors/move/language/move-core/types" }
 move-compiler = { path= "../vendors/move/language/move-compiler" }
 move-stdlib = { path= "../vendors/move/language/move-stdlib" }
+
+

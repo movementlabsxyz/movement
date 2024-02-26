@@ -7,7 +7,7 @@ edition = "2021"
 zkfp = []
 
 [build-dependencies]
-build-utils = { path = "../../build-utils" }
+risc0-build = { version = "0.20.1" }
 
 [package.metadata.risc0]
 methods = ["guest"]

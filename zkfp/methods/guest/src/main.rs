@@ -2,7 +2,6 @@
 // If you want to try std support, also update the guest Cargo.toml file
 
 pub mod move_vm_integration_run;
-
 use risc0_zkvm::guest::env;
 
 risc0_zkvm::guest::entry!(main);
@@ -20,6 +19,8 @@ fn main() {
         vec![],
         vec![],
     ).unwrap();
+
+    env::log(format!("The move program output {:#?} ", output).as_str());
 
     env::commit(&output);
 }
