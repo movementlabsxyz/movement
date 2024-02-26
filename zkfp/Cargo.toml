@@ -4,9 +4,6 @@ version = "0.1.0"
 edition = "2021"
 description = "Testing environment for Zero Konwledge Fraud Proofs on Movement"
 
-# We can't inherit workspace.dependencies because this crate is currently excluded 
-# from the workspace.
-
 [[bin]]
 name = "host"
 path = "host/src/main.rs"
