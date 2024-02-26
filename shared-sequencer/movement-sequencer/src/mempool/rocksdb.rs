@@ -4,9 +4,11 @@ use super::{
 };
 use rocksdb::{DB, Options, ColumnFamilyDescriptor};
 use std::sync::Arc;
+use std::pin::Pin;
 use serde_json;
 use tokio::sync::RwLock;
 use avalanche_types::ids::Id;
+use futures::stream::Stream;
 use crate::block::{Transaction, Block};
 
 #[derive(Debug, Clone)]
@@ -71,6 +73,11 @@ impl MempoolTransactionOperations for RocksdbMempool {
         let serialized_tx = db.get_cf(&cf_handle, tx_id.to_vec())?.expect("Transaction not found");
         let tx: Transaction = serde_json::from_slice(&serialized_tx)?;
         Ok(tx)
+    }
+
+    async fn iter(&self) {
+        // TODO Create tracking issue here.
+        unimplemented!()
     }
     
 }

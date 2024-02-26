@@ -2,9 +2,7 @@
 // The ELF is used for proving and the ID is used for verification.
 pub mod compiler;
 pub mod compiler_examples;
-use methods::{
-    HELLO_GUEST_ELF, HELLO_GUEST_ID
-};
+use methods::{GUEST_ELF, GUEST_ID};
 use risc0_zkvm::{default_prover, ExecutorEnv};
 
 fn main() {
@@ -37,19 +35,15 @@ fn main() {
     let prover = default_prover();
 
     // Produce a receipt by proving the specified ELF binary.
-    let receipt = prover
-        .prove(env, HELLO_GUEST_ELF)
-        .unwrap();
+    let receipt = prover.prove(env, GUEST_ELF).unwrap();
 
     // TODO: Implement code for retrieving receipt journal here.
 
     // For example:
-    let output: Vec<Vec<u8>> = receipt.journal.decode().unwrap();
-    println!("The move program output {:#?} ", output);
+    let output: Vec<u8> = receipt.journal.decode().unwrap();
+    //println!("The move program output {:?} ", output);
 
     // The receipt was verified at the end of proving, but the below code is an
     // example of how someone else could verify this receipt.
-    receipt
-        .verify(HELLO_GUEST_ID)
-        .unwrap();
+    receipt.verify(GUEST_ID).unwrap();
 }

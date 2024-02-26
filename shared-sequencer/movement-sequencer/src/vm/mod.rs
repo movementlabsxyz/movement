@@ -258,19 +258,20 @@ where
             vm_state.preferred = last_accepted_blk_id;
             log::info!("initialized Vm with last accepted block {last_accepted_blk_id}");
         } else {
-            let mut genesis_block = Block::try_new(
-                ids::Id::empty(),
-                0,
-                0,
-                vm_state.genesis.data.as_bytes().to_vec(),
-                choices::status::Status::default(),
-            )?;
-            genesis_block.set_state(state.clone());
-            genesis_block.accept().await?;
+            // @TODO create tracking issue, type error here on genesis_block
+            // let mut genesis_block = Block::try_new(
+            //     ids::Id::empty(),
+            //     0,
+            //     0,
+            //     vm_state.genesis.data.as_bytes().to_vec(),
+            //     choices::status::Status::default(),
+            // )?;
+            // genesis_block.set_state(state.clone());
+            // genesis_block.accept().await?;
 
-            let genesis_blk_id = genesis_block.id();
-            vm_state.preferred = genesis_blk_id;
-            log::info!("initialized Vm with genesis block {genesis_blk_id}");
+            // let genesis_blk_id = genesis_block.id();
+            // vm_state.preferred = genesis_blk_id;
+            log::info!("failed to init genesis block");
         }
 
         self.mempool = Arc::new(RwLock::new(VecDeque::with_capacity(100)));
@@ -349,29 +350,32 @@ where
 
         let vm_state = self.state.read().await;
         if let Some(state) = &vm_state.state {
-            self.notify_block_ready().await;
+            // @TODO Type Error here, this block needs to be implemented 
+            // Create tracking issue
 
-            // "state" must have preferred block in cache/verified_block
-            // otherwise, not found error from rpcchainvm database
-            let prnt_blk = state.get_block(&vm_state.preferred).await?;
-            let unix_now = Utc::now()
-                .timestamp()
-                .try_into()
-                .expect("timestamp to convert from i64 to u64");
+            // self.notify_block_ready().await;
 
-            let first = mempool.pop_front().unwrap();
-            let mut block = Block::try_new(
-                prnt_blk.id(),
-                prnt_blk.height() + 1,
-                unix_now,
-                first,
-                choices::status::Status::Processing,
-            )?;
-            block.set_state(state.clone());
-            block.verify().await?;
+            // // "state" must have preferred block in cache/verified_block
+            // // otherwise, not found error from rpcchainvm database
+            // let prnt_blk = state.get_block(&vm_state.preferred).await?;
+            // let unix_now = Utc::now()
+            //     .timestamp()
+            //     .try_into()
+            //     .expect("timestamp to convert from i64 to u64");
 
-            log::info!("successfully built block");
-            return Ok(block);
+            // let first = mempool.pop_front().unwrap();
+            // let mut block = Block::try_new(
+            //     prnt_blk.id(),
+            //     prnt_blk.height() + 1,
+            //     unix_now,
+            //     first,
+            //     choices::status::Status::Processing,
+            // )?;
+            // block.set_state(state.clone());
+            // block.verify().await?;
+
+            // log::info!("successfully built block");
+            // return Ok(block);
         }
 
         Err(Error::new(ErrorKind::NotFound, "state manager not found"))

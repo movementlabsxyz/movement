@@ -1,4 +1,3 @@
-
 [submodule "zkfp/vendors/move"]
 	path = zkfp/vendors/move
 	url = https://github.com/movemntdev/move

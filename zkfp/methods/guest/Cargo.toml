@@ -1,9 +1,7 @@
 [package]
-name = "hello_guest"
+name = "guest"
 version = "0.1.0"
 edition = "2021"
-
-[workspace]
 
 [dependencies]
 # If you want to try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
