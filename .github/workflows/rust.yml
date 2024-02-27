@@ -16,27 +16,18 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        # This option ensures that Git submodules are recursively checked out
-        submodules: 'recursive'
+        # Fetches the main repo but skips automatic handling of submodules
+        submodules: false
         fetch-depth: 0
 
-    # Configure submodule URLs as specified in .gitmodules
-    - name: Configure submodule URLs
+    # Manually handle submodules
+    - name: Handle Git Submodules
       run: |
-        while IFS= read -r line; do
-          if [[ "$line" =~ \[submodule\..*\] ]]; then
-            module_path=$(echo "$line" | sed -e 's/\[submodule\."//' -e 's/"\]//')
-            module_url=$(git config --file .gitmodules --get submodule."$module_path".url)
-            git config --file .gitmodules submodule."$module_path".url "$module_url"
-          fi
-        done < .gitmodules
-        git submodule sync --recursive
-
-    # Initialize and update git submodules
-    - name: Initialize and update git submodules
-      run: |
-        git submodule sync --recursive
+        # Initialize submodules
         git submodule update --init --recursive
+        # Sync submodules in case .gitmodules has been updated
+        git submodule sync --recursive
+        # Attempt to fix any specific submodule fetching issues here, if applicable
 
     - name: Build
       run: cargo build --verbose
