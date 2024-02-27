@@ -2,3 +2,4 @@
 Cargo.lock
 methods/guest/Cargo.lock
 target/
+/protocol-units/zkfp/vendors/*
