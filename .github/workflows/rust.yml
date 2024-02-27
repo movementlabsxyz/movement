@@ -1,0 +1,29 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        # This option ensures that Git submodules are recursively checked out
+        submodules: 'recursive'
+    
+    # New step to explicitly ensure submodules are up to date
+    - name: Initialize and update git submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive
+
+    - name: Build
+      run: cargo build --verbose
