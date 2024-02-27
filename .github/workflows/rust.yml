@@ -19,8 +19,20 @@ jobs:
         # This option ensures that Git submodules are recursively checked out
         submodules: 'recursive'
         fetch-depth: 0
-    
-    # New step to explicitly ensure submodules are up to date
+
+    # Configure submodule URLs as specified in .gitmodules
+    - name: Configure submodule URLs
+      run: |
+        while IFS= read -r line; do
+          if [[ "$line" =~ \[submodule\..*\] ]]; then
+            module_path=$(echo "$line" | sed -e 's/\[submodule\."//' -e 's/"\]//')
+            module_url=$(git config --file .gitmodules --get submodule."$module_path".url)
+            git config --file .gitmodules submodule."$module_path".url "$module_url"
+          fi
+        done < .gitmodules
+        git submodule sync --recursive
+
+    # Initialize and update git submodules
     - name: Initialize and update git submodules
       run: |
         git submodule sync --recursive
