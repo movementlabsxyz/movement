@@ -7,9 +7,10 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
-    "zkfp/host",
-    "zkfp/methods",
-    "zkfp/methods/guest"
+    "protocol-units/data-availability",
+    "protocol-units/zkfp/host",
+    "protocol-units/zkfp/methods",
+    "protocol-units/zkfp/methods/guest"
 ]
 
 exclude = [
@@ -25,13 +26,13 @@ serde = "1.0"
 tempfile = "3.2.0"
 
 # Move dependencies
-move-vm-runtime = { path = "zkfp/vendors/move/language/move-vm/runtime" }
-move-vm-test-utils = { path = "zkfp/vendors/move/language/move-vm/test-utils" }
-move-binary-format = { path = "zkfp/vendors/move/language/move-binary-format" }
-move-vm-types = { path = "zkfp/vendors/move/language/move-vm/types"}
-move-core-types = { path= "zkfp/vendors/move/language/move-core/types" }
-move-compiler = { path= "zkfp/vendors/move/language/move-compiler" }
-move-stdlib = { path= "zkfp/vendors/move/language/move-stdlib" }
+move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
+move-vm-test-utils = { path = "protocol-units/zkfp/vendors/move/language/move-vm/test-utils" }
+move-binary-format = { path = "protocol-units/zkfp/vendors/move/language/move-binary-format" }
+move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/types"}
+move-core-types = { path= "protocol-units/zkfp/vendors/move/language/move-core/types" }
+move-compiler = { path= "protocol-units/zkfp/vendors/move/language/move-compiler" }
+move-stdlib = { path= "protocol-units/zkfp/vendors/move/language/move-stdlib" }
 
 
 # Always optimize; building and running the guest takes much longer without optimization.
