@@ -4,7 +4,7 @@ use std::{
     collections::{HashMap, VecDeque},
     io::{self, Error, ErrorKind},
     sync::Arc,
-    time::Duration,
+    time::Duration, vec,
 };
 
 use crate::{
@@ -262,7 +262,7 @@ where
                 ids::Id::empty(),
                 0,
                 0,
-                vm_state.genesis.data.as_bytes().to_vec(),
+                vec![],
                 choices::status::Status::default(),
             )?;
             genesis_block.set_state(state.clone());
@@ -364,7 +364,7 @@ where
                 prnt_blk.id(),
                 prnt_blk.height() + 1,
                 unix_now,
-                first,
+                vec![],
                 choices::status::Status::Processing,
             )?;
             block.set_state(state.clone());

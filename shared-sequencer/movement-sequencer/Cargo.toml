@@ -29,6 +29,7 @@ serde_json = "1.0.113" # https://github.com/serde-rs/json/releases
 serde_with = { version = "3.6.1", features = ["hex"] }
 tokio = { version = "1.36.0", features = ["fs", "rt-multi-thread"] }
 tonic = { version = "0.11.0", features = ["gzip"] }
+tempfile = "3.2.0"
 
 # new deps
 anyhow = "1.0"
