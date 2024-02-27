@@ -7,7 +7,8 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
-    "protocol-units/data-availability",
+    "protocol-units/data-availability/rollup",
+    "protocol-units/data-availability/stf",
     "protocol-units/zkfp/host",
     "protocol-units/zkfp/methods",
     "protocol-units/zkfp/methods/guest"

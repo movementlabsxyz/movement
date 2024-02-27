@@ -1,14 +1,13 @@
 [package]
-name = "data-availability"
+name = "data-availbility"
 version = "0.1.0"
 edition = "2021"
-description = "Data Availability adapters for the Movement SDK"
+description = "Data Availability modules for Movement SDK"
 
-[dependencies]
-anyhow = { workspace = true }
-clap = { workspace = true }
-tokio = { workspace = true }
-tracing-subscriber = { workspace = true }
+[[bin]]
+name = "rollup"
+path = "rollup/src/main.rs"
 
-# Sovereign SDK dependencies
-sov-rollup-interface = { workspace = true }
+[[bin]]
+name = "stf"
+path = "stf/src/main.rs"

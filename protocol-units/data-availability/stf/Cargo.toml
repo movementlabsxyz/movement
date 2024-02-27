@@ -1,0 +1,6 @@
+[package]
+name = "stf"
+version = "0.1.0"
+edition = "2021"
+description = "State Transition Function (STF) implemented with Sovereign Labs for Movement SDK"
+
