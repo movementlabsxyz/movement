@@ -30,9 +30,9 @@ move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/ru
 move-vm-test-utils = { path = "protocol-units/zkfp/vendors/move/language/move-vm/test-utils" }
 move-binary-format = { path = "protocol-units/zkfp/vendors/move/language/move-binary-format" }
 move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/types"}
-move-core-types = { path= "protocol-units/zkfp/vendors/move/language/move-core/types" }
-move-compiler = { path= "protocol-units/zkfp/vendors/move/language/move-compiler" }
-move-stdlib = { path= "protocol-units/zkfp/vendors/move/language/move-stdlib" }
+move-core-types = { path = "protocol-units/zkfp/vendors/move/language/move-core/types" }
+move-compiler = { path = "protocol-units/zkfp/vendors/move/language/move-compiler" }
+move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
 
 
 # Always optimize; building and running the guest takes much longer without optimization.
