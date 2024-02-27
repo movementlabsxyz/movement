@@ -3,3 +3,12 @@ name = "data-availability"
 version = "0.1.0"
 edition = "2021"
 description = "Data Availability adapters for the Movement SDK"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Sovereign SDK dependencies
+sov-rollup-interface = { workspace = true }
