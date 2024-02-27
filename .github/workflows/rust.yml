@@ -18,6 +18,7 @@ jobs:
       with:
         # This option ensures that Git submodules are recursively checked out
         submodules: 'recursive'
+        fetch-depth: 0
     
     # New step to explicitly ensure submodules are up to date
     - name: Initialize and update git submodules
