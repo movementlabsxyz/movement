@@ -20,6 +20,7 @@ exclude = [
 
 [workspace.dependencies]
 anyhow = "1.0"
+async-trait = "0.1.77"
 clap = { version = "4.4.10", features = ["derive"] }
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }

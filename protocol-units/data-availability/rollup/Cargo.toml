@@ -5,7 +5,19 @@ edition = "2021"
 description = "Sovereign Labs Rollup"
 
 [dependencies]
+async-trait = { workspace = true }
 anyhow = { workspace = true }
 clap = { workspace = true }
 tokio = { workspace = true }
 tracing-subscriber = { workspace = true } 
+
+# Sovereign Labs dependencies
+sov-celestia-adapter = { workspace = true, features = ["native"], optional = true}
+sov-modules-api = { workspace = true }
+sov-modules-rollup-blueprint = { workspace = true }
+sov-modules-stf-blueprint = { workspace = true }
+sov-risc0-adapter = { workspace = true }
+sov-rollup-interface = { workspace = true }
+sov-state = { workspace = true }
+sov-stf-runner = { workspace = true }
+stf = { path = "../stf" }
