@@ -15,20 +15,8 @@ use super::de_request;
 #[rpc]
 pub trait Rpc {
     /// Pings the VM.
-    #[rpc(name = "ping", alias("timestampvm.ping"))]
+    #[rpc(name = "ping", alias("movement-sequencer.ping"))]
     fn ping(&self) -> BoxFuture<Result<crate::api::PingResponse>>;
-
-    /// Proposes the arbitrary data.
-    #[rpc(name = "proposeBlock", alias("timestampvm.proposeBlock"))]
-    fn propose_block(&self, args: ProposeBlockArgs) -> BoxFuture<Result<ProposeBlockResponse>>;
-
-    /// Fetches the last accepted block.
-    #[rpc(name = "lastAccepted", alias("timestampvm.lastAccepted"))]
-    fn last_accepted(&self) -> BoxFuture<Result<LastAcceptedResponse>>;
-
-    /// Fetches the block.
-    #[rpc(name = "getBlock", alias("timestampvm.getBlock"))]
-    fn get_block(&self, args: GetBlockArgs) -> BoxFuture<Result<GetBlockResponse>>;
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -80,66 +68,6 @@ where
     fn ping(&self) -> BoxFuture<Result<crate::api::PingResponse>> {
         log::debug!("ping called");
         Box::pin(async move { Ok(crate::api::PingResponse { success: true }) })
-    }
-
-    fn propose_block(&self, args: ProposeBlockArgs) -> BoxFuture<Result<ProposeBlockResponse>> {
-        log::debug!("propose_block called");
-        let vm = self.vm.clone();
-
-        Box::pin(async move {
-            vm.propose_block(args.data)
-                .await
-                .map_err(create_jsonrpc_error)?;
-            Ok(ProposeBlockResponse { success: true })
-        })
-    }
-
-    fn last_accepted(&self) -> BoxFuture<Result<LastAcceptedResponse>> {
-        log::debug!("last accepted method called");
-        let vm = self.vm.clone();
-
-        Box::pin(async move {
-            let vm_state = vm.state.read().await;
-            if let Some(state) = &vm_state.state {
-                let last_accepted = state
-                    .get_last_accepted_block_id()
-                    .await
-                    .map_err(create_jsonrpc_error)?;
-
-                return Ok(LastAcceptedResponse { id: last_accepted });
-            }
-
-            Err(Error {
-                code: ErrorCode::InternalError,
-                message: String::from("no state manager found"),
-                data: None,
-            })
-        })
-    }
-
-    fn get_block(&self, args: GetBlockArgs) -> BoxFuture<Result<GetBlockResponse>> {
-        let blk_id = ids::Id::from_str(&args.id).unwrap();
-        log::info!("get_block called for {}", blk_id);
-
-        let vm = self.vm.clone();
-
-        Box::pin(async move {
-            let vm_state = vm.state.read().await;
-            if let Some(state) = &vm_state.state {
-                let block = state
-                    .get_block(&blk_id)
-                    .await
-                    .map_err(create_jsonrpc_error)?;
-
-                return Ok(GetBlockResponse { block });
-            }
-
-            Err(Error {
-                code: ErrorCode::InternalError,
-                message: String::from("no state manager found"),
-                data: None,
-            })
-        })
     }
 }
 

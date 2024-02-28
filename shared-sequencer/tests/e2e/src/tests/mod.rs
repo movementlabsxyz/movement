@@ -227,63 +227,6 @@ async fn e2e() {
         thread::sleep(Duration::from_millis(300));
     }
 
-    let ep = rpc_eps[0].clone();
-
-    log::info!("get last_accepted from chain handlers");
-    let resp = movement_sequencer::client::last_accepted(&ep, &chain_url_path)
-        .await
-        .unwrap();
-    log::info!("last_accepted response from {}: {:?}", ep, resp);
-
-    let blk_id = resp.result.unwrap().id;
-
-    log::info!("getting block {blk_id}");
-    let resp = movement_sequencer::client::get_block(&ep, &chain_url_path, &blk_id)
-        .await
-        .unwrap();
-    log::info!("get_block response from {}: {:?}", ep, resp);
-    let height0 = resp.result.unwrap().block.height();
-    assert_eq!(height0, 0);
-
-    log::info!("propose block");
-    let resp = movement_sequencer::client::propose_block(&ep, &chain_url_path, vec![0, 1, 2])
-        .await
-        .unwrap();
-    log::info!("propose_block response from {}: {:?}", ep, resp);
-
-    // enough time for block builds
-    thread::sleep(Duration::from_secs(5));
-
-    log::info!("get last_accepted from chain handlers");
-    let resp = movement_sequencer::client::last_accepted(&ep, &chain_url_path)
-        .await
-        .unwrap();
-    log::info!("last_accepted response from {}: {:?}", ep, resp);
-
-    let blk_id = resp.result.unwrap().id;
-
-    log::info!("getting block {blk_id}");
-    let resp = movement_sequencer::client::get_block(&ep, &chain_url_path, &blk_id)
-        .await
-        .unwrap();
-    log::info!("get_block response from {}: {:?}", ep, resp);
-    let height1 = resp.result.unwrap().block.height();
-    assert_eq!(height0 + 1, height1);
-
-    // expects an error of
-    // "error":{"code":-32603,"message":"data 1048586-byte exceeds the limit 1048576-byte"}
-    log::info!("propose block beyond its limit");
-    let resp = movement_sequencer::client::propose_block(
-        &ep,
-        &chain_url_path,
-        vec![1; movement_sequencer::vm::PROPOSE_LIMIT_BYTES + 10],
-    )
-    .await
-    .unwrap();
-    assert!(resp.result.is_none());
-    assert!(resp.error.is_some());
-    log::info!("propose block response: {:?}", resp);
-
     if crate::get_network_runner_enable_shutdown() {
         log::info!("shutdown is enabled... stopping...");
         let _resp = cli.stop().await.expect("failed stop");

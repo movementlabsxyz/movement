@@ -14,7 +14,7 @@ pub const APP_NAME: &str = "movement-sequencer";
 async fn main() -> io::Result<()> {
     let matches = Command::new(APP_NAME)
         .version(crate_version!())
-        .about("Timestamp Vm")
+        .about("Movement Sequencer")
         .subcommands(vec![genesis::command(), vm_id::command()])
         .get_matches();
 

@@ -1,4 +1,4 @@
-//! Implementation of [`snowman.Block`](https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/snowman#Block) interface for timestampvm.
+//! Implementation of [`snowman.Block`](https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/consensus/snowman#Block)
 
 use std::{
     fmt,
@@ -16,8 +16,6 @@ use chrono::{Duration, Utc};
 use derivative::{self, Derivative};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-
-
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Derivative, Default)]
@@ -40,6 +38,7 @@ impl Transaction {
         }
     }
 
+    // TODO Would this not best being somewhere else?
     /// Creates a transaction for testing
     pub fn test() -> Self {
         Self {
@@ -89,6 +88,8 @@ pub struct Block {
 
 
 impl Block {
+
+    // TODO maybe not best here??
 
     /// Creates a transaction for testing
     pub fn test() -> Self {

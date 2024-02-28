@@ -45,9 +45,6 @@ use tokio::sync::{mpsc::Sender, RwLock};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Limits how much data a user can propose.
-pub const PROPOSE_LIMIT_BYTES: usize = 1024 * 1024;
-
 /// Represents VM-specific states.
 /// Defined in a separate struct, for interior mutability in [`Vm`](Vm).
 /// To be protected with `Arc` and `RwLock`.
@@ -88,10 +85,6 @@ pub struct Vm<A> {
     /// Maintains the Vm-specific states.
     pub state: Arc<RwLock<State>>,
     pub app_sender: Option<A>,
-
-    /// A queue of data that have not been put into a block and proposed yet.
-    /// Mempool is not persistent, so just keep in memory via Vm.
-    pub mempool: Arc<RwLock<VecDeque<Vec<u8>>>>,
 }
 
 impl<A> Default for Vm<A>
@@ -112,7 +105,6 @@ where
         Self {
             state: Arc::new(RwLock::new(State::default())),
             app_sender: None,
-            mempool: Arc::new(RwLock::new(VecDeque::with_capacity(100))),
         }
     }
 
@@ -134,30 +126,6 @@ where
         } else {
             log::error!("consensus engine channel failed to initialized");
         }
-    }
-
-    /// Proposes arbitrary data to mempool and notifies that a block is ready for builds.
-    /// Other VMs may optimize mempool with more complicated batching mechanisms.
-    /// # Errors
-    /// Can fail if the data size exceeds `PROPOSE_LIMIT_BYTES`.
-    pub async fn propose_block(&self, d: Vec<u8>) -> io::Result<()> {
-        let size = d.len();
-        log::info!("received propose_block of {size} bytes");
-
-        if size > PROPOSE_LIMIT_BYTES {
-            log::info!("limit exceeded... returning an error...");
-            return Err(Error::new(
-                ErrorKind::InvalidInput,
-                format!("data {size}-byte exceeds the limit {PROPOSE_LIMIT_BYTES}-byte"),
-            ));
-        }
-
-        let mut mempool = self.mempool.write().await;
-        mempool.push_back(d);
-        log::info!("proposed {size} bytes of data for a block");
-
-        self.notify_block_ready().await;
-        Ok(())
     }
 
     /// Sets the state of the Vm.
@@ -191,18 +159,6 @@ where
                 vm_state.bootstrapped = true;
                 Ok(())
             }
-        }
-    }
-
-    /// Returns the last accepted block Id.
-    /// # Errors
-    /// Will fail if there's no state or if the db can't be accessed
-    pub async fn last_accepted(&self) -> io::Result<ids::Id> {
-        let vm_state = self.state.read().await;
-
-        match &vm_state.state {
-            Some(state) => state.get_last_accepted_block_id().await,
-            None => Err(Error::new(ErrorKind::NotFound, "state manager not found")),
         }
     }
 }
@@ -273,8 +229,6 @@ where
             log::info!("initialized Vm with genesis block {genesis_blk_id}");
         }
 
-        self.mempool = Arc::new(RwLock::new(VecDeque::with_capacity(100)));
-
         log::info!("successfully initialized Vm");
         Ok(())
     }
@@ -340,12 +294,6 @@ where
 
     /// Builds a block from mempool data.
     async fn build_block(&self) -> io::Result<<Self as ChainVm>::Block> {
-        let mut mempool = self.mempool.write().await;
-
-        log::info!("build_block called for {} mempool", mempool.len());
-        if mempool.is_empty() {
-            return Err(Error::new(ErrorKind::Other, "no pending block"));
-        }
 
         let vm_state = self.state.read().await;
         if let Some(state) = &vm_state.state {
@@ -359,7 +307,6 @@ where
                 .try_into()
                 .expect("timestamp to convert from i64 to u64");
 
-            let first = mempool.pop_front().unwrap();
             let mut block = Block::try_new(
                 prnt_blk.id(),
                 prnt_blk.height() + 1,
