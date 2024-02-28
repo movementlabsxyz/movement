@@ -17,3 +17,4 @@ sov-sequencer-registry = { workspace = true }
 sov-modules-api = { workspace = true }
 sov-modules-stf-blueprint = { workspace = true }
 
+
