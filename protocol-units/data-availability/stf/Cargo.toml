@@ -4,3 +4,16 @@ version = "0.1.0"
 edition = "2021"
 description = "State Transition Function (STF) implemented with Sovereign Labs for Movement SDK"
 
+[dependencies]
+anyhow = { workspace = true }
+jsonrpsee = { workspace = true }
+borsh = { workspace = true }
+serde = { workspace = true }
+
+#Sovereign Labs Dependencies
+sov-accounts = { workspace = true }
+sov-bank = { workspace = true }
+sov-sequencer-registry = { workspace = true }
+sov-modules-api = { workspace = true }
+sov-modules-stf-blueprint = { workspace = true }
+

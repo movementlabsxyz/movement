@@ -21,13 +21,17 @@ exclude = [
 [workspace.dependencies]
 anyhow = "1.0"
 async-trait = "0.1.77"
+borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 clap = { version = "4.4.10", features = ["derive"] }
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-serde = "1.0"
+serde = { version = "1.0.192", features = ["derive", "rc"] }
+serde_json = "1.0"
 tokio = "1.26.0"
 tempfile = "3.2.0"
+
 
 # Move dependencies
 move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
