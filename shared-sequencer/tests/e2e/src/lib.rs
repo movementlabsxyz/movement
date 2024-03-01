@@ -22,6 +22,13 @@ pub fn get_avalanchego_path() -> (String, bool) {
     }
 }
 
+pub fn get_avalanchego_data_dir() -> (String, bool) {
+    match std::env::var("AVALANCHEGO_DATA_DIR") {
+        Ok(s) => (s, true),
+        _ => (String::new(), false),
+    }
+}
+
 #[must_use]
 pub fn get_vm_plugin_path() -> (String, bool) {
     match std::env::var("VM_PLUGIN_PATH") {

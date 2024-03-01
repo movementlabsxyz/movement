@@ -4,14 +4,13 @@ version = "0.0.0"
 edition = "2021"
 rust-version = "1.70"
 publish = false
-description = "e2e tests for timestampvm"
+description = "e2e tests for movement-sequencer"
 license = "BSD-3-Clause"
 homepage = "https://avax.network"
 
 [dependencies]
 
 [dev-dependencies]
-avalanche-installer = "0.0.77"
 avalanche-network-runner-sdk = "0.3.3" # https://crates.io/crates/avalanche-network-runner-sdk
 avalanche-types = { version = "0.1.4", features = ["jsonrpc_client", "subnet"] } # https://crates.io/crates/avalanche-types
 env_logger = "0.10.2"

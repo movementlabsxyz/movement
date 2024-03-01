@@ -5,11 +5,26 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
+use std::process::Command;
+use std::thread::sleep;
 
 use avalanche_network_runner_sdk::{BlockchainSpec, Client, GlobalConfig, StartRequest};
 use avalanche_types::{ids, jsonrpc::client::info as avalanche_sdk_info, subnet};
 
 const AVALANCHEGO_VERSION: &str = "v1.10.9";
+const VM_NAME: &str = "movement-sequencer";
+const NETWORK_RUNNER_GRPC_ENDPOINT: &str = "http://127.0.0.1:12342";
+
+fn launch_avalanche_network_runner() -> std::process::Child {
+    Command::new("avalanche-network-runner")
+        .arg("server")
+        .arg("--log-level")
+        .arg("debug")
+        .arg("--port")
+        .arg(":12342")
+        .arg("--disable-grpc-gateway")
+        .spawn().unwrap()
+}
 
 #[tokio::test]
 async fn e2e() {
@@ -18,10 +33,9 @@ async fn e2e() {
         .is_test(true)
         .try_init();
 
-    let (ep, is_set) = crate::get_network_runner_grpc_endpoint();
-    assert!(is_set);
-
-    let cli = Client::new(&ep).await;
+    let mut anr_process = launch_avalanche_network_runner();
+    sleep(Duration::from_secs(2));
+    let cli = Client::new(NETWORK_RUNNER_GRPC_ENDPOINT).await;
 
     log::info!("ping...");
     let resp = cli.ping().await.expect("failed ping");
@@ -40,28 +54,7 @@ async fn e2e() {
         .to_string();
     let vm_id = subnet::vm_name_to_id(&vm_id).unwrap();
 
-    let (mut avalanchego_exec_path, _) = crate::get_avalanchego_path();
-    let plugins_dir = if !avalanchego_exec_path.is_empty() {
-        let parent_dir = Path::new(&avalanchego_exec_path)
-            .parent()
-            .expect("unexpected None parent");
-        parent_dir
-            .join("plugins")
-            .as_os_str()
-            .to_str()
-            .unwrap()
-            .to_string()
-    } else {
-        let exec_path = avalanche_installer::avalanchego::github::download(
-            None,
-            None,
-            Some(AVALANCHEGO_VERSION.to_string()),
-        )
-        .await
-        .unwrap();
-        avalanchego_exec_path = exec_path;
-        avalanche_installer::avalanchego::get_plugin_dir(&avalanchego_exec_path)
-    };
+    let (plugins_dir, _) = crate::get_avalanchego_data_dir();
 
     log::info!(
         "copying vm plugin {} to {}/{}",
@@ -70,7 +63,9 @@ async fn e2e() {
         vm_id
     );
 
-    fs::create_dir(&plugins_dir).unwrap();
+    fs::remove_dir_all(&plugins_dir).expect("remove data directory");
+    fs::create_dir(&plugins_dir).expect("create data directory");
+
     fs::copy(
         &vm_plugin_path,
         Path::new(&plugins_dir).join(vm_id.to_string()),
@@ -85,14 +80,15 @@ async fn e2e() {
     genesis.sync(&genesis_file_path).unwrap();
 
     log::info!(
-        "starting {} with avalanchego {}, genesis file path {}",
+        "starting {} with avalanchego, genesis file path {}",
         vm_id,
-        &avalanchego_exec_path,
         genesis_file_path,
     );
+    let (exec_path, _) = crate::get_avalanchego_path();
+
     let resp = cli
         .start(StartRequest {
-            exec_path: avalanchego_exec_path,
+            exec_path,
             num_nodes: Some(5),
             plugin_dir: plugins_dir,
             global_node_config: Some(
@@ -102,7 +98,7 @@ async fn e2e() {
                 .unwrap(),
             ),
             blockchain_specs: vec![BlockchainSpec {
-                vm_name: String::from("movement_sequencer"),
+                vm_name: String::from(VM_NAME),
                 genesis: genesis_file_path.to_string(),
                 ..Default::default()
             }],
@@ -114,9 +110,9 @@ async fn e2e() {
         "started avalanchego cluster with network-runner: {:?}",
         resp
     );
-
+    
     // enough time for network-runner to get ready
-    thread::sleep(Duration::from_secs(20));
+    sleep(Duration::from_secs(20));
 
     log::info!("checking cluster healthiness...");
     let mut ready = false;
@@ -190,7 +186,7 @@ async fn e2e() {
     let mut blockchain_id = ids::Id::empty();
     for (k, v) in cluster_info.custom_chains.iter() {
         log::info!("custom chain info: {}={:?}", k, v);
-        if v.chain_name == "movement_sequencer" {
+        if v.chain_name == VM_NAME {
             blockchain_id = ids::Id::from_str(&v.chain_id).unwrap();
             break;
         }
@@ -234,4 +230,6 @@ async fn e2e() {
     } else {
         log::info!("skipped network shutdown...");
     }
+
+    anr_process.kill().expect("kill anr process");
 }
