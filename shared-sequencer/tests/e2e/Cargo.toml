@@ -11,12 +11,12 @@ homepage = "https://avax.network"
 [dependencies]
 
 [dev-dependencies]
-avalanche-network-runner-sdk = "0.3.3" # https://crates.io/crates/avalanche-network-runner-sdk
-avalanche-types = { version = "0.1.4", features = ["jsonrpc_client", "subnet"] } # https://crates.io/crates/avalanche-types
-env_logger = "0.10.2"
-log = "0.4.19"
+avalanche-network-runner-sdk = "0.3.4" # https://crates.io/crates/avalanche-network-runner-sdk
+avalanche-types = { version = "0.1.5", features = ["jsonrpc_client", "subnet"] } # https://crates.io/crates/avalanche-types
+env_logger = "0.11.2"
+log = "0.4.20"
 random-manager = "0.0.5"
-serde_json = "1.0.113" # https://github.com/serde-rs/json/releases
-tempfile = "3.10.0"
-movement-sequencer = { path = "../../movement-sequencer" }
-tokio = { version = "1.36.0", features = [] } # https://github.com/tokio-rs/tokio/releases
+serde_json = "1.0.114" # https://github.com/serde-rs/json/releases
+tempfile = "3.10.1"
+sequencer = { path = "../../sequencer" }
+tokio = { version = "1.36.0", features = ["full"] } # https://github.com/tokio-rs/tokio/releases

@@ -1,4 +1,4 @@
-//! Defines timestampvm genesis block.
+//! Defines sequencer genesis block.
 
 use std::{
     fmt,
@@ -40,8 +40,8 @@ impl Genesis {
     /// # Errors
     /// Fails if the bytes can't be deserialized
     pub fn from_slice<S>(d: S) -> io::Result<Self>
-    where
-        S: AsRef<[u8]>,
+        where
+            S: AsRef<[u8]>,
     {
         serde_json::from_slice(d.as_ref())
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed to decode {e}")))

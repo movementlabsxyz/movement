@@ -15,7 +15,7 @@ use super::de_request;
 #[rpc]
 pub trait Rpc {
     /// Pings the VM.
-    #[rpc(name = "ping", alias("movement-sequencer.ping"))]
+    #[rpc(name = "ping", alias("sequencer.ping"))]
     fn ping(&self) -> BoxFuture<Result<crate::api::PingResponse>>;
 }
 

@@ -5,10 +5,10 @@ use std::io;
 
 use avalanche_types::subnet;
 use clap::{crate_version, Command};
-use movement_sequencer::vm;
+use sequencer::vm;
 use tokio::sync::broadcast::{self, Receiver, Sender};
 
-pub const APP_NAME: &str = "movement-sequencer";
+pub const APP_NAME: &str = "sequencer";
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
@@ -26,7 +26,7 @@ async fn main() -> io::Result<()> {
     match matches.subcommand() {
         Some((genesis::NAME, sub_matches)) => {
             let data = sub_matches.get_one::<String>("DATA").expect("required");
-            let genesis = movement_sequencer::genesis::Genesis { data: data.clone() };
+            let genesis = sequencer::genesis::Genesis { data: data.clone() };
             println!("{genesis}");
 
             Ok(())
@@ -41,7 +41,7 @@ async fn main() -> io::Result<()> {
         }
 
         _ => {
-            log::info!("starting movement-sequencer");
+            log::info!("starting sequencer");
 
             let (stop_ch_tx, stop_ch_rx): (Sender<()>, Receiver<()>) = broadcast::channel(1);
             let vm_server = subnet::rpc::vm::server::Server::new(vm::Vm::new(), stop_ch_tx);

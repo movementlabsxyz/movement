@@ -1,4 +1,4 @@
-//! Implements client for timestampvm APIs.
+//! Implements client for sequencer APIs.
 
 use std::{
     collections::HashMap,
@@ -29,7 +29,7 @@ pub async fn ping(http_rpc: &str, url_path: &str) -> io::Result<PingResponse> {
     log::info!("ping {http_rpc} with {url_path}");
 
     let mut data = jsonrpc::RequestWithParamsArray::default();
-    data.method = String::from("timestampvm.ping");
+    data.method = String::from("sequencer.ping");
 
     let d = data.encode_json()?;
     let rb = http_manager::post_non_tls(http_rpc, url_path, &d).await?;

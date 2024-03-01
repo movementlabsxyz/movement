@@ -24,7 +24,9 @@ pub struct State {
 impl Default for State {
     fn default() -> State {
         Self {
-            db: Arc::new(RwLock::new(subnet::rpc::database::memdb::Database::new())),
+            db: Arc::new(RwLock::new(
+                subnet::rpc::database::memdb::Database::new_boxed(),
+            )),
             verified_blocks: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -184,7 +186,6 @@ impl State {
     }
 }
 
-/// RUST_LOG=debug cargo test --package timestampvm --lib -- state::test_state --exact --show-output
 #[tokio::test]
 async fn test_state() {
     let _ = env_logger::builder()
@@ -199,7 +200,7 @@ async fn test_state() {
         vec![],
         choices::status::Status::Accepted,
     )
-    .unwrap();
+        .unwrap();
     log::info!("genesis block: {genesis_blk}");
 
     let blk1 = Block::try_new(
@@ -209,7 +210,7 @@ async fn test_state() {
         vec![ ],
         choices::status::Status::Accepted,
     )
-    .unwrap();
+        .unwrap();
     log::info!("blk1: {blk1}");
 
     let mut state = State::default();

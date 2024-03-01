@@ -1,4 +1,4 @@
-//! Implementation of [`snowman.block.ChainVM`](https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#ChainVM) interface for timestampvm.
+//! Implementation of [`snowman.block.ChainVM`](https://pkg.go.dev/github.com/ava-labs/avalanchego/snow/engine/snowman/block#ChainVM) interface for sequencer.
 
 use std::{
     collections::{HashMap, VecDeque},
@@ -22,7 +22,7 @@ use avalanche_types::{
         self,
         rpc::{
             context::Context,
-            database::manager::{DatabaseManager, Manager},
+            database::{manager::DatabaseManager, BoxedDatabase},
             health::Checkable,
             snow::{
                 self,
@@ -88,8 +88,8 @@ pub struct Vm<A> {
 }
 
 impl<A> Default for Vm<A>
-where
-    A: Send + Sync + Clone + 'static,
+    where
+        A: Send + Sync + Clone + 'static,
 {
     fn default() -> Self {
         Self::new()
@@ -97,8 +97,8 @@ where
 }
 
 impl<A> Vm<A>
-where
-    A: Send + Sync + Clone + 'static,
+    where
+        A: Send + Sync + Clone + 'static,
 {
     #[must_use]
     pub fn new() -> Self {
@@ -165,8 +165,8 @@ where
 
 #[tonic::async_trait]
 impl<A> CommonVm for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     type DatabaseManager = DatabaseManager;
     type AppSender = A;
@@ -177,7 +177,7 @@ where
     async fn initialize(
         &mut self,
         ctx: Option<Context<Self::ValidatorState>>,
-        db_manager: Self::DatabaseManager,
+        db_manager: BoxedDatabase,
         genesis_bytes: &[u8],
         _upgrade_bytes: &[u8],
         _config_bytes: &[u8],
@@ -197,9 +197,8 @@ where
         let genesis = Genesis::from_slice(genesis_bytes)?;
         vm_state.genesis = genesis;
 
-        let current = db_manager.current().await?;
         let state = state::State {
-            db: Arc::new(RwLock::new(current.db)),
+            db: Arc::new(RwLock::new(db_manager)),
             verified_blocks: Arc::new(RwLock::new(HashMap::new())),
         };
         vm_state.state = Some(state.clone());
@@ -229,18 +228,21 @@ where
             log::info!("initialized Vm with genesis block {genesis_blk_id}");
         }
 
-        log::info!("successfully initialized Vm");
+        log::info!("successfully initialized Vm now");
         Ok(())
     }
 
     /// Called when the node is shutting down.
     async fn shutdown(&self) -> io::Result<()> {
+        log::info!("Shutting down Vm");
         // grpc servers are shutdown via broadcast channel
         // if additional shutdown is required we can extend.
         Ok(())
     }
 
     async fn set_state(&self, snow_state: subnet::rpc::snow::State) -> io::Result<()> {
+        log::info!("Set state of VM");
+
         self.set_state(snow_state).await
     }
 
@@ -252,6 +254,8 @@ where
     async fn create_static_handlers(
         &mut self,
     ) -> io::Result<HashMap<String, HttpHandler<Self::StaticHandler>>> {
+        log::info!("Creating static handlers");
+
         let handler = StaticHandler::new(StaticService::new());
         let mut handlers = HashMap::new();
         handlers.insert(
@@ -270,6 +274,8 @@ where
     async fn create_handlers(
         &mut self,
     ) -> io::Result<HashMap<String, HttpHandler<Self::ChainHandler>>> {
+        log::info!("Creating handlers");
+
         let handler = ChainHandler::new(ChainService::new(self.clone()));
         let mut handlers = HashMap::new();
         handlers.insert(
@@ -287,13 +293,14 @@ where
 
 #[tonic::async_trait]
 impl<A> ChainVm for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     type Block = Block;
 
     /// Builds a block from mempool data.
     async fn build_block(&self) -> io::Result<<Self as ChainVm>::Block> {
+        log::info!("Build block");
 
         let vm_state = self.state.read().await;
         if let Some(state) = &vm_state.state {
@@ -325,6 +332,8 @@ where
     }
 
     async fn set_preference(&self, id: ids::Id) -> io::Result<()> {
+        log::info!("Set preference");
+
         let mut vm_state = self.state.write().await;
         vm_state.preferred = id;
 
@@ -332,10 +341,13 @@ where
     }
 
     async fn last_accepted(&self) -> io::Result<ids::Id> {
-        self.last_accepted().await
+        let vm_state = self.state.read().await;
+        Ok(vm_state.preferred)
     }
 
     async fn issue_tx(&self) -> io::Result<<Self as ChainVm>::Block> {
+        log::info!("Issue tx");
+
         Err(Error::new(
             ErrorKind::Unsupported,
             "issue_tx not implemented",
@@ -345,23 +357,27 @@ where
     // Passes back ok as a no-op for now.
     // TODO: Remove after v1.11.x activates
     async fn verify_height_index(&self) -> io::Result<()> {
+        log::info!("verify_height_index");
         Ok(())
     }
 
     // Returns an error as a no-op for now.
     async fn get_block_id_at_height(&self, _height: u64) -> io::Result<ids::Id> {
+        log::info!("Block id at height");
+
         Err(Error::new(ErrorKind::NotFound, "block id not found"))
     }
 
     async fn state_sync_enabled(&self) -> io::Result<bool> {
+        log::info!("state_sync_enabled");
         Ok(false)
     }
 }
 
 #[tonic::async_trait]
 impl<A> BatchedChainVm for Vm<A>
-where
-    A: Send + Sync + Clone + 'static,
+    where
+        A: Send + Sync + Clone + 'static,
 {
     type Block = Block;
 
@@ -387,8 +403,8 @@ where
 
 #[tonic::async_trait]
 impl<A> NetworkAppHandler for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     /// Currently, no app-specific messages, so returning Ok.
     async fn app_request(
@@ -428,8 +444,8 @@ where
 
 #[tonic::async_trait]
 impl<A> CrossChainAppHandler for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     /// Currently, no cross chain specific messages, so returning Ok.
     async fn cross_chain_app_request(
@@ -466,8 +482,8 @@ impl<A: AppSender> AppHandler for Vm<A> where A: AppSender + Send + Sync + Clone
 
 #[tonic::async_trait]
 impl<A> Connector for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     async fn connected(&self, _id: &ids::node::Id) -> io::Result<()> {
         // no-op
@@ -482,8 +498,8 @@ where
 
 #[tonic::async_trait]
 impl<A> Checkable for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     async fn health_check(&self) -> io::Result<Vec<u8>> {
         Ok("200".as_bytes().to_vec())
@@ -492,12 +508,13 @@ where
 
 #[tonic::async_trait]
 impl<A> Getter for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     type Block = Block;
 
     async fn get_block(&self, blk_id: ids::Id) -> io::Result<<Self as Getter>::Block> {
+        log::info!("get_block");
         let vm_state = self.state.read().await;
         if let Some(state) = &vm_state.state {
             let block = state.get_block(&blk_id).await?;
@@ -510,12 +527,13 @@ where
 
 #[tonic::async_trait]
 impl<A> Parser for Vm<A>
-where
-    A: AppSender + Send + Sync + Clone + 'static,
+    where
+        A: AppSender + Send + Sync + Clone + 'static,
 {
     type Block = Block;
 
     async fn parse_block(&self, bytes: &[u8]) -> io::Result<<Self as Parser>::Block> {
+        log::info!("parse_block");
         let vm_state = self.state.read().await;
         if let Some(state) = &vm_state.state {
             let mut new_block = Block::from_slice(bytes)?;

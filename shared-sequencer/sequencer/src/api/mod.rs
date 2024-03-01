@@ -1,4 +1,4 @@
-//! Implementation of timestampvm APIs, to be registered via
+//! Implementation of sequencer APIs, to be registered via
 //! `create_static_handlers` and `create_handlers` in the [`vm`](crate::vm) crate.
 
 pub mod chain_handlers;

@@ -19,8 +19,13 @@
           inherit system overlays;
         };
 
-        # Include ANR
-        anr = import ./avalanche-network-runner.nix { inherit pkgs; };
+        frameworks = pkgs.darwin.apple_sdk.frameworks;
+
+        # Include avalanche network runner and avalanchego
+        avalanche-network-runner = import ./avalanche-network-runner.nix { inherit pkgs; };
+        avalanchego = with pkgs; callPackage ./avalanchego.nix {
+            IOKit = lib.optionals pkgs.stdenv.isDarwin frameworks.IOKit;
+        };
 
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain;
@@ -34,7 +39,6 @@
           openssl
         ];
 
-        frameworks = pkgs.darwin.apple_sdk.frameworks;
 
         buildDependencies = with pkgs; [
             libclang.lib
@@ -54,7 +58,7 @@
 
         testingDependencies = with pkgs; [
             avalanchego
-            anr
+            avalanche-network-runner
         ]
         ++ buildDependencies;
 
@@ -84,7 +88,7 @@
               # false would skip the tests
               doCheck = true;
               preCheck = ''
-                  export VM_PLUGIN_PATH=$out/bin/movement-sequencer
+                  export VM_PLUGIN_PATH=$out/bin/sequencer
                 '';
             };
 
@@ -98,7 +102,8 @@
             shellHook = ''
               ${lib.optionalString (stdenv.cc.isClang && stdenv.isDarwin) "export NIX_LDFLAGS='-l${stdenv.cc.libcxx.cxxabi.libName}'"}
               export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
-              export VM_PLUGIN_PATH=$(pwd)/target/debug/movement-sequencer
+              echo NB. Plugin is built as debug
+              export VM_PLUGIN_PATH=$(pwd)/target/debug/sequencer
               #!/bin/bash
 
               cat <<'EOF'
@@ -112,16 +117,17 @@
 
               read -p "Do you want to clean the build directory? [y/N]: " clean_reply
               if [[ $clean_reply =~ ^[Yy]$ ]]; then
-                  echo "Cleaning build directory..."
-                  cargo clean
+                echo "Cleaning build directory..."
+                cargo clean
               fi
 
               if [ -f "$VM_PLUGIN_PATH" ]; then
-                  echo "VM_PLUGIN_PATH="$VM_PLUGIN_PATH
+                echo "VM_PLUGIN_PATH="$VM_PLUGIN_PATH
               else
-                  cargo build
+                echo "Building plugin..."
+                cargo build
               fi
-
+              mkdir -p data
               export AVALANCHEGO_DATA_DIR=$(pwd)/data
               export AVALANCHEGO_PATH=${avalanchego}/bin/avalanchego
             '';

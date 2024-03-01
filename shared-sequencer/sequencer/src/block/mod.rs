@@ -332,7 +332,7 @@ impl fmt::Display for Block {
     }
 }
 
-/// RUST_LOG=debug cargo test --package timestampvm --lib -- block::test_block --exact --show-output
+/// RUST_LOG=debug cargo test --package sequencer --lib -- block::test_block --exact --show-output
 #[tokio::test]
 async fn test_block() {
     let _ = env_logger::builder()

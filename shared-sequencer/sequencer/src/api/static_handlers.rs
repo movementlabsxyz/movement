@@ -13,7 +13,7 @@ use super::de_request;
 /// Defines static handler RPCs for this VM.
 #[rpc]
 pub trait Rpc {
-    #[rpc(name = "ping", alias("timestampvm.ping"))]
+    #[rpc(name = "ping", alias("sequencer.ping"))]
     fn ping(&self) -> BoxFuture<Result<crate::api::PingResponse>>;
 }
 
