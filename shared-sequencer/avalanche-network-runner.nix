@@ -11,15 +11,27 @@ pkgs.buildGoModule rec {
     sha256 = "A54KNB9BGKvGp2UsP46U5HteiCOOKrnYatDXUAc/BIg=";
   };
 
-  vendorHash = null;
-  vendor = true;
+  vendorHash = "sha256-av30nVCyxpnTycqgTNwPCDmbqEdgnsq30t1WP6JVod8=";
+  proxyVendor = true; 
 
-  nativeBuildInputs = with pkgs; [git cacert blst];
+  nativeBuildInputs = with pkgs; [
+    git
+    cacert
+    curl
+    wget
+    openssh
+    blst
+  ];
+
   buildInputs = with pkgs; [cacert blst];
+  doCheck = false;
+
+  preBuild = ''
+    export GOPROXY=direct  
+  '';
 
   buildPhase = ''
-    export GOPROXY=direct
-    go build -v -ldflags="-X 'github.com/ava-labs/avalanche-network-runner/cmd.Version=${version}'" -mod=readonly
+    go build -v -ldflags="-X 'github.com/ava-labs/avalanche-network-runner/cmd.Version=${version}'" 
   '';
 
   installPhase = ''

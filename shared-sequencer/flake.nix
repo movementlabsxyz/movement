@@ -67,7 +67,7 @@
           ]
           ++ testingDependencies;
 
-        movement-sequencer-cargo-toml = builtins.fromTOML (builtins.readFile ./movement-sequencer/Cargo.toml);
+        movement-sequencer-cargo-toml = builtins.fromTOML (builtins.readFile ./sequencer/Cargo.toml);
       in
         with pkgs; {
           packages = flake-utils.lib.flattenTree rec {
