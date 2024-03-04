@@ -16,4 +16,4 @@ use sov_state::{DefaultStorageSpec, ZkStorage};
 use sov_stf_runner::ParallelProverService;
 use sov_stf_runner::RollupConfig;
 use sov_stf_runner::RollupProverConfig;
-use stf_starter::Runtime;
+//use stf_starter::Runtime;

@@ -26,6 +26,7 @@ clap = { version = "4.4.10", features = ["derive"] }
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }
+tracing = "0.1.40" #soverign labs requires this
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = { version = "1.0.192", features = ["derive", "rc"] }
 serde_json = "1.0"

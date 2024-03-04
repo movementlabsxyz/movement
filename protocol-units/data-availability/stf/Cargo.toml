@@ -1,20 +1,50 @@
 [package]
 name = "stf"
-version = "0.1.0"
-edition = "2021"
-description = "State Transition Function (STF) implemented with Sovereign Labs for Movement SDK"
+resolver = "2"
+homepage = "sovereign.xyz"
+edition = { workspace = true }
+publish = false
 
 [dependencies]
-anyhow = { workspace = true }
-jsonrpsee = { workspace = true }
-borsh = { workspace = true }
-serde = { workspace = true }
+anyhow = { workspace = true } 
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_json = { workspace = true, optional = true }
+jsonrpsee = { workspace = true, features = ["jsonrpsee-types"], optional = true }
+borsh = { workspace = true, features = ["rc", "bytes"] }
+clap = { workspace = true, features = ["derive"], optional = true }
 
-#Sovereign Labs Dependencies
+# Soverign Labs Dependencies
+sov-modules-api = { workspace = true }
+sov-state = { workspace = true }
 sov-accounts = { workspace = true }
 sov-bank = { workspace = true }
 sov-sequencer-registry = { workspace = true }
-sov-modules-api = { workspace = true }
+sov-mock-da = { workspace = true }
 sov-modules-stf-blueprint = { workspace = true }
+sov-stf-runner = { workspace = true }
+sov-sequencer = { workspace = true, optional = true }
+sov-rollup-interface = { workspace = true }
+tracing = "0.1.37"
 
-
+[features]
+default = ["serde"]
+native = [
+    "sov-modules-api/native",
+    "sov-accounts/native",
+    "sov-bank/native",
+    "sov-sequencer-registry/native",
+    "sov-mock-da/native",
+    "sov-modules-stf-blueprint/native",
+    "sov-stf-runner/native",
+    "serde_json",
+    "jsonrpsee",
+    "sov-sequencer",
+    "clap",
+    "serde",
+]
+serde = [
+    "sov-accounts/serde",
+    "sov-bank/serde",
+    "sov-modules-api/serde",
+    "sov-sequencer-registry/serde",
+]

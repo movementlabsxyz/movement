@@ -30,7 +30,7 @@ pub struct CelestiaRollup {}
 
 /// This is the place, where all the rollup components come together and
 /// they can be easily swapped with alternative implementations as needed.
-#[async_trait]
-impl RollupBlueprint for CelestiaRollup {
+// #[async_trait]
+// impl RollupBlueprint for CelestiaRollup {
 
-}
+// }

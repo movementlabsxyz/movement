@@ -2,22 +2,60 @@
 name = "rollup"
 version = "0.1.0"
 edition = "2021"
+resolver = "2"
 description = "Sovereign Labs Rollup"
 
 [dependencies]
-async-trait = { workspace = true }
 anyhow = { workspace = true }
+async-trait = { workspace = true }
+borsh = { workspace = true }
 clap = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+serde_json = { workspace = true }
+jsonrpsee = { workspace = true }
 tokio = { workspace = true }
-tracing-subscriber = { workspace = true } 
 
 # Sovereign Labs dependencies
-sov-celestia-adapter = { workspace = true, features = ["native"], optional = true}
-sov-modules-api = { workspace = true }
-sov-modules-rollup-blueprint = { workspace = true }
-sov-modules-stf-blueprint = { workspace = true }
-sov-risc0-adapter = { workspace = true }
-sov-rollup-interface = { workspace = true }
+sov-modules-api = { workspace = true, features = ["native"] }
 sov-state = { workspace = true }
-sov-stf-runner = { workspace = true }
-stf = { path = "../stf" }
+sov-prover-storage-manager = { workspace = true }
+sov-accounts = { workspace = true, features = ["native"] }
+sov-bank = { workspace = true, features = ["native"] }
+sov-ledger-rpc = { workspace = true, features = ["server"] }
+sov-sequencer-registry = { workspace = true, features = ["native"] }
+sov-modules-rollup-blueprint = { workspace = true }
+sov-modules-stf-blueprint = { workspace = true, features = ["native"] }
+sov-stf-runner = { workspace = true, features = ["native"] }
+sov-cli = { workspace = true, optional = true }
+
+sov-db = { workspace = true }
+sov-sequencer = { workspace = true }
+sov-rollup-interface = { workspace = true }
+sov-mock-da = { workspace = true, features = ["native"], optional=true }
+sov-celestia-adapter = { workspace = true, features = ["native"], optional=true }
+
+#risc0-starter = { path = "../provers/risc0" }
+stf = { path = "../stf", features = ["native"] }
+
+
+sov-risc0-adapter = { workspace = true, features = ["native"] }
+
+# binary dependencies
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+
+[features]
+default = ["mock_da"] # set mock_da as the default feature
+mock_da = ["sov-mock-da"]
+celestia_da = ["sov-celestia-adapter"]
+
+# [[bin]]
+# name = "node"
+# path = "src/bin/node.rs"
+
+# [[bin]]
+# name = "starter-cli-wallet"
+# path = "src/bin/starter_cli_wallet.rs"
