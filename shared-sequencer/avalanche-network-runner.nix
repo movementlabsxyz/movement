@@ -11,7 +11,7 @@ pkgs.buildGoModule rec {
     sha256 = "A54KNB9BGKvGp2UsP46U5HteiCOOKrnYatDXUAc/BIg=";
   };
 
-  vendorHash = "sha256-av30nVCyxpnTycqgTNwPCDmbqEdgnsq30t1WP6JVod8=";
+  vendorHash = null;
   proxyVendor = true; 
 
   nativeBuildInputs = with pkgs; [
@@ -31,10 +31,12 @@ pkgs.buildGoModule rec {
   '';
 
   buildPhase = ''
+    export GOPROXY=direct  
     go build -v -ldflags="-X 'github.com/ava-labs/avalanche-network-runner/cmd.Version=${version}'" 
   '';
 
   installPhase = ''
+    export GOPROXY=direct  
     install -Dm755 ./avalanche-network-runner $out/bin/avalanche-network-runner
   '';
 }
