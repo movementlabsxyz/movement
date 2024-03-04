@@ -35,7 +35,7 @@ sov-rollup-interface = { workspace = true }
 sov-mock-da = { workspace = true, features = ["native"], optional=true }
 sov-celestia-adapter = { workspace = true, features = ["native"], optional=true }
 
-#risc0-starter = { path = "../provers/risc0" }
+risc0-starter = { path = "../provers/risc0" }
 stf = { path = "../stf", features = ["native"] }
 
 
