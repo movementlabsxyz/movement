@@ -10,4 +10,7 @@ tracing-subscriber = { workspace = true }
 tempfile = { workspace = true }
 serde = { workspace = true } 
 
+ethers = { workspace = true }
+foundry-compilers = { workspace = true }
+
 methods = { path = "../methods" }
