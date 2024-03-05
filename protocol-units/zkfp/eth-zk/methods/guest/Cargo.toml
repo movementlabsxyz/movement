@@ -11,6 +11,3 @@ path = "src/bin/is_even.rs"
 alloy-primitives = { version = "0.6", default-features = false, features = ["rlp", "serde", "std"] }
 alloy-sol-types = { version = "0.6" }
 risc0-zkvm = { version = "0.20.1", default-features = false, features = ['std'] }
-
-[profile.release]
-lto = "thin"

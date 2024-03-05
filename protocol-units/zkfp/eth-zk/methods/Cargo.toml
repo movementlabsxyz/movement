@@ -1,13 +1,18 @@
 [package]
 name = "methods"
-version = "0.1.0"
-edition = "2021"
-
-[features]
-zkfp = []
-
-[build-dependencies]
-risc0-build = { version = "0.20.1" }
+version = { workspace = true }
+edition = { workspace = true }
 
 [package.metadata.risc0]
 methods = ["guest"]
+
+[build-dependencies]
+hex = { workspace = true }
+risc0-build = { workspace = true }
+risc0-build-ethereum = { workspace = true }
+risc0-zkp = { workspace = true }
+
+[dev-dependencies]
+alloy-primitives = { workspace = true }
+alloy-sol-types = { workspace = true }
+risc0-zkvm = { workspace = true, features = ["client"] }
