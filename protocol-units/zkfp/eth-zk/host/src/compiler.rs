@@ -1,20 +1,30 @@
-use std::path::Path;
-
 use anyhow::Result;
+use serde::Serialize;
+use std::path::PathBuf;
 
-pub fn compile_units(s: &str) -> Result<Vec<()>> {
-    Ok(vec![])
-}
+use foundry_compilers::{info::ContractInfo, Artifact, Project, ProjectCompileOutput, ProjectPathsConfig};
 
-fn expect_contracts(units: impl IntoIterator<Item = ()>) -> impl Iterator<Item = Result<()>> {
-    units.into_iter().map(|_| Ok(()))
-}
+/// Makes a foo function that is compatible with the expectations of the guest code.
+pub fn compile_foo() -> Vec<u8> {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let paths = ProjectPathsConfig::builder()
+        .sources(root.join("contracts"))
+        .build()
+        .unwrap();
+    let project = Project::builder()
+        .paths(paths)
+        .no_artifacts()
+        .build()
+        .unwrap();
 
-pub fn compile_contracts_in_file(_path: &Path) -> Result<Vec<()>> {
-    Ok(vec![])
-}
-
-#[allow(dead_code)]
-pub fn as_contract(_unit: ()) -> () {
-    ()
+    let compiled = project.compile().unwrap();
+    let info = ContractInfo::new("contracts/Foo.sol:Foo");
+    let bytes = compiled
+        .find_contract(info)
+        .expect("Could not find contract")
+        .get_bytecode_bytes()
+        .unwrap()
+        .to_vec();
+    println!("Compiled foo: {:?}", bytes);
+    bytes
 }
