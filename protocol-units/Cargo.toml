@@ -10,15 +10,15 @@ path = "data-availability/src/main.rs"
 
 [[bin]]
 name = "host"
-path = "zkfp/host/src/main.rs"
+path = "zkfp/move-zk/host/src/main.rs"
 
 [[bin]]
 name = "methods"
-path = "zkfp/methods/src/main.rs"
+path = "zkfp/move-zk/methods/src/main.rs"
 
 [[bin]]
 name = "guest"
-path = "zkfp/guest/src/main.rs"
+path = "zkfp/move-zk/guest/src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
