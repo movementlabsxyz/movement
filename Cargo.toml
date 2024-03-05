@@ -8,6 +8,8 @@ license = "Apache-2.0"
 resolver = "2"
 members = [
     "protocol-units/data-availability",
+    "protocol-units/storage/jelly-move",
+
     "protocol-units/zkfp/host",
     "protocol-units/zkfp/methods",
     "protocol-units/zkfp/methods/guest"
@@ -23,7 +25,23 @@ anyhow = "1.0"
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
+serde_json = "1.0"
 tempfile = "3.2.0"
+
+# runtime
+tokio = { version = "1.36.0", features = ["fs", "rt-multi-thread"] }
+
+# storage
+rocksdb = { version = "0.22.0", features = [
+  "snappy",
+  "lz4",
+  "zstd",
+  "zlib",
+  "multi-threaded-cf",
+], default-features = false }
+
+# cryptography
+jmt = "0.9.0"
 
 # Move dependencies
 move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
@@ -33,7 +51,6 @@ move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/type
 move-core-types = { path = "protocol-units/zkfp/vendors/move/language/move-core/types" }
 move-compiler = { path = "protocol-units/zkfp/vendors/move/language/move-compiler" }
 move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
-
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
