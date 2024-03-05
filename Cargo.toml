@@ -8,13 +8,16 @@ license = "Apache-2.0"
 resolver = "2"
 members = [
     "protocol-units/data-availability",
-    "protocol-units/zkfp/move-zk/host",
-    "protocol-units/zkfp/move-zk/methods",
-    "protocol-units/zkfp/move-zk/methods/guest"
+    "protocol-units/zkfp/eth-zk/host",
+    "protocol-units/zkfp/eth-zk/methods",
+    "protocol-units/zkfp/eth-zk/methods/guest",
 ]
 
 exclude = [
-    "shared-sequencer/movement-sequencer"
+    "protocol-units/zkfp/move-zk/host",
+    "protocol-units/zkfp/move-zk/methods",
+    "protocol-units/zkfp/move-zk/methods/guest",
+    "shared-sequencer/movement-sequencer",
 ]
 
 [workspace.dependencies]

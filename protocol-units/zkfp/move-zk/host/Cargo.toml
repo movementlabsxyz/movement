@@ -1,5 +1,5 @@
 [package]
-name = "host"
+name = "move-host"
 version = "0.0.0"
 edition = "2021"
 
@@ -10,7 +10,7 @@ tracing-subscriber = { workspace = true }
 tempfile = { workspace = true }
 serde = { workspace = true } 
 
-methods = { path = "../methods" }
+move-methods = { path = "../methods" }
 
 # Move dependencies. 
 move-vm-runtime = { workspace = true }

@@ -1,8 +1,8 @@
 [package]
-name = "zkfp"
+name = "move-zkfp"
 version = "0.1.0"
 edition = "2021"
-description = "Testing environment for Zero Konwledge Fraud Proofs on Movement"
+description = "Zero Konwledge Fraud Proofs with the MoveVM"
 
 [[bin]]
 name = "host"
@@ -23,7 +23,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tempfile = "3.2.0"
 serde = "1.0"
 
-methods = { path = "zkfp/methods" }
+methods = { path = "zkfp/move-zk/methods" }
 
 # Move dependencies. 
 move-vm-runtime = { workspace = true }

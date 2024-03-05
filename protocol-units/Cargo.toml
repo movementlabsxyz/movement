@@ -8,16 +8,30 @@ description = "Protocol Units for the Movement SDK"
 name = "data-availability"
 path = "data-availability/src/main.rs"
 
+# ETH-ZK
 [[bin]]
-name = "host"
+name = "eth-host"
+path = "zkfp/eth-zk/host/src/main.rs"
+
+[[bin]]
+name = "eth-methods"
+path = "zkfp/eth-zk/methods/src/main.rs"
+
+[[bin]]
+name = "eth-guest"
+path = "zkfp/eth-zk/guest/src/main.rs"
+
+#Move-ZK
+[[bin]]
+name = "move-host"
 path = "zkfp/move-zk/host/src/main.rs"
 
 [[bin]]
-name = "methods"
+name = "move-methods"
 path = "zkfp/move-zk/methods/src/main.rs"
 
 [[bin]]
-name = "guest"
+name = "move-guest"
 path = "zkfp/move-zk/guest/src/main.rs"
 
 [dependencies]

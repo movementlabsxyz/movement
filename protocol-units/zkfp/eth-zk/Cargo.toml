@@ -1,0 +1,28 @@
+[package]
+name = "eth-zkfp"
+version = "0.1.0"
+edition = "2021"
+description = "Zero Konwledge Fraud Proofs with the EVM"
+
+[[bin]]
+name = "host"
+path = "host/src/main.rs"
+
+[[bin]]
+name = "methods"
+path = "methods/src/main.rs"
+
+[[bin]]
+name = "guest"
+path = "methods/guest/src/main.rs"
+
+[dependencies]
+anyhow = "1.0"
+risc0-zkvm = { version = "0.20.1",  features = ["std"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tempfile = "3.2.0"
+serde = "1.0"
+
+methods = { path = "zkfp/eth-zk/methods" }
+
+# Ethereum dependencies. 
