@@ -7,7 +7,6 @@ use std::fmt;
 use std::sync::Arc;
 use std::{any, fs};
 use tokio::sync::RwLock;
-use web3::ethabi::Token;
 use web3::signing::Key;
 use web3::transports::Http;
 use web3::{
@@ -159,8 +158,10 @@ impl<T: DaService<Error = anyhow::Error>> DaService for EthSettlementService<T> 
         let receipt: Receipt = serde_json::from_slice(aggregated_proof_data)?;
         let tx_hash = self
             .contract
-            .call("verifyIntegrity", (receipt), from, Options::default())
+            .call("verifyIntegrity", receipt, from, Options::default())
             .await?;
+
+        // @TODO: Why u64 returned here, what does sov-lab adapter do with this val?
 
         Ok(height)
     }
@@ -189,7 +190,7 @@ pub struct Receipt {
     pub claim: ReceiptClaim,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ReceiptClaim {
     pub pre_state_digest: [u8; 32],
     pub post_state_digest: [u8; 32],
@@ -198,13 +199,13 @@ pub struct ReceiptClaim {
     pub output: [u8; 32],
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ExitCode {
     pub system_exit_code: SystemExitCode,
     pub user_exit_code: u64,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SystemExitCode {
     Halted,
     Paused,
@@ -240,35 +241,55 @@ impl Tokenizable for Receipt {
     {
         match token {
             Token::Tuple(tokens) => {
-                let seal = match tokens[0] {
+                let seal = match &tokens[0] {
                     Token::Bytes(bytes) => bytes,
-                    _ => return Err(web3::contract::Error::InvalidOutputType),
+                    _ => {
+                        return Err(web3::contract::Error::InvalidOutputType(
+                            "Expected Bytes".to_string(),
+                        ))
+                    }
                 };
 
-                let claim = match tokens[1] {
+                let claim = match &tokens[1] {
                     Token::Tuple(tokens) => {
-                        let pre_state_digest = match tokens[0] {
+                        let pre_state_digest = match &tokens[0] {
                             Token::FixedBytes(bytes) => bytes,
-                            _ => return Err(web3::contract::Error::InvalidOutputType),
+                            _ => {
+                                return Err(web3::contract::Error::InvalidOutputType(
+                                    "Expected FixedBytes".to_string(),
+                                ))
+                            }
                         };
 
-                        let post_state_digest = match tokens[1] {
+                        let post_state_digest = match &tokens[1] {
                             Token::FixedBytes(bytes) => bytes,
-                            _ => return Err(web3::contract::Error::InvalidOutputType),
+                            _ => {
+                                return Err(web3::contract::Error::InvalidOutputType(
+                                    "Expected FixedBytes".to_string(),
+                                ))
+                            }
                         };
 
-                        let exit_code = match tokens[2] {
-                            token => ExitCode::from_token(token)?,
+                        let exit_code = match &tokens[2] {
+                            token => ExitCode::from_token(token.clone())?,
                         };
 
-                        let input = match tokens[3] {
+                        let input = match &tokens[3] {
                             Token::FixedBytes(bytes) => bytes,
-                            _ => return Err(web3::contract::Error::InvalidOutputType),
+                            _ => {
+                                return Err(web3::contract::Error::InvalidOutputType(
+                                    "Expected FixedBytes".to_string(),
+                                ))
+                            }
                         };
 
-                        let output = match tokens[4] {
+                        let output = match &tokens[4] {
                             Token::FixedBytes(bytes) => bytes,
-                            _ => return Err(web3::contract::Error::InvalidOutputType),
+                            _ => {
+                                return Err(web3::contract::Error::InvalidOutputType(
+                                    "Expected FixedBytes".to_string(),
+                                ))
+                            }
                         };
 
                         ReceiptClaim {
@@ -279,12 +300,21 @@ impl Tokenizable for Receipt {
                             output: output.as_slice().try_into().unwrap(),
                         }
                     }
-                    _ => return Err(web3::contract::Error::InvalidOutputType),
+                    _ => {
+                        return Err(web3::contract::Error::InvalidOutputType(
+                            "Expected Tuple".to_string(),
+                        ))
+                    }
                 };
 
-                Ok(Receipt { seal, claim })
+                Ok(Receipt {
+                    seal: seal.to_vec(),
+                    claim,
+                })
             }
-            _ => Err(web3::contract::Error::InvalidOutputType),
+            _ => Err(web3::contract::Error::InvalidOutputType(
+                "Expected Tuple".to_string(),
+            )),
         }
     }
 }
@@ -303,13 +333,17 @@ impl Tokenizable for ExitCode {
     {
         match token {
             Token::Tuple(tokens) => {
-                let system_exit_code = match tokens[0] {
-                    token => SystemExitCode::from_token(token)?,
+                let system_exit_code = match &tokens[0] {
+                    token => SystemExitCode::from_token(token.clone())?,
                 };
 
                 let user_exit_code = match tokens[1] {
                     Token::Uint(uint) => uint.as_u64(),
-                    _ => return Err(web3::contract::Error::InvalidOutputType),
+                    _ => {
+                        return Err(web3::contract::Error::InvalidOutputType(
+                            "Expected Uint".to_string(),
+                        ))
+                    }
                 };
 
                 Ok(ExitCode {
@@ -317,7 +351,9 @@ impl Tokenizable for ExitCode {
                     user_exit_code,
                 })
             }
-            _ => Err(web3::contract::Error::InvalidOutputType),
+            _ => Err(web3::contract::Error::InvalidOutputType(
+                "Expected Tuple".to_string(),
+            )),
         }
     }
 }
@@ -340,9 +376,13 @@ impl Tokenizable for SystemExitCode {
                 0 => Ok(SystemExitCode::Halted),
                 1 => Ok(SystemExitCode::Paused),
                 2 => Ok(SystemExitCode::SystemSplit),
-                _ => Err(web3::contract::Error::InvalidOutputType),
+                _ => Err(web3::contract::Error::InvalidOutputType(
+                    "Invalid SystemExitCode".to_string(),
+                )),
             },
-            _ => Err(web3::contract::Error::InvalidOutputType),
+            _ => Err(web3::contract::Error::InvalidOutputType(
+                "Expected Uint".to_string(),
+            )),
         }
     }
 }
