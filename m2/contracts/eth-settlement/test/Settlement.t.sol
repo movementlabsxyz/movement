@@ -59,6 +59,38 @@ contract SettlementTest is DSTest {
         require(settlement.verify_integrity(TEST_RECEIPT), "verification failed");
     }
 
+    // A no-so-thorough test to make sure changing the bits causes a failure.
+    function testVerifyMangledReceipts() external view {
+        RiscZeroReceipt memory mangled = TEST_RECEIPT;
+
+        mangled.seal[0] ^= bytes1(uint8(1));
+        require(!settlement.verify_integrity(mangled), "verification passed on mangled seal value");
+        mangled = TEST_RECEIPT;
+
+        mangled.claim.preStateDigest ^= bytes32(uint256(1));
+        require(!settlement.verify_integrity(mangled), "verification passed on mangled preStateDigest value");
+        mangled = TEST_RECEIPT;
+
+        mangled.claim.postStateDigest ^= bytes32(uint256(1));
+        require(!settlement.verify_integrity(mangled), "verification passed on mangled postStateDigest value");
+        mangled = TEST_RECEIPT;
+
+        mangled.claim.exitCode = ExitCode(SystemExitCode.SystemSplit, 0);
+        require(!settlement.verify_integrity(mangled), "verification passed on mangled exitCode value");
+        mangled = TEST_RECEIPT;
+
+        mangled.claim.input ^= bytes32(uint256(1));
+        require(!settlement.verify_integrity(mangled), "verification passed on mangled input value");
+        mangled = TEST_RECEIPT;
+
+        mangled.claim.output ^= bytes32(uint256(1));
+        require(!settlement.verify_integrity(mangled), "verification passed on mangled input value");
+        mangled = TEST_RECEIPT;
+
+        // Just a quick sanity check
+        require(settlement.verify_integrity(mangled), "verification failed");
+    }
+
     // function testFailSettleNotSigner() public {
     //     vm.prank(signer2);
     //     settlement.settle(1, exampleProofData);
