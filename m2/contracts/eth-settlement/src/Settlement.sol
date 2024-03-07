@@ -133,7 +133,7 @@ contract Settlement {
         return (uint256(uint128(uint256(reversed))), uint256(reversed >> 128));
     }
 
-    function verify_integrity(Receipt memory receipt) public view returns (bool) {
+    function verifyIntegrity(Receipt memory receipt) public view returns (bool) {
         (uint256 claim0, uint256 claim1) = splitDigest(receipt.claim.digest());
         Seal memory seal = abi.decode(receipt.seal, (Seal));
         return this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1]);

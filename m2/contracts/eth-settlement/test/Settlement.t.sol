@@ -56,7 +56,7 @@ contract SettlementTest is DSTest {
     }
 
     function testVerifyKnownGoodReceipt() external view {
-        require(settlement.verify_integrity(TEST_RECEIPT), "verification failed");
+        require(settlement.verifyIntegrity(TEST_RECEIPT), "verification failed");
     }
 
     // A no-so-thorough test to make sure changing the bits causes a failure.
