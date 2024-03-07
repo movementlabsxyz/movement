@@ -1,5 +1,5 @@
 [package]
-name = "sui-block-executor"
+name = "eth-settlement"
 version = "0.1.0"
 edition = "2021"
 

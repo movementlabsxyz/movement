@@ -169,6 +169,8 @@ impl<T: DaService<Error = anyhow::Error>> DaService for EthSettlementService<T> 
     async fn get_aggregated_proofs_at(&self, height: u64) -> Result<Vec<Vec<u8>>, Self::Error> {
         let block_height = U256::from(height);
 
+        // The proofs wont be coming from the on chain contract but our shared sequencer. 
+        // Mock this. 
         let proofs: Vec<Vec<u8>> = self
             .contract
             .query(
