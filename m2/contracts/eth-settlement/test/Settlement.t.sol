@@ -18,8 +18,9 @@ import {
     SystemExitCode
 } from "../src/IRiscZeroVerifier.sol";
 import {TestReceipt} from "./TestReceipt.sol";
+import {ControlID} from "../src/ControlID.sol";
 
-contract SettlementTest is Test {
+contract SettlementTest is DSTest {
     using OutputLib for Output;
     using ReceiptClaimLib for ReceiptClaim;
 
@@ -41,7 +42,7 @@ contract SettlementTest is Test {
     );
 
     function setUp() public {
-        settlement = new Settlement();
+        settlement = new Settlement(ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
         settlement.addSigner(signer1);
     }
 
@@ -52,6 +53,10 @@ contract SettlementTest is Test {
     function testRemoveSigner() public {
         settlement.removeSigner(signer1);
         assertTrue(!settlement.isSigner(signer1), "signer1 should not be a signer after removal");
+    }
+
+    function testVerifyKnownGoodReceipt() external view {
+        require(settlement.verify_integrity(TEST_RECEIPT), "verification failed");
     }
 
     // function testFailSettleNotSigner() public {
