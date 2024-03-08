@@ -1,6 +1,6 @@
 pragma solidity ^0.8.20;
 
-import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
+import {IRiscZeroVerifier} from "./IRiscZeroVerifier.sol";
 import {ImageID} from "./ImageID.sol"; // auto-generated contract after running `cargo build`.
 
 /// @title A starter application using RISC Zero.

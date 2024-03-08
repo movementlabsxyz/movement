@@ -64,31 +64,31 @@ contract SettlementTest is DSTest {
         RiscZeroReceipt memory mangled = TEST_RECEIPT;
 
         mangled.seal[0] ^= bytes1(uint8(1));
-        require(!settlement.verify_integrity(mangled), "verification passed on mangled seal value");
+        require(!settlement.verifyIntegrity(mangled), "verification passed on mangled seal value");
         mangled = TEST_RECEIPT;
 
         mangled.claim.preStateDigest ^= bytes32(uint256(1));
-        require(!settlement.verify_integrity(mangled), "verification passed on mangled preStateDigest value");
+        require(!settlement.verifyIntegrity(mangled), "verification passed on mangled preStateDigest value");
         mangled = TEST_RECEIPT;
 
         mangled.claim.postStateDigest ^= bytes32(uint256(1));
-        require(!settlement.verify_integrity(mangled), "verification passed on mangled postStateDigest value");
+        require(!settlement.verifyIntegrity(mangled), "verification passed on mangled postStateDigest value");
         mangled = TEST_RECEIPT;
 
         mangled.claim.exitCode = ExitCode(SystemExitCode.SystemSplit, 0);
-        require(!settlement.verify_integrity(mangled), "verification passed on mangled exitCode value");
+        require(!settlement.verifyIntegrity(mangled), "verification passed on mangled exitCode value");
         mangled = TEST_RECEIPT;
 
         mangled.claim.input ^= bytes32(uint256(1));
-        require(!settlement.verify_integrity(mangled), "verification passed on mangled input value");
+        require(!settlement.verifyIntegrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
 
         mangled.claim.output ^= bytes32(uint256(1));
-        require(!settlement.verify_integrity(mangled), "verification passed on mangled input value");
+        require(!settlement.verifyIntegrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
 
         // Just a quick sanity check
-        require(settlement.verify_integrity(mangled), "verification failed");
+        require(settlement.verifyIntegrity(mangled), "verification failed");
     }
 
     // function testFailSettleNotSigner() public {
