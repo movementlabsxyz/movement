@@ -1,5 +1,5 @@
 [package]
-name = "jelly-move"
+name = "move-vm-ext"
 version = "0.0.0"
 edition = "2021"
 
@@ -7,28 +7,8 @@ edition = "2021"
 anyhow = { workspace = true } 
 tempfile = { workspace = true }
 
-# serialization, deserialization
-borsh = { workspace = true }
-serde = { workspace = true } 
-serde_json = { workspace = true }
-
-# runtime
-tokio = { workspace = true }
-
-# cryptography
-jmt = { workspace = true }
-sha2 = { workspace = true }
-
-# storage
-rocksdb = { workspace = true }
-
-# internal
-move-vm-ext = { workspace = true }
-
 # Move dependencies. 
 move-core-types = { workspace = true }
-
-# testing
 move-vm-runtime = { workspace = true }
 move-vm-test-utils = { workspace = true }
 move-binary-format = { workspace = true }

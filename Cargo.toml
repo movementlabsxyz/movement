@@ -8,11 +8,23 @@ license = "Apache-2.0"
 resolver = "2"
 members = [
     "protocol-units/data-availability",
+
+    # storage
     "protocol-units/storage/jelly-move",
+    "protocol-units/storage/move-access-log",
+
+    # "protocol-units/cryptography/tentacles",
 
     "protocol-units/zkfp/host",
     "protocol-units/zkfp/methods",
-    "protocol-units/zkfp/methods/guest"
+    "protocol-units/zkfp/methods/guest",
+
+
+    # test-helpers
+    "test-helpers/move-vm-integration-test-helpers",
+
+    # types
+    "types/move-vm-ext"
 ]
 
 exclude = [
@@ -20,12 +32,20 @@ exclude = [
 ]
 
 [workspace.dependencies]
+# random
+rand = "0.8.4"
+
 anyhow = "1.0"
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# serialization, deserialization
+borsh = { version = "0.10" } # todo: internalize jmt and bump
 serde = "1.0"
 serde_json = "1.0"
+
+
 tempfile = "3.2.0"
 
 # runtime
@@ -42,6 +62,8 @@ rocksdb = { version = "0.22.0", features = [
 
 # cryptography
 jmt = "0.9.0"
+trie-db = "0.28.0"
+sha2 = "0.10"
 
 # Move dependencies
 move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
@@ -51,6 +73,29 @@ move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/type
 move-core-types = { path = "protocol-units/zkfp/vendors/move/language/move-core/types" }
 move-compiler = { path = "protocol-units/zkfp/vendors/move/language/move-compiler" }
 move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
+
+# for jmt
+digest = "0.10" 
+hashbrown = "0.14.3"
+itertools = { version = "0.12.1", default-features = false }
+mirai-annotations = "1.10.1"
+num-derive = "0.4.2"
+num-traits = "0.2.14"
+parking_lot = { version = "0.12.1" } 
+thiserror = { version = "1.0.24" } 
+blake3 = { version = "1.4.0", features = ["traits-preview"] } 
+hex = { vesion = "0.4.3", features = ["serde"] }
+tracing = "0.1"
+ics23 = { version = "0.11.0" }
+
+
+proptest = "1.0"
+proptest-derive = "0.4"
+
+# internal
+# tentacles = { path = "protocol-units/cryptography/tentacles" }
+move-vm-integration-test-helpers = { path = "test-helpers/move-vm-integration-test-helpers" }
+move-vm-ext = { path = "types/move-vm-ext" }
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
