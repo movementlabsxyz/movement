@@ -4,7 +4,7 @@ use std::{
     collections::{HashMap, VecDeque},
     io::{self, Error, ErrorKind},
     sync::Arc,
-    time::Duration, vec,
+    time::Duration,
 };
 
 use crate::{
