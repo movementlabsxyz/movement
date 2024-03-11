@@ -20,3 +20,6 @@
 [submodule "m2/contracts/eth-settlement/lib/forge-std"]
 	path = m2/contracts/eth-settlement/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "m2/contracts/eth-settlement/lib/openzeppelin-contracts"]
+	path = m2/contracts/eth-settlement/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
