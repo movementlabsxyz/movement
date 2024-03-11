@@ -18,8 +18,8 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {console2} from "forge-std/console2.sol";
-import {IRiscZeroVerifier} from "../src/IRiscZeroVerifier.sol";
-import {ControlID, Settlement} from "../src/Settlement.sol";
+import {Settlement} from "../src/Settlement.sol";
+import {ControlID} from "../src/ControlID.sol";
 
 import {EvenNumber} from "../src/EvenNumber.sol";
 
@@ -35,10 +35,10 @@ contract DeploySettlement is Script {
 
         vm.startBroadcast(deployerKey);
 
-        IRiscZeroVerifier verifier = new Settlement(ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
-        console2.log("Deployed Settlementto", address(verifier));
+        Settlement settlement = new Settlement(ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
+        console2.log("Deployed Settlement", address(settlement));
 
-        EvenNumber evenNumber = new EvenNumber(verifier);
+        EvenNumber evenNumber = new EvenNumber(settlement);
         console2.log("Deployed EvenNumber to", address(evenNumber));
 
         vm.stopBroadcast();
