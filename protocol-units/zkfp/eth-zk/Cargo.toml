@@ -1,0 +1,25 @@
+[package]
+resolver = "2"
+members = [
+    "eth-settlement"
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Liam Monninger <liam@movementlabs.xyz>"]
+homepage = "https://www.movementlabs.xyz"
+publish = false
+repository = "https://github.com/movemntdev/m2"
+rust-version = "1.70"
+
+[workspace.dependencies]
+async-trait = { version = "0.1" } 
+anyhow = { version = "1" }     # For flexible error handling
+sov-rollup-interface = { git = "https://github.com/Sovereign-Labs/sovereign-sdk.git", branch = "nightly", features = ["native"] }
+sov-mock-da = { git = "https://github.com/Sovereign-Labs/sovereign-sdk.git", branch = "nightly", features = ["native"] }
+tokio = { version = "1", features = ["full"] }
+web3 = "0.19.0"
+serde_json = "1.0.68"
+# ethers-rs = "0.2.3"
