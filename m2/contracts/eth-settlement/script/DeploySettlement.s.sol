@@ -1,15 +1,45 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// Copyright 2024 RISC Zero, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0
 
-import "forge-std/Script.sol";
-import "../src/Settlement.sol";
-import "../src/ControlID.sol";
+pragma solidity ^0.8.20;
 
+import {Script} from "forge-std/Script.sol";
+import {console2} from "forge-std/console2.sol";
+import {IRiscZeroVerifier} from "../src/IRiscZeroVerifier.sol";
+import {ControlID, Settlement} from "../src/Settlement.sol";
+
+import {EvenNumber} from "../src/EvenNumber.sol";
+
+/// @notice Deployment script for the RISC Zero starter project.
+/// @dev Use the following environment variable to control the deployment:
+///     * ETH_WALLET_PRIVATE_KEY private key of the wallet to be used for deployment.
+///
+/// See the Foundry documentation for more information about Solidity scripts.
+/// https://book.getfoundry.sh/tutorials/solidity-scripting
 contract DeploySettlement is Script {
     function run() external {
-        vm.startBroadcast();
+        uint256 deployerKey = uint256(vm.envBytes32("ETH_WALLET_PRIVATE_KEY"));
 
-        new Settlement(ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
+        vm.startBroadcast(deployerKey);
+
+        IRiscZeroVerifier verifier = new Settlement(ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
+        console2.log("Deployed Settlementto", address(verifier));
+
+        EvenNumber evenNumber = new EvenNumber(verifier);
+        console2.log("Deployed EvenNumber to", address(evenNumber));
 
         vm.stopBroadcast();
     }
