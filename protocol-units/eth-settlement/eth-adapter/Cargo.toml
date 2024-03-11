@@ -1,5 +1,5 @@
 [package]
-name = "eth-settlement"
+name = "eth-adapter"
 version = "0.1.0"
 edition = "2021"
 

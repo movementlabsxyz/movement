@@ -9,20 +9,28 @@ name = "eth-settlement"
 path = "eth-settlement/src/lib.rs"
 
 [[bin]]
-name = "data-availability"
-path = "data-availability/src/main.rs"
-
-[[bin]]
-name = "host"
-path = "zkfp/host/src/main.rs"
+name = "eth-publisher"
+path = "eth-publisher/src/bin/publisher.rs"
 
 [[bin]]
 name = "methods"
-path = "zkfp/methods/src/main.rs"
+path = "methods/src/main.rs"
 
 [[bin]]
-name = "guest"
-path = "zkfp/guest/src/main.rs"
+name = "data-availability"
+path = "data-availability/src/main.rs"
+
+# [[bin]]
+# name = "host"
+# path = "zkfp/host/src/main.rs"
+
+# [[bin]]
+# name = "methods"
+# path = "zkfp/methods/src/main.rs"
+
+# [[bin]]
+# name = "guest"
+# path = "zkfp/guest/src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
