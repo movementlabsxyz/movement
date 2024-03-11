@@ -21,15 +21,32 @@ use serde_with::serde_as;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Derivative, Default)]
-#[derivative(Debug, PartialEq, Eq)]
+#[derivative(Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Transaction {
+    // the id of the rollup chain that the transaction is for
     #[serde_as(as = "Hex0xBytes")]
     pub consumer_id : Vec<u8>,
+    // the data of the transaction
     #[serde_as(as = "Hex0xBytes")]
     pub data : Vec<u8>, 
 }
 
 impl Transaction {
+
+    pub fn new(consumer_id: Vec<u8>, data: Vec<u8>) -> Self {
+        Self {
+            consumer_id,
+            data,
+        }
+    }
+
+    /// Creates a transaction for testing
+    pub fn test() -> Self {
+        Self {
+            consumer_id: vec![0, 1, 2, 3, 4],
+            data: vec![5, 6, 7, 8, 9],
+        }
+    }
 
     #[must_use]
     pub fn id(&self) -> ids::Id {
@@ -72,6 +89,28 @@ pub struct Block {
 
 
 impl Block {
+
+    /// Creates a transaction for testing
+    pub fn test() -> Self {
+        let consumer_id = vec![0, 1, 2, 3, 4];
+        let data = vec![5, 6, 7, 8, 9];
+        let transactions = vec![Transaction::new(consumer_id, data)];
+        let parent_id = ids::Id::empty();
+        let height = 0;
+        let timestamp = Utc::now().timestamp() as u64;
+        let status = choices::status::Status::default();
+        Self {
+            parent_id,
+            height,
+            timestamp,
+            transactions,
+            status,
+            bytes: vec![],
+            id: ids::Id::empty(),
+            state: state::State::default(),
+        }
+    }
+
     /// Can fail if the block can't be serialized to JSON.
     /// # Errors
     /// Will fail if the block can't be serialized to JSON.
