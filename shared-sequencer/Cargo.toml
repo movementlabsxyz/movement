@@ -1,8 +1,12 @@
-[workspace]
-members = [
-    "tests/e2e",
-    "movement-sequencer",
-]
+[package]
+name = "shared-sequencer"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+repository.workspace = true
+description = "The Movement Decentralised Sequencer"
+readme = "README.md"
 
 resolver = "2"
 

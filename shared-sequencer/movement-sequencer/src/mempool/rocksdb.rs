@@ -5,9 +5,11 @@ use super::{
 };
 use rocksdb::{DB, Options, ColumnFamilyDescriptor};
 use std::sync::Arc;
+use std::pin::Pin;
 use serde_json;
 use tokio::sync::RwLock;
 use avalanche_types::ids::Id;
+use futures::stream::Stream;
 use crate::block::{Transaction, Block};
 use anyhow::Error;
 
@@ -124,28 +126,11 @@ impl MempoolTransactionOperations for RocksdbMempool {
         }
     }
 
-    async fn pop_mempool_transaction(&self) -> Result<Option<MempoolTransaction>, Error> {
-        let db = self.db.write().await;
-        let cf_handle = db.cf_handle("mempool_transactions").ok_or_else(|| Error::msg("CF handle not found"))?;
-        let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
-
-        match iter.next() {
-            None => return Ok(None), // No transactions to pop
-            Some(res) => {
-                let (key, value) = res?;
-                let tx: MempoolTransaction = serde_json::from_slice(&value)?;
-                db.delete_cf(&cf_handle, &key)?;
-
-                // Optionally, remove from the lookup table as well
-                let lookups_cf_handle = db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
-                db.delete_cf(&lookups_cf_handle, tx.transaction.id().to_vec())?;
-                
-                Ok(Some(tx))
-            }
-        }
-
+    async fn iter(&self) {
+        // TODO Create tracking issue here.
+        unimplemented!()
     }
-
+    
 }
 
 #[tonic::async_trait]

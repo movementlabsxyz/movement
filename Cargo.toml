@@ -1,0 +1,50 @@
+[workspace.package]
+authors = ["Movement Labs"]
+edition = "2021"
+repository = "https://github.com/movemntdev/sdk"
+license = "Apache-2.0"
+
+[workspace]
+resolver = "2"
+members = [
+    "protocol-units/data-availability",
+    "protocol-units/zkfp/host",
+    "protocol-units/zkfp/methods",
+    "protocol-units/zkfp/methods/guest"
+]
+
+exclude = [
+    "shared-sequencer/movement-sequencer"
+]
+
+[workspace.dependencies]
+anyhow = "1.0"
+# To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
+risc0-zkvm = { version = "0.20.1",  features = ["std"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde = "1.0"
+tempfile = "3.2.0"
+
+# Move dependencies
+move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
+move-vm-test-utils = { path = "protocol-units/zkfp/vendors/move/language/move-vm/test-utils" }
+move-binary-format = { path = "protocol-units/zkfp/vendors/move/language/move-binary-format" }
+move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/types"}
+move-core-types = { path = "protocol-units/zkfp/vendors/move/language/move-core/types" }
+move-compiler = { path = "protocol-units/zkfp/vendors/move/language/move-compiler" }
+move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
+
+
+# Always optimize; building and running the guest takes much longer without optimization.
+[profile.dev]
+opt-level = 3
+
+[profile.dev.build-override]
+opt-level = 3
+
+[profile.release]
+debug = 1
+lto = true
+
+[profile.release.build-override]
+opt-level = 3
