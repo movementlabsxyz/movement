@@ -6,6 +6,18 @@ edition = "2021"
 description = "ZK Onchain Groth16 Settlement layer for Ethereum"
 publish = false 
 
+[lib]
+name = "methods"
+path = "methods/src/lib.rs"
+
+[[bin]]
+name = "eth-settlement"
+path = "eth-settlement/src/main.rs"
+
+[[bin]]
+name = "eth-publisher"
+path = "eth-publisher/src/bin/publisher.rs"
+
 [dependencies]
 async-trait = { workspace = true } 
 anyhow = { workspace = true }     # For flexible error handling

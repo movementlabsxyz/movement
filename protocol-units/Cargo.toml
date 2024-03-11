@@ -4,13 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Protocol Units for the Movement SDK"
 
-[lib]
-name = "eth-settlement"
-path = "eth-settlement/src/lib.rs"
 
-[[bin]]
-name = "eth-publisher"
-path = "eth-publisher/src/bin/publisher.rs"
 
 [[bin]]
 name = "methods"

@@ -20,5 +20,5 @@ pragma solidity ^0.8.20;
 
 library Elf {
     string public constant IS_EVEN_PATH =
-        "/home/movses/mvmt/sdk/m2/target/riscv-guest/riscv32im-risc0-zkvm-elf/release/is-even";
+        "/home/movses/mvmt/sdk/target/riscv-guest/riscv32im-risc0-zkvm-elf/release/is-even";
 }
