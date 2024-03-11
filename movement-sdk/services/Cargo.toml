@@ -1,0 +1,21 @@
+[package]
+name = "services"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+util = { workspace = true, features = ["logging"] }
+artifacts = { workspace = true }
+async-trait = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+clap = { workspace = true }
+tokio = { workspace = true}
+dirs = { workspace = true }
+reqwest = { workspace = true }
+tempfile = { workspace = true }
+semver = { workspace = true }
+serde_json = { workspace = true }
+const-str = { workspace = true }
+test-helpers = { workspace = true }
+once_cell = { workspace = true }

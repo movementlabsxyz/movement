@@ -1,0 +1,27 @@
+[package]
+name = "sui-block-executor"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# internal
+movement-sdk = { workspace = true }
+
+# general
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+
+# internal
+sui-helper-types = { workspace = true }
+sui-types = { workspace = true }
+
+
+# sui
+# todo: conflicting rocksdb means we can't use workspace
+# todo: likely movement-sdk will move into its own workspace
+# todo: once that happens, we can move sui into its own workspace
+# todo: we will have to reconcile the two when we begin on the canonical VM

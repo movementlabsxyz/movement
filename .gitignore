@@ -1,0 +1,9 @@
+.DS_Store
+Cargo.lock
+methods/guest/Cargo.lock
+target/
+
+# Ignores Foundry Generated files
+protocol-units/eth-settlement/contracts/broadcast
+protocol-units/eth-settlement/contracts/broadcast/*/31337/
+protocol-units/eth-settlement/contracts/broadcast/**/dry-run/
