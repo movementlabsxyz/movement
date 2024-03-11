@@ -2,3 +2,9 @@
 Cargo.lock
 methods/guest/Cargo.lock
 target/
+
+# Ignores Foundry dependencies and Generated files
+/protocol-units/eth-settlement/contracts/lib
+/protocol-units/eth-settlement/contracts/broadcast
+/protocol-units/eth-settlement/contracts/broadcast/*/31337/
+/protocol-units/eth-settlement/contracts/broadcast/**/dry-run/

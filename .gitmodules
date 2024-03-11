@@ -16,9 +16,9 @@
 [submodule "vendors/ed25519-dalek"]
 	path = movement-sdk/vendors/ed25519-dalek
 	url = https://github.com/movemntdev/ed25519-dalek
-[submodule "m2/contracts/eth-settlement/lib/forge-std"]
-	path = m2/contracts/eth-settlement/lib/forge-std
+[submodule "protocol-units/eth-settlement/contracts/lib/forge-std"]
+	path = protocol-units/eth-settlement/contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "m2/contracts/eth-settlement/lib/openzeppelin-contracts"]
-	path = m2/contracts/eth-settlement/lib/openzeppelin-contracts
+[submodule "protocol-units/eth-settlement/contracts/lib/openzeppelin-contracts"]
+	path = protocol-units/eth-settlement/contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
