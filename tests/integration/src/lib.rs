@@ -1,7 +1,8 @@
-use std::{sync::Arc, time::Duration};
 use anyhow::{Context, Result};
+use eth_client::WalletKey;
 use ethers::{providers::Provider, utils::AnvilInstance};
-use risc0_ethereum_relay::WalletKey;
+use risc0_ethereum_relay::EthersClientConfig;
+use std::{sync::Arc, time::Duration};
 
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
 const WAIT_DURATION: Duration = Duration::from_secs(5);

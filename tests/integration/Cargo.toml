@@ -14,6 +14,7 @@ path = "publisher_tests.rs"
 [dependencies]
 anyhow = { workspace = true }
 ethers = { workspace = true } 
+eth-client = { path = "../../protocol-units/clients/eth" }
 eth-adapter = { path = "../../protocol-units/eth-settlement/eth-adapter" }
 eth-publisher = { path = "../../protocol-units/eth-settlement/eth-publisher" }
 tokio = { version = "1.0", features = ["full"] }

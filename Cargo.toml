@@ -12,6 +12,7 @@ members = [
     "protocol-units/eth-settlement/eth-adapter",
     "protocol-units/eth-settlement/eth-publisher",
     "protocol-units/eth-settlement/methods",
+    "protocol-units/clients/eth",
     "tests/integration"
 ]
 
@@ -30,6 +31,7 @@ alloy-sol-types = { version = "0.6" }
 bincode = { version = "1.3" }
 tokio = { version = "1", features = ["full"] }
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
+tracing = "0.1.40"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
 serde_json = "1.0.68"
