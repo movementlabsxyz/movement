@@ -1,0 +1,25 @@
+[package]
+name = "integration-tests"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "integration_tests"
+path = "src/lib.rs"
+
+[[test]]
+name = "publisher_tests"
+path = "publisher_tests.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+ethers = { workspace = true } 
+eth-adapter = { path = "../../protocol-units/eth-settlement/eth-adapter" }
+eth-publisher = { path = "../../protocol-units/eth-settlement/eth-publisher" }
+tokio = { version = "1.0", features = ["full"] }
+
+risc0-ethereum-relay= { workspace = true }
+
+[features]
+# Define any optional features
+default = []
