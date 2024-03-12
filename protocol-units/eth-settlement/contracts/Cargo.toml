@@ -1,0 +1,11 @@
+[package]
+name = "eth-contracts"
+version = "0.1.0"
+edition = "2021"
+description = "Movement Labs Contracts for Eth Settlement with Risc0 Groth16 Bonsai service"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+ethers = { workspace = true }
