@@ -1,12 +1,19 @@
 use anyhow::{Context, Result};
-use eth_client::WalletKey;
-use ethers::{providers::Provider, utils::AnvilInstance};
-use risc0_ethereum_relay::EthersClientConfig;
+use eth_client::{EthersClientConfig, WalletKey};
+use bonsai_sdk::{
+    alpha::Client as BonsaiClient,
+    alpha_async::{get_client_from_parts},
+};
+use ethers::{
+    providers::{Middleware, Provider, Ws},
+    utils::AnvilInstance,
+};
 use std::{sync::Arc, time::Duration};
 
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
 const WAIT_DURATION: Duration = Duration::from_secs(5);
 const MAX_RETRIES: u64 = 7 * 24 * 60 * 60 / WAIT_DURATION.as_secs(); // 1 week
+const BONSAI_API_URI: &str = "http://localhost:8081";
 
 /// Returns an empty Anvil builder. The default port is 8545. The mnemonic is
 /// chosen randomly.
@@ -62,4 +69,30 @@ pub async fn get_ws_provider_endpoint(anvil: Option<&AnvilInstance>) -> Result<S
         _ => anvil.context("Anvil not instantiated.")?.ws_endpoint(),
     };
     Ok(endpoint)
+}
+
+pub async fn get_bonsai_client(api_key: String) -> BonsaiClient {
+    let bonsai_api_endpoint = get_bonsai_url();
+    get_client_from_parts(bonsai_api_endpoint, api_key, risc0_zkvm::VERSION)
+        .await
+        .unwrap()
+}
+
+pub fn get_bonsai_url() -> String {
+    let endpoint = match std::env::var("BONSAI_API_URL") {
+        Ok(endpoint) => endpoint,
+        Err(_) => BONSAI_API_URI.to_string(),
+    };
+
+    endpoint
+        .is_empty()
+        .then(|| BONSAI_API_URI.to_string())
+        .unwrap_or(endpoint)
+}
+
+pub fn get_bonsai_key() -> String {
+    match std::env::var("BONSAI_API_KEY") {
+        Ok(api_key) => api_key,
+        _ => "test_key".to_string(),
+    }
 }

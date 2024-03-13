@@ -13,13 +13,23 @@ path = "publisher_tests.rs"
 
 [dependencies]
 anyhow = { workspace = true }
+bytemuck = { workspace = true }
 ethers = { workspace = true } 
+tokio = { version = "1.0", features = ["full"] }
+
+# Workspace dependencies
 eth-client = { path = "../../protocol-units/clients/eth" }
 eth-adapter = { path = "../../protocol-units/eth-settlement/eth-adapter" }
 eth-publisher = { path = "../../protocol-units/eth-settlement/eth-publisher" }
-tokio = { version = "1.0", features = ["full"] }
+eth-contracts = { path = "../../protocol-units/eth-settlement/contracts" }
+eth-relay-test-methods = { path = "./methods"}
 
-risc0-ethereum-relay= { workspace = true }
+# Risc0 dependencies
+bonsai-rest-api-mock = { workspace = true }
+bonsai-sdk = { workspace = true, features = ["async"] }
+risc0-zkvm = { workspace = true }
+risc0-ethereum-relay = { workspace = true }
+risc0-ethereum-contracts = { workspace = true }
 
 [features]
 # Define any optional features

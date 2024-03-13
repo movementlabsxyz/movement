@@ -12,8 +12,11 @@ members = [
     "protocol-units/eth-settlement/eth-adapter",
     "protocol-units/eth-settlement/eth-publisher",
     "protocol-units/eth-settlement/methods",
+    "protocol-units/eth-settlement/contracts",
     "protocol-units/clients/eth",
-    "tests/integration"
+    "tests/integration/methods",
+    "tests/integration",
+
 ]
 
 exclude = [
@@ -58,13 +61,17 @@ move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
 # Risc0 dependencies
 # NOTE: Using a git rev temporarily to get an unreleased version of risc0-build.
 # Once the referenced commit is in a released version of risc0-build, this will go back to using a version.
-bonsai-sdk = { version = "0.6.1" }
+bonsai-rest-api-mock = { version = "0.6.1", default-features = false }
+bonsai-sdk = { version = "0.6.1", default-features = false }
 risc0-build = { git = "https://github.com/risc0/risc0", rev = "7f731662", features = ["docker"] }
 risc0-build-ethereum = { git = "https://github.com/risc0/risc0-ethereum", branch = "release-0.7" }
 risc0-ethereum-relay= { git = "https://github.com/risc0/risc0-ethereum", branch = "release-0.7" }
 risc0-ethereum-contracts = { git = "https://github.com/risc0/risc0-ethereum", branch = "release-0.7" }
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }
 risc0-zkp = { version = "0.20", default-features = false }
+
+eth-relay-test-methods = { path = "./tests/integration/methods" }
+
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]

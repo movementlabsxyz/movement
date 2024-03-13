@@ -6,6 +6,7 @@ use ethers::{
     prelude::*,
     providers::{Provider, Ws},
 };
+use risc0_ethereum_relay::EthersClientConfig as Risc0EthersClientConfig;
 use tracing::{debug, error};
 
 /// We use this in combination with `EthersClientConfig` to 
@@ -48,6 +49,8 @@ impl WalletKey {
         self.0.clone()
     }
 }
+
+type EthersClientConfig = Risc0EthersClientConfig;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EthersClientConfig {

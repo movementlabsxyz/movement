@@ -12,3 +12,5 @@ ethers = { workspace = true }
 hex = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+
+risc0-ethereum-relay = { workspace = true }

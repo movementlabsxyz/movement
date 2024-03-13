@@ -4,6 +4,8 @@ methods/guest/Cargo.lock
 target/
 
 # Ignores Foundry Generated files
+## Generated ABI files in the /out dir
+protocol-units/eth-settlement/contracts/out 
 protocol-units/eth-settlement/contracts/broadcast
 protocol-units/eth-settlement/contracts/broadcast/*/31337/
 protocol-units/eth-settlement/contracts/broadcast/**/dry-run/
