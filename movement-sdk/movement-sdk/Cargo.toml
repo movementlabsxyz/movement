@@ -1,9 +1,0 @@
-[package]
-name = "movement-sdk"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-async-trait = { workspace = true }
-anyhow = { workspace = true }
-serde = { workspace = true }
