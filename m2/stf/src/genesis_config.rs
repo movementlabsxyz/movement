@@ -95,29 +95,3 @@ impl<C: Context, Da: DaSpec> ApplyBlobHooks<Da::BlobTransaction> for Runtime<C, 
         }
     }
 }
-
-impl<C: Context, Da: DaSpec> SlotHooks<Da> for Runtime<C, Da> {
-    type Context = C;
-
-    fn begin_slot_hook(
-        &self,
-        _slot_header: &Da::BlockHeader,
-        _validity_condition: &Da::ValidityCondition,
-        _pre_state_root: &<<Self::Context as Spec>::Storage as Storage>::Root,
-        _working_set: &mut sov_modules_api::WorkingSet<C>,
-    ) {
-    }
-
-    fn end_slot_hook(&self, _working_set: &mut sov_modules_api::WorkingSet<C>) {}
-}
-
-impl<C: Context, Da: sov_modules_api::DaSpec> FinalizeHook<Da> for Runtime<C, Da> {
-    type Context = C;
-
-    fn finalize_hook(
-        &self,
-        _root_hash: &<<Self::Context as Spec>::Storage as Storage>::Root,
-        _accessory_working_set: &mut AccessoryWorkingSet<C>,
-    ) {
-    }
-}
