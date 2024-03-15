@@ -18,12 +18,18 @@ exclude = [
     "shared-sequencer/movement-sequencer"
 ]
 
+[workspace.dependencies.m2-stf]
+features = ["native"]
+
 [workspace.dependencies]
 anyhow = "1.0"
+clap = { version = "4.4.10", features = ["derive"] }
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] } 
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 risc0-zkvm = { version = "0.20.1",  features = ["std"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = "1.0"
+serde_json = { version = "1.0" }
 tempfile = "3.2.0"
 
 # Move dependencies
@@ -54,6 +60,7 @@ sov-cli = { git = "https://github.com/Sovereign-Labs/sovereign-sdk.git", rev = "
 sov-mock-da = { git = "https://github.com/Sovereign-Labs/sovereign-sdk.git", rev = "13e4077c329ff14954b32e3180d43a6d86fa3172" }
 sov-celestia-adapter = { git = "https://github.com/Sovereign-Labs/sovereign-sdk.git", rev = "13e4077c329ff14954b32e3180d43a6d86fa3172" }
 sov-prover-storage-manager = { git = "https://github.com/Sovereign-Labs/sovereign-sdk.git", rev = "13e4077c329ff14954b32e3180d43a6d86fa3172" }
+borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 
 # Always optimize; building and running the guest takes much longer without optimization.
 [profile.dev]
