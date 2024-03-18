@@ -13,7 +13,7 @@ time-macros = "=0.2.15" # Same as above
 risc0-zkvm = { version = "0.20", default-features = false, features = ["std"] }
 risc0-zkvm-platform = "0.20"
 
-m2-stf = { path = "../../../stf" }
+stf-starter = { path = "../../../stf" }
 
 sov-rollup-interface = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-celestia-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
