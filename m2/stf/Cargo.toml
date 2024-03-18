@@ -5,6 +5,7 @@ edition = { workspace = true }
 resolver = "2"
 authors = { workspace = true }
 license = { workspace = true }
+homepage = "sovereign.xyz"
 publish = false
 
 [dependencies]
@@ -22,13 +23,13 @@ tracing = "0.1.37"
 
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
-serde_json = { workspace = true, optional = true }
+serde_json = { workspace = true }
 jsonrpsee = { workspace = true, features = ["jsonrpsee-types"], optional = true }
 borsh = { workspace = true, features = ["rc", "bytes"] }
 clap = { workspace = true, features = ["derive"], optional = true }
 
 [features]
-default = ["serde"]
+default = []
 native = [
     "sov-modules-api/native",
     "sov-accounts/native",
@@ -37,15 +38,7 @@ native = [
     "sov-mock-da/native",
     "sov-modules-stf-blueprint/native",
     "sov-stf-runner/native",
-    "serde_json",
     "jsonrpsee",
     "sov-sequencer",
     "clap",
-    "serde",
-]
-serde = [
-    "sov-accounts/serde",
-    "sov-bank/serde",
-    "sov-modules-api/serde",
-    "sov-sequencer-registry/serde",
 ]
