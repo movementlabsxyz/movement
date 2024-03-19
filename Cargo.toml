@@ -1,45 +1,21 @@
-[workspace.package]
-authors = ["Movement Labs"]
-edition = "2021"
-repository = "https://github.com/movemntdev/sdk"
-license = "Apache-2.0"
-
 [workspace]
+
 resolver = "2"
+
 members = [
     "m2/rollup",
     "m2/stf",
 ]
 
-[workspace.dependencies.m2-stf]
-features = ["native"]
-
-[workspace.dependencies.m2-rollup]
-features = ["mock_da"]
+[workspace.package]
+version = "0.3.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Movement Labs"]
+publish = false
+rust-version = "1.73"
 
 [workspace.dependencies]
-anyhow = "1.0"
-async-trait = "0.1.71"
-clap = { version = "4.4.10", features = ["derive"] }
-jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] } 
-# To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-serde = "1.0"
-serde_json = { version = "1.0" }
-tempfile = "3.2.0"
-tracing = "0.1.40"
-tokio = { version = "1", features = ["full"] }
-
-# Move dependencies
-move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
-move-vm-test-utils = { path = "protocol-units/zkfp/vendors/move/language/move-vm/test-utils" }
-move-binary-format = { path = "protocol-units/zkfp/vendors/move/language/move-binary-format" }
-move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/types"}
-move-core-types = { path = "protocol-units/zkfp/vendors/move/language/move-core/types" }
-move-compiler = { path = "protocol-units/zkfp/vendors/move/language/move-compiler" }
-move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
-
-#Sovereign Labs dependencies
 sov-modules-api = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-accounts = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
@@ -60,18 +36,18 @@ sov-mock-da = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git
 sov-celestia-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-prover-storage-manager = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 
+stf-starter = { path = "./crates/stf" }
+
+serde = { version = "1.0.192", features = ["derive", "rc"] }
+serde_json = { version = "1.0" }
+
+anyhow = "1.0.68"
+clap = { version = "4.4.10", features = ["derive"] }
+async-trait = "0.1.71"
 borsh = { version = "0.10.3", features = ["rc", "bytes"] }
+tracing = "0.1.40"
+tokio = { version = "1", features = ["full"] }
+tempfile = "3.5"
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
+
 risc0-build = "0.20"
-# Always optimize; building and running the guest takes much longer without optimization.
-[profile.dev]
-opt-level = 3
-
-[profile.dev.build-override]
-opt-level = 3
-
-[profile.release]
-debug = 1
-lto = true
-
-[profile.release.build-override]
-opt-level = 3

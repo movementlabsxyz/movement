@@ -1,11 +1,10 @@
 [package]
 name = "m2-stf"
-version = "0.1.0" 
+version = { workspace = true }
 edition = { workspace = true }
 resolver = "2"
 authors = { workspace = true }
 license = { workspace = true }
-homepage = "sovereign.xyz"
 publish = false
 
 [dependencies]
