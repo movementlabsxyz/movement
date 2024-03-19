@@ -121,7 +121,7 @@ impl RollupBlueprint for CelestiaRollup {
         rollup_config: &RollupConfig<Self::DaConfig>,
         _da_service: &Self::DaService,
     ) -> Self::ProverService {
-        let vm = Risc0Host::new(risc0_starter::ROLLUP_ELF);
+        let vm = Risc0Host::new(m2_risc0::ROLLUP_ELF);
         let zk_stf = StfBlueprint::new();
         let zk_storage = ZkStorage::new();
 
