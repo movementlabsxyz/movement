@@ -5,7 +5,7 @@ use sov_mock_da::MockDaConfig;
 use sov_modules_rollup_blueprint::RollupBlueprint;
 use sov_modules_stf_blueprint::kernels::basic::BasicKernelGenesisConfig;
 use sov_modules_stf_blueprint::kernels::basic::BasicKernelGenesisPaths;
-use sov_rollup_starter::mock_rollup::MockRollup;
+use m2_rollup::mock_rollup::MockRollup;
 use sov_stf_runner::ProverServiceConfig;
 use sov_stf_runner::RollupProverConfig;
 use sov_stf_runner::{RollupConfig, RpcConfig, RunnerConfig, StorageConfig};
