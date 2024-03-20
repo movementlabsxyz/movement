@@ -1,18 +1,3 @@
-[submodule "protocol-units/zkfp/vendors/move"]
-	path = protocol-units/zkfp/vendors/move
-	url = https://github.com/movemntdev/move
-	branch = zkp
-[submodule "movement-sdk/vendors/aptos-core"]
-	path = movement-sdk/vendors/aptos-core
-	url = https://github.com/movemntdev/aptos-core
-	branch = canonical
-[submodule "movement-sdk/vendors/asui"]
-	path = movement-sdk/vendors/asui
-	url = https://github.com/movemntdev/sui
-	branch = canonical
-[submodule "vendors/x25519-dalek"]
-	path = movement-sdk/vendors/x25519-dalek
-	url = https://github.com/movemntdev/x25519-dalek
-[submodule "vendors/ed25519-dalek"]
-	path = movement-sdk/vendors/ed25519-dalek
-	url = https://github.com/movemntdev/ed25519-dalek
+[submodule "vendors/aptos-core"]
+	path = vendors/aptos-core
+	url = https://github.com/aptos-labs/aptos-core.git

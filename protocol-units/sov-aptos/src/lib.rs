@@ -9,11 +9,9 @@ pub use gas_price::gas_oracle::GasPriceOracleConfig;
 #[cfg(feature = "experimental")]
 pub use sov_evm::DevSigner;
 
-#[cfg(feature = "experimental")]
 pub mod experimental {
     use std::array::TryFromSliceError;
     use std::sync::{Arc, Mutex};
-
     use borsh::ser::BorshSerialize;
     use m2_stf::runtime::Runtime;
     use ethers::types::{Bytes, H256};

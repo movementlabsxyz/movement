@@ -6,8 +6,12 @@ members = [
     "m2/rollup",
     "m2/stf",
     "protocol-units/sov-aptos",
-    "protocol-units/sov-modules/sov-evm"
+    "protocol-units/sov-modules/sov-aptos-vm"
 ]
+
+[workspace.features]
+sov-aptos = ["experimental"]
+
 
 [workspace.package]
 version = "0.3.0"
@@ -20,6 +24,26 @@ publish = false
 rust-version = "1.73"
 
 [workspace.dependencies]
+
+serde = { version = "1.0.192", features = ["derive", "rc"] }
+serde_json = { version = "1.0" }
+
+anyhow = "1.0.68"
+derive_more = { version = "0.99.11", default-features = false }
+bytes = { version = "1.2.1", default-features = false }
+clap = { version = "4.4.10", features = ["derive"] }
+hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
+async-trait = "0.1.71"
+borsh = { version = "0.10.3", features = ["rc", "bytes"] }
+tracing = "0.1.40"
+tokio = { version = "1", features = ["full"] }
+tempfile = "3.5"
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
+proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
+schemars = { version = "0.8.16", features = ["derive"] }
+thiserror = "1.0.50"
+
+# Sovereign Labs dependencies
 sov-modules-api = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-accounts = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
@@ -41,27 +65,9 @@ sov-celestia-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sd
 sov-prover-storage-manager = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-chain-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 
-m2-stf = { path = "./crates/stf" }
-
-serde = { version = "1.0.192", features = ["derive", "rc"] }
-serde_json = { version = "1.0" }
-
-anyhow = "1.0.68"
-derive_more = { version = "0.99.11", default-features = false }
-bytes = { version = "1.2.1", default-features = false }
-clap = { version = "4.4.10", features = ["derive"] }
-hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
-async-trait = "0.1.71"
-borsh = { version = "0.10.3", features = ["rc", "bytes"] }
-tracing = "0.1.40"
-tokio = { version = "1", features = ["full"] }
-tempfile = "3.5"
-jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
-proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
-schemars = { version = "0.8.16", features = ["derive"] }
-thiserror = "1.0.50"
-
 risc0-build = "0.20"
+
+m2-stf = { path = "./crates/stf" }
 
 # EVM dependencies
 ethereum-types = "0.14.1"
@@ -71,6 +77,9 @@ ethers-contract = "=2.0.10"
 ethers-providers = { version = "=2.0.10", default-features = false }
 ethers-signers = { version = "=2.0.10", default-features = false }
 ethers-middleware = { version = "=2.0.10", default-features = false }
+
+# Aptos dependencies
+aptos-sdk = { git = "https://github.com/aptos-labs/aptos-core", rev = "main" } 
 
 # https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }

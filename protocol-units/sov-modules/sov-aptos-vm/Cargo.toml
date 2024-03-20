@@ -1,6 +1,6 @@
 [package]
-name = "sov-evm"
-description = "A Sovereign SDK managing fungible tokens"
+name = "sov-aptos-vm"
+description = "A Sovereign Labs compatible AptosVM implementation"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -35,6 +35,8 @@ tracing = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"
 secp256k1 = { workspace = true }
+
+aptos-sdk = { workspace = true }
 
 alloy-sol-types = { version = "0.6" }
 revm = { workspace = true, features = [

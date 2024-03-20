@@ -18,7 +18,8 @@ sov-rollup-interface = { workspace = true, features = [
   "native",
 ] }
 
-sov-evm = { path = "../sov-modules/sov-evm" }
+aptos-sdk = { workspace = true }
+sov-aptos-vm = { path = "../sov-modules/sov-aptos-vm" }
 m2-stf = { path = "../../m2/stf", features = ["native"] }
 sov-modules-api = { workspace = true }
 sov-accounts = { workspace = true }
