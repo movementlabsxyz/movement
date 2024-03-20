@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "m2/rollup",
     "m2/stf",
+    "protocol-units/sov-aptos"
 ]
 
 [workspace.package]
@@ -12,6 +13,7 @@ version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Movement Labs"]
+repository = "www.github.com/movementlabs"
 publish = false
 rust-version = "1.73"
 
@@ -49,5 +51,26 @@ tracing = "0.1.40"
 tokio = { version = "1", features = ["full"] }
 tempfile = "3.5"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
+proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
 
 risc0-build = "0.20"
+
+# EVM dependencies
+ethereum-types = "0.14.1"
+ethers = "=2.0.10"
+ethers-core = { version = "=2.0.10", default-features = false }
+ethers-contract = "=2.0.10"
+ethers-providers = { version = "=2.0.10", default-features = false }
+ethers-signers = { version = "=2.0.10", default-features = false }
+ethers-middleware = { version = "=2.0.10", default-features = false }
+
+reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
+reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
+reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
+reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
+reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
+
+revm = { git = "https://github.com/bluealloy/revm", rev = "516f62cc" }
+revm-primitives = { git = "https://github.com/bluealloy/revm", rev = "516f62cc" }
+
+secp256k1 = { version = "0.27.0", default-features = false, features = ["global-context", "rand-std", "recovery"] }
