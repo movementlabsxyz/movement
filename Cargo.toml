@@ -5,7 +5,8 @@ resolver = "2"
 members = [
     "m2/rollup",
     "m2/stf",
-    "protocol-units/sov-aptos"
+    "protocol-units/sov-aptos",
+    "protocol-units/sov-modules/sov-evm"
 ]
 
 [workspace.package]
@@ -14,6 +15,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Movement Labs"]
 repository = "www.github.com/movementlabs"
+homepage = "www.homepage.com"
 publish = false
 rust-version = "1.73"
 
@@ -37,14 +39,18 @@ sov-cli = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", r
 sov-mock-da = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-celestia-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-prover-storage-manager = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
+sov-chain-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 
-stf-starter = { path = "./crates/stf" }
+m2-stf = { path = "./crates/stf" }
 
 serde = { version = "1.0.192", features = ["derive", "rc"] }
 serde_json = { version = "1.0" }
 
 anyhow = "1.0.68"
+derive_more = { version = "0.99.11", default-features = false }
+bytes = { version = "1.2.1", default-features = false }
 clap = { version = "4.4.10", features = ["derive"] }
+hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
 async-trait = "0.1.71"
 borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 tracing = "0.1.40"
@@ -52,6 +58,8 @@ tokio = { version = "1", features = ["full"] }
 tempfile = "3.5"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
+schemars = { version = "0.8.16", features = ["derive"] }
+thiserror = "1.0.50"
 
 risc0-build = "0.20"
 
@@ -64,13 +72,15 @@ ethers-providers = { version = "=2.0.10", default-features = false }
 ethers-signers = { version = "=2.0.10", default-features = false }
 ethers-middleware = { version = "=2.0.10", default-features = false }
 
-reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
-reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
-reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
-reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
-reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "e83d3aa" }
+# https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
+reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
+reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
 
-revm = { git = "https://github.com/bluealloy/revm", rev = "516f62cc" }
-revm-primitives = { git = "https://github.com/bluealloy/revm", rev = "516f62cc" }
-
-secp256k1 = { version = "0.27.0", default-features = false, features = ["global-context", "rand-std", "recovery"] }
+# Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
+revm = { version = "5.0.0", default-features = false, features = ["serde"] }
+# Used just to be safe about breaking changes
+revm-primitives = { version = "=2.0.0", default-features = false }
+secp256k1 = { version = "0.27", default-features = false, features = ["global-context", "rand-std", "recovery"] }

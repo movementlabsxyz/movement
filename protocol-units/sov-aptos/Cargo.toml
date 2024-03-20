@@ -14,11 +14,11 @@ publish = false
 anyhow = { workspace = true }
 tracing = { workspace = true }
 jsonrpsee = { workspace = true, features = ["http-client", "server"] }
-sov-rollup-interface = { path = "../../rollup-interface", features = [
+sov-rollup-interface = { workspace = true, features = [
   "native",
 ] }
 
-sov-evm = { path = "../../module-system/module-implementations/sov-evm" }
+sov-evm = { path = "../sov-modules/sov-evm" }
 m2-stf = { path = "../../m2/stf", features = ["native"] }
 sov-modules-api = { workspace = true }
 sov-accounts = { workspace = true }
@@ -41,5 +41,4 @@ proptest = { workspace = true }
 [features]
 default = []
 local = []
-experimental = ["m2-stf/experimental", "sov-evm/experimental", "local"]
-native = ["m2-stf/native", "sov-evm/native"]
+native = ["m2-stf/native"]
