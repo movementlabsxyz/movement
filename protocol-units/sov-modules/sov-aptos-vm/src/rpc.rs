@@ -22,33 +22,34 @@ use crate::helpers::prepare_call_env;
 use crate::{EthApiError, Evm};
 
 #[rpc_gen(client, server)]
-impl<S: sov_modules_api::Spec, Da: DaSpec> Evm<S, Da> {
+impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
     /// Handler for `net_version`
-    #[rpc_method(name = "net_version")]
+    #[rpc_method(name = "get_ledger_info")]
     pub fn net_version(&self, working_set: &mut WorkingSet<S>) -> RpcResult<String> {
-        debug!("EVM module JSON-RPC request to `net_version`");
+        debug!("Aptos VM module JSON-RPC request to `get_ledger_info`");
 
         // Network ID is the same as chain ID for most networks
+        // Not sure if this is the same for Aptos, unit test this.
         let chain_id = self
             .cfg
             .get(working_set)
-            .expect("EVM config must be set at genesis")
+            .expect("AptosVM config must be set at genesis")
             .chain_id;
 
         Ok(chain_id.to_string())
     }
 
     /// Handler for: `eth_chainId`
-    #[rpc_method(name = "eth_chainId")]
+    #[rpc_method(name = "healthy")]
     pub fn chain_id(&self, working_set: &mut WorkingSet<S>) -> RpcResult<Option<U64>> {
         let chain_id = self
             .cfg
             .get(working_set)
-            .expect("EVM config must be set at genesis")
+            .expect("AptosVM config must be set at genesis")
             .chain_id;
         debug!(
             chain_id = chain_id,
-            "EVM module JSON-RPC request to `eth_chainId`"
+            "AptosVM module JSON-RPC request to `healthy`"
         );
         Ok(Some(U64::from(chain_id)))
     }

@@ -1,12 +1,19 @@
 use std::ops::Range;
 
+use aptos_crypto::hash::HashValue;
+use aptos_sdk::types::account_address::AccountAddress;
+use aptos_consensus_types::block_data::BlockData;
 use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
 use revm::primitives::{Address, EVMError, B256};
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Clone)]
 pub(crate) struct BlockEnv {
-    pub(crate) number: u64,
-    pub(crate) coinbase: Address,
+    /// This block's id as a hash value, it is generated at call time
+    pub(crate) id: HashValue,
+    /// A coinbase account
+    pub(crate) coinbase: AccountAddress,
+    /// The container for the actual block
+    pub(crate) block_data: BlockData,
     pub(crate) timestamp: u64,
     /// Prevrandao is used after Paris (aka TheMerge) instead of the difficulty value.
     pub(crate) prevrandao: B256,
@@ -23,6 +30,7 @@ impl Default for BlockEnv {
             timestamp: Default::default(),
             prevrandao: Default::default(),
             basefee: Default::default(),
+            // @TODO: Check this value, make tracking issue.
             gas_limit: reth_primitives::constants::ETHEREUM_BLOCK_GAS_LIMIT,
         }
     }

@@ -81,8 +81,10 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
-# to be avoid depenedency conflicts with other Sovereign Labs crates.
+# to be avoid depenedency conflicts with other Sovereign Labs crates. 
 aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" } 
+aptos-consensus-types = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
+aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" } 
 
 # https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }

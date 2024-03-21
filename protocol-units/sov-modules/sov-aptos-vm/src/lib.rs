@@ -1,9 +1,14 @@
+mod evm;
+mod event;
 mod signer;
+mod genesis;
+pub use experimental::Evm;
 pub use signer::DevSigner;
 
 mod experimental {
     use revm::primitives::Address;
-    use aptos_api::types::account_address::AccountAddress;
+    use aptos_sdk::types::account_address::AccountAddress;
+    use aptos_sdk::types::bl
     use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
     use sov_state::codec::BcsCodec;
 
@@ -13,9 +18,9 @@ mod experimental {
     use crate::evm::primitive_types::{
         Block, BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
     };
-    use crate::EvmConfig;
+    use crate::evm::EvmConfig;
 
-    // Gas per transaction not creating a contract.
+    // @TODO: Check these vals. Make tracking issue.
     #[cfg(feature = "native")]
     pub(crate) const MIN_TRANSACTION_GAS: u64 = 21_000u64;
     #[cfg(feature = "native")]
@@ -31,7 +36,7 @@ mod experimental {
     #[allow(dead_code)]
     // #[cfg_attr(feature = "native", derive(sov_modules_api::ModuleCallJsonSchema))]
     #[derive(ModuleInfo, Clone)]
-    pub struct Evm<S: sov_modules_api::Spec, Da: DaSpec> {
+    pub struct AptosVM<S: sov_modules_api::Spec, Da: DaSpec> {
         /// The address of the evm module.
         #[address]
         pub(crate) address: S::Address,
