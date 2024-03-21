@@ -1,23 +1,23 @@
 use anyhow::Result;
 use reth_primitives::{Log as RethLog, TransactionSignedEcRecovered};
-use revm::primitives::{Address, CfgEnv, CfgEnvWithHandlerCfg, EVMError, Log};
+use revm::primitives::{Address, CfgEnv, CfgEnvWithHandlerCfg, EVMError, Log, SpecId};
 use sov_modules_api::{CallResponse, Context, DaSpec, WorkingSet};
 
-use crate::evm::db::EvmDb;
+use crate::evm::db::AptosDb;
 use crate::evm::executor::{self};
 use crate::evm::primitive_types::{BlockEnv, Receipt, TransactionSignedAndRecovered};
 use crate::evm::{AptosChainConfig, RlpEvmTransaction};
-use crate::experimental::{AptosVM, PendingTransaction, SpecId};
+use crate::experimental::{AptosVM, PendingTransaction};
 
 /// EVM call message.
 #[derive(
-    borsh::BorshDeserialize,
-    borsh::BorshSerialize,
-    serde::Serialize,
-    serde::Deserialize,
-    Debug,
-    PartialEq,
-    Clone,
+borsh::BorshDeserialize,
+borsh::BorshSerialize,
+serde::Serialize,
+serde::Deserialize,
+Debug,
+PartialEq,
+Clone,
 )]
 pub struct CallMessage {
     /// RLP encoded transaction.
@@ -40,7 +40,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let cfg = self.cfg.get(working_set).expect("Evm config must be set");
         let cfg_env = get_cfg_env_with_handler(&block_env, cfg, None);
 
-        let evm_db: EvmDb<'_, S> = self.get_db(working_set);
+        let aptos_db: AptosDb<'_, S> = self.get_db(working_set);
         let result = executor::execute_tx(evm_db, &block_env, &evm_tx_recovered, cfg_env);
         let previous_transaction = self.pending_transactions.last(working_set);
         let previous_transaction_cumulative_gas_used = previous_transaction
@@ -70,7 +70,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                     log_index_start,
                     error: None,
                 }
-            },
+            }
             // Adopted from https://github.com/paradigmxyz/reth/blob/main/crates/payload/basic/src/lib.rs#L884
             Err(err) => {
                 tracing::debug!(
@@ -82,13 +82,13 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                     EVMError::Transaction(_) => {
                         // This is a transactional error, so we can skip it without doing anything.
                         Ok(CallResponse::default())
-                    },
+                    }
                     err => {
                         // This is a fatal error, so we need to return it.
                         Err(err.into())
-                    },
+                    }
                 };
-            },
+            }
         };
 
         let pending_transaction = PendingTransaction {
@@ -134,7 +134,7 @@ pub(crate) fn get_spec_id(spec: Vec<(u64, SpecId)>, block_number: u64) -> SpecId
                 // this should never happen as we cover this in genesis
                 panic!("EVM spec must start from block 0")
             }
-        },
+        }
     }
 }
 

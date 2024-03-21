@@ -1,7 +1,7 @@
 use revm::primitives::{Account, Address, HashMap};
 use revm::DatabaseCommit;
 
-use super::db::EvmDb;
+use super::db::AptosDb;
 use super::DbAccount;
 
 impl<'a, S: sov_modules_api::Spec> DatabaseCommit for EvmDb<'a, S> {

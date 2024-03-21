@@ -7,7 +7,7 @@ use revm::{self, Database, DatabaseCommit, EvmBuilder};
 use super::primitive_types::BlockEnv;
 use crate::evm::conversions::create_tx_env;
 
-pub(crate) fn execute_tx<DB: Database<Error = Infallible> + DatabaseCommit>(
+pub(crate) fn execute_tx<DB: Database<Error=Infallible> + DatabaseCommit>(
     db: DB,
     block_env: &BlockEnv,
     tx: &TransactionSignedEcRecovered,
@@ -35,8 +35,7 @@ pub(crate) fn execute_tx<DB: Database<Error = Infallible> + DatabaseCommit>(
     evm.transact_commit()
 }
 
-#[cfg(feature = "native")]
-pub(crate) fn inspect<DB: Database<Error = Infallible> + DatabaseCommit>(
+pub(crate) fn inspect<DB: Database<Error=Infallible> + DatabaseCommit>(
     db: DB,
     block_env: &BlockEnv,
     tx: revm::primitives::TxEnv,

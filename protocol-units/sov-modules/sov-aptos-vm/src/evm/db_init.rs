@@ -1,9 +1,11 @@
+use aptos_sdk::types::account_address::AccountAddress;
 use reth_primitives::Bytes;
 #[cfg(test)]
 use revm::db::{CacheDB, EmptyDB};
 use revm::primitives::{Address, B256};
+use sov_modules_api::StateMapAccessor;
 
-use super::db::EvmDb;
+use super::db::AptosDb;
 use super::{AccountInfo, DbAccount};
 
 /// Initializes database with a predefined account.
@@ -12,8 +14,8 @@ pub(crate) trait InitEvmDb {
     fn insert_code(&mut self, code_hash: B256, code: Bytes);
 }
 
-impl<'a, S: sov_modules_api::Spec> InitEvmDb for EvmDb<'a, S> {
-    fn insert_account_info(&mut self, sender: Address, info: AccountInfo) {
+impl<'a, S: sov_modules_api::Spec> InitEvmDb for AptosDb<'a, S> {
+    fn insert_account_info(&mut self, sender: AccountAddress, info: AccountInfo) {
         let parent_prefix = self.accounts.prefix();
         let db_account = DbAccount::new_with_info(parent_prefix, sender, info);
 

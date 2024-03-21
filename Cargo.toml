@@ -12,7 +12,6 @@ members = [
 [workspace.features]
 sov-aptos = ["experimental"]
 
-
 [workspace.package]
 version = "0.3.0"
 edition = "2021"
@@ -60,7 +59,7 @@ sov-db = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", re
 sov-sequencer = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-rollup-interface = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-risc0-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-mock-zkvm = {  git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b"  }
+sov-mock-zkvm = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-first-read-last-write-cache = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-cli = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-mock-da = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
@@ -82,9 +81,10 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
 # to be avoid depenedency conflicts with other Sovereign Labs crates. 
-aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" } 
+aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
 aptos-consensus-types = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
-aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" } 
+aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
+aptos-db = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
 
 # https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
@@ -98,6 +98,23 @@ revm = { version = "5.0.0", default-features = false, features = ["serde"] }
 # Used just to be safe about breaking changes
 revm-primitives = { version = "=2.0.0", default-features = false }
 secp256k1 = { version = "0.27", default-features = false, features = ["global-context", "rand-std", "recovery"] }
+
+[workspace.lints.rust]
+dead_code = "deny"
+unused_imports = "deny"
+non_ascii_idents = "deny" # Bad for readability and it can also be a security vulnerability
+
+# In case you need inspiration for new lints to add to the list, this is a good
+# reference: <https://github.com/EmbarkStudios/rust-ecosystem/blob/6783ae1573d62f3f5439b8ff9e04bec191ec2eaf/lints.toml>.
+[workspace.lints.clippy]
+debug_assert_with_mut_call = "deny"
+inefficient_to_string = "deny"
+map_flatten = "deny"
+manual_ok_or = "deny"
+doc_link_with_quotes = "deny"
+match_same_arms = "deny"
+semicolon_if_nothing_returned = "deny"
+
 
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }

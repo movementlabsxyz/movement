@@ -2,6 +2,7 @@
 // similar as possible to upstream than clean it up.
 #![allow(clippy::match_same_arms)]
 
+use aptos_sdk::move_types::account_address::AccountAddress;
 use reth_primitives::BaseFeeParams;
 use revm::primitives::specification::SpecId;
 use revm::primitives::{Address, B256, U256};
@@ -48,7 +49,7 @@ impl DbAccount {
 
     pub(crate) fn new_with_info(
         parent_prefix: &Prefix,
-        address: Address,
+        address: AccountAddress,
         info: AccountInfo,
     ) -> Self {
         let prefix = Self::create_storage_prefix(parent_prefix, address);

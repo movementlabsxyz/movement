@@ -11,7 +11,7 @@ use revm::primitives::{
     KECCAK_EMPTY, U256,
 };
 use sov_modules_api::macros::rpc_gen;
-use sov_modules_api::{DaSpec, WorkingSet};
+use sov_modules_api::{DaSpec, StateMapAccessor, StateValueAccessor, WorkingSet};
 use tracing::debug;
 
 use crate::evm::primitive_types::BlockTransactions;
@@ -19,15 +19,14 @@ use aptos_consensus_types::block::Block;
 use aptos_crypto::bls12381::Signature;
 
 use crate::call::get_cfg_env_with_handler;
-use crate::evm::db::EvmDb;
+use crate::evm::db::AptosDb;
 use crate::evm::error::rpc::{RevertError, RpcInvalidTransactionError};
 use crate::evm::executor;
 use crate::evm::primitive_types::{
     BlockEnv, Receipt, SealedBlock, SovAptosBlock, TransactionSignedAndRecovered,
 };
-use crate::experimental::{AptosVM, MIN_CREATE_GAS, MIN_TRANSACTION_GAS};
+use crate::experimental::AptosVM;
 use crate::helpers::prepare_call_env;
-use crate::{AptosVM, EthApiError};
 
 #[rpc_gen(client, server)]
 impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
@@ -81,7 +80,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             .map(|number| hex::encode(number.to_be_bytes()))
             .expect("Block number for known block hash must be set");
 
-        self.get_block_by_height(block_number_hex, details, working_set)
+        self.get_block_by_height(Some(block_number_hex), details, working_set)
     }
 
     /// Handler for: `get_block_by_height`
@@ -327,11 +326,11 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let block_env = match block_number {
             Some(ref block_number) if block_number == "pending" => {
                 self.block_env.get(working_set).unwrap_or_default().clone()
-            },
+            }
             _ => {
                 let block = self.get_sealed_block_by_number(block_number, working_set);
                 BlockEnv::from(&block)
-            },
+            }
         };
 
         let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
@@ -339,7 +338,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let cfg = self.cfg.get(working_set).unwrap_or_default();
         let cfg_env = get_cfg_env_with_handler(&block_env, cfg, Some(get_cfg_env_template()));
 
-        let evm_db: EvmDb<'_, S> = self.get_db(working_set);
+        let aptos_db: AptosDb<'_, S> = self.get_db(working_set);
 
         let result = match executor::inspect(evm_db, &block_env, tx_env, cfg_env) {
             Ok(result) => result.result,
@@ -374,11 +373,11 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let mut block_env = match block_number {
             Some(ref block_number) if block_number == "pending" => {
                 self.block_env.get(working_set).unwrap_or_default().clone()
-            },
+            }
             _ => {
                 let block = self.get_sealed_block_by_number(block_number, working_set);
                 BlockEnv::from(&block)
-            },
+            }
         };
 
         let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
@@ -464,8 +463,8 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             Ok(result) => match result.result {
                 ExecutionResult::Success { .. } => result.result,
                 ExecutionResult::Halt { reason, gas_used } => {
-                    return Err(RpcInvalidTransactionError::halt(reason, gas_used).into())
-                },
+                    return Err(RpcInvalidTransactionError::halt(reason, gas_used).into());
+                }
                 ExecutionResult::Revert { output, .. } => {
                     // if price or limit was included in the request,
                     // then we can execute the request
@@ -483,7 +482,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                                 .into(),
                         )
                     };
-                },
+                }
             },
             Err(err) => return Err(EthApiError::from(err).into()),
         };
@@ -537,24 +536,24 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                     ExecutionResult::Success { .. } => {
                         // cap the highest gas limit with succeeding gas limit
                         highest_gas_limit = mid_gas_limit;
-                    },
+                    }
                     ExecutionResult::Revert { .. } => {
                         // increase the lowest gas limit
                         lowest_gas_limit = mid_gas_limit;
-                    },
+                    }
                     ExecutionResult::Halt { reason, .. } => {
                         match reason {
                             HaltReason::OutOfGas(_) => {
                                 // increase the lowest gas limit
                                 lowest_gas_limit = mid_gas_limit;
-                            },
+                            }
                             err => {
                                 // these should be unreachable because we know the transaction succeeds,
                                 // but we consider these cases an error
                                 return Err(RpcInvalidTransactionError::EvmHalt(err).into());
-                            },
+                            }
                         }
-                    },
+                    }
                 },
                 Err(err) => return Err(EthApiError::from(err).into()),
             };
@@ -588,7 +587,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                 self.blocks
                     .get(block_number, &mut working_set.accessory_state())
                     .expect("Block must be set")
-            },
+            }
             None => self
                 .blocks
                 .last(&mut working_set.accessory_state())
@@ -692,11 +691,11 @@ fn map_out_of_gas_err<S: sov_modules_api::Spec>(
             // a transaction succeeded by manually increasing the gas limit to
             // highest, which means the caller lacks funds to pay for the tx
             RpcInvalidTransactionError::BasicOutOfGas(U256::from(req_gas_limit)).into()
-        },
+        }
         ExecutionResult::Revert { output, .. } => {
             // reverted again after bumping the limit
             RpcInvalidTransactionError::Revert(RevertError::new(output.into())).into()
-        },
+        }
         ExecutionResult::Halt { reason, .. } => RpcInvalidTransactionError::EvmHalt(reason).into(),
     }
 }

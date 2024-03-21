@@ -29,15 +29,16 @@ hex = { workspace = true }
 jsonrpsee = { workspace = true, features = [
     "macros",
     "client-core",
-    "server"], optional = true }
+    "server"] }
 tracing = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"
 secp256k1 = { workspace = true }
 
 aptos-sdk = { workspace = true }
-aptos-crypto = { workspace = true}
+aptos-crypto = { workspace = true }
 aptos-consensus-types = { workspace = true }
+aptos-db = { workspace = true }
 
 alloy-sol-types = { version = "0.6" }
 revm = { workspace = true, features = [
@@ -72,20 +73,19 @@ ethers-signers = { workspace = true, optional = true }
 [features]
 default = []
 native = [
-	"clap",
-	"jsonrpsee",
-	"reth-interfaces",
-	"reth-revm",
-	# Optional for speed up in native mode
-	# "revm/asm-keccak"
-	"schemars",
-	"serde_json",
-	"sov-chain-state/native",
+    "clap",
+    "reth-interfaces",
+    "reth-revm",
+    # Optional for speed up in native mode
+    # "revm/asm-keccak"
+    "schemars",
+    "serde_json",
+    "sov-chain-state/native",
 ]
 # For testing smart contract
 smart_contracts = [
-	"ethereum-types",
-	"ethers-contract",
-	"ethers-core",
-	"ethers-signers",
+    "ethereum-types",
+    "ethers-contract",
+    "ethers-core",
+    "ethers-signers",
 ]

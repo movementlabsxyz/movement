@@ -2,9 +2,11 @@ mod call;
 mod event;
 mod evm;
 mod genesis;
+mod helpers;
 mod rpc;
 mod signer;
-pub use experimental::Evm;
+
+pub use experimental::AptosVM;
 pub use signer::DevSigner;
 
 mod experimental {
@@ -14,14 +16,14 @@ mod experimental {
     use revm::primitives::Address;
     use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
     use sov_state::codec::BcsCodec;
+    use super::genesis::AptosConfig;
 
     use super::event::Event;
-    use super::evm::db::EvmDb;
+    use super::evm::db::AptosDb;
     use super::evm::{AptosChainConfig, DbAccount};
     use crate::evm::primitive_types::{
-        Block, BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
+        BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
     };
-    use crate::evm::{AptosChainConfig, EvmConfig};
 
     // @TODO: Check these vals. Make tracking issue.
     #[cfg(feature = "native")]
@@ -52,7 +54,7 @@ mod experimental {
         // @TODO: update to Aptos primitive type.
         #[state]
         pub(crate) code:
-            sov_modules_api::StateMap<revm::primitives::B256, reth_primitives::Bytes, BcsCodec>,
+        sov_modules_api::StateMap<revm::primitives::B256, reth_primitives::Bytes, BcsCodec>,
 
         /// Chain configuration. This field is set in genesis.
         #[state]
@@ -90,12 +92,12 @@ mod experimental {
         /// Used only by the RPC: List of processed transactions.
         #[state]
         pub(crate) transactions:
-            sov_modules_api::AccessoryStateVec<TransactionSignedAndRecovered, BcsCodec>,
+        sov_modules_api::AccessoryStateVec<TransactionSignedAndRecovered, BcsCodec>,
 
         /// Used only by the RPC: transaction_hash => transaction_index mapping.
         #[state]
         pub(crate) transaction_hashes:
-            sov_modules_api::AccessoryStateMap<revm::primitives::B256, u64, BcsCodec>,
+        sov_modules_api::AccessoryStateMap<revm::primitives::B256, u64, BcsCodec>,
 
         /// Used only by the RPC: Receipts.
         #[state]
@@ -108,7 +110,7 @@ mod experimental {
     impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for AptosVM<S, Da> {
         type Spec = S;
 
-        type Config = EvmConfig;
+        type Config = AptosConfig;
 
         type CallMessage = super::call::CallMessage;
 

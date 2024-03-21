@@ -7,7 +7,7 @@ use revm::primitives::{
 
 use super::primitive_types::{BlockEnv, RlpEvmTransaction};
 use super::AccountInfo;
-use crate::error::rpc::EthApiError;
+use crate::evm::error::rpc::EthApiError;
 
 impl From<AccountInfo> for ReVmAccountInfo {
     fn from(info: AccountInfo) -> Self {

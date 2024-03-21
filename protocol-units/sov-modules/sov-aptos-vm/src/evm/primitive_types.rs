@@ -28,13 +28,13 @@ impl Default for BlockEnv {
 
 /// RLP encoded evm transaction.
 #[derive(
-    borsh::BorshDeserialize,
-    borsh::BorshSerialize,
-    Debug,
-    PartialEq,
-    Clone,
-    serde::Serialize,
-    serde::Deserialize,
+borsh::BorshDeserialize,
+borsh::BorshSerialize,
+Debug,
+PartialEq,
+Clone,
+serde::Serialize,
+serde::Deserialize,
 )]
 pub struct RlpEvmTransaction {
     /// Rlp data.
@@ -79,10 +79,12 @@ impl From<TransactionSignedAndRecovered> for TransactionSignedEcRecovered {
 
 pub(crate) enum BlockTransactions {
     Full(Vec<Block>),
-    Signatures(Vec<Signature>) 
+    Signatures(Vec<Signature>),
 }
 
 pub(crate) struct SovAptosBlock {
     pub(crate) block: Block,
     pub(crate) transactions: BlockTransactions,
 }
+
+

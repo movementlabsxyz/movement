@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="EMPTY_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/m2/provers/risc0/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/m2/rollup/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/m2/rollup/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/m2/stf/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/protocol-units/sov-aptos/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/protocol-units/sov-modules/sov-aptos-vm/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.idea/copilot/chatSessions" />
+      <excludeFolder url="file://$MODULE_DIR$/target" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
