@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use aptos_crypto::HashValue;
 use reth_primitives::constants::{EMPTY_RECEIPTS, EMPTY_TRANSACTIONS};
 use reth_primitives::{Bloom, Bytes, EMPTY_OMMER_ROOT_HASH, KECCAK_EMPTY};
 use revm::primitives::{Address, SpecId, B256, U256};
 use sov_modules_api::{DaSpec, WorkingSet};
 
+use aptos_consensus_types::block::Block;
+
 use crate::evm::db_init::InitEvmDb;
-use crate::evm::primitive_types::Block;
-use crate::evm::{AccountInfo, EvmChainConfig};
-use crate::Evm;
+use crate::evm::{AccountInfo, AptosChainConfig};
+use crate::experimental::AptosVM;
+use crate::AptosVM;
 
 /// Evm account.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
@@ -80,7 +83,7 @@ impl Default for EvmConfig {
     }
 }
 
-impl<S: sov_modules_api::Spec, Da: DaSpec> Evm<S, Da> {
+impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
     pub(crate) fn init_module(
         &self,
         config: &<Self as sov_modules_api::Module>::Config,
@@ -124,7 +127,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> Evm<S, Da> {
             panic!("EVM spec must start from block 0");
         }
 
-        let chain_cfg = EvmChainConfig {
+        let chain_cfg = AptosChainConfig {
             chain_id: config.chain_id,
             limit_contract_code_size: config.limit_contract_code_size,
             spec,
@@ -164,10 +167,8 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> Evm<S, Da> {
             parent_beacon_block_root: None,
         };
 
-        let block = Block {
-            header,
-            transactions: 0u64..0u64,
-        };
+        // dummy Block
+        let block = Block::default();
 
         self.head.set(&block, working_set);
         #[cfg(feature = "native")]

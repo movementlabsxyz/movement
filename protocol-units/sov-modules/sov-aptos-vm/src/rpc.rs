@@ -1,5 +1,7 @@
 use std::array::TryFromSliceError;
 
+use aptos_consensus_types::common::Payload;
+use aptos_sdk::types::account_address::AccountAddress;
 use jsonrpsee::core::RpcResult;
 use reth_primitives::{TransactionKind, TransactionSignedEcRecovered, U128, U64};
 use reth_rpc_types_compat::block::from_primitive_with_hash;
@@ -12,14 +14,20 @@ use sov_modules_api::macros::rpc_gen;
 use sov_modules_api::{DaSpec, WorkingSet};
 use tracing::debug;
 
+use crate::evm::primitive_types::BlockTransactions;
+use aptos_consensus_types::block::Block;
+use aptos_crypto::bls12381::Signature;
+
 use crate::call::get_cfg_env_with_handler;
-use crate::error::rpc::{ensure_success, RevertError, RpcInvalidTransactionError};
 use crate::evm::db::EvmDb;
+use crate::evm::error::rpc::{RevertError, RpcInvalidTransactionError};
 use crate::evm::executor;
-use crate::evm::primitive_types::{BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered};
-use crate::experimental::{MIN_CREATE_GAS, MIN_TRANSACTION_GAS};
+use crate::evm::primitive_types::{
+    BlockEnv, Receipt, SealedBlock, SovAptosBlock, TransactionSignedAndRecovered,
+};
+use crate::experimental::{AptosVM, MIN_CREATE_GAS, MIN_TRANSACTION_GAS};
 use crate::helpers::prepare_call_env;
-use crate::{EthApiError, Evm};
+use crate::{AptosVM, EthApiError};
 
 #[rpc_gen(client, server)]
 impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
@@ -39,7 +47,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         Ok(chain_id.to_string())
     }
 
-    /// Handler for: `eth_chainId`
+    /// Handler for: `healthy`
     #[rpc_method(name = "healthy")]
     pub fn chain_id(&self, working_set: &mut WorkingSet<S>) -> RpcResult<Option<U64>> {
         let chain_id = self
@@ -54,31 +62,31 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         Ok(Some(U64::from(chain_id)))
     }
 
-    /// Handler for `eth_getBlockByHash`
-    #[rpc_method(name = "eth_getBlockByHash")]
-    pub fn get_block_by_hash(
+    /// Handler for `get_block_by_signature`
+    #[rpc_method(name = "get_block_by_signature")]
+    pub fn get_block_by_signature(
         &self,
-        block_hash: B256,
+        signature: Signature,
         details: Option<bool>,
         working_set: &mut WorkingSet<S>,
     ) -> RpcResult<Option<reth_rpc_types::RichBlock>> {
         debug!(
-            ?block_hash,
-            "EVM module JSON-RPC request to `eth_getBlockByHash`"
+            ?signature,
+            "AptosVM module JSON-RPC request to `get_block_by_signature`"
         );
 
         let block_number_hex = self
             .block_hashes
-            .get(&block_hash, &mut working_set.accessory_state())
+            .get(&signature, &mut working_set.accessory_state())
             .map(|number| hex::encode(number.to_be_bytes()))
             .expect("Block number for known block hash must be set");
 
-        self.get_block_by_number(Some(block_number_hex), details, working_set)
+        self.get_block_by_height(block_number_hex, details, working_set)
     }
 
-    /// Handler for: `eth_getBlockByNumber`
-    #[rpc_method(name = "eth_getBlockByNumber")]
-    pub fn get_block_by_number(
+    /// Handler for: `get_block_by_height`
+    #[rpc_method(name = "get_block_by_height")]
+    pub fn get_block_by_height(
         &self,
         block_number: Option<String>,
         details: Option<bool>,
@@ -86,65 +94,33 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
     ) -> RpcResult<Option<reth_rpc_types::RichBlock>> {
         debug!(
             block_number,
-            "EVM module JSON-RPC request to `eth_getBlockByNumber`"
+            "AptosVM module JSON-RPC request to `get_block_by_height`"
         );
 
-        let block = self.get_sealed_block_by_number(block_number, working_set);
+        let block: Block = self.get_sealed_block_by_number(block_number, working_set);
 
         // Build rpc header response
         let header = from_primitive_with_hash(block.header.clone());
 
-        // Collect transactions with ids from db
-        let transactions_with_ids = block.transactions.clone().map(|id| {
-            let tx = self
-                .transactions
-                .get(id as usize, &mut working_set.accessory_state())
-                .expect("Transaction must be set");
-            (id, tx)
-        });
-
-        // Build rpc transactions response
-        let transactions = match details {
-            Some(true) => reth_rpc_types::BlockTransactions::Full(
-                transactions_with_ids
-                    .map(|(id, tx)| {
-                        from_recovered_with_block_context(
-                            tx.clone().into(),
-                            block.header.hash(),
-                            block.header.number,
-                            block.header.base_fee_per_gas,
-                            U256::from(id - block.transactions.start),
-                        )
-                    })
-                    .collect::<Vec<_>>(),
-            ),
-            _ => reth_rpc_types::BlockTransactions::Hashes({
-                transactions_with_ids
-                    .map(|(_, tx)| tx.signed_transaction.hash)
-                    .collect::<Vec<_>>()
-            }),
+        let payload = block.payload().expect("No payload in block");
+        let transactions = match payload {
+            Payload::DirectMempool(txs) => txs,
+            _ => panic!("Only DirectMempool payload is supported"), // add proper error
         };
 
-        // Build rpc block response
-        let total_difficulty = Some(block.header.difficulty);
-        let block = reth_rpc_types::Block {
-            header,
-            total_difficulty,
-            transactions,
-            uncles: Default::default(),
-            size: Default::default(),
-            withdrawals: Default::default(),
-            other: Default::default(),
+        let block = SovAptosBlock {
+            block,
+            transactions: BlockTransactions::Full(transactions),
         };
 
         Ok(Some(block.into()))
     }
 
-    /// Handler for: `eth_getBalance`
-    #[rpc_method(name = "eth_getBalance")]
+    /// Handler for: `get_balance`
+    #[rpc_method(name = "get_balance")]
     pub fn get_balance(
         &self,
-        address: Address,
+        address: AccountAddress,
         _block_number: Option<String>,
         working_set: &mut WorkingSet<S>,
     ) -> RpcResult<U256> {
@@ -153,14 +129,14 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 
         let balance = self
             .accounts
-            .get(&address, working_set)
+            .get(&address.to_standard_string(), working_set)
             .map(|account| account.info.balance)
             .unwrap_or_default();
 
         debug!(
             %address,
             %balance,
-            "EVM module JSON-RPC request to `eth_getBalance`"
+            "AptosVM module JSON-RPC request to `get_balance`"
         );
 
         Ok(balance)
@@ -252,7 +228,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 
     /// Handler for: `eth_getTransactionByHash`
     // TODO https://github.com/Sovereign-Labs/sovereign-sdk/issues/502
-    #[rpc_method(name = "eth_getTransactionByHash")]
+    #[rpc_method(name = "get_transaction_by_hash")]
     pub fn get_transaction_by_hash(
         &self,
         hash: B256,
@@ -351,11 +327,11 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let block_env = match block_number {
             Some(ref block_number) if block_number == "pending" => {
                 self.block_env.get(working_set).unwrap_or_default().clone()
-            }
+            },
             _ => {
                 let block = self.get_sealed_block_by_number(block_number, working_set);
                 BlockEnv::from(&block)
-            }
+            },
         };
 
         let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
@@ -398,11 +374,11 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let mut block_env = match block_number {
             Some(ref block_number) if block_number == "pending" => {
                 self.block_env.get(working_set).unwrap_or_default().clone()
-            }
+            },
             _ => {
                 let block = self.get_sealed_block_by_number(block_number, working_set);
                 BlockEnv::from(&block)
-            }
+            },
         };
 
         let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
@@ -489,7 +465,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                 ExecutionResult::Success { .. } => result.result,
                 ExecutionResult::Halt { reason, gas_used } => {
                     return Err(RpcInvalidTransactionError::halt(reason, gas_used).into())
-                }
+                },
                 ExecutionResult::Revert { output, .. } => {
                     // if price or limit was included in the request,
                     // then we can execute the request
@@ -507,7 +483,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                                 .into(),
                         )
                     };
-                }
+                },
             },
             Err(err) => return Err(EthApiError::from(err).into()),
         };
@@ -561,24 +537,24 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                     ExecutionResult::Success { .. } => {
                         // cap the highest gas limit with succeeding gas limit
                         highest_gas_limit = mid_gas_limit;
-                    }
+                    },
                     ExecutionResult::Revert { .. } => {
                         // increase the lowest gas limit
                         lowest_gas_limit = mid_gas_limit;
-                    }
+                    },
                     ExecutionResult::Halt { reason, .. } => {
                         match reason {
                             HaltReason::OutOfGas(_) => {
                                 // increase the lowest gas limit
                                 lowest_gas_limit = mid_gas_limit;
-                            }
+                            },
                             err => {
                                 // these should be unreachable because we know the transaction succeeds,
                                 // but we consider these cases an error
                                 return Err(RpcInvalidTransactionError::EvmHalt(err).into());
-                            }
+                            },
                         }
-                    }
+                    },
                 },
                 Err(err) => return Err(EthApiError::from(err).into()),
             };
@@ -594,7 +570,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         &self,
         block_number: Option<String>,
         working_set: &mut WorkingSet<S>,
-    ) -> SealedBlock {
+    ) -> Block {
         // safe, finalized, and pending are not supported
         match block_number {
             Some(ref block_number) if block_number == "earliest" => self
@@ -612,7 +588,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                 self.blocks
                     .get(block_number, &mut working_set.accessory_state())
                     .expect("Block must be set")
-            }
+            },
             None => self
                 .blocks
                 .last(&mut working_set.accessory_state())
@@ -716,11 +692,11 @@ fn map_out_of_gas_err<S: sov_modules_api::Spec>(
             // a transaction succeeded by manually increasing the gas limit to
             // highest, which means the caller lacks funds to pay for the tx
             RpcInvalidTransactionError::BasicOutOfGas(U256::from(req_gas_limit)).into()
-        }
+        },
         ExecutionResult::Revert { output, .. } => {
             // reverted again after bumping the limit
             RpcInvalidTransactionError::Revert(RevertError::new(output.into())).into()
-        }
+        },
         ExecutionResult::Halt { reason, .. } => RpcInvalidTransactionError::EvmHalt(reason).into(),
     }
 }

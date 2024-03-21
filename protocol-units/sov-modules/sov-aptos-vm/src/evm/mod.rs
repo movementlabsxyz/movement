@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use sov_modules_api::StateMap;
 use sov_state::Prefix;
 
-pub(crate) mod call;
+//pub(crate) mod call;
 pub(crate) mod conversions;
 pub(crate) mod db;
 mod db_commit;
@@ -17,8 +17,7 @@ pub(crate) mod db_init;
 pub(crate) mod error;
 pub(crate) mod executor;
 pub(crate) mod primitive_types;
-#[cfg(test)]
-mod tests;
+
 
 pub use primitive_types::RlpEvmTransaction;
 use sov_state::codec::BcsCodec;
@@ -68,9 +67,9 @@ impl DbAccount {
 
 /// EVM Chain configuration
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct EvmChainConfig {
+pub struct AptosChainConfig {
     /// Unique chain id
-    /// Chains can be registered at <https://github.com/ethereum-lists/chains>.
+    /// Chains can be registered at <https://aptos.dev/nodes/networks/>.
     pub chain_id: u64,
 
     /// Limits size of contract code size
@@ -93,9 +92,9 @@ pub struct EvmChainConfig {
     pub base_fee_params: BaseFeeParams,
 }
 
-impl Default for EvmChainConfig {
-    fn default() -> EvmChainConfig {
-        EvmChainConfig {
+impl Default for AptosChainConfig {
+    fn default() -> AptosChainConfig {
+        AptosChainConfig {
             chain_id: 1,
             limit_contract_code_size: None,
             spec: vec![(0, SpecId::SHANGHAI)],

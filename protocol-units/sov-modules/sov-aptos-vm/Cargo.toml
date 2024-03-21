@@ -29,8 +29,7 @@ hex = { workspace = true }
 jsonrpsee = { workspace = true, features = [
     "macros",
     "client-core",
-    "server",
-], optional = true }
+    "server"], optional = true }
 tracing = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"

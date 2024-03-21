@@ -1,8 +1,8 @@
 use std::ops::Range;
 
-use aptos_crypto::hash::HashValue;
+use aptos_crypto::{bls12381::Signature, hash::HashValue};
 use aptos_sdk::types::account_address::AccountAddress;
-use aptos_consensus_types::block_data::BlockData;
+use aptos_consensus_types::{block::Block, block_data::BlockData};
 use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
 use revm::primitives::{Address, EVMError, B256};
 
@@ -10,42 +10,18 @@ use revm::primitives::{Address, EVMError, B256};
 pub(crate) struct BlockEnv {
     /// This block's id as a hash value, it is generated at call time
     pub(crate) id: HashValue,
-    /// A coinbase account
+    /// The account for fees 
     pub(crate) coinbase: AccountAddress,
     /// The container for the actual block
     pub(crate) block_data: BlockData,
-    pub(crate) timestamp: u64,
-    /// Prevrandao is used after Paris (aka TheMerge) instead of the difficulty value.
-    pub(crate) prevrandao: B256,
-    /// basefee is added in EIP1559 London upgrade
-    pub(crate) basefee: u64,
-    pub(crate) gas_limit: u64,
 }
 
 impl Default for BlockEnv {
     fn default() -> Self {
         Self {
-            number: Default::default(),
+            id: Default::default(),
             coinbase: Default::default(),
-            timestamp: Default::default(),
-            prevrandao: Default::default(),
-            basefee: Default::default(),
-            // @TODO: Check this value, make tracking issue.
-            gas_limit: reth_primitives::constants::ETHEREUM_BLOCK_GAS_LIMIT,
-        }
-    }
-}
-
-// BlockEnv from SealedBlock
-impl From<&SealedBlock> for BlockEnv {
-    fn from(block: &SealedBlock) -> Self {
-        Self {
-            number: block.header.number,
-            coinbase: block.header.beneficiary,
-            timestamp: block.header.timestamp,
-            prevrandao: block.header.mix_hash,
-            basefee: block.header.base_fee_per_gas.unwrap_or_default(),
-            gas_limit: block.header.gas_limit,
+            block_data: Default::default(),
         }
     }
 }
@@ -76,24 +52,6 @@ pub(crate) struct TransactionSignedAndRecovered {
 }
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub(crate) struct Block {
-    /// Block header.
-    pub(crate) header: Header,
-
-    /// Transactions in this block.
-    pub(crate) transactions: Range<u64>,
-}
-
-impl Block {
-    pub(crate) fn seal(self) -> SealedBlock {
-        SealedBlock {
-            header: self.header.seal_slow(),
-            transactions: self.transactions,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct SealedBlock {
     /// Block header.
     pub(crate) header: SealedHeader,
@@ -117,4 +75,14 @@ impl From<TransactionSignedAndRecovered> for TransactionSignedEcRecovered {
             value.signer,
         )
     }
+}
+
+pub(crate) enum BlockTransactions {
+    Full(Vec<Block>),
+    Signatures(Vec<Signature>) 
+}
+
+pub(crate) struct SovAptosBlock {
+    pub(crate) block: Block,
+    pub(crate) transactions: BlockTransactions,
 }

@@ -1,24 +1,27 @@
-mod evm;
+mod call;
 mod event;
-mod signer;
+mod evm;
 mod genesis;
+mod rpc;
+mod signer;
 pub use experimental::Evm;
 pub use signer::DevSigner;
 
 mod experimental {
-    use revm::primitives::Address;
+    use aptos_consensus_types::block::Block;
+    use aptos_crypto::bls12381::Signature;
     use aptos_sdk::types::account_address::AccountAddress;
-    use aptos_sdk::types::bl
+    use revm::primitives::Address;
     use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
     use sov_state::codec::BcsCodec;
 
     use super::event::Event;
     use super::evm::db::EvmDb;
-    use super::evm::{DbAccount, EvmChainConfig};
+    use super::evm::{AptosChainConfig, DbAccount};
     use crate::evm::primitive_types::{
         Block, BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
     };
-    use crate::evm::EvmConfig;
+    use crate::evm::{AptosChainConfig, EvmConfig};
 
     // @TODO: Check these vals. Make tracking issue.
     #[cfg(feature = "native")]
@@ -43,16 +46,17 @@ mod experimental {
 
         /// Mapping from account address to account state.
         #[state]
-        pub(crate) accounts: sov_modules_api::StateMap<Address, DbAccount, BcsCodec>,
+        pub(crate) accounts: sov_modules_api::StateMap<AccountAddress, DbAccount, BcsCodec>,
 
         /// Mapping from code hash to code. Used for lazy-loading code into a contract account.
+        // @TODO: update to Aptos primitive type.
         #[state]
         pub(crate) code:
             sov_modules_api::StateMap<revm::primitives::B256, reth_primitives::Bytes, BcsCodec>,
 
         /// Chain configuration. This field is set in genesis.
         #[state]
-        pub(crate) cfg: sov_modules_api::StateValue<EvmChainConfig, BcsCodec>,
+        pub(crate) cfg: sov_modules_api::StateValue<AptosChainConfig, BcsCodec>,
 
         /// Block environment used by the evm. This field is set in `begin_slot_hook`.
         #[state]
@@ -77,12 +81,11 @@ mod experimental {
 
         /// Used only by the RPC: The vec is extended with `pending_head` in `finalize_hook`.
         #[state]
-        pub(crate) blocks: sov_modules_api::AccessoryStateVec<SealedBlock, BcsCodec>,
+        pub(crate) blocks: sov_modules_api::AccessoryStateVec<Block, BcsCodec>,
 
-        /// Used only by the RPC: block_hash => block_number mapping.
+        /// Used only by the RPC: block.signature => block_number mapping.
         #[state]
-        pub(crate) block_hashes:
-            sov_modules_api::AccessoryStateMap<revm::primitives::B256, u64, BcsCodec>,
+        pub(crate) block_hashes: sov_modules_api::AccessoryStateMap<Signature, u64, BcsCodec>,
 
         /// Used only by the RPC: List of processed transactions.
         #[state]
@@ -102,7 +105,7 @@ mod experimental {
         pub(crate) chain_state: sov_chain_state::ChainState<S, Da>,
     }
 
-    impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for Evm<S, Da> {
+    impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for AptosVM<S, Da> {
         type Spec = S;
 
         type Config = EvmConfig;
@@ -129,7 +132,7 @@ mod experimental {
         }
     }
 
-    impl<S: sov_modules_api::Spec, Da: DaSpec> Evm<S, Da> {
+    impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> EvmDb<'a, S> {
             EvmDb::new(self.accounts.clone(), self.code.clone(), working_set)
         }
