@@ -1,14 +1,12 @@
 use crate::evm::primitive_types::AptosStorage;
-use aptos_api_types::{Address, HexEncodedBytes};
+use aptos_api_types::{Address, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 use aptos_sdk::rest_client::Account;
 use reth_primitives::Bytes;
-use revm::primitives::{AccountInfo as ReVmAccountInfo, Bytecode, B256, U256};
-use revm::Database;
 use sov_modules_api::{StateMapAccessor, WorkingSet};
 use sov_state::codec::BcsCodec;
 use std::convert::Infallible;
 
-use super::DbAccount;
+use super::{AccountInfo, DbAccount};
 
 /// The Aptos Database structure for storing and working with accounts and their modules.
 pub(crate) struct AptosDb<'a, S: sov_modules_api::Spec> {
@@ -34,13 +32,16 @@ impl<'a, S: sov_modules_api::Spec> AptosDb<'a, S> {
 impl<'a, S: sov_modules_api::Spec> AptosStorage for AptosDb<'a, S> {
 	type Error = Infallible;
 
-	fn account(&mut self, account: Account) -> Result<Option<ReVmAccountInfo>, Self::Error> {
-		let db_account =
-			self.accounts.get(&Address::from(account.authentication_key), self.working_set);
-		Ok(db_account.map(|acc| acc.info.into()))
+	fn account(&mut self, account: Account) -> Result<AccountInfo, Self::Error> {
+		let db_account = self
+			.accounts
+			.get(&Address::from(account.authentication_key.account_address()), self.working_set)
+			.expect("Account not found");
+
+		Ok(db_account.info)
 	}
 
-	fn resources(&mut self, account: Account) -> Result<Bytecode, Self::Error> {
+	fn resources(&mut self, account: Account) -> Result<Vec<MoveResource>, Self::Error> {
 		// TODO move to new_raw_with_hash for better performance
 		// let bytecode =
 		// 	Bytecode::new_raw(self.code.get(&code_hash, self.working_set).unwrap_or_default());
@@ -49,7 +50,7 @@ impl<'a, S: sov_modules_api::Spec> AptosStorage for AptosDb<'a, S> {
 		todo!("resources not yet implemented")
 	}
 
-	fn modules(&mut self, account: Account) -> Result<U256, Self::Error> {
+	fn modules(&mut self, account: Account) -> Result<Vec<MoveModuleBytecode>, Self::Error> {
 		// let storage_value: U256 = if let Some(acc) = self.accounts.get(&address, self.working_set) {
 		// 	acc.storage.get(&index, self.working_set).unwrap_or_default()
 		// } else {

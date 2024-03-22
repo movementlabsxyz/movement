@@ -11,10 +11,9 @@ pub use signer::DevSigner;
 
 mod experimental {
 	use super::genesis::AptosConfig;
-	use aptos_api_types::Address;
+	use aptos_api_types::{Address, HexEncodedBytes};
 	use aptos_consensus_types::block::Block;
 	use aptos_crypto::bls12381::Signature;
-	use aptos_sdk::types::account_address::AccountAddress;
 	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
 	use sov_state::codec::BcsCodec;
 
@@ -54,7 +53,7 @@ mod experimental {
 		// @TODO: update to Aptos primitive type.
 		#[state]
 		pub(crate) code:
-			sov_modules_api::StateMap<revm::primitives::B256, reth_primitives::Bytes, BcsCodec>,
+			sov_modules_api::StateMap<HexEncodedBytes, reth_primitives::Bytes, BcsCodec>,
 
 		/// Chain configuration. This field is set in genesis.
 		#[state]

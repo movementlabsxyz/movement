@@ -1,6 +1,7 @@
 use aptos_api_types::{AccountData, MoveModuleBytecode, MoveResource};
 use std::ops::Range;
 
+use crate::evm::AccountInfo;
 use aptos_consensus_types::{block::Block, block_data::BlockData};
 use aptos_crypto::{bls12381::Signature, hash::HashValue};
 use aptos_sdk::rest_client::Account;
@@ -16,7 +17,7 @@ pub trait AptosStorage {
 	type Error;
 
 	/// Get basic account information.
-	fn account(&mut self, account: Account) -> Result<AccountData, Self::Error>;
+	fn account(&mut self, account: Account) -> Result<AccountInfo, Self::Error>;
 
 	/// Get Move resources for an account.
 	fn resources(&mut self, account: Account) -> Result<Vec<MoveResource>, Self::Error>;

@@ -2,16 +2,12 @@
 // similar as possible to upstream than clean it up.
 #![allow(clippy::match_same_arms)]
 
-use poem_openapi::param::Path;
-use reth_primitives::BaseFeeParams;
-use revm::primitives::specification::SpecId;
-use revm::primitives::{B256, U256};
+use revm::primitives::U256;
 use serde::{Deserialize, Serialize};
 use sov_modules_api::StateMap;
 use sov_state::Prefix;
 
 //pub(crate) mod call;
-pub(crate) mod conversions;
 pub(crate) mod db;
 mod db_commit;
 pub(crate) mod db_init;
@@ -26,16 +22,15 @@ use sov_state::codec::BcsCodec;
 
 const PLACEHOLDER_APTOS_BLOCK_LIMIT: u64 = 1000;
 const PLACEHOLDER_APTOS_CHAIN_ID: u64 = 1;
-const PLACEHOLDER_APTOS_COINBASE: Address = Address::from(AccountAddress::random());
 const PLACEHOLDER_APTOS_BLOCK_TIMESTAMP_DELTA: u64 = 1;
 const PLACEHOLDER_APTOS_BASE_FEE: u64 = 0;
 
 // Stores information about an Aptos account
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub(crate) struct AccountInfo {
 	pub(crate) public_key: HexEncodedBytes,
 	pub(crate) resources: Vec<MoveModuleBytecode>,
-	pub(crate) modules: <Vec<MoveResource>,
+	pub(crate) modules: Vec<MoveResource>,
 	pub(crate) sequence_number: U64,
 }
 
@@ -49,7 +44,15 @@ pub(crate) struct DbAccount {
 impl DbAccount {
 	fn new(parent_prefix: &Prefix, address: Address) -> Self {
 		let prefix = Self::create_storage_prefix(parent_prefix, address);
-		Self { info: Default::default(), storage: StateMap::with_codec(prefix, BcsCodec {}) }
+		Self {
+			info: AccountInfo {
+				public_key: HexEncodedBytes::from(vec![0]),
+				resources: Vec::new(),
+				modules: Vec::new(),
+				sequence_number: U64::default(),
+			},
+			storage: StateMap::with_codec(prefix, BcsCodec {}),
+		}
 	}
 
 	pub(crate) fn new_with_info(
@@ -61,10 +64,9 @@ impl DbAccount {
 		Self { info, storage: StateMap::with_codec(prefix, BcsCodec {}) }
 	}
 
+	// Not sure what this function does for the evm-module
 	fn create_storage_prefix(parent_prefix: &Prefix, address: Address) -> Prefix {
-		let mut prefix = parent_prefix.as_aligned_vec().clone().into_inner();
-		prefix.extend_from_slice(address.as_slice());
-		Prefix::new(prefix)
+		todo!()
 	}
 }
 
@@ -97,7 +99,7 @@ impl Default for AptosChainConfig {
 		AptosChainConfig {
 			chain_id: 1,
 			limit_module_code_size: None,
-			coinbase: PLACEHOLDER_APTOS_COINBASE,
+			coinbase: Address::from(AccountAddress::random()),
 			block_gas_limit: PLACEHOLDER_APTOS_BLOCK_LIMIT,
 			block_timestamp_delta: PLACEHOLDER_APTOS_BLOCK_TIMESTAMP_DELTA,
 			base_fee: PLACEHOLDER_APTOS_BASE_FEE,

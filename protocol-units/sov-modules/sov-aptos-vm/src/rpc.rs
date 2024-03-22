@@ -1,34 +1,22 @@
 use std::array::TryFromSliceError;
 
-use aptos_consensus_types::common::Payload;
-use aptos_sdk::types::account_address::AccountAddress;
 use jsonrpsee::core::RpcResult;
-use reth_primitives::{TransactionKind, TransactionSignedEcRecovered, U128};
-use reth_rpc_types_compat::block::from_primitive_with_hash;
-use reth_rpc_types_compat::transaction::from_recovered_with_block_context;
+use reth_primitives::{TransactionSignedEcRecovered, U128};
 use revm::primitives::{
-	EVMError, ExecutionResult, HaltReason, InvalidTransaction, TransactTo, B256, KECCAK_EMPTY, U256,
+	ExecutionResult, HaltReason, InvalidTransaction, TransactTo, B256, KECCAK_EMPTY, U256,
 };
 use sov_modules_api::macros::rpc_gen;
 use sov_modules_api::{DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor, WorkingSet};
 use tracing::debug;
 
-use crate::evm::primitive_types::BlockTransactions;
-
 use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
-use aptos_consensus_types::block::Block;
 use aptos_crypto::bls12381::Signature;
 
-use crate::call::get_cfg_env_with_handler;
 use crate::evm::db::AptosDb;
 use crate::evm::error::rpc::EthApiError;
-use crate::evm::error::rpc::{RevertError, RpcInvalidTransactionError};
-use crate::evm::executor;
-use crate::evm::primitive_types::{
-	BlockEnv, Receipt, SealedBlock, SovAptosBlock, TransactionSignedAndRecovered,
-};
+use crate::evm::error::rpc::RpcInvalidTransactionError;
+use crate::evm::primitive_types::{BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered};
 use crate::experimental::AptosVM;
-use crate::helpers::prepare_call_env;
 
 #[rpc_gen(client, server)]
 impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
