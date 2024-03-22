@@ -11,7 +11,7 @@ use revm::primitives::{
     KECCAK_EMPTY, U256,
 };
 use sov_modules_api::macros::rpc_gen;
-use sov_modules_api::{DaSpec, StateMapAccessor, StateValueAccessor, WorkingSet};
+use sov_modules_api::{DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor, WorkingSet};
 use tracing::debug;
 
 use crate::evm::primitive_types::BlockTransactions;
@@ -25,6 +25,7 @@ use crate::evm::executor;
 use crate::evm::primitive_types::{
     BlockEnv, Receipt, SealedBlock, SovAptosBlock, TransactionSignedAndRecovered,
 };
+use crate::evm::error::rpc::EthApiError;
 use crate::experimental::AptosVM;
 use crate::helpers::prepare_call_env;
 
@@ -96,30 +97,31 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             "AptosVM module JSON-RPC request to `get_block_by_height`"
         );
 
-        let block: Block = self.get_sealed_block_by_number(block_number, working_set);
+        let block = self.get_sealed_block_by_number(block_number, working_set);
 
         // Build rpc header response
-        let header = from_primitive_with_hash(block.header.clone());
+        //let header = from_primitive_with_hash(block.header.clone());
 
-        let payload = block.payload().expect("No payload in block");
-        let transactions = match payload {
-            Payload::DirectMempool(txs) => txs,
-            _ => panic!("Only DirectMempool payload is supported"), // add proper error
-        };
-
-        let block = SovAptosBlock {
-            block,
-            transactions: BlockTransactions::Full(transactions),
-        };
-
-        Ok(Some(block.into()))
+        // let payload = block.payload().expect("No payload in block");
+        // let transactions = match payload {
+        //     Payload::DirectMempool(txs) => txs,
+        //     _ => panic!("Only DirectMempool payload is supported"), // add proper error
+        // };
+        //
+        // let block = SovAptosBlock {
+        //     block,
+        //     transactions: BlockTransactions::Full(transactions),
+        // };
+        //
+        // Ok(Some(block.into()))
+        todo!()
     }
 
     /// Handler for: `get_balance`
     #[rpc_method(name = "get_balance")]
     pub fn get_balance(
         &self,
-        address: AccountAddress,
+        address: Address,
         _block_number: Option<String>,
         working_set: &mut WorkingSet<S>,
     ) -> RpcResult<U256> {
@@ -128,7 +130,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 
         let balance = self
             .accounts
-            .get(&address.to_standard_string(), working_set)
+            .get(&address, working_set)
             .map(|account| account.info.balance)
             .unwrap_or_default();
 
@@ -252,14 +254,6 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                 .unwrap_or_else(|| panic!("Block with number {} for known transaction {} must be set",
                                           tx.block_number,
                                           tx.signed_transaction.hash));
-
-            from_recovered_with_block_context(
-                tx.into(),
-                block.header.hash(),
-                block.header.number,
-                block.header.base_fee_per_gas,
-                U256::from(tx_number.unwrap() - block.transactions.start),
-            )
         });
 
         debug!(
@@ -268,7 +262,8 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             "EVM module JSON-RPC request to `eth_getTransactionByHash`"
         );
 
-        Ok(transaction)
+        todo!()
+        //Ok(transaction)
     }
 
     /// Handler for: `eth_getTransactionReceipt`
@@ -298,15 +293,16 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
                 .get(tx.block_number as usize, &mut accessory_state)
                 .expect("Block number for known transaction must be set");
 
-            let receipt = self
+            self
                 .receipts
                 .get(tx_number.unwrap() as usize, &mut accessory_state)
-                .expect("Receipt for known transaction must be set");
+                .expect("Receipt for known transaction must be set")
 
-            build_rpc_receipt(block, tx, tx_number.unwrap(), receipt)
+            //build_rpc_receipt(block, tx, tx_number.unwrap(), receipt)
         });
 
-        Ok(receipt)
+        todo!()
+        //Ok(receipt)
     }
 
     /// Handler for: `eth_call`
@@ -329,23 +325,24 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             }
             _ => {
                 let block = self.get_sealed_block_by_number(block_number, working_set);
-                BlockEnv::from(&block)
+                BlockEnv::from(block)
             }
         };
 
-        let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
+        // let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
+        //
+        // let cfg = self.cfg.get(working_set).unwrap_or_default();
+        // let cfg_env = get_cfg_env_with_handler(&block_env, cfg, Some(get_cfg_env_template()));
+        //
+        // let aptos_db: AptosDb<'_, S> = self.get_db(working_set);
 
-        let cfg = self.cfg.get(working_set).unwrap_or_default();
-        let cfg_env = get_cfg_env_with_handler(&block_env, cfg, Some(get_cfg_env_template()));
+        // let result = match executor::inspect(aptos_db, &block_env, tx_env, cfg_env) {
+        //     Ok(result) => result.result,
+        //     Err(err) => return Err(AptosApiError::from(err).into()),
+        // };
 
-        let aptos_db: AptosDb<'_, S> = self.get_db(working_set);
-
-        let result = match executor::inspect(evm_db, &block_env, tx_env, cfg_env) {
-            Ok(result) => result.result,
-            Err(err) => return Err(EthApiError::from(err).into()),
-        };
-
-        Ok(ensure_success(result)?)
+        // Ok(result?)
+        todo!()
     }
 
     /// Handler for: `eth_blockNumber`
@@ -360,239 +357,13 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         ))
     }
 
-    /// Handler for: `eth_estimateGas`
-    // https://github.com/paradigmxyz/reth/blob/main/crates/rpc/rpc/src/eth/api/call.rs#L172
-    #[rpc_method(name = "eth_estimateGas")]
-    pub fn eth_estimate_gas(
-        &self,
-        request: reth_rpc_types::TransactionRequest,
-        block_number: Option<String>,
-        working_set: &mut WorkingSet<S>,
-    ) -> RpcResult<U64> {
-        debug!("EVM module JSON-RPC request to `eth_estimateGas`");
-        let mut block_env = match block_number {
-            Some(ref block_number) if block_number == "pending" => {
-                self.block_env.get(working_set).unwrap_or_default().clone()
-            }
-            _ => {
-                let block = self.get_sealed_block_by_number(block_number, working_set);
-                BlockEnv::from(&block)
-            }
-        };
-
-        let tx_env = prepare_call_env(&block_env, request.clone()).unwrap();
-
-        let cfg = self.cfg.get(working_set).unwrap_or_default();
-        let cfg_env_with_handler =
-            get_cfg_env_with_handler(&block_env, cfg, Some(get_cfg_env_template()));
-
-        let request_gas = request.gas;
-        let request_gas_price = request.gas_price;
-        let env_gas_limit = block_env.gas_limit;
-
-        // get the highest possible gas limit, either the request's set value or the currently
-        // configured gas limit
-        let mut highest_gas_limit = request.gas.unwrap_or(U256::from(env_gas_limit));
-
-        let account = self
-            .accounts
-            .get(&tx_env.caller, working_set)
-            .map(|account| account.info)
-            .unwrap_or_default();
-
-        // if the request is a simple transfer, can we optimize?
-        if tx_env.data.is_empty() {
-            if let TransactTo::Call(to) = tx_env.transact_to {
-                let to_account = self
-                    .accounts
-                    .get(&to, working_set)
-                    .map(|account| account.info)
-                    .unwrap_or_default();
-                if KECCAK_EMPTY == to_account.code_hash {
-                    // simple transfer, check if caller has sufficient funds
-                    let available_funds = account.balance;
-
-                    if tx_env.value > available_funds {
-                        return Err(RpcInvalidTransactionError::InsufficientFundsForTransfer.into());
-                    }
-                    return Ok(U64::from(MIN_TRANSACTION_GAS));
-                }
-            }
-        }
-
-        // check funds of the sender
-        if tx_env.gas_price > U256::ZERO {
-            // allowance is (balance - tx.value) / tx.gas_price
-            let allowance = (account.balance - tx_env.value) / tx_env.gas_price;
-
-            if highest_gas_limit > allowance {
-                // cap the highest gas limit by max gas caller can afford with a given gas price
-                highest_gas_limit = allowance;
-            }
-        }
-
-        // if the provided gas limit is less than computed cap, use that
-        let gas_limit = std::cmp::min(U256::from(tx_env.gas_limit), highest_gas_limit);
-        block_env.gas_limit = convert_u256_to_u64(gas_limit).unwrap();
-
-        let evm_db = self.get_db(working_set);
-
-        // execute the call without writing to db
-        let result = executor::inspect(
-            evm_db,
-            &block_env,
-            tx_env.clone(),
-            cfg_env_with_handler.clone(),
-        );
-
-        // Exceptional case: init used too much gas, we need to increase the gas limit and try
-        // again
-        if let Err(EVMError::Transaction(InvalidTransaction::CallerGasLimitMoreThanBlock)) = result
-        {
-            // if price or limit was included in the request, then we can execute the request
-            // again with the block's gas limit to check if revert is gas related or not
-            if request_gas.is_some() || request_gas_price.is_some() {
-                let evm_db = self.get_db(working_set);
-                return Err(
-                    map_out_of_gas_err(block_env, tx_env, cfg_env_with_handler, evm_db).into(),
-                );
-            }
-        }
-
-        let result = match result {
-            Ok(result) => match result.result {
-                ExecutionResult::Success { .. } => result.result,
-                ExecutionResult::Halt { reason, gas_used } => {
-                    return Err(RpcInvalidTransactionError::halt(reason, gas_used).into());
-                }
-                ExecutionResult::Revert { output, .. } => {
-                    // if price or limit was included in the request,
-                    // then we can execute the request
-                    // again with the block's gas limit to check if revert is gas related or not
-                    return if request_gas.is_some() || request_gas_price.is_some() {
-                        let evm_db = self.get_db(working_set);
-                        Err(
-                            map_out_of_gas_err(block_env, tx_env, cfg_env_with_handler, evm_db)
-                                .into(),
-                        )
-                    } else {
-                        // the transaction did revert
-                        Err(
-                            RpcInvalidTransactionError::Revert(RevertError::new(output.into()))
-                                .into(),
-                        )
-                    };
-                }
-            },
-            Err(err) => return Err(EthApiError::from(err).into()),
-        };
-
-        // at this point, we know the call succeeded but want to find the _best_ (lowest) gas the
-        // transaction succeeds with.
-        // we find this by doing a binary search over the
-        // possible range NOTE: this is the gas the transaction used, which is less than the
-        // transaction requires succeeding
-        let gas_used = result.gas_used();
-        // the lowest value is capped by the gas it takes for a transfer
-        let mut lowest_gas_limit = if tx_env.transact_to.is_create() {
-            MIN_CREATE_GAS
-        } else {
-            MIN_TRANSACTION_GAS
-        };
-        let mut highest_gas_limit: u64 = highest_gas_limit.try_into().unwrap_or(u64::MAX);
-        // pick a point that's close to the estimated gas
-        let mut mid_gas_limit = std::cmp::min(
-            gas_used * 3,
-            ((highest_gas_limit as u128 + lowest_gas_limit as u128) / 2) as u64,
-        );
-        // binary search
-        while (highest_gas_limit - lowest_gas_limit) > 1 {
-            let mut tx_env = tx_env.clone();
-            tx_env.gas_limit = mid_gas_limit;
-
-            let evm_db = self.get_db(working_set);
-            let result = executor::inspect(
-                evm_db,
-                &block_env,
-                tx_env.clone(),
-                cfg_env_with_handler.clone(),
-            );
-
-            // Exceptional case: init used too much gas, we need to increase the gas limit and try
-            // again
-            if let Err(EVMError::Transaction(InvalidTransaction::CallerGasLimitMoreThanBlock)) =
-                result
-            {
-                // increase the lowest gas limit
-                lowest_gas_limit = mid_gas_limit;
-
-                // new midpoint
-                mid_gas_limit = ((highest_gas_limit as u128 + lowest_gas_limit as u128) / 2) as u64;
-                continue;
-            }
-
-            match result {
-                Ok(result) => match result.result {
-                    ExecutionResult::Success { .. } => {
-                        // cap the highest gas limit with succeeding gas limit
-                        highest_gas_limit = mid_gas_limit;
-                    }
-                    ExecutionResult::Revert { .. } => {
-                        // increase the lowest gas limit
-                        lowest_gas_limit = mid_gas_limit;
-                    }
-                    ExecutionResult::Halt { reason, .. } => {
-                        match reason {
-                            HaltReason::OutOfGas(_) => {
-                                // increase the lowest gas limit
-                                lowest_gas_limit = mid_gas_limit;
-                            }
-                            err => {
-                                // these should be unreachable because we know the transaction succeeds,
-                                // but we consider these cases an error
-                                return Err(RpcInvalidTransactionError::EvmHalt(err).into());
-                            }
-                        }
-                    }
-                },
-                Err(err) => return Err(EthApiError::from(err).into()),
-            };
-
-            // new midpoint
-            mid_gas_limit = ((highest_gas_limit as u128 + lowest_gas_limit as u128) / 2) as u64;
-        }
-
-        Ok(U64::from(highest_gas_limit))
-    }
-
     fn get_sealed_block_by_number(
         &self,
-        block_number: Option<String>,
-        working_set: &mut WorkingSet<S>,
-    ) -> Block {
+        _block_number: Option<String>,
+        _working_set: &mut WorkingSet<S>,
+    ) -> BlockEnv {
         // safe, finalized, and pending are not supported
-        match block_number {
-            Some(ref block_number) if block_number == "earliest" => self
-                .blocks
-                .get(0, &mut working_set.accessory_state())
-                .expect("Genesis block must be set"),
-            Some(ref block_number) if block_number == "latest" => self
-                .blocks
-                .last(&mut working_set.accessory_state())
-                .expect("Head block must be set"),
-            Some(ref block_number) => {
-                // hex representation may have 0x prefix
-                let block_number = usize::from_str_radix(block_number.trim_start_matches("0x"), 16)
-                    .expect("Block number must be a valid hex number, with or without 0x prefix");
-                self.blocks
-                    .get(block_number, &mut working_set.accessory_state())
-                    .expect("Block must be set")
-            }
-            None => self
-                .blocks
-                .last(&mut working_set.accessory_state())
-                .expect("Head block must be set"),
-        }
+        BlockEnv::default()
     }
 }
 
@@ -681,10 +452,9 @@ fn map_out_of_gas_err<S: sov_modules_api::Spec>(
     block_env: BlockEnv,
     mut tx_env: revm::primitives::TxEnv,
     cfg_env_with_handler: revm::primitives::CfgEnvWithHandlerCfg,
-    db: EvmDb<'_, S>,
+    db: AptosDb<'_, S>,
 ) -> EthApiError {
     let req_gas_limit = tx_env.gas_limit;
-    tx_env.gas_limit = block_env.gas_limit;
     let res = executor::inspect(db, &block_env, tx_env, cfg_env_with_handler).unwrap();
     match res.result {
         ExecutionResult::Success { .. } => {

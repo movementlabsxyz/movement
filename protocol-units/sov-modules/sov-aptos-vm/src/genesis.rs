@@ -6,7 +6,7 @@ use reth_primitives::constants::{EMPTY_RECEIPTS, EMPTY_TRANSACTIONS};
 use reth_primitives::{Bloom, Bytes, EMPTY_OMMER_ROOT_HASH, KECCAK_EMPTY};
 use revm::primitives::{Address, SpecId, B256, U256};
 use sov_modules_api::{DaSpec, WorkingSet};
-
+use sov_modules_api::StateValueAccessor;
 use aptos_consensus_types::block::Block;
 
 use crate::evm::db_init::InitEvmDb;
@@ -166,15 +166,16 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             parent_beacon_block_root: None,
         };
 
+        // Need to implement
         // dummy Block
-        let block = Block::default();
-
-        self.head.set(&block, working_set);
-        #[cfg(feature = "native")]
-        {
-            self.pending_head
-                .set(&block, &mut working_set.accessory_state());
-        }
+        // let block = Block::new_for_testing(HashValue::default(), BlockData:: )
+        //
+        // self.head.set(&block, working_set);
+        // #[cfg(feature = "native")]
+        // {
+        //     self.pending_head
+        //         .set(&block, &mut working_set.accessory_state());
+        // }
 
         Ok(())
     }

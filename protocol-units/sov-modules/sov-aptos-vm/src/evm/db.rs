@@ -10,15 +10,16 @@ use sov_state::codec::BcsCodec;
 
 use super::DbAccount;
 
+// This needs to change to use Aptos Types and we could try implementing revm::Database for AptosDB
 pub(crate) struct AptosDb<'a, S: sov_modules_api::Spec> {
-    pub(crate) accounts: sov_modules_api::StateMap<AccountAddress, DbAccount, BcsCodec>,
+    pub(crate) accounts: sov_modules_api::StateMap<Address, DbAccount, BcsCodec>,
     pub(crate) code: sov_modules_api::StateMap<B256, Bytes, BcsCodec>,
     pub(crate) working_set: &'a mut WorkingSet<S>,
 }
 
 impl<'a, S: sov_modules_api::Spec> AptosDb<'a, S> {
     pub(crate) fn new(
-        accounts: sov_modules_api::StateMap<AccountAddress, DbAccount, BcsCodec>,
+        accounts: sov_modules_api::StateMap<Address, DbAccount, BcsCodec>,
         code: sov_modules_api::StateMap<B256, Bytes, BcsCodec>,
         working_set: &'a mut WorkingSet<S>,
     ) -> Self {
@@ -30,10 +31,10 @@ impl<'a, S: sov_modules_api::Spec> AptosDb<'a, S> {
     }
 }
 
-impl<'a, S: sov_modules_api::Spec> AptosDatabase for AptosDb<'a, S> {
+impl<'a, S: sov_modules_api::Spec> Database for AptosDb<'a, S> {
     type Error = Infallible;
 
-    fn basic(&mut self, address: AccountAddress) -> Result<Option<ReVmAccountInfo>, Self::Error> {
+    fn basic(&mut self, address: Address) -> Result<Option<ReVmAccountInfo>, Self::Error> {
         let db_account = self.accounts.get(&address, self.working_set);
         Ok(db_account.map(|acc| acc.info.into()))
     }
@@ -49,7 +50,7 @@ impl<'a, S: sov_modules_api::Spec> AptosDatabase for AptosDb<'a, S> {
         Ok(bytecode)
     }
 
-    fn storage(&mut self, address: AccountAddress, index: U256) -> Result<U256, Self::Error> {
+    fn storage(&mut self, address: Address, index: U256) -> Result<U256, Self::Error> {
         let storage_value: U256 = if let Some(acc) = self.accounts.get(&address, self.working_set) {
             acc.storage
                 .get(&index, self.working_set)

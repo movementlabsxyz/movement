@@ -11,9 +11,9 @@ pub(crate) struct BlockEnv {
     /// This block's id as a hash value, it is generated at call time
     pub(crate) id: HashValue,
     /// The account for fees 
-    pub(crate) coinbase: AccountAddress,
+    pub(crate) coinbase: Address,
     /// The container for the actual block
-    pub(crate) block_data: BlockData,
+    pub(crate) block_data: Option<BlockData>,
 }
 
 impl Default for BlockEnv {
@@ -21,7 +21,7 @@ impl Default for BlockEnv {
         Self {
             id: Default::default(),
             coinbase: Default::default(),
-            block_data: Default::default(),
+            block_data: None,
         }
     }
 }

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use reth_primitives::{Log as RethLog, TransactionSignedEcRecovered};
 use revm::primitives::{Address, CfgEnv, CfgEnvWithHandlerCfg, EVMError, Log, SpecId};
-use sov_modules_api::{CallResponse, Context, DaSpec, WorkingSet};
+use sov_modules_api::{CallResponse, Context, DaSpec, WorkingSet, StateVecAccessor, StateValueAccessor};
 
 use crate::evm::db::AptosDb;
 use crate::evm::executor::{self};
@@ -41,7 +41,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
         let cfg_env = get_cfg_env_with_handler(&block_env, cfg, None);
 
         let aptos_db: AptosDb<'_, S> = self.get_db(working_set);
-        let result = executor::execute_tx(evm_db, &block_env, &evm_tx_recovered, cfg_env);
+        let result = executor::execute_tx(aptos_db, &block_env, &evm_tx_recovered, cfg_env);
         let previous_transaction = self.pending_transactions.last(working_set);
         let previous_transaction_cumulative_gas_used = previous_transaction
             .as_ref()
@@ -91,19 +91,20 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
             }
         };
 
-        let pending_transaction = PendingTransaction {
-            transaction: TransactionSignedAndRecovered {
-                signer: evm_tx_recovered.signer(),
-                signed_transaction: evm_tx_recovered.into(),
-                block_number: block_env.number,
-            },
-            receipt,
-        };
-
-        self.pending_transactions
-            .push(&pending_transaction, working_set);
-
-        Ok(CallResponse::default())
+        // let pending_transaction = PendingTransaction {
+        //     transaction: TransactionSignedAndRecovered {
+        //         signer: evm_tx_recovered.signer(),
+        //         signed_transaction: evm_tx_recovered.into(),
+        //         block_number: block_env.number,
+        //     },
+        //     receipt,
+        // };
+        //
+        // self.pending_transactions
+        //     .push(&pending_transaction, working_set);
+        //
+        // Ok(CallResponse::default())
+        todo!()
     }
 }
 
@@ -115,27 +116,14 @@ pub(crate) fn get_cfg_env_with_handler(
     cfg: AptosChainConfig,
     template_cfg: Option<CfgEnv>,
 ) -> CfgEnvWithHandlerCfg {
-    let mut cfg_env = template_cfg.unwrap_or_default();
-    cfg_env.chain_id = cfg.chain_id;
-    cfg_env.limit_contract_code_size = cfg.limit_contract_code_size;
-    let spec_id = get_spec_id(cfg.spec, block_env.number);
-    CfgEnvWithHandlerCfg::new(cfg_env, spec_id)
+    todo!()
 }
 
 /// Get spec id for a given block number
 /// Returns the first spec id defined for block >= block_number
-pub(crate) fn get_spec_id(spec: Vec<(u64, SpecId)>, block_number: u64) -> SpecId {
-    match spec.binary_search_by(|&(k, _)| k.cmp(&block_number)) {
-        Ok(index) => spec[index].1,
-        Err(index) => {
-            if index > 0 {
-                spec[index - 1].1
-            } else {
-                // this should never happen as we cover this in genesis
-                panic!("EVM spec must start from block 0")
-            }
-        }
-    }
+pub(crate) fn get_spec_id(spec: Vec<(u64, SpecId)>, block_number: u64) -> u64 {
+    // not sure we need this for sov-aptos, the values can be hardcoded
+    todo!()
 }
 
 /// Copied from <https://github.com/paradigmxyz/reth/blob/e83d3aa704f87825ca8cab6f593ab4d4adbf6792/crates/revm/revm-primitives/src/compat.rs#L17-L23>.

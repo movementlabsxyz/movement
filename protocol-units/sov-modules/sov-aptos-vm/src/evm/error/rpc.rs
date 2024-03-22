@@ -439,6 +439,7 @@ impl From<revm::primitives::InvalidTransaction> for RpcInvalidTransactionError {
             InvalidTransaction::BlobCreateTransaction => {
                 RpcInvalidTransactionError::BlobTransactionIsCreate
             }
+            _ => panic!("InvalidTransaction error not handled: {:?}", err),
         }
     }
 }

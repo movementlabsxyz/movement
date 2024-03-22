@@ -15,7 +15,7 @@ pub(crate) trait InitEvmDb {
 }
 
 impl<'a, S: sov_modules_api::Spec> InitEvmDb for AptosDb<'a, S> {
-    fn insert_account_info(&mut self, sender: AccountAddress, info: AccountInfo) {
+    fn insert_account_info(&mut self, sender: Address, info: AccountInfo) {
         let parent_prefix = self.accounts.prefix();
         let db_account = DbAccount::new_with_info(parent_prefix, sender, info);
 

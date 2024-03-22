@@ -48,7 +48,7 @@ mod experimental {
 
         /// Mapping from account address to account state.
         #[state]
-        pub(crate) accounts: sov_modules_api::StateMap<AccountAddress, DbAccount, BcsCodec>,
+        pub(crate) accounts: sov_modules_api::StateMap<Address, DbAccount, BcsCodec>,
 
         /// Mapping from code hash to code. Used for lazy-loading code into a contract account.
         // @TODO: update to Aptos primitive type.
@@ -135,8 +135,8 @@ mod experimental {
     }
 
     impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
-        pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> EvmDb<'a, S> {
-            EvmDb::new(self.accounts.clone(), self.code.clone(), working_set)
+        pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> AptosDb<'a, S> {
+            AptosDb::new(self.accounts.clone(), self.code.clone(), working_set)
         }
     }
 }

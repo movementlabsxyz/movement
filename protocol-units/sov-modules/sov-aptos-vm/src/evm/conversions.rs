@@ -30,22 +30,22 @@ impl From<ReVmAccountInfo> for AccountInfo {
     }
 }
 
-impl From<&BlockEnv> for ReVmBlockEnv {
-    fn from(block_env: &BlockEnv) -> Self {
-        Self {
-            number: U256::from(block_env.number),
-            coinbase: block_env.coinbase,
-            timestamp: U256::from(block_env.timestamp),
-            difficulty: U256::ZERO,
-            prevrandao: Some(block_env.prevrandao),
-            basefee: U256::from(block_env.basefee),
-            gas_limit: U256::from(block_env.gas_limit),
-            // EIP-4844 related field
-            // https://github.com/Sovereign-Labs/sovereign-sdk/issues/912
-            blob_excess_gas_and_price: None,
-        }
-    }
-}
+// impl From<&BlockEnv> for ReVmBlockEnv {
+//     fn from(block_env: &BlockEnv) -> Self {
+//         Self {
+//             number: U256::from(block_env.number),
+//             coinbase: block_env.coinbase,
+//             timestamp: U256::from(block_env.timestamp),
+//             difficulty: U256::ZERO,
+//             prevrandao: Some(block_env.prevrandao),
+//             basefee: U256::from(block_env.basefee),
+//             gas_limit: U256::from(block_env.gas_limit),
+//             // EIP-4844 related field
+//             // https://github.com/Sovereign-Labs/sovereign-sdk/issues/912
+//             blob_excess_gas_and_price: None,
+//         }
+//     }
+// }
 
 pub(crate) fn create_tx_env(tx: &TransactionSignedEcRecovered) -> TxEnv {
     let to = match tx.to() {
