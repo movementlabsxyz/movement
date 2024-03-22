@@ -26,6 +26,7 @@ serde = { workspace = true }
 serde_json = { workspace = true, optional = true }
 borsh = { workspace = true, features = ["rc"] }
 hex = { workspace = true }
+poem-openapi = { workspace = true }
 jsonrpsee = { workspace = true, features = [
     "macros",
     "client-core",
@@ -39,6 +40,9 @@ aptos-sdk = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-consensus-types = { workspace = true }
 aptos-db = { workspace = true }
+aptos-api = { workspace = true }
+aptos-api-types = { workspace = true }
+
 
 alloy-sol-types = { version = "0.6" }
 revm = { workspace = true, features = [
