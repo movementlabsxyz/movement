@@ -70,7 +70,7 @@ sov-chain-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip
 
 risc0-build = "0.20"
 
-# EVM dependencies
+# aptos dependencies
 ethereum-types = "0.14.1"
 ethers = "=2.0.10"
 ethers-core = { version = "=2.0.10", default-features = false }

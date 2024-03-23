@@ -1,4 +1,4 @@
-use crate::evm::primitive_types::AptosStorage;
+use crate::aptos::primitive_types::AptosStorage;
 use aptos_api_types::{Address, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 use aptos_sdk::rest_client::Account;
 use reth_primitives::Bytes;

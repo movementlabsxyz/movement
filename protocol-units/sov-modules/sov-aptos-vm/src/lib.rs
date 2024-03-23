@@ -1,6 +1,6 @@
 mod call;
 mod event;
-mod evm;
+mod aptos;
 mod genesis;
 mod helpers;
 mod rpc;
@@ -18,9 +18,9 @@ mod experimental {
 	use sov_state::codec::BcsCodec;
 
 	use super::event::Event;
-	use super::evm::db::AptosDb;
-	use super::evm::{AptosChainConfig, DbAccount};
-	use crate::evm::primitive_types::{
+	use super::aptos::db::AptosDb;
+	use super::aptos::{AptosChainConfig, DbAccount};
+	use crate::aptos::primitive_types::{
 		BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
 	};
 
@@ -36,12 +36,12 @@ mod experimental {
 		pub(crate) receipt: Receipt,
 	}
 
-	/// The sov-evm module provides compatibility with the EVM.
+	/// The sov-aptos module provides compatibility with the aptos.
 	#[allow(dead_code)]
 	// #[cfg_attr(feature = "native", derive(sov_modules_api::ModuleCallJsonSchema))]
 	#[derive(ModuleInfo, Clone)]
 	pub struct AptosVM<S: sov_modules_api::Spec, Da: DaSpec> {
-		/// The address of the evm module.
+		/// The address of the aptos module.
 		#[address]
 		pub(crate) address: S::Address,
 
@@ -59,7 +59,7 @@ mod experimental {
 		#[state]
 		pub(crate) cfg: sov_modules_api::StateValue<AptosChainConfig, BcsCodec>,
 
-		/// Block environment used by the evm. This field is set in `begin_slot_hook`.
+		/// Block environment used by the aptos. This field is set in `begin_slot_hook`.
 		#[state]
 		pub(crate) block_env: sov_modules_api::StateValue<BlockEnv, BcsCodec>,
 

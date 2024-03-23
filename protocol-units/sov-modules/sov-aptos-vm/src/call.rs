@@ -5,13 +5,13 @@ use sov_modules_api::{
 	CallResponse, Context, DaSpec, StateValueAccessor, StateVecAccessor, WorkingSet,
 };
 
-use crate::evm::db::AptosDb;
-use crate::evm::executor::{self};
-use crate::evm::primitive_types::{BlockEnv, Receipt, TransactionSignedAndRecovered};
-use crate::evm::{AptosChainConfig, RlpEvmTransaction};
+use crate::aptos::db::AptosDb;
+use crate::aptos::executor::{self};
+use crate::aptos::primitive_types::{BlockEnv, Receipt, TransactionSignedAndRecovered};
+use crate::aptos::{AptosChainConfig, RlpEvmTransaction};
 use crate::experimental::{AptosVM, PendingTransaction};
 
-/// EVM call message.
+/// aptos call message.
 #[derive(
 	borsh::BorshDeserialize,
 	borsh::BorshSerialize,

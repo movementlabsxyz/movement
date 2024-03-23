@@ -42,11 +42,11 @@ pub enum EthApiError {
     /// When an invalid block range is provided
     #[error("Invalid block range")]
     InvalidBlockRange,
-    /// An internal error where prevrandao is not set in the evm's environment
-    #[error("Prevrandao not in the EVM's environment after merge")]
+    /// An internal error where prevrandao is not set in the aptos's environment
+    #[error("Prevrandao not in the aptos's environment after merge")]
     PrevrandaoNotSet,
     /// `excess_blob_gas` is not set for Cancun and above
-    #[error("Excess blob gas missing in the EVM's environment after Cancun")]
+    #[error("Excess blob gas missing in the aptos's environment after Cancun")]
     ExcessBlobGasNotSet,
     /// Thrown when a call or transaction request (`eth_call`, `eth_estimateGas`,
     /// `eth_sendTransaction`) contains conflicting fields (legacy, EIP-1559)
@@ -101,7 +101,7 @@ pub enum EthApiError {
     #[error(transparent)]
     /// Call Input error when both `data` and `input` fields are set and not equal.
     TransactionInputError(#[from] TransactionInputError),
-    /// Evm generic purpose error.
+    /// aptos generic purpose error.
     #[error("Revm error: {0}")]
     EvmCustom(String),
 }
@@ -283,8 +283,8 @@ pub enum RpcInvalidTransactionError {
     /// Thrown if executing a transaction failed during estimate/call
     #[error("{0}")]
     Revert(RevertError),
-    /// Unspecific evm halt error
-    #[error("EVM error {0:?}")]
+    /// Unspecific aptos halt error
+    #[error("aptos error {0:?}")]
     EvmHalt(HaltReason),
     /// Invalid chain id set for the transaction.
     #[error("Invalid chain id")]
@@ -637,7 +637,7 @@ pub enum SignError {
 }
 
 #[cfg(feature = "native")]
-/// Converts the evm [ExecutionResult] into a result where `Ok` variant is the output bytes if it is
+/// Converts the aptos [ExecutionResult] into a result where `Ok` variant is the output bytes if it is
 /// [ExecutionResult::Success].
 pub(crate) fn ensure_success(
     result: revm::primitives::ExecutionResult,

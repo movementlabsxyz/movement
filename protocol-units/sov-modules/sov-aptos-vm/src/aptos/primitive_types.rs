@@ -1,7 +1,7 @@
 use aptos_api_types::{AccountData, MoveModuleBytecode, MoveResource};
 use std::ops::Range;
 
-use crate::evm::AccountInfo;
+use crate::aptos::AccountInfo;
 use aptos_consensus_types::{block::Block, block_data::BlockData};
 use aptos_crypto::{bls12381::Signature, hash::HashValue};
 use aptos_sdk::rest_client::Account;
@@ -11,7 +11,7 @@ use revm::primitives::{Address, EVMError, B256};
 
 /// Aptos database interface
 /// This trait is loosely modelled on `revm::Database` as this trait is used
-/// in the sov-evm module.
+/// in the sov-aptos module.
 pub trait AptosStorage {
 	/// The database error type.
 	type Error;
@@ -42,7 +42,7 @@ impl Default for BlockEnv {
 	}
 }
 
-/// RLP encoded evm transaction.
+/// RLP encoded aptos transaction.
 #[derive(
 	borsh::BorshDeserialize,
 	borsh::BorshSerialize,

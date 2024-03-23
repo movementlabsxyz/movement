@@ -12,10 +12,10 @@ use tracing::debug;
 use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
 use aptos_crypto::bls12381::Signature;
 
-use crate::evm::db::AptosDb;
-use crate::evm::error::rpc::EthApiError;
-use crate::evm::error::rpc::RpcInvalidTransactionError;
-use crate::evm::primitive_types::{BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered};
+use crate::aptos::db::AptosDb;
+use crate::aptos::error::rpc::EthApiError;
+use crate::aptos::error::rpc::RpcInvalidTransactionError;
+use crate::aptos::primitive_types::{BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered};
 use crate::experimental::AptosVM;
 
 #[rpc_gen(client, server)]
@@ -147,7 +147,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 		_block_number: Option<String>,
 		working_set: &mut WorkingSet<S>,
 	) -> RpcResult<U256> {
-		debug!("EVM module JSON-RPC request to `eth_getStorageAt`");
+		debug!("aptos module JSON-RPC request to `eth_getStorageAt`");
 
 		// TODO: Implement block_number once we have archival state #951
 		// https://github.com/Sovereign-Labs/sovereign-sdk/issues/951
@@ -218,7 +218,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 		debug!(
 			%hash,
 			?transaction,
-			"EVM module JSON-RPC request to `eth_getTransactionByHash`"
+			"aptos module JSON-RPC request to `eth_getTransactionByHash`"
 		);
 
 		todo!()
@@ -235,7 +235,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 	) -> RpcResult<Option<reth_rpc_types::TransactionReceipt>> {
 		debug!(
 			%hash,
-			"EVM module JSON-RPC request to `eth_getTransactionReceipt`"
+			"aptos module JSON-RPC request to `eth_getTransactionReceipt`"
 		);
 
 		let mut accessory_state = working_set.accessory_state();
@@ -275,7 +275,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 		_block_overrides: Option<Box<reth_rpc_types::BlockOverrides>>,
 		working_set: &mut WorkingSet<S>,
 	) -> RpcResult<reth_primitives::Bytes> {
-		debug!("EVM module JSON-RPC request to `eth_call`");
+		debug!("aptos module JSON-RPC request to `eth_call`");
 
 		let block_env = match block_number {
 			Some(ref block_number) if block_number == "pending" => {
@@ -306,7 +306,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 	/// Handler for: `eth_blockNumber`
 	#[rpc_method(name = "eth_blockNumber")]
 	pub fn block_number(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U256> {
-		debug!("EVM module JSON-RPC request to `eth_blockNumber`");
+		debug!("aptos module JSON-RPC request to `eth_blockNumber`");
 
 		Ok(U256::from(self.blocks.len(&mut working_set.accessory_state()).saturating_sub(1)))
 	}

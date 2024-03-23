@@ -7,7 +7,7 @@ use sov_modules_api::{DaSpec, WorkingSet};
 
 use crate::experimental::AptosVM;
 
-/// Evm account.
+/// aptos account.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub struct AccountData {
 	/// Account address.
@@ -43,7 +43,7 @@ pub struct AptosConfig {
 	pub chain_id: u64,
 	/// Limits size of contract code size.
 	pub limit_contract_code_size: Option<usize>,
-	/// List of EVM hard forks by block number
+	/// List of aptos hard forks by block number
 	pub spec: HashMap<u64, SpecId>,
 	/// Coinbase where all the fees go
 	pub coinbase: Address,

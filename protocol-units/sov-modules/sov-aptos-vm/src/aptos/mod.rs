@@ -1,4 +1,4 @@
-// Much of this code was copy-pasted from reth-evm, and we'd rather keep it as
+// Much of this code was copy-pasted from reth-aptos, and we'd rather keep it as
 // similar as possible to upstream than clean it up.
 #![allow(clippy::match_same_arms)]
 
@@ -64,13 +64,13 @@ impl DbAccount {
 		Self { info, storage: StateMap::with_codec(prefix, BcsCodec {}) }
 	}
 
-	// Not sure what this function does for the evm-module
+	// Not sure what this function does for the aptos-module
 	fn create_storage_prefix(parent_prefix: &Prefix, address: Address) -> Prefix {
 		todo!()
 	}
 }
 
-/// EVM Chain configuration
+/// aptos Chain configuration
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct AptosChainConfig {
 	/// Unique chain id
