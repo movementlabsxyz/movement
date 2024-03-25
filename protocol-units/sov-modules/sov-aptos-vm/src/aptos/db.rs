@@ -1,7 +1,6 @@
 use crate::aptos::primitive_types::AptosStorage;
 use aptos_api_types::{Address, HexEncodedBytes, MoveModule, MoveModuleBytecode, MoveResource};
 use aptos_sdk::rest_client::Account;
-use reth_primitives::Bytes;
 use sov_modules_api::{StateMapAccessor, WorkingSet};
 use sov_state::codec::BcsCodec;
 use std::convert::Infallible;
