@@ -23,7 +23,7 @@ publish = false
 rust-version = "1.73"
 
 [workspace.dependencies]
-
+auto_impl = "1.2.0"
 serde = { version = "1.0.192", features = ["derive", "rc"] }
 serde_json = { version = "1.0.81", features = [
     "preserve_order",

@@ -6,12 +6,15 @@ use aptos_consensus_types::{block::Block, block_data::BlockData};
 use aptos_crypto::{bls12381::Signature, hash::HashValue};
 use aptos_sdk::rest_client::Account;
 use aptos_sdk::types::account_address::AccountAddress;
+use auto_impl::auto_impl;
 use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
+use reth_revm::precompile::HashMap;
 use revm::primitives::{Address, EVMError, B256};
 
 /// Aptos database interface
 /// This trait is loosely modelled on `revm::Database` as this trait is used
 /// in the sov-aptos module.
+#[auto_impl(&mut, Box)]
 pub trait AptosStorage {
 	/// The database error type.
 	type Error;
@@ -24,6 +27,12 @@ pub trait AptosStorage {
 
 	/// Get modules for an account.
 	fn modules(&mut self, account: Account) -> Result<Vec<MoveModule>, Self::Error>;
+}
+
+#[auto_impl(&mut, Box)]
+pub trait AptosStorageCommit {
+	/// Commit changes to the database.
+	fn commit(&mut self, changes: HashMap<AccountAddress, Account>);
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Clone)]
@@ -42,7 +51,7 @@ impl Default for BlockEnv {
 	}
 }
 
-/// RLP encoded aptos transaction.
+/// RLP encoded Aptos transaction.
 #[derive(
 	borsh::BorshDeserialize,
 	borsh::BorshSerialize,
