@@ -38,6 +38,7 @@ tracing = { workspace = true }
 serde_json = { workspace = true }
 jsonrpsee = { workspace = true }
 tokio = { workspace = true }
+subtle = "2.5.0"
 
 m2-risc0 = { path = "../provers/risc0" }
 m2-stf = { path = "../stf", features = ["native"] }
