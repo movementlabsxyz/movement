@@ -11,7 +11,6 @@ impl<'a, S: sov_modules_api::Spec> AptosStorageCommit for AptosDb<'a, S> {
 	fn commit(&mut self, changes: HashMap<AccountAddress, Account>) {
 		for (address, account) in changes {
 			let accounts_prefix = self.accounts.prefix();
-
 			let mut db_acccount = self
 				.accounts
 				.get(&Address::from(account.authentication_key.account_address()), self.working_set)
