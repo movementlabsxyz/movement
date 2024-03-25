@@ -1,4 +1,4 @@
-use aptos_api_types::{AccountData, MoveModuleBytecode, MoveResource};
+use aptos_api_types::{AccountData, MoveModule, MoveModuleBytecode, MoveResource};
 use std::ops::Range;
 
 use crate::aptos::AccountInfo;
@@ -23,7 +23,7 @@ pub trait AptosStorage {
 	fn resources(&mut self, account: Account) -> Result<Vec<MoveResource>, Self::Error>;
 
 	/// Get modules for an account.
-	fn modules(&mut self, account: Account) -> Result<Vec<MoveModuleBytecode>, Self::Error>;
+	fn modules(&mut self, account: Account) -> Result<Vec<MoveModule>, Self::Error>;
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, PartialEq, Clone)]

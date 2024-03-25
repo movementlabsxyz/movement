@@ -1,6 +1,6 @@
+mod aptos;
 mod call;
 mod event;
-mod aptos;
 mod genesis;
 mod helpers;
 mod rpc;
@@ -11,15 +11,15 @@ pub use signer::DevSigner;
 
 mod experimental {
 	use super::genesis::AptosConfig;
-	use aptos_api_types::{Address, HexEncodedBytes};
+	use aptos_api_types::{Address, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_consensus_types::block::Block;
 	use aptos_crypto::bls12381::Signature;
 	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
 	use sov_state::codec::BcsCodec;
 
-	use super::event::Event;
 	use super::aptos::db::AptosDb;
 	use super::aptos::{AptosChainConfig, DbAccount};
+	use super::event::Event;
 	use crate::aptos::primitive_types::{
 		BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
 	};
@@ -49,11 +49,13 @@ mod experimental {
 		#[state]
 		pub(crate) accounts: sov_modules_api::StateMap<Address, DbAccount, BcsCodec>,
 
-		/// Mapping from code hash to code. Used for lazy-loading code into a contract account.
-		// @TODO: update to Aptos primitive type.
+		/// Mapping from code hash to owend resources. Used for lazy-loading code into a contract account.
 		#[state]
-		pub(crate) code:
-			sov_modules_api::StateMap<HexEncodedBytes, reth_primitives::Bytes, BcsCodec>,
+		pub(crate) resources:
+			sov_modules_api::StateMap<HexEncodedBytes, Vec<MoveResource>, BcsCodec>,
+
+		#[state]
+		pub(crate) modules: sov_modules_api::StateMap<HexEncodedBytes, Vec<MoveModuleBytecode>>,
 
 		/// Chain configuration. This field is set in genesis.
 		#[state]
