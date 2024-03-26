@@ -1,15 +1,21 @@
 use aptos_api_types::{AccountData, MoveModule, MoveModuleBytecode, MoveResource};
 use std::ops::Range;
 
+use crate::aptos::db::SovAptosDb;
 use crate::aptos::AccountInfo;
 use aptos_consensus_types::{block::Block, block_data::BlockData};
 use aptos_crypto::{bls12381::Signature, hash::HashValue};
+use aptos_db::ledger_db::LedgerDb;
 use aptos_sdk::rest_client::Account;
 use aptos_sdk::types::account_address::AccountAddress;
+use aptos_storage_interface::state_view::DbStateView;
+use aptos_types::on_chain_config::Version;
 use auto_impl::auto_impl;
 use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
 use reth_revm::precompile::HashMap;
 use revm::primitives::{Address, EVMError, B256};
+
+pub type SovLedgerDb = LedgerDb;
 
 /// Aptos database interface
 /// This trait is loosely modelled on `revm::Database` as this trait is used

@@ -14,6 +14,7 @@ mod experimental {
 	use aptos_api_types::{Address, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_consensus_types::block::Block;
 	use aptos_crypto::bls12381::Signature;
+	use aptos_db::AptosDB;
 	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
 	use sov_state::codec::BcsCodec;
 
@@ -136,8 +137,6 @@ mod experimental {
 	}
 
 	impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
-		pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> AptosDb<'a, S> {
-			AptosDb::new(self.accounts.clone(), self.code.clone(), working_set)
-		}
+		pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> AptosDb<'a, S> {}
 	}
 }
