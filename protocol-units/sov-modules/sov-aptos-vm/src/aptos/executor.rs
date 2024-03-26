@@ -4,7 +4,7 @@ use aptos_db::AptosDB;
 use aptos_sdk::move_types::vm_status::StatusCode;
 use aptos_types::block_executor::partitioner::TxnIndex;
 use aptos_types::state_store::StateView;
-use aptos_types::transaction::{Transaction, TransactionOutput, WriteSetPayload};
+use aptos_types::transaction::{Transaction, TransactionOutput, Version, WriteSetPayload};
 use aptos_types::vm_status::VMStatus;
 use aptos_types::{
 	chain_id::ChainId, transaction::signature_verified_transaction::SignatureVerifiedTransaction,
@@ -19,7 +19,7 @@ use aptos_vm_types::output::VMOutput;
 use aptos_language_e2e_tests::executor::FakeExecutor;
 use aptos_vm_types::resolver::{ExecutorView, ResourceGroupView};
 use fail::fail_point;
-use crate::aptos::db::AptosDb;
+use crate::aptos::db::{AptosDb, SovAptosDb};
 
 pub(crate) struct AptosExecutor<'a, S> {
 	vm: AptosVM,
@@ -107,12 +107,15 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for AptosExecutor<'a, S> {
 	}
 }
 
-pub fn execute_block(
-	db: StateValue<AptosDB>,
+pub fn execute_block<S>(
+	db: SovAptosDb<S>,
+	version: Version,
 	transactions: &[SignatureVerifiedTransaction],
 	onchain_config: BlockExecutorConfigFromOnchain,
-) {
-	let db = db.get().unwrap();
+)
+where S: sov_modules_api::Spec
+{
+	let state= db.state_view_at_version(Some(version)).expect("Failed to create state view");
 
-	let foo=  AptosVM::execute_block(transactions, state_view, onchain_config);
+	let foo=  AptosVM::execute_block(transactions, &state, onchain_config);
 }
