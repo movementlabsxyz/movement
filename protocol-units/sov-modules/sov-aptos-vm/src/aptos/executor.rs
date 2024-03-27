@@ -108,7 +108,7 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for AptosExecutor<'a, S> {
 }
 
 pub fn execute_block_no_limit<S>(
-	state: &DbStateView<S>,
+	state: &SovAptosDb<S>,
 	transactions: &[SignatureVerifiedTransaction],
 ) -> Result<Vec<TransactionOutput>, VMStatus>
 	where S: sov_modules_api::Spec

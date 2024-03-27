@@ -9,57 +9,25 @@ use sov_modules_api::{StateMap, StateMapAccessor, WorkingSet};
 type Result<T, E = StateviewError> = std::result::Result<T, E>;
 /// The Aptos Database structure for storing and working with accounts and their modules.
 pub(crate) struct SovAptosDb<'a, S: sov_modules_api::Spec> {
-	pub(crate) state_kv_db: StateMap<Version, AptosStateValue>,
+	pub(crate) state_data: StateMap<Version, AptosStateValue>,
 	/// Working set
 	pub(crate) working_set: &'a mut WorkingSet<S>,
 }
 
 impl<'a, S: sov_modules_api::Spec> SovAptosDb<'a, S> {
 	pub(crate) fn new(
-		state_kv_db: StateMap<Version, AptosStateValue>,
+		state_data: StateMap<Version, AptosStateValue>,
 		working_set: &'a mut WorkingSet<S>,
 	) -> Self {
-		Self { working_set, state_kv_db }
+		Self { working_set, state_data }
 	}
 
 	/// Get state view at `Version`, this is analogous to `blockheight`.
 	pub(crate) fn state_view_at_version(
 		&self,
 		version: Option<Version>,
-	) -> Result<DbStateView<'a, S>> {
-		Ok(DbStateView { db: self.clone(), version, verify_against_state_root_hash: None })
-	}
-}
-
-/// The `DbStateView` that is passed to the VM for transaction execution.
-pub struct DbStateView<'a, S>
-where
-	S: sov_modules_api::Spec,
-{
-	db: &'a SovAptosDb<'a, S>,
-	version: Option<Version>,
-	verify_against_state_root_hash: Option<HashValue>,
-}
-
-impl<'a, S> DbStateView<'a, S>
-where
-	S: sov_modules_api::Spec,
-{
-	/// Get state value by key
-	fn get(&self, key: &StateKey) -> Result<Option<AptosStateValue>> {
-		Ok(if let Some(version) = self.version {
-			if let Some(root_hash) = self.verify_against_state_root_hash {
-				// We need to implement `get_state_value_with_proof_by_version` and use that here.
-				// let (value, proof) = self.db.get_state_value_with_proof_by_version(key, version)?;
-				// proof.verify(root_hash, CryptoHash::hash(key), value.as_ref())?;
-				// value
-				unimplemented!()
-			} else {
-				self.db.state_kv_db.get(version, self.working_set).get(key).cloned
-			}
-		} else {
-			None
-		})
+	) -> Result<SovAptosDb<'a, S>> {
+		Ok(SovAptosDb { state_data: self.state_data.clone(), working_set: self.working_set })
 	}
 }
 
@@ -68,10 +36,11 @@ impl<'a, S> TStateView for SovAptosDb<'a, S>
 where
 	S: sov_modules_api::Spec,
 {
-	type Key = StateKey;
+	type Key = Version;
 
-	fn get_state_value(&self, state_key: &StateKey) -> Result<Option<AptosStateValue>> {
-		self.get(state_key).map_err(Into::into)
+	fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<AptosStateValue>> {
+		let state_value = self.state_data.get(state_key, self.working_set)?;
+		Ok(Some(state_value))
 	}
 
 	fn get_usage(&self) -> Result<StateStorageUsage> {

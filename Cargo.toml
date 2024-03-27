@@ -11,6 +11,7 @@ members = [
 
 [workspace.features]
 sov-aptos = ["experimental"]
+defailt = ["m2/rollup"]
 
 [workspace.package]
 version = "0.3.0"
