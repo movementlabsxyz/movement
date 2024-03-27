@@ -19,7 +19,7 @@ use aptos_vm_types::output::VMOutput;
 use aptos_language_e2e_tests::executor::FakeExecutor;
 use aptos_vm_types::resolver::{ExecutorView, ResourceGroupView};
 use fail::fail_point;
-use crate::aptos::db::{AptosDb, SovAptosDb};
+use crate::aptos::db::{DbStateView, SovAptosDb};
 
 pub(crate) struct AptosExecutor<'a, S> {
 	vm: AptosVM,
@@ -107,15 +107,11 @@ impl<'a, S: 'a + StateView + Sync> ExecutorTask for AptosExecutor<'a, S> {
 	}
 }
 
-pub fn execute_block<S>(
-	db: SovAptosDb<S>,
-	version: Version,
+pub fn execute_block_no_limit<S>(
+	state: &DbStateView<S>,
 	transactions: &[SignatureVerifiedTransaction],
-	onchain_config: BlockExecutorConfigFromOnchain,
-)
-where S: sov_modules_api::Spec
+) -> Result<Vec<TransactionOutput>, VMStatus>
+	where S: sov_modules_api::Spec
 {
-	let state= db.state_view_at_version(Some(version)).expect("Failed to create state view");
-
-	let foo=  AptosVM::execute_block(transactions, &state, onchain_config);
+	AptosVM::execute_block_no_limit(transactions, state)
 }

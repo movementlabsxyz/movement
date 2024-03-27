@@ -1,4 +1,6 @@
 use anyhow::Result;
+use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
+use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
 use reth_primitives::{Log as RethLog, TransactionSignedEcRecovered};
 use revm::primitives::{Address, CfgEnv, CfgEnvWithHandlerCfg, EVMError, Log, SpecId};
 use sov_modules_api::{
@@ -9,7 +11,7 @@ use crate::aptos::db::AptosDb;
 use crate::aptos::executor::{self};
 use crate::aptos::primitive_types::{BlockEnv, Receipt, TransactionSignedAndRecovered};
 use crate::aptos::{AptosChainConfig, RlpEvmTransaction};
-use crate::experimental::{AptosVM, PendingTransaction};
+use crate::experimental::{AptosVM, PendingTransaction, SovAptosVM};
 
 /// aptos call message.
 #[derive(
@@ -26,14 +28,16 @@ pub struct CallMessage {
 	pub tx: RlpEvmTransaction,
 }
 
-impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
+impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 	pub(crate) fn execute_call(
 		&self,
-		_tx: RlpEvmTransaction,
+		txs: &[SignatureVerifiedTransaction],
 		_context: &Context<S>,
-		_working_set: &mut WorkingSet<S>,
+		working_set: &mut WorkingSet<S>,
 	) -> Result<CallResponse> {
-		todo!()
+		let state = self.get_db(working_set).state_view_at_version(None)?;
+		let result = executor::execute_block_no_limit(&state, txs)?;
+		Ok(CallResponse {})
 	}
 }
 

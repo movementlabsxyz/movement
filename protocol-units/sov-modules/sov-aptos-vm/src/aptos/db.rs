@@ -1,17 +1,10 @@
-use crate::aptos::primitive_types::AptosStorage;
-use aptos_api_types::{Address, HexEncodedBytes, MoveModule, MoveModuleBytecode, MoveResource};
-use aptos_crypto::HashValue;
-use aptos_db::AptosDB;
-use aptos_sdk::rest_client::Account;
-use aptos_storage_interface::state_view::DbStateViewAtVersion;
-use aptos_storage_interface::DbReader;
+use aptos_crypto::{hash::CryptoHash, HashValue};
 use aptos_types::state_store::errors::StateviewError;
 use aptos_types::state_store::state_key::StateKey;
 use aptos_types::state_store::state_storage_usage::StateStorageUsage;
 use aptos_types::state_store::{state_value::StateValue as AptosStateValue, TStateView};
 use aptos_types::transaction::Version;
-use sov_modules_api::{StateMap, StateMapAccessor, StateValue, WorkingSet};
-use std::sync::Arc;
+use sov_modules_api::{StateMap, StateMapAccessor, WorkingSet};
 
 type Result<T, E = StateviewError> = std::result::Result<T, E>;
 /// The Aptos Database structure for storing and working with accounts and their modules.
@@ -22,17 +15,14 @@ pub(crate) struct SovAptosDb<'a, S: sov_modules_api::Spec> {
 }
 
 impl<'a, S: sov_modules_api::Spec> SovAptosDb<'a, S> {
-	pub(crate) fn new(working_set: &'a mut WorkingSet<S>, db: StateValue<AptosDB>) -> Self {
-		Self { working_set, db }
+	pub(crate) fn new(
+		state_kv_db: StateMap<Version, AptosStateValue>,
+		working_set: &'a mut WorkingSet<S>,
+	) -> Self {
+		Self { working_set, state_kv_db }
 	}
 
 	/// Get state view at `Version`, this is analogous to `blockheight`.
-	/// `Version` is a type alias for `u64` in the `aptos_types` module.
-	/// Source code: https://github.com/0xmovses/aptos-core/blob/bd1644729bc2598d9769fbf556797d5a4f51bf35/types/src/transaction/mod.rs#L77
-	///
-	/// For reading state from the SovAptosDb. We purposefully do not implement the Aptos native `DbReader` trait
-	/// because it is `Send` and `Sync`. The sov_modules_api::StateMap is not `Send` and `Sync` so instead we add
-	/// this custom method.
 	pub(crate) fn state_view_at_version(
 		&self,
 		version: Option<Version>,
@@ -41,10 +31,7 @@ impl<'a, S: sov_modules_api::Spec> SovAptosDb<'a, S> {
 	}
 }
 
-/// The DbStateView that is passed to the VM for transaction execution.
-/// We don't use the Aptos native `DbStateView` because its `db` field is `Arc<dyn DbReader>`,
-/// meaning it's a dynamically dispatched trait object, so unable to derive
-/// serialization/deserialization. Instead, in our custom type we use a concrete type `SovAptosDb`.
+/// The `DbStateView` that is passed to the VM for transaction execution.
 pub struct DbStateView<'a, S>
 where
 	S: sov_modules_api::Spec,
@@ -54,8 +41,30 @@ where
 	verify_against_state_root_hash: Option<HashValue>,
 }
 
+impl<'a, S> DbStateView<'a, S>
+where
+	S: sov_modules_api::Spec,
+{
+	/// Get state value by key
+	fn get(&self, key: &StateKey) -> Result<Option<AptosStateValue>> {
+		Ok(if let Some(version) = self.version {
+			if let Some(root_hash) = self.verify_against_state_root_hash {
+				// We need to implement `get_state_value_with_proof_by_version` and use that here.
+				// let (value, proof) = self.db.get_state_value_with_proof_by_version(key, version)?;
+				// proof.verify(root_hash, CryptoHash::hash(key), value.as_ref())?;
+				// value
+				unimplemented!()
+			} else {
+				self.db.state_kv_db.get(version, self.working_set).get(key).cloned
+			}
+		} else {
+			None
+		})
+	}
+}
+
 //`DbStateView` must implement `TStateView` trait for `AptosVM` to execute transactions.
-impl<'a, S> TStateView for DbStateView<'a, S>
+impl<'a, S> TStateView for SovAptosDb<'a, S>
 where
 	S: sov_modules_api::Spec,
 {
@@ -66,6 +75,6 @@ where
 	}
 
 	fn get_usage(&self) -> Result<StateStorageUsage> {
-		self.db.get_state_storage_usage(self.version).map_err(Into::into)
+		unimplemented!()
 	}
 }

@@ -6,24 +6,24 @@ mod helpers;
 mod rpc;
 mod signer;
 
-pub use experimental::AptosVM;
 pub use signer::DevSigner;
 
 mod experimental {
+	use super::aptos::db::SovAptosDb;
+	use super::aptos::{AptosChainConfig, DbAccount};
+	use super::event::Event;
 	use super::genesis::AptosConfig;
+	use crate::aptos::primitive_types::{
+		BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
+	};
 	use aptos_api_types::{Address, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_consensus_types::block::Block;
 	use aptos_crypto::bls12381::Signature;
 	use aptos_db::AptosDB;
-	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
+	use aptos_types::state_store::state_value::StateValue as AptosStateValue;
+	use aptos_types::transaction::Version;
+	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, StateValue, WorkingSet};
 	use sov_state::codec::BcsCodec;
-
-	use super::aptos::db::AptosDb;
-	use super::aptos::{AptosChainConfig, DbAccount};
-	use super::event::Event;
-	use crate::aptos::primitive_types::{
-		BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
-	};
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -37,14 +37,20 @@ mod experimental {
 		pub(crate) receipt: Receipt,
 	}
 
-	/// The sov-aptos module provides compatibility with the aptos.
+	/// The sov-aptos module provides compatibility with the Aptos VM and Sovereign Labs
 	#[allow(dead_code)]
 	// #[cfg_attr(feature = "native", derive(sov_modules_api::ModuleCallJsonSchema))]
 	#[derive(ModuleInfo, Clone)]
-	pub struct AptosVM<S: sov_modules_api::Spec, Da: DaSpec> {
+	pub struct SovAptosVM<S: sov_modules_api::Spec, Da: DaSpec> {
 		/// The address of the aptos module.
 		#[address]
 		pub(crate) address: S::Address,
+
+		/// Mapping of `Version` to `AptosStateValue`.
+		/// By default, `StateMap` uses the `Borsh` codec which is faster and more
+		/// performant that `BcsCodec`.
+		#[state]
+		pub(crate) state_kv_db: sov_modules_api::StateMap<Version, AptosStateValue>,
 
 		/// Mapping from account address to account state.
 		#[state]
@@ -109,7 +115,7 @@ mod experimental {
 		pub(crate) chain_state: sov_chain_state::ChainState<S, Da>,
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for AptosVM<S, Da> {
+	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for SovAptosVM<S, Da> {
 		type Spec = S;
 
 		type Config = AptosConfig;
@@ -136,7 +142,9 @@ mod experimental {
 		}
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
-		pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> AptosDb<'a, S> {}
+	impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
+		pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> SovAptosDb<'a, S> {
+			SovAptosDb::new(self.state_kv_db.clone(), working_set)
+		}
 	}
 }
