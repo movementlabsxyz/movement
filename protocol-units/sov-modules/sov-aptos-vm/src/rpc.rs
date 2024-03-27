@@ -1,25 +1,37 @@
 use std::array::TryFromSliceError;
 
+use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
+use aptos_crypto::bls12381::Signature;
+use aptos_types::state_store::state_value::StateValue as AptosStateValue;
+use aptos_types::transaction::Version;
 use jsonrpsee::core::RpcResult;
 use reth_primitives::{TransactionSignedEcRecovered, U128};
 use revm::primitives::{
 	ExecutionResult, HaltReason, InvalidTransaction, TransactTo, B256, KECCAK_EMPTY, U256,
 };
 use sov_modules_api::macros::rpc_gen;
-use sov_modules_api::{DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor, WorkingSet};
+use sov_modules_api::{
+	CryptoSpec, DaSpec, StateMap, StateMapAccessor, StateValueAccessor, StateVecAccessor,
+	WorkingSet,
+};
 use tracing::debug;
 
-use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
-use aptos_crypto::bls12381::Signature;
-
-use crate::aptos::db::AptosDb;
 use crate::aptos::error::rpc::EthApiError;
-use crate::aptos::error::rpc::RpcInvalidTransactionError;
-use crate::aptos::primitive_types::{BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered};
-use crate::experimental::AptosVM;
+use crate::aptos::primitive_types::{
+	BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
+};
+use crate::experimental::SovAptosVM;
+
+#[derive(Clone)]
+pub struct EthRpcConfig<S: sov_modules_api::Spec> {
+	pub min_blob_size: Option<usize>,
+	pub sov_tx_signer_priv_key: <S::CryptoSpec as CryptoSpec>::PrivateKey,
+	// add gas_price_oracle_config here
+	pub signer: DevSigner,
+}
 
 #[rpc_gen(client, server)]
-impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
+impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 	/// Handler for `net_version`
 	#[rpc_method(name = "get_ledger_info")]
 	pub fn net_version(&self, working_set: &mut WorkingSet<S>) -> RpcResult<String> {
@@ -65,6 +77,18 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
 			.expect("Block number for known block hash must be set");
 
 		self.get_block_by_height(Some(block_number_hex), details, working_set)
+	}
+
+	/// Handler for: `get_block_by_version`
+	#[rpc_method(name = "get_block_by_version")]
+	pub fn get_block_by_version(
+		&self,
+		version: Version,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Option<AptosStateValue>> {
+		debug!(?version, "AptosVM module JSON-RPC request to `get_block_by_version`");
+		let state = self.state_data.get(&version, working_set);
+		Ok(state)
 	}
 
 	/// Handler for: `get_block_by_height`

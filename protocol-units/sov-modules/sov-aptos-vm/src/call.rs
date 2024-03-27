@@ -6,6 +6,7 @@ use revm::primitives::{Address, CfgEnv, CfgEnvWithHandlerCfg, EVMError, Log, Spe
 use sov_modules_api::{
 	CallResponse, Context, DaSpec, StateValueAccessor, StateVecAccessor, WorkingSet,
 };
+use tracing::log;
 
 use crate::aptos::db::AptosDb;
 use crate::aptos::executor::{self};
@@ -37,6 +38,7 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 	) -> Result<CallResponse> {
 		let state = self.get_db(working_set).state_view_at_version(None)?;
 		let result = executor::execute_block_no_limit(&state, txs)?;
+		log::info!("execute_call: result: {:?}", result);
 		Ok(CallResponse {})
 	}
 }

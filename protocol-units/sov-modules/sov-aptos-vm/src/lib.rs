@@ -20,6 +20,7 @@ mod experimental {
 	use aptos_consensus_types::block::Block;
 	use aptos_crypto::bls12381::Signature;
 	use aptos_db::AptosDB;
+	use aptos_types::state_store::state_key::StateKey;
 	use aptos_types::state_store::state_value::StateValue as AptosStateValue;
 	use aptos_types::transaction::Version;
 	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, StateValue, WorkingSet};
@@ -50,7 +51,7 @@ mod experimental {
 		/// By default, `StateMap` uses the `Borsh` codec which is faster and more
 		/// performant that `BcsCodec`.
 		#[state]
-		pub(crate) state_kv_db: sov_modules_api::StateMap<Version, AptosStateValue>,
+		pub(crate) state_data: sov_modules_api::StateMap<Version, AptosStateValue>,
 
 		/// Mapping from account address to account state.
 		#[state]
@@ -144,7 +145,7 @@ mod experimental {
 
 	impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 		pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> SovAptosDb<'a, S> {
-			SovAptosDb::new(self.state_kv_db.clone(), working_set)
+			SovAptosDb::new(self.state_data.clone(), working_set)
 		}
 	}
 }
