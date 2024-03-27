@@ -39,6 +39,7 @@ borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 tracing = "0.1.40"
 tokio = { version = "1.35.1", features = ["full"] }
 tempfile = "3.5"
+fail = "0.5.1"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
 poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
@@ -81,13 +82,20 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
-# to be avoid depenedency conflicts with other Sovereign Labs crates. 
-aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
-aptos-consensus-types = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
-aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
-aptos-db = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
-aptos-api-types = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
-aptos-api = { git = "https://github.com/0xmovses/aptos-core", rev = "d3cc82ac6739bd1b9f2f532ddfe79fc261dceb5d" }
+# to be avoid depenedency conflicts with other Sovereign Labs crates.
+aptos-vm = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-consensus-types = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-db = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-api-types = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-types = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-api = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-storage-interface = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-block-executor = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-vm-types = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-vm-logging = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-language-e2e-tests = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
 
 # https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
