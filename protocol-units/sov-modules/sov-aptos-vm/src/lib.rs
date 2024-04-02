@@ -65,6 +65,9 @@ mod experimental {
 
 		#[state]
 		pub(crate) known_version: StateValue<u64>,
+
+		#[state]
+		pub(crate) chain_id: StateValue<u64>,
 	}
 
 	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for SovAptosVM<S, Da> {
