@@ -1,4 +1,6 @@
-use aptos_api_types::{AccountData, MoveModule, MoveModuleBytecode, MoveResource, Transaction};
+use aptos_api_types::{
+	AccountData, Event, MoveModule, MoveModuleBytecode, MoveResource, Transaction,
+};
 use std::ops::Range;
 
 use crate::aptos::db::SovAptosDb;
@@ -222,3 +224,6 @@ impl BorshDeserialize for TransactionWrapper {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ValidatorSignerWrapper(ValidatorSigner);
+
+#[derive(BorshDeserialize, BorshSerialize, Debug, PartialEq, Clone, Serialize, Deserialize)]
+pub struct EventWrapper(Event);

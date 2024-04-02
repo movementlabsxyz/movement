@@ -57,6 +57,7 @@ aptos-language-e2e-tests = { workspace = true }
 aptos-framework = { workspace = true }
 aptos-executor = { workspace = true }
 aptos-executor-types = { workspace = true }
+aptos-executor-test-helpers = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-table-extension = { workspace = true }
@@ -83,6 +84,8 @@ ethers-core = { workspace = true, optional = true }
 ethers-contract = { workspace = true, optional = true }
 ethers-signers = { workspace = true, optional = true }
 dirs = "5.0.1"
+rand = "0.8.5"
+tempfile = "3.10.1"
 
 [dev-dependencies]
 # sov-aptos = { path = ".", features = ["smart_contracts"] }

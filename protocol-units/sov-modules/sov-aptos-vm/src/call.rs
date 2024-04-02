@@ -5,6 +5,7 @@ use aptos_api_types::LedgerInfo;
 use aptos_consensus_types::block::Block;
 use aptos_crypto::hash::CryptoHash;
 use aptos_crypto::HashValue;
+use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::block_info::BlockInfo;
 use aptos_types::block_metadata::BlockMetadata;
 use aptos_types::ledger_info::generate_ledger_info_with_sig;
@@ -12,7 +13,8 @@ use aptos_types::transaction::Transaction;
 use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
 use chrono::Utc;
 use sov_modules_api::{
-	CallResponse, Context, DaSpec, StateValueAccessor, StateVecAccessor, WorkingSet,
+	CallResponse, Context, DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor,
+	WorkingSet,
 };
 /// Aptos call message.
 #[derive(
@@ -28,11 +30,10 @@ pub struct CallMessage {
 	pub serialized_txs: Vec<Vec<u8>>,
 }
 
-impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
+impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S> {
 	pub(crate) fn execute_call(
 		&self,
 		serialized_txs: Vec<Vec<u8>>,
-		_context: &C,
 		working_set: &mut WorkingSet<S>,
 	) -> Result<CallResponse> {
 		// timestamp
@@ -88,9 +89,12 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 
 		println!("EXECUTING BLOCK {:?} {:?}", block_id, parent_block_id);
 		let result = executor.execute_block((block_id, block).into(), parent_block_id, None)?;
+		let chain_id = self.chain_id.get(working_set).unwrap();
 
 		// sign for the the ledger
+		// last three args are likely wrong, where to get this data.
 		let ledger_info = LedgerInfo::new(
+			chain_id,
 			BlockInfo::new(
 				next_epoch,
 				0,
@@ -100,7 +104,9 @@ impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 				unix_now,
 				result.epoch_state().clone(),
 			),
-			HashValue::zero(),
+			0,
+			0,
+			0,
 		);
 
 		println!("COMMITTING BLOCK: {:?} {:?}", block_id, parent_block_id);

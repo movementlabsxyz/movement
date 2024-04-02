@@ -103,6 +103,7 @@ aptos-config = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9
 aptos-vm-genesis = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
 aptos-executor = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
 aptos-executor-types = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
+aptos-executor-test-helpers = { git = "https://github.com/0xmovses/aptos-core", rev = "bfa7d8f9a6467e4b5c84344c2024f60a306536d4" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }

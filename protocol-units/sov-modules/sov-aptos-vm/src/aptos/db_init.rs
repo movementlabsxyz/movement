@@ -1,7 +1,6 @@
 use aptos_api_types::{Address, HexEncodedBytes, MoveModule, MoveResource};
 use sov_modules_api::StateMapAccessor;
 
-use super::db::AptosDb;
 use super::{AccountInfo, DbAccount};
 
 /// Initializes database with a predefined account.

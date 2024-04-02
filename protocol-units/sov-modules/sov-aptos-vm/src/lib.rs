@@ -1,31 +1,31 @@
 mod aptos;
 mod call;
-mod event;
+mod call_tests;
 mod genesis;
-mod helpers;
 mod rpc;
 mod signer;
 
 pub use signer::DevSigner;
 
 mod experimental {
-	use super::aptos::DbAccount;
-	use super::event::Event;
-	use super::genesis::AptosConfig;
 	use crate::aptos::primitive_types::{
-		Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper, TransactionSignedAndRecovered,
-		ValidatorSignerWrapper,
+		EventWrapper, Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper,
+		TransactionSignedAndRecovered, ValidatorSignerWrapper,
 	};
-	use aptos_api_types::{HexEncodedBytes, MoveModuleBytecode, MoveResource};
+	use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_config::config::{
 		RocksdbConfigs, StorageDirPaths, BUFFERED_STATE_TARGET_ITEMS,
 		DEFAULT_MAX_NUM_NODES_PER_LRU_CACHE_SHARD, NO_OP_STORAGE_PRUNER_CONFIG,
 	};
+	use aptos_crypto::HashValue;
 	use aptos_db::AptosDB;
+	use aptos_executor::block_executor::BlockExecutor;
 	use aptos_storage_interface::DbReaderWriter;
+	use aptos_types::waypoint::Waypoint;
 	use sov_modules_api::{
-		Context, DaSpec, Error, ModuleInfo, StateValue, StateValueAccessor, WorkingSet,
+		Context, DaSpec, Error, ModuleInfo, StateMap, StateValue, StateValueAccessor, WorkingSet,
 	};
+	use std::str::FromStr;
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -39,11 +39,15 @@ mod experimental {
 		pub(crate) receipt: Receipt,
 	}
 
-	/// The sov-aptos module provides compatibility with the Aptos VM and Sovereign Labs
+	#[derive(Clone)]
+	pub struct AptosVmConfig {
+		pub data: Vec<u8>,
+	}
+
+	/// The sov-aptos module provides compatibility with the Aptos VM
 	#[allow(dead_code)]
-	// #[cfg_attr(feature = "native", derive(sov_modules_api::ModuleCallJsonSchema))]
 	#[derive(ModuleInfo, Clone)]
-	pub struct SovAptosVM<S: sov_modules_api::Spec, Da: DaSpec> {
+	pub struct SovAptosVM<S: sov_modules_api::Spec> {
 		#[address]
 		pub(crate) address: S::Address,
 
@@ -56,6 +60,11 @@ mod experimental {
 		// TODO: this may be redundant with address
 		#[state]
 		pub(crate) validator_signer: StateValue<Vec<u8>>, // TODO: fix validator signer incompatability
+
+		// This is string because we are using transaction.hash: https://github.com/movemntdev/aptos-core/blob/112ad6d8e229a19cfe471153b2fd48f1f22b9684/crates/indexer/src/models/transactions.rs#L31
+		// #[cfg(feature = "aptos-consensus")]
+		#[state]
+		pub(crate) transactions: StateMap<String, Vec<u8>>, // TODO: fix Transaction serialiation incompatability
 
 		#[state]
 		pub(crate) genesis_hash: StateValue<Vec<u8>>, // TODO: fix genesis serialiation incompatability
@@ -70,14 +79,14 @@ mod experimental {
 		pub(crate) chain_id: StateValue<u64>,
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for SovAptosVM<S, Da> {
+	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for SovAptosVM<S> {
 		type Spec = S;
 
-		type Config = AptosConfig;
+		type Config = AptosVmConfig;
 
 		type CallMessage = super::call::CallMessage;
 
-		type Event = Event;
+		type Event = EventWrapper;
 
 		fn genesis(
 			&self,
@@ -97,7 +106,7 @@ mod experimental {
 		}
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
+	impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S> {
 		pub(crate) fn get_db(
 			&self,
 			working_set: &mut WorkingSet<S>,
@@ -118,10 +127,17 @@ mod experimental {
 			)?;
 			Ok(DbReaderWriter::new(aptosdb))
 		}
+		pub(crate) fn get_executor(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<BlockExecutor<SovAptosVM<S>>, Error> {
+			let db = self.get_db(working_set)?;
+			Ok(BlockExecutor::new(db.clone()))
+		}
 
 		pub(crate) fn get_validator_signer(
 			&self,
-			working_set: &mut WorkingSet<C::Storage>,
+			working_set: &mut WorkingSet<S>,
 		) -> Result<ValidatorSignerWrapper, Error> {
 			let serialized_validator_signer = self
 				.validator_signer
@@ -131,6 +147,44 @@ mod experimental {
 			// TODO: seems redundant, but error types are different
 			Ok(serde_json::from_slice::<ValidatorSignerWrapper>(&serialized_validator_signer)
 				.expect("Failed to deserialize validator signer"))
+		}
+
+		pub(crate) fn get_known_version(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<u64, Error> {
+			let known_version = self
+				.known_version
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Serialized waypoint hash is not set."))?;
+			Ok(known_version)
+		}
+
+		pub(crate) fn get_waypoint(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<Waypoint, Error> {
+			let serialized_waypoint = self
+				.waypoint
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Serialized waypoint hash is not set."))?;
+			println!("serialized_waypoint: {:?}", serialized_waypoint);
+
+			// TODO: seems redundant, but error types are different
+			Ok(Waypoint::from_str(serialized_waypoint.as_str())
+				.expect("Failed to deserialize waypoint"))
+		}
+
+		pub(crate) fn get_genesis_hash(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<HashValue, Error> {
+			let serialized_genesis_hash = self
+				.genesis_hash
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Serialized genesis hash is not set."))?;
+			Ok(HashValue::from_slice(serialized_genesis_hash)
+				.expect("Failed to deserialize genesis hash"))
 		}
 	}
 }
