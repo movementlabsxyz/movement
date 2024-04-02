@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
   };
 
@@ -12,13 +13,12 @@
         pkgs = import nixpkgs {
           inherit system;
         };
-        celestiaSrc = pkgs.fetchFromGitHub {
-          owner = "celestiaorg";
-          repo = "celestia-node";
-          rev = "v0.13.2";
-          # This is a placeholder; you would need to replace it with the actual hash.
-          # However, since you prefer not to specify it, you might consider other approaches for development purposes.
-          sha256 = "sha256-YCwIJ55lkLcViVzmAeCIrPtc9mJ/N0eswKrlu9BEC3g="; 
+        celestiaSrc =  pkgs.fetchgit {
+          url = "https://github.com/celestiaorg/celestia-node.git";
+          rev = "v0.13.2"; # Use ref for tags or branches
+          sha256 = "Sxw4ccHiO3nszd4L5wsBXk4MReFfHnzISjRlmJy5KBY=";
+          leaveDotGit = true; # Leave the .git directory in the source
+          # `rev` and `sha256` are omitted to demonstrate fetching the latest commit on the ref.
         };
       in
       {
@@ -38,6 +38,12 @@
               name = "celestia";
               src = celestiaSrc;
               buildInputs = with pkgs; [ git go gnumake gcc protobuf clang llvm openssl rustc cargo ];
+              preBuild = ''
+                export HOME=$TMPDIR
+                export GOPATH="$TMPDIR/go"
+                export GOCACHE="$TMPDIR/go-cache"
+                mkdir -p $GOPATH $GOCACHE
+              '';
               buildPhase = ''
                 make build
               '';
