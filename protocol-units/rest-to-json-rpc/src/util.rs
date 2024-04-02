@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-struct JsonRpcRequest {
+pub struct JsonRpcRequest {
     jsonrpc: String,
     method: String,
     params: serde_json::Value,
@@ -11,6 +11,11 @@ struct JsonRpcRequest {
 
 pub trait ToJsonRpc<T> {
 
+    // ? This currently does not need to be part of the trait. It's just this way for organization.
+    /// Converts a request to a method name
+    fn path_to_method(&self, request : &T) -> Result<String, anyhow::Error>;
+
+    /// Converts a request to a JsonRpcRequest
     fn to_json_rpc(&self, request : T) -> Result<JsonRpcRequest, anyhow::Error>;
 
 }
@@ -29,8 +34,13 @@ pub mod actix_web {
     pub struct WebArgs(web::Path<String>, web::Json<serde_json::Value>, web::Query<serde_json::Map<String, serde_json::Value>>);
 
     impl ToJsonRpc<WebArgs> for ActixWeb {
+
+        fn path_to_method(&self, path: &WebArgs) -> Result<String, anyhow::Error> {
+            Ok(path.0.clone().replace("/", "."))
+        }
+
         fn to_json_rpc(&self, request: WebArgs) -> Result<JsonRpcRequest, anyhow::Error> {
-            let path_as_method = request.0.into_inner().replace("/", ".");
+            let path_as_method = self.path_to_method(&request)?;
             let params = json!({
                 "body": request.1.into_inner(),
                 "query": request.2.into_inner(),
