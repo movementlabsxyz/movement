@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH=$PATH:./target/release
+
+ESPRESSO_BASE_STORAGE_PATH=$(mktemp -d -t m2-XXXXXXXX)
+export M2_BASE_STORAGE_PATH
+echo "Using sequencer storage path: $M@_BASE_STORAGE_PATH"
+
+# If keeping the storage path, is desired for debugging, comment out the line
+# below or set a custom storage path in process-compose.yaml.
+trap "exit" INT TERM
+trap cleanup EXIT
+cleanup(){
+    echo "Cleaning up sequencer storage path: $M2_BASE_STORAGE_PATH"
+    rm -rv "$M2_BASE_STORAGE_PATH"
+}
+
+process-compose "$@"
