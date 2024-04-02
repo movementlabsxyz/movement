@@ -1,3 +1,9 @@
+pub mod util;
+pub use util::{
+    JsonRpcRequest,
+    ToJsonRpc,
+    Middleware
+};
 pub mod naive;
 pub mod custom;
-pub mod util;
+pub mod actix;
