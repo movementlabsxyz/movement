@@ -19,6 +19,7 @@ sov-state = { workspace = true }
 sov-chain-state = { workspace = true }
 
 anyhow = { workspace = true }
+chrono = { workspace = true }
 fail = { workspace = true }
 thiserror = { workspace = true }
 bytes = { workspace = true }
@@ -39,6 +40,7 @@ lazy_static = "1.4.0"
 secp256k1 = { workspace = true }
 
 aptos-vm = { workspace = true }
+aptos-config = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-consensus-types = { workspace = true }
@@ -50,7 +52,15 @@ aptos-storage-interface = { workspace = true }
 aptos-block-executor = { workspace = true }
 aptos-vm-types = { workspace = true }
 aptos-vm-logging = { workspace = true }
+aptos-vm-genesis = { workspace = true }
 aptos-language-e2e-tests = { workspace = true }
+aptos-framework = { workspace = true }
+aptos-executor = { workspace = true }
+aptos-executor-types = { workspace = true }
+
+move-binary-format = { workspace = true }
+move-table-extension = { workspace = true }
+move-core-types = { workspace = true }
 
 alloy-sol-types = { version = "0.6" }
 revm = { workspace = true, features = [
@@ -72,6 +82,7 @@ ethereum-types = { workspace = true, optional = true }
 ethers-core = { workspace = true, optional = true }
 ethers-contract = { workspace = true, optional = true }
 ethers-signers = { workspace = true, optional = true }
+dirs = "5.0.1"
 
 [dev-dependencies]
 # sov-aptos = { path = ".", features = ["smart_contracts"] }

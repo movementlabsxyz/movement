@@ -1,4 +1,4 @@
-use aptos_api_types::{AccountData, MoveModule, MoveModuleBytecode, MoveResource};
+use aptos_api_types::{AccountData, MoveModule, MoveModuleBytecode, MoveResource, Transaction};
 use std::ops::Range;
 
 use crate::aptos::db::SovAptosDb;
@@ -10,6 +10,7 @@ use aptos_sdk::rest_client::Account;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_storage_interface::state_view::DbStateView;
 use aptos_types::on_chain_config::Version;
+use aptos_types::state_store::state_key::StateKey;
 use auto_impl::auto_impl;
 use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
 use reth_revm::precompile::HashMap;
@@ -117,3 +118,107 @@ pub(crate) struct SovAptosBlock {
 	pub(crate) block: Block,
 	pub(crate) transactions: BlockTransactions,
 }
+
+use aptos_types::state_store::state_value::StateValue;
+use aptos_types::validator_signer::ValidatorSigner;
+use borsh::{BorshDeserialize, BorshSerialize};
+use serde::{Deserialize, Serialize};
+
+#[cfg_attr(feature = "native", derive(serde::Serialize), derive(serde::Deserialize))]
+
+pub struct StateValueWrapper(StateValue);
+
+impl BorshSerialize for StateValueWrapper {
+	fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+		writer.write_all(&serde_json::to_vec(&self.0)?)?;
+		Ok(())
+	}
+}
+
+impl BorshDeserialize for StateValueWrapper {
+	fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
+		Ok(Self(serde_json::from_slice(buf)?))
+	}
+	fn deserialize_reader<R>(_: &mut R) -> Result<Self, std::io::Error>
+	where
+		R: std::io::Read,
+	{
+		todo!()
+	}
+}
+
+impl StateValueWrapper {
+	pub fn new(state_key: StateValue) -> Self {
+		Self(state_key)
+	}
+}
+
+impl Into<StateValue> for StateValueWrapper {
+	fn into(self) -> StateValue {
+		self.0
+	}
+}
+
+#[cfg_attr(feature = "native", derive(serde::Serialize), derive(serde::Deserialize))]
+pub struct StateKeyWrapper(StateKey);
+
+impl BorshSerialize for StateKeyWrapper {
+	fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+		writer.write_all(&serde_json::to_vec(&self.0)?)?;
+		Ok(())
+	}
+}
+
+impl BorshDeserialize for StateKeyWrapper {
+	fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
+		Ok(Self(serde_json::from_slice(buf)?))
+	}
+	fn deserialize_reader<R>(_: &mut R) -> Result<Self, std::io::Error>
+	where
+		R: std::io::Read,
+	{
+		todo!()
+	}
+}
+
+impl StateKeyWrapper {
+	pub fn new(state_key: StateKey) -> Self {
+		Self(state_key)
+	}
+}
+
+impl Into<StateKey> for StateKeyWrapper {
+	fn into(self) -> StateKey {
+		self.0
+	}
+}
+
+pub struct TransactionWrapper(Transaction);
+
+impl BorshSerialize for TransactionWrapper {
+	fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+		writer.write_all(&serde_json::to_vec(&self.0)?)?;
+		Ok(())
+	}
+}
+
+impl Into<Transaction> for TransactionWrapper {
+	fn into(self) -> Transaction {
+		self.0
+	}
+}
+
+impl BorshDeserialize for TransactionWrapper {
+	fn deserialize(buf: &mut &[u8]) -> std::io::Result<Self> {
+		Ok(Self(serde_json::from_slice(buf)?))
+	}
+	fn deserialize_reader<R>(_: &mut R) -> Result<Self, std::io::Error>
+	where
+		R: std::io::Read,
+	{
+		todo!()
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidatorSignerWrapper(ValidatorSigner);

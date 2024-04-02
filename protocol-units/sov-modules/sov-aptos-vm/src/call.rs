@@ -1,20 +1,20 @@
+use crate::aptos::db::SovAptosDb;
+use crate::experimental::SovAptosVM;
 use anyhow::Result;
-use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
-use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
-use reth_primitives::{Log as RethLog, TransactionSignedEcRecovered};
-use revm::primitives::{Address, CfgEnv, CfgEnvWithHandlerCfg, EVMError, Log, SpecId};
+use aptos_api_types::LedgerInfo;
+use aptos_consensus_types::block::Block;
+use aptos_crypto::hash::CryptoHash;
+use aptos_crypto::HashValue;
+use aptos_types::block_info::BlockInfo;
+use aptos_types::block_metadata::BlockMetadata;
+use aptos_types::ledger_info::generate_ledger_info_with_sig;
+use aptos_types::transaction::Transaction;
+use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
+use chrono::Utc;
 use sov_modules_api::{
 	CallResponse, Context, DaSpec, StateValueAccessor, StateVecAccessor, WorkingSet,
 };
-use tracing::log;
-
-use crate::aptos::db::AptosDb;
-use crate::aptos::executor::{self};
-use crate::aptos::primitive_types::{BlockEnv, Receipt, TransactionSignedAndRecovered};
-use crate::aptos::{AptosChainConfig, RlpEvmTransaction};
-use crate::experimental::{AptosVM, PendingTransaction, SovAptosVM};
-
-/// aptos call message.
+/// Aptos call message.
 #[derive(
 	borsh::BorshDeserialize,
 	borsh::BorshSerialize,
@@ -25,46 +25,112 @@ use crate::experimental::{AptosVM, PendingTransaction, SovAptosVM};
 	Clone,
 )]
 pub struct CallMessage {
-	/// RLP encoded transaction.
-	pub tx: RlpEvmTransaction,
+	pub serialized_txs: Vec<Vec<u8>>,
 }
 
 impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
 	pub(crate) fn execute_call(
 		&self,
-		txs: &[SignatureVerifiedTransaction],
-		_context: &Context<S>,
+		serialized_txs: Vec<Vec<u8>>,
+		_context: &C,
 		working_set: &mut WorkingSet<S>,
 	) -> Result<CallResponse> {
-		let state = self.get_db(working_set).state_view_at_version(None)?;
-		let result = executor::execute_block_no_limit(&state, txs)?;
-		log::info!("execute_call: result: {:?}", result);
-		Ok(CallResponse {})
+		// timestamp
+		let unix_now = Utc::now().timestamp() as u64;
+
+		// get db for reference
+		let db = self.get_db(working_set)?;
+
+		// get the validator signer
+		let validator_signer = self.get_validator_signer(working_set)?;
+
+		// get the parent (genesis block)
+		let parent_block_id = self.get_genesis_hash(working_set)?;
+
+		// produce the block meta
+		let latest_ledger_info = db.reader.get_latest_ledger_info()?;
+		let next_epoch = latest_ledger_info.ledger_info().next_block_epoch();
+		let block_id = HashValue::random();
+		let block_meta = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			next_epoch,
+			0,
+			validator_signer.author(),
+			vec![],
+			vec![],
+			unix_now,
+		));
+
+		let mut txs = vec![];
+		for serialized_tx in serialized_txs {
+			let tx = serde_json::from_slice::<Transaction>(&serialized_tx)
+				.expect("Failed to deserialize transaction");
+			txs.push(tx.clone());
+			let hash = tx.hash(); // diem crypto hasher
+			let str_hash = hash.to_string();
+			self.transactions.set(&str_hash, &serialized_tx, working_set);
+		}
+
+		// store the checkpoint
+		let checkpoint = Transaction::StateCheckpoint(HashValue::random());
+
+		// form the complete block
+		let mut block = vec![];
+		block.push(block_meta);
+		block.extend(txs);
+		block.push(checkpoint);
+
+		drop(db); // drop the db from above so that the executor can use RocksDB
+
+		// execute the transaction in Aptos
+		let executor = self.get_executor(working_set)?;
+		// let parent_block_id = executor.committed_block_id();
+
+		println!("EXECUTING BLOCK {:?} {:?}", block_id, parent_block_id);
+		let result = executor.execute_block((block_id, block).into(), parent_block_id, None)?;
+
+		// sign for the the ledger
+		let ledger_info = LedgerInfo::new(
+			BlockInfo::new(
+				next_epoch,
+				0,
+				block_id,
+				result.root_hash(),
+				result.version(),
+				unix_now,
+				result.epoch_state().clone(),
+			),
+			HashValue::zero(),
+		);
+
+		println!("COMMITTING BLOCK: {:?} {:?}", block_id, parent_block_id);
+		let li = generate_ledger_info_with_sig(&[validator_signer], ledger_info);
+		executor
+			.commit_blocks(vec![block_id], li.clone())
+			.expect("Failed to commit blocks");
+
+		// manage epoch an parent block id
+		if li.ledger_info().ends_epoch() {
+			let epoch_genesis_id =
+				Block::make_genesis_block_from_ledger_info(li.ledger_info()).id();
+			self.genesis_hash.set(&epoch_genesis_id.to_vec(), working_set);
+		}
+
+		drop(executor);
+		// prove state
+		let db_too = self.get_db(working_set)?;
+		let state_proof = db_too.reader.get_state_proof(self.get_known_version(working_set)?)?;
+		let trusted_state = TrustedState::from_epoch_waypoint(self.get_waypoint(working_set)?);
+		let trusted_state = match trusted_state.verify_and_ratchet(&state_proof) {
+			Ok(TrustedStateChange::Epoch { new_state, .. }) => new_state,
+			_ => panic!("unexpected state change"),
+		};
+		self.waypoint.set(&trusted_state.waypoint().to_string(), working_set);
+		self.known_version.set(&trusted_state.version(), working_set);
+
+		// TODO: may want to use a lower level of execution abstraction
+		// TODO: see https://github.com/movemntdev/aptos-core/blob/main/aptos-move/block-executor/src/executor.rs#L73
+		// TODO: for an entrypoint that does not require a block.
+		Ok(CallResponse::default())
 	}
-}
-
-/// builds CfgEnvWithHandlerCfg
-/// Returns correct config depending on spec for given block number
-// Copies context-dependent values from template_cfg or default if not provided
-pub(crate) fn get_cfg_env_with_handler(
-	block_env: &BlockEnv,
-	cfg: AptosChainConfig,
-	template_cfg: Option<CfgEnv>,
-) -> CfgEnvWithHandlerCfg {
-	todo!()
-}
-
-/// Get spec id for a given block number
-/// Returns the first spec id defined for block >= block_number
-pub(crate) fn get_spec_id(spec: Vec<(u64, SpecId)>, block_number: u64) -> u64 {
-	// not sure we need this for sov-aptos, the values can be hardcoded
-	todo!()
-}
-
-/// Copied from <https://github.com/paradigmxyz/reth/blob/e83d3aa704f87825ca8cab6f593ab4d4adbf6792/crates/revm/revm-primitives/src/compat.rs#L17-L23>.
-/// All rights reserved.
-///
-/// By copying the code, we can avoid depending on the whole crate.
-pub fn into_reth_log(log: Log) -> RethLog {
-	RethLog { address: Address(log.address.0), topics: log.topics().to_vec(), data: log.data.data }
 }
