@@ -37,7 +37,6 @@ pkgs.stdenv.mkDerivation rec {
     export GOCACHE="$TMPDIR/go-cache"
     mkdir -p $GOPATH $GOCACHE
     make build && make install
-    ls -l $GOPATH/bin && sleep 300 | grep celestia
   '';
 
   installPhase = ''
