@@ -4,13 +4,11 @@ use crate::{
 };
 use actix_web::web;
 use serde_json::json;
-use regex::Regex;
 use std::collections::HashMap;
 use actix_router::{Path, ResourceDef};
 
 #[derive(Clone)]
 pub struct ActixWeb;
-
 
 pub struct WebArgs {
     pub path : web::Path<String>, 
@@ -40,12 +38,12 @@ impl From<WebArgsTuple> for WebArgs {
 
 impl ToJsonRpc<WebArgs> for ActixWeb {
 
-    fn request_to_method(&self, request : &WebArgs) -> Result<String, anyhow::Error> {
+    async fn request_to_method(&self, request : &WebArgs) -> Result<String, anyhow::Error> {
         Ok(request.path.clone().replace("/", "."))
     }
 
-    fn to_json_rpc(&self, request: WebArgs) -> Result<JsonRpcRequest, anyhow::Error> {
-        let path_as_method = self.request_to_method(&request)?;
+    async fn to_json_rpc(&self, request: WebArgs) -> Result<JsonRpcRequest, anyhow::Error> {
+        let path_as_method = self.request_to_method(&request).await?;
         let params = json!({
             "body": request.body.into_inner(),
             "query": request.path.into_inner(),
@@ -72,8 +70,8 @@ pub mod test_web_args {
     use actix_web::web;
     use serde_json::json;
 
-    #[test]
-    fn test_to_json_rpc() {
+    #[tokio::test]
+    async fn test_to_json_rpc() -> Result<(), anyhow::Error>{
 
         let actix_web = ActixWeb;
         let request = WebArgs::new(
@@ -81,9 +79,11 @@ pub mod test_web_args {
             web::Json(json!({"test": "test"})),
             web::Query::from_query("test=test").unwrap()
         );   
-        let rpc_request = actix_web.to_json_rpc(request).unwrap();
+        let rpc_request = actix_web.to_json_rpc(request).await?;
         assert_eq!(rpc_request.method, "test");
         assert_eq!(rpc_request.params, json!({"body": {"test": "test"}, "query": {"test": "test"}}));
+
+        Ok(())
 
     }
 
