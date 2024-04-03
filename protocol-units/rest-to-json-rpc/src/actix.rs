@@ -6,9 +6,11 @@ use actix_web::web;
 use serde_json::json;
 use regex::Regex;
 use std::collections::HashMap;
+use actix_router::{Path, ResourceDef};
 
 #[derive(Clone)]
 pub struct ActixWeb;
+
 
 pub struct WebArgs {
     pub path : web::Path<String>, 
@@ -25,6 +27,14 @@ impl WebArgs {
             query_params,
             path_params: HashMap::new(),
         }
+    }
+}
+
+pub struct WebArgsTuple(pub web::Path<String>, pub web::Json<serde_json::Value>, pub web::Query<serde_json::Map<String, serde_json::Value>>);
+
+impl From<WebArgsTuple> for WebArgs {
+    fn from(tuple: WebArgsTuple) -> Self {
+        WebArgs::new(tuple.0, tuple.1, tuple.2)
     }
 }
 
@@ -53,7 +63,7 @@ impl ToJsonRpc<WebArgs> for ActixWeb {
 }
 
 
-pub mod test {
+pub mod test_web_args {
     use super::{
         ActixWeb,
         WebArgs,
@@ -80,33 +90,41 @@ pub mod test {
 }
 
 #[derive(Clone)]
-pub struct WebArgsExtractor {
+pub struct PathExtractor {
     pub actix_web: ActixWeb,
-    pub matching : Vec<Regex>,
+    pub matching : Vec<String>,
 }
 
-impl WebArgsExtractor {
+impl PathExtractor {
     pub fn new() -> Self {
 
-        WebArgsExtractor {
+        PathExtractor {
             actix_web: ActixWeb,
             matching: vec![],
         }
     }
 
+    pub fn matching(&mut self, pattern: &str) -> Result<(), anyhow::Error> {
+        self.matching.push(pattern.to_string());
+        Ok(())
+    }
+
     pub fn match_and_extract(&self, original_path: &str) -> Result<(HashMap<String, String>, String), anyhow::Error> {
         for pattern in &self.matching {
-            if let Some(caps) = pattern.captures(original_path) {
+
+            let resource = ResourceDef::new(pattern.as_str());
+            let mut path = Path::new(original_path);
+            let matches = resource.capture_match_info(&mut path);
+
+            if matches {
                 let mut path_params = HashMap::new();
                 let mut new_path = original_path.to_string();
                 
-                for name in pattern.capture_names().flatten() {
-                    if let Some(matched) = caps.name(name) {
-                        path_params.insert(name.to_string(), matched.as_str().to_string());
+                for (name, value) in path.iter() {
+                  
+                    path_params.insert(name.to_string(), value.to_string());
+                    new_path = new_path.replace(&value, name);
 
-                        // Replace the matched segment with nothing in the new path
-                        new_path = new_path.replacen(matched.as_str(), "", 1);
-                    }
                 }
 
                 // Cleanup any residual slashes from the path
@@ -128,6 +146,66 @@ impl WebArgsExtractor {
 
         Ok(request)
 
+    }
+
+}
+
+pub mod test_path_extractor {
+
+    use super::{
+        PathExtractor,
+        WebArgs,
+        ToJsonRpc,
+        ActixWeb,
+    };
+    use actix_web::web;
+    use serde_json::json;
+
+    #[test]
+    fn test_match_and_extract() -> Result<(), anyhow::Error> {
+        let mut path_extractor = PathExtractor::new();
+        path_extractor.matching(r"test/{id}")?;
+        let (path_params, new_path) = path_extractor.match_and_extract("test/1")?;
+        assert_eq!(path_params.get("id").unwrap(), "1");
+        assert_eq!(new_path, "test/id");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_match_multiple_patterns() -> Result<(), anyhow::Error> {
+        let mut path_extractor = PathExtractor::new();
+        path_extractor.matching(r"test/{id}")?;
+        path_extractor.matching(r"test/{id}/test")?;
+        let (path_params, new_path) = path_extractor.match_and_extract("test/1/test")?;
+        assert_eq!(path_params.get("id").unwrap(), "1");
+        assert_eq!(new_path, "test/id/test");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_multiple_patterns_matches_first() -> Result<(), anyhow::Error> {
+        let mut path_extractor = PathExtractor::new();
+        path_extractor.matching(r"test/{id}")?;
+        path_extractor.matching(r"test/{id}/test")?;
+        let (path_params, new_path) = path_extractor.match_and_extract("test/1")?;
+        assert_eq!(path_params.get("id").unwrap(), "1");
+        assert_eq!(new_path, "test/id");
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_multiple_segments() -> Result<(), anyhow::Error> {
+        let mut path_extractor = PathExtractor::new();
+        path_extractor.matching(r"test/{id}/test/{id2}")?;
+        let (path_params, new_path) = path_extractor.match_and_extract("test/1/test/2")?;
+        assert_eq!(path_params.get("id").unwrap(), "1");
+        assert_eq!(path_params.get("id2").unwrap(), "2");
+        assert_eq!(new_path, "test/id/test/id2");
+
+        Ok(())
     }
 
 }
