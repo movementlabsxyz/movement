@@ -1,14 +1,14 @@
 { pkgs }:
 
-pkgs.stdenv.mkDerivation {
+pkgs.stdenv.mkDerivation rec {
   name = "celestia-node";
   version = "v0.13.2"; # Update to the desired version
 
-  src = pkgs.fetchFromGitHub {
-    owner = "celestiaorg";
-    repo = "celestia-node";
+  src = pkgs.fetchgit {
+    url = "https://github.com/celestiaorg/celestia-node.git";
     rev = version;
-    sha256 = "0000000000000000000000000000000000000000000000000000"; # Replace with the correct hash
+    sha256 = "YCwIJ55lkLcViVzmAeCIrPtc9mJ/N0eswKrlu9BEC3g="; 
+    leaveDotGit = true;
   };
 
   nativeBuildInputs = with pkgs; [
@@ -32,13 +32,19 @@ pkgs.stdenv.mkDerivation {
   '';
 
   buildPhase = ''
-    make build
+    export HOME=$TMPDIR
+    export GOPATH="$TMPDIR/go"
+    export GOCACHE="$TMPDIR/go-cache"
+    mkdir -p $GOPATH $GOCACHE
+    make build && make install
+    ls -l $GOPATH/bin && sleep 300 | grep celestia
   '';
 
   installPhase = ''
     mkdir -p $out/bin
-    cp -r * $out/bin
+    cp $GOPATH/bin/celestia $out/bin
   '';
+
 
   meta = with pkgs.lib; {
     description = "Celestia Node";
