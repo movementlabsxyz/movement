@@ -1,4 +1,3 @@
-use crate::aptos::db::SovAptosDb;
 use crate::experimental::SovAptosVM;
 use anyhow::Result;
 use aptos_bitvec::BitVec;
@@ -88,7 +87,9 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		let mut block = vec![];
 		block.push(block_meta);
 		block.extend(txs);
-		block.push(checkpoint);
+		// block.push(checkpoint);
+
+		println!("BLOCK: {:?}", block);
 
 		drop(db); // drop the db from above so that the executor can use RocksDB
 

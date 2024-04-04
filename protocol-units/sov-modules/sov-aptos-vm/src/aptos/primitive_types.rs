@@ -16,9 +16,9 @@ use aptos_types::on_chain_config::Version;
 use aptos_types::state_store::state_key::StateKey;
 use auto_impl::auto_impl;
 use move_core_types::metadata::Metadata as MoveMetadata;
-use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
-use reth_revm::precompile::HashMap;
-use revm::primitives::{Address, EVMError, B256};
+// use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
+// use reth_revm::precompile::HashMap;
+// use revm::primitives::{Address, EVMError, B256};
 /// Aptos database interface
 /// This trait is loosely modelled on `revm::Database` as this trait is used
 /// in the sov-aptos module.

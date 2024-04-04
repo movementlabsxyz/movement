@@ -32,8 +32,9 @@ use sov_modules_api::utils::generate_address;
 use sov_modules_api::Error;
 use sov_state::storage::WorkingSet;
 use sov_state::{DefaultStorageSpec, ProverStorage};
+use sov_test_utils::MockZkVerifier;
 
-type S = sov_modules_api::default_spec::DefaultSpec<sov_risc0_adapter::Risc0Verifier>;
+type S = sov_modules_api::default_spec::DefaultSpec<MockZkVerifier>;
 
 type DefaultPrivateKey = <<S as Spec>::CryptoSpec as CryptoSpec>::PrivateKey;
 const B: u64 = 1_000_000_000;
@@ -111,7 +112,10 @@ fn aptosvm_small_test() -> Result<(), Error> {
 
 	// initialize AptosVM
 	let aptosvm = SovAptosVM::default();
-	aptosvm.init_module(&AptosVmConfig { data: vec![] }, &mut working_set)?;
+	aptosvm.init_module(&AptosVmConfig { 
+		data: vec![] ,
+		path : tmpdir.path().to_path_buf()
+	}, &mut working_set)?;
 
 	// get validator_signer from aptosvm
 	let signer = ValidatorSigner::from_int(0);
@@ -162,7 +166,10 @@ fn aptosvm_test() -> Result<(), Error> {
 	// initialize AptosVM
 	let aptosvm = SovAptosVM::<S>::default();
 
-	aptosvm.init_module(&AptosVmConfig { data: vec![] }, &mut working_set)?;
+	aptosvm.init_module(&AptosVmConfig {
+		 data: vec![],
+		 path : tmpdir.path().to_path_buf()
+	}, &mut working_set)?;
 
 	// get validator_signer from aptosvm
 	let signer = ValidatorSigner::from_int(0);
@@ -226,7 +233,7 @@ fn aptosvm_test() -> Result<(), Error> {
 		)))
 	);*/
 
-	// use transcation factory to create entrypoint call
+	// use transaction factory to create entrypoint call
 	let block_vec: Vec<Transaction> = vec![
 		UserTransaction(create1_tx),
 		UserTransaction(create2_tx),

@@ -8,11 +8,13 @@ use dirs;
 use poem_openapi::__private::serde_json;
 use std::fs;
 
-use crate::aptos::primitive_types::ValidatorSignerWrapper;
 use crate::experimental::SovAptosVM;
 use aptos_types::transaction::{Transaction, WriteSetPayload};
 use aptos_types::vm_status::StatusType::Validation;
 use sov_modules_api::{DaSpec, StateValueAccessor, WorkingSet};
+use aptos_types::ledger_info::{
+	generate_ledger_info_with_sig, LedgerInfo, LedgerInfoWithSignatures, LedgerInfoWithV0,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const MOVE_DB_DIR: &str = ".sov-aptosvm-db";
@@ -34,7 +36,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		// issue the genesis transaction
 		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 		// 1. create the db
-		let path = format!("{}/{}", dirs::home_dir().unwrap().to_str().unwrap(), MOVE_DB_DIR);
+		let path = format!("{}", config.path.display());
 		if !fs::metadata(path.clone().as_str()).is_ok() {
 			fs::create_dir_all(path.as_str()).unwrap();
 		}
@@ -53,18 +55,15 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		// set state version
 		self.known_version.set(&0, working_set);
 
+		self.chain_id.set(&1, working_set);
+
 		drop(db); // need to drop the lock on the RocksDB
 		  // set the genesis block
 		let executor = self.get_executor(working_set)?;
 		let genesis_block_id = executor.committed_block_id();
-		println!("Genesis block id: {:?}", genesis_block_id);
 		self.genesis_hash.set(&genesis_block_id.to_vec(), working_set);
 
-		// might we need to commit the blocks first?
-		/*executor.commit_blocks(
-			vec![genesis_block_id],
-			executor.
-		)?;*/
+	
 		Ok(())
 	}
 }

@@ -1,17 +1,17 @@
-mod aptos;
+// mod aptos;
 mod call;
 mod call_tests;
 mod genesis;
-mod rpc;
-mod signer;
+// mod rpc;
+// mod signer;
 
-pub use signer::DevSigner;
+// pub use signer::DevSigner;
 
 mod experimental {
-	use crate::aptos::primitive_types::{
+	/*use crate::aptos::primitive_types::{
 		EventWrapper, Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper,
 		TransactionSignedAndRecovered, ValidatorSignerWrapper,
-	};
+	};*/
 	use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_config::config::{
 		RocksdbConfigs, StorageDirPaths, BUFFERED_STATE_TARGET_ITEMS,
@@ -29,6 +29,7 @@ mod experimental {
 		Context, DaSpec, Error, ModuleInfo, StateMap, StateValue, StateValueAccessor, WorkingSet,
 	};
 	use std::str::FromStr;
+	use std::path::PathBuf;
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -38,13 +39,13 @@ mod experimental {
 
 	#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 	pub(crate) struct PendingTransaction {
-		pub(crate) transaction: TransactionSignedAndRecovered,
-		pub(crate) receipt: Receipt,
+
 	}
 
 	#[derive(Clone)]
 	pub struct AptosVmConfig {
 		pub data: Vec<u8>,
+		pub path : PathBuf
 	}
 
 	/// The sov-aptos module provides compatibility with the Aptos VM
@@ -54,8 +55,8 @@ mod experimental {
 		#[address]
 		pub(crate) address: S::Address,
 
-		#[state]
-		pub(crate) state_data: sov_modules_api::StateMap<StateKeyWrapper, StateValueWrapper>,
+		/*#[state]
+		pub(crate) state_data: sov_modules_api::StateMap<StateKeyWrapper, StateValueWrapper>,*/
 
 		#[state]
 		pub(crate) db_path: StateValue<String>,
@@ -89,7 +90,7 @@ mod experimental {
 
 		type CallMessage = super::call::CallMessage;
 
-		type Event = EventWrapper;
+		type Event = ();
 
 		fn genesis(
 			&self,
