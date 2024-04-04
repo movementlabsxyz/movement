@@ -6,11 +6,13 @@ use rest_to_json_rpc::{
     }
 };
 
-pub struct V1Proxy;
+pub enum V1Proxy {
+    Actix(Actix)
+}
 
 impl V1Proxy {
 
-    pub fn try_actix() -> Result<Actix, anyhow::Error>{
+    pub fn try_actix() -> Result<Self, anyhow::Error>{
         let mut actix = Actix::try_reqwest_from_env()?;
 
         let mut path_extractor = PathMatchAndExtract::new();
@@ -54,8 +56,22 @@ impl V1Proxy {
 
         actix.middleware(Box::new(path_extractor));
 
-        Ok(actix)
+        Ok(Self::Actix(actix))
 
     }
 
+}
+
+
+impl Proxy for V1Proxy {
+    async fn serve(&self) -> Result<(), anyhow::Error> {
+        
+        match self {
+            V1Proxy::Actix(actix) => {
+                actix.serve().await?;
+                Ok(())
+            }
+        }
+
+    }
 }

@@ -204,15 +204,15 @@ impl Actix {
 
 }
 
-#[async_trait::async_trait]
+
 impl Proxy for Actix {
 
+    async fn serve(&self) -> Result<(), anyhow::Error> {
 
-    async fn serve(self) -> Result<(), anyhow::Error> {
-
+        let me = self.clone();
         HttpServer::new(move || {
             App::new()
-                .app_data(self.clone())
+                .app_data(me.clone())
                 .route("/{info:.*}", web::post().to(
                     |req, info, body, query, actix: web::Data<Actix>| {
                         // Use actix instance here

@@ -113,9 +113,9 @@ pub trait Middleware<T>  {
 }
 
 
-#[async_trait::async_trait] // if we don't have this we can't use Box<dyn Forwarder>
+
 pub trait Proxy {
 
-    async fn serve(self) -> Result<(), anyhow::Error>;
+    async fn serve(&self) -> Result<(), anyhow::Error>;
 
 }
