@@ -18,6 +18,7 @@ sov-modules-api = { workspace = true, features = ["native"] }
 sov-state = { workspace = true }
 sov-chain-state = { workspace = true }
 sov-risc0-adapter = { workspace = true, features = ["native"] }
+sov-prover-storage-manager = { workspace = true, features = ["test-utils"] }
 
 anyhow = { workspace = true }
 chrono = { workspace = true }
@@ -61,6 +62,7 @@ aptos-framework = { workspace = true }
 aptos-executor = { workspace = true }
 aptos-executor-types = { workspace = true }
 aptos-executor-test-helpers = { workspace = true }
+aptos-bitvec = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-table-extension = { workspace = true }

@@ -2,6 +2,7 @@ use aptos_crypto::hash::CryptoHash;
 use aptos_crypto::{bls12381, CryptoMaterialError, SigningKey};
 use aptos_types::account_address::AccountAddress;
 use std::collections::HashMap;
+use alloy_sol_types::private::SolTypeValue;
 
 use reth_primitives::{sign_message, TransactionSigned};
 use reth_rpc_types::TypedTransactionRequest;
@@ -33,7 +34,7 @@ impl DevSigner {
 		message: &T,
 		address: &AccountAddress,
 	) -> Result<bls12381::Signature, CryptoMaterialError> {
-		let signer = self.signers.get(address)?;
+		let signer = self.signers.get(address).unwrap();
 		signer.sign(message)
 	}
 

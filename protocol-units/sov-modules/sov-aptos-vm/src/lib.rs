@@ -10,7 +10,7 @@ pub use signer::DevSigner;
 mod experimental {
 	use crate::aptos::primitive_types::{
 		EventWrapper, Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper,
-		TransactionSignedAndRecovered, 
+		TransactionSignedAndRecovered, ValidatorSignerWrapper,
 	};
 	use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_config::config::{
@@ -21,13 +21,14 @@ mod experimental {
 	use aptos_db::AptosDB;
 	use aptos_executor::block_executor::BlockExecutor;
 	use aptos_storage_interface::DbReaderWriter;
+	use aptos_types::validator_signer::ValidatorSigner;
 	use aptos_types::waypoint::Waypoint;
+	use aptos_vm::AptosVM;
 	use serde_json;
 	use sov_modules_api::{
 		Context, DaSpec, Error, ModuleInfo, StateMap, StateValue, StateValueAccessor, WorkingSet,
 	};
 	use std::str::FromStr;
-	use aptos_types::validator_signer::ValidatorSigner;
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -48,7 +49,7 @@ mod experimental {
 
 	/// The sov-aptos module provides compatibility with the Aptos VM
 	#[allow(dead_code)]
-	#[derive(ModuleInfo, Clone)]
+	#[derive(ModuleInfo)]
 	pub struct SovAptosVM<S: sov_modules_api::Spec> {
 		#[address]
 		pub(crate) address: S::Address,
@@ -101,10 +102,10 @@ mod experimental {
 		fn call(
 			&self,
 			msg: Self::CallMessage,
-			context: &Context<Self::Spec>,
+			_context: &Context<Self::Spec>,
 			working_set: &mut WorkingSet<S>,
 		) -> Result<sov_modules_api::CallResponse, Error> {
-			Ok(self.execute_call(msg.serialized_txs, context, working_set)?)
+			Ok(self.execute_call(msg.serialized_txs, working_set)?)
 		}
 	}
 
@@ -126,13 +127,14 @@ mod experimental {
 				false, /* indexer */
 				BUFFERED_STATE_TARGET_ITEMS,
 				DEFAULT_MAX_NUM_NODES_PER_LRU_CACHE_SHARD,
-			)?;
+			)
+			.expect("Failed to open AptosDB");
 			Ok(DbReaderWriter::new(aptosdb))
 		}
 		pub(crate) fn get_executor(
 			&self,
 			working_set: &mut WorkingSet<S>,
-		) -> Result<BlockExecutor<SovAptosVM<S>>, Error> {
+		) -> Result<BlockExecutor<AptosVM>, Error> {
 			let db = self.get_db(working_set)?;
 			Ok(BlockExecutor::new(db.clone()))
 		}
@@ -140,13 +142,13 @@ mod experimental {
 		pub(crate) fn get_validator_signer(
 			&self,
 			working_set: &mut WorkingSet<S>,
-		) -> Result<Vec<u8>, Error> {
+		) -> Result<ValidatorSigner, Error> {
 			let serialized_validator_signer = self
 				.validator_signer
 				.get(working_set)
 				.ok_or(anyhow::Error::msg("Validator signer is not set."))?;
 
-			Ok(serialized_validator_signer)
+			todo!()
 		}
 
 		pub(crate) fn get_known_version(

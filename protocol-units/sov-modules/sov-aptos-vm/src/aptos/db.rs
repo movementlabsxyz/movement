@@ -44,7 +44,7 @@ where
 {
 	type Key = StateKey;
 
-	fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<AptosStateValue>> {
+	fn get_state_value(&mut self, state_key: &Self::Key) -> Result<Option<AptosStateValue>> {
 		let state_key_wrapper = StateKeyWrapper::new(state_key.clone());
 		let state_value_wrapper = self.state_data.get(&state_key_wrapper, self.working_set);
 		match state_value_wrapper {

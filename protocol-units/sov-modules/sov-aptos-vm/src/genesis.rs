@@ -8,8 +8,10 @@ use dirs;
 use poem_openapi::__private::serde_json;
 use std::fs;
 
+use crate::aptos::primitive_types::ValidatorSignerWrapper;
 use crate::experimental::SovAptosVM;
 use aptos_types::transaction::{Transaction, WriteSetPayload};
+use aptos_types::vm_status::StatusType::Validation;
 use sov_modules_api::{DaSpec, StateValueAccessor, WorkingSet};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -27,7 +29,8 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 			validators[0].data.owner_address,
 			validators[0].consensus_key.clone(),
 		);
-		self.validator_signer.set(&serde_json::to_vec(&signer)?, working_set);
+		let signer_wrapper = ValidatorSignerWrapper::new(signer);
+		self.validator_signer.set(&serde_json::to_vec(&signer_wrapper)?, working_set);
 
 		// issue the gnesis transaction
 		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
