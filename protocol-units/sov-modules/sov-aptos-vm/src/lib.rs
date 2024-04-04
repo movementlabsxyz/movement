@@ -1,29 +1,33 @@
 mod aptos;
 mod call;
-mod event;
+mod call_tests;
 mod genesis;
-mod helpers;
 mod rpc;
 mod signer;
 
-pub use experimental::AptosVM;
 pub use signer::DevSigner;
 
 mod experimental {
-	use super::genesis::AptosConfig;
-	use aptos_api_types::{Address, HexEncodedBytes, MoveModuleBytecode, MoveResource};
-	use aptos_consensus_types::block::Block;
-	use aptos_crypto::bls12381::Signature;
-	use aptos_db::AptosDB;
-	use sov_modules_api::{Context, DaSpec, Error, ModuleInfo, WorkingSet};
-	use sov_state::codec::BcsCodec;
-
-	use super::aptos::db::AptosDb;
-	use super::aptos::{AptosChainConfig, DbAccount};
-	use super::event::Event;
 	use crate::aptos::primitive_types::{
-		BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
+		EventWrapper, Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper,
+		TransactionSignedAndRecovered, 
 	};
+	use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
+	use aptos_config::config::{
+		RocksdbConfigs, StorageDirPaths, BUFFERED_STATE_TARGET_ITEMS,
+		DEFAULT_MAX_NUM_NODES_PER_LRU_CACHE_SHARD, NO_OP_STORAGE_PRUNER_CONFIG,
+	};
+	use aptos_crypto::HashValue;
+	use aptos_db::AptosDB;
+	use aptos_executor::block_executor::BlockExecutor;
+	use aptos_storage_interface::DbReaderWriter;
+	use aptos_types::waypoint::Waypoint;
+	use serde_json;
+	use sov_modules_api::{
+		Context, DaSpec, Error, ModuleInfo, StateMap, StateValue, StateValueAccessor, WorkingSet,
+	};
+	use std::str::FromStr;
+	use aptos_types::validator_signer::ValidatorSigner;
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -37,86 +41,54 @@ mod experimental {
 		pub(crate) receipt: Receipt,
 	}
 
-	/// The sov-aptos module provides compatibility with the aptos.
+	#[derive(Clone)]
+	pub struct AptosVmConfig {
+		pub data: Vec<u8>,
+	}
+
+	/// The sov-aptos module provides compatibility with the Aptos VM
 	#[allow(dead_code)]
-	// #[cfg_attr(feature = "native", derive(sov_modules_api::ModuleCallJsonSchema))]
 	#[derive(ModuleInfo, Clone)]
-	pub struct AptosVM<S: sov_modules_api::Spec, Da: DaSpec> {
-		/// The address of the aptos module.
+	pub struct SovAptosVM<S: sov_modules_api::Spec> {
 		#[address]
 		pub(crate) address: S::Address,
 
-		/// Mapping from account address to account state.
 		#[state]
-		pub(crate) accounts: sov_modules_api::StateMap<Address, DbAccount, BcsCodec>,
-
-		/// Mapping from code hash to owend resources. Used for lazy-loading code into a contract account.
-		#[state]
-		pub(crate) resources:
-			sov_modules_api::StateMap<HexEncodedBytes, Vec<MoveResource>, BcsCodec>,
+		pub(crate) state_data: sov_modules_api::StateMap<StateKeyWrapper, StateValueWrapper>,
 
 		#[state]
-		pub(crate) modules: sov_modules_api::StateMap<HexEncodedBytes, Vec<MoveModuleBytecode>>,
+		pub(crate) db_path: StateValue<String>,
 
-		/// Chain configuration. This field is set in genesis.
+		// TODO: this may be redundant with address
 		#[state]
-		pub(crate) cfg: sov_modules_api::StateValue<AptosChainConfig, BcsCodec>,
+		pub(crate) validator_signer: StateValue<Vec<u8>>, // TODO: fix validator signer incompatability
 
-		/// Block environment used by the aptos. This field is set in `begin_slot_hook`.
+		// This is string because we are using transaction.hash: https://github.com/movemntdev/aptos-core/blob/112ad6d8e229a19cfe471153b2fd48f1f22b9684/crates/indexer/src/models/transactions.rs#L31
+		// #[cfg(feature = "aptos-consensus")]
 		#[state]
-		pub(crate) block_env: sov_modules_api::StateValue<BlockEnv, BcsCodec>,
+		pub(crate) transactions: StateMap<String, Vec<u8>>, // TODO: fix Transaction serialiation incompatability
 
-		/// Transactions that will be added to the current block.
-		/// A valid transaction is added to the vec on every call message.
 		#[state]
-		pub(crate) pending_transactions: sov_modules_api::StateVec<PendingTransaction, BcsCodec>,
+		pub(crate) genesis_hash: StateValue<Vec<u8>>, // TODO: fix genesis serialiation incompatability
 
-		/// Head of the chain. The new head is set in `end_slot_hook` but without the inclusion of the `state_root` field.
-		/// The `state_root` is added in `begin_slot_hook` of the next block because its calculation occurs after the `end_slot_hook`.
 		#[state]
-		pub(crate) head: sov_modules_api::StateValue<Block, BcsCodec>,
+		pub(crate) waypoint: StateValue<String>, // TODO: fix waypoint serialiation incompatability
 
-		/// Used only by the RPC: This represents the head of the chain and is set in two distinct stages:
-		/// 1. `end_slot_hook`: the pending head is populated with data from pending_transactions.
-		/// 2. `finalize_hook` the `root_hash` is populated.
-		/// Since this value is not authenticated, it can be modified in the `finalize_hook` with the correct `state_root`.
 		#[state]
-		pub(crate) pending_head: sov_modules_api::AccessoryStateValue<Block, BcsCodec>,
+		pub(crate) known_version: StateValue<u64>,
 
-		/// Used only by the RPC: The vec is extended with `pending_head` in `finalize_hook`.
 		#[state]
-		pub(crate) blocks: sov_modules_api::AccessoryStateVec<Block, BcsCodec>,
-
-		/// Used only by the RPC: block.signature => block_number mapping.
-		#[state]
-		pub(crate) block_hashes: sov_modules_api::AccessoryStateMap<Signature, u64, BcsCodec>,
-
-		/// Used only by the RPC: List of processed transactions.
-		#[state]
-		pub(crate) transactions:
-			sov_modules_api::AccessoryStateVec<TransactionSignedAndRecovered, BcsCodec>,
-
-		/// Used only by the RPC: transaction_hash => transaction_index mapping.
-		#[state]
-		pub(crate) transaction_hashes:
-			sov_modules_api::AccessoryStateMap<revm::primitives::B256, u64, BcsCodec>,
-
-		/// Used only by the RPC: Receipts.
-		#[state]
-		pub(crate) receipts: sov_modules_api::AccessoryStateVec<Receipt, BcsCodec>,
-
-		#[kernel_module]
-		pub(crate) chain_state: sov_chain_state::ChainState<S, Da>,
+		pub(crate) chain_id: StateValue<u64>,
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for AptosVM<S, Da> {
+	impl<S: sov_modules_api::Spec> sov_modules_api::Module for SovAptosVM<S> {
 		type Spec = S;
 
-		type Config = AptosConfig;
+		type Config = AptosVmConfig;
 
 		type CallMessage = super::call::CallMessage;
 
-		type Event = Event;
+		type Event = EventWrapper;
 
 		fn genesis(
 			&self,
@@ -132,11 +104,87 @@ mod experimental {
 			context: &Context<Self::Spec>,
 			working_set: &mut WorkingSet<S>,
 		) -> Result<sov_modules_api::CallResponse, Error> {
-			Ok(self.execute_call(msg.tx, context, working_set)?)
+			Ok(self.execute_call(msg.serialized_txs, context, working_set)?)
 		}
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
-		pub(crate) fn get_db<'a>(&self, working_set: &'a mut WorkingSet<S>) -> AptosDb<'a, S> {}
+	impl<S: sov_modules_api::Spec> SovAptosVM<S> {
+		pub(crate) fn get_db(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<DbReaderWriter, Error> {
+			let path = self
+				.db_path
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Database path is not set."))?;
+
+			let aptosdb = AptosDB::open(
+				StorageDirPaths::from_path(path),
+				false,
+				NO_OP_STORAGE_PRUNER_CONFIG,
+				RocksdbConfigs::default(),
+				false, /* indexer */
+				BUFFERED_STATE_TARGET_ITEMS,
+				DEFAULT_MAX_NUM_NODES_PER_LRU_CACHE_SHARD,
+			)?;
+			Ok(DbReaderWriter::new(aptosdb))
+		}
+		pub(crate) fn get_executor(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<BlockExecutor<SovAptosVM<S>>, Error> {
+			let db = self.get_db(working_set)?;
+			Ok(BlockExecutor::new(db.clone()))
+		}
+
+		pub(crate) fn get_validator_signer(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<Vec<u8>, Error> {
+			let serialized_validator_signer = self
+				.validator_signer
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Validator signer is not set."))?;
+
+			Ok(serialized_validator_signer)
+		}
+
+		pub(crate) fn get_known_version(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<u64, Error> {
+			let known_version = self
+				.known_version
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Serialized waypoint hash is not set."))?;
+			Ok(known_version)
+		}
+
+		pub(crate) fn get_waypoint(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<Waypoint, Error> {
+			let serialized_waypoint = self
+				.waypoint
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Serialized waypoint hash is not set."))?;
+			println!("serialized_waypoint: {:?}", serialized_waypoint);
+
+			// TODO: seems redundant, but error types are different
+			Ok(Waypoint::from_str(serialized_waypoint.as_str())
+				.expect("Failed to deserialize waypoint"))
+		}
+
+		pub(crate) fn get_genesis_hash(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<HashValue, Error> {
+			let serialized_genesis_hash = self
+				.genesis_hash
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Serialized genesis hash is not set."))?;
+			Ok(HashValue::from_slice(serialized_genesis_hash)
+				.expect("Failed to deserialize genesis hash"))
+		}
 	}
 }
