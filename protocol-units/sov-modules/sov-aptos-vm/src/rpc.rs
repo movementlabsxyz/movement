@@ -11,6 +11,7 @@ use aptos_crypto::bls12381::Signature;
 use aptos_types::state_store::state_value::StateValue as AptosStateValue;
 use aptos_types::transaction::Version;
 use jsonrpsee::core::RpcResult;
+use jsonrpsee::proc_macros::rpc;
 use reth_primitives::{TransactionSignedEcRecovered, U128};
 use revm::primitives::{
 	ExecutionResult, HaltReason, InvalidTransaction, TransactTo, B256, KECCAK_EMPTY, U256,
@@ -32,21 +33,18 @@ pub struct EthRpcConfig<S: sov_modules_api::Spec> {
 
 #[rpc_gen(client, server)]
 impl<S: sov_modules_api::Spec> SovAptosVM<S> {
-	/// Handler for `net_version`
-	#[rpc_method(name = "get_ledger_info")]
-	pub fn net_version(&self, working_set: &mut WorkingSet<S>) -> RpcResult<String> {
+
+	// ACCOUNTS
+
+	/// Handler for: `eth_call`
+	#[rpc_method(name = "accounts.address")]
+	pub fn accounts_by_address(&self, working_set: &mut WorkingSet<S>) -> RpcResult<Option<U64>> {
 		todo!()
 	}
 
-	/// Handler for: `healthy`
-	#[rpc_method(name = "healthy")]
-	pub fn chain_id(&self, working_set: &mut WorkingSet<S>) -> RpcResult<Option<U64>> {
-		todo!()
-	}
-
-	/// Handler for `get_block_by_signature`
-	#[rpc_method(name = "get_block_by_signature")]
-	pub fn get_block_by_signature(
+	/// Handler for `/accounts/{address}`
+	#[rpc_method(name = "accounts.address.resources")]
+	pub fn account_resources_by_address(
 		&self,
 		signature: Signature,
 		details: Option<bool>,
@@ -55,9 +53,9 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		todo!()
 	}
 
-	/// Handler for: `get_block_by_version`
-	#[rpc_method(name = "get_block_by_version")]
-	pub fn get_block_by_version(
+	/// Handler for: /accounts/{address}/resources
+	#[rpc_method(name = "accounts.address.modules")]
+	pub fn account_modules_by_address(
 		&self,
 		version: Version,
 		working_set: &mut WorkingSet<S>,
@@ -67,8 +65,8 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	}
 
 	/// Handler for: `get_block_by_height`
-	#[rpc_method(name = "get_block_by_height")]
-	pub fn get_block_by_height(
+	#[rpc_method(name = "accounts.address.resource.resource_type")]
+	pub fn account_resource_by_address(
 		&self,
 		block_number: Option<String>,
 		details: Option<bool>,
@@ -78,7 +76,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	}
 
 	/// Handler for: `get_resources`
-	#[rpc_method(name = "get_resources")]
+	#[rpc_method(name = "accounts.address.module.module_name")]
 	pub fn get_resources(
 		&self,
 		address: Address,
@@ -88,9 +86,11 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		todo!()
 	}
 
+	// BLOCKS
+
 	/// Handler for : `get_modules`
-	#[rpc_method(name = "get_modules")]
-	pub fn get_modules(
+	#[rpc_method(name = "blocks.by_height.block_height")]
+	pub fn blocks_by_block_height(
 		&self,
 		address: Address,
 		_block_number: Option<String>,
@@ -100,8 +100,8 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	}
 
 	/// Handler for: `eth_getStorageAt`
-	#[rpc_method(name = "eth_getStorageAt")]
-	pub fn get_storage_at(
+	#[rpc_method(name = "blocks.by_version.version")]
+	pub fn block_by_version(
 		&self,
 		address: Address,
 		index: U256,
@@ -111,9 +111,37 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		todo!()
 	}
 
+	// EVENTS
+
+	#[rpc_method(name = "accounts.address.events.creation_number")]
+	pub fn account_events_by_creation_number(
+		&self,
+		address: Address,
+		creation_number: U64,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Vec<Receipt>> {
+		todo!()
+	}
+
+	#[rpc_method(name = "accounts.address.events.event_handle.field_name")]
+	pub fn account_events_by_event_handle_field_name(
+		&self,
+		address: Address,
+		event_handle: U64,
+		field_name: String,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Vec<Receipt>> {
+		todo!()
+	}
+
+	// GENERAL
+	
+
+	// TABLES
+
 	/// Handler for: `eth_getTransactionCount`
-	#[rpc_method(name = "get_sequence_number")]
-	pub fn get_sequence_number(
+	#[rpc_method(name = "tables.table_handle.item")]
+	pub fn tables_by_table_handle(
 		&self,
 		address: Address,
 		_block_number: Option<String>,
@@ -124,8 +152,8 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 
 	// Handler for: `eth_getTransactionByHash`
 	// TODO https://github.com/Sovereign-Labs/sovereign-sdk/issues/502
-	#[rpc_method(name = "get_transaction_by_hash")]
-	pub fn get_transaction_by_hash(
+	#[rpc_method(name = "tables.table_handle.raw_item")]
+	pub fn tables_by_table_handle_raw(
 		&self,
 		hash: B256,
 		working_set: &mut WorkingSet<S>,
@@ -135,8 +163,8 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 
 	/// Handler for: `eth_getTransactionReceipt`
 	// TODO https://github.com/Sovereign-Labs/sovereign-sdk/issues/502
-	#[rpc_method(name = "eth_getTransactionReceipt")]
-	pub fn get_transaction_receipt(
+	#[rpc_method(name = "transactions")]
+	pub fn transactions(
 		&self,
 		hash: B256,
 		working_set: &mut WorkingSet<S>,
@@ -145,16 +173,66 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	}
 
 	/// Handler for: `eth_blockNumber`
-	#[rpc_method(name = "eth_blockNumber")]
-	pub fn block_number(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U256> {
+	#[rpc_method(name = "transactions.by_hash.txn_hash")]
+	pub fn transactions_by_transaction_hash(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U256> {
 		todo!()
 	}
 
-	fn get_sealed_block_by_number(
+
+	#[rpc_method(name = "transactions.by_version.txn_version")]
+	pub fn transactions_by_version(
 		&self,
-		_block_number: Option<String>,
-		_working_set: &mut WorkingSet<S>,
-	) -> BlockEnv {
+		version: Version,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Option<reth_rpc_types::Transaction>> {
 		todo!()
 	}
+
+	#[rpc_method(name = "accounts.address.transactions")]
+	pub fn account_transactions_by_address(
+		&self,
+		address: Address,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Vec<reth_rpc_types::Transaction>> {
+		todo!()
+	}
+
+	#[rpc_method(name = "transactions.batch")]
+	pub fn transactions_batch(
+		&self,
+		transactions: Vec<TransactionSignedEcRecovered>,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Vec<ExecutionResult>> {
+		todo!()
+	}
+
+	#[rpc_method(name = "transactions.simulate")]
+	pub fn transactions_simulate(
+		&self,
+		transactions: Vec<TransactionSignedEcRecovered>,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Vec<ExecutionResult>> {
+		todo!()
+	}
+
+	#[rpc_method(name = "transactions.encode_submission")]
+	pub fn transactions_encode_submission(
+		&self,
+		transactions: Vec<TransactionSignedEcRecovered>,
+		working_set: &mut WorkingSet<S>,
+	) -> RpcResult<Vec<ExecutionResult>> {
+		todo!()
+	}
+
+	#[rpc_method(name = "estimate_gas_price")]
+	pub fn estimate_gas_price(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U128> {
+		todo!()
+	}
+
+
+	#[rpc_method(name = "view")]
+	pub fn view(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U128> {
+		todo!()
+	}
+	
 }
