@@ -147,8 +147,8 @@ mod experimental {
 				.validator_signer
 				.get(working_set)
 				.ok_or(anyhow::Error::msg("Validator signer is not set."))?;
-
-			todo!()
+			Ok(serde_json::from_slice::<ValidatorSigner>(&serialized_validator_signer)
+				.expect("Failed to deserialize validator signer"))
 		}
 
 		pub(crate) fn get_known_version(

@@ -29,10 +29,9 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 			validators[0].data.owner_address,
 			validators[0].consensus_key.clone(),
 		);
-		let signer_wrapper = ValidatorSignerWrapper::new(signer);
-		self.validator_signer.set(&serde_json::to_vec(&signer_wrapper)?, working_set);
+		self.validator_signer.set(&serde_json::to_vec(&signer)?, working_set);
 
-		// issue the gnesis transaction
+		// issue the genesis transaction
 		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 		// 1. create the db
 		let path = format!("{}/{}", dirs::home_dir().unwrap().to_str().unwrap(), MOVE_DB_DIR);
@@ -66,7 +65,6 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 			vec![genesis_block_id],
 			executor.
 		)?;*/
-
 		Ok(())
 	}
 }
