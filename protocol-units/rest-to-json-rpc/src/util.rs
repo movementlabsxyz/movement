@@ -4,8 +4,39 @@ use std::collections::HashMap;
 use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum HttpMethod {
+    GET,
+    POST,
+    PUT,
+    DELETE,
+    PATCH,
+    OPTIONS,
+    HEAD,
+    CONNECT,
+    TRACE,
+}
+
+impl From<&str> for HttpMethod {
+    fn from(s : &str) -> Self {
+        match s {
+            "GET" => HttpMethod::GET,
+            "POST" => HttpMethod::POST,
+            "PUT" => HttpMethod::PUT,
+            "DELETE" => HttpMethod::DELETE,
+            "PATCH" => HttpMethod::PATCH,
+            "OPTIONS" => HttpMethod::OPTIONS,
+            "HEAD" => HttpMethod::HEAD,
+            "CONNECT" => HttpMethod::CONNECT,
+            "TRACE" => HttpMethod::TRACE,
+            _ => HttpMethod::GET
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct JsonRpcRequestStandard {
     pub path : String,
+    pub http_method : HttpMethod,
     pub http_headers : HashMap<String, String>,
     pub path_params : HashMap<String, String>,
     pub body : serde_json::Value,
@@ -16,6 +47,7 @@ impl JsonRpcRequestStandard {
     pub fn new() -> Self {
         JsonRpcRequestStandard {
             path: "".to_string(),
+            http_method: HttpMethod::GET,
             http_headers: HashMap::new(),
             path_params: HashMap::new(),
             body: serde_json::Value::Null,
@@ -46,16 +78,12 @@ impl From<JsonRpcRequestStandard> for JsonRpcRequest {
         JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
             method: standard.path.replace("/", "."), // ? This is a naive way to convert a path to a method name
-            params: json!({
-                "http_headers": standard.http_headers,
-                "path_params": standard.path_params,
-                "body": standard.body,
-                "query": standard.query_params,
-            }),
+            params: serde_json::to_value(standard).unwrap(),
             id: json!(1), // You can customize this as needed
         }
     }
 }
+
 
 /*impl From<JsonRpcRequest> for JsonRpcRequestStandard {
     fn from(request : JsonRpcRequest) -> Self {

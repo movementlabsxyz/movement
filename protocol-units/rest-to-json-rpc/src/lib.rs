@@ -5,6 +5,7 @@ pub use util::{
     Forwarder,
     Middleware,
     Proxy,
+    HttpMethod
 };
 pub mod naive;
 pub mod custom;

@@ -1,7 +1,7 @@
 use crate::{
-    Forwarder, JsonRpcRequestStandard, Middleware, Proxy
+    Forwarder, JsonRpcRequestStandard, Middleware, Proxy, HttpMethod
 };
-use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use std::collections::HashMap;
 use actix_router::{Path, ResourceDef};
 use serde_json::Value;
@@ -164,6 +164,8 @@ impl Actix {
         body: web::Json<Value>, 
         query: web::Query<serde_json::Map<String, Value>>
     ) -> Result<impl Responder, anyhow::Error>  {
+        
+        let http_method = HttpMethod::from(req.method().as_str());
 
         let mut http_headers = HashMap::new();
         for (key, value) in req.headers().iter() {
@@ -172,6 +174,7 @@ impl Actix {
 
         let mut standard_request = JsonRpcRequestStandard {
             http_headers: http_headers,
+            http_method,
             path: info.into_inner(),
             body: body.into_inner(),
             query_params: query.into_inner(),
