@@ -1,0 +1,15 @@
+[package]
+name = "aptos-rest-to-json-rpc"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+readme = "README.md"
+resolver = "2"
+publish = false
+
+[dependencies]
+rest-to-json-rpc = { workspace = true }
+anyhow = { workspace = true }

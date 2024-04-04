@@ -9,7 +9,7 @@ pub struct JsonRpcRequestStandard {
     pub http_headers : HashMap<String, String>,
     pub path_params : HashMap<String, String>,
     pub body : serde_json::Value,
-    pub query_params : HashMap<String, String>
+    pub query_params : serde_json::Map<String, serde_json::Value>
 }
 
 impl JsonRpcRequestStandard {
@@ -19,7 +19,7 @@ impl JsonRpcRequestStandard {
             http_headers: HashMap::new(),
             path_params: HashMap::new(),
             body: serde_json::Value::Null,
-            query_params: serde_json::Value::Null,
+            query_params: serde_json::Map::new()
         }
     }
 
@@ -57,33 +57,19 @@ impl From<JsonRpcRequestStandard> for JsonRpcRequest {
     }
 }
 
-impl From<JsonRpcRequest> for JsonRpcRequestStandard {
+/*impl From<JsonRpcRequest> for JsonRpcRequestStandard {
     fn from(request : JsonRpcRequest) -> Self {
         let params = request.params.as_object().unwrap();
         JsonRpcRequestStandard {
+            path: request.method.replace(".", "/"),
             http_headers: params.get("http_headers").unwrap().as_object().unwrap().clone(),
             path_params: params.get("path_params").unwrap().as_object().unwrap().clone(),
             body: params.get("body").unwrap().clone(),
             query_params: params.get("query").unwrap().clone(),
         }
     }
-}
+}*/
 
-pub trait ToJsonRpc<T> {
-
-    // ? This currently does not need to be part of the trait. It's just this way for organization.
-    /// Converts a request to a method name
-    async fn request_to_method(&self, request : &T) -> Result<String, anyhow::Error>;
-
-    async fn to_json_rpc_standard(&self, request : T) -> Result<JsonRpcRequestStandard, anyhow::Error>;
-
-    /// Converts a request to a JsonRpcRequest
-    async fn to_json_rpc(&self, request : T) -> Result<JsonRpcRequest, anyhow::Error> {
-        let standard = self.to_json_rpc_standard(request).await?;
-        Ok(JsonRpcRequest::from(standard))
-    }
-
-}
 
 #[async_trait::async_trait] // if we don't have this we can't use Box<dyn Forwarder>
 pub trait Forwarder<T> {
@@ -92,17 +78,16 @@ pub trait Forwarder<T> {
 
 }
 
+
 #[async_trait::async_trait] // if we don't have this we can't use Box<dyn Forwarder>
-pub trait Middleware<T> {
+pub trait Middleware<T>  {
     async fn apply(&self, request : T) -> Result<T, anyhow::Error>;
 }
 
+
 #[async_trait::async_trait] // if we don't have this we can't use Box<dyn Forwarder>
-pub trait Proxy<T> {
+pub trait Proxy {
 
-    // ? This is async in case we want to pick up a forwarding destination from a database or something
-    async fn set_forwarder(&mut self, forwarder : Box<dyn Forwarder<T> + Send + Sync>) -> Result<(), anyhow::Error>;
-
-    async fn serve(&self) -> Result<(), anyhow::Error>;
+    async fn serve(self) -> Result<(), anyhow::Error>;
 
 }

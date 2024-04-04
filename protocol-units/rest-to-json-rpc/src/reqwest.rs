@@ -1,29 +1,29 @@
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
 use crate::{
-    JsonRpcRequestStandard,
     JsonRpcRequest,
     Forwarder,
 };
+use reqwest::Response;
 
+#[derive(Debug, Clone)]
 pub struct ReqwestForwarder {
-    pub url: String,
+    pub url: Arc<RwLock<String>>,
 }
 
 #[async_trait::async_trait]
-impl Forwarder for ReqwestForwarder {
+impl Forwarder<Response> for ReqwestForwarder {
 
-    async fn forward(&self, json_rpc_request : JsonRpcRequest) -> Result<(), anyhow::Error> {
+    async fn forward(&self, json_rpc_request : JsonRpcRequest) -> Result<Response, anyhow::Error> {
+        let url = self.url.read().await;
         let client = reqwest::Client::new();
-        let response = client.post(&self.url)
+        let response = client.post(&*url)
         .json(&json_rpc_request)
         .send().await?;
 
-    response.b
+        Ok(response)
 
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("Failed to forward request"))
-        }
     }
 
 }

@@ -9,7 +9,8 @@ members = [
     # protocol units
     # "protocol-units/sov-aptos",
     #"protocol-units/sov-modules/sov-aptos-vm",
-    "protocol-units/rest-to-json-rpc"
+    "protocol-units/rest-to-json-rpc",
+    "protocol-units/aptos-rest-to-json-rpc"
 ]
 
 [workspace.features]
@@ -27,6 +28,9 @@ publish = false
 rust-version = "1.73"
 
 [workspace.dependencies]
+# internal
+rest-to-json-rpc = { path = "protocol-units/rest-to-json-rpc" }
+
 auto_impl = "1.2.0"
 chrono = "0.4.37"
 serde = { version = "1.0.192", features = ["derive", "rc"] }
@@ -142,6 +146,8 @@ manual_ok_or = "deny"
 doc_link_with_quotes = "deny"
 match_same_arms = "deny"
 semicolon_if_nothing_returned = "deny"
+
+
 
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }

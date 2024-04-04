@@ -1,117 +1,20 @@
 use crate::{
-    JsonRpcRequestStandard, 
-    JsonRpcRequest,
-    ToJsonRpc,
-    Forwarder,
-    Middleware,
-    Proxy
+    Forwarder, JsonRpcRequestStandard, Middleware, Proxy
 };
-use actix_web::{web, App, FromRequest, HttpRequest, HttpResponse, HttpServer, Responder};
-use serde_json::json;
+use actix_web::{middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use std::collections::HashMap;
 use actix_router::{Path, ResourceDef};
-use futures_util::{
-    future::BoxFuture,
-    FutureExt,
-};
+use serde_json::Value;
 
 #[derive(Clone)]
-pub struct ActixWeb;
-
-impl FromRequest for JsonRpcRequestStandard {
-
-    type Error = actix_web::Error;
-    type Future = BoxFuture<'static, Result<Self, Self::Error>>;
-
-    
-    fn from_request(req: &HttpRequest, payload: &mut actix_web::dev::Payload) -> Self::Future {
-
-        let headers = req.headers().clone();
-        let path = req.path().to_owned();
-        let match_info = req.match_info().clone();
-        let query_string = req.query_string().to_owned();
-        let bytes_future = web::Bytes::from_request(req, payload);
-
-        async move {
-            // Extracting the body as bytes
-            let body_bytes = bytes_future.await.map_err(actix_web::Error::from)?;
-
-            // Handling query parameters (assuming they are key=value pairs)
-            let query_params = serde_urlencoded::from_str::<HashMap<String, String>>(&query_string)
-                .map_err(actix_web::Error::from)?;
-
-            let rpc_request = JsonRpcRequestStandard {
-                path,
-                http_headers: headers.iter().map(|(k, v)| (k.as_str().to_string(), v.to_str().unwrap_or_default().to_string())).collect(),
-                path_params: match_info.iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
-                body: body_bytes.to_vec().into(),
-                query_params,
-            };
-    
-            Ok(rpc_request)
-        }
-        .boxed()
-    }
-
-}
-
-impl ToJsonRpc<HttpRequest> for ActixWeb {
-
-    async fn request_to_method(&self, request : &HttpRequest) -> Result<String, anyhow::Error> {
-        Ok(request.path().replace("/", ".").to_string())
-    }
-
-    async fn to_json_rpc_standard(&self, request: HttpRequest) -> Result<JsonRpcRequestStandard, anyhow::Error> {
-        let path_as_method = self.request_to_method(&request).await?;
-        let body = web::Json(serde_json::from_slice(&request.body().wait().unwrap()).unwrap());
-        let query = web::Query::from_query(request.query_string()).unwrap();
-
-        let rpc_request = JsonRpcRequestStandard {
-            path : request.path().to_string(),
-            http_headers: request.headers().iter().map(|(k, v)| (k.as_str().to_string(), v.to_str()?.to_string())).collect(),
-            path_params: request.match_info().iter().map(|(k, v)| (k.to_string(), v.to_string())).collect(),
-            body: body.into_inner(),
-            query_params: query.into_inner(),
-        };
-
-        Ok(rpc_request)
-    }
-
-
-}
-
-
-
-pub mod test_web_args {
-    use super::{
-        ActixWeb,
-        ToJsonRpc,
-    };
-    use actix_web::{web, HttpRequest};
-    use serde_json::json;
-
-    #[tokio::test]
-    async fn test_to_json_rpc() -> Result<(), anyhow::Error>{
-
-        // need to figure out a new way to test this as HttpRequest can't be created directly. Maybe we'll use an extract struct.
-
-        Ok(())
-
-    }
-
-}
-
-#[derive(Clone)]
-pub struct PathExtractor {
-    pub actix_web: ActixWeb,
+pub struct PathMatchAndExtract {
     pub matching : Vec<String>,
 }
 
-impl PathExtractor {
+impl PathMatchAndExtract {
     pub fn new() -> Self {
 
-        PathExtractor {
-            actix_web: ActixWeb,
+        PathMatchAndExtract {
             matching: vec![],
         }
     }
@@ -149,7 +52,7 @@ impl PathExtractor {
         Ok((HashMap::new(), original_path.to_string()))
     }
 
-    pub fn extract(&self, mut request: JsonRpcRequestStandard) -> Result<HttpRequest, anyhow::Error> {
+    pub fn extract(&self, mut request: JsonRpcRequestStandard) -> Result<JsonRpcRequestStandard, anyhow::Error> {
         
         let (path_params, new_path) = self.match_and_extract(&request.path)?;
 
@@ -163,7 +66,7 @@ impl PathExtractor {
 }
 
 #[async_trait::async_trait]
-impl Middleware<JsonRpcRequestStandard> for PathExtractor {
+impl Middleware<JsonRpcRequestStandard> for PathMatchAndExtract {
 
     async fn apply(&self, request: JsonRpcRequestStandard) -> Result<JsonRpcRequestStandard, anyhow::Error> {
         self.extract(request)
@@ -173,18 +76,11 @@ impl Middleware<JsonRpcRequestStandard> for PathExtractor {
 
 pub mod test_path_extractor {
 
-    use super::{
-        PathExtractor,
-        JsonRpcRequestStandard,
-        ToJsonRpc,
-        ActixWeb,
-    };
-    use actix_web::web;
-    use serde_json::json;
+    use super::PathMatchAndExtract;
 
     #[test]
     fn test_match_and_extract() -> Result<(), anyhow::Error> {
-        let mut path_extractor = PathExtractor::new();
+        let mut path_extractor = PathMatchAndExtract::new();
         path_extractor.matching(r"test/{id}")?;
         let (path_params, new_path) = path_extractor.match_and_extract("test/1")?;
         assert_eq!(path_params.get("id").unwrap(), "1");
@@ -195,7 +91,7 @@ pub mod test_path_extractor {
 
     #[test]
     fn test_match_multiple_patterns() -> Result<(), anyhow::Error> {
-        let mut path_extractor = PathExtractor::new();
+        let mut path_extractor = PathMatchAndExtract::new();
         path_extractor.matching(r"test/{id}")?;
         path_extractor.matching(r"test/{id}/test")?;
         let (path_params, new_path) = path_extractor.match_and_extract("test/1/test")?;
@@ -207,7 +103,7 @@ pub mod test_path_extractor {
 
     #[test]
     fn test_multiple_patterns_matches_first() -> Result<(), anyhow::Error> {
-        let mut path_extractor = PathExtractor::new();
+        let mut path_extractor = PathMatchAndExtract::new();
         path_extractor.matching(r"test/{id}")?;
         path_extractor.matching(r"test/{id}/test")?;
         let (path_params, new_path) = path_extractor.match_and_extract("test/1")?;
@@ -219,7 +115,7 @@ pub mod test_path_extractor {
 
     #[test]
     fn test_multiple_segments() -> Result<(), anyhow::Error> {
-        let mut path_extractor = PathExtractor::new();
+        let mut path_extractor = PathMatchAndExtract::new();
         path_extractor.matching(r"test/{id}/test/{id2}")?;
         let (path_params, new_path) = path_extractor.match_and_extract("test/1/test/2")?;
         assert_eq!(path_params.get("id").unwrap(), "1");
@@ -231,59 +127,115 @@ pub mod test_path_extractor {
 
 }
 
+use std::sync::{Arc, RwLock};
 
+#[derive(Clone)]
 pub struct Actix {
-    pub forwarders : Box<dyn Forwarder<String> + Send + Sync>,
-    pub middleware : Vec<Box<dyn Middleware<JsonRpcRequestStandard> + Send + Sync>>,
-    pub actix_web : ActixWeb,
+    pub forwarder : Arc<Box<dyn Forwarder<reqwest::Response> + Send + Sync>>,
+    pub middleware : Arc<RwLock<Vec<Box<dyn Middleware<JsonRpcRequestStandard> + Send + Sync>>>>,
 }
 
 impl Actix {
 
-    pub fn new() -> Self {
+    pub fn new(forwarder : Box<dyn Forwarder<reqwest::Response> + Send + Sync>) -> Self {
         Actix {
-            forwarders: vec![],
-            middleware: vec![],
-            actix_web: ActixWeb,
+            forwarder : Arc::new(forwarder),
+            middleware: Arc::new(
+                RwLock::new(
+                    vec![]
+                )
+            ),
         }
     }
 
-    pub async fn add_middleware(&mut self, middleware: Box<dyn Middleware<JsonRpcRequestStandard> + Send + Sync>) {
-        self.middleware.push(middleware);
+    pub fn forwarder(&mut self, forwarder : Box<dyn Forwarder<reqwest::Response> + Send + Sync>) {
+        self.forwarder = Arc::new(forwarder);
     }
 
-    pub async fn handle_request(&self, args: JsonRpcRequestStandard) -> impl Responder  {
-        let mut request = args;
-        for middleware in &self.middleware {
-            request = middleware.apply(request).await?;
+    pub fn middleware(&mut self, middleware: Box<dyn Middleware<JsonRpcRequestStandard> + Send + Sync>) {
+        let mut middlewares = self.middleware.write().unwrap();
+        middlewares.push(middleware);
+    }
+
+    pub async fn handle_request(
+        &self,
+        req: HttpRequest, // Include HttpRequest to access headers
+        info: web::Path<String>, 
+        body: web::Json<Value>, 
+        query: web::Query<serde_json::Map<String, Value>>
+    ) -> Result<impl Responder, anyhow::Error>  {
+
+        let mut http_headers = HashMap::new();
+        for (key, value) in req.headers().iter() {
+            http_headers.insert(key.to_string(), value.to_str()?.to_string());
         }
 
-        // send to all the forwarders in parallel
-        let mut futures = vec![];
-        for forwarder in &self.forwarders {
-            futures.push(forwarder.forward(args.into()));
+        let mut standard_request = JsonRpcRequestStandard {
+            http_headers: http_headers,
+            path: info.into_inner(),
+            body: body.into_inner(),
+            query_params: query.into_inner(),
+            path_params: HashMap::new(),
+        };
+
+        let middlewares = self.middleware.read().map_err(
+            |e| anyhow::anyhow!("Error reading middlewares: {:?}", e)
+        )?;
+        for middleware in middlewares.iter() {
+            standard_request = middleware.apply(standard_request).await?;
         }
 
-        Ok(request)
+        let response = self.forwarder.forward(standard_request.into()).await?;
+
+        // extract the headers from the response and send the body along as text
+        let mut response_builder = HttpResponse::Ok();
+        for (key, value) in response.headers().iter() {
+            response_builder.append_header(
+                (key.as_str(), value.to_str()?)
+            );
+        }
+
+        Ok(response_builder.body(response.text().await?))
+        
     }
 
 }
 
 #[async_trait::async_trait]
-impl Proxy<String> for Actix {
+impl Proxy for Actix {
 
-    async fn set_forwarder(&mut self, forwarder : Box<dyn Forwarder<String> + Send + Sync>) -> Result<(), anyhow::Error> {
 
-        self.forwarders.push(forwarder);
+    async fn serve(self) -> Result<(), anyhow::Error> {
+
+        HttpServer::new(move || {
+            App::new()
+                .app_data(self.clone())
+                .route("/{info:.*}", web::post().to(
+                    |req, info, body, query, actix: web::Data<Actix>| {
+                        // Use actix instance here
+                        async move {
+                            actix.handle_request(req, info, body, query).await.map_err(
+                                |e| actix_web::error::ErrorInternalServerError(e)
+                            )
+                        }
+                    }
+                ))
+        });
 
         Ok(())
     }
 
-    async fn serve(&self) -> Result<(), anyhow::Error> {
+}
 
+impl Actix {
 
+    pub fn try_reqwest_from_env() -> Result<Self, anyhow::Error> {
+        let url = std::env::var("PROXY_URL")?;
+        let forwarder = Box::new(crate::reqwest::ReqwestForwarder {
+            url: Arc::new(tokio::sync::RwLock::new(url)),
+        });
 
-        Ok(())
+        Ok(Actix::new(forwarder))
     }
 
 }
