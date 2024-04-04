@@ -1,87 +1,70 @@
-use std::collections::HashMap;
-
 use anyhow::Result;
-use reth_primitives::{Bloom, Bytes, EMPTY_OMMER_ROOT_HASH, KECCAK_EMPTY};
-use revm::primitives::{Address, SpecId, B256, U256};
-use sov_modules_api::{DaSpec, WorkingSet};
+use aptos_executor::db_bootstrapper::{generate_waypoint, maybe_bootstrap};
+use aptos_executor_types::BlockExecutorTrait;
+use aptos_types::validator_signer::ValidatorSigner;
+use aptos_vm::AptosVM;
+use aptos_vm_genesis::{test_genesis_change_set_and_validators, GENESIS_KEYPAIR};
+use dirs;
+use poem_openapi::__private::serde_json;
+use std::fs;
 
-use crate::experimental::AptosVM;
+use crate::aptos::primitive_types::ValidatorSignerWrapper;
+use crate::experimental::SovAptosVM;
+use aptos_types::transaction::{Transaction, WriteSetPayload};
+use aptos_types::vm_status::StatusType::Validation;
+use sov_modules_api::{DaSpec, StateValueAccessor, WorkingSet};
 
-/// aptos account.
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
-pub struct AccountData {
-	/// Account address.
-	pub address: Address,
-	/// Account balance.
-	pub balance: U256,
-	/// Code hash.
-	pub code_hash: B256,
-	/// Smart contract code.
-	pub code: Bytes,
-	/// Account nonce.
-	pub nonce: u64,
-}
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(crate) const MOVE_DB_DIR: &str = ".sov-aptosvm-db";
 
-impl AccountData {
-	/// Empty code hash.
-	pub fn empty_code() -> B256 {
-		KECCAK_EMPTY
-	}
-
-	/// Account balance.
-	pub fn balance(balance: u64) -> U256 {
-		U256::from(balance)
-	}
-}
-
-/// Genesis configuration.
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
-pub struct AptosConfig {
-	/// Genesis accounts.
-	pub data: Vec<AccountData>,
-	/// Chain id.
-	pub chain_id: u64,
-	/// Limits size of contract code size.
-	pub limit_contract_code_size: Option<usize>,
-	/// List of aptos hard forks by block number
-	pub spec: HashMap<u64, SpecId>,
-	/// Coinbase where all the fees go
-	pub coinbase: Address,
-	/// Starting base fee.
-	pub starting_base_fee: u64,
-	/// Gas limit for single block
-	pub block_gas_limit: u64,
-	/// Genesis timestamp.
-	pub genesis_timestamp: u64,
-	/// Delta to add to parent block timestamp,
-	pub block_timestamp_delta: u64,
-	/// Base fee params.
-	pub base_fee_params: reth_primitives::BaseFeeParams,
-}
-
-impl Default for AptosConfig {
-	fn default() -> Self {
-		Self {
-			data: vec![],
-			chain_id: 1,
-			limit_contract_code_size: None,
-			spec: vec![(0, SpecId::SHANGHAI)].into_iter().collect(),
-			coinbase: Address::ZERO,
-			starting_base_fee: reth_primitives::constants::MIN_PROTOCOL_BASE_FEE,
-			block_gas_limit: reth_primitives::constants::ETHEREUM_BLOCK_GAS_LIMIT,
-			block_timestamp_delta: reth_primitives::constants::SLOT_DURATION.as_secs(),
-			genesis_timestamp: 0,
-			base_fee_params: reth_primitives::BaseFeeParams::ethereum(),
-		}
-	}
-}
-
-impl<S: sov_modules_api::Spec, Da: DaSpec> AptosVM<S, Da> {
+impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	pub(crate) fn init_module(
 		&self,
 		config: &<Self as sov_modules_api::Module>::Config,
 		working_set: &mut WorkingSet<S>,
 	) -> Result<()> {
+		// get the validator signer
+		let (genesis, validators) = test_genesis_change_set_and_validators(Some(1));
+		let signer = ValidatorSigner::new(
+			validators[0].data.owner_address,
+			validators[0].consensus_key.clone(),
+		);
+		self.validator_signer.set(&serde_json::to_vec(&signer)?, working_set);
+
+		// issue the genesis transaction
+		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
+		// 1. create the db
+		let path = format!("{}/{}", dirs::home_dir().unwrap().to_str().unwrap(), MOVE_DB_DIR);
+		if !fs::metadata(path.clone().as_str()).is_ok() {
+			fs::create_dir_all(path.as_str()).unwrap();
+		}
+		// 2. store the db path
+		self.db_path.set(&path, working_set);
+
+		let db = self.get_db(working_set)?;
+
+		// 3. write the genesis transaction
+		let waypoint = generate_waypoint::<AptosVM>(&db, &genesis_txn)?;
+		maybe_bootstrap::<AptosVM>(&db, &genesis_txn, waypoint)?;
+
+		// set the genesis waypoint
+		self.waypoint.set(&waypoint.to_string(), working_set);
+
+		// set state version
+		self.known_version.set(&0, working_set);
+
+		drop(db); // need to drop the lock on the RocksDB
+		  // set the genesis block
+		let executor = self.get_executor(working_set)?;
+		let genesis_block_id = executor.committed_block_id();
+		println!("Genesis block id: {:?}", genesis_block_id);
+		self.genesis_hash.set(&genesis_block_id.to_vec(), working_set);
+
+		// might we need to commit the blocks first?
+		/*executor.commit_blocks(
+			vec![genesis_block_id],
+			executor.
+		)?;*/
 		Ok(())
 	}
 }

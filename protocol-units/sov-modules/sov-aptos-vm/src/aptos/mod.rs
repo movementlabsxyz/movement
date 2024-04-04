@@ -10,7 +10,6 @@ use sov_state::Prefix;
 //pub(crate) mod call;
 mod context;
 pub(crate) mod db;
-mod db_commit;
 pub(crate) mod db_init;
 pub(crate) mod error;
 pub(crate) mod executor;
