@@ -1,10 +1,13 @@
 pub mod util;
 pub use util::{
+    JsonRpcRequestStandard,
     JsonRpcRequest,
     ToJsonRpc,
-    Middleware
+    Forwarder,
+    Middleware,
+    Proxy
 };
 pub mod naive;
 pub mod custom;
 pub mod actix;
-pub mod forwarder;
+pub mod reqwest;
