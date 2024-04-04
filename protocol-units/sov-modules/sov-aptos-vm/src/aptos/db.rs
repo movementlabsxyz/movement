@@ -1,4 +1,4 @@
-use crate::aptos::primitive_types::{StateKeyWrapper, StateValueWrapper};
+use crate::aptos::primitive_types::{MetadataWrapper, StateKeyWrapper, StateValueWrapper};
 use anyhow::Error;
 use aptos_crypto::hash::CryptoHash;
 use aptos_sdk::move_types::language_storage::{ModuleId, StructTag};
@@ -25,13 +25,13 @@ type Result<T, E = StateviewError> = std::result::Result<T, E>;
 pub(crate) struct SovAptosDb<'a, S: sov_modules_api::Spec> {
 	pub(crate) state_data: StateMap<StateKeyWrapper, StateValueWrapper>,
 	/// Working set
-	pub(crate) working_set: RefCell<&'a mut WorkingSet<S>>,
+	pub(crate) working_set: &'a mut WorkingSet<S>,
 }
 
 impl<'a, S: sov_modules_api::Spec> SovAptosDb<'a, S> {
 	pub(crate) fn new(
 		state_data: StateMap<StateKeyWrapper, StateValueWrapper>,
-		working_set: RefCell<&'a mut WorkingSet<S>>,
+		working_set: &'a mut WorkingSet<S>,
 	) -> Self {
 		Self { working_set, state_data }
 	}
@@ -45,9 +45,8 @@ where
 	type Key = StateKey;
 
 	fn get_state_value(&self, state_key: &Self::Key) -> Result<Option<AptosStateValue>> {
-		let mut working_set = self.working_set.borrow_mut();
 		let state_key_wrapper = StateKeyWrapper::new(state_key.clone());
-		let state_value_wrapper = self.state_data.get(&state_key_wrapper, &mut working_set);
+		let state_value_wrapper = self.state_data.get(&state_key_wrapper, self.working_set);
 		match state_value_wrapper {
 			Some(state_value_wrapper) => {
 				let state_value = state_value_wrapper.into();
@@ -75,14 +74,11 @@ impl<'a, S: sov_modules_api::Spec> ResourceResolver for SovAptosDb<'a, S> {
 	) -> Result<(Option<Bytes>, usize), Error> {
 		let ap = AccessPath::resource_access_path(*address, struct_tag.clone())
 			.expect("Invalid access path.");
-
-		let mut working_set = self.working_set.borrow_mut();
-
 		match self
 			.state_data
-			.get(&StateKeyWrapper::new(StateKey::access_path(ap)), &mut working_set)
+			.get(&StateKeyWrapper::new(StateKey::access_path(ap)), self.working_set)
 		{
-			Some(val) => Ok((Some(Bytes::from(val)), 0)),
+			Some(val) => Ok((Some(val.0.bytes().clone()), 0)),
 			None => Ok((None, 0)),
 		}
 	}
@@ -100,17 +96,16 @@ impl<'a, S: sov_modules_api::Spec> ModuleResolver for SovAptosDb<'a, S> {
 			Ok(module) => module,
 			_ => return vec![],
 		};
-		module.metadata.into()
+		module.metadata.into_iter().map(MetadataWrapper::from).map(|w| w.0).collect()
 	}
 
 	fn get_module(&self, id: &ModuleId) -> std::result::Result<Option<Bytes>, Self::Error> {
 		let ap = AccessPath::from(id);
-		let mut working_set = self.working_set.borrow_mut();
 		match self
 			.state_data
-			.get(&StateKeyWrapper::new(StateKey::access_path(ap)), &mut working_set)
+			.get(&StateKeyWrapper::new(StateKey::access_path(ap)), self.working_set)
 		{
-			Some(val) => Ok(Some(Bytes::from(val))),
+			Some(val) => Ok(Some(val.0.bytes().clone())),
 			None => Ok(None),
 		}
 	}
@@ -122,15 +117,16 @@ impl<'a, S: sov_modules_api::Spec> TableResolver for SovAptosDb<'a, S> {
 		handle: &TableHandle,
 		key: &[u8],
 	) -> std::result::Result<Option<Vec<u8>>, anyhow::Error> {
-		let mut working_set = self.working_set.borrow_mut();
-		let account_address = handle.0;
+		let bytes = handle.0.to_le_bytes();
+		let address: [u8; 32] = bytes[..].try_into()?;
+		let account_address = AccountAddress::new(address);
 		let ap = AccessPath::new(AccountAddress::from(account_address), key.to_vec());
 		let state_key_wrapper = StateKeyWrapper::new(StateKey::access_path(ap));
-		let state_value_wrapper = self.state_data.get(&state_key_wrapper, &mut working_set);
+		let state_value_wrapper = self.state_data.get(&state_key_wrapper, self.working_set);
 		match state_value_wrapper {
 			Some(state_value_wrapper) => {
 				let state_value: StateValue = state_value_wrapper.into();
-				Ok(Some(state_value.into_bytes()))
+				Ok(Some(state_value.bytes().to_vec()))
 			},
 			None => Ok(None),
 		}

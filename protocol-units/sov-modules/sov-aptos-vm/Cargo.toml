@@ -14,9 +14,10 @@ publish = false
 
 [dependencies]
 auto_impl = { workspace = true }
-sov-modules-api = { workspace = true }
+sov-modules-api = { workspace = true, features = ["native"] }
 sov-state = { workspace = true }
 sov-chain-state = { workspace = true }
+sov-risc0-adapter = { workspace = true, features = ["native"] }
 
 anyhow = { workspace = true }
 chrono = { workspace = true }
@@ -26,7 +27,7 @@ bytes = { workspace = true }
 schemars = { workspace = true, optional = true }
 clap = { workspace = true, optional = true }
 serde = { workspace = true }
-serde_json = { workspace = true, optional = true }
+serde_json = { workspace = true }
 borsh = { workspace = true, features = ["rc"] }
 hex = { workspace = true }
 poem-openapi = { workspace = true }
@@ -38,6 +39,8 @@ tracing = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"
 secp256k1 = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
@@ -84,7 +87,6 @@ ethers-core = { workspace = true, optional = true }
 ethers-contract = { workspace = true, optional = true }
 ethers-signers = { workspace = true, optional = true }
 dirs = "5.0.1"
-rand = "0.8.5"
 tempfile = "3.10.1"
 
 [dev-dependencies]
@@ -105,7 +107,6 @@ native = [
     # Optional for speed up in native mode
     # "revm/asm-keccak"
     "schemars",
-    "serde_json",
     "sov-chain-state/native",
 ]
 # For testing smart contract

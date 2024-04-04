@@ -1,11 +1,10 @@
-use anvil_core::eth::block;
+//use anvil_core::eth::block;
 use aptos_executor_test_helpers::{bootstrap_genesis, gen_block_id, gen_ledger_info_with_sigs};
 use aptos_framework::{BuildOptions, BuiltPackage};
 use aptos_sdk::{
 	transaction_builder::TransactionFactory,
 	types::{AccountKey, LocalAccount},
 };
-use aptos_state_view::account_with_state_view::{AccountWithStateView, AsAccountWithStateView};
 use aptos_storage_interface::{state_view::DbStateViewAtVersion, DbReaderWriter, Order};
 use aptos_types::transaction::{ModuleBundle, Transaction, TransactionPayload};
 use aptos_types::validator_signer::ValidatorSigner;
@@ -15,7 +14,6 @@ use aptos_types::{
 	block_metadata::BlockMetadata,
 	chain_id::ChainId,
 	event::EventKey,
-	test_helpers::transaction_test_helpers::{block, BLOCK_GAS_LIMIT},
 	transaction::{
 		Transaction::UserTransaction, TransactionListWithProof, TransactionWithProof,
 		WriteSetPayload,
@@ -23,30 +21,23 @@ use aptos_types::{
 	trusted_state::{TrustedState, TrustedStateChange},
 	waypoint::Waypoint,
 };
-use rand::SeedableRng;
-use sov_modules_api::{Context, CryptoSpec, Module, PrivateKey, PublicKey, Spec};
+use sov_modules_api::{CryptoSpec, Module, PrivateKey, PublicKey, Spec};
 
 use crate::call::CallMessage;
 use crate::experimental::{AptosVmConfig, SovAptosVM};
-use crate::genesis::MOVE_DB_DIR;
-use serde_json;
+use poem_openapi::__private::serde_json;
+use rand_core::{RngCore, SeedableRng};
 use sov_modules_api::Error;
 use sov_state::storage::WorkingSet;
 use sov_state::ProverStorage;
-use std::fs;
-use std::path::PathBuf;
 
-type C = DefaultContext;
+type S = sov_modules_api::default_spec::DefaultSpec<sov_risc0_adapter::Risc0Verifier>;
+
 type DefaultPrivateKey = <<S as Spec>::CryptoSpec as CryptoSpec>::PrivateKey;
 const B: u64 = 1_000_000_000;
 
 #[test]
 fn serialize_deserialize_test() -> Result<(), Error> {
-	// Helps make sure we haven't introduced any quirks with different version numbers.
-	// seed
-	let seed = [3u8; 32];
-	let mut rng = rand::rngs::StdRng::from_seed(seed);
-
 	// get validator_signer from aptosvm
 	let signer = ValidatorSigner::from_int(0);
 	// core resources account
@@ -60,7 +51,7 @@ fn serialize_deserialize_test() -> Result<(), Error> {
 	let tx_factory = TransactionFactory::new(ChainId::test());
 
 	// accounts
-	let mut account1 = LocalAccount::generate(&mut rng);
+	let account1 = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let account1_address = account1.address();
 	let create1_tx = core_resources_account
 		.sign_with_transaction_builder(tx_factory.create_user_account(account1.public_key()));
@@ -113,7 +104,7 @@ fn aptosvm_small_test() -> Result<(), Error> {
 	let priv_key = DefaultPrivateKey::generate();
 	let sender = priv_key.pub_key();
 	let sender_addr = sender.to_address::<<S as Spec>::Address>();
-	let sender_context = C::new(sender_addr);
+	let sender_context = S::new(sender_addr);
 
 	// initialize AptosVM
 	let aptosvm = SovAptosVM::default();
@@ -161,11 +152,11 @@ fn aptosvm_test() -> Result<(), Error> {
 	// sender context
 	let priv_key = DefaultPrivateKey::generate();
 	let sender = priv_key.pub_key();
-	let sender_addr = sender.to_address::<<C as Spec>::Address>();
+	let sender_addr = sender.to_address::<<S as Spec>::Address>();
 	let sender_context = C::new(sender_addr);
 
 	// initialize AptosVM
-	let aptosvm = AptosVm::<C>::default();
+	let aptosvm = SovAptosVM::<S>::default();
 
 	aptosvm.init_module(&AptosVmConfig { data: vec![] }, working_set)?;
 

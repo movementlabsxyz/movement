@@ -1,5 +1,11 @@
+use crate::DevSigner;
 use std::array::TryFromSliceError;
 
+use crate::aptos::error::rpc::EthApiError;
+use crate::aptos::primitive_types::{
+	BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
+};
+use crate::experimental::SovAptosVM;
 use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
 use aptos_crypto::bls12381::Signature;
 use aptos_types::state_store::state_value::StateValue as AptosStateValue;
@@ -16,12 +22,6 @@ use sov_modules_api::{
 };
 use tracing::debug;
 
-use crate::aptos::error::rpc::EthApiError;
-use crate::aptos::primitive_types::{
-	BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
-};
-use crate::experimental::SovAptosVM;
-
 #[derive(Clone)]
 pub struct EthRpcConfig<S: sov_modules_api::Spec> {
 	pub min_blob_size: Option<usize>,
@@ -31,7 +31,7 @@ pub struct EthRpcConfig<S: sov_modules_api::Spec> {
 }
 
 #[rpc_gen(client, server)]
-impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
+impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	/// Handler for `net_version`
 	#[rpc_method(name = "get_ledger_info")]
 	pub fn net_version(&self, working_set: &mut WorkingSet<S>) -> RpcResult<String> {

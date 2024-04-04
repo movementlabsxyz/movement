@@ -5,7 +5,7 @@ use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
 use aptos_vm_genesis::{test_genesis_change_set_and_validators, GENESIS_KEYPAIR};
 use dirs;
-use serde_json;
+use poem_openapi::__private::serde_json;
 use std::fs;
 
 use crate::experimental::SovAptosVM;
@@ -15,7 +15,7 @@ use sov_modules_api::{DaSpec, StateValueAccessor, WorkingSet};
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const MOVE_DB_DIR: &str = ".sov-aptosvm-db";
 
-impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S, Da> {
+impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	pub(crate) fn init_module(
 		&self,
 		config: &<Self as sov_modules_api::Module>::Config,

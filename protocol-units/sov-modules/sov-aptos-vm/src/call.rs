@@ -12,6 +12,7 @@ use aptos_types::ledger_info::generate_ledger_info_with_sig;
 use aptos_types::transaction::Transaction;
 use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
 use chrono::Utc;
+use poem_openapi::__private::serde_json;
 use sov_modules_api::{
 	CallResponse, Context, DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor,
 	WorkingSet,
@@ -30,7 +31,7 @@ pub struct CallMessage {
 	pub serialized_txs: Vec<Vec<u8>>,
 }
 
-impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S> {
+impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	pub(crate) fn execute_call(
 		&self,
 		serialized_txs: Vec<Vec<u8>>,

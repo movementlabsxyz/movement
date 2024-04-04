@@ -10,7 +10,7 @@ pub use signer::DevSigner;
 mod experimental {
 	use crate::aptos::primitive_types::{
 		EventWrapper, Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper,
-		TransactionSignedAndRecovered, ValidatorSignerWrapper,
+		TransactionSignedAndRecovered, 
 	};
 	use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_config::config::{
@@ -22,10 +22,12 @@ mod experimental {
 	use aptos_executor::block_executor::BlockExecutor;
 	use aptos_storage_interface::DbReaderWriter;
 	use aptos_types::waypoint::Waypoint;
+	use serde_json;
 	use sov_modules_api::{
 		Context, DaSpec, Error, ModuleInfo, StateMap, StateValue, StateValueAccessor, WorkingSet,
 	};
 	use std::str::FromStr;
+	use aptos_types::validator_signer::ValidatorSigner;
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -79,7 +81,7 @@ mod experimental {
 		pub(crate) chain_id: StateValue<u64>,
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> sov_modules_api::Module for SovAptosVM<S> {
+	impl<S: sov_modules_api::Spec> sov_modules_api::Module for SovAptosVM<S> {
 		type Spec = S;
 
 		type Config = AptosVmConfig;
@@ -106,7 +108,7 @@ mod experimental {
 		}
 	}
 
-	impl<S: sov_modules_api::Spec, Da: DaSpec> SovAptosVM<S> {
+	impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		pub(crate) fn get_db(
 			&self,
 			working_set: &mut WorkingSet<S>,
@@ -138,15 +140,13 @@ mod experimental {
 		pub(crate) fn get_validator_signer(
 			&self,
 			working_set: &mut WorkingSet<S>,
-		) -> Result<ValidatorSignerWrapper, Error> {
+		) -> Result<Vec<u8>, Error> {
 			let serialized_validator_signer = self
 				.validator_signer
 				.get(working_set)
 				.ok_or(anyhow::Error::msg("Validator signer is not set."))?;
 
-			// TODO: seems redundant, but error types are different
-			Ok(serde_json::from_slice::<ValidatorSignerWrapper>(&serialized_validator_signer)
-				.expect("Failed to deserialize validator signer"))
+			Ok(serialized_validator_signer)
 		}
 
 		pub(crate) fn get_known_version(
