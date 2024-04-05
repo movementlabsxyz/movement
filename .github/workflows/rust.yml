@@ -1,10 +1,8 @@
-name: Rust
+name: M2 CI
 
 on:
   push:
-    branches: [ "main" ]
   pull_request:
-    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -15,10 +13,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          # Fetches the main repo but skips automatic handling of submodules
-          submodules: false
-          fetch-depth: 0
 
       - name: cargo build
         run: cargo build --verbose

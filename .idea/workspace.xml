@@ -7,7 +7,15 @@
     <cargoProject FILE="$PROJECT_DIR$/Cargo.toml" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="60f9b678-46ae-4846-8f2c-5acd994cc78d" name="Changes" comment="" />
+    <list default="true" id="60f9b678-46ae-4846-8f2c-5acd994cc78d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/copilot/chatSessions/00000000000.xd" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot/chatSessions/blobs/version" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/copilot/chatSessions/xd.lck" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.github/workflows/rust.yml" beforeDir="false" afterPath="$PROJECT_DIR$/.github/workflows/rust.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/m2/rollup/src/bin/node.rs" beforeDir="false" afterPath="$PROJECT_DIR$/m2/rollup/src/bin/node.rs" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -252,7 +260,7 @@
       <workItem from="1712240760186" duration="4958000" />
       <workItem from="1712303682938" duration="2162000" />
       <workItem from="1712306223471" duration="6264000" />
-      <workItem from="1712313936976" duration="2001000" />
+      <workItem from="1712313936976" duration="3119000" />
     </task>
     <servers />
   </component>
