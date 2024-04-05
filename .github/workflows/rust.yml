@@ -14,20 +14,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-      with:
-        # Fetches the main repo but skips automatic handling of submodules
-        submodules: false
-        fetch-depth: 0
+      - uses: actions/checkout@v3
+        with:
+          # Fetches the main repo but skips automatic handling of submodules
+          submodules: false
+          fetch-depth: 0
 
-    # Manually handle submodules
-    - name: Handle Git Submodules
-      run: |
-        # Initialize submodules
-        git submodule update --init --recursive
-        # Sync submodules in case .gitmodules has been updated
-        git submodule sync --recursive
-        # Attempt to fix any specific submodule fetching issues here, if applicable
+      - name: cargo build
+        run: cargo build --verbose
 
-    - name: Build
-      run: cargo build --verbose
+      - name: cargo test
+        run: cargo test --verbose

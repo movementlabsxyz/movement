@@ -37,18 +37,19 @@ use tracing_subscriber::{fmt, EnvFilter};
 // #[cfg(feature = "celestia_da")]
 // const DEFAULT_KERNEL_GENESIS_PATH: &str = "../../test-data/genesis/celestia/chain_state.json";
 
+//TODO add default values to the clap arg proc macro
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
 	/// The path to the rollup config.
-	#[arg(long, default_value = DEFAULT_CONFIG_PATH)]
+	#[arg(long)]
 	rollup_config_path: String,
 
 	/// The path to the genesis config.
-	#[arg(long, default_value = DEFAULT_GENESIS_PATH)]
+	#[arg(long)]
 	genesis_paths: String,
 	/// The path to the kernel genesis config.
-	#[arg(long, default_value = DEFAULT_KERNEL_GENESIS_PATH)]
+	#[arg(long)]
 	kernel_genesis_paths: String,
 }
 
