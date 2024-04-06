@@ -42,7 +42,7 @@ subtle = "2.5.0"
 
 m2-risc0 = { path = "../provers/risc0" }
 m2-stf = { path = "../stf", features = ["native"] }
-sov-risc0-adapter = { workspace = true, features = ["native"] }
+# sov-risc0-adapter = { workspace = true, features = ["native"] }
 
 # binary dependencies
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }

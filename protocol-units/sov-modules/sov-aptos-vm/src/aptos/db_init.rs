@@ -1,4 +1,3 @@
-use crate::aptos::db::SovAptosDb;
 use aptos_api_types::{Address, HexEncodedBytes, MoveModule, MoveResource};
 use sov_modules_api::StateMapAccessor;
 

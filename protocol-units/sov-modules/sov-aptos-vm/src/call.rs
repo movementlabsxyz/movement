@@ -1,22 +1,29 @@
-use crate::aptos::db::SovAptosDb;
 use crate::experimental::SovAptosVM;
 use anyhow::Result;
-use aptos_api_types::LedgerInfo;
+use aptos_bitvec::BitVec;
 use aptos_consensus_types::block::Block;
+use aptos_crypto::bls12381::Signature;
 use aptos_crypto::hash::CryptoHash;
-use aptos_crypto::HashValue;
+use aptos_crypto::{HashValue, SigningKey};
 use aptos_executor_types::BlockExecutorTrait;
+use aptos_types::aggregate_signature::{AggregateSignature, PartialSignatures};
+use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
 use aptos_types::block_info::BlockInfo;
 use aptos_types::block_metadata::BlockMetadata;
-use aptos_types::ledger_info::generate_ledger_info_with_sig;
+use aptos_types::chain_id::ChainId;
+use aptos_types::ledger_info::{
+	generate_ledger_info_with_sig, LedgerInfo, LedgerInfoWithSignatures, LedgerInfoWithV0,
+};
 use aptos_types::transaction::Transaction;
 use aptos_types::trusted_state::{TrustedState, TrustedStateChange};
+use aptos_types::validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier};
 use chrono::Utc;
 use poem_openapi::__private::serde_json;
 use sov_modules_api::{
 	CallResponse, Context, DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor,
 	WorkingSet,
 };
+use std::collections::BTreeMap;
 /// Aptos call message.
 #[derive(
 	borsh::BorshDeserialize,
@@ -80,22 +87,28 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		let mut block = vec![];
 		block.push(block_meta);
 		block.extend(txs);
-		block.push(checkpoint);
+		// block.push(checkpoint);
+
+		println!("BLOCK: {:?}", block);
 
 		drop(db); // drop the db from above so that the executor can use RocksDB
 
 		// execute the transaction in Aptos
 		let executor = self.get_executor(working_set)?;
 		// let parent_block_id = executor.committed_block_id();
+		// Create a map from author to signatures.
 
 		println!("EXECUTING BLOCK {:?} {:?}", block_id, parent_block_id);
-		let result = executor.execute_block((block_id, block).into(), parent_block_id, None)?;
+		let result = executor.execute_block(
+			(block_id, block).into(),
+			parent_block_id,
+			BlockExecutorConfigFromOnchain::new_no_block_limit(),
+		)?;
 		let chain_id = self.chain_id.get(working_set).unwrap();
 
 		// sign for the the ledger
 		// last three args are likely wrong, where to get this data.
 		let ledger_info = LedgerInfo::new(
-			chain_id,
 			BlockInfo::new(
 				next_epoch,
 				0,
@@ -105,9 +118,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 				unix_now,
 				result.epoch_state().clone(),
 			),
-			0,
-			0,
-			0,
+			HashValue::zero(),
 		);
 
 		println!("COMMITTING BLOCK: {:?} {:?}", block_id, parent_block_id);

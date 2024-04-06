@@ -17,7 +17,9 @@ auto_impl = { workspace = true }
 sov-modules-api = { workspace = true, features = ["native"] }
 sov-state = { workspace = true }
 sov-chain-state = { workspace = true }
-sov-risc0-adapter = { workspace = true, features = ["native"] }
+sov-test-utils = { workspace = true }
+# sov-risc0-adapter = { workspace = true, features = ["native"] }
+sov-prover-storage-manager = { workspace = true, features = ["test-utils"] }
 
 anyhow = { workspace = true }
 chrono = { workspace = true }
@@ -61,6 +63,7 @@ aptos-framework = { workspace = true }
 aptos-executor = { workspace = true }
 aptos-executor-types = { workspace = true }
 aptos-executor-test-helpers = { workspace = true }
+aptos-bitvec = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-table-extension = { workspace = true }
@@ -74,18 +77,18 @@ revm = { workspace = true, features = [
     "std",
     "secp256k1"
 ] }
-reth-primitives = { workspace = true }
-reth-rpc-types = { workspace = true }
-reth-rpc-types-compat = { workspace = true }
-reth-interfaces = { workspace = true, optional = true }
-reth-revm = { workspace = true }
-revm-primitives = { workspace = true }
+# reth-primitives = { workspace = true }
+# reth-rpc-types = { workspace = true }
+# reth-rpc-types-compat = { workspace = true }
+# mreth-interfaces = { workspace = true, optional = true }
+# reth-revm = { workspace = true }
+# revm-primitives = { workspace = true }
 
 # For test-utils
-ethereum-types = { workspace = true, optional = true }
-ethers-core = { workspace = true, optional = true }
-ethers-contract = { workspace = true, optional = true }
-ethers-signers = { workspace = true, optional = true }
+# ethereum-types = { workspace = true, optional = true }
+# ethers-core = { workspace = true, optional = true }
+# ethers-contract = { workspace = true, optional = true }
+# ethers-signers = { workspace = true, optional = true }
 dirs = "5.0.1"
 tempfile = "3.10.1"
 
@@ -102,7 +105,7 @@ tempfile = "3.10.1"
 default = []
 native = [
     "clap",
-    "reth-interfaces",
+    # "reth-interfaces",
     #"reth-revm",
     # Optional for speed up in native mode
     # "revm/asm-keccak"
@@ -110,9 +113,3 @@ native = [
     "sov-chain-state/native",
 ]
 # For testing smart contract
-smart_contracts = [
-    "ethereum-types",
-    "ethers-contract",
-    "ethers-core",
-    "ethers-signers",
-]

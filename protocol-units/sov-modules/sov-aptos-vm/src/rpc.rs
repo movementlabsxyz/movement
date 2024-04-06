@@ -1,10 +1,5 @@
 use crate::DevSigner;
 use std::array::TryFromSliceError;
-
-use crate::aptos::error::rpc::EthApiError;
-use crate::aptos::primitive_types::{
-	BlockEnv, Receipt, SealedBlock, TransactionSignedAndRecovered,
-};
 use crate::experimental::SovAptosVM;
 use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
 use aptos_crypto::bls12381::Signature;
@@ -13,9 +8,6 @@ use aptos_types::transaction::Version;
 use jsonrpsee::core::RpcResult;
 use jsonrpsee::proc_macros::rpc;
 use reth_primitives::{TransactionSignedEcRecovered, U128};
-use revm::primitives::{
-	ExecutionResult, HaltReason, InvalidTransaction, TransactTo, B256, KECCAK_EMPTY, U256,
-};
 use sov_modules_api::macros::rpc_gen;
 use sov_modules_api::{
 	CryptoSpec, DaSpec, StateMap, StateMapAccessor, StateValueAccessor, StateVecAccessor,
@@ -25,10 +17,7 @@ use tracing::debug;
 
 #[derive(Clone)]
 pub struct EthRpcConfig<S: sov_modules_api::Spec> {
-	pub min_blob_size: Option<usize>,
-	pub sov_tx_signer_priv_key: <S::CryptoSpec as CryptoSpec>::PrivateKey,
-	// add gas_price_oracle_config here
-	pub signer: DevSigner,
+
 }
 
 #[rpc_gen(client, server)]

@@ -2,7 +2,7 @@
 // similar as possible to upstream than clean it up.
 #![allow(clippy::match_same_arms)]
 
-use revm::primitives::U256;
+// use revm::primitives::U256;
 use serde::{Deserialize, Serialize};
 use sov_modules_api::StateMap;
 use sov_state::Prefix;
@@ -38,7 +38,7 @@ pub(crate) struct AccountInfo {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub(crate) struct DbAccount {
 	pub(crate) info: AccountInfo,
-	pub(crate) storage: StateMap<U256, U256, BcsCodec>,
+	pub(crate) storage: StateMap<U64, BcsCodec>,
 }
 
 impl DbAccount {

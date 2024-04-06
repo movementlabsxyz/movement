@@ -21,17 +21,20 @@ use aptos_types::{
 	trusted_state::{TrustedState, TrustedStateChange},
 	waypoint::Waypoint,
 };
-use sov_modules_api::{CryptoSpec, Module, PrivateKey, PublicKey, Spec};
+use sov_modules_api::{Context, CryptoSpec, Module, PrivateKey, PublicKey, Spec};
+use sov_prover_storage_manager::new_orphan_storage;
 
 use crate::call::CallMessage;
 use crate::experimental::{AptosVmConfig, SovAptosVM};
 use poem_openapi::__private::serde_json;
 use rand_core::{RngCore, SeedableRng};
+use sov_modules_api::utils::generate_address;
 use sov_modules_api::Error;
 use sov_state::storage::WorkingSet;
-use sov_state::ProverStorage;
+use sov_state::{DefaultStorageSpec, ProverStorage};
+use sov_test_utils::MockZkVerifier;
 
-type S = sov_modules_api::default_spec::DefaultSpec<sov_risc0_adapter::Risc0Verifier>;
+type S = sov_modules_api::default_spec::DefaultSpec<MockZkVerifier>;
 
 type DefaultPrivateKey = <<S as Spec>::CryptoSpec as CryptoSpec>::PrivateKey;
 const B: u64 = 1_000_000_000;
@@ -98,18 +101,21 @@ fn aptosvm_small_test() -> Result<(), Error> {
 
 	// create a working set
 	let tmpdir = tempfile::tempdir().unwrap();
-	let working_set = &mut WorkingSet::new(ProverStorage::with_path(tmpdir.path()).unwrap());
-
+	let storage = new_orphan_storage::<DefaultStorageSpec>(tmpdir.path()).unwrap();
+	let mut working_set = WorkingSet::new(storage.clone());
 	// sender context
 	let priv_key = DefaultPrivateKey::generate();
 	let sender = priv_key.pub_key();
-	let sender_addr = sender.to_address::<<S as Spec>::Address>();
-	let sender_context = S::new(sender_addr);
+	let admin = generate_address::<S>("admin");
+	let sequencer = generate_address::<S>("sequencer");
+	let admin_context = Context::<S>::new(admin, sequencer, 1);
 
 	// initialize AptosVM
 	let aptosvm = SovAptosVM::default();
-
-	aptosvm.init_module(&AptosVmConfig { data: vec![] }, working_set)?;
+	aptosvm.init_module(&AptosVmConfig { 
+		data: vec![] ,
+		path : tmpdir.path().to_path_buf()
+	}, &mut working_set)?;
 
 	// get validator_signer from aptosvm
 	let signer = ValidatorSigner::from_int(0);
@@ -133,7 +139,7 @@ fn aptosvm_small_test() -> Result<(), Error> {
 
 	let serialized_tx = serde_json::to_vec::<Transaction>(&create1_tx).unwrap();
 	aptosvm
-		.call(CallMessage { serialized_txs: vec![serialized_tx] }, &sender_context, working_set)
+		.call(CallMessage { serialized_txs: vec![serialized_tx] }, &admin_context, &mut working_set)
 		.unwrap();
 
 	Ok(())
@@ -147,18 +153,23 @@ fn aptosvm_test() -> Result<(), Error> {
 
 	// create a working set
 	let tmpdir = tempfile::tempdir().unwrap();
-	let working_set = &mut WorkingSet::new(ProverStorage::with_path(tmpdir.path()).unwrap());
+	let storage = new_orphan_storage::<DefaultStorageSpec>(tmpdir.path()).unwrap();
+	let mut working_set = WorkingSet::new(storage.clone());
+	let admin = generate_address::<S>("admin");
+	let sequencer = generate_address::<S>("sequencer");
+	let admin_context = Context::<S>::new(admin, sequencer, 1);
 
 	// sender context
 	let priv_key = DefaultPrivateKey::generate();
 	let sender = priv_key.pub_key();
-	let sender_addr = sender.to_address::<<S as Spec>::Address>();
-	let sender_context = C::new(sender_addr);
 
 	// initialize AptosVM
 	let aptosvm = SovAptosVM::<S>::default();
 
-	aptosvm.init_module(&AptosVmConfig { data: vec![] }, working_set)?;
+	aptosvm.init_module(&AptosVmConfig {
+		 data: vec![],
+		 path : tmpdir.path().to_path_buf()
+	}, &mut working_set)?;
 
 	// get validator_signer from aptosvm
 	let signer = ValidatorSigner::from_int(0);
@@ -222,7 +233,7 @@ fn aptosvm_test() -> Result<(), Error> {
 		)))
 	);*/
 
-	// use transcation factory to create entrypoint call
+	// use transaction factory to create entrypoint call
 	let block_vec: Vec<Transaction> = vec![
 		UserTransaction(create1_tx),
 		UserTransaction(create2_tx),
@@ -242,7 +253,7 @@ fn aptosvm_test() -> Result<(), Error> {
 	}
 
 	aptosvm
-		.call(CallMessage { serialized_txs }, &sender_context, working_set)
+		.call(CallMessage { serialized_txs }, &admin_context, &mut working_set)
 		.unwrap();
 
 	let block_vec_two: Vec<Transaction> = vec![
@@ -262,7 +273,7 @@ fn aptosvm_test() -> Result<(), Error> {
 	}
 
 	aptosvm
-		.call(CallMessage { serialized_txs: serialized_txs_two }, &sender_context, working_set)
+		.call(CallMessage { serialized_txs: serialized_txs_two }, &admin_context, &mut working_set)
 		.unwrap();
 
 	// check caller address

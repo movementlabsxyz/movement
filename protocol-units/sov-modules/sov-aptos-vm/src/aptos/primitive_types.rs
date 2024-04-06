@@ -7,7 +7,7 @@ use std::ops::Range;
 use crate::aptos::db::SovAptosDb;
 use crate::aptos::AccountInfo;
 use aptos_consensus_types::{block::Block, block_data::BlockData};
-use aptos_crypto::{bls12381::Signature, hash::HashValue};
+use aptos_crypto::{bls12381, bls12381::Signature, hash::HashValue};
 use aptos_sdk::move_types::metadata::Metadata as AptosMetadata;
 use aptos_sdk::rest_client::Account;
 use aptos_sdk::types::account_address::AccountAddress;
@@ -16,9 +16,9 @@ use aptos_types::on_chain_config::Version;
 use aptos_types::state_store::state_key::StateKey;
 use auto_impl::auto_impl;
 use move_core_types::metadata::Metadata as MoveMetadata;
-use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
-use reth_revm::precompile::HashMap;
-use revm::primitives::{Address, EVMError, B256};
+// use reth_primitives::{Header, SealedHeader, TransactionSigned, TransactionSignedEcRecovered};
+// use reth_revm::precompile::HashMap;
+// use revm::primitives::{Address, EVMError, B256};
 /// Aptos database interface
 /// This trait is loosely modelled on `revm::Database` as this trait is used
 /// in the sov-aptos module.
@@ -123,7 +123,8 @@ pub(crate) struct SovAptosBlock {
 use aptos_types::state_store::state_value::StateValue;
 use aptos_types::validator_signer::ValidatorSigner;
 use borsh::{BorshDeserialize, BorshSerialize};
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[cfg_attr(feature = "native", derive(serde::Serialize), derive(serde::Deserialize))]
 
@@ -248,5 +249,22 @@ pub struct MetadataWrapper(pub(crate) AptosMetadata);
 impl From<MoveMetadata> for MetadataWrapper {
 	fn from(metadata: MoveMetadata) -> Self {
 		MetadataWrapper(AptosMetadata { key: metadata.key, value: metadata.value })
+	}
+}
+
+pub struct ValidatorSignerWrapper(ValidatorSigner);
+
+impl ValidatorSignerWrapper {
+	pub fn new(signer: ValidatorSigner) -> Self {
+		ValidatorSignerWrapper(signer)
+	}
+}
+
+impl Serialize for ValidatorSignerWrapper {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		let mut map = serializer.serialize_map(Some(2))?;
+		map.serialize_entry("author", &self.0.author())?;
+		map.serialize_entry("private_key", &self.0.private_key().to_bytes())?;
+		map.end()
 	}
 }
