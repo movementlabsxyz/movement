@@ -61,6 +61,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		  // set the genesis block
 		let executor = self.get_executor(working_set)?;
 		let genesis_block_id = executor.committed_block_id();
+		println!("Genesis block id: {:?}", genesis_block_id.to_vec());
 		self.genesis_hash.set(&genesis_block_id.to_vec(), working_set);
 
 	

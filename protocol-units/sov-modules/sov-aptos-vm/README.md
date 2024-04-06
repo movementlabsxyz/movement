@@ -9,3 +9,5 @@ The module `CallMessage` contains `rlp` encoded Ethereum transaction, which is v
 WARNING: `prevrandao` value is predictable up to `DEFERRED_SLOTS_COUNT` in advance,
 Users should follow the same best practice that they would on Ethereum and use future randomness.
 See: `<https://eips.ethereum.org/EIPS/eip-4399#tips-for-application-developers>`
+
+We need to update this.
