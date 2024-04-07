@@ -3,18 +3,17 @@ use aptos_executor::db_bootstrapper::{generate_waypoint, maybe_bootstrap};
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
-use aptos_vm_genesis::{test_genesis_change_set_and_validators, GENESIS_KEYPAIR};
-use dirs;
+use aptos_vm_genesis::test_genesis_change_set_and_validators;
 use poem_openapi::__private::serde_json;
 use std::fs;
 
 use crate::experimental::SovAptosVM;
 use aptos_types::transaction::{Transaction, WriteSetPayload};
 use aptos_types::vm_status::StatusType::Validation;
-use sov_modules_api::{DaSpec, StateValueAccessor, WorkingSet};
-use aptos_types::ledger_info::{
+use sov_modules_api::{StateValueAccessor, WorkingSet};
+/*use aptos_types::ledger_info::{
 	generate_ledger_info_with_sig, LedgerInfo, LedgerInfoWithSignatures, LedgerInfoWithV0,
-};
+};*/
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub(crate) const MOVE_DB_DIR: &str = ".sov-aptosvm-db";
@@ -61,8 +60,15 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		  // set the genesis block
 		let executor = self.get_executor(working_set)?;
 		let genesis_block_id = executor.committed_block_id();
-		println!("Genesis block id: {:?}", genesis_block_id.to_vec());
 		self.genesis_hash.set(&genesis_block_id.to_vec(), working_set);
+
+		// ! this is not necessary because we will be handling the senders ourselves
+		// ! you'll see elsewhere that the sender will be an arbitrary channel member
+		// set up api context
+		/*let (mempool_client_sender, mut mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
+        let sender = MempoolClientSender::from(mempool_client_sender);
+        let node_config = NodeConfig::default();
+        let context = Context::new(ChainId::test(), db.1.reader.clone(), sender, node_config.clone());*/
 
 	
 		Ok(())

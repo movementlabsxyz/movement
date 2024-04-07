@@ -73,6 +73,26 @@ pub struct JsonRpcRequest {
     pub id: serde_json::Value,
 }
 
+impl JsonRpcRequest {
+    pub fn new() -> Self {
+        JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            method: "".to_string(),
+            params: serde_json::Value::Null,
+            id: json!(1)
+        }
+    }
+
+    pub fn try_standard(&self) -> Result<JsonRpcRequestStandard, anyhow::Error>{
+        
+        // convert the params field to a JsonRpcRequestStandard
+        let standard : JsonRpcRequestStandard = serde_json::from_value(self.params.clone())?;
+
+        Ok(standard)
+
+    }
+}
+
 impl From<JsonRpcRequestStandard> for JsonRpcRequest {
     fn from(standard : JsonRpcRequestStandard) -> Self {
         JsonRpcRequest {

@@ -1,8 +1,11 @@
 // mod aptos;
 mod call;
+#[cfg(test)]
 mod call_tests;
 mod genesis;
-// mod rpc;
+mod rpc;
+mod util;
+
 // mod signer;
 
 // pub use signer::DevSigner;
@@ -12,7 +15,7 @@ mod experimental {
 		EventWrapper, Receipt, SealedBlock, StateKeyWrapper, StateValueWrapper,
 		TransactionSignedAndRecovered, ValidatorSignerWrapper,
 	};*/
-	use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
+	// use aptos_api_types::{Event, HexEncodedBytes, MoveModuleBytecode, MoveResource};
 	use aptos_config::config::{
 		RocksdbConfigs, StorageDirPaths, BUFFERED_STATE_TARGET_ITEMS,
 		DEFAULT_MAX_NUM_NODES_PER_LRU_CACHE_SHARD, NO_OP_STORAGE_PRUNER_CONFIG,
@@ -30,6 +33,11 @@ mod experimental {
 	};
 	use std::str::FromStr;
 	use std::path::PathBuf;
+	// use aptos_mempool::core_mempool::{CoreMempool, TimelineState};
+	use aptos_mempool::{MempoolClientRequest, MempoolClientSender, SubmissionStatus};
+	use futures::{channel::mpsc as futures_mpsc, StreamExt};
+	use aptos_config::config::NodeConfig;
+	use aptos_types::chain_id::ChainId;
 
 	// @TODO: Check these vals. Make tracking issue.
 	#[cfg(feature = "native")]
@@ -80,7 +88,8 @@ mod experimental {
 		pub(crate) known_version: StateValue<u64>,
 
 		#[state]
-		pub(crate) chain_id: StateValue<u64>,
+		pub(crate) chain_id: StateValue<u8>,
+
 	}
 
 	impl<S: sov_modules_api::Spec> sov_modules_api::Module for SovAptosVM<S> {
@@ -186,8 +195,43 @@ mod experimental {
 				.genesis_hash
 				.get(working_set)
 				.ok_or(anyhow::Error::msg("Serialized genesis hash is not set."))?;
+
+			// todo: remove expects
 			Ok(HashValue::from_slice(serialized_genesis_hash)
 				.expect("Failed to deserialize genesis hash"))
 		}
+
+		pub(crate) fn get_chain_id(
+			&self,
+			working_set: &mut WorkingSet<S>,
+		) -> Result<ChainId, Error> {
+			let chain_id = self
+				.chain_id
+				.get(working_set)
+				.ok_or(anyhow::Error::msg("Chain ID is not set."))?;
+
+			Ok(ChainId::new(chain_id))
+		}
+
+		pub(crate) fn get_aptos_api_context(
+			&self,
+			working_set: &mut WorkingSet<S>
+		) -> Result<aptos_api::Context, Error> {
+
+			let (mempool_client_sender, mut mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
+			let db = self.get_db(working_set)?;
+			let sender = MempoolClientSender::from(mempool_client_sender);
+			let node_config = NodeConfig::default(); // todo: this will need to be modded
+			let context = aptos_api::Context::new(
+				self.get_chain_id(working_set)?.into(),
+				db.reader.clone(),
+				sender, node_config.clone(), 
+				None // qiz: this may need to be an actual table reader
+			);
+
+			Ok(context)
+
+		}
+
 	}
 }

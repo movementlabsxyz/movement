@@ -20,10 +20,14 @@ use aptos_types::validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier}
 use chrono::Utc;
 use poem_openapi::__private::serde_json;
 use sov_modules_api::{
-	CallResponse, Context, DaSpec, StateMapAccessor, StateValueAccessor, StateVecAccessor,
+	CallResponse, Context, DaSpec, StateMapAccessor, StateValueAccessor, 
 	WorkingSet,
 };
 use std::collections::BTreeMap;
+
+use aptos_config::config::NodeConfig;
+
+// qiz: How can the call message be a block? That is, how does this change how we submit transactions?
 /// Aptos call message.
 #[derive(
 	borsh::BorshDeserialize,

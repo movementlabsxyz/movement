@@ -14,6 +14,13 @@ use sov_modules_api::{
 	WorkingSet,
 };
 use tracing::debug;
+use aptos_api::get_api_service;
+use aptos_api_types::{
+    Address, EncodeSubmissionRequest, IdentifierWrapper, MoveStructTag, RawTableItemRequest,
+    StateKeyWrapper, TableItemRequest, ViewRequest, U64,
+};
+use crate::util::sync;
+use rest_to_json_rpc::JsonRpcRequest;
 
 #[derive(Clone)]
 pub struct EthRpcConfig<S: sov_modules_api::Spec> {
@@ -25,13 +32,43 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 
 	// ACCOUNTS
 
-	/// Handler for: `eth_call`
+	/// https://github.com/aptos-labs/aptos-core/blob/fec2fbe817df70e9c8ccb55fec52a568ec8586c5/api/src/accounts.rs#L50
 	#[rpc_method(name = "accounts.address")]
-	pub fn accounts_by_address(&self, working_set: &mut WorkingSet<S>) -> RpcResult<Option<U64>> {
-		todo!()
+	pub fn accounts_by_address(
+		&self, 
+		request : JsonRpcRequest,
+		working_set: &mut WorkingSet<S>
+	) -> RpcResult<Account> {
+
+		// PARAMS
+		let standard_request = request.try_standard()?;
+
+		// get the accept type from the body
+		let accept_type_value = standard_request.body.get("accept_type").ok_or_else(|| anyhow!("accept_type not found"))?;
+		let accept_type = AcceptType::from_str(accept_type_value)?;
+
+		// get the address from the path params
+		let address_string = standard_request.path_params.get("address").ok_or_else(|| anyhow!("address not found"))?;
+		let address = Address::from_str(address_string)?;
+
+		// get the option of the ledger version from the query params
+		let ledger_version : Option<u64> = standard_request.query_params.get("ledger_version").map(|v| v.parse::<Version>()).transpose()?;
+
+		// API CONTEXT
+		let aptos_api_context = self.get_aptos_api_context(working_set)?;
+		let aptos_api_service  = get_api_service(aptos_api_context);
+		let accounts_api = aptos_api_service.api.0;
+
+		// LOGIC
+		let account_data = sync(|| async move {
+			accounts_api.get_account(accept_type, address, ledger_version).await
+		})?;
+
+		// RETURN
+		Ok(account_data)
 	}
 
-	/// Handler for `/accounts/{address}`
+	/// https://github.com/aptos-labs/aptos-core/blob/fec2fbe817df70e9c8ccb55fec52a568ec8586c5/api/src/accounts.rs#L78
 	#[rpc_method(name = "accounts.address.resources")]
 	pub fn account_resources_by_address(
 		&self,

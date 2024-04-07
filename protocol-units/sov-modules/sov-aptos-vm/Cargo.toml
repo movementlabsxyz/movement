@@ -13,6 +13,11 @@ resolver = "2"
 publish = false
 
 [dependencies]
+# to migrate
+futures = "0.3"
+tokio = { workspace = true }
+rest-to-json-rpc = { workspace = true }
+
 auto_impl = { workspace = true }
 sov-modules-api = { workspace = true, features = ["native"] }
 sov-state = { workspace = true }
@@ -45,6 +50,7 @@ rand = { workspace = true }
 rand_core = { workspace = true }
 
 aptos-vm = { workspace = true }
+aptos-mempool = { workspace = true }
 aptos-config = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-crypto = { workspace = true }
