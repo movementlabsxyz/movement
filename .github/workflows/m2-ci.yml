@@ -36,10 +36,11 @@ jobs:
           components: rustfmt, clippy
           override: true
 
-      - name: Install risc0
+      - name: Install risc
+        shell: bash
         run: |
           cargo install cargo-binstall
-          cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero | yes
+          echo -e "yes\n" | cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero
           cargo risczero install 
 
 
