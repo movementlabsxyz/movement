@@ -38,8 +38,7 @@ jobs:
 
       - name: Install risc0
         run: |
-          cargo install cargo-binstall 
-          cargo binstall cargo-risczero
+          cargo install --git https://github.com/risc0/risc0 cargo-risczero
           cargo risczero install
 
       - name: Cache Rust dependencies
