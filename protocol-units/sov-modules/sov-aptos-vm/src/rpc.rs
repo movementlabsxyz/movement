@@ -14,7 +14,7 @@ use sov_modules_api::{
 	WorkingSet,
 };
 use tracing::debug;
-use aptos_api::get_api_service;
+use aptos_api::runtime::get_apis;
 use aptos_api_types::{
     Address, EncodeSubmissionRequest, IdentifierWrapper, MoveStructTag, RawTableItemRequest,
     StateKeyWrapper, TableItemRequest, ViewRequest, U64,
@@ -56,7 +56,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 
 		// API CONTEXT
 		let aptos_api_context = self.get_aptos_api_context(working_set)?;
-		let aptos_api_service  = get_api_service(aptos_api_context);
+		let aptos_api_service  = get_apis(aptos_api_context);
 		let accounts_api = aptos_api_service.api.0;
 
 		// LOGIC
