@@ -10,7 +10,7 @@ pub use sov_accounts::{AccountsRpcImpl, AccountsRpcServer};
 #[cfg(feature = "native")]
 pub use sov_bank::{BankRpcImpl, BankRpcServer};
 use sov_modules_api::{macros::DefaultRuntime, Event};
-use sov_modules_api::{Spec, DaSpec, DispatchCall, Genesis, MessageCodec};
+use sov_modules_api::{DaSpec, DispatchCall, Genesis, MessageCodec, Spec};
 #[cfg(feature = "native")]
 pub use sov_sequencer_registry::{SequencerRegistryRpcImpl, SequencerRegistryRpcServer};
 
@@ -48,47 +48,49 @@ use crate::genesis_config::GenesisPaths;
 /// `Runtime::decode_call` accepts a serialized call message and returns a type that implements the `DispatchCall` trait.
 ///  The `DispatchCall` implementation (derived by a macro) forwards the message to the appropriate module and executes its `call` method.
 #[cfg_attr(
-    feature = "native",
-    derive(sov_modules_api::macros::CliWallet),
-    sov_modules_api::macros::expose_rpc
+	feature = "native",
+	derive(sov_modules_api::macros::CliWallet),
+	sov_modules_api::macros::expose_rpc
 )]
 #[derive(Genesis, DispatchCall, Event, MessageCodec, DefaultRuntime)]
 #[serialization(
-borsh::BorshDeserialize,
-borsh::BorshSerialize,
-serde::Serialize,
-serde::Deserialize
+	borsh::BorshDeserialize,
+	borsh::BorshSerialize,
+	serde::Serialize,
+	serde::Deserialize
 )]
 pub struct Runtime<S: Spec, Da: DaSpec> {
-    /// The `accounts` module is responsible for managing user accounts and their nonces
-    pub accounts: sov_accounts::Accounts<S>,
-    /// The bank module is responsible for minting, transferring, and burning tokens
-    pub bank: sov_bank::Bank<S>,
-    /// The sequencer registry module is responsible for authorizing users to sequencer rollup transactions
-    pub sequencer_registry: sov_sequencer_registry::SequencerRegistry<S, Da>,
+	/// The `accounts` module is responsible for managing user accounts and their nonces
+	pub accounts: sov_accounts::Accounts<S>,
+	/// The bank module is responsible for minting, transferring, and burning tokens
+	pub bank: sov_bank::Bank<S>,
+	/// The sequencer registry module is responsible for authorizing users to sequencer rollup transactions
+	pub sequencer_registry: sov_sequencer_registry::SequencerRegistry<S, Da>,
+	/// The Aptos module
+	pub aptos: sov_aptos::S,
 }
 
 impl<S, Da> sov_modules_stf_blueprint::Runtime<S, Da> for Runtime<S, Da>
 where
-    S: Spec,
-    Da: DaSpec,
+	S: Spec,
+	Da: DaSpec,
 {
-    type GenesisConfig = GenesisConfig<S, Da>;
+	type GenesisConfig = GenesisConfig<S, Da>;
 
-    #[cfg(feature = "native")]
-    type GenesisPaths = GenesisPaths;
+	#[cfg(feature = "native")]
+	type GenesisPaths = GenesisPaths;
 
-    #[cfg(feature = "native")]
-    fn rpc_methods(
-        storage: std::sync::Arc<std::sync::RwLock<<S as Spec>::Storage>>,
-    ) -> jsonrpsee::RpcModule<()> {
-        get_rpc_methods::<S, Da>(storage)
-    }
+	#[cfg(feature = "native")]
+	fn rpc_methods(
+		storage: std::sync::Arc<std::sync::RwLock<<S as Spec>::Storage>>,
+	) -> jsonrpsee::RpcModule<()> {
+		get_rpc_methods::<S, Da>(storage)
+	}
 
-    #[cfg(feature = "native")]
-    fn genesis_config(
-        genesis_paths: &Self::GenesisPaths,
-    ) -> Result<Self::GenesisConfig, anyhow::Error> {
-        crate::genesis_config::get_genesis_config(genesis_paths)
-    }
+	#[cfg(feature = "native")]
+	fn genesis_config(
+		genesis_paths: &Self::GenesisPaths,
+	) -> Result<Self::GenesisConfig, anyhow::Error> {
+		crate::genesis_config::get_genesis_config(genesis_paths)
+	}
 }

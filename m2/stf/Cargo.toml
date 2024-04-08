@@ -20,6 +20,8 @@ sov-sequencer = { workspace = true, optional = true }
 sov-rollup-interface = { workspace = true }
 tracing = "0.1.37"
 
+sov-aptos = { workspace = true }
+
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive", "rc"] }
 serde_json = { workspace = true }

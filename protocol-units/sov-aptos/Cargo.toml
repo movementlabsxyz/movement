@@ -1,7 +1,9 @@
 [package]
 name = "sov-aptos"
+description = "A Sovereign Labs compatible AptosVM implementation"
 authors = { workspace = true }
 edition = { workspace = true }
+homepage = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
 
@@ -11,35 +13,103 @@ resolver = "2"
 publish = false
 
 [dependencies]
+auto_impl = { workspace = true }
+sov-modules-api = { workspace = true, features = ["native"] }
+sov-state = { workspace = true }
+sov-chain-state = { workspace = true }
+sov-test-utils = { workspace = true }
+# sov-risc0-adapter = { workspace = true, features = ["native"] }
+sov-prover-storage-manager = { workspace = true, features = ["test-utils"] }
+
 anyhow = { workspace = true }
-tracing = { workspace = true }
-jsonrpsee = { workspace = true, features = ["http-client", "server"] }
-sov-rollup-interface = { workspace = true, features = [
-  "native",
-] }
-
-aptos-sdk = { workspace = true }
-sov-aptos-vm = { path = "../sov-modules/sov-aptos-vm" }
-m2-stf = { path = "../../m2/stf", features = ["native"] }
-sov-modules-api = { workspace = true }
-sov-accounts = { workspace = true }
-
-borsh = { workspace = true }
+chrono = { workspace = true }
+fail = { workspace = true }
+thiserror = { workspace = true }
+bytes = { workspace = true }
+schemars = { workspace = true, optional = true }
+clap = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+borsh = { workspace = true, features = ["rc"] }
+hex = { workspace = true }
+poem-openapi = { workspace = true }
+jsonrpsee = { workspace = true, features = [
+    "macros",
+    "client-core",
+    "server"] }
+tracing = { workspace = true }
+derive_more = { workspace = true, default-features = true }
+lazy_static = "1.4.0"
+secp256k1 = { workspace = true }
+rand = { workspace = true }
+rand_core = { workspace = true }
 
-reth-primitives = { workspace = true }
-reth-rpc-types = { workspace = true }
+aptos-vm = { workspace = true }
+aptos-config = { workspace = true }
+aptos-sdk = { workspace = true }
+aptos-crypto = { workspace = true }
+aptos-consensus-types = { workspace = true }
+aptos-db = { workspace = true }
+aptos-api = { workspace = true }
+aptos-api-types = { workspace = true }
+aptos-types = { workspace = true }
+aptos-storage-interface = { workspace = true }
+aptos-block-executor = { workspace = true }
+aptos-vm-types = { workspace = true }
+aptos-vm-logging = { workspace = true }
+aptos-vm-genesis = { workspace = true }
+aptos-language-e2e-tests = { workspace = true }
+aptos-framework = { workspace = true }
+aptos-executor = { workspace = true }
+aptos-executor-types = { workspace = true }
+aptos-executor-test-helpers = { workspace = true }
+aptos-bitvec = { workspace = true }
 
-ethers = { workspace = true }
-tokio = { workspace = true }
-schnellru = "0.2.1"
+move-binary-format = { workspace = true }
+move-table-extension = { workspace = true }
+move-core-types = { workspace = true }
+
+alloy-sol-types = { version = "0.6" }
+revm = { workspace = true, features = [
+    "optional_block_gas_limit",
+    "optional_eip3607",
+    "optional_no_base_fee",
+    "std",
+    "secp256k1"
+] }
+# reth-primitives = { workspace = true }
+# reth-rpc-types = { workspace = true }
+# reth-rpc-types-compat = { workspace = true }
+# mreth-interfaces = { workspace = true, optional = true }
+# reth-revm = { workspace = true }
+# revm-primitives = { workspace = true }
+
+# For test-utils
+# ethereum-types = { workspace = true, optional = true }
+# ethers-core = { workspace = true, optional = true }
+# ethers-contract = { workspace = true, optional = true }
+# ethers-signers = { workspace = true, optional = true }
+dirs = "5.0.1"
+tempfile = "3.10.1"
 
 [dev-dependencies]
-tokio = { workspace = true }
-proptest = { workspace = true }
+# sov-aptos = { path = ".", features = ["smart_contracts"] }
+# tokio = { workspace = true }
+# tempfile = { workspace = true }
+# bytes = { workspace = true }
+# sov-prover-storage-manager = { path = "../../../full-node/sov-prover-storage-manager", features = ["test-utils"] }
+# sov-mock-da = { path = "../../../adapters/mock-da", features = ["native"] }
+# sov-test-utils = { path = "../../sov-test-utils" }
 
 [features]
 default = []
-local = []
-native = ["m2-stf/native"]
+native = [
+    "clap",
+    # "reth-interfaces",
+    #"reth-revm",
+    # Optional for speed up in native mode
+    # "revm/asm-keccak"
+    "schemars",
+    "sov-chain-state/native",
+]
+# For testing smart contract

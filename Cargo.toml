@@ -7,7 +7,7 @@ members = [
     "m2/stf",
     # protocol units
     "protocol-units/sov-aptos",
-    "protocol-units/sov-modules/sov-aptos-vm",
+    "protocol-units/sov-aptos",
     # "protocol-units/rest-to-json-rpc"
 ]
 
@@ -76,6 +76,8 @@ sov-celestia-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sd
 sov-prover-storage-manager = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-chain-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-test-utils = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
+
+sov-aptos = { path = "protocol-units/sov-aptos" }
 
 risc0-build = "0.20"
 
