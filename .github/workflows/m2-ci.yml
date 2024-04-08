@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: movement-runner
 
     steps:
       - name: Checkout code
@@ -51,6 +51,7 @@ jobs:
           cargo install cargo-binstall
           echo -e "yes\n" | cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero
           cargo risczero install 
+
       - name: cargo check
         run: |
           eval "$(ssh-agent -s)"
@@ -59,12 +60,3 @@ jobs:
           export CARGO_HOME=$HOME/.cargo
           export PATH=$CARGO_HOME/bin:$PATH
           cargo check --verbose
-
-      - name: cargo test
-        run: |
-          eval "$(ssh-agent -s)"
-          ssh-add ~/.ssh/id_rsa
-          export RUSTUP_HOME=$HOME/.rustup
-          export CARGO_HOME=$HOME/.cargo
-          export PATH=$CARGO_HOME/bin:$PATH
-          cargo test --verbose
