@@ -29,6 +29,22 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: $(cat rust-toolchain.toml | grep 'channel' | cut -d'"' -f2)
+          components: $(cat rust-toolchain.toml | grep 'components' | cut -d'[' -f2 | cut -d']' -f1 | tr -d '"' | tr -d ' ')
+          override: true
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: cargo check
         run: |
           eval "$(ssh-agent -s)"
