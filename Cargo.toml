@@ -52,8 +52,7 @@ thiserror = "1.0.50"
 x25519-dalek = "1.0.1"
 rand = "0.7.3"
 rand_core = "0.5.1"
-zstd-safe = "0.11.2"
-zstd-sys = "2.0.7"
+zstd-sys = "2.0.9"
 
 # Sovereign Labs dependencies
 sov-modules-api = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
