@@ -37,22 +37,20 @@ jobs:
           components: rustfmt, clippy
           override: true
 
-      - name: Install risc
-        shell: bash
-        run: |
-          cargo install cargo-binstall
-          echo -e "yes\n" | cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero
-          cargo risczero install 
-
-
       - name: Cache Rust dependencies
         uses: actions/cache@v2
         with:
           path: ~/.cargo/registry
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo- 
 
+      - name: Install risc0
+        shell: bash
+        run: |
+          cargo install cargo-binstall
+          echo -e "yes\n" | cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero
+          cargo risczero install 
       - name: cargo check
         run: |
           eval "$(ssh-agent -s)"
