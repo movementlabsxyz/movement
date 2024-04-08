@@ -27,31 +27,6 @@ rust-version = "1.73"
 
 [workspace.dependencies]
 auto_impl = "1.2.0"
-chrono = "0.4.37"
-serde = { version = "1.0.192", features = ["derive", "rc"] }
-serde_json = { version = "1.0.81", features = [
-    "preserve_order",
-    "arbitrary_precision",
-] } # Note: arbitrary_precision is required to parse u256 in JSON
-anyhow = "1.0.68"
-derive_more = { version = "0.99.11", default-features = false }
-bytes = { version = "1.2.1", default-features = false }
-clap = { version = "4.4.10", features = ["derive"] }
-hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
-async-trait = "0.1.71"
-borsh = { version = "0.10.3", features = ["rc", "bytes"] }
-tracing = "0.1.40"
-tokio = { version = "1.35.1", features = ["full"] }
-tempfile = "3.5"
-fail = "0.5.1"
-jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
-proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
-poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
-schemars = { version = "0.8.16", features = ["derive"] }
-thiserror = "1.0.50"
-x25519-dalek = "1.0.1"
-rand = "0.7.3"
-rand_core = "0.5.1"
 
 # Sovereign Labs dependencies
 sov-modules-api = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
@@ -90,30 +65,6 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
 # to be avoid depenedency conflicts with other Sovereign Labs crates.
-aptos-vm = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-consensus-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-db = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-api-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-api = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-storage-interface = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-block-executor = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-vm-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-vm-logging = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-language-e2e-tests = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-framework = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-config = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-vm-genesis = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-executor = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-executor-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-executor-test-helpers = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-bitvec = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-
-move-binary-format = { git = "https://github.com/diem/move" }
-move-table-extension = { git = "https://github.com/diem/move" }
-move-core-types = { git = "https://github.com/diem/move" }
 
 # https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
 reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
@@ -128,6 +79,477 @@ revm = { version = "5.0.0", default-features = false, features = ["serde"] }
 revm-primitives = { version = "=2.0.0", default-features = false }
 secp256k1 = { version = "0.27", default-features = false, features = ["global-context", "rand-std", "recovery"] }
 
+# APTOS
+# aptos
+# TODO: pleas remove unused dependencies
+aptos = { path = "./vendors/aptos-monza/crates/aptos" }
+aptos-accumulator = { path = "./vendors/aptos-monza/storage/accumulator" }
+aptos-aggregator = { path = "./vendors/aptos-monza/aptos-move/aptos-aggregator" }
+aptos-api = { path = "./vendors/aptos-monza/api" }
+aptos-api-test-context = { path = "./vendors/aptos-monza/api/test-context" }
+aptos-api-types = { path = "./vendors/aptos-monza/api/types" }
+aptos-backup-cli = { path = "./vendors/aptos-monza/storage/backup/backup-cli" }
+aptos-backup-service = { path = "./vendors/aptos-monza/storage/backup/backup-service" }
+aptos-bounded-executor = { path = "./vendors/aptos-monza/crates/bounded-executor" }
+aptos-block-executor = { path = "./vendors/aptos-monza/aptos-move/block-executor" }
+aptos-bitvec = { path = "./vendors/aptos-monza/crates/aptos-bitvec" }
+aptos-build-info = { path = "./vendors/aptos-monza/crates/aptos-build-info" }
+aptos-cached-packages = { path = "./vendors/aptos-monza/aptos-move/framework/cached-packages" }
+aptos-channels = { path = "./vendors/aptos-monza/crates/channel" }
+aptos-cli-common = { path = "./vendors/aptos-monza/crates/aptos-cli-common" }
+aptos-compression = { path = "./vendors/aptos-monza/crates/aptos-compression" }
+aptos-consensus = { path = "./vendors/aptos-monza/consensus" }
+aptos-consensus-notifications = { path = "./vendors/aptos-monza/state-sync/inter-component/consensus-notifications" }
+aptos-consensus-types = { path = "./vendors/aptos-monza/consensus/consensus-types" }
+aptos-config = { path = "./vendors/aptos-monza/config" }
+aptos-crash-handler = { path = "./vendors/aptos-monza/crates/crash-handler" }
+aptos-crypto = { path = "./vendors/aptos-monza/crates/aptos-crypto" }
+aptos-crypto-derive = { path = "./vendors/aptos-monza/crates/aptos-crypto-derive" }
+aptos-data-client = { path = "./vendors/aptos-monza/state-sync/aptos-data-client" }
+aptos-data-streaming-service = { path = "./vendors/aptos-monza/state-sync/state-sync-v2/data-streaming-service" }
+aptos-db = { path = "./vendors/aptos-monza/storage/aptosdb" }
+aptos-db-indexer = { path = "./vendors/aptos-monza/storage/indexer" }
+aptos-db-tool = { path = "./vendors/aptos-monza/storage/db-tool" }
+aptos-debugger = { path = "./vendors/aptos-monza/aptos-move/aptos-debugger" }
+aptos-event-notifications = { path = "./vendors/aptos-monza/state-sync/inter-component/event-notifications" }
+aptos-executable-store = { path = "./vendors/aptos-monza/storage/executable-store" }
+aptos-executor = { path = "./vendors/aptos-monza/execution/executor" }
+aptos-block-partitioner = { path = "./vendors/aptos-monza/execution/block-partitioner" }
+aptos-enum-conversion-derive = { path = "./vendors/aptos-monza/crates/aptos-enum-conversion-derive" }
+aptos-executor-service = { path = "./vendors/aptos-monza/execution/executor-service" }
+aptos-executor-test-helpers = { path = "./vendors/aptos-monza/execution/executor-test-helpers" }
+aptos-executor-types = { path = "./vendors/aptos-monza/execution/executor-types" }
+aptos-faucet-cli = { path = "./vendors/aptos-monza/crates/aptos-faucet/cli" }
+aptos-faucet-core = { path = "./vendors/aptos-monza/crates/aptos-faucet/core" }
+aptos-faucet-service = { path = "./vendors/aptos-monza/crates/aptos-faucet/service" }
+aptos-faucet-metrics-server = { path = "./vendors/aptos-monza/crates/aptos-faucet/metrics-server" }
+aptos-fallible = { path = "./vendors/aptos-monza/crates/fallible" }
+aptos-forge = { path = "./vendors/aptos-monza/testsuite/forge" }
+aptos-framework = { path = "./vendors/aptos-monza/aptos-move/framework" }
+aptos-fuzzer = { path = "./vendors/aptos-monza/testsuite/aptos-fuzzer" }
+fuzzer = { path = "./vendors/aptos-monza/testsuite/fuzzer" }
+aptos-gas = { path = "./vendors/aptos-monza/aptos-move/aptos-gas" }
+aptos-gas-algebra-ext = { path = "./vendors/aptos-monza/aptos-move/gas-algebra-ext" }
+aptos-gas-profiling = { path = "./vendors/aptos-monza/aptos-move/aptos-gas-profiling" }
+aptos-genesis = { path = "./vendors/aptos-monza/crates/aptos-genesis" }
+aptos-github-client = { path = "./vendors/aptos-monza/secure/storage/github" }
+aptos-global-constants = { path = "./vendors/aptos-monza/config/global-constants" }
+aptos-id-generator = { path = "./vendors/aptos-monza/crates/aptos-id-generator" }
+aptos-indexer = { path = "./vendors/aptos-monza/crates/indexer" }
+aptos-indexer-grpc-cache-worker = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-cache-worker" }
+aptos-indexer-grpc-data-service = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-data-service" }
+aptos-indexer-grpc-file-store = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-file-store" }
+aptos-indexer-grpc-post-processor = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-post-processor" }
+aptos-indexer-grpc-fullnode = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-fullnode" }
+aptos-indexer-grpc-utils = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-utils" }
+aptos-indexer-grpc-parser = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-parser" }
+aptos-indexer-grpc-server-framework = { path = "./vendors/aptos-monza/ecosystem/indexer-grpc/indexer-grpc-server-framework" }
+aptos-infallible = { path = "./vendors/aptos-monza/crates/aptos-infallible" }
+aptos-inspection-service = { path = "./vendors/aptos-monza/crates/aptos-inspection-service" }
+aptos-jellyfish-merkle = { path = "./vendors/aptos-monza/storage/jellyfish-merkle" }
+aptos-keygen = { path = "./vendors/aptos-monza/crates/aptos-keygen" }
+aptos-language-e2e-tests = { path = "./vendors/aptos-monza/aptos-move/e2e-tests" }
+aptos-ledger = { path = "./vendors/aptos-monza/crates/aptos-ledger" }
+aptos-log-derive = { path = "./vendors/aptos-monza/crates/aptos-log-derive" }
+aptos-logger = { path = "./vendors/aptos-monza/crates/aptos-logger" }
+aptos-memory-usage-tracker = { path = "./vendors/aptos-monza/aptos-move/aptos-memory-usage-tracker" }
+aptos-mempool = { path = "./vendors/aptos-monza/mempool" }
+aptos-mempool-notifications = { path = "./vendors/aptos-monza/state-sync/inter-component/mempool-notifications" }
+aptos-memsocket = { path = "./vendors/aptos-monza/network/memsocket" }
+aptos-metrics-core = { path = "./vendors/aptos-monza/crates/aptos-metrics-core" }
+aptos-move-examples = { path = "./vendors/aptos-monza/aptos-move/move-examples" }
+aptos-moving-average = { path = "./vendors/aptos-monza/crates/moving-average" }
+aptos-mvhashmap = { path = "./vendors/aptos-monza/aptos-move/mvhashmap" }
+aptos-netcore = { path = "./vendors/aptos-monza/network/netcore" }
+aptos-network = { path = "./vendors/aptos-monza/network" }
+aptos-network-builder = { path = "./vendors/aptos-monza/network/builder" }
+aptos-network-checker = { path = "./vendors/aptos-monza/crates/aptos-network-checker" }
+aptos-network-discovery = { path = "./vendors/aptos-monza/network/discovery" }
+aptos-node = { path = "./vendors/aptos-monza/aptos-node" }
+aptos-node-checker = { path = "./vendors/aptos-monza/ecosystem/node-checker" }
+aptos-node-identity = { path = "./vendors/aptos-monza/crates/aptos-node-identity" }
+aptos-node-resource-metrics = { path = "./vendors/aptos-monza/crates/node-resource-metrics" }
+aptos-num-variants = { path = "./vendors/aptos-monza/crates/num-variants" }
+aptos-openapi = { path = "./vendors/aptos-monza/crates/aptos-openapi" }
+aptos-package-builder = { path = "./vendors/aptos-monza/aptos-move/package-builder" }
+aptos-peer-monitoring-service-client = { path = "./vendors/aptos-monza/network/peer-monitoring-service/client" }
+aptos-peer-monitoring-service-server = { path = "./vendors/aptos-monza/network/peer-monitoring-service/server" }
+aptos-peer-monitoring-service-types = { path = "./vendors/aptos-monza/network/peer-monitoring-service/types" }
+aptos-proptest-helpers = { path = "./vendors/aptos-monza/crates/aptos-proptest-helpers" }
+aptos-protos = { path = "./vendors/aptos-monza/crates/aptos-protos" }
+aptos-proxy = { path = "./vendors/aptos-monza/crates/proxy" }
+aptos-push-metrics = { path = "./vendors/aptos-monza/crates/aptos-push-metrics" }
+aptos-rate-limiter = { path = "./vendors/aptos-monza/crates/aptos-rate-limiter" }
+aptos-release-builder = { path = "./vendors/aptos-monza/aptos-move/aptos-release-builder" }
+aptos-resource-viewer = { path = "./vendors/aptos-monza/aptos-move/aptos-resource-viewer" }
+aptos-rest-client = { path = "./vendors/aptos-monza/crates/aptos-rest-client" }
+aptos-retrier = { path = "./vendors/aptos-monza/crates/aptos-retrier" }
+aptos-rocksdb-options = { path = "./vendors/aptos-monza/storage/rocksdb-options" }
+aptos-rosetta = { path = "./vendors/aptos-monza/crates/aptos-rosetta" }
+aptos-runtimes = { path = "./vendors/aptos-monza/crates/aptos-runtimes" }
+aptos-safety-rules = { path = "./vendors/aptos-monza/consensus/safety-rules" }
+aptos-schemadb = { path = "./vendors/aptos-monza/storage/schemadb" }
+aptos-scratchpad = { path = "./vendors/aptos-monza/storage/scratchpad" }
+aptos-sdk = { path = "./vendors/aptos-monza/sdk" }
+aptos-sdk-builder = { path = "./vendors/aptos-monza/aptos-move/aptos-sdk-builder" }
+aptos-secure-net = { path = "./vendors/aptos-monza/secure/net" }
+aptos-secure-storage = { path = "./vendors/aptos-monza/secure/storage" }
+aptos-short-hex-str = { path = "./vendors/aptos-monza/crates/short-hex-str" }
+aptos-speculative-state-helper = { path = "./vendors/aptos-monza/crates/aptos-speculative-state-helper" }
+aptos-state-sync-driver = { path = "./vendors/aptos-monza/state-sync/state-sync-v2/state-sync-driver" }
+aptos-state-view = { path = "./vendors/aptos-monza/storage/state-view" }
+aptos-storage-interface = { path = "./vendors/aptos-monza/storage/storage-interface" }
+aptos-storage-service-client = { path = "./vendors/aptos-monza/state-sync/storage-service/client" }
+aptos-storage-service-notifications = { path = "./vendors/aptos-monza/state-sync/inter-component/storage-service-notifications" }
+aptos-storage-service-types = { path = "./vendors/aptos-monza/state-sync/storage-service/types" }
+aptos-storage-service-server = { path = "./vendors/aptos-monza/state-sync/storage-service/server" }
+aptos-telemetry = { path = "./vendors/aptos-monza/crates/aptos-telemetry" }
+aptos-telemetry-service = { path = "./vendors/aptos-monza/crates/aptos-telemetry-service" }
+aptos-temppath = { path = "./vendors/aptos-monza/crates/aptos-temppath" }
+aptos-testcases = { path = "./vendors/aptos-monza/testsuite/testcases" }
+aptos-time-service = { path = "./vendors/aptos-monza/crates/aptos-time-service", features = [
+    "async",
+] }
+aptos-transaction-emitter-lib = { path = "./vendors/aptos-monza/crates/transaction-emitter-lib" }
+aptos-transaction-generator-lib = { path = "./vendors/aptos-monza/crates/transaction-generator-lib" }
+aptos-transactional-test-harness = { path = "./vendors/aptos-monza/aptos-move/aptos-transactional-test-harness" }
+aptos-types = { path = "./vendors/aptos-monza/types" }
+aptos-utils = { path = "./vendors/aptos-monza/aptos-utils" }
+aptos-validator-interface = { path = "./vendors/aptos-monza/aptos-move/aptos-validator-interface" }
+aptos-vault-client = { path = "./vendors/aptos-monza/secure/storage/vault" }
+aptos-vm = { path = "./vendors/aptos-monza/aptos-move/aptos-vm" }
+aptos-vm-logging = { path = "./vendors/aptos-monza/aptos-move/aptos-vm-logging" }
+aptos-vm-genesis = { path = "./vendors/aptos-monza/aptos-move/vm-genesis" }
+aptos-vm-types = { path = "./vendors/aptos-monza/aptos-move/aptos-vm-types" }
+aptos-vm-validator = { path = "./vendors/aptos-monza/vm-validator" }
+aptos-warp-webserver = { path = "./vendors/aptos-monza/crates/aptos-warp-webserver" }
+aptos-writeset-generator = { path = "./vendors/aptos-monza/aptos-move/writeset-transaction-generator" }
+
+# MOVE dependencies from APTOS
+move-abigen = { path = "./vendors/aptos-monza/third_party/move/move-prover/move-abigen" }
+move-binary-format = { path = "./vendors/aptos-monza/third_party/move/move-binary-format" }
+move-bytecode-verifier = { path = "./vendors/aptos-monza/third_party/move/move-bytecode-verifier" }
+move-bytecode-utils = { path = "./vendors/aptos-monza/third_party/move/tools/move-bytecode-utils" }
+move-cli = { path = "./vendors/aptos-monza/third_party/move/tools/move-cli" }
+move-command-line-common = { path = "./vendors/aptos-monza/third_party/move/move-command-line-common" }
+move-coverage = { path = "./vendors/aptos-monza/third_party/move/tools/move-coverage" }
+move-compiler = { path = "./vendors/aptos-monza/third_party/move/move-compiler" }
+move-core-types = { path = "./vendors/aptos-monza/third_party/move/move-core/types" }
+move-docgen = { path = "./vendors/aptos-monza/third_party/move/move-prover/move-docgen" }
+move-disassembler = { path = "./vendors/aptos-monza/third_party/move/tools/move-disassembler" }
+move-ir-types = { path = "./vendors/aptos-monza/third_party/move/move-ir/types" }
+move-ir-compiler = { path = "./vendors/aptos-monza/third_party/move/move-ir-compiler" }
+move-bytecode-source-map = { path = "./vendors/aptos-monza/third_party/move/move-ir-compiler/move-bytecode-source-map" }
+move-model = { path = "./vendors/aptos-monza/third_party/move/move-model" }
+move-package = { path = "./vendors/aptos-monza/third_party/move/tools/move-package" }
+move-prover = { path = "./vendors/aptos-monza/third_party/move/move-prover" }
+move-prover-boogie-backend = { path = "./vendors/aptos-monza/third_party/move/move-prover/boogie-backend" }
+move-stackless-bytecode = { path = "./vendors/aptos-monza/third_party/move/move-prover/bytecode" }
+aptos-move-stdlib = { path = "aptos-move/framework/move-stdlib" }
+move-prover-test-utils = { path = "./vendors/aptos-monza/third_party/move/move-prover/test-utils" }
+move-resource-viewer = { path = "./vendors/aptos-monza/third_party/move/tools/move-resource-viewer" }
+move-symbol-pool = { path = "./vendors/aptos-monza/third_party/move/move-symbol-pool" }
+move-table-extension = { path = "./vendors/aptos-monza/third_party/move/extensions/move-table-extension" }
+move-transactional-test-runner = { path = "./vendors/aptos-monza/third_party/move/testing-infra/transactional-test-runner" }
+move-unit-test = { path = "./vendors/aptos-monza/third_party/move/tools/move-unit-test", features = ["table-extension"] }
+move-vm-runtime = { path = "./vendors/aptos-monza/third_party/move/move-vm/runtime" }
+move-vm-test-utils = { path = "./vendors/aptos-monza/third_party/move/move-vm/test-utils", features = ["table-extension"] }
+move-vm-types = { path = "./vendors/aptos-monza/third_party/move/move-vm/types" }
+read-write-set = { path = "./vendors/aptos-monza/third_party/move/tools/read-write-set" }
+read-write-set-dynamic = { path = "./vendors/aptos-monza/third_party/move/tools/read-write-set/dynamic" }
+
+# External crate dependencies.
+# Please do not add any test features here: they should be declared by the individual crate.
+nalgebra = "0.32"
+float-cmp = "0.9.0"
+again = "0.1.2"
+anyhow = "1.0.71"
+anstyle = "1.0.1"
+arc-swap = "1.6.0"
+arr_macro = "0.2.1"
+ark-bls12-381 = "0.4.0"
+ark-bn254 = "0.4.0"
+ark-ec = "0.4.0"
+ark-ff = "0.4.0"
+ark-groth16 = "0.4.0"
+ark-serialize = "0.4.0"
+ark-std = { version = "0.4.0", features = ["getrandom"] }
+assert_approx_eq = "1.1.0"
+assert_unordered = "0.3.5"
+async-channel = "1.7.1"
+async-mutex = "1.4.0"
+async-recursion = "1.0.5"
+async-stream = "0.3"
+async-trait = "0.1.53"
+axum = "0.5.16"
+base64 = "0.13.0"
+base64-url = "2.0.1"
+backoff = { version = "0.4.0", features = ["tokio"] }
+backtrace = "0.3.58"
+bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
+better_any = "0.1.1"
+bellman = { version = "0.13.1", default-features = false }
+bigdecimal = { version = "0.4.0", features = ["serde"] }
+version-compare = "0.1.1"
+bitvec = "1.0.1"
+blake2 = "0.10.4"
+blake2-rfc = "0.2.18"
+blst = "0.3.11"
+# The __private_bench feature exposes the Fp12 type which we need to implement a multi-threaded multi-pairing.
+blstrs = { version = "0.7.1", features = ["serde", "__private_bench"] }
+bollard = "0.15"
+bulletproofs = { version = "4.0.0" }
+byteorder = "1.4.3"
+bytes = { version = "1.4.0", features = ["serde"] }
+chrono = { version = "0.4.19", features = ["clock", "serde"] }
+cfg_block = "0.1.1"
+cfg-if = "1.0.0"
+ciborium = "0.2"
+claims = "0.7"
+clap = { version = "4.3.9", features = ["derive", "unstable-styles"] }
+clap-verbosity-flag = "2.1.1"
+clap_complete = "4.4.1"
+cloud-storage = { version = "0.11.1", features = [
+    "global-client",
+    "rustls-tls",
+], default-features = false }
+codespan-reporting = "0.11.1"
+concurrent-queue = "2.2.0"
+console-subscriber = "0.1.8"
+const_format = "0.2.26"
+core_affinity = "0.8.1"
+coset = "0.3"
+criterion = "0.3.5"
+criterion-cpu-time = "0.1.0"
+crossbeam = "0.8.1"
+crossbeam-channel = "0.5.4"
+csv = "1.2.1"
+curve25519-dalek = "3"
+curve25519-dalek-ng = "4"
+dashmap = "5.2.0"
+datatest-stable = "0.1.1"
+debug-ignore = { version = "1.0.3", features = ["serde"] }
+derivative = "2.2.0"
+determinator = "0.12.0"
+derive_more = "0.99.11"
+diesel = "2.1"
+diesel-async = { version = "0.4", features = ["postgres", "tokio"] }
+diesel_migrations = { version = "2.1.0", features = ["postgres"] }
+digest = "0.9.0"
+dir-diff = "0.3.2"
+dirs = "5.0.1"
+dunce = "1.0.4"
+ed25519-dalek = { version = "1.0.1", features = ["std", "serde"] }
+ed25519-dalek-bip32 = "0.2.0"
+either = "1.6.1"
+enum_dispatch = "0.3.12"
+env_logger = "0.10.0"
+erased-serde = "0.3.13"
+event-listener = "2.5.3"
+fail = "0.5.0"
+ff = "0.13"
+field_count = "0.1.1"
+fixed = "1.25.1"
+flate2 = "1.0.24"
+futures = "0.3.29"
+futures-channel = "0.3.29"
+futures-core = "0.3.29"
+futures-util = "0.3.29"
+gcp-bigquery-client = "0.13.0"
+get_if_addrs = "0.5.3"
+git2 = "0.16.1"
+glob = "0.3.0"
+goldenfile = "1.5.2"
+google-cloud-storage = "0.13.0"
+group = "0.13"
+guppy = "0.17.0"
+handlebars = "4.2.2"
+heck = "0.4.1"
+hex = { version = "0.4.3", features = ["serde"] }
+hkdf = "0.10.0"
+hostname = "0.3.1"
+http = "0.2.9"
+httpmock = "0.6.8"
+hyper = { version = "0.14.18", features = ["full"] }
+hyper-tls = "0.5.0"
+image = "0.24.5"
+include_dir = { version = "0.7.2", features = ["glob"] }
+indicatif = "0.15.0"
+indoc = "1.0.6"
+inferno = "0.11.14"
+ipnet = "2.5.0"
+itertools = "0.10.3"
+jemallocator = { version = "0.5.0", features = [
+    "profiling",
+    "unprefixed_malloc_on_supported_platforms",
+] }
+jemalloc-sys = "0.5.4"
+json-patch = "0.2.6"
+jsonwebtoken = "8.1"
+jwt = "0.16.0"
+lazy_static = "1.4.0"
+libc = "0.2.147"
+libfuzzer-sys = "0.4.6"
+libsecp256k1 = "0.7.0"
+log = "0.4.17"
+lru = "0.7.5"
+lz4 = "1.24.0"
+maplit = "1.0.2"
+merlin = "3"
+mime = "0.3.16"
+mini-moka = { version = "0.10.3", features = ["sync"] }
+mirai-annotations = "1.12.0"
+mockall = "0.11.4"
+more-asserts = "0.3.0"
+native-tls = "0.2.10"
+ntest = "0.9.0"
+num-bigint = { version = "0.3.2", features = ["rand"] }
+num_cpus = "1.13.1"
+num-derive = "0.3.3"
+num-integer = "0.1.42"
+num-traits = "0.2.15"
+number_range = "0.3.2"
+once_cell = "1.10.0"
+ordered-float = "3.9.1"
+ouroboros = "0.15.6"
+owo-colors = "3.5.0"
+p256 = { version = "0.13.2" }
+signature = "2.1.0"
+sec1 = "0.7.0"
+pairing = "0.23"
+parking_lot = "0.12.0"
+paste = "1.0.7"
+pathsearch = "0.2.0"
+passkey-authenticator = { version = "0.2.0", features = ["testable"] }
+passkey-client = { version = "0.2.0" }
+passkey-types = { version = "0.2.0" }
+pbjson = "0.5.1"
+percent-encoding = "2.1.0"
+pin-project = "1.0.10"
+poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
+poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
+poem-openapi-derive = "=2.0.11"
+poseidon-ark = { git = "https://github.com/arnaucube/poseidon-ark.git", rev = "6d2487aa1308d9d3860a2b724c485d73095c1c68" }
+pprof = { version = "0.11", features = ["flamegraph", "protobuf-codec"] }
+pretty_assertions = "1.2.1"
+procfs = "0.14.1"
+proc-macro2 = "1.0.38"
+project-root = "0.2.2"
+prometheus = { version = "0.13.3", default-features = false }
+prometheus-http-query = "0.5.2"
+prometheus-parse = "0.2.4"
+proptest = "1.4.0"
+proptest-derive = "0.4.0"
+prost = { version = "0.12.3", features = ["no-recursion-limit"] }
+prost-types = "0.12.3"
+quanta = "0.10.1"
+quote = "1.0.18"
+rand = "0.7.3"
+rand_core = "0.5.1"
+random_word = "0.3.0"
+rayon = "1.5.2"
+redis = { version = "0.22.3", features = [
+    "tokio-comp",
+    "script",
+    "connection-manager",
+] }
+redis-test = { version = "0.1.1", features = ["aio"] }
+regex = "1.9.3"
+reqwest = { version = "0.11.11", features = [
+    "blocking",
+    "cookies",
+    "json",
+    "stream",
+] }
+reqwest-middleware = "0.2.0"
+reqwest-retry = "0.2.1"
+ring = { version = "0.16.20", features = ["std"] }
+ripemd = "0.1.1"
+rocksdb = { version = "0.21.0", features = ["lz4"] }
+rsa = { version = "0.9.6" }
+rstack-self = { version = "0.3.0", features = ["dw"], default_features = false }
+rstest = "0.15.0"
+rusty-fork = "0.3.0"
+rustversion = "1.0.14"
+scopeguard = "1.2.0"
+sha-1 = "0.10.0"
+sha2 = "0.9.3"
+sha256 = "1.4.0"
+sha2_0_10_6 = { package = "sha2", version = "0.10.6" }
+sha3 = "0.9.1"
+siphasher = "0.3.10"
+serde = { version = "1.0.193", features = ["derive", "rc"] }
+serde-big-array = "0.5.1"
+serde_bytes = "0.11.6"
+serde_json = { version = "1.0.81", features = [
+    "preserve_order",
+    "arbitrary_precision",
+] } # Note: arbitrary_precision is required to parse u256 in JSON
+serde_repr = "0.1"
+serde_merge = "0.1.3"
+serde-name = "0.1.1"
+serde-generate = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
+serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
+serde_with = "3.4.0"
+serde_yaml = "0.8.24"
+shadow-rs = "0.16.2"
+smallvec = "1.8.0"
+static_assertions = "1.1.0"
+stats_alloc = "0.1.8"
+status-line = "0.2.0"
+strum = "0.24.1"
+strum_macros = "0.24.2"
+syn = { version = "1.0.92", features = ["derive", "extra-traits"] }
+sysinfo = "0.28.4"
+tar = "0.4.40"
+tempfile = "3.3.0"
+termcolor = "1.1.2"
+test-case = "3.1.0"
+textwrap = "0.15.0"
+thiserror = "1.0.37"
+threadpool = "1.8.1"
+thread_local = "1.1.7"
+time = { version = "0.3.24", features = ["serde"] }
+tiny-bip39 = "0.8.2"
+tiny-keccak = { version = "2.0.2", features = ["keccak", "sha3"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["json", "env-filter"] }
+trybuild = "1.0.80"
+tokio = { version = "1.35.1", features = ["full"] }
+tokio-io-timeout = "1.2.0"
+tokio-metrics = "0.3.1"
+tokio-retry = "0.3.0"
+tokio-scoped = { version = "0.2.0" }
+tokio-stream = { version = "0.1.14", features = ["fs"] }
+tokio-test = "0.4.1"
+tokio-util = { version = "0.7.2", features = ["compat", "codec"] }
+toml = "0.7.4"
+tonic = { version = "0.11.0", features = [
+    "tls-roots",
+    "transport",
+    "prost",
+    "gzip",
+    "codegen",
+    "zstd",
+] }
+tonic-reflection = "0.11.0"
+ureq = { version = "1.5.4", features = [
+    "json",
+    "native-tls",
+], default_features = false }
+url = { version = "2.4.0", features = ["serde"] }
+uuid = { version = "1.0.0", features = ["v4", "serde"] }
+walkdir = "2.3.3"
+warp = { version = "0.3.5", features = ["tls"] }
+warp-reverse-proxy = "1.0.0"
+which = "4.2.5"
+x25519-dalek = "2.0.0" #Set to this version to be compatible with Sovereign Labs
+zeroize = "1.6.0" #Set to this version to be compatible with Sovereign Labs
+
+# 
+borsh = { version = "0.10.3", features = ["rc", "bytes"] }
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
+
 [workspace.lints.rust]
 dead_code = "deny"
 unused_imports = "deny"
@@ -135,6 +557,8 @@ non_ascii_idents = "deny" # Bad for readability and it can also be a security vu
 
 # In case you need inspiration for new lints to add to the list, this is a good
 # reference: <https://github.com/EmbarkStudios/rust-ecosystem/blob/6783ae1573d62f3f5439b8ff9e04bec191ec2eaf/lints.toml>.
+
+
 [workspace.lints.clippy]
 debug_assert_with_mut_call = "deny"
 inefficient_to_string = "deny"
