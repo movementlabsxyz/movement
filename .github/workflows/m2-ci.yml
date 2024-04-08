@@ -22,15 +22,19 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-      - name: cargo build
+      - name: cargo check
         run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
           export RUSTUP_HOME=$HOME/.rustup
           export CARGO_HOME=$HOME/.cargo
           export PATH=$CARGO_HOME/bin:$PATH
-          cargo build --verbose
+          cargo check --verbose
 
       - name: cargo test
         run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
           export RUSTUP_HOME=$HOME/.rustup
           export CARGO_HOME=$HOME/.cargo
           export PATH=$CARGO_HOME/bin:$PATH
