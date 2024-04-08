@@ -36,15 +36,6 @@ jobs:
           components: rustfmt, clippy
           override: true
 
-      - name: Cache Rust dependencies
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
       - name: cargo check
         run: |
           eval "$(ssh-agent -s)"
