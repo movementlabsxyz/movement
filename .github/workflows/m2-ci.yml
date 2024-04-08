@@ -32,8 +32,8 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: $(cat rust-toolchain.toml | grep 'channel' | cut -d'"' -f2)
-          components: $(cat rust-toolchain.toml | grep 'components' | cut -d'[' -f2 | cut -d']' -f1 | tr -d '"' | tr -d ' ')
+          toolchain: 1.75.0
+          components: rustfmt, clippy
           override: true
 
       - name: Cache Rust dependencies
