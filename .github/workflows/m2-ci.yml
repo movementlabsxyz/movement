@@ -37,12 +37,11 @@ jobs:
           override: true
 
       - name: Install risc0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cargo install cargo-binstall 
-          cargo binstall --github-token &GITHUB_TOKEN cargo-risczero
-          cargo risczero install
+          cargo install cargo-binstall
+          cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero
+          cargo risczero install 
+
 
       - name: Cache Rust dependencies
         uses: actions/cache@v2
