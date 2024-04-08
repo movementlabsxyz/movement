@@ -15,6 +15,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Install build essentials
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential lld libpq-dev unzip
+          sudo apt install -y pkg-config libusb-1.0-0-dev libftdi1-dev
+          sudo apt-get install libudev-dev libdw1 libdw-dev 
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
