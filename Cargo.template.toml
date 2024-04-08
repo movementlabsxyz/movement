@@ -3,14 +3,12 @@
 resolver = "2"
 
 members = [
-    # "m2/rollup",
-    # "m2/stf",
-
+    "m2/rollup",
+    "m2/stf",
     # protocol units
     "protocol-units/sov-aptos",
     "protocol-units/sov-modules/sov-aptos-vm",
-    "protocol-units/rest-to-json-rpc",
-    "protocol-units/aptos-rest-to-json-rpc"
+    # "protocol-units/rest-to-json-rpc"
 ]
 
 [workspace.features]
@@ -28,9 +26,6 @@ publish = false
 rust-version = "1.73"
 
 [workspace.dependencies]
-# internal
-rest-to-json-rpc = { path = "protocol-units/rest-to-json-rpc" }
-
 auto_impl = "1.2.0"
 chrono = "0.4.37"
 serde = { version = "1.0.192", features = ["derive", "rc"] }
@@ -71,7 +66,7 @@ sov-stf-runner = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.
 sov-db = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-sequencer = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-rollup-interface = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-# sov-risc0-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
+sov-risc0-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-mock-zkvm = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-first-read-last-write-cache = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-cli = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
@@ -81,7 +76,7 @@ sov-prover-storage-manager = { git = "ssh://git@github.com/Sovereign-Labs/sovere
 sov-chain-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 sov-test-utils = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
 
-risc0-build = "0.21"
+risc0-build = "0.20"
 
 # aptos dependencies
 ethereum-types = "0.14.1"
@@ -95,26 +90,26 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
 # to be avoid depenedency conflicts with other Sovereign Labs crates.
-aptos-vm = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-sdk = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-consensus-types = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-crypto = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-db = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-api-types = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-types = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-api = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-storage-interface = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-block-executor = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-vm-types = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-vm-logging = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-language-e2e-tests = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-framework = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-config = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-vm-genesis = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-executor = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-executor-types = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-executor-test-helpers = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
-aptos-bitvec = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
+aptos-vm = { git = "file://PWD/vendors/aptos-monza" }
+aptos-sdk = { git = "file://PWD/vendors/aptos-monza" }
+aptos-consensus-types = { git = "file://PWD/vendors/aptos-monza" }
+aptos-crypto = { git = "file://PWD/vendors/aptos-monza" }
+aptos-db = { git = "file://PWD/vendors/aptos-monza" }
+aptos-api-types = { git = "file://PWD/vendors/aptos-monza" }
+aptos-types = { git = "file://PWD/vendors/aptos-monza" }
+aptos-api = { git = "file://PWD/vendors/aptos-monza" }
+aptos-storage-interface = { git = "file://PWD/vendors/aptos-monza" }
+aptos-block-executor = { git = "file://PWD/vendors/aptos-monza" }
+aptos-vm-types = { git = "file://PWD/vendors/aptos-monza" }
+aptos-vm-logging = { git = "file://PWD/vendors/aptos-monza" }
+aptos-language-e2e-tests = { git = "file://PWD/vendors/aptos-monza" }
+aptos-framework = { git = "file://PWD/vendors/aptos-monza" }
+aptos-config = { git = "file://PWD/vendors/aptos-monza" }
+aptos-vm-genesis = { git = "file://PWD/vendors/aptos-monza" }
+aptos-executor = { git = "file://PWD/vendors/aptos-monza" }
+aptos-executor-types = { git = "file://PWD/vendors/aptos-monza" }
+aptos-executor-test-helpers = { git = "file://PWD/vendors/aptos-monza" }
+aptos-bitvec = { git = "file://PWD/vendors/aptos-monza" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }
@@ -149,11 +144,8 @@ doc_link_with_quotes = "deny"
 match_same_arms = "deny"
 semicolon_if_nothing_returned = "deny"
 
-
-
 [patch.crates-io]
-serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
 merlin = { git = "https://github.com/aptos-labs/merlin" }
-# x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
 ed25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.0-risczero.1" }

@@ -1,0 +1,41 @@
+name: M2 CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: cargo check
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+          export RUSTUP_HOME=$HOME/.rustup
+          export CARGO_HOME=$HOME/.cargo
+          export PATH=$CARGO_HOME/bin:$PATH
+          cargo check --verbose
+
+      - name: cargo test
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+          export RUSTUP_HOME=$HOME/.rustup
+          export CARGO_HOME=$HOME/.cargo
+          export PATH=$CARGO_HOME/bin:$PATH
+          cargo test --verbose

@@ -1,0 +1,4 @@
+[submodule "vendors/aptos-monza"]
+	path = vendors/aptos-monza
+	url = https://github.com/movementlabsxyz/aptos-core
+	branch = monza
