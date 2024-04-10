@@ -1,0 +1,15 @@
+[package]
+name = "guest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+risc0-zkvm = { workspace = true }
+tempfile = { workspace = true }
+
+# Move dependencies
+move-vm-runtime = { workspace = true }
+move-vm-test-utils = { workspace = true }
+move-binary-format = { workspace = true }
+move-vm-types = { workspace = true }
+move-core-types = { workspace = true }

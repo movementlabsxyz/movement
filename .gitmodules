@@ -16,3 +16,7 @@
 [submodule "vendors/ed25519-dalek"]
 	path = movement-sdk/vendors/ed25519-dalek
 	url = https://github.com/movemntdev/ed25519-dalek
+[submodule "aptos-core"]
+	path = protocol-units/aptos-zkfp/vendors/aptos-core
+	url = https://github.com/movementlabsxyz/aptos-core
+	branch = monza-testing
