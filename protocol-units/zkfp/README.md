@@ -17,6 +17,16 @@ command:
 cargo run --bin host
 ```
 
+Additionally, make sure to install the RISC0 toolchain supporting Rust 1.75.0:
+```bash
+cargo risczero install --version v2024-02-08.1
+```
+
+You may additionally have to set 1.75.0 as the default toolchain:
+```bash
+rustup default 1.75.0
+```
+
 ### Organization
 - RISC0 host code is located in the [`host`](./host) directory.
 - RISC0 guest code, i.e. code that runs on the ZKVM, is located in the [`zkvm`](.guest) directory.
