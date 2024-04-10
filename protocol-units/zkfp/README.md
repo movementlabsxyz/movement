@@ -15,6 +15,8 @@ command:
 
 ```bash
 cargo run --bin host
+# or to simply check risczero compilation
+cargo check -p methods
 ```
 
 Additionally, make sure to install the RISC0 toolchain supporting Rust 1.75.0:
