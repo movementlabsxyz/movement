@@ -36,7 +36,7 @@ rand = "0.8.4"
 
 anyhow = "1.0"
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
-risc0-zkvm = { version = "0.20.1",  features = ["std"] }
+risc0-zkvm = { version = "0.21",  features = ["std", "getrandom"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # serialization, deserialization
