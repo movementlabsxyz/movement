@@ -1,26 +1,21 @@
 #![no_main]
 // If you want to try std support, also update the guest Cargo.toml file
 
-pub mod move_vm_integration_run;
-use risc0_zkvm::guest::env;
+// pub mod move_vm_integration_run;
+use aptos_vm::AptosVM;
+use aptos_executor::block_executor::{self, BlockExecutor};
+use aptos_storage_interface::{mock::MockDbReaderWriter, DbReaderWriter, DbReader, DbWriter};
 
 risc0_zkvm::guest::entry!(main);
 
 
 fn main() {
 
-    // read the input
-    let input: Vec<u8> = env::read();
+    let mock = MockDbReaderWriter;
 
-    // run the VM and unwrap the output
-    let output = move_vm_integration_run::run(
-        input,
-        // todo: support type arg decoding from env for guest
-        vec![],
-        vec![],
-    ).unwrap();
+    let block_executor = BlockExecutor::<AptosVM>::new(
+        DbReaderWriter::new(mock),
+    );
 
-    env::log(format!("The move program output {:#?} ", output).as_str());
 
-    env::commit(&output);
 }

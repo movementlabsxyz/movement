@@ -7,11 +7,11 @@ license = "Apache-2.0"
 [workspace]
 resolver = "2"
 members = [
-    "protocol-units/data-availability",
+    # "protocol-units/data-availability",
 
     # storage
-    "protocol-units/storage/jelly-move",
-    "protocol-units/storage/move-access-log",
+    # "protocol-units/storage/jelly-move",
+    # "protocol-units/storage/move-access-log",
 
     # "protocol-units/cryptography/tentacles",
 
@@ -19,12 +19,11 @@ members = [
     "protocol-units/zkfp/methods",
     "protocol-units/zkfp/methods/guest",
 
-
     # test-helpers
-    "test-helpers/move-vm-integration-test-helpers",
+    # "test-helpers/move-vm-integration-test-helpers",
 
     # types
-    "types/move-vm-ext"
+    # "types/move-vm-ext"
 ]
 
 exclude = [
@@ -65,15 +64,6 @@ jmt = "0.9.0"
 trie-db = "0.28.0"
 sha2 = "0.10"
 
-# Move dependencies
-move-vm-runtime = { path = "protocol-units/zkfp/vendors/move/language/move-vm/runtime" }
-move-vm-test-utils = { path = "protocol-units/zkfp/vendors/move/language/move-vm/test-utils" }
-move-binary-format = { path = "protocol-units/zkfp/vendors/move/language/move-binary-format" }
-move-vm-types = { path = "protocol-units/zkfp/vendors/move/language/move-vm/types"}
-move-core-types = { path = "protocol-units/zkfp/vendors/move/language/move-core/types" }
-move-compiler = { path = "protocol-units/zkfp/vendors/move/language/move-compiler" }
-move-stdlib = { path = "protocol-units/zkfp/vendors/move/language/move-stdlib" }
-
 # for jmt
 digest = "0.10" 
 hashbrown = "0.14.3"
@@ -110,3 +100,10 @@ lto = true
 
 [profile.release.build-override]
 opt-level = 3
+
+[patch.crates-io]
+merlin = { git = "https://github.com/aptos-labs/merlin" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
+ed25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.0-risczero.1" }
+zstd-sys = { git = "https://github.com/gyscos/zstd-rs.git", rev = "1779b385b42b08f958b767a37878dfa6a0b4f6a4" }

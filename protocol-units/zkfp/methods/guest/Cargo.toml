@@ -8,8 +8,20 @@ risc0-zkvm = { workspace = true }
 tempfile = { workspace = true }
 
 # Move dependencies
-move-vm-runtime = { workspace = true }
-move-vm-test-utils = { workspace = true }
-move-binary-format = { workspace = true }
-move-vm-types = { workspace = true }
-move-core-types = { workspace = true }
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
