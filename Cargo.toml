@@ -52,6 +52,7 @@ thiserror = "1.0.50"
 x25519-dalek = "1.0.1"
 rand = "0.7.3"
 rand_core = "0.5.1"
+zstd-sys = "2.0.9"
 
 # Sovereign Labs dependencies
 sov-modules-api = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
@@ -149,3 +150,4 @@ merlin = { git = "https://github.com/aptos-labs/merlin" }
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
 ed25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.0-risczero.1" }
+zstd-sys = { git = "https://github.com/gyscos/zstd-rs.git", rev = "1779b385b42b08f958b767a37878dfa6a0b4f6a4" }

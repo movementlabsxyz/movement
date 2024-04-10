@@ -8,6 +8,7 @@ use aptos_crypto::{HashValue, SigningKey};
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::aggregate_signature::{AggregateSignature, PartialSignatures};
 use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
+use aptos_types::block_executor::partitioner::{ExecutableBlock, ExecutableTransactions};
 use aptos_types::block_info::BlockInfo;
 use aptos_types::block_metadata::BlockMetadata;
 use aptos_types::chain_id::ChainId;
@@ -24,6 +25,7 @@ use sov_modules_api::{
 	WorkingSet,
 };
 use std::collections::BTreeMap;
+
 /// Aptos call message.
 #[derive(
 	borsh::BorshDeserialize,
@@ -84,10 +86,10 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		let checkpoint = Transaction::StateCheckpoint(HashValue::random());
 
 		// form the complete block
-		let mut block = vec![];
+		let mut block: Vec<Transaction> = vec![];
 		block.push(block_meta);
 		block.extend(txs);
-		// block.push(checkpoint);
+		//block.push(checkpoint);
 
 		println!("BLOCK: {:?}", block);
 
@@ -99,40 +101,16 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		// Create a map from author to signatures.
 
 		println!("EXECUTING BLOCK {:?} {:?}", block_id, parent_block_id);
-		let result = executor.execute_block(
-			(block_id, block).into(),
-			parent_block_id,
+		let result = executor.execute_and_state_checkpoint(
+			(block_id.clone(), block).into(),
+			parent_block_id.clone(),
 			BlockExecutorConfigFromOnchain::new_no_block_limit(),
 		)?;
+
+		let result = executor
+			.ledger_update(block_id, parent_block_id, result)
+			.expect("Failed to get ledger update");
 		let chain_id = self.chain_id.get(working_set).unwrap();
-
-		// sign for the the ledger
-		// last three args are likely wrong, where to get this data.
-		let ledger_info = LedgerInfo::new(
-			BlockInfo::new(
-				next_epoch,
-				0,
-				block_id,
-				result.root_hash(),
-				result.version(),
-				unix_now,
-				result.epoch_state().clone(),
-			),
-			HashValue::zero(),
-		);
-
-		println!("COMMITTING BLOCK: {:?} {:?}", block_id, parent_block_id);
-		let li = generate_ledger_info_with_sig(&[validator_signer], ledger_info);
-		executor
-			.commit_blocks(vec![block_id], li.clone())
-			.expect("Failed to commit blocks");
-
-		// manage epoch an parent block id
-		if li.ledger_info().ends_epoch() {
-			let epoch_genesis_id =
-				Block::make_genesis_block_from_ledger_info(li.ledger_info()).id();
-			self.genesis_hash.set(&epoch_genesis_id.to_vec(), working_set);
-		}
 
 		drop(executor);
 		// prove state
