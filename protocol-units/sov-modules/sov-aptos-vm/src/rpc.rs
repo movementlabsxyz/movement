@@ -1,29 +1,39 @@
-use crate::DevSigner;
 use std::array::TryFromSliceError;
 use crate::experimental::SovAptosVM;
-use aptos_api_types::{Address, MoveModuleBytecode, MoveResource, U64};
 use aptos_crypto::bls12381::Signature;
 use aptos_types::state_store::state_value::StateValue as AptosStateValue;
 use aptos_types::transaction::Version;
-use jsonrpsee::core::RpcResult;
+use jsonrpsee::core::{RpcResult, Error};
 use jsonrpsee::proc_macros::rpc;
-use reth_primitives::{TransactionSignedEcRecovered, U128};
 use sov_modules_api::macros::rpc_gen;
 use sov_modules_api::{
 	CryptoSpec, DaSpec, StateMap, StateMapAccessor, StateValueAccessor, StateVecAccessor,
 	WorkingSet,
 };
 use tracing::debug;
+use aptos_api::accept_type::AcceptType;
 use aptos_api::runtime::get_apis;
 use aptos_api_types::{
     Address, EncodeSubmissionRequest, IdentifierWrapper, MoveStructTag, RawTableItemRequest,
     StateKeyWrapper, TableItemRequest, ViewRequest, U64,
+	MoveModuleBytecode, MoveResource,
+	AccountData,
+	mime_types::BCS
 };
-use crate::util::sync;
-use rest_to_json_rpc::JsonRpcRequest;
+use crate::util::{
+	sync, RpcError
+};
+use rest_to_json_rpc::{JsonRpcRequest, JsonRpcRequestStandard};
+use std::str::FromStr;
 
-#[derive(Clone)]
-pub struct EthRpcConfig<S: sov_modules_api::Spec> {
+pub fn accept_type_from_standard_request(standard_request: &JsonRpcRequestStandard) -> Result<AcceptType, anyhow::Error> {
+	// get the content type from the headers
+	let content_type : String = *standard_request.http_headers.get("content-type").ok_or_else(|| anyhow::anyhow!("content-type not found"))?;
+
+	match content_type.as_str() {
+		BCS => Ok(AcceptType::Json),
+		_ => Ok(AcceptType::Json)
+	}
 
 }
 
@@ -38,26 +48,27 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		&self, 
 		request : JsonRpcRequest,
 		working_set: &mut WorkingSet<S>
-	) -> RpcResult<Account> {
+	) -> RpcResult<AccountData> {
 
 		// PARAMS
-		let standard_request = request.try_standard()?;
+		let standard_request = request.try_standard().map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
 
 		// get the accept type from the body
-		let accept_type_value = standard_request.body.get("accept_type").ok_or_else(|| anyhow!("accept_type not found"))?;
-		let accept_type = AcceptType::from_str(accept_type_value)?;
+		let accept_type = accept_type_from_standard_request(&standard_request).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
 
 		// get the address from the path params
-		let address_string = standard_request.path_params.get("address").ok_or_else(|| anyhow!("address not found"))?;
-		let address = Address::from_str(address_string)?;
+		let address_string = standard_request.path_params.get("address").ok_or_else(|| anyhow::anyhow!("address not found")).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+		let address = Address::from_str(address_string).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
 
 		// get the option of the ledger version from the query params
-		let ledger_version : Option<u64> = standard_request.query_params.get("ledger_version").map(|v| v.parse::<Version>()).transpose()?;
+		let ledger_version : Option<u64> = standard_request.query_params.get("ledger_version").map(
+			|v| serde_json::from_value::<Version>(v.clone())
+		).transpose().map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
 
 		// API CONTEXT
-		let aptos_api_context = self.get_aptos_api_context(working_set)?;
-		let aptos_api_service  = get_apis(aptos_api_context);
-		let accounts_api = aptos_api_service.api.0;
+		let aptos_api_context = self.get_aptos_api_context(working_set).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+		let aptos_api_service  = get_apis(Arc::new(aptos_api_context));
+		let accounts_api = aptos_api_service.accounts;
 
 		// LOGIC
 		let account_data = sync(|| async move {
@@ -72,11 +83,33 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	#[rpc_method(name = "accounts.address.resources")]
 	pub fn account_resources_by_address(
 		&self,
+		request : JsonRpcRequest,
 		signature: Signature,
 		details: Option<bool>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Option<reth_rpc_types::RichBlock>> {
-		todo!()
+	) -> RpcResult<u16> {
+		
+		// PARAMS
+		let standard_request = request.try_standard().map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+
+		// get the accept type from the body
+		let accept_type = accept_type_from_standard_request(&standard_request).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+
+		// get the address from the path params
+		let address_string = standard_request.path_params.get("address").ok_or_else(|| anyhow::anyhow!("address not found")).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+		let address = Address::from_str(address_string).map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+
+		// get the option of the ledger version from the query params
+		let ledger_version : Option<u64> = standard_request.query_params.get("ledger_version").map(|v| v.parse::<Version>()).transpose().map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+
+		// get the option of the start of the resource page
+		let start : Option<StateKeyWrapper> = standard_request.query_params.get("start").map(|v| v.parse::<u64>()).transpose().map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+
+		// get the option of the limit of the resource page
+		let limit : Option<u16> = standard_request.query_params.get("limit").map(|v| v.parse::<u64>()).transpose().map_err(|e| RpcError::BadRequest(e.to_string()).into())?;
+
+		Ok(0)
+
 	}
 
 	/// Handler for: /accounts/{address}/resources
@@ -97,7 +130,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		block_number: Option<String>,
 		details: Option<bool>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Option<reth_rpc_types::RichBlock>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -108,7 +141,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		address: Address,
 		_block_number: Option<String>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<MoveModuleBytecode>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -121,7 +154,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		address: Address,
 		_block_number: Option<String>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<MoveResource>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -130,10 +163,9 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	pub fn block_by_version(
 		&self,
 		address: Address,
-		index: U256,
 		_block_number: Option<String>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<U256> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -145,7 +177,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		address: Address,
 		creation_number: U64,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<Receipt>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -156,7 +188,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		event_handle: U64,
 		field_name: String,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<Receipt>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -172,7 +204,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		address: Address,
 		_block_number: Option<String>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<U64> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -181,9 +213,8 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	#[rpc_method(name = "tables.table_handle.raw_item")]
 	pub fn tables_by_table_handle_raw(
 		&self,
-		hash: B256,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Option<reth_rpc_types::Transaction>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -192,15 +223,14 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 	#[rpc_method(name = "transactions")]
 	pub fn transactions(
 		&self,
-		hash: B256,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Option<reth_rpc_types::TransactionReceipt>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
 	/// Handler for: `eth_blockNumber`
 	#[rpc_method(name = "transactions.by_hash.txn_hash")]
-	pub fn transactions_by_transaction_hash(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U256> {
+	pub fn transactions_by_transaction_hash(&self, working_set: &mut WorkingSet<S>) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -210,7 +240,7 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		&self,
 		version: Version,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Option<reth_rpc_types::Transaction>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
@@ -219,45 +249,45 @@ impl<S: sov_modules_api::Spec> SovAptosVM<S> {
 		&self,
 		address: Address,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<reth_rpc_types::Transaction>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
 	#[rpc_method(name = "transactions.batch")]
 	pub fn transactions_batch(
 		&self,
-		transactions: Vec<TransactionSignedEcRecovered>,
+		// transactions: Vec<TransactionSignedEcRecovered>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<ExecutionResult>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
 	#[rpc_method(name = "transactions.simulate")]
 	pub fn transactions_simulate(
 		&self,
-		transactions: Vec<TransactionSignedEcRecovered>,
+		// transactions: Vec<TransactionSignedEcRecovered>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<ExecutionResult>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
 	#[rpc_method(name = "transactions.encode_submission")]
 	pub fn transactions_encode_submission(
 		&self,
-		transactions: Vec<TransactionSignedEcRecovered>,
+		// transactions: Vec<TransactionSignedEcRecovered>,
 		working_set: &mut WorkingSet<S>,
-	) -> RpcResult<Vec<ExecutionResult>> {
+	) -> RpcResult<u16> {
 		todo!()
 	}
 
 	#[rpc_method(name = "estimate_gas_price")]
-	pub fn estimate_gas_price(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U128> {
+	pub fn estimate_gas_price(&self, working_set: &mut WorkingSet<S>) -> RpcResult<u16> {
 		todo!()
 	}
 
 
 	#[rpc_method(name = "view")]
-	pub fn view(&self, working_set: &mut WorkingSet<S>) -> RpcResult<U128> {
+	pub fn view(&self, working_set: &mut WorkingSet<S>) -> RpcResult<u16> {
 		todo!()
 	}
 	

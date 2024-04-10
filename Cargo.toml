@@ -115,6 +115,7 @@ aptos-executor = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza"
 aptos-executor-types = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
 aptos-executor-test-helpers = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
 aptos-bitvec = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
+aptos-mempool = { git = "file:///Users/l-monninger/dev/sdk/vendors/aptos-monza" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }

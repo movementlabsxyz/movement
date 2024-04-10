@@ -24,3 +24,26 @@ where
     })
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum RpcError {
+    #[error("Internal server error: {0}")]
+    InternalError(String),
+
+    #[error("Bad request: {0}")]
+    BadRequest(String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
+
+    // Add more as needed
+}
+
+impl <'a>Into<jsonrpsee::types::error::ErrorObject<'a>> for RpcError {
+    fn into(self) -> jsonrpsee::types::error::ErrorObject<'a> {
+        jsonrpsee::types::error::ErrorObject::owned(
+            500,
+            self.to_string(),
+            Some(1),
+        )
+    }
+}
