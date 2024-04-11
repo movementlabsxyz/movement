@@ -3,17 +3,7 @@
 resolver = "2"
 
 members = [
-    "m2/rollup",
-    "m2/stf",
-    # protocol units
-    "protocol-units/sov-aptos",
-    "protocol-units/sov-modules/sov-aptos-vm",
-    # "protocol-units/rest-to-json-rpc"
 ]
-
-[workspace.features]
-sov-aptos = ["experimental"]
-defailt = ["m2/rollup"]
 
 [workspace.package]
 version = "0.3.0"
@@ -101,7 +91,7 @@ reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "c0
 reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
 
 # Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
-revm = { version = "5.0.0", default-features = false, features = ["serde"] }
+revm = { version = "8.0.0", default-features = false, features = ["serde"] }
 # Used just to be safe about breaking changes
 revm-primitives = { version = "=2.0.0", default-features = false }
 secp256k1 = { version = "0.27", default-features = false, features = ["global-context", "rand-std", "recovery"] }
