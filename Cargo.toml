@@ -60,10 +60,10 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
 # to be avoid depenedency conflicts with other Sovereign Labs crates.
-aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
