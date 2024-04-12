@@ -7107,6 +7107,8 @@ name = "movement-rollup"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-config",
+ "aptos-event-notifications",
  "aptos-infallible",
  "aptos-node",
  "aptos-storage-interface",
