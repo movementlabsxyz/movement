@@ -25,6 +25,8 @@ serde_json = { version = "1.0.81", features = [
 anyhow = "1.0.68"
 derive_more = { version = "0.99.11", default-features = false }
 bytes = { version = "1.2.1", default-features = false }
+log = "0.4.21"
+env_logger = "0.11.3"
 clap = { version = "4.4.10", features = ["derive"] }
 hex = { version = "0.4.3", default-features = false, features = [
     "alloc",

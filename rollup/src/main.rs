@@ -8,8 +8,8 @@ use aptos_types::on_chain_config::{
 	ApprovedExecutionHashes, ConfigID, OnChainConfig, OnChainConsensusConfig, ValidatorSet, Version,
 };
 use aptos_types::{chain_id::ChainId, waypoint::Waypoint};
+use log::info;
 use std::sync::Arc;
-
 /// State sync will panic if the value of any config in this registry is uninitialized
 pub const ON_CHAIN_CONFIG_REGISTRY: &[ConfigID] = &[
 	ApprovedExecutionHashes::CONFIG_ID,
@@ -25,22 +25,29 @@ impl DbReader for MockDatabase {}
 impl DbWriter for MockDatabase {}
 
 fn main() {
+	env_logger::init();
 	let temp_path = TempPath::new();
 
-	let mut node_config = NodeConfig::get_default_validator_config();
+	let mut node_config = NodeConfig::load_from_path("rollup/test_data/validator.yaml")
+		.expect("Failed to load node config");
+	info!("Node config: {:?}", node_config);
 	node_config.set_data_dir(temp_path.path().to_path_buf());
+	info!("node config data dir set");
 	node_config.base.waypoint = WaypointConfig::FromConfig(Waypoint::default());
-
+	info!("way point set");
 	// Create an event subscription service
 	let mut event_subscription_service =
 		EventSubscriptionService::new(Arc::new(RwLock::new(DbReaderWriter::new(MockDatabase {}))));
+	info!("event subscription service created");
 
 	// Set up the networks and gather the application network handles. This should panic.
 	let peers_and_metadata = network::create_peers_and_metadata(&node_config);
+	info!("peers and metadata created");
 	let _ = network::setup_networks_and_get_interfaces(
 		&node_config,
 		ChainId::test(),
 		peers_and_metadata,
 		&mut event_subscription_service,
 	);
+	info!("networks setup and interfaces created");
 }
