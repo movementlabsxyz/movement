@@ -3,18 +3,8 @@
 resolver = "2"
 
 members = [
-    # "m2/rollup",
-    # "m2/stf",
 
-    # protocol units
-    "protocol-units/sov-aptos",
-    "protocol-units/sov-modules/sov-aptos-vm",
-    # "protocol-units/rest-to-json-rpc"
 ]
-
-[workspace.features]
-sov-aptos = ["experimental"]
-defailt = ["m2/rollup"]
 
 [workspace.package]
 version = "0.3.0"
@@ -38,7 +28,10 @@ anyhow = "1.0.68"
 derive_more = { version = "0.99.11", default-features = false }
 bytes = { version = "1.2.1", default-features = false }
 clap = { version = "4.4.10", features = ["derive"] }
-hex = { version = "0.4.3", default-features = false, features = ["alloc", "serde"] }
+hex = { version = "0.4.3", default-features = false, features = [
+    "alloc",
+    "serde",
+] }
 async-trait = "0.1.71"
 borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 tracing = "0.1.40"
@@ -53,29 +46,7 @@ thiserror = "1.0.50"
 x25519-dalek = "1.0.1"
 rand = "0.7.3"
 rand_core = "0.5.1"
-
-# Sovereign Labs dependencies
-sov-modules-api = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-accounts = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-bank = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-ledger-rpc = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-sequencer-registry = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-modules-stf-blueprint = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-modules-rollup-blueprint = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-stf-runner = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-db = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-sequencer = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-rollup-interface = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-# sov-risc0-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-mock-zkvm = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-first-read-last-write-cache = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-cli = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-mock-da = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-celestia-adapter = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-prover-storage-manager = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-chain-state = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
-sov-test-utils = { git = "ssh://git@github.com/Sovereign-Labs/sovereign-sdk-wip.git", rev = "517e99e558513e24983d8d09ef16a73675ea1a1b" }
+zstd-sys = "2.0.9"
 
 risc0-build = "0.20"
 
@@ -91,43 +62,40 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
 # to be avoid depenedency conflicts with other Sovereign Labs crates.
-aptos-vm = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-sdk = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-consensus-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-crypto = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-db = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-api-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-api = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-storage-interface = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-block-executor = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-vm-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-vm-logging = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-language-e2e-tests = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-framework = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-config = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-vm-genesis = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-executor = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-executor-types = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-executor-test-helpers = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
-aptos-bitvec = { git = "https://github.com/0xmovses/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }
 move-core-types = { git = "https://github.com/diem/move" }
 
-# https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
-reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
-reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
-
 # Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
-revm = { version = "5.0.0", default-features = false, features = ["serde"] }
+revm = { version = "8.0.0", default-features = false, features = ["serde"] }
 # Used just to be safe about breaking changes
 revm-primitives = { version = "=2.0.0", default-features = false }
-secp256k1 = { version = "0.27", default-features = false, features = ["global-context", "rand-std", "recovery"] }
+secp256k1 = { version = "0.27", default-features = false, features = [
+    "global-context",
+    "rand-std",
+    "recovery",
+] }
 
 [workspace.lints.rust]
 dead_code = "deny"
@@ -150,3 +118,4 @@ merlin = { git = "https://github.com/aptos-labs/merlin" }
 x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
 ed25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.0-risczero.1" }
+zstd-sys = { git = "https://github.com/gyscos/zstd-rs.git", rev = "1779b385b42b08f958b767a37878dfa6a0b4f6a4" }

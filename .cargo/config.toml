@@ -33,4 +33,3 @@ rustflags = [
   "-C",
   "link-arg=/STACK:8000000" # Set stack to 8 MB
 ]
-
