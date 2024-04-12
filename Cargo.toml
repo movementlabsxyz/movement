@@ -81,6 +81,8 @@ aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = 
 aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "316f50908ddc0fc53ced7715006215e39dae736e" }
 aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "316f50908ddc0fc53ced7715006215e39dae736e" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "316f50908ddc0fc53ced7715006215e39dae736e" }
+aptos-infallible = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "316f50908ddc0fc53ced7715006215e39dae736e" }
+aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "316f50908ddc0fc53ced7715006215e39dae736e" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }

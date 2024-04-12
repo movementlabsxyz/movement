@@ -7106,7 +7106,13 @@ dependencies = [
 name = "movement-rollup"
 version = "0.3.0"
 dependencies = [
+ "anyhow",
+ "aptos-infallible",
  "aptos-node",
+ "aptos-storage-interface",
+ "aptos-temppath",
+ "aptos-types",
+ "clap 4.5.4",
 ]
 
 [[package]]
