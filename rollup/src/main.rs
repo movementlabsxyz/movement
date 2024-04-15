@@ -3,7 +3,6 @@ use aptos_event_notifications::EventSubscriptionService;
 use aptos_infallible::RwLock;
 use aptos_node::network;
 use aptos_storage_interface::{DbReader, DbReaderWriter, DbWriter};
-use aptos_temppath::TempPath;
 use aptos_types::{
 	chain_id::ChainId,
 	on_chain_config::{
