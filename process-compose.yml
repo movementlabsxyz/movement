@@ -4,4 +4,7 @@ environment:
 
 
 processes:
- 
+  celestia-arabic-light-node:
+    command: |
+      celestia light init
+      celestia light start --core.ip validator-1.celestia-arabica-11.com --p2p.network arabica

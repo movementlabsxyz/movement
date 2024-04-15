@@ -1,3 +1,3 @@
-m2-demo-native:
+movement-demo-native:
     cargo build --release
-    scripts/m2/run-native
+    scripts/movement/run-native
