@@ -73,7 +73,7 @@ pub fn proto_build_main(input: TokenStream) -> TokenStream {
 
             let mut config = tonic_build::configure()
             .file_descriptor_set_path(descriptor_file_path)
-            .out_dir("src")
+            // .out_dir("src")
             .build_client(client_enabled)
             .build_server(server_enabled);
           
