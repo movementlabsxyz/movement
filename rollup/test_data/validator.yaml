@@ -16,7 +16,7 @@ consensus:
       from_file:
         waypoint:
           from_file: waypoint.txt
-        identity_blob_path: validator-identity.yaml
+        identity_blob_path: ../test_data/validator-identity.yaml
 
 execution:
   genesis_file_location: "genesis.blob"
@@ -26,7 +26,7 @@ validator_network:
   mutual_authentication: true
   identity:
     type: "from_file"
-    path: validator-identity.yaml
+    path: ../test_data/validator-identity.yaml
 
 full_node_networks:
   - network_id:

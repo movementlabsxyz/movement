@@ -4,10 +4,14 @@ use aptos_infallible::RwLock;
 use aptos_node::network;
 use aptos_storage_interface::{DbReader, DbReaderWriter, DbWriter};
 use aptos_temppath::TempPath;
-use aptos_types::on_chain_config::{
-	ApprovedExecutionHashes, ConfigID, OnChainConfig, OnChainConsensusConfig, ValidatorSet, Version,
+use aptos_types::{
+	chain_id::ChainId,
+	on_chain_config::{
+		ApprovedExecutionHashes, ConfigID, OnChainConfig, OnChainConsensusConfig, ValidatorSet,
+		Version,
+	},
+	waypoint::Waypoint,
 };
-use aptos_types::{chain_id::ChainId, waypoint::Waypoint};
 use log::info;
 use std::sync::Arc;
 /// State sync will panic if the value of any config in this registry is uninitialized
@@ -26,13 +30,9 @@ impl DbWriter for MockDatabase {}
 
 fn main() {
 	env_logger::init();
-	let temp_path = TempPath::new();
-
 	let mut node_config = NodeConfig::load_from_path("rollup/test_data/validator.yaml")
 		.expect("Failed to load node config");
 	info!("Node config: {:?}", node_config);
-	node_config.set_data_dir(temp_path.path().to_path_buf());
-	info!("node config data dir set");
 	node_config.base.waypoint = WaypointConfig::FromConfig(Waypoint::default());
 	info!("way point set");
 	// Create an event subscription service
