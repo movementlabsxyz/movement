@@ -4,6 +4,13 @@ resolver = "2"
 
 members = [
 
+"protocol-units/data-availability/m1/*",
+
+"util/*",
+"util/buildtime/buildtime-helpers",
+"util/buildtime/buildtime-macros"
+
+
 ]
 
 [workspace.package]
@@ -11,12 +18,20 @@ version = "0.3.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Movement Labs"]
-repository = "www.github.com/movementlabs"
+repository = "www.github.com/movementlabs/movement"
 homepage = "www.homepage.com"
 publish = false
 rust-version = "1.73"
 
 [workspace.dependencies]
+# internal
+## buildtime
+buildtime = { path = "util/buildtime" }
+buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
+buildtime-macros = { path = "util/buildtime/buildtime-macros" }
+# data-availability/m1
+m1-da-light-node-grpc = { path = "protocol-units/data-availability/m1/light-node-grpc" }
+
 auto_impl = "1.2.0"
 chrono = "0.4.37"
 serde = { version = "1.0.192", features = ["derive", "rc"] }
@@ -36,6 +51,7 @@ async-trait = "0.1.71"
 borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 tracing = "0.1.40"
 tokio = { version = "1.35.1", features = ["full"] }
+tokio-stream = "0.1.15"
 tempfile = "3.5"
 fail = "0.5.1"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
@@ -49,6 +65,20 @@ rand_core = "0.5.1"
 zstd-sys = "2.0.9"
 
 risc0-build = "0.20"
+
+# tonic
+tonic = "0.11"
+tonic-reflection = "0.11"
+tonic-web = "0.11"
+tonic-build = { version = "0.11", features = ["prost"] }
+prost = "0.12"
+
+# marcos
+quote = "1.0"
+syn = "2.0"
+
+# format
+toml = "0.8"
 
 # aptos dependencies
 ethereum-types = "0.14.1"
@@ -83,19 +113,6 @@ aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", 
 aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 
-move-binary-format = { git = "https://github.com/diem/move" }
-move-table-extension = { git = "https://github.com/diem/move" }
-move-core-types = { git = "https://github.com/diem/move" }
-
-# Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
-revm = { version = "8.0.0", default-features = false, features = ["serde"] }
-# Used just to be safe about breaking changes
-revm-primitives = { version = "=2.0.0", default-features = false }
-secp256k1 = { version = "0.27", default-features = false, features = [
-    "global-context",
-    "rand-std",
-    "recovery",
-] }
 
 [workspace.lints.rust]
 dead_code = "deny"
