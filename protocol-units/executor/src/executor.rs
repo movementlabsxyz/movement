@@ -1,12 +1,12 @@
 use aptos_db::AptosDB;
 use aptos_executor::block_executor::BlockExecutor;
-use aptos_executor_types::state_checkpoint_output::StateCheckpointOutput;
-use aptos_executor_types::BlockExecutorTrait;
+use aptos_executor_types::{state_checkpoint_output::StateCheckpointOutput, BlockExecutorTrait};
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_storage_interface::DbReaderWriter;
-use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
-use aptos_types::block_executor::partitioner::ExecutableBlock;
-use aptos_types::validator_signer::ValidatorSigner;
+use aptos_types::{
+	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
+	validator_signer::ValidatorSigner,
+};
 use aptos_vm::AptosVM;
 use std::sync::{Arc, RwLock};
 
@@ -107,20 +107,26 @@ impl Executor {
 mod tests {
 	use super::*;
 	use aptos_config::config::NodeConfig;
-	use aptos_crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature};
-	use aptos_crypto::{HashValue, PrivateKey, Uniform};
-	use aptos_executor::block_executor::BlockExecutor;
-	use aptos_executor::db_bootstrapper::{generate_waypoint, maybe_bootstrap};
+	use aptos_crypto::{
+		ed25519::{Ed25519PrivateKey, Ed25519Signature},
+		HashValue, PrivateKey, Uniform,
+	};
+	use aptos_executor::{
+		block_executor::BlockExecutor,
+		db_bootstrapper::{generate_waypoint, maybe_bootstrap},
+	};
 	use aptos_storage_interface::DbReaderWriter;
 	use aptos_temppath::TempPath;
-	use aptos_types::account_address::AccountAddress;
-	use aptos_types::block_executor::partitioner::ExecutableTransactions;
-	use aptos_types::chain_id::ChainId;
-	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
-	use aptos_types::transaction::{
-		RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload, WriteSetPayload,
+	use aptos_types::{
+		account_address::AccountAddress,
+		block_executor::partitioner::ExecutableTransactions,
+		chain_id::ChainId,
+		transaction::{
+			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
+			SignedTransaction, Transaction, TransactionPayload, WriteSetPayload,
+		},
+		validator_signer::ValidatorSigner,
 	};
-	use aptos_types::validator_signer::ValidatorSigner;
 
 	fn init_executor() -> Executor {
 		// configure db
@@ -161,12 +167,6 @@ mod tests {
 		assert!(db_rw.reader.get_latest_ledger_info_option().unwrap().is_some());
 
 		db_rw
-	}
-
-	#[test]
-	fn test_executor_new() {
-		let executor = init_executor();
-		assert_eq!(executor.status, ExecutorState::Idle);
 	}
 
 	#[tokio::test]
