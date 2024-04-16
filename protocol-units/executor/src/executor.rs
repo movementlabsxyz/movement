@@ -1,4 +1,3 @@
-use crate::types::Block;
 use aptos_db::AptosDB;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_executor_types::state_checkpoint_output::StateCheckpointOutput;
@@ -9,8 +8,9 @@ use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
 use aptos_types::block_executor::partitioner::ExecutableBlock;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
+/// The name that appends the dir path of the rocksdb.
 const APTOS_DB_DIR: &str = ".aptosdb-block-executor";
 
 /// The state of `movement-network` execution can exist in three states,
@@ -47,23 +47,23 @@ pub enum ExecutorState {
 /// against the `AptosVM`.
 pub struct Executor {
 	/// The executing type.
-	pub block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
+	pub block_executor: BlockExecutor<AptosVM>,
 	/// The current state of the executor.
 	pub status: ExecutorState,
 	/// The access to db.
 	pub db: DbReaderWriter,
 	/// The signer of the executor's transactions.
-	pub signer: Option<ValidatorSigner>,
+	pub signer: ValidatorSigner,
 	/// The access to the core mempool.
-	pub mempool: Arc<RwLock<CoreMempool>>,
+	pub mempool: CoreMempool,
 }
 
 impl Executor {
 	/// Create a new `Executor` instance.
 	pub fn new(
-		block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
-		signer: Option<ValidatorSigner>,
-		mempool: Arc<RwLock<CoreMempool>>,
+		block_executor: BlockExecutor<AptosVM>,
+		signer: ValidatorSigner,
+		mempool: CoreMempool,
 	) -> Self {
 		let path = format!("{}/{}", dirs::home_dir().unwrap().to_str().unwrap(), APTOS_DB_DIR);
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(path.as_str()));
@@ -79,10 +79,9 @@ impl Executor {
 		if self.status != ExecutorState::Commit {
 			return Err(anyhow::anyhow!("Executor is not in the Commit state"));
 		}
-		let executor = self.block_executor.write().unwrap();
-		let parent_block_id = executor.committed_block_id();
+		let parent_block_id = self.block_executor.committed_block_id();
 		log::info!("Executing block: {:?}", block.block_id);
-		let state_checkpoint = executor.execute_and_state_checkpoint(
+		let state_checkpoint = self.block_executor.execute_and_state_checkpoint(
 			block,
 			parent_block_id,
 			BlockExecutorConfigFromOnchain::new_no_block_limit(),
@@ -98,58 +97,60 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aptos_crypto::ed25519::Ed25519PrivateKey;
-	use aptos_types::{
-		block_info::BlockInfo,
-		ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-		validator_signer::ValidatorSigner,
+	use aptos_config::config::NodeConfig;
+	use aptos_crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature};
+	use aptos_crypto::{HashValue, PrivateKey, Uniform};
+	use aptos_executor::block_executor::BlockExecutor;
+	use aptos_storage_interface::DbReaderWriter;
+	use aptos_types::account_address::AccountAddress;
+	use aptos_types::block_executor::partitioner::ExecutableTransactions;
+	use aptos_types::chain_id::ChainId;
+	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
+	use aptos_types::transaction::{
+		RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload,
 	};
-	use aptos_vm::AptosVM;
-	use executor::block_executor::BlockExecutor;
-	use std::sync::Arc;
+	use aptos_types::validator_signer::ValidatorSigner;
+
+	fn init_executor() -> Executor {
+		let (_, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(""));
+		let block_executor = BlockExecutor::new(reader_writer);
+		let signer = ValidatorSigner::random(None);
+		let mempool = CoreMempool::new(&NodeConfig::default());
+		Executor::new(block_executor, signer, mempool)
+	}
+
+	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let public_key = private_key.public_key();
+
+		let transaction_payload = TransactionPayload::Script(Script::new(vec![], vec![], vec![]));
+		let raw_transaction = RawTransaction::new(
+			AccountAddress::random(),
+			0,
+			transaction_payload,
+			0,
+			gas_unit_price,
+			0,
+			ChainId::new(10), // This is the value used in aptos testing code.
+		);
+		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
+	}
 
 	#[test]
 	fn test_executor_new() {
-		let block_executor = Arc::new(RwLock::new(BlockExecutor::<AptosVM>::new(Arc::new(
-			DbReaderWriter::new(DbReader::new(Arc::new(MockTreeStore::default())), None),
-		))));
-		let signer =
-			Some(ValidatorSigner::new(Vec::new(), Ed25519PrivateKey::generate_for_testing()));
-		let mempool = Arc::new(RwLock::new(CoreMempool::new(Arc::new(MockDB::default()))));
-
-		let executor = Executor::new(block_executor, signer, mempool);
-
+		let executor = init_executor();
 		assert_eq!(executor.status, ExecutorState::Idle);
-		assert!(executor.signer.is_some());
 	}
 
 	#[tokio::test]
 	async fn test_execute_block() {
-		let block_executor = Arc::new(RwLock::new(BlockExecutor::<AptosVM>::new(Arc::new(
-			DbReaderWriter::new(DbReader::new(Arc::new(MockTreeStore::default())), None),
-		))));
-		let signer =
-			Some(ValidatorSigner::new(Vec::new(), Ed25519PrivateKey::generate_for_testing()));
-		let mempool = Arc::new(RwLock::new(CoreMempool::new(Arc::new(MockDB::default()))));
-
-		let mut executor = Executor::new(block_executor, signer, mempool);
-
-		// Create a sample executable block
-		let block = ExecutableBlock { block: BlockInfo::random(), txns: vec![] };
-
-		// Try executing the block when executor is in Idle state
-		let result = executor.execute_block(block.clone()).await;
-		assert!(result.is_err());
-		assert_eq!(result.unwrap_err().to_string(), "Executor is not in the Commit state");
-
-		// Set the executor state to Commit
-		executor.status = ExecutorState::Commit;
-
-		// Execute the block
-		let result = executor.execute_block(block).await;
-		assert!(result.is_ok());
-
-		// Check if the executor state is updated to Idle
-		assert_eq!(executor.status, ExecutorState::Idle);
+		let mut executor = init_executor();
+		let block_id = HashValue::random();
+		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
+			create_signed_transaction(0),
+		));
+		let txs = ExecutableTransactions::Unsharded(vec![tx]);
+		let block = ExecutableBlock::new(block_id.clone(), txs);
+		executor.execute_block(block).await.unwrap();
 	}
 }

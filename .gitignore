@@ -2,3 +2,4 @@
 methods/guest/Cargo.lock
 .idea/
 target/
+ledger_db/
