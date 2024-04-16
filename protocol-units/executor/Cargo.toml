@@ -55,6 +55,7 @@ aptos-executor-types = { workspace = true }
 aptos-executor-test-helpers = { workspace = true }
 aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
+aptos-temppath = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-table-extension = { workspace = true }

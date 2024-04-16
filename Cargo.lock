@@ -3921,6 +3921,7 @@ dependencies = [
  "aptos-mempool",
  "aptos-sdk",
  "aptos-storage-interface",
+ "aptos-temppath",
  "aptos-types",
  "aptos-vm",
  "aptos-vm-genesis",

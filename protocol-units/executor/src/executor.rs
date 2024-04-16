@@ -10,7 +10,6 @@ use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
 use std::sync::RwLock;
 
-/// The name that appends the dir path of the rocksdb.
 const APTOS_DB_DIR: &str = ".aptosdb-block-executor";
 
 /// The state of `movement-network` execution can exist in three states,
@@ -70,6 +69,10 @@ impl Executor {
 		Self { block_executor, status: ExecutorState::Idle, db: reader_writer, signer, mempool }
 	}
 
+	pub fn set_commit_state(&mut self) {
+		self.status = ExecutorState::Commit;
+	}
+
 	/// Execute a block which gets committed to the state.
 	/// `ExecutorState` must be set to `Commit` before calling this method.
 	pub async fn execute_block(
@@ -101,19 +104,21 @@ mod tests {
 	use aptos_crypto::ed25519::{Ed25519PrivateKey, Ed25519Signature};
 	use aptos_crypto::{HashValue, PrivateKey, Uniform};
 	use aptos_executor::block_executor::BlockExecutor;
+	use aptos_executor::db_bootstrapper::{generate_waypoint, maybe_bootstrap};
 	use aptos_storage_interface::DbReaderWriter;
+	use aptos_temppath::TempPath;
 	use aptos_types::account_address::AccountAddress;
 	use aptos_types::block_executor::partitioner::ExecutableTransactions;
 	use aptos_types::chain_id::ChainId;
 	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
 	use aptos_types::transaction::{
-		RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload,
+		RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload, WriteSetPayload,
 	};
 	use aptos_types::validator_signer::ValidatorSigner;
 
 	fn init_executor() -> Executor {
-		let (_, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(""));
-		let block_executor = BlockExecutor::new(reader_writer);
+		// configure db
+		let block_executor = BlockExecutor::new(bootstrap_empty_db());
 		let signer = ValidatorSigner::random(None);
 		let mempool = CoreMempool::new(&NodeConfig::default());
 		Executor::new(block_executor, signer, mempool)
@@ -136,6 +141,22 @@ mod tests {
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
 
+	fn bootstrap_empty_db() -> DbReaderWriter {
+		let genesis = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
+		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis.0));
+		let tmp_dir = TempPath::new();
+		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(&tmp_dir));
+		assert!(db_rw.reader.get_latest_ledger_info_option().unwrap().is_none());
+
+		// Bootstrap empty DB.
+		let waypoint =
+			generate_waypoint::<AptosVM>(&db_rw, &genesis_txn).expect("Should not fail.");
+		maybe_bootstrap::<AptosVM>(&db_rw, &genesis_txn, waypoint).unwrap();
+		assert!(db_rw.reader.get_latest_ledger_info_option().unwrap().is_some());
+
+		db_rw
+	}
+
 	#[test]
 	fn test_executor_new() {
 		let executor = init_executor();
@@ -145,6 +166,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block() {
 		let mut executor = init_executor();
+		executor.set_commit_state();
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
