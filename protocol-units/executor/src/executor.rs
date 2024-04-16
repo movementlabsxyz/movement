@@ -8,7 +8,7 @@ use aptos_types::block_executor::config::BlockExecutorConfigFromOnchain;
 use aptos_types::block_executor::partitioner::ExecutableBlock;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 const APTOS_DB_DIR: &str = ".aptosdb-block-executor";
 
@@ -46,11 +46,11 @@ pub enum ExecutorState {
 /// against the `AptosVM`.
 pub struct Executor {
 	/// The executing type.
-	pub block_executor: BlockExecutor<AptosVM>,
+	pub block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
 	/// The current state of the executor.
 	pub status: ExecutorState,
 	/// The access to db.
-	pub db: DbReaderWriter,
+	pub db: Arc<RwLock<DbReaderWriter>>,
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	/// The access to the core mempool.
@@ -66,7 +66,13 @@ impl Executor {
 	) -> Self {
 		let path = format!("{}/{}", dirs::home_dir().unwrap().to_str().unwrap(), APTOS_DB_DIR);
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(path.as_str()));
-		Self { block_executor, status: ExecutorState::Idle, db: reader_writer, signer, mempool }
+		Self {
+			block_executor: Arc::new(RwLock::new(block_executor)),
+			status: ExecutorState::Idle,
+			db: Arc::new(RwLock::new(reader_writer)),
+			signer,
+			mempool,
+		}
 	}
 
 	pub fn set_commit_state(&mut self) {
@@ -82,9 +88,9 @@ impl Executor {
 		if self.status != ExecutorState::Commit {
 			return Err(anyhow::anyhow!("Executor is not in the Commit state"));
 		}
-		let parent_block_id = self.block_executor.committed_block_id();
+		let parent_block_id = self.block_executor.read().unwrap().committed_block_id();
 		log::info!("Executing block: {:?}", block.block_id);
-		let state_checkpoint = self.block_executor.execute_and_state_checkpoint(
+		let state_checkpoint = self.block_executor.write().unwrap().execute_and_state_checkpoint(
 			block,
 			parent_block_id,
 			BlockExecutorConfigFromOnchain::new_no_block_limit(),
