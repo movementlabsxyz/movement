@@ -12,3 +12,8 @@ tempfile = { workspace = true }
 # aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
 # aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
 # aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", features = ["task-arena-size-32768", "arch-std", "executor-thread", "log", "integrated-timers"]  }
+embassy-time = { git = "https://github.com/embassy-rs/embassy", features = ["log", "std" ] }
+log = "0.4"
+lazy_static = "1.4"
+futures = "0.3"

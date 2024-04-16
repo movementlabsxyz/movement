@@ -1,0 +1,8 @@
+[package]
+name = "minitime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+futures = "0.3"
+parking_lot = "0.12"

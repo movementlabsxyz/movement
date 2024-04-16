@@ -18,6 +18,7 @@ members = [
     "protocol-units/zkfp/host",
     "protocol-units/zkfp/methods",
     "protocol-units/zkfp/methods/guest",
+    "protocol-units/minitime",
 
     # test-helpers
     # "test-helpers/move-vm-integration-test-helpers",
@@ -36,7 +37,8 @@ rand = "0.8.4"
 
 anyhow = "1.0"
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
-risc0-zkvm = { version = "0.21",  features = ["std", "getrandom"] }
+risc0-zkvm = { version = "0.20.1",  features = ["std", "getrandom"] }
+risc0-build = { version = "0.20.1"  }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # serialization, deserialization
