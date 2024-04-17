@@ -18,7 +18,7 @@ pub struct LightNodeV1 {
     pub celestia_namespace : Namespace,
     pub default_client : Arc<Client>,
     pub verification_mode : Arc<RwLock<VerificationMode>>,
-    pub verifier : Arc<V1Verifier>,
+    pub verifier : Arc<Box<dyn Verifier + Send + Sync>>,
 }
 
 impl LightNodeV1 {
@@ -35,10 +35,10 @@ impl LightNodeV1 {
             celestia_namespace: config.celestia_namespace,
             default_client: client.clone(),
             verification_mode: Arc::new(RwLock::new(config.verification_mode)),
-            verifier: Arc::new(V1Verifier {
+            verifier: Arc::new(Box::new(V1Verifier {
                 client: client,
                 namespace: config.celestia_namespace.clone(),
-            })
+            }))
         })
     
 

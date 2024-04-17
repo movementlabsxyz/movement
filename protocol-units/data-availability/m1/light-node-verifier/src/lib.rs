@@ -2,6 +2,7 @@ pub mod v1;
 
 pub use m1_da_light_node_grpc::*;
 
+#[tonic::async_trait]
 pub trait Verifier {
 
     async fn verify(

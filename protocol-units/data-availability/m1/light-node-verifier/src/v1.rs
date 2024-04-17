@@ -10,6 +10,7 @@ pub struct V1Verifier {
     pub namespace : Namespace,
 }
 
+#[tonic::async_trait]
 impl Verifier for V1Verifier {
 
     /// All verification is the same for now
