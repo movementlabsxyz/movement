@@ -24,6 +24,7 @@ celestia-types = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 async-stream = { workspace = true }
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

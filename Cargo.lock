@@ -1429,6 +1429,7 @@ dependencies = [
  "hex",
  "m1-da-light-node-grpc",
  "prost",
+ "serde_json",
  "tokio",
  "tokio-stream",
  "tonic",
