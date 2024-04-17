@@ -1,5 +1,5 @@
 [package]
-name = "m1-da-light-node"
+name = "m1-da-light-node-util"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }
@@ -18,15 +18,13 @@ tonic = { workspace = true }
 tonic-reflection = { workspace = true }
 tonic-web = { workspace = true }
 prost = { workspace = true }
-m1-da-light-node-grpc = { workspace = true, features = ["server"] }
-m1-da-light-node-util = { workspace = true }
+m1-da-light-node-grpc = { workspace = true, features = [] }
 celestia-rpc = { workspace = true }
 celestia-types = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 async-stream = { workspace = true }
 serde_json = { workspace = true }
-
 
 [lints]
 workspace = true

@@ -5,10 +5,10 @@ use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{blob::GasPrice, nmt::Namespace, Blob};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use m1_da_light_node_util::Config;
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
-    // pub celestia_client : Client,
     pub celestia_url : String,
     pub celestia_token : String,
     pub celestia_namespace : Namespace,
@@ -18,43 +18,18 @@ pub struct LightNodeV1 {
 
 impl LightNodeV1 {
 
-    const DEFAULT_CELESTIA_NODE_URL: &'static str = "ws://localhost:26658";
-    const DEFAULT_NAMESPACE_BYTES: &'static str = "a673006fb64aa2e5360d";
-
     /// Tries to create a new LightNodeV1 instance from the environment variables.
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
 
-        let token = std::env::var("CELESTIA_NODE_AUTH_TOKEN").map_err(
-            |_| anyhow::anyhow!("Token not provided")
-        )?; // expect("Token not provided"
-        let url = std::env::var("CELESTIA_NODE_URL").unwrap_or_else(|_| Self::DEFAULT_CELESTIA_NODE_URL.to_string());
-        
-        
-        let namespace_hex = std::env::var("CELESTIA_NAMESPACE_BYTES")
-        .unwrap_or_else(|_| Self::DEFAULT_NAMESPACE_BYTES.to_string());
-
-        // Decode the hex string to bytes
-        let namespace_bytes = hex::decode(namespace_hex).map_err(|e| anyhow::anyhow!("Failed to decode namespace bytes: {}", e))?;
-
-        // Create a namespace from the bytes
-        let namespace = Namespace::new_v0(&namespace_bytes)?;
-
-        let client = Client::new(&url, Some(&token)).await.map_err(|e| anyhow::anyhow!("Failed to create Celestia client: {}", e))?;
-
-        // try to read the verification mode from the environment
-        let verification_mode = match std::env::var("VERIFICATION_MODE") {
-            Ok(mode) => {
-              VerificationMode::from_str_name(mode.as_str()).ok_or(anyhow::anyhow!("Invalid verification mode"))?
-            },
-            Err(_) => VerificationMode::MOfN
-        };
-
+        let config = Config::try_from_env()?;
+        let client = config.connect_celestia().await?;
+       
         Ok(Self {
-            celestia_url: url,
-            celestia_token: token,
-            celestia_namespace: namespace,
+            celestia_url: config.celestia_url,
+            celestia_token: config.celestia_token,
+            celestia_namespace: config.celestia_namespace,
             default_client: Arc::new(client),
-            verification_mode: Arc::new(RwLock::new(verification_mode)),
+            verification_mode: Arc::new(RwLock::new(config.verification_mode)),
         })
     
 

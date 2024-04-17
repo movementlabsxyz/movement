@@ -18,5 +18,5 @@ cleanup(){
     rm -rv "$MOVEMENT_BASE_STORAGE_PATH"
 }
 
-. ./scripts/preludes/$1/prelude run
-process-compose "${@:2}" -f process-compose/$1/run/process-compose.yml
+. ./scripts/preludes/$1/prelude test
+process-compose "${@:2}" -f process-compose/$1/test/process-compose.yml
