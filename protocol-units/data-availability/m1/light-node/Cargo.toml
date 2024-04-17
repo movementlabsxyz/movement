@@ -20,6 +20,7 @@ tonic-web = { workspace = true }
 prost = { workspace = true }
 m1-da-light-node-grpc = { workspace = true, features = ["server"] }
 m1-da-light-node-util = { workspace = true }
+m1-da-light-node-verifier = { workspace = true }
 celestia-rpc = { workspace = true }
 celestia-types = { workspace = true }
 anyhow = { workspace = true }

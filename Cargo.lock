@@ -1662,6 +1662,7 @@ dependencies = [
  "hex",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
+ "m1-da-light-node-verifier",
  "prost",
  "serde_json",
  "tokio",

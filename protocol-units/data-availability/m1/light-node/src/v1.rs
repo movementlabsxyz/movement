@@ -6,6 +6,10 @@ use celestia_types::{blob::GasPrice, nmt::Namespace, Blob};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use m1_da_light_node_util::Config;
+use m1_da_light_node_verifier::{
+    Verifier,
+    v1::V1Verifier
+};
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
@@ -14,6 +18,7 @@ pub struct LightNodeV1 {
     pub celestia_namespace : Namespace,
     pub default_client : Arc<Client>,
     pub verification_mode : Arc<RwLock<VerificationMode>>,
+    pub verifier : Arc<V1Verifier>,
 }
 
 impl LightNodeV1 {
@@ -22,14 +27,18 @@ impl LightNodeV1 {
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
 
         let config = Config::try_from_env()?;
-        let client = config.connect_celestia().await?;
+        let client = Arc::new(config.connect_celestia().await?);
        
         Ok(Self {
             celestia_url: config.celestia_url,
             celestia_token: config.celestia_token,
             celestia_namespace: config.celestia_namespace,
-            default_client: Arc::new(client),
+            default_client: client.clone(),
             verification_mode: Arc::new(RwLock::new(config.verification_mode)),
+            verifier: Arc::new(V1Verifier {
+                client: client,
+                namespace: config.celestia_namespace.clone(),
+            })
         })
     
 
@@ -60,10 +69,31 @@ impl LightNodeV1 {
     /// Gets the blobs at a given height.
     pub async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
 
-        self.default_client
+        let blobs = self.default_client
             .blob_get_all(height, &[self.celestia_namespace])
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to get blobs at height: {}", e))
+            .map_err(|e| anyhow::anyhow!("Failed to get blobs at height: {}", e))?;
+
+        let mut verified_blobs = Vec::new();
+        for blob in blobs {
+
+            let blob_data = blob.data.clone();
+
+            // todo: improve error boundary here to detect crashes
+            let verified = self.verifier.verify(
+                *self.verification_mode.read().await,
+                &blob_data,
+                height,
+            ).await.is_ok_and(|v| v);
+
+            if verified {
+                verified_blobs.push(blob);
+            }
+
+        }
+
+        Ok(verified_blobs)
+
     }
         
 }
