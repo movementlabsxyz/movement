@@ -19,6 +19,11 @@ tonic-reflection = { workspace = true }
 tonic-web = { workspace = true }
 prost = { workspace = true }
 m1-da-light-node-grpc = { workspace = true, features = ["server"] }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
+anyhow = { workspace = true }
+hex = { workspace = true }
+async-stream = { workspace = true }
 
 [lints]
 workspace = true

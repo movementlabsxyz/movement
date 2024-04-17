@@ -52,6 +52,7 @@ borsh = { version = "0.10.3", features = ["rc", "bytes"] }
 tracing = "0.1.40"
 tokio = { version = "1.35.1", features = ["full"] }
 tokio-stream = "0.1.15"
+async-stream = "0.3.0"
 tempfile = "3.5"
 fail = "0.5.1"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
@@ -112,6 +113,10 @@ aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = 
 aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "830bb59ead3c5082734486adf1dd5177d349d2a1" }
+
+# celestia dependencies
+celestia-rpc = { git = "https://github.com/eigerco/lumina" }
+celestia-types = { git = "https://github.com/eigerco/lumina" }
 
 
 [workspace.lints.rust]

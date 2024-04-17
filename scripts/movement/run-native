@@ -5,14 +5,19 @@ export PATH=$PATH:./target/release
 
 MOVEMENT_BASE_STORAGE_PATH=$(mktemp -d -t m2-XXXXXXXX)
 export MOVEMENT_BASE_STORAGE_PATH
-echo "Using sequencer storage path: $M_BASE_STORAGE_PATH"
+echo "Using sequencer storage path: $MOVEMENT_BASE_STORAGE_PATH"
+
+export DA_BLOCK_HEIGHT="$(curl https://rpc.celestia-arabica-11.com/block | jq -r '.result.block.header.height')"
+export CELESTIA_NODE_AUTH_TOKEN="$(celestia light auth admin --p2p.network arabica)"
+export CELESTIA_ADDRESS="$(./scripts/get-arabica-11-address.sh)"
+export CELESTIA_NAMESPACE_BYTES="$(openssl rand -hex 10)"
 
 # If keeping the storage path, is desired for debugging, comment out the line
 # below or set a custom storage path in process-compose.yaml.
 trap "exit" INT TERM
 trap cleanup EXIT
 cleanup(){
-    echo "Cleaning up sequencer storage path: $MOVEMENT_BASE_STORAGE_PATH"
+    echo "Cleaning up storage: $MOVEMENT_BASE_STORAGE_PATH"
     rm -rv "$MOVEMENT_BASE_STORAGE_PATH"
 }
 

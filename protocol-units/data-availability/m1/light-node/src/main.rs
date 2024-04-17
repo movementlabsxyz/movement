@@ -9,14 +9,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
         .build()?;
 
-
-    let addr = "[::1]:30730".parse()?;
-    let light_node = LightNodeV1 {};
+    let env_addr = std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "[::1]:30730".to_string());
+    let addr = env_addr.parse()?;
+    let light_node = LightNodeV1::try_from_env().await?;
 
     Server::builder()
         .accept_http1(true)
-        .add_service(reflection)
         .add_service(LightNodeServer::new(light_node))
+        .add_service(reflection)
         .serve(addr)
         .await?;
 

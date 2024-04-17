@@ -35,6 +35,8 @@
         runtimeDependencies = with pkgs; [
           openssl
           process-compose
+          just
+          jq
         ];
 
 
