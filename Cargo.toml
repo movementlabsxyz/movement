@@ -6,10 +6,13 @@ members = [
 
 "protocol-units/data-availability/m1/*",
 
+"protocol-units/sequencing/*",
+
+"protocol-units/mempool/*",
+
 "util/*",
 "util/buildtime/buildtime-helpers",
-"util/buildtime/buildtime-macros"
-
+"util/buildtime/buildtime-macros",
 
 ]
 
@@ -25,13 +28,21 @@ rust-version = "1.73"
 
 [workspace.dependencies]
 # internal
+## types
+movement-types = { path = "util/movement-types"}
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
 buildtime-macros = { path = "util/buildtime/buildtime-macros" }
-# data-availability/m1
+## data-availability/m1
 m1-da-light-node-grpc = { path = "protocol-units/data-availability/m1/light-node-grpc" }
 m1-da-light-node-util = { path = "protocol-units/data-availability/m1/util" }
+## mempool
+mempool-util = { path = "protocol-units/mempool/util" }
+move-rocks = { path = "protocol-units/mempool/move-rocks" }
+## sequencing
+sequencing-util = { path = "protocol-units/sequencing/util" }
+
 
 auto_impl = "1.2.0"
 chrono = "0.4.37"
@@ -40,6 +51,8 @@ serde_json = { version = "1.0.81", features = [
     "preserve_order",
     "arbitrary_precision",
 ] } # Note: arbitrary_precision is required to parse u256 in JSON
+serde_with = "3.7.0"
+derivative = "2.2.0"
 anyhow = "1.0.68"
 derive_more = { version = "0.99.11", default-features = false }
 bytes = { version = "1.2.1", default-features = false }
@@ -65,8 +78,17 @@ x25519-dalek = "1.0.1"
 rand = "0.7.3"
 rand_core = "0.5.1"
 zstd-sys = "2.0.9"
+sha2 = "0.10.8"
 
 risc0-build = "0.20"
+
+rocksdb = { version = "0.22.0", features = [
+  "snappy",
+  "lz4",
+  "zstd",
+  "zlib",
+  "multi-threaded-cf",
+], default-features = false }
 
 # tonic
 tonic = "0.11"
