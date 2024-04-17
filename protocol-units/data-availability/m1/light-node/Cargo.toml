@@ -28,6 +28,13 @@ hex = { workspace = true }
 async-stream = { workspace = true }
 serde_json = { workspace = true }
 
+# sequencer
+memseq = { workspace = true, optional = true }
+
+[features]
+sequencer = [
+    "memseq"
+]
 
 [lints]
 workspace = true

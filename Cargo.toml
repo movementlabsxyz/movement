@@ -43,6 +43,7 @@ mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }
 ## sequencing
 sequencing-util = { path = "protocol-units/sequencing/util" }
+memseq = { path = "protocol-units/sequencing/memseq" }
 
 
 auto_impl = "1.2.0"

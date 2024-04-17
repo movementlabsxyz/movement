@@ -1663,6 +1663,7 @@ dependencies = [
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
+ "memseq",
  "prost",
  "serde_json",
  "tokio",
