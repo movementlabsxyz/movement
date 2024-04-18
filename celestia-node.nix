@@ -3,12 +3,12 @@
 pkgs.stdenv.mkDerivation rec {
   name = "celestia-node";
   version = "v0.13.2"; # Update to the desired version
+  commit_hash = "c1b41b0973e9d140b7651295e879d27ad47f42c4";
 
-  src = pkgs.fetchgit {
+  src = builtins.fetchGit {
     url = "https://github.com/celestiaorg/celestia-node.git";
-    rev = version;
-    sha256 = "YCwIJ55lkLcViVzmAeCIrPtc9mJ/N0eswKrlu9BEC3g="; 
-    leaveDotGit = true;
+    ref = version;
+    rev = commit_hash;
   };
 
   nativeBuildInputs = with pkgs; [
