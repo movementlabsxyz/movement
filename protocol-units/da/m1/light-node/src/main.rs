@@ -1,5 +1,5 @@
 use m1_da_light_node::v1::LightNodeV1;
-use m1_da_light_node_grpc::light_node_server::LightNodeServer;
+use m1_da_light_node_grpc::light_node_service_server::LightNodeServiceServer;
 use tonic::transport::Server;
 
 #[tokio::main]
@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Server::builder()
         .accept_http1(true)
-        .add_service(LightNodeServer::new(light_node))
+        .add_service(LightNodeServiceServer::new(light_node))
         .add_service(reflection)
         .serve(addr)
         .await?;

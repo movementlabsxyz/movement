@@ -1,16 +1,18 @@
 use anyhow::Ok;
-use m1_da_light_node_grpc::light_node_client::LightNodeClient;
-use m1_da_light_node_grpc::*;
+use crate::*;
 use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::StreamExt;
 
 #[tokio::test]
 async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>{
     
-    let mut client = LightNodeClient::connect("http://[::1]:30730").await?;
+    let mut client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
 
-    let request = BlobWriteRequest {
-        data : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    let blob_write = BlobWrite {
+        data : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    };
+    let request = StreamWriteBlobRequest {
+        blob : Some(blob_write.clone())
     };
 
     let (tx, rx) = tokio::sync::mpsc::channel(32);
@@ -30,7 +32,7 @@ async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>
 
     match back.blob {
         Some(blob) => {
-            assert_eq!(blob.data, request.data);
+            assert_eq!(blob.data, blob_write.data);
         },
         None => {
             assert!(false, "No blob in response");
@@ -43,11 +45,14 @@ async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>
 #[tokio::test]
 async fn test_submit_and_read() -> Result<(), anyhow::Error>{
     
-    let mut client = LightNodeClient::connect("http://[::1]:30730").await?;
+    let mut client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
 
     let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let blob_write = BlobWrite {
+        data : data.clone()
+    };
     let request = BatchWriteRequest {
-        data : vec![data.clone()]
+        blobs : vec![blob_write.clone()]
     };
 
     let write = client.batch_write(request).await?;

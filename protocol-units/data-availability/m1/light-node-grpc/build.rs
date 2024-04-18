@@ -1,1 +1,0 @@
-buildtime::proto_build_main!("protocol-units/data-availability/m1/m1_da_light_node.proto");
