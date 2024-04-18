@@ -24,7 +24,7 @@ pub trait MempoolTransactionOperations {
 
     /// Pops the next n mempool transactions from the mempool.
     async fn pop_mempool_transactions(&self, n: usize) -> Result<Vec<MempoolTransaction>, anyhow::Error> {
-        let mut mempool_transactions = Vec::new();
+        let mut mempool_transactions = Vec::with_capacity(n);
         for _ in 0..n {
             if let Some(mempool_transaction) = self.pop_mempool_transaction().await? {
                 mempool_transactions.push(mempool_transaction);
