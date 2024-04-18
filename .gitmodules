@@ -1,3 +1,6 @@
 [submodule "protocol-units/dispute/lib/forge-std"]
 	path = protocol-units/dispute/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "protocol-units/eth-settlement/contracts/lib/openzeppelin-contracts"]
+	path = protocol-units/dispute/contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
