@@ -3,15 +3,16 @@ pub mod v1;
 pub use aptos_types::{
     transaction::signature_verified_transaction::SignatureVerifiedTransaction,
     block_executor::partitioner::ExecutableBlock,
+    block_executor::partitioner::ExecutableTransactions
 };
 pub use aptos_crypto::hash::HashValue;
 use aptos_executor_types::state_checkpoint_output::StateCheckpointOutput;
 use async_channel::Sender;
 use aptos_api::runtime::Apis;
-use monza_execution_util::FinalityMode;
+pub use monza_execution_util::FinalityMode;
 
 
-
+#[tonic::async_trait]
 pub trait MonzaExecutor {
 
     /// Executes a block dynamically

@@ -15,6 +15,7 @@ impl MonzaExecutorV1 {
     }
 }
 
+#[tonic::async_trait]
 impl MonzaExecutor for MonzaExecutorV1 {
     
     /// Executes a block dynamically
