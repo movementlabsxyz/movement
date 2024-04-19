@@ -2,8 +2,6 @@ syntax = "proto3";
 package movementlabs.protocol_units.da.m1.light_node.v1beta1;
 
 // Request and response messages
-message Empty {}
-
 message Blob {
     string blob_id = 1;
     bytes data = 2;
@@ -30,6 +28,10 @@ message StreamReadFromHeightResponse {
 }
 
 // StreamReadLatest
+message StreamReadLatestRequest {
+    
+}
+
 message StreamReadLatestResponse {
     Blob blob = 1;
 }
@@ -84,7 +86,7 @@ message UpdateVerificationParametersResponse {
 service LightNodeService {
   // Stream blobs from a specified height or from the latest height.
   rpc StreamReadFromHeight (StreamReadFromHeightRequest) returns (stream StreamReadFromHeightResponse);
-  rpc StreamReadLatest (Empty) returns (stream StreamReadLatestResponse);
+  rpc StreamReadLatest (StreamReadLatestRequest) returns (stream StreamReadLatestResponse);
   
   // Stream blobs out, either individually or in batches.
   rpc StreamWriteBlob (stream StreamWriteBlobRequest) returns (stream StreamWriteBlobResponse);
