@@ -224,7 +224,7 @@ impl LightNodeService for LightNodeV1 {
     /// Stream the latest blobs.
     async fn stream_read_latest(
         &self,
-        _request: tonic::Request<Empty>,
+        _request: tonic::Request<StreamReadLatestRequest>,
     ) -> std::result::Result<
         tonic::Response<Self::StreamReadLatestStream>,
         tonic::Status,
