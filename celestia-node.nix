@@ -22,6 +22,7 @@ pkgs.stdenv.mkDerivation rec {
     openssl
     rustc
     cargo
+    coreutils
   ];
 
   preBuild = ''
