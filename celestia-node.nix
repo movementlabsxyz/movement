@@ -1,8 +1,8 @@
 { pkgs }:
 
 pkgs.stdenv.mkDerivation rec {
-  name = "celestia-node";
-  version = "v0.13.2"; # Update to the desired version
+  pname = "celestia-node";
+  version = "0.13.2";
   commit_hash = "c1b41b0973e9d140b7651295e879d27ad47f42c4";
 
   src = builtins.fetchGit {
@@ -12,17 +12,7 @@ pkgs.stdenv.mkDerivation rec {
   };
 
   nativeBuildInputs = with pkgs; [
-    git
-    go
-    gnumake
-    gcc
-    protobuf
-    clang
-    llvm
-    openssl
-    rustc
-    cargo
-    coreutils
+    git go gnumake gcc protobuf clang llvm openssl rustc cargo coreutils
   ];
 
   preBuild = ''
@@ -32,23 +22,14 @@ pkgs.stdenv.mkDerivation rec {
     mkdir -p $GOPATH $GOCACHE
   '';
 
-  buildPhase = ''
-  '';
+  buildFlags = [ "build" "cel-key" ];
 
   installPhase = ''
-
-    export HOME=$TMPDIR
-    export GOPATH="$TMPDIR/go"
-    export GOCACHE="$TMPDIR/go-cache"
-    mkdir -p $GOPATH $GOCACHE
-    make build && make install
-    make cel-key && make install-key
-
     mkdir -p $out/bin
-    cp $GOPATH/bin/celestia $out/bin
-    cp $GOPATH/bin/cel-key $out/bin
+    ls -la $TMPDIR/go
+    cp $GOPATH/bin/celestia $out/bin/celestia
+    cp $GOPATH/bin/cel-key $out/bin/cel-key
   '';
-
 
   meta = with pkgs.lib; {
     description = "Celestia Node";
