@@ -3,20 +3,33 @@ version: "3"
 environment:
 
 processes:
-  celestia-arabica-light-node:
+
+  celestia-arabica-light-node-init:
     command: |
       celestia light init --p2p.network arabica
+
+
+  celestia-arabica-light-node:
+    command: |
       celestia light start --core.ip validator-1.celestia-arabica-11.com --p2p.network arabica
 
     readiness_probe:
       exec:
         command: echo "true"
+    depends_on:
+      celestia-arabica-light-node-init:
+        condition: process_completed
 
   celestia-arabica-fund-account:
     command: |
       curl -X POST 'https://faucet.celestia-arabica-11.com/api/v1/faucet/give_me' \
       -H 'Content-Type: application/json' \
       -d '{"address": "$CELESTIA_ADDRESS", "chainId": "arabica-11"}'
+      # wait for a little
+      sleep 20
+    depends_on:
+      celestia-arabica-light-node-init:
+        condition: process_completed
 
 
   m1-da-light-node:
