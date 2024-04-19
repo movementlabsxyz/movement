@@ -1,6 +1,6 @@
 [package]
-name = "executor"
-description = "Executor for the AptosVM"
+name = "monza-executor"
+description = "Monza executor containing dyn, opt, and fin execution paths."
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -33,6 +33,7 @@ secp256k1 = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
+async-channel = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
@@ -56,6 +57,9 @@ aptos-executor-test-helpers = { workspace = true }
 aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
+
+monza-opt-executor = { workspace = true }
+monza-execution-util = { workspace = true }
 
 move-binary-format = { workspace = true }
 move-table-extension = { workspace = true }
