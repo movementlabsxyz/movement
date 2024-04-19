@@ -21,7 +21,7 @@
 
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-        # Include avalanche network runner and avalanchego
+        # celesita-node
         celestia-node = import ./celestia-node.nix { inherit pkgs; };
        
         # Specific version of toolchain
