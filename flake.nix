@@ -21,7 +21,7 @@
 
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-        # celesita-node
+        # celestia-node
         celestia-node = import ./celestia-node.nix { inherit pkgs; };
        
         # Specific version of toolchain

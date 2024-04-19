@@ -1,62 +1,25 @@
-{ pkgs }:
+{ pkgs,  }:
 
-pkgs.stdenv.mkDerivation rec {
-  name = "celestia-node";
-  version = "v0.13.2"; # Update to the desired version
-  commit_hash = "c1b41b0973e9d140b7651295e879d27ad47f42c4";
+pkgs.buildGoModule rec {
+  pname = "celestia-node";
+  version = "0.13.2";
 
-  src = builtins.fetchGit {
-    url = "https://github.com/celestiaorg/celestia-node.git";
-    ref = version;
-    rev = commit_hash;
+  src = pkgs.fetchFromGitHub {
+    owner = "celestiaorg";
+    repo = "celestia-node";
+    rev = "c1b41b0973e9d140b7651295e879d27ad47f42c4";
+    sha256 = "sha256-YCwIJ55lkLcViVzmAeCIrPtc9mJ/N0eswKrlu9BEC3g=";  # Replace with the actual sha256
   };
 
-  nativeBuildInputs = with pkgs; [
-    git
-    go
-    gnumake
-    gcc
-    protobuf
-    clang
-    llvm
-    openssl
-    rustc
-    cargo
-    coreutils
-  ];
+  vendorHash = "sha256-UyNNVDO/FFKp80rI5kOI4xfKpkhqF53lgiOSJhCm79U=";  # Replace with the correct vendor hash
 
-  preBuild = ''
-    export HOME=$TMPDIR
-    export GOPATH="$TMPDIR/go"
-    export GOCACHE="$TMPDIR/go-cache"
-    mkdir -p $GOPATH $GOCACHE
-  '';
-
-  patchPhase = ''
-    sed -i 's|/usr/bin/env bash|${pkgs.bash}/bin/bash|g' Makefile
-  '';
-
-
-  buildPhase = ''
-    export HOME=$TMPDIR
-    export GOPATH="$TMPDIR/go"
-    export GOCACHE="$TMPDIR/go-cache"
-    mkdir -p $GOPATH $GOCACHE
-    make build && make install
-    make cel-key && make install-key
-  '';
-
-  installPhase = ''
-    mkdir -p $out/bin
-    cp $GOPATH/bin/celestia $out/bin
-    cp $GOPATH/bin/cel-key $out/bin
-  '';
-
+  # Specify the subpackage to build
+  subPackages = [ "cmd/celestia" "cmd/cel-key" ];
 
   meta = with pkgs.lib; {
-    description = "Celestia Node";
+    description = "Build specific Go subpackage in Nix";
     homepage = "https://github.com/celestiaorg/celestia-node";
     license = licenses.mit;
-    maintainers = with maintainers; [ ]; # Add maintainers here
+    maintainers = with maintainers; [ maintainers.example ];
   };
 }
