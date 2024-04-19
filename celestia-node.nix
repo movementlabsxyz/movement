@@ -30,6 +30,7 @@ pkgs.stdenv.mkDerivation rec {
     export GOPATH="$TMPDIR/go"
     export GOCACHE="$TMPDIR/go-cache"
     mkdir -p $GOPATH $GOCACHE
+    patchShebangs .
   '';
 
   buildPhase = ''
