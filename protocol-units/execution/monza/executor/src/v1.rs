@@ -49,4 +49,9 @@ impl MonzaExecutor for MonzaExecutorV1 {
         unimplemented!()
     }
 
+    /// Get block head height.
+    async fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
+        unimplemented!()
+    }
+
 }

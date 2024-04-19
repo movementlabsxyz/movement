@@ -6114,6 +6114,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "monza-full-node"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "m1-da-light-node-client",
+ "monza-executor",
+ "serde_json",
+ "sha2 0.10.8",
+ "tokio",
+ "tonic",
+]
+
+[[package]]
 name = "monza-opt-executor"
 version = "0.3.0"
 dependencies = [

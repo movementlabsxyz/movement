@@ -13,6 +13,8 @@ members = [
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
 
+    "networks/monza/monza-full-node"
+
 ]
 
 [workspace.package]
@@ -27,9 +29,11 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
+## execution/monza
 monza-opt-executor = { path = "protocol-units/execution/monza/opt-executor" }
 monza-fin-executor = { path = "protocol-units/execution/monza/fin-executor" }
 monza-execution-util = { path = "protocol-units/execution/monza/util" }
+monza-executor = { path = "protocol-units/execution/monza/executor" }
 ## types
 movement-types = { path = "util/movement-types"}
 ## buildtime
@@ -40,6 +44,7 @@ buildtime-macros = { path = "util/buildtime/buildtime-macros" }
 m1-da-light-node-grpc = { path = "protocol-units/da/m1/light-node-grpc" }
 m1-da-light-node-util = { path = "protocol-units/da/m1/util" }
 m1-da-light-node-verifier = { path = "protocol-units/da/m1/light-node-verifier" }
+m1-da-light-node-client = { path = "protocol-units/da/m1/light-node-client" }
 ## mempool
 mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }
