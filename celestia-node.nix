@@ -33,16 +33,10 @@ pkgs.stdenv.mkDerivation rec {
   '';
 
   buildPhase = ''
-    export HOME=$TMPDIR
-    export GOPATH="$TMPDIR/go"
-    export GOCACHE="$TMPDIR/go-cache"
-    mkdir -p $GOPATH $GOCACHE
-    make build && make install
-    make cel-key && make install-key
   '';
 
   installPhase = ''
-  
+
     export HOME=$TMPDIR
     export GOPATH="$TMPDIR/go"
     export GOCACHE="$TMPDIR/go-cache"
