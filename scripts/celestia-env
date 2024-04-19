@@ -1,4 +1,5 @@
 #!/bin/bash
+celestia light init --p2p.network arabica
 export DA_BLOCK_HEIGHT="$(curl https://rpc.celestia-arabica-11.com/block | jq -r '.result.block.header.height')"
 export CELESTIA_NODE_AUTH_TOKEN="$(celestia light auth admin --p2p.network arabica)"
 export CELESTIA_ADDRESS="$(./scripts/get-arabica-11-address.sh)"

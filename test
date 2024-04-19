@@ -1,7 +1,0 @@
-celestia1nhgc505kyr53u5s60u4j2cl4atuzfqwguacgvg
-
-curl -X POST 'https://faucet.celestia-arabica-11.com/api/v1/faucet/give_me' \
-      -H 'Content-Type: application/json' \
-      -d '{"address": "celestia1nhgc505kyr53u5s60u4j2cl4atuzfqwguacgvg", "chainId": "arabica-11"}'
-
-curl -X POST 'https://faucet.celestia-arabica-11.com/api/v1/faucet/give_me'       -H 'Content-Type: application/json'       -d '{"address": "$CELESTIA_ADDRESS", "chainId": "arabica-11"}'

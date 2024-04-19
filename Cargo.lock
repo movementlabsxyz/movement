@@ -1704,6 +1704,7 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "hex",
+ "jsonrpsee",
  "m1-da-light-node-grpc",
  "prost",
  "serde_json",
