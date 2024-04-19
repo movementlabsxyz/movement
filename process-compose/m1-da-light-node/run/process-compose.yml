@@ -26,8 +26,6 @@ processes:
       -H 'Content-Type: application/json' \
       -d "{\"address\": \"$CELESTIA_ADDRESS\", \"chainId\": \"arabica-11\"}" | \
       jq -e '.txHash' || echo "Error: txHash field not found in the response." >&2
-      # wait for a little
-      sleep 20
     depends_on:
       celestia-arabica-light-node-init:
         condition: process_completed
@@ -35,7 +33,6 @@ processes:
 
   m1-da-light-node:
     command: |
-      sleep 5
       cargo run -p m1-da-light-node
     depends_on:
       celestia-arabica-light-node:
@@ -49,7 +46,6 @@ processes:
 
   m1-da-light-node-verifier-tests:
     command: |
-      sleep 5
       cargo test -p m1-da-light-node-verifier -- --test-threads=1
     depends_on:
       celestia-arabica-light-node:
@@ -59,7 +55,6 @@ processes:
 
   m1-da-light-node-client-tests:
     command: |
-      sleep 15
       cargo test -p m1-da-light-node-client -- --test-threads=1
     depends_on:
       m1-da-light-node: 
