@@ -24,7 +24,8 @@ processes:
     command: |
       curl -X POST 'https://faucet.celestia-arabica-11.com/api/v1/faucet/give_me' \
       -H 'Content-Type: application/json' \
-      -d '{"address": "$CELESTIA_ADDRESS", "chainId": "arabica-11"}'
+      -d "{\"address\": \"$CELESTIA_ADDRESS\", \"chainId\": \"arabica-11\"}" | \
+      jq -e '.txHash' || echo "Error: txHash field not found in the response." >&2
       # wait for a little
       sleep 20
     depends_on:
