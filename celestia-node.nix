@@ -33,17 +33,20 @@ pkgs.stdenv.mkDerivation rec {
   '';
 
   buildPhase = ''
-    ls /bin/env
     export HOME=$TMPDIR
     export GOPATH="$TMPDIR/go"
     export GOCACHE="$TMPDIR/go-cache"
     mkdir -p $GOPATH $GOCACHE
-    make build && make install
-    make cel-key && make install-key
   '';
 
   installPhase = ''
+    export HOME=$TMPDIR
+    export GOPATH="$TMPDIR/go"
+    export GOCACHE="$TMPDIR/go-cache"
+    mkdir -p $GOPATH $GOCACHE
     mkdir -p $out/bin
+    make build && make install
+    make cel-key && make install-key
     cp $GOPATH/bin/celestia $out/bin
     cp $GOPATH/bin/cel-key $out/bin
   '';
