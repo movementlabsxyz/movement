@@ -33,6 +33,7 @@ pkgs.stdenv.mkDerivation rec {
   '';
 
   buildPhase = ''
+    ls /usr/bin/env
     export HOME=$TMPDIR
     export GOPATH="$TMPDIR/go"
     export GOCACHE="$TMPDIR/go-cache"
