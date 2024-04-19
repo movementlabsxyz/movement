@@ -1,5 +1,5 @@
 [package]
-name = "movement-rollup"
+name = "move-rocks"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }
@@ -12,6 +12,14 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+tokio = { workspace = true }
+mempool-util = { workspace = true }
+movement-types = { workspace = true }
+rocksdb = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tempfile = { workspace = true }
+
 
 [lints]
 workspace = true

@@ -29,7 +29,6 @@ poem-openapi = { workspace = true }
 tracing = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"
-secp256k1 = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
@@ -56,10 +55,6 @@ aptos-executor-test-helpers = { workspace = true }
 aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
-
-move-binary-format = { workspace = true }
-move-table-extension = { workspace = true }
-move-core-types = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"
