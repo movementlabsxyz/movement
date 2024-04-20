@@ -7,3 +7,15 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`protocol-units`](./protocol-units): Protocol units for the Movement Network. These are the core building blocks of the Movement Network. See the [protocol-units README](./protocol-units/README.md) for more information about the organization of protocol units.
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
+
+# `m1-da-light-node`
+
+- **Features**:
+    - `local`: Run a local Celestia Data Availability service. (Default.)
+    - `arabica`: Run an Arabica Celestia Data Availability service. (Overrides local.)
+    - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`.)
+
+```bash
+# example test with local  Celestia Data Availability service
+just m1-da-light-node test.local
+```

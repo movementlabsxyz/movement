@@ -9,7 +9,7 @@ processes:
       sleep 10
       cargo test -p m1-da-light-node-client -- --test-threads=1
     depends_on:
-      celestia-arabica-light-node: 
+      celestia-light-node: 
         condition: process_healthy
       m1-da-light-node: 
         condition: process_healthy
