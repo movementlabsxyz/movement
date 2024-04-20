@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+APP_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
+NODE_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/bridge"
+celestia-appd start --grpc.enable --home $APP_PATH

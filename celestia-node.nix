@@ -13,6 +13,12 @@ pkgs.buildGoModule rec {
 
   vendorHash = "sha256-UyNNVDO/FFKp80rI5kOI4xfKpkhqF53lgiOSJhCm79U=";  # Replace with the correct vendor hash
 
+  preBuild = ''
+    ls -al ./cmd
+    sleep 5
+  '';
+
+
   # Specify the subpackage to build
   subPackages = [ "cmd/celestia" "cmd/cel-key" ];
 

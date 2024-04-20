@@ -23,6 +23,9 @@
 
         # celestia-node
         celestia-node = import ./celestia-node.nix { inherit pkgs; };
+
+        # celestia-app
+        celestia-app = import ./celestia-app.nix { inherit pkgs; };
        
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
@@ -58,6 +61,7 @@
 
         testingDependencies = with pkgs; [
             celestia-node
+            celestia-app
         ]
         ++ buildDependencies;
 

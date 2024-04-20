@@ -1,0 +1,3 @@
+#!/bin/bash
+cd ~/.celestia-light-arabica-11
+cel-key list --node.type light --keyring-backend test --home $NODE_PATH --output json |  sed '1d' | jq -r '.[0].address'

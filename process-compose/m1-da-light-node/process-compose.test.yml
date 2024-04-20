@@ -1,0 +1,21 @@
+version: "3"
+
+environment:
+
+processes:
+
+  m1-da-light-node-client-tests:
+    command: |
+      sleep 10
+      cargo test -p m1-da-light-node-client -- --test-threads=1
+    depends_on:
+      celestia-arabica-light-node: 
+        condition: process_healthy
+      m1-da-light-node: 
+        condition: process_healthy
+      m1-da-light-node-verifier-tests:
+        condition: process_completed
+    availability:
+      # NOTE: `restart: exit_on_failure` is not needed since
+      # exit_on_end implies it.
+      exit_on_end: true
