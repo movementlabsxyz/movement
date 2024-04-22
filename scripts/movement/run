@@ -2,9 +2,15 @@
 set -euo pipefail
 
 export PATH=$PATH:./target/release
+export PROC_COMP_CONFIG=$HOME
 
-MOVEMENT_BASE_STORAGE_PATH=$(mktemp -d -t m2-XXXXXXXX)
-export MOVEMENT_BASE_STORAGE_PATH
+# if proc_compose config does not exist at $PROC_COMP_CONFIG/settings.yaml, create it
+if [ ! -f $PROC_COMP_CONFIG/settings.yaml ]; then
+    mkdir -p $PROC_COMP_CONFIG
+    touch $PROC_COMP_CONFIG/settings.yaml
+fi
+
+export MOVEMENT_BASE_STORAGE_PATH=$(mktemp -d -t m2-XXXXXXXX)
 echo "Using sequencer storage path: $MOVEMENT_BASE_STORAGE_PATH"
 
 # If keeping the storage path, is desired for debugging, comment out the line
