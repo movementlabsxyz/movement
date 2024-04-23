@@ -43,6 +43,11 @@ impl Memseq<RocksdbMempool> {
         Ok(Self::new(mempool, 10, parent_block, 1000))
     }
 
+    pub fn try_move_rocks_from_env() -> Result<Self, anyhow::Error> {
+        let path = std::env::var("MOVE_ROCKS_PATH")?;
+        Self::try_move_rocks(PathBuf::from(path))
+    }
+
 }
 
 impl <T : MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
