@@ -8,10 +8,10 @@ pkgs.buildGoModule rec {
     owner = "celestiaorg";
     repo = "celestia-app";
     rev = "e75a1fdc8f2386d9f389cb596c88ca7cc19563af";
-    sha256 = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";  # Replace with the actual sha256
+    sha256 = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";  
   };
 
-  vendorHash = "sha256-2vU1liAm0us7Nk1eawgMvarhq77+IUS0VE61FuvQbuQ=";  # Replace with the correct vendor hash
+  vendorHash = null; 
 
   nativeBuildInputs = [ pkgs.git pkgs.openssl pkgs.cacert ];
 
