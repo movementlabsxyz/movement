@@ -187,7 +187,7 @@ pub mod test {
                 memseq.publish(transaction.clone()).await?;
             }
 
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(600)).await;
 
             // add the rest of the transactions
             for i in block_size/2..block_size-2 {
@@ -208,6 +208,8 @@ pub mod test {
                 anyhow::anyhow!("Block not found")
             )?;
             assert_eq!(block.transactions.len(), (block_size/2) as usize);
+
+            tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
             // second block
             let block = memseq.wait_for_next_block().await?;
