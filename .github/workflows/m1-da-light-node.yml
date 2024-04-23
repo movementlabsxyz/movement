@@ -13,15 +13,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Install Nix
-      uses: cachix/install-nix-action@v17
-      with:
-        install_url: https://install.determinate.systems/install
-        # Ensure you configure Nix settings as required by your project
-        extra_nix_config: |
-          build-users-group = nixbld
-          experimental-features = nix-command flakes repl-flake nix-command flakes configurable-impure-env
-          bash-prompt-prefix = (nix:$name) 
-          max-jobs = auto
+      uses: DeterminateSystems/nix-installer-action@main
 
     - name: Load Nix environment
       run: nix develop
