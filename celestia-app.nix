@@ -13,11 +13,6 @@ pkgs.buildGoModule rec {
 
   vendorHash = "sha256-2vU1liAm0us7Nk1eawgMvarhq77+IUS0VE61FuvQbuQ=";  # Replace with the correct vendor hash
 
-  preBuild = ''
-    ls -al ./cmd
-    sleep 5
-  '';
-
   # Specify the subpackage to build
   subPackages = [ "cmd/celestia-appd" ];
 

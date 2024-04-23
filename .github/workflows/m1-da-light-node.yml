@@ -1,8 +1,8 @@
 name: M1 DA Light Node
 
 on:
-    push:
-    pull_request:
+  push:
+  pull_request:
 
 jobs:
   build:
@@ -15,16 +15,13 @@ jobs:
     - name: Install Nix
       uses: cachix/install-nix-action@v17
       with:
-        # Optionally configure Nix settings, such as enabling flakes
-        install_url: https://releases.nixos.org/nix/nix-2.20.3/install
-        # nix_path: nixpkgs=channel:nixos-23.05
+        install_url: https://install.determinate.systems/install
+        # Ensure you configure Nix settings as required by your project
         extra_nix_config: |
-            build-users-group = nixbld
-            experimental-features = nix-command flakes repl-flake nix-command flakes configurable-impure-env
-            bash-prompt-prefix = (nix:$name)\040
-            max-jobs = auto
-            extra-nix-path = nixpkgs=flake:nixpkgs
-            upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/stable/universal
+          build-users-group = nixbld
+          experimental-features = nix-command flakes repl-flake nix-command flakes configurable-impure-env
+          bash-prompt-prefix = (nix:$name) 
+          max-jobs = auto
 
     - name: Load Nix environment
       run: nix develop

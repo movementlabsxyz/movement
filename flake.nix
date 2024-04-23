@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/6143fc5eeb9c4f00163267708e26191d1e918932";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -18,6 +18,8 @@
         pkgs = import nixpkgs {
           inherit system overlays;
         };
+
+        go = pkgs.go_1_22;
 
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
@@ -66,6 +68,7 @@
         ++ buildDependencies;
 
         developmentDependencies = with pkgs; [
+          go
           rust
         ] ++ testingDependencies;
 
