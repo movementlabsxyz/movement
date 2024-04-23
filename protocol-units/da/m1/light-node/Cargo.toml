@@ -26,15 +26,20 @@ celestia-types = { workspace = true }
 anyhow = { workspace = true }
 hex = { workspace = true }
 async-stream = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
+tempfile = { workspace = true }
+
 
 # sequencer
 memseq = { workspace = true, optional = true }
 
 [features]
 sequencer = [
-    "memseq"
+    "memseq",
 ]
+
+default = ["sequencer"]
 
 [lints]
 workspace = true

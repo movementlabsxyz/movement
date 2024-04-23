@@ -1,9 +1,9 @@
-use sequencing_util::Sequencer;
-use movement_types::{Block, Transaction, Id};
+pub use movement_types::{Block, Transaction, Id};
 use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
-use move_rocks::RocksdbMempool;
+pub use move_rocks::RocksdbMempool;
+pub use sequencing_util::Sequencer;
 
 pub struct Memseq<T : MempoolBlockOperations + MempoolTransactionOperations> {
     pub mempool : Arc<RwLock<T>>,

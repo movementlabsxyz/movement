@@ -10,7 +10,16 @@ use m1_da_light_node_verifier::{
     Verifier,
     v1::V1Verifier
 };
+use tempfile::tempdir;
+use std::collections::HashMap;
+use memseq::{Sequencer, Transaction};
 
+#[cfg(feature = "sequencer")]
+#[derive(Debug, Clone)]
+pub struct BlockInclusion {
+    pub submitted_timestamp : u64,
+    pub included_height : Option<u64>
+}
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
@@ -20,6 +29,15 @@ pub struct LightNodeV1 {
     pub default_client : Arc<Client>,
     pub verification_mode : Arc<RwLock<VerificationMode>>,
     pub verifier : Arc<Box<dyn Verifier + Send + Sync>>,
+
+    #[cfg(feature = "sequencer")]
+    pub memseq : Arc<memseq::Memseq<memseq::RocksdbMempool>>,
+
+    // the block heights at which recent transactions were published
+    #[cfg(feature = "sequencer")]
+    pub block_heights : Arc<RwLock<
+        HashMap<Vec<u8>, BlockInclusion>>
+    >,
 }
 
 impl LightNodeV1 {
@@ -29,6 +47,14 @@ impl LightNodeV1 {
 
         let config = Config::try_from_env()?;
         let client = Arc::new(config.connect_celestia().await?);
+
+        #[cfg(feature = "sequencer")]
+        let memseq = {
+            // generate temp dir
+            let temp_dir = tempdir()?;
+            let path = temp_dir.path().to_path_buf();
+            Arc::new(memseq::Memseq::try_move_rocks(path)?)
+        };
        
         Ok(Self {
             celestia_url: config.celestia_url,
@@ -39,7 +65,11 @@ impl LightNodeV1 {
             verifier: Arc::new(Box::new(V1Verifier {
                 client: client,
                 namespace: config.celestia_namespace.clone(),
-            }))
+            })),
+            #[cfg(feature = "sequencer")]
+            memseq,
+            #[cfg(feature = "sequencer")]
+            block_heights: Arc::new(RwLock::new(HashMap::new())),
         })
     
 
@@ -68,10 +98,57 @@ impl LightNodeV1 {
     }
 
     /// Submits a blob to the Celestia node.
+    #[cfg(not(feature = "sequencer"))]
     pub async fn submit_blob(&self, data: Vec<u8>) -> Result<Blob, anyhow::Error> {
         let celestia_blob = self.create_new_celestia_blob(data)?;
         let height = self.submit_celestia_blob(celestia_blob.clone()).await?;
         Ok(Self::celestia_blob_to_blob(celestia_blob, height)?)
+    }
+
+    /// Submits blob to the sequencer which can then be published to the Celestia node. 
+    #[cfg(feature = "sequencer")]
+    pub async fn submit_blob(&self, data: Vec<u8>) -> Result<Blob, anyhow::Error> {
+        let transaction = Transaction::new(data.clone());
+        self.memseq.publish(transaction).await?;
+
+        // todo: this is invalid
+        // todo: we need to decide whether to invalidate the returning of blobs in sequencer mode
+        // todo: or else we would want to wait for the actual block to be published and return that
+        let celestia_blob = self.create_new_celestia_blob(data)?;
+        Ok(Self::celestia_blob_to_blob(celestia_blob, 0)?) 
+    }
+
+    #[cfg(feature = "sequencer")]
+    pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
+        let block = self.memseq.wait_for_next_block().await?;
+        match block {
+            Some(block) => {
+
+                let block_blob = self.create_new_celestia_blob(
+                    serde_json::to_vec(&block).map_err(
+                        |e| anyhow::anyhow!("Failed to serialize block: {}", e)
+                    )?
+                )?;
+
+                self.submit_celestia_blob(block_blob).await?;
+            },
+            None => {
+                // no transactions to include
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(feature = "sequencer")]
+    pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
+        loop {
+            // build the next block from the blobs
+            self.tick_block_proposer().await?;
+
+            // sleep for a while
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+        }
+        Ok(())
     }
 
     /// Gets the blobs at a given height.
