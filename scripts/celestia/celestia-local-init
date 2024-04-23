@@ -22,7 +22,7 @@ celestia-appd add-genesis-account $(celestia-appd keys show validator -a --keyri
 celestia-appd gentx validator 5000000000utia \
   --keyring-backend="test" \
   --chain-id $CELESTIA_CHAIN_ID \
-  --home $APP_PATH \
+  --home $APP_PATH
 
 celestia-appd collect-gentxs --home $APP_PATH
 
