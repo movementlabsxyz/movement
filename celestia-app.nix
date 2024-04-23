@@ -13,6 +13,16 @@ pkgs.buildGoModule rec {
 
   vendorHash = "sha256-2vU1liAm0us7Nk1eawgMvarhq77+IUS0VE61FuvQbuQ=";  # Replace with the correct vendor hash
 
+  nativeBuildInputs = [ pkgs.git pkgs.openssl pkgs.cacert ];
+
+  preBuild = ''
+    export GOPROXY=https://proxy.golang.org,direct
+    export GOSUMDB=off
+    chmod -R +w .
+    go mod tidy
+    go mod vendor
+  '';
+
   # Specify the subpackage to build
   subPackages = [ "cmd/celestia-appd" ];
 

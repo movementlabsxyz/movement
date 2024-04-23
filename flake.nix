@@ -19,8 +19,6 @@
           inherit system overlays;
         };
 
-        go = pkgs.go_1_22;
-
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
         # celestia-node
@@ -68,7 +66,6 @@
         ++ buildDependencies;
 
         developmentDependencies = with pkgs; [
-          go
           rust
         ] ++ testingDependencies;
 
