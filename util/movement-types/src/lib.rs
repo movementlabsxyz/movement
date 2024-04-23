@@ -14,6 +14,10 @@ impl Id {
         self.0.clone()
     }
 
+    pub fn genesis_block() -> Self {
+        Self(vec![0])
+    }
+
 }
 
 impl Display for Id {

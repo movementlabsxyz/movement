@@ -5937,8 +5937,10 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "mempool-util",
+ "move-rocks",
  "movement-types",
  "sequencing-util",
+ "tempfile",
  "tokio",
 ]
 
