@@ -1,0 +1,33 @@
+name: M1 DA Light Node
+
+on:
+    push:
+    pull_request:
+
+jobs:
+  build:
+    runs-on: movement-runner
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v17
+      with:
+        # Optionally configure Nix settings, such as enabling flakes
+        install_url: https://releases.nixos.org/nix/nix-2.11.0/install
+        nix_path: nixpkgs=channel:nixos-23.05
+        extra_nix_config: |
+            build-users-group = nixbld
+            experimental-features = nix-command flakes repl-flake nix-command flakes configurable-impure-env
+            bash-prompt-prefix = (nix:$name)\040
+            max-jobs = auto
+            extra-nix-path = nixpkgs=flake:nixpkgs
+            upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/stable/universal
+
+    - name: Load Nix environment
+      run: nix develop
+
+    - name: Run Just task
+      run: just m1-da-light-node test.local

@@ -1,3 +1,2 @@
 #!/bin/bash
 . ./scripts/celestia/celestia-env
-./scripts/celestia/create-and-fund-account
