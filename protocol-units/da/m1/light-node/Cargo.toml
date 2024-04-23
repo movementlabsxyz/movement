@@ -39,7 +39,7 @@ sequencer = [
     "memseq",
 ]
 
-default = ["sequencer"]
+default = []
 
 [lints]
 workspace = true

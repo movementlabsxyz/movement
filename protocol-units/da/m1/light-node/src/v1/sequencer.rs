@@ -1,28 +1,41 @@
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
 use tokio_stream::Stream;
-use crate::v1::pass_through::LightNodeV1;
+use crate::v1::{
+    LightNodeV1Operations,
+    passthrough::LightNodeV1 as LightNodeV1PassThrough
+};
 use memseq::{Transaction, Sequencer};
 
-pub struct LightNodeV1Sequencer {
-    pub pass_through : LightNodeV1,
+#[derive(Clone)]
+pub struct LightNodeV1 {
+    pub pass_through : LightNodeV1PassThrough,
     pub memseq : memseq::Memseq<memseq::RocksdbMempool>
 }
 
-impl LightNodeV1Sequencer {
+impl LightNodeV1Operations for LightNodeV1 {
 
-    pub async fn try_from_env() -> Result<Self, anyhow::Error> {
-        let pass_through = LightNodeV1::try_from_env().await?;
+    async fn try_from_env() -> Result<Self, anyhow::Error> {
+        let pass_through = LightNodeV1PassThrough::try_from_env().await?;
         let memseq = memseq::Memseq::try_move_rocks_from_env()?;
         Ok(Self {
             pass_through,
             memseq
         })
     }
+
+    async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+ 
+        self.run_block_proposer().await?;
+        
+        Ok(())
+
+    }
     
+
 }
 
-impl LightNodeV1Sequencer {
+impl LightNodeV1 {
 
     pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
         let block = self.memseq.wait_for_next_block().await?;
@@ -61,7 +74,7 @@ impl LightNodeV1Sequencer {
 }
 
 #[tonic::async_trait]
-impl LightNodeService for LightNodeV1Sequencer {
+impl LightNodeService for LightNodeV1 {
 
     /// Server streaming response type for the StreamReadFromHeight method.
     type StreamReadFromHeightStream = std::pin::Pin<Box<dyn Stream<Item = Result<StreamReadFromHeightResponse, tonic::Status>> + Send + 'static>>;
@@ -104,7 +117,7 @@ impl LightNodeService for LightNodeV1Sequencer {
         tonic::Status,
     > {
 
-        unimplemented!("StreamWriteBlob not implemented")
+        unimplemented!("stream_write_blob")
 
     }
     /// Read blobs at a specified height.

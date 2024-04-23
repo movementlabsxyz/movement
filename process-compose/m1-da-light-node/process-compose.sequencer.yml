@@ -4,29 +4,17 @@ environment:
 
 processes:
 
-  celestia-light-node:
-    command: |
-      ./scripts/celestia/celestia-local
-    readiness_probe:
-      exec:
-        command: echo "true"
-
-  celestia-light-node-synced:
-    command: |
-      sleep 10
-      cargo run --bin wait-for-celestia-light-node
-    depends_on:
-      celestia-light-node:
-        condition: process_healthy
-
   m1-da-light-node:
     command: |
-      cargo run -p m1-da-light-node
+      cargo run -p m1-da-light-node --features "sequencer"
     depends_on:
       m1-da-light-node-verifier-tests:
         condition: process_completed
       celestia-light-node:
         condition: process_healthy
+    readiness_probe:
+      exec:
+        command: echo "true"
 
   m1-da-light-node-verifier-tests:
     command: |
@@ -44,7 +32,7 @@ processes:
   m1-da-light-node-client-tests:
     command: |
       sleep 10
-      cargo test -p m1-da-light-node-client -- --test-threads=1
+      cargo test -p m1-da-light-node-client --features "sequencer" -- --test-threads=1
     depends_on:
       celestia-light-node: 
         condition: process_healthy

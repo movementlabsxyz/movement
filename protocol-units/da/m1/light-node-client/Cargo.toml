@@ -16,6 +16,16 @@ tokio = { workspace = true }
 m1-da-light-node-grpc = { workspace  = true, features = ["client"] }
 anyhow = { workspace = true }
 tokio-stream = { workspace = true }
+movement-types = { workspace = true }
+serde_json = { workspace = true }
+
+[features]
+sequencer = []
+
+default = [
+    
+]
+
 
 [lints]
 workspace = true

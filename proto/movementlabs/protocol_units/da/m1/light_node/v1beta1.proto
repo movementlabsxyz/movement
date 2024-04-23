@@ -1,17 +1,27 @@
 syntax = "proto3";
 package movementlabs.protocol_units.da.m1.light_node.v1beta1;
 
+
 // Request and response messages
 message Blob {
     string blob_id = 1;
     bytes data = 2;
     uint64 height = 3;
+    // bytes signature = 4; // at some point a signature will be added here
 }
 
 enum VerificationMode {
     COWBOY = 0;
     VALIDATOR_IN = 1;
     M_OF_N = 2;
+}
+
+message BlobResponse {
+    oneof response_type {
+      Blob passed_through_blob = 1;
+      Blob sequenced_blob_intent = 2;
+      Blob sequenced_blob_block = 3;
+    }
 }
 
 message BlobWrite {

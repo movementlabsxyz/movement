@@ -10,6 +10,7 @@ use m1_da_light_node_verifier::{
     Verifier,
     v1::V1Verifier
 };
+use crate::v1::LightNodeV1Operations;
 
 
 #[derive(Clone)]
@@ -22,10 +23,10 @@ pub struct LightNodeV1 {
     pub verifier : Arc<Box<dyn Verifier + Send + Sync>>,
 }
 
-impl LightNodeV1 {
+impl LightNodeV1Operations for LightNodeV1 {
 
     /// Tries to create a new LightNodeV1 instance from the environment variables.
-    pub async fn try_from_env() -> Result<Self, anyhow::Error> {
+    async fn try_from_env() -> Result<Self, anyhow::Error> {
 
         let config = Config::try_from_env()?;
         let client = Arc::new(config.connect_celestia().await?);
@@ -44,6 +45,15 @@ impl LightNodeV1 {
     
 
     }
+
+    /// Runs background tasks for the LightNodeV1 instance.
+    async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+
+}
+
+impl LightNodeV1 {
 
     /// Gets a new Celestia client instance with the matching params. 
     pub async fn get_new_celestia_client(&self) -> Result<Client, anyhow::Error> {

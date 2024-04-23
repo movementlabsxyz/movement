@@ -5835,6 +5835,8 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "m1-da-light-node-grpc",
+ "movement-types",
+ "serde_json",
  "tokio",
  "tokio-stream",
 ]

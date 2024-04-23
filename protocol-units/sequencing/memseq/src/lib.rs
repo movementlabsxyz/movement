@@ -5,11 +5,14 @@ use tokio::sync::RwLock;
 pub use move_rocks::RocksdbMempool;
 pub use sequencing_util::Sequencer;
 
+#[derive(Clone)]
 pub struct Memseq<T : MempoolBlockOperations + MempoolTransactionOperations> {
     pub mempool : Arc<RwLock<T>>,
-    pub block_size : u32,
+    // this value should not be changed after initialization
+    block_size : u32,
     pub parent_block : Arc<RwLock<Id>>,
-    pub building_time_ms : u64,
+    // this value should not be changed after initialization
+    building_time_ms : u64,
 }
 
 impl <T : MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
@@ -22,12 +25,14 @@ impl <T : MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
         }
     }
 
-    pub fn set_block_size(&mut self, block_size : u32) {
+    pub fn with_block_size(mut self, block_size : u32) -> Self {
         self.block_size = block_size;
+        self
     }
 
-    pub fn set_building_time_ms(&mut self, building_time_ms : u64) {
+    pub fn with_building_time_ms(mut self, building_time_ms : u64) -> Self {
         self.building_time_ms = building_time_ms;
+        self
     }
 
 }
@@ -44,7 +49,7 @@ impl Memseq<RocksdbMempool> {
     }
 
     pub fn try_move_rocks_from_env() -> Result<Self, anyhow::Error> {
-        let path = std::env::var("MOVE_ROCKS_PATH")?;
+        let path = std::env::var("MOVE_ROCKS_PATH").or(Err(anyhow::anyhow!("MOVE_ROCKS_PATH not found")))?;
         Self::try_move_rocks(PathBuf::from(path))
     }
 
@@ -135,9 +140,8 @@ pub mod test {
 
         let dir = tempdir()?;
         let path = dir.path().to_path_buf();
-        let mut memseq = Memseq::try_move_rocks(path)?;
         let block_size = 100;
-        memseq.set_block_size(block_size);
+        let memseq = Memseq::try_move_rocks(path)?.with_block_size(block_size);
 
         let mut transactions = Vec::new();
         for i in 0..block_size * 2 {
@@ -175,10 +179,10 @@ pub mod test {
 
         let dir = tempdir()?;
         let path = dir.path().to_path_buf();
-        let mut memseq = Memseq::try_move_rocks(path)?;
         let block_size = 100;
-        memseq.set_block_size(block_size);
-        memseq.set_building_time_ms(500);
+        let memseq = Memseq::try_move_rocks(path)?
+        .with_block_size(block_size)
+        .with_building_time_ms(500);
 
         let building_memseq = Arc::new(memseq);
         let waiting_memseq = Arc::clone(&building_memseq);
