@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/6143fc5eeb9c4f00163267708e26191d1e918932";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -19,10 +19,15 @@
           inherit system overlays;
         };
 
+        go = pkgs.go_1_22;
+
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
         # celestia-node
         celestia-node = import ./celestia-node.nix { inherit pkgs; };
+
+        # celestia-app
+        celestia-app = import ./celestia-app.nix { inherit pkgs; };
        
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
@@ -58,10 +63,12 @@
 
         testingDependencies = with pkgs; [
             celestia-node
+            celestia-app
         ]
         ++ buildDependencies;
 
         developmentDependencies = with pkgs; [
+          go
           rust
         ] ++ testingDependencies;
 

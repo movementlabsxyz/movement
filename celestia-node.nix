@@ -2,12 +2,12 @@
 
 pkgs.buildGoModule rec {
   pname = "celestia-node";
-  version = "0.13.2";
+  version = "0.13.3";
 
   src = pkgs.fetchFromGitHub {
     owner = "celestiaorg";
     repo = "celestia-node";
-    rev = "c1b41b0973e9d140b7651295e879d27ad47f42c4";
+    rev = "05238b3e087eb9ecd3b9684cd0125f2400f6f0c7";
     sha256 = "sha256-YCwIJ55lkLcViVzmAeCIrPtc9mJ/N0eswKrlu9BEC3g=";  # Replace with the actual sha256
   };
 

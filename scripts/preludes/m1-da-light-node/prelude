@@ -1,2 +1,2 @@
 #!/bin/bash
-. ./scripts/celestia-env
+. ./scripts/celestia/celestia-env

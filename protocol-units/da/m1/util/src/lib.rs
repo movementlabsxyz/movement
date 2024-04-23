@@ -49,7 +49,7 @@ impl Config {
     }
 
     pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
-        let client = Client::new(&self.celestia_url, Some(&self.celestia_token)).await.map_err(|e| anyhow::anyhow!("Failed to create Celestia client: {}", e))?;
+        let client = Client::new(&self.celestia_url, Some(&self.celestia_token)).await.map_err(|e| anyhow::anyhow!("Failed to connect to Celestia client at {}: {}", self.celestia_url, e))?;
         Ok(client)
     }
 

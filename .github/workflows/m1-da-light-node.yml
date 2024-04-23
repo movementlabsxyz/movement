@@ -1,0 +1,22 @@
+name: M1 DA Light Node
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: movement-runner
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Load Nix environment
+      run: nix develop
+
+    - name: Run Just task
+      run: just m1-da-light-node test.local
