@@ -1,8 +1,9 @@
-#!/usr/bin/bash -e
+#!/bin/bash -e
 set -euo pipefail
 
 export PATH=$PATH:./target/release
 export PROC_COMP_CONFIG=$HOME
+export PC_LOG_FILE=proc-compose.temp.log
 
 # if proc_compose config does not exist at $PROC_COMP_CONFIG/settings.yaml, create it
 if [ ! -f $PROC_COMP_CONFIG/settings.yaml ]; then
@@ -20,6 +21,7 @@ trap cleanup EXIT
 cleanup(){
     echo "Cleaning up storage: $MOVEMENT_BASE_STORAGE_PATH"
     rm -rv "$MOVEMENT_BASE_STORAGE_PATH"
+    rm -rv "$PC_LOG_FILE"
 }
 
 # split the second argument into an array
@@ -36,4 +38,6 @@ for element in "${split[@]}"; do
     override_files+=("-f")
     override_files+=("process-compose/$1/process-compose.$element.yml")
 done
-process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}" "${@:3}"
+
+process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}"  "${@:3}"
+cat $PC_LOG_FILE

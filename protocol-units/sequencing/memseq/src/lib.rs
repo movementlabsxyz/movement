@@ -21,6 +21,15 @@ impl <T : MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
             building_time_ms
         }
     }
+
+    pub fn set_block_size(&mut self, block_size : u32) {
+        self.block_size = block_size;
+    }
+
+    pub fn set_building_time_ms(&mut self, building_time_ms : u64) {
+        self.building_time_ms = building_time_ms;
+    }
+
 }
 
 impl Memseq<RocksdbMempool> {
@@ -106,8 +115,116 @@ pub mod test {
 
         let transaction = Transaction::new(vec![1, 2, 3]);
         memseq.publish(transaction.clone()).await?;
+
+        let block = memseq.wait_for_next_block().await?;
+
+        assert_eq!(block.ok_or(
+            anyhow::anyhow!("Block not found")
+        )?.transactions[0], transaction);
         
         Ok(())
     }
+
+    #[tokio::test]
+    async fn test_respects_size() -> Result<(), anyhow::Error>{
+
+        let dir = tempdir()?;
+        let path = dir.path().to_path_buf();
+        let mut memseq = Memseq::try_move_rocks(path)?;
+        let block_size = 100;
+        memseq.set_block_size(block_size);
+
+        let mut transactions = Vec::new();
+        for i in 0..block_size * 2 {
+            let transaction = Transaction::new(vec![i as u8]);
+            memseq.publish(transaction.clone()).await?;
+            transactions.push(transaction);
+        }
+
+        let block = memseq.wait_for_next_block().await?;
+
+        assert!(block.is_some());
+
+        let block = block.ok_or(
+            anyhow::anyhow!("Block not found")
+        )?;
+
+        assert_eq!(block.transactions.len(), block_size as usize);
+
+        let second_block = memseq.wait_for_next_block().await?;
+
+        assert!(second_block.is_some());
+
+        let second_block = second_block.ok_or(
+            anyhow::anyhow!("Second block not found")
+        )?;
+
+        assert_eq!(second_block.transactions.len(), block_size as usize);
+        
+        Ok(())
+    }
+
+
+    #[tokio::test]
+    async fn test_respects_time() -> Result<(), anyhow::Error>{
+
+        let dir = tempdir()?;
+        let path = dir.path().to_path_buf();
+        let mut memseq = Memseq::try_move_rocks(path)?;
+        let block_size = 100;
+        memseq.set_block_size(block_size);
+        memseq.set_building_time_ms(500);
+
+        let building_memseq = Arc::new(memseq);
+        let waiting_memseq = Arc::clone(&building_memseq);
+
+        let building_task = async move {
+            let memseq = building_memseq;
+    
+            // add half of the transactions
+            for i in 0..block_size/2 {
+                let transaction = Transaction::new(vec![i as u8]);
+                memseq.publish(transaction.clone()).await?;
+            }
+
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+
+            // add the rest of the transactions
+            for i in block_size/2..block_size-2 {
+                let transaction = Transaction::new(vec![i as u8]);
+                memseq.publish(transaction.clone()).await?;
+            }
+
+            Ok::<_, anyhow::Error>(())
+        };
+
+        let waiting_task = async move {
+            let memseq = waiting_memseq;
+
+            // first block
+            let block = memseq.wait_for_next_block().await?;
+            assert!(block.is_some());
+            let block = block.ok_or(
+                anyhow::anyhow!("Block not found")
+            )?;
+            assert_eq!(block.transactions.len(), (block_size/2) as usize);
+
+            // second block
+            let block = memseq.wait_for_next_block().await?;
+            assert!(block.is_some());
+            let block = block.ok_or(
+                anyhow::anyhow!("Block not found")
+            )?;
+            assert_eq!(block.transactions.len(), ((block_size/2) - 2) as usize);
+
+            Ok::<_, anyhow::Error>(())
+        };
+
+        tokio::try_join!(building_task, waiting_task)?;
+        
+        Ok(())
+    }
+
+
 
 }
