@@ -15,5 +15,5 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Load Nix environment
+    - name: Run test in nix environment
       run: nix develop --command bash  -c "just m1-da-light-node test.local"  

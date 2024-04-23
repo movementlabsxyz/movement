@@ -51,6 +51,7 @@
             protobuf
             rustPlatform.bindgenHook
             lld
+            coreutils
           ]
           ++ runtimeDependencies
           # Be it Darwin

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/bash -e
 set -euo pipefail
 
 export PATH=$PATH:./target/release
