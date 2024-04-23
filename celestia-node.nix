@@ -11,17 +11,7 @@ pkgs.buildGoModule rec {
     sha256 = "sha256-bmFcJrC4ocbCw1pew2HKEdLj6+1D/0VuWtdoTs1S2sU=";  # Replace with the actual sha256
   };
 
-  vendorHash = "sha256-UyNNVDO/FFKp80rI5kOI4xfKpkhqF53lgiOSJhCm79U=";  # Replace with the correct vendor hash
-
-  nativeBuildInputs = [ pkgs.git pkgs.openssl pkgs.cacert ];
-
-  preBuild = ''
-    export GOPROXY=https://proxy.golang.org,direct
-    export GOSUMDB=off
-    chmod -R +w .
-    go mod tidy
-    go mod vendor
-  '';
+  vendorHash = "sha256-8RC/9KiFOsEJDpt7d8WtzRLn0HzYrZ1LIHo6lOKSQxU=";  # Replace with the correct vendor hash
 
   # Specify the subpackage to build
   subPackages = [ "cmd/celestia" "cmd/cel-key" ];
