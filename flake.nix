@@ -49,7 +49,9 @@
             clang
             pkg-config
             protobuf
-            rustPlatform.bindgenHook]
+            rustPlatform.bindgenHook
+            lld
+          ]
           ++ runtimeDependencies
           # Be it Darwin
           ++ lib.optionals stdenv.isDarwin [
