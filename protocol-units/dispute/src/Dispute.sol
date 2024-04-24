@@ -2,10 +2,9 @@
 pragma solidity ^0.8.13;
 
 import {Output, OutputLib, Receipt, ReceiptClaim, ReceiptClaimLib, IRiscZeroVerifier, SystemExitCode, ExitCode} from "./IRiscZeroVerifier.sol";
-import {Groth16Verifier} from "./Groth16Verifier.sol";
-import {SafeCast} from "openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-contract RStarMDisputeSystem is IRISC0Verifier {
+contract Dispute is IRISC0Verifier {
     struct Validator {
         bool isRegistered;
         uint256 stake;
