@@ -6,32 +6,35 @@ use monza_executor::{
     ExecutableBlock,
     HashValue,
     FinalityMode,
-    ExecutableTransactions
+    ExecutableTransactions,
     // v1::MonzaExecutorV1,
 };
-use m1_da_light_node_client::{LightNodeServiceClient, StreamReadFromHeightRequest, BatchWriteRequest, BlobWrite};
+use m1_da_light_node_client::*;
 use async_channel::{Sender, Receiver};
 use sha2::Digest;
 use crate::*;
 use tokio_stream::StreamExt;
 use tokio::sync::RwLock;
+use movement_types::Block;
 
-pub struct MonzaPartialFullNode<T : MonzaExecutor + Send + Sync> {
+
+#[derive(Clone)]
+pub struct MonzaPartialFullNode<T : MonzaExecutor + Send + Sync + Clone> {
     executor: T,
     transaction_sender : Sender<SignatureVerifiedTransaction>,
-    transaction_reeiver : Receiver<SignatureVerifiedTransaction>,
-    light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>
+    pub transaction_receiver : Receiver<SignatureVerifiedTransaction>,
+    light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl <T : MonzaExecutor + Send + Sync>MonzaPartialFullNode<T> {
+impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
 
     pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
-        let (transaction_sender, transaction_reeiver) = async_channel::unbounded();
+        let (transaction_sender, transaction_receiver) = async_channel::unbounded();
         Self {
             executor : executor,
             transaction_sender,
-            transaction_reeiver,
-            light_node_client : Arc::new(RwLock::new(light_node_client))
+            transaction_receiver,
+            light_node_client : Arc::new(RwLock::new(light_node_client)),
         }
     }
 
@@ -48,19 +51,22 @@ impl <T : MonzaExecutor + Send + Sync>MonzaPartialFullNode<T> {
 
     pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
         
-        while let Ok(transaction) = self.transaction_reeiver.recv().await {
+        let mut transactions = Vec::new();
+        while let Ok(transaction) = self.transaction_receiver.recv().await {
             let serialized_transaction = serde_json::to_vec(&transaction)?;
-            {
-                let client_ptr = self.light_node_client.clone();
-                let mut light_node_client = client_ptr.write().await;
-                light_node_client.batch_write(
-                    BatchWriteRequest {
-                        blobs: vec![BlobWrite {
-                            data: serialized_transaction,
-                        }],
-                    }
-                ).await?;
-            }
+            transactions.push(BlobWrite {
+                data: serialized_transaction
+            });
+        }
+
+        {
+            let client_ptr = self.light_node_client.clone();
+            let mut light_node_client = client_ptr.write().await;
+            light_node_client.batch_write(
+                BatchWriteRequest {
+                    blobs: transactions
+                }
+            ).await?;
         }
 
         Ok(())
@@ -68,7 +74,7 @@ impl <T : MonzaExecutor + Send + Sync>MonzaPartialFullNode<T> {
 
     }
 
-    // receive transactions from the transaction channel and send them to the da
+    // receive transactions from the transaction channel and send them to be executed
     // ! This assumes the m1 da light node is running sequencer mode
     pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
         
@@ -86,8 +92,25 @@ impl <T : MonzaExecutor + Send + Sync>MonzaPartialFullNode<T> {
 
         while let Some(blob) = stream.next().await {
             // get the block
-            let block_bytes = blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.data;
-            let block_transactions : Vec<SignatureVerifiedTransaction> = serde_json::from_slice(&block_bytes)?;
+            let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
+                blob_response::BlobType::SequencedBlobBlock(blob) => {
+                    blob.data
+                },
+                _ => { anyhow::bail!("Invalid blob type in response") }
+            };
+
+            // get the block
+            let block : Block = serde_json::from_slice(&block_bytes)?;
+
+            // get the transactions
+            let mut block_transactions = Vec::new();
+            for transaction in block.transactions {
+                block_transactions.push(
+                    serde_json::from_slice(&transaction.0)?
+                );
+            }
+
+            // form the executable transactions vec
             let block = ExecutableTransactions::Unsharded(
                 block_transactions
             );
@@ -116,7 +139,7 @@ impl <T : MonzaExecutor + Send + Sync>MonzaPartialFullNode<T> {
 
 }
 
-impl <T : MonzaExecutor + Send + Sync>MonzaFullNode for MonzaPartialFullNode<T> {
+impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFullNode<T> {
     
       /// Runs the services until crash or shutdown.
       async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -126,6 +149,7 @@ impl <T : MonzaExecutor + Send + Sync>MonzaFullNode for MonzaPartialFullNode<T> 
             // synthesize a new api over them using some abstraction
 
             // start the open api service over it
+            self.executor.run_service().await?;
 
             Ok(())
 
@@ -137,6 +161,7 @@ impl <T : MonzaExecutor + Send + Sync>MonzaFullNode for MonzaPartialFullNode<T> 
 
             // wait for both tasks to finish
             tokio::try_join!(
+                self.executor.run_background_tasks(),
                 self.write_transactions_to_da(),
                 self.read_blocks_from_da()
             )?;

@@ -25,6 +25,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 borsh = { workspace = true, features = ["rc"] }
 hex = { workspace = true }
+poem = { workspace = true }
 poem-openapi = { workspace = true }
 tracing = { workspace = true }
 derive_more = { workspace = true, default-features = true }
@@ -32,6 +33,7 @@ lazy_static = "1.4.0"
 tokio = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
+bcs = { workspace = true}
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
@@ -55,6 +57,8 @@ aptos-executor-test-helpers = { workspace = true }
 aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
+futures = { workspace = true }
+async-channel = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"

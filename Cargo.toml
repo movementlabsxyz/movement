@@ -81,6 +81,7 @@ tempfile = "3.5"
 fail = "0.5.1"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
+poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
 poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
 schemars = { version = "0.8.16", features = ["derive"] }
 thiserror = "1.0.50"
@@ -100,6 +101,7 @@ rocksdb = { version = "0.21.0", features = [
   "zlib",
   "multi-threaded-cf",
 ], default-features = false }
+bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 
 # tonic
 tonic = "0.11"
@@ -155,6 +157,8 @@ aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", branch
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
+# other
+futures = "0.3.17"
 
 [workspace.lints.rust]
 dead_code = "deny"

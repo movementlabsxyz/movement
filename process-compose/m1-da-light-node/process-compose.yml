@@ -27,6 +27,9 @@ processes:
         condition: process_completed
       celestia-light-node:
         condition: process_healthy
+    readiness_probe:
+      exec:
+        command: echo "true"
 
   m1-da-light-node-verifier-tests:
     command: |

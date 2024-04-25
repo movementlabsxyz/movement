@@ -1,4 +1,4 @@
-use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
+use m1_da_light_node_grpc::{blob_response, light_node_service_server::LightNodeService};
 use m1_da_light_node_grpc::*;
 use tokio_stream::{StreamExt, Stream};
 use celestia_rpc::{BlobClient, Client, HeaderClient};
@@ -191,6 +191,30 @@ impl LightNodeV1 {
             height
         })
     }
+
+    pub fn blob_to_blob_write_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
+        Ok(BlobResponse {
+            blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob))
+        })
+    }
+
+    pub fn blob_to_blob_read_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
+
+        #[cfg(feature = "sequencer")]
+        {
+            Ok(BlobResponse {
+                blob_type: Some(blob_response::BlobType::SequencedBlobBlock(blob))
+            })
+        }
+
+        #[cfg(not(feature = "sequencer"))]
+        {
+            Ok(BlobResponse {
+                blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob))
+            })
+        }
+    
+    }
         
 }
 
@@ -218,7 +242,7 @@ impl LightNodeService for LightNodeV1 {
             while let Some(blob) = blob_stream.next().await {
                 let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
                 let response = StreamReadFromHeightResponse {
-                    blob : Some(blob)
+                    blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
                 };
                 yield response;
             }
@@ -247,7 +271,7 @@ impl LightNodeService for LightNodeV1 {
             while let Some(blob) = blob_stream.next().await {
                 let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
                 let response = StreamReadLatestResponse {
-                    blob : Some(blob)
+                    blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
                 };
                 yield response;
             }
@@ -280,7 +304,7 @@ impl LightNodeService for LightNodeV1 {
                 let blob = me.submit_blob(blob_data).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
                
                 let write_response = StreamWriteBlobResponse {
-                    blob : Some(blob)
+                    blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
                 };
 
                 yield write_response;
@@ -304,8 +328,14 @@ impl LightNodeService for LightNodeV1 {
             return Err(tonic::Status::not_found("No blobs found at the specified height"));
         }
 
+        let mut blob_responses = Vec::new();
+        for blob in blobs {
+            blob_responses.push(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?);
+        }
+
         Ok(tonic::Response::new(ReadAtHeightResponse {
-            blobs
+            // map blobs to the response type
+            blobs : blob_responses
         }))
 
     }
@@ -327,8 +357,13 @@ impl LightNodeService for LightNodeV1 {
                 return Err(tonic::Status::not_found("No blobs found at the specified height"));
             }
 
+            let mut blob_responses = Vec::new();
+            for blob in blobs {
+                blob_responses.push(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?);
+            }
+
             responses.push(ReadAtHeightResponse {
-                blobs
+                blobs : blob_responses
             })
     
         }
@@ -354,8 +389,13 @@ impl LightNodeService for LightNodeV1 {
             responses.push(blob);
         }
 
+        let mut blob_responses = Vec::new();
+        for blob in responses {
+            blob_responses.push(Self::blob_to_blob_write_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?);
+        }
+
         Ok(tonic::Response::new(BatchWriteResponse {
-            blobs : responses
+            blobs : blob_responses
         }))
 
     }

@@ -17,7 +17,7 @@ enum VerificationMode {
 }
 
 message BlobResponse {
-    oneof response_type {
+    oneof blob_type {
       Blob passed_through_blob = 1;
       Blob sequenced_blob_intent = 2;
       Blob sequenced_blob_block = 3;
@@ -34,7 +34,7 @@ message StreamReadFromHeightRequest {
 }
 
 message StreamReadFromHeightResponse {
-    Blob blob = 1;
+    BlobResponse blob = 1;
 }
 
 // StreamReadLatest
@@ -43,7 +43,7 @@ message StreamReadLatestRequest {
 }
 
 message StreamReadLatestResponse {
-    Blob blob = 1;
+    BlobResponse blob = 1;
 }
 
 // StreamWriteBlob
@@ -52,7 +52,7 @@ message StreamWriteBlobRequest {
 }
 
 message StreamWriteBlobResponse {
-    Blob blob = 1;
+    BlobResponse blob = 1;
 }
 
 // ReadAtHeight
@@ -61,7 +61,7 @@ message ReadAtHeightRequest {
 }
   
 message ReadAtHeightResponse {
-    repeated Blob blobs = 1;
+    repeated BlobResponse blobs = 1;
 }
 
 // BatchRead
@@ -78,7 +78,7 @@ message BatchWriteRequest {
 }
   
 message BatchWriteResponse {
-    repeated Blob blobs = 1;
+    repeated BlobResponse blobs = 1;
 }
   
 message UpdateVerificationParametersRequest {

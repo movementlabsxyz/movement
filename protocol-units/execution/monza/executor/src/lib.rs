@@ -15,6 +15,12 @@ pub use monza_execution_util::FinalityMode;
 #[tonic::async_trait]
 pub trait MonzaExecutor {
 
+    /// Runs the service
+    async fn run_service(&self) -> Result<(), anyhow::Error>;
+
+    /// Runs the necessary background tasks.
+    async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
+
     /// Executes a block dynamically
     async fn execute_block(
         &self,

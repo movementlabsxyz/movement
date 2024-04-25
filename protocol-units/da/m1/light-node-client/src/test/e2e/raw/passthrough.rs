@@ -32,7 +32,16 @@ async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>
 
     match back.blob {
         Some(blob) => {
-            assert_eq!(blob.data, blob_write.data);
+            match blob.blob_type.ok_or(
+                anyhow::anyhow!("No blob type in response")
+            )? {
+                blob_response::BlobType::PassedThroughBlob(blob) => {
+                    assert_eq!(blob.data, request.blob.unwrap().data);
+                },
+                _ => {
+                    assert!(false, "Invalid blob type in response");
+                }
+            }
         },
         None => {
             assert!(false, "No blob in response");
@@ -55,15 +64,37 @@ async fn test_submit_and_read() -> Result<(), anyhow::Error>{
         blobs : vec![blob_write.clone()]
     };
 
-    let write = client.batch_write(request).await?;
+    let write = client.batch_write(request).await?.into_inner();
+    let first = write.blobs[0].clone();
 
+    let blob_type = first.blob_type.ok_or(
+        anyhow::anyhow!("No blob type in response")
+    )?;
+    let height = match blob_type {
+        blob_response::BlobType::PassedThroughBlob(blob) => {
+            blob.height
+        },
+        _ => {
+            anyhow::bail!("Invalid blob type in response");
+        }
+    };
     let read_request = ReadAtHeightRequest {
-        height : write.into_inner().blobs[0].height,
+        height
     };
 
-    let read = client.read_at_height(read_request).await?;
+    let read = client.read_at_height(read_request).await?.into_inner();
+    let first = read.blobs[0].clone();
 
-    assert_eq!(read.into_inner().blobs[0].data, data);
+    match first.blob_type.ok_or(
+        anyhow::anyhow!("No blob type in response")
+    )? {
+        blob_response::BlobType::PassedThroughBlob(blob) => {
+            assert_eq!(blob.data, data);
+        },
+        _ => {
+            anyhow::bail!("Invalid blob type in response");
+        }
+    }
 
     Ok(())
 

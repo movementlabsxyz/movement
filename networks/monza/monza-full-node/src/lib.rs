@@ -1,5 +1,8 @@
 pub mod partial;
 
+#[cfg(test)]
+pub mod tests;
+
 pub trait MonzaFullNode {
 
     /// Runs the services until crash or shutdown.

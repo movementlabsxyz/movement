@@ -21,6 +21,8 @@ tokio = { workspace = true }
 tokio-stream = { workspace = true }
 sha2 = { workspace = true }
 tonic = { workspace = true }
+movement-types = { workspace = true }
+aptos-mempool = { workspace = true }
 
 [lints]
 workspace = true

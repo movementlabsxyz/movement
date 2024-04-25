@@ -1,3 +1,4 @@
+use celestia_rpc::HeaderClient;
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
 use tokio_stream::Stream;
@@ -69,6 +70,38 @@ impl LightNodeV1 {
 
         Ok(())
 
+    }
+
+    pub fn to_sequenced_blob_block(blob_response : BlobResponse) -> Result<BlobResponse, anyhow::Error>{
+
+        let blob_type = blob_response.blob_type.ok_or(anyhow::anyhow!("No blob type"))?;
+
+        let sequenced_block = match blob_type {
+            blob_response::BlobType::PassedThroughBlob(blob) => {
+                blob_response::BlobType::SequencedBlobBlock(blob)
+            },
+            blob_response::BlobType::SequencedBlobBlock(blob) => {
+                blob_response::BlobType::SequencedBlobBlock(blob)
+            },
+            _ => { anyhow::bail!("Invalid blob type") }
+        };
+
+        Ok(BlobResponse{
+            blob_type : Some(sequenced_block)
+        })
+
+    }
+
+    pub fn make_sequenced_blob_intent(data : Vec<u8>, height : u64) -> Result<BlobResponse, anyhow::Error> {
+        Ok(BlobResponse{
+            blob_type : Some(blob_response::BlobType::SequencedBlobIntent(
+                Blob {
+                    data,
+                    blob_id : "".to_string(),
+                    height
+                }
+            ))
+        })
     }
 
 }
@@ -148,9 +181,23 @@ impl LightNodeService for LightNodeV1 {
         tonic::Response<BatchWriteResponse>,
         tonic::Status,
     > {
+
+        let blobs_for_intent = request.into_inner().blobs;
+        let blobs_for_submission = blobs_for_intent.clone();
+        let height : u64 = self.pass_through.default_client.header_network_head().await.map_err(
+            |e| tonic::Status::internal(e.to_string())
+        )?.height().into();
+
+        let intents : Vec<BlobResponse> = blobs_for_intent.into_iter().map(
+            |blob| {
+                Self::make_sequenced_blob_intent(blob.data, height).map_err(
+                    |e| tonic::Status::internal(e.to_string())
+                )
+            }
+        ).collect::<Result<Vec<BlobResponse>, tonic::Status>>()?;
        
         // make transactions from the blobs
-        let transactions : Vec<Transaction> = request.into_inner().blobs.into_iter().map(
+        let transactions : Vec<Transaction> = blobs_for_submission.into_iter().map(
             |blob| {
                 let transaction = Transaction::from(blob.data);
                 transaction
@@ -165,7 +212,7 @@ impl LightNodeService for LightNodeV1 {
         }
 
         Ok(tonic::Response::new(BatchWriteResponse{
-            blobs : vec![]
+            blobs : intents
         }))
 
     }
