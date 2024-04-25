@@ -60,3 +60,6 @@ jobs:
           export CARGO_HOME=$HOME/.cargo
           export PATH=$CARGO_HOME/bin:$PATH
           cargo check --verbose
+
+      - name: cargo test
+        run: cargo test --verbose
