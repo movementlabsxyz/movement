@@ -19,8 +19,6 @@
           inherit system overlays;
         };
 
-        go = pkgs.go_1_22;
-
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
         # celestia-node
@@ -51,7 +49,10 @@
             clang
             pkg-config
             protobuf
-            rustPlatform.bindgenHook]
+            rustPlatform.bindgenHook
+            lld
+            coreutils
+          ]
           ++ runtimeDependencies
           # Be it Darwin
           ++ lib.optionals stdenv.isDarwin [
@@ -68,7 +69,6 @@
         ++ buildDependencies;
 
         developmentDependencies = with pkgs; [
-          go
           rust
         ] ++ testingDependencies;
 

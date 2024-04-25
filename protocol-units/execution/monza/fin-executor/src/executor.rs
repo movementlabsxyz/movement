@@ -1,16 +1,22 @@
 use aptos_db::AptosDB;
-use aptos_executor::block_executor::BlockExecutor;
 use aptos_executor_types::{state_checkpoint_output::StateCheckpointOutput, BlockExecutorTrait};
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
-	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
+	block_executor::config::BlockExecutorConfigFromOnchain,
+	transaction::{
+		Transaction, WriteSetPayload,
+	},
 	validator_signer::ValidatorSigner,
+	block_executor::partitioner::ExecutableBlock
 };
 use aptos_vm::AptosVM;
-use std::sync::{Arc, RwLock};
-
-const APTOS_DB_DIR: &str = ".aptosdb-block-executor";
+use std::{path::PathBuf, sync::{Arc, RwLock}};
+use aptos_config::config::NodeConfig;
+use aptos_executor::{
+	block_executor::BlockExecutor,
+	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
+};
 
 /// The state of `movement-network` execution can exist in three states,
 /// `Dynamic`, `Optimistic`, and `Final`. The `Dynamic` state is the state.
@@ -58,14 +64,18 @@ pub struct Executor {
 }
 
 impl Executor {
+
+	const DB_PATH_ENV_VAR: &'static str = "DB_DIR";
+
 	/// Create a new `Executor` instance.
 	pub fn new(
+		db_dir : PathBuf,
 		block_executor: BlockExecutor<AptosVM>,
 		signer: ValidatorSigner,
-		mempool: CoreMempool,
+		mempool: CoreMempool
 	) -> Self {
-		let path = format!("{}/{}", dirs::home_dir().unwrap().to_str().unwrap(), APTOS_DB_DIR);
-		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(path.as_str()));
+
+		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&db_dir));
 		Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
 			status: ExecutorState::Idle,
@@ -74,6 +84,63 @@ impl Executor {
 			mempool,
 		}
 	}
+
+	pub fn bootstrap_empty_db(db_dir : PathBuf) -> Result<DbReaderWriter, anyhow::Error> {
+		let genesis = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
+		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis.0));
+		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(&db_dir));
+		assert!(db_rw.reader.get_latest_ledger_info_option()?.is_none());
+
+		// Bootstrap empty DB.
+		let waypoint =
+			generate_waypoint::<AptosVM>(&db_rw, &genesis_txn).expect("Should not fail.");
+		maybe_bootstrap::<AptosVM>(&db_rw, &genesis_txn, waypoint)?;
+		assert!(db_rw.reader.get_latest_ledger_info_option()?.is_some());
+
+		Ok(db_rw)
+	}
+
+	pub fn bootstrap(
+		db_dir : PathBuf,
+		signer: ValidatorSigner,
+		mempool: CoreMempool
+	) -> Result<Self, anyhow::Error> {
+
+		let db_rw = Self::bootstrap_empty_db(db_dir)?;
+
+		Ok(Self {
+			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db_rw.clone()))),
+			status: ExecutorState::Idle,
+			db: Arc::new(RwLock::new(db_rw)),
+			signer,
+			mempool,
+		})
+
+	}
+
+	pub fn try_from_env() -> Result<Self, anyhow::Error> {
+
+		// read the db dir from env or use a tempfile
+		let db_dir = match std::env::var(Self::DB_PATH_ENV_VAR) {
+			Ok(dir) => PathBuf::from(dir),
+			Err(_) => {
+				let temp_dir = tempfile::tempdir()?;
+				temp_dir.path().to_path_buf()
+			}
+		};
+
+		// use the default signer, block executor, and mempool
+		let signer = ValidatorSigner::random(None);
+		let mempool = CoreMempool::new(&NodeConfig::default());
+
+		Self::bootstrap(
+			db_dir,
+			signer,
+			mempool
+		)
+
+	}
+
 
 	pub fn set_commit_state(&mut self) {
 		self.status = ExecutorState::Commit;
@@ -88,13 +155,25 @@ impl Executor {
 		if self.status != ExecutorState::Commit {
 			return Err(anyhow::anyhow!("Executor is not in the Commit state"));
 		}
-		let parent_block_id = self.block_executor.read().unwrap().committed_block_id();
-		log::info!("Executing block: {:?}", block.block_id);
-		let state_checkpoint = self.block_executor.write().unwrap().execute_and_state_checkpoint(
-			block,
-			parent_block_id,
-			BlockExecutorConfigFromOnchain::new_no_block_limit(),
-		)?;
+
+		let parent_block_id = {
+			let block_executor = self.block_executor.read().map_err(
+				|e| anyhow::anyhow!("Failed to acquire block executor read lock: {:?}", e)
+			)?; // acquire read lock
+			block_executor.committed_block_id()
+		};
+
+	
+		let state_checkpoint = {
+			let block_executor = self.block_executor.write().map_err(
+				|e| anyhow::anyhow!("Failed to acquire block executor write lock: {:?}", e)
+			)?; // acquire write lock
+			block_executor.execute_and_state_checkpoint(
+				block,
+				parent_block_id,
+				BlockExecutorConfigFromOnchain::new_no_block_limit(),
+			)?
+		};
 
 		// Update the executor state
 		self.status = ExecutorState::Idle;
@@ -106,35 +185,19 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aptos_config::config::NodeConfig;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_executor::{
-		block_executor::BlockExecutor,
-		db_bootstrapper::{generate_waypoint, maybe_bootstrap},
-	};
-	use aptos_storage_interface::DbReaderWriter;
-	use aptos_temppath::TempPath;
 	use aptos_types::{
 		account_address::AccountAddress,
 		block_executor::partitioner::ExecutableTransactions,
 		chain_id::ChainId,
 		transaction::{
 			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
-			SignedTransaction, Transaction, TransactionPayload, WriteSetPayload,
-		},
-		validator_signer::ValidatorSigner,
+			SignedTransaction, Transaction, TransactionPayload
+		}
 	};
-
-	fn init_executor() -> Executor {
-		// configure db
-		let block_executor = BlockExecutor::new(bootstrap_empty_db());
-		let signer = ValidatorSigner::random(None);
-		let mempool = CoreMempool::new(&NodeConfig::default());
-		Executor::new(block_executor, signer, mempool)
-	}
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -153,25 +216,10 @@ mod tests {
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
 
-	fn bootstrap_empty_db() -> DbReaderWriter {
-		let genesis = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
-		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis.0));
-		let tmp_dir = TempPath::new();
-		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(&tmp_dir));
-		assert!(db_rw.reader.get_latest_ledger_info_option().unwrap().is_none());
-
-		// Bootstrap empty DB.
-		let waypoint =
-			generate_waypoint::<AptosVM>(&db_rw, &genesis_txn).expect("Should not fail.");
-		maybe_bootstrap::<AptosVM>(&db_rw, &genesis_txn, waypoint).unwrap();
-		assert!(db_rw.reader.get_latest_ledger_info_option().unwrap().is_some());
-
-		db_rw
-	}
 
 	#[tokio::test]
-	async fn test_execute_block() {
-		let mut executor = init_executor();
+	async fn test_execute_block() -> Result<(), anyhow::Error> {
+		let mut executor = Executor::try_from_env()?;
 		executor.set_commit_state();
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
@@ -179,6 +227,7 @@ mod tests {
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(block).await.unwrap();
+		executor.execute_block(block).await?;
+		Ok(())
 	}
 }

@@ -17,6 +17,8 @@ sequencing-util = { workspace = true }
 tokio = { workspace = true }
 movement-types = { workspace = true }
 anyhow = { workspace = true }
+move-rocks = { workspace = true }
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

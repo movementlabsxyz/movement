@@ -2,6 +2,6 @@
 methods/guest/Cargo.lock
 .idea/
 target/
-.etc
 ledger_db/
 state_merkle_db/
+.etc

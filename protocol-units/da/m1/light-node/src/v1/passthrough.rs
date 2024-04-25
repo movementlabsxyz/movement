@@ -1,4 +1,4 @@
-use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
+use m1_da_light_node_grpc::{blob_response, light_node_service_server::LightNodeService};
 use m1_da_light_node_grpc::*;
 use tokio_stream::{StreamExt, Stream};
 use celestia_rpc::{BlobClient, Client, HeaderClient};
@@ -10,6 +10,7 @@ use m1_da_light_node_verifier::{
     Verifier,
     v1::V1Verifier
 };
+use crate::v1::LightNodeV1Operations;
 
 
 #[derive(Clone)]
@@ -22,10 +23,10 @@ pub struct LightNodeV1 {
     pub verifier : Arc<Box<dyn Verifier + Send + Sync>>,
 }
 
-impl LightNodeV1 {
+impl LightNodeV1Operations for LightNodeV1 {
 
     /// Tries to create a new LightNodeV1 instance from the environment variables.
-    pub async fn try_from_env() -> Result<Self, anyhow::Error> {
+    async fn try_from_env() -> Result<Self, anyhow::Error> {
 
         let config = Config::try_from_env()?;
         let client = Arc::new(config.connect_celestia().await?);
@@ -44,6 +45,15 @@ impl LightNodeV1 {
     
 
     }
+
+    /// Runs background tasks for the LightNodeV1 instance.
+    async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+
+}
+
+impl LightNodeV1 {
 
     /// Gets a new Celestia client instance with the matching params. 
     pub async fn get_new_celestia_client(&self) -> Result<Client, anyhow::Error> {
@@ -79,11 +89,18 @@ impl LightNodeV1 {
 
         let blobs = self.default_client
             .blob_get_all(height, &[self.celestia_namespace])
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to get blobs at height: {}", e))?;
+            .await;
+
+        if blobs.is_err() {
+            println!("Error getting blobs: {:?}", blobs.as_ref().err().unwrap());
+        }
+
+        let blobs = blobs.unwrap_or_default();
 
         let mut verified_blobs = Vec::new();
         for blob in blobs {
+
+            println!("Verifying blob");
 
             let blob_data = blob.data.clone();
 
@@ -92,7 +109,13 @@ impl LightNodeV1 {
                 *self.verification_mode.read().await,
                 &blob_data,
                 height,
-            ).await.is_ok_and(|v| v);
+            ).await;
+
+            if verified.is_err() {
+                println!("Error verifying blob: {:?}", verified.as_ref().err().unwrap());
+            }
+
+            let verified = verified.unwrap_or(true);
 
             if verified {
                 verified_blobs.push(blob);
@@ -149,13 +172,15 @@ impl LightNodeV1 {
 
                 let header = header_res?;
                 let height = header.height().into();
+                println!("Stream got header: {:?}", header.height());
 
                 // back fetch the blobs
-                if first_flag && height > start_height {
+                if first_flag && (height > start_height) {
         
                     let mut blob_stream = me.stream_blobs_in_range(start_height, Some(height)).await?;
                     
                     while let Some(blob) = blob_stream.next().await {
+                        println!("Stream got blob: {:?}", blob);
                         yield blob?;
                     }
 
@@ -164,6 +189,7 @@ impl LightNodeV1 {
 
                 let blobs = me.get_blobs_at_height(height).await?;
                 for blob in blobs {
+                    println!("Stream got blob: {:?}", blob);
                     yield blob;
                 }
             }
@@ -180,6 +206,30 @@ impl LightNodeV1 {
             )?,
             height
         })
+    }
+
+    pub fn blob_to_blob_write_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
+        Ok(BlobResponse {
+            blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob))
+        })
+    }
+
+    pub fn blob_to_blob_read_response(blob: Blob) -> Result<BlobResponse, anyhow::Error> {
+
+        #[cfg(feature = "sequencer")]
+        {
+            Ok(BlobResponse {
+                blob_type: Some(blob_response::BlobType::SequencedBlobBlock(blob))
+            })
+        }
+
+        #[cfg(not(feature = "sequencer"))]
+        {
+            Ok(BlobResponse {
+                blob_type: Some(blob_response::BlobType::PassedThroughBlob(blob))
+            })
+        }
+    
     }
         
 }
@@ -208,7 +258,7 @@ impl LightNodeService for LightNodeV1 {
             while let Some(blob) = blob_stream.next().await {
                 let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
                 let response = StreamReadFromHeightResponse {
-                    blob : Some(blob)
+                    blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
                 };
                 yield response;
             }
@@ -237,7 +287,7 @@ impl LightNodeService for LightNodeV1 {
             while let Some(blob) = blob_stream.next().await {
                 let blob = blob.map_err(|e| tonic::Status::internal(e.to_string()))?;
                 let response = StreamReadLatestResponse {
-                    blob : Some(blob)
+                    blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
                 };
                 yield response;
             }
@@ -262,7 +312,7 @@ impl LightNodeService for LightNodeV1 {
         let me = Arc::new(self.clone());
     
         let output = async_stream::try_stream! {
-            // Note: using try_stream! here was replaced with stream! for illustration, handling errors should be adapted
+       
             while let Some(request) = stream.next().await {
                 let request = request?;
                 let blob_data = request.blob.ok_or(tonic::Status::invalid_argument("No blob in request"))?.data;
@@ -270,7 +320,7 @@ impl LightNodeService for LightNodeV1 {
                 let blob = me.submit_blob(blob_data).await.map_err(|e| tonic::Status::internal(e.to_string()))?;
                
                 let write_response = StreamWriteBlobResponse {
-                    blob : Some(blob)
+                    blob : Some(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?)
                 };
 
                 yield write_response;
@@ -294,8 +344,14 @@ impl LightNodeService for LightNodeV1 {
             return Err(tonic::Status::not_found("No blobs found at the specified height"));
         }
 
+        let mut blob_responses = Vec::new();
+        for blob in blobs {
+            blob_responses.push(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?);
+        }
+
         Ok(tonic::Response::new(ReadAtHeightResponse {
-            blobs
+            // map blobs to the response type
+            blobs : blob_responses
         }))
 
     }
@@ -317,8 +373,13 @@ impl LightNodeService for LightNodeV1 {
                 return Err(tonic::Status::not_found("No blobs found at the specified height"));
             }
 
+            let mut blob_responses = Vec::new();
+            for blob in blobs {
+                blob_responses.push(Self::blob_to_blob_read_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?);
+            }
+
             responses.push(ReadAtHeightResponse {
-                blobs
+                blobs : blob_responses
             })
     
         }
@@ -344,8 +405,13 @@ impl LightNodeService for LightNodeV1 {
             responses.push(blob);
         }
 
+        let mut blob_responses = Vec::new();
+        for blob in responses {
+            blob_responses.push(Self::blob_to_blob_write_response(blob).map_err(|e| tonic::Status::internal(e.to_string()))?);
+        }
+
         Ok(tonic::Response::new(BatchWriteResponse {
-            blobs : responses
+            blobs : blob_responses
         }))
 
     }

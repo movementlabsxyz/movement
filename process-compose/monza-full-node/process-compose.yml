@@ -1,0 +1,44 @@
+version: "3"
+
+environment:
+
+processes:
+
+  celestia-light-node:
+    command: |
+      exit 1
+    readiness_probe:
+      exec:
+        command: echo "true"
+
+  celestia-light-node-synced:
+    command: |
+      sleep 10
+      cargo run --bin wait-for-celestia-light-node
+    depends_on:
+      celestia-light-node:
+        condition: process_healthy
+
+  m1-da-light-node:
+    command: |
+      cargo run -p m1-da-light-node --features "sequencer"
+    depends_on:
+      celestia-light-node-synced:
+        condition: process_completed
+      celestia-light-node:
+        condition: process_healthy
+    readiness_probe:
+      exec:
+        command: echo "true"
+
+  monza-full-node:
+    command: |
+      cargo run -p monza-full-node
+    depends_on:
+      m1-da-light-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 60
+      exec:
+        command: |
+          echo "true"
