@@ -2,7 +2,6 @@ use aptos_db::AptosDB;
 use aptos_executor_types::{state_checkpoint_output::StateCheckpointOutput, BlockExecutorTrait};
 use aptos_mempool::{
 	MempoolClientRequest, MempoolClientSender,
-	core_mempool::CoreMempool
 };
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
@@ -11,7 +10,7 @@ use aptos_types::{
 	}, validator_signer::ValidatorSigner
 };
 use aptos_vm::AptosVM;
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use aptos_config::config::NodeConfig;
 use aptos_executor::{
@@ -19,41 +18,11 @@ use aptos_executor::{
 	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
 };
 use aptos_api::{get_api_service, runtime::{get_apis, Apis}, Context};
-use futures::channel::mpsc as futures_mpsc;
+use futures::channel::{mpsc as futures_mpsc, oneshot};
 use poem::{listener::TcpListener, Route, Server};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_mempool::SubmissionStatus;
 use futures::StreamExt;
-
-/// The state of `movement-network` execution can exist in three states,
-/// `Dynamic`, `Optimistic`, and `Final`. The `Dynamic` state is the state.
-pub enum FinalityState {
-	/// The dynamic state that is subject to change and is not
-	/// yet finalized. It is the state that is derived from the blocks
-	/// received before any finality is reached and simply represents a
-	/// local application of the fork-choice rule (longest chain)
-	/// of the gossipped blocks.
-	Dynamic,
-	/// The optimistic state that is derived from the blocks received after DA finality.
-	/// It is the state that is derived from the blocks that have been finalized by the DA.
-	Optimistic,
-	/// The final state that is derived from the blocks received after the finality is reached.
-	Final,
-}
-
-/// The current state of the executor and its execution of blocks.
-#[derive(PartialEq, Debug, Clone, Copy)]
-pub enum ExecutorState {
-	/// The executor is idle and waiting for a block to be executed.
-	Idle,
-	/// The block is executed in a speculative manner and its effects held in memory.
-	Speculate,
-	/// The network agrees on the block.
-	Consensus,
-	/// The block is committed to the state, at this point
-	/// fork choices must be resolved otherwise the commitment and subsequent execution will fail.
-	Commit,
-}
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -61,8 +30,6 @@ pub enum ExecutorState {
 pub struct Executor {
 	/// The executing type.
 	pub block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
-	/// The current state of the executor.
-	pub status: ExecutorState,
 	/// The access to db.
 	pub db: Arc<RwLock<DbReaderWriter>>,
 	/// The signer of the executor's transactions.
@@ -88,7 +55,6 @@ impl Executor {
 		db_dir : PathBuf,
 		block_executor: BlockExecutor<AptosVM>,
 		signer: ValidatorSigner,
-		mempool: CoreMempool,
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
@@ -99,7 +65,6 @@ impl Executor {
 		let reader = reader_writer.reader.clone();
 		Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
-			status: ExecutorState::Idle,
 			db: Arc::new(RwLock::new(reader_writer)),
 			signer,
 			mempool_client_sender : mempool_client_sender.clone(),
@@ -134,7 +99,6 @@ impl Executor {
 	pub fn bootstrap(
 		db_dir : PathBuf,
 		signer: ValidatorSigner,
-		mempool: CoreMempool,
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
@@ -146,10 +110,8 @@ impl Executor {
 
 		Ok(Self {
 			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db_rw.clone()))),
-			status: ExecutorState::Idle,
 			db: Arc::new(RwLock::new(db_rw)),
 			signer,
-			mempool : Arc::new(RwLock::new(mempool)),
 			mempool_client_sender : mempool_client_sender.clone(),
 			mempool_client_receiver : Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config : node_config.clone(),
@@ -178,7 +140,6 @@ impl Executor {
 
 		// use the default signer, block executor, and mempool
 		let signer = ValidatorSigner::random(None);
-		let mempool = CoreMempool::new(&NodeConfig::default());
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
 		let chain_id = ChainId::new(10);
@@ -186,7 +147,6 @@ impl Executor {
 		Self::bootstrap(
 			db_dir,
 			signer,
-			mempool,
 			mempool_client_sender,
 			mempool_client_receiver,
 			node_config,
@@ -195,19 +155,12 @@ impl Executor {
 
 	}
 
-	pub fn set_commit_state(&mut self) {
-		self.status = ExecutorState::Commit;
-	}
-
 	/// Execute a block which gets committed to the state.
 	/// `ExecutorState` must be set to `Commit` before calling this method.
 	pub async fn execute_block(
-		&mut self,
+		&self,
 		block: ExecutableBlock,
 	) -> Result<StateCheckpointOutput, anyhow::Error> {
-		if self.status != ExecutorState::Commit {
-			return Err(anyhow::anyhow!("Executor is not in the Commit state"));
-		}
 
 		let parent_block_id = {
 			let block_executor = self.block_executor.read().await;
@@ -223,9 +176,6 @@ impl Executor {
 				BlockExecutorConfigFromOnchain::new_no_block_limit(),
 			)?
 		};
-
-		// Update the executor state
-		self.status = ExecutorState::Idle;
 
 		Ok(state_checkpoint)
 	}
@@ -249,7 +199,6 @@ impl Executor {
 		let app = Route::new()
 			.nest("/v1", api_service)
 			.nest("/spec", ui);
-		println!("Server running on http://127.0.0.1:3000");
 		Server::new(TcpListener::bind("127.0.0.1:3000"))
 			.run(app)
 			.await.map_err(
@@ -259,65 +208,46 @@ impl Executor {
 		Ok(())
 	}
 
-	pub async fn tick_mempool_pipe(
+	/// Pipes a batch of transactions from the mempool to the transaction channel.
+	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	pub async fn tick_transaction_pipe(
 		&self, 
 		transaction_channel : async_channel::Sender<SignedTransaction>
 	) -> Result<(), anyhow::Error> {
 		
 		let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
 		for _ in 0..256 {
-			match mempool_client_receiver.next().await {
-				Some(request) => {
+
+			// use select to safely timeout a request for a transaction without risking dropping the transaction
+			// !warn: this may still be unsafe
+			tokio::select! {
+				_ = tokio::time::sleep(tokio::time::Duration::from_millis(5)) => { () },
+				request = mempool_client_receiver.next() => {
 					match request {
-						MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-							transaction_channel.send(transaction).await?;
-							let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-							let status: SubmissionStatus = (ms, None);
-							callback.send(Ok(status)).map_err(
-								|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-							)?;
+						Some(request) => {
+							match request {
+								MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+									transaction_channel.send(transaction).await?;
+									let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
+									let status: SubmissionStatus = (ms, None);
+									callback.send(Ok(status)).map_err(
+										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
+									)?;
+								},
+								MempoolClientRequest::GetTransactionByHash(_, _) => {},
+							}
 						},
-						MempoolClientRequest::GetTransactionByHash(_, _) => {},
+						None => {
+							break;
+						}
 					}
-				},
-				None => {
-					break;
 				}
 			}
+			
 		}
 
 		Ok(())
 	}
-
-	/*pub async fn run_mempool_receiver(
-		&self,
-		transaction_channel : async_channel::Sender<SignedTransaction>
-	) -> Result<(), anyhow::Error> {
-
-		println!("Running mempool receiver");
-		// only one task should be runnin this, so this is fine
-		// ! todo: may want to put a timeout on the await for the lock
-		let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
-		while let Some(request) = mempool_client_receiver.next().await {
-			println!("Received request");
-			match request {
-				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-
-					transaction_channel.send(transaction).await?;
-				
-					let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-					let status: SubmissionStatus = (ms, None);
-					callback.send(Ok(status)).map_err(
-						|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-					)?;
-				},
-				MempoolClientRequest::GetTransactionByHash(_, _) => {},
-			}
-		}
-
-		Ok(())
-
-	}*/
 
 }
 
@@ -342,6 +272,7 @@ mod tests {
 		accept_type::AcceptType,
 		transactions::SubmitTransactionPost
 	};
+use futures::SinkExt;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -363,7 +294,6 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let mut executor = Executor::try_from_env()?;
-		executor.set_commit_state();
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
@@ -376,32 +306,36 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
-		let executor = Executor::try_from_env()?;
+
+		// header
+		let mut executor = Executor::try_from_env()?;
 		let user_transaction = create_signed_transaction(0);
-		{
-			let mut mempool = executor.mempool.write().await;
-			let _ = mempool.add_txn(
-				user_transaction.clone(),
-				0,
-				0,
-				aptos_mempool::core_mempool::TimelineState::NonQualified,
-				true
-			);
-		};
+
+		// send transaction to mempool
+		let (req_sender, callback) = oneshot::channel();
+		executor.mempool_client_sender.send(MempoolClientRequest::SubmitTransaction(
+			user_transaction.clone(),
+			req_sender
+		)).await?;
+
+		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
-		executor.tick_mempool_pipe(tx).await?;
-		let mut count = 0;
-		while let Ok(transaction) = rx.recv().await {
-			assert_eq!(transaction, user_transaction);
-			count += 1;
-		}
-		assert!(count > 0);
+		executor.tick_transaction_pipe(tx).await?;
+
+		// receive the callback
+		callback.await??;
+		
+		// receive the transaction
+		let received_transaction = rx.recv().await?;
+		assert_eq!(received_transaction, user_transaction);
+
 		Ok(())
 	}
 
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
-		let executor = Executor::try_from_env()?;
+		
+		let mut executor = Executor::try_from_env()?;
 		let server_executor = executor.clone();
 
 		let handle = tokio::spawn(async move {
@@ -410,25 +344,27 @@ mod tests {
 		});
 
 		let user_transaction = create_signed_transaction(0);
-		{
-			let mut mempool = executor.mempool.write().await;
-			let _ = mempool.add_txn(
-				user_transaction.clone(),
-				0,
-				0,
-				aptos_mempool::core_mempool::TimelineState::NonQualified,
-				true
-			);
-		};
+
+		// send transaction to mempool
+		let (req_sender, callback) = oneshot::channel();
+		executor.mempool_client_sender.send(MempoolClientRequest::SubmitTransaction(
+			user_transaction.clone(),
+			req_sender
+		)).await?;
+
+		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
-		executor.tick_mempool_pipe(tx).await?;
-		let mut count = 0;
-		while let Ok(transaction) = rx.recv().await {
-			assert_eq!(transaction, user_transaction);
-			count += 1;
-		}
-		assert!(count > 0);
-		handle.abort();	
+		executor.tick_transaction_pipe(tx).await?;
+
+		// receive the callback
+		callback.await??;
+		
+		// receive the transaction
+		let received_transaction = rx.recv().await?;
+		assert_eq!(received_transaction, user_transaction);
+
+		handle.abort();
+
 		Ok(())
 	}
 
@@ -445,7 +381,7 @@ mod tests {
 		let (tx, rx) = async_channel::unbounded();
 		let mempool_handle = tokio::spawn(async move {
 			loop {
-				mempool_executor.tick_mempool_pipe(tx.clone()).await?;
+				mempool_executor.tick_transaction_pipe(tx.clone()).await?;
 				tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 			};
 			Ok(()) as Result<(), anyhow::Error>

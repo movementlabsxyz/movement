@@ -6,7 +6,7 @@ processes:
 
   celestia-light-node:
     command: |
-      ./scripts/celestia/celestia-local
+      exit 1
     readiness_probe:
       exec:
         command: echo "true"
@@ -21,12 +21,19 @@ processes:
 
   m1-da-light-node:
     command: |
-      cargo run -p m1-da-light-node
+      cargo run -p m1-da-light-node --features "sequencer"
     depends_on:
-      m1-da-light-node-verifier-tests:
+      celestia-light-node-synced:
         condition: process_completed
       celestia-light-node:
         condition: process_healthy
     readiness_probe:
       exec:
         command: echo "true"
+
+  monza-full-node:
+    command: |
+      cargo run -p monza-full-node
+    depends_on:
+      m1-da-light-node:
+        condition: process_healthy

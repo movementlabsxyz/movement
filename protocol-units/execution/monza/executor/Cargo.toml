@@ -34,6 +34,8 @@ rand = { workspace = true }
 rand_core = { workspace = true }
 async-channel = { workspace = true }
 tonic = { workspace = true }
+futures = { workspace = true}
+bcs = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }

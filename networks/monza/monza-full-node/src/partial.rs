@@ -2,12 +2,14 @@ use std::sync::Arc;
 
 use monza_executor::{
     MonzaExecutor,
-    SignatureVerifiedTransaction,
     ExecutableBlock,
     HashValue,
     FinalityMode,
+    Transaction,
+    SignatureVerifiedTransaction,
+    SignedTransaction,
     ExecutableTransactions,
-    // v1::MonzaExecutorV1,
+    v1::MonzaExecutorV1,
 };
 use m1_da_light_node_client::*;
 use async_channel::{Sender, Receiver};
@@ -21,8 +23,8 @@ use movement_types::Block;
 #[derive(Clone)]
 pub struct MonzaPartialFullNode<T : MonzaExecutor + Send + Sync + Clone> {
     executor: T,
-    transaction_sender : Sender<SignatureVerifiedTransaction>,
-    pub transaction_receiver : Receiver<SignatureVerifiedTransaction>,
+    transaction_sender : Sender<SignedTransaction>,
+    pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
@@ -38,13 +40,13 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
         }
     }
 
-    pub async fn bind_transaction_channel(&self) -> Result<(), anyhow::Error> {
+    pub async fn bind_transaction_channel(&mut self) -> Result<(), anyhow::Error> {
         self.executor.set_tx_channel(self.transaction_sender.clone()).await?;
         Ok(())
     }
 
     pub async fn bound(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Result<Self, anyhow::Error> {
-        let node = Self::new(executor, light_node_client);
+        let mut node = Self::new(executor, light_node_client);
         node.bind_transaction_channel().await?;
         Ok(node)
     }
@@ -105,9 +107,13 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
             // get the transactions
             let mut block_transactions = Vec::new();
             for transaction in block.transactions {
-                block_transactions.push(
-                    serde_json::from_slice(&transaction.0)?
+                let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
+                let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
+                    Transaction::UserTransaction(
+                        signed_transaction
+                    )
                 );
+                block_transactions.push(signature_verified_transaction);
             }
 
             // form the executable transactions vec
@@ -141,19 +147,23 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
 
 impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFullNode<T> {
     
-      /// Runs the services until crash or shutdown.
-      async fn run_services(&self) -> Result<(), anyhow::Error> {
+        /// Runs the services until crash or shutdown.
+        async fn run_services(&self) -> Result<(), anyhow::Error> {
 
-            // get each of the apis
-
-            // synthesize a new api over them using some abstraction
-
-            // start the open api service over it
             self.executor.run_service().await?;
 
             Ok(())
 
-      }
+        }
+
+        /// Runs the background tasks until crash or shutdown.
+        async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+
+            self.executor.run_background_tasks().await?;
+
+            Ok(())
+
+        }
 
       // ! Currently this only implements opt.
       /// Runs the executor until crash or shutdown.
@@ -161,7 +171,6 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFull
 
             // wait for both tasks to finish
             tokio::try_join!(
-                self.executor.run_background_tasks(),
                 self.write_transactions_to_da(),
                 self.read_blocks_from_da()
             )?;
@@ -170,5 +179,16 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFull
         
 
       }
+
+}
+
+impl MonzaPartialFullNode<MonzaExecutorV1> {
+
+    pub async fn try_from_env() -> Result<Self, anyhow::Error> {
+        let (tx, _) = async_channel::unbounded();
+        let light_node_client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
+        let executor = MonzaExecutorV1::try_from_env(tx).await?;
+        Self::bound(executor, light_node_client).await
+    }
 
 }
