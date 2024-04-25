@@ -1,19 +1,25 @@
-[90m24-04-24 22:12:28.962[0m [32mINF[0m [1mProcess Compose v1.2.0[0m
-[90m24-04-24 22:12:28.965[0m [32mINF[0m [1mLoaded project from process-compose/monza-full-node/process-compose.yml[0m
-[90m24-04-24 22:12:28.965[0m [32mINF[0m [1mLoaded project from process-compose/monza-full-node/process-compose.test.yml[0m
-[90m24-04-24 22:12:28.965[0m [32mINF[0m [1mLoaded project from process-compose/monza-full-node/process-compose.local.yml[0m
-[90m24-04-24 22:12:28.965[0m [32mINF[0m [1mGlobal shell command: bash -c[0m
-[90m24-04-24 22:12:28.969[0m [32mINF[0m [1mstart http server listening :8080[0m
-[90m24-04-24 22:12:28.970[0m DBG Spinning up 7 processes. Order: ["celestia-node-appd" "celestia-bridge" "celestia-light-node" "celestia-light-node-synced" "m1-da-light-node" "monza-full-node" "monza-client-tests"]
-[90m24-04-24 22:12:28.974[0m [32mINF[0m [1mcelestia-light-node-synced is waiting for celestia-light-node to be healthy[0m
-[90m24-04-24 22:12:28.975[0m [32mINF[0m [1mcelestia-light-node is waiting for celestia-node-appd to be healthy[0m
-[90m24-04-24 22:12:28.974[0m [32mINF[0m [1mmonza-full-node is waiting for m1-da-light-node to be healthy[0m
-[90m24-04-24 22:12:28.974[0m [32mINF[0m [1mcelestia-bridge is waiting for celestia-node-appd to be healthy[0m
-[90m24-04-24 22:12:28.974[0m [32mINF[0m [1mmonza-client-tests is waiting for monza-full-node to be healthy[0m
-[90m24-04-24 22:12:28.977[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/celestia/celestia-local-appd\n"] [36mprocess=[0mcelestia-node-appd
-[90m24-04-24 22:12:28.978[0m [33mWRN[0m [1mError reading themes file /Users/l-monninger/theme.yaml[0m [36merror=[0m[31m[1m"open /Users/l-monninger/theme.yaml: no such file or directory"[0m[0m
-[90m24-04-24 22:12:28.978[0m DBG celestia-node-appd_ready_probe started monitoring
-[90m24-04-24 22:12:28.986[0m [32mINF[0m [1mcelestia-light-node is waiting for celestia-bridge to be healthy[0m
-[90m24-04-24 22:12:28.987[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/celestia/celestia-local-bridge\n"] [36mprocess=[0mcelestia-bridge
-[90m24-04-24 22:12:28.987[0m DBG celestia-bridge_ready_probe started monitoring
-[90m24-04-24 22:12:28.993[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","sleep 999999999d\necho \"started\"\n"] [36mprocess=[0mcelestia-light-node
+[90m24-04-24 23:04:27.664[0m [32mINF[0m [1mProcess Compose v1.2.0[0m
+[90m24-04-24 23:04:27.664[0m [32mINF[0m [1mLoaded project from process-compose/monza-full-node/process-compose.yml[0m
+[90m24-04-24 23:04:27.664[0m [32mINF[0m [1mLoaded project from process-compose/monza-full-node/process-compose.local.yml[0m
+[90m24-04-24 23:04:27.664[0m [32mINF[0m [1mGlobal shell command: bash -c[0m
+[90m24-04-24 23:04:27.665[0m [32mINF[0m [1mstart http server listening :8080[0m
+[90m24-04-24 23:04:27.665[0m DBG Spinning up 6 processes. Order: ["celestia-node-appd" "celestia-bridge" "celestia-light-node" "celestia-light-node-synced" "m1-da-light-node" "monza-full-node"]
+[90m24-04-24 23:04:27.666[0m [32mINF[0m [1mcelestia-bridge is waiting for celestia-node-appd to be healthy[0m
+[90m24-04-24 23:04:27.666[0m [32mINF[0m [1mmonza-full-node is waiting for m1-da-light-node to be healthy[0m
+[90m24-04-24 23:04:27.666[0m [32mINF[0m [1mcelestia-light-node is waiting for celestia-node-appd to be healthy[0m
+[90m24-04-24 23:04:27.666[0m [32mINF[0m [1mcelestia-light-node-synced is waiting for celestia-light-node to be healthy[0m
+[90m24-04-24 23:04:27.666[0m [33mWRN[0m [1mError reading themes file /Users/l-monninger/theme.yaml[0m [36merror=[0m[31m[1m"open /Users/l-monninger/theme.yaml: no such file or directory"[0m[0m
+[90m24-04-24 23:04:27.667[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/celestia/celestia-local-appd\n"] [36mprocess=[0mcelestia-node-appd
+[90m24-04-24 23:04:27.667[0m DBG celestia-node-appd_ready_probe started monitoring
+[90m24-04-24 23:04:27.670[0m [32mINF[0m [1mcelestia-light-node is waiting for celestia-bridge to be healthy[0m
+[90m24-04-24 23:04:27.672[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/celestia/celestia-local-bridge\n"] [36mprocess=[0mcelestia-bridge
+[90m24-04-24 23:04:27.672[0m DBG celestia-bridge_ready_probe started monitoring
+[90m24-04-24 23:04:27.680[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","sleep 999999999d\necho \"started\"\n"] [36mprocess=[0mcelestia-light-node
+[90m24-04-24 23:04:57.681[0m DBG celestia-light-node_ready_probe started monitoring
+[90m24-04-24 23:04:57.686[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","sleep 10\ncargo run --bin wait-for-celestia-light-node\n"] [36mprocess=[0mcelestia-light-node-synced
+[90m24-04-24 23:05:09.197[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m0 [36mprocess=[0mcelestia-light-node-synced
+[90m24-04-24 23:05:09.197[0m [32mINF[0m [1mm1-da-light-node is waiting for celestia-light-node to be healthy[0m
+[90m24-04-24 23:05:09.198[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","cargo run -p m1-da-light-node --features \"sequencer\"\n"] [36mprocess=[0mm1-da-light-node
+[90m24-04-24 23:05:09.198[0m DBG m1-da-light-node_ready_probe started monitoring
+[90m24-04-24 23:05:09.202[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","cargo run -p monza-full-node\n"] [36mprocess=[0mmonza-full-node
+[90m24-04-24 23:06:09.203[0m DBG monza-full-node_ready_probe started monitoring

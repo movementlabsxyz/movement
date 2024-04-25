@@ -21,10 +21,10 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
     Url::from_str(
-        std::env::var("APTOS_FAUCET_URL")
+        std::env::var("MONZA_FAUCET_URL")
             .as_ref()
             .map(|s| s.as_str())
-            .unwrap_or("http://localhost:3000"),
+            .unwrap_or("http://localhost:8081"),
     )
     .unwrap()
 });

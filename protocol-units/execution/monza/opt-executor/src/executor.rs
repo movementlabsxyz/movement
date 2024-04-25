@@ -23,6 +23,7 @@ use poem::{listener::TcpListener, Route, Server};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_mempool::SubmissionStatus;
 use futures::StreamExt;
+use aptos_vm_genesis::GENESIS_KEYPAIR;
 /*use aptos_faucet_core::{
 	bypasser::{Bypasser, BypasserConfig},
     checkers::{CaptchaManager, Checker, CheckerConfig, CheckerTrait},
@@ -115,6 +116,24 @@ impl Executor {
 		node_config: NodeConfig,
 		chain_id: ChainId,
 	) -> Result<Self, anyhow::Error> {
+
+		// todo: update this to something more stable
+		// keypair will be GENESIS_KEYPAIR.
+		// For now, let's write this to a well known location
+		let private_key_bytes = GENESIS_KEYPAIR.0.to_bytes(); // get the private key bytes
+		let public_key_bytes = GENESIS_KEYPAIR.1.to_bytes(); // get the public key bytes
+		let private_key_hex = hex::encode(private_key_bytes); // convert bytes to hex string
+		let public_key_hex = hex::encode(public_key_bytes); // convert bytes to hex string
+		let chain_id_str = chain_id.to_string();
+		let base_dir = PathBuf::from("./.etc/monza");
+		let private_key_path = base_dir.join("private_key");
+		let public_key_path = base_dir.join("public_key");
+		let chain_id_path = base_dir.join("chain_id");
+		// mkdir -p
+		std::fs::create_dir_all(&base_dir)?;
+		std::fs::write(private_key_path, private_key_hex)?;
+		std::fs::write(public_key_path, public_key_hex)?;
+		std::fs::write(chain_id_path, chain_id_str)?;
 
 		let db_rw = Self::bootstrap_empty_db(db_dir)?;
 		let reader = db_rw.reader.clone();
