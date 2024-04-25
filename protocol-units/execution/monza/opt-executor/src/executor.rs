@@ -1,6 +1,8 @@
+use aptos_api_types::transaction;
 use aptos_db::AptosDB;
 use aptos_executor_types::{state_checkpoint_output::StateCheckpointOutput, BlockExecutorTrait};
 use aptos_mempool::{
+	core_mempool::{CoreMempool, TimelineState},
 	MempoolClientRequest, MempoolClientSender,
 };
 use aptos_storage_interface::DbReaderWriter;
@@ -10,7 +12,7 @@ use aptos_types::{
 	}, validator_signer::ValidatorSigner
 };
 use aptos_vm::AptosVM;
-use std::{path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use aptos_config::config::NodeConfig;
 use aptos_executor::{
@@ -24,17 +26,6 @@ use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_mempool::SubmissionStatus;
 use futures::StreamExt;
 use aptos_vm_genesis::GENESIS_KEYPAIR;
-/*use aptos_faucet_core::{
-	bypasser::{Bypasser, BypasserConfig},
-    checkers::{CaptchaManager, Checker, CheckerConfig, CheckerTrait},
-    endpoints::{
-        build_openapi_service, convert_error, mint, BasicApi, CaptchaApi, FundApi,
-        FundApiComponents,
-    },
-    funder::{ApiConnectionConfig, FunderConfig, MintFunderConfig, TransactionSubmissionConfig},
-    middleware::middleware_log,
-};
-use tokio::sync::Semaphore;*/
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -46,6 +37,8 @@ pub struct Executor {
 	pub db: Arc<RwLock<DbReaderWriter>>,
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
+	/// The core mempool (used for the api to query the mempool).
+	pub core_mempool: Arc<RwLock<CoreMempool>>,
 	/// The sender for the mempool client.
 	pub mempool_client_sender: MempoolClientSender,
 	/// The receiver for the mempool client.
@@ -57,6 +50,7 @@ pub struct Executor {
 	/// Context 
 	pub context : Arc<Context>,
 }
+
 
 impl Executor {
 
@@ -74,11 +68,13 @@ impl Executor {
 	) -> Self {
 
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&db_dir));
+		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
 		Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
 			db: Arc::new(RwLock::new(reader_writer)),
 			signer,
+			core_mempool,
 			mempool_client_sender : mempool_client_sender.clone(),
 			node_config : node_config.clone(),
 			mempool_client_receiver : Arc::new(RwLock::new(mempool_client_receiver)),
@@ -137,11 +133,13 @@ impl Executor {
 
 		let db_rw = Self::bootstrap_empty_db(db_dir)?;
 		let reader = db_rw.reader.clone();
+		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
 		Ok(Self {
 			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db_rw.clone()))),
 			db: Arc::new(RwLock::new(db_rw)),
 			signer,
+			core_mempool,
 			mempool_client_sender : mempool_client_sender.clone(),
 			mempool_client_receiver : Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config : node_config.clone(),
@@ -243,13 +241,21 @@ impl Executor {
 		Ok(())
 	}
 
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub async fn tick_transaction_pipe(
-		&self, 
+	pub async fn get_transaction_sequence_number(
+		&self,
+		_transaction: &SignedTransaction
+	) -> Result<u64, anyhow::Error> {
+		// just use the ms since epoch for now
+		let ms = chrono::Utc::now().timestamp_millis();
+		Ok(ms as u64)	
+	}
+
+	/// Ticks the transaction reader.
+	pub async fn tick_transaction_reader(
+		&self,
 		transaction_channel : async_channel::Sender<SignedTransaction>
-	) -> Result<(), anyhow::Error> {
-		
+	) ->  Result<(), anyhow::Error> {
+
 		let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
 		for _ in 0..256 {
 
@@ -262,14 +268,50 @@ impl Executor {
 						Some(request) => {
 							match request {
 								MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-									transaction_channel.send(transaction).await?;
+									// add to the mempool
+									{
+								
+										let mut core_mempool = self.core_mempool.write().await;
+										
+										let status = core_mempool.add_txn(
+											transaction.clone(),
+											0,
+											0,
+											TimelineState::NonQualified,
+											true
+										);
+
+										match status.code {
+											MempoolStatusCode::Accepted => {
+											
+											},
+											_ => {
+												anyhow::bail!("Transaction not accepted: {:?}", status);
+											}
+										}
+
+										// send along to the receiver
+										transaction_channel.send(transaction).await.map_err(
+											|e| anyhow::anyhow!("Error sending transaction: {:?}", e)
+										)?;
+
+									};
+
+									// report status
 									let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
 									let status: SubmissionStatus = (ms, None);
 									callback.send(Ok(status)).map_err(
 										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
 									)?;
+
 								},
-								MempoolClientRequest::GetTransactionByHash(_, _) => {},
+								MempoolClientRequest::GetTransactionByHash(hash, sender) => {
+									let mempool = self.core_mempool.read().await;
+									let mempool_result = mempool.get_by_hash(hash);
+									sender.send(mempool_result).map_err(
+										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
+									)?;
+								},
 							}
 						},
 						None => {
@@ -282,6 +324,31 @@ impl Executor {
 		}
 
 		Ok(())
+
+	}
+
+	pub async fn tick_mempool_pipe(
+		&self,
+		_transaction_channel : async_channel::Sender<SignedTransaction>
+	) -> Result<(), anyhow::Error> {
+
+		// todo: remove this old implementation
+		
+		Ok(())
+	}
+
+	/// Pipes a batch of transactions from the mempool to the transaction channel.
+	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	pub async fn tick_transaction_pipe(
+		&self, 
+		transaction_channel : async_channel::Sender<SignedTransaction>
+	) -> Result<(), anyhow::Error> {
+	
+		self.tick_transaction_reader(transaction_channel.clone()).await?;
+
+		self.tick_mempool_pipe(transaction_channel).await?;
+
+		Ok(())
 	}
 
 }
@@ -289,7 +356,9 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 
-	use super::*;
+	use std::collections::{BTreeSet, HashSet};
+
+use super::*;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
@@ -410,9 +479,6 @@ mod tests {
 
 		let executor = Executor::try_from_env()?;
 		let mempool_executor = executor.clone();
-		let user_transaction = create_signed_transaction(0);
-		let comparison_user_transaction = user_transaction.clone();
-		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let (tx, rx) = async_channel::unbounded();
 		let mempool_handle = tokio::spawn(async move {
@@ -423,15 +489,61 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
+		let api = executor.try_get_apis().await?;
+		let user_transaction = create_signed_transaction(0);
+		let comparison_user_transaction = user_transaction.clone();
+		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.try_get_apis().await?;
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-
-		mempool_handle.abort();
 		let received_transaction = rx.recv().await?;
 		assert_eq!(received_transaction, comparison_user_transaction);
+
+		mempool_handle.abort();
+	
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
+
+		let executor = Executor::try_from_env()?;
+		let mempool_executor = executor.clone();
+
+		let (tx, rx) = async_channel::unbounded();
+		let mempool_handle = tokio::spawn(async move {
+			loop {
+				mempool_executor.tick_transaction_pipe(tx.clone()).await?;
+				tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+			};
+			Ok(()) as Result<(), anyhow::Error>
+		});
+
+		let api = executor.try_get_apis().await?;
+		let mut user_transactions = BTreeSet::new();
+		let mut comparison_user_transactions = BTreeSet::new();
+		for _ in 0..25 {
+
+			let user_transaction = create_signed_transaction(0);
+			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
+			user_transactions.insert(bcs_user_transaction.clone());
+
+			let request = SubmitTransactionPost::Bcs(
+				aptos_api::bcs_payload::Bcs(bcs_user_transaction)
+			);
+			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
+
+			let received_transaction = rx.recv().await?;
+			let bcs_received_transaction = bcs::to_bytes(&received_transaction)?;
+			comparison_user_transactions.insert(bcs_received_transaction.clone());
+
+		}
+
+		assert_eq!(user_transactions.len(), comparison_user_transactions.len());
+		assert_eq!(user_transactions, comparison_user_transactions);
+
+		mempool_handle.abort();
 	
 		Ok(())
 	}

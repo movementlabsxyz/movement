@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use monza_executor::{
     MonzaExecutor,
@@ -51,17 +51,36 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
         Ok(node)
     }
 
-    pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+    pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+        
+        // limit the total time batching transactions
+        let start_time = std::time::Instant::now();
+        let end_time = start_time + std::time::Duration::from_millis(100);
         
         let mut transactions = Vec::new();
-        while let Ok(transaction) = self.transaction_receiver.recv().await {
-            let serialized_transaction = serde_json::to_vec(&transaction)?;
-            transactions.push(BlobWrite {
-                data: serialized_transaction
-            });
+
+
+        while let Ok(transaction_result) = tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await {
+
+            match transaction_result {
+                Ok(transaction) => {
+                    println!("Got transaction: {:?}", transaction);
+                    let serialized_transaction = serde_json::to_vec(&transaction)?;
+                    transactions.push(BlobWrite {
+                        data: serialized_transaction
+                    });
+                },
+                Err(_) => {
+                    break;
+                }
+            }
+
+            if std::time::Instant::now() > end_time {
+                break;
+            }
         }
 
-        {
+        if transactions.len() > 0 {
             let client_ptr = self.light_node_client.clone();
             let mut light_node_client = client_ptr.write().await;
             light_node_client.batch_write(
@@ -69,10 +88,19 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
                     blobs: transactions
                 }
             ).await?;
+            println!("Wrote transactions to DA");
         }
 
         Ok(())
 
+
+    }
+
+    pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+        
+        loop {
+            self.tick_write_transactions_to_da().await?;
+        }
 
     }
 
@@ -93,6 +121,8 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
         }.into_inner();
 
         while let Some(blob) = stream.next().await {
+
+            println!("Stream hot!");
             // get the block
             let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
                 blob_response::BlobType::SequencedBlobBlock(blob) => {
@@ -103,6 +133,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
 
             // get the block
             let block : Block = serde_json::from_slice(&block_bytes)?;
+            println!("Received block: {:?}", block);
 
             // get the transactions
             let mut block_transactions = Vec::new();

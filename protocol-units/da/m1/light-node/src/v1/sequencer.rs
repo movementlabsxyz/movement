@@ -39,17 +39,18 @@ impl LightNodeV1Operations for LightNodeV1 {
 impl LightNodeV1 {
 
     pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
+
         let block = self.memseq.wait_for_next_block().await?;
         match block {
             Some(block) => {
-
                 let block_blob = self.pass_through.create_new_celestia_blob(
                     serde_json::to_vec(&block).map_err(
                         |e| anyhow::anyhow!("Failed to serialize block: {}", e)
                     )?
                 )?;
 
-                self.pass_through.submit_celestia_blob(block_blob).await?;
+                let height = self.pass_through.submit_celestia_blob(block_blob).await?;
+                println!("Submitted block: {:?} {:?}", block.id(), height);
             },
             None => {
                 // no transactions to include
@@ -206,6 +207,7 @@ impl LightNodeService for LightNodeV1 {
 
         // publish the transactions
         for transaction in transactions {
+            println!("Publishing transaction: {:?}", transaction.id());
             self.memseq.publish(transaction).await.map_err(
                 |e| tonic::Status::internal(e.to_string())
             )?;

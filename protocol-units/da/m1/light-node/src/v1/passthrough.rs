@@ -89,11 +89,18 @@ impl LightNodeV1 {
 
         let blobs = self.default_client
             .blob_get_all(height, &[self.celestia_namespace])
-            .await
-            .unwrap_or_default();
+            .await;
+
+        if blobs.is_err() {
+            println!("Error getting blobs: {:?}", blobs.as_ref().err().unwrap());
+        }
+
+        let blobs = blobs.unwrap_or_default();
 
         let mut verified_blobs = Vec::new();
         for blob in blobs {
+
+            println!("Verifying blob");
 
             let blob_data = blob.data.clone();
 
@@ -102,7 +109,13 @@ impl LightNodeV1 {
                 *self.verification_mode.read().await,
                 &blob_data,
                 height,
-            ).await.is_ok_and(|v| v);
+            ).await;
+
+            if verified.is_err() {
+                println!("Error verifying blob: {:?}", verified.as_ref().err().unwrap());
+            }
+
+            let verified = verified.unwrap_or(true);
 
             if verified {
                 verified_blobs.push(blob);
@@ -159,13 +172,15 @@ impl LightNodeV1 {
 
                 let header = header_res?;
                 let height = header.height().into();
+                println!("Stream got header: {:?}", header.height());
 
                 // back fetch the blobs
-                if first_flag && height > start_height {
+                if first_flag && (height > start_height) {
         
                     let mut blob_stream = me.stream_blobs_in_range(start_height, Some(height)).await?;
                     
                     while let Some(blob) = blob_stream.next().await {
+                        println!("Stream got blob: {:?}", blob);
                         yield blob?;
                     }
 
@@ -174,6 +189,7 @@ impl LightNodeV1 {
 
                 let blobs = me.get_blobs_at_height(height).await?;
                 for blob in blobs {
+                    println!("Stream got blob: {:?}", blob);
                     yield blob;
                 }
             }
@@ -296,7 +312,7 @@ impl LightNodeService for LightNodeV1 {
         let me = Arc::new(self.clone());
     
         let output = async_stream::try_stream! {
-            // Note: using try_stream! here was replaced with stream! for illustration, handling errors should be adapted
+       
             while let Some(request) = stream.next().await {
                 let request = request?;
                 let blob_data = request.blob.ok_or(tonic::Status::invalid_argument("No blob in request"))?.data;

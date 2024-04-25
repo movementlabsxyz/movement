@@ -40,7 +40,7 @@ sequencer = [
 ]
 
 default = [
-    
+    "sequencer"
 ]
 
 [lints]
