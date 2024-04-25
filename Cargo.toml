@@ -154,6 +154,7 @@ aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", branch =
 aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 
 # celestia dependencies
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }

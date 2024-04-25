@@ -18,11 +18,22 @@ use aptos_executor::{
 	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
 };
 use aptos_api::{get_api_service, runtime::{get_apis, Apis}, Context};
-use futures::channel::{mpsc as futures_mpsc, oneshot};
+use futures::channel::mpsc as futures_mpsc;
 use poem::{listener::TcpListener, Route, Server};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_mempool::SubmissionStatus;
 use futures::StreamExt;
+/*use aptos_faucet_core::{
+	bypasser::{Bypasser, BypasserConfig},
+    checkers::{CaptchaManager, Checker, CheckerConfig, CheckerTrait},
+    endpoints::{
+        build_openapi_service, convert_error, mint, BasicApi, CaptchaApi, FundApi,
+        FundApiComponents,
+    },
+    funder::{ApiConnectionConfig, FunderConfig, MintFunderConfig, TransactionSubmissionConfig},
+    middleware::middleware_log,
+};
+use tokio::sync::Semaphore;*/
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -192,7 +203,12 @@ impl Executor {
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 
 		let context = self.try_get_context().await?;
-		let api_service = get_api_service(context).server("http://127.0.0.1:3000/api");
+		let api_service = get_api_service(context).server("http://127.0.0.1:3000");
+
+		/*let basic_api = BasicApi {
+			concurrent_requests_semaphore : None,
+
+		};*/
 
 		let ui = api_service.swagger_ui();
 	
@@ -272,7 +288,8 @@ mod tests {
 		accept_type::AcceptType,
 		transactions::SubmitTransactionPost
 	};
-use futures::SinkExt;
+	use futures::SinkExt;
+	use futures::channel::oneshot;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();

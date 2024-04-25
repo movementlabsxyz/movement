@@ -57,6 +57,7 @@ aptos-executor-test-helpers = { workspace = true }
 aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
+aptos-faucet-core = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
 

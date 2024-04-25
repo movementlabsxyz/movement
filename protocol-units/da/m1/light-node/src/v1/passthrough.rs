@@ -90,7 +90,7 @@ impl LightNodeV1 {
         let blobs = self.default_client
             .blob_get_all(height, &[self.celestia_namespace])
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to get blobs at height: {}", e))?;
+            .unwrap_or_default();
 
         let mut verified_blobs = Vec::new();
         for blob in blobs {
