@@ -86,7 +86,7 @@ sha2 = "0.10.8"
 
 risc0-build = "0.20"
 
-rocksdb = { version = "0.22.0", features = [
+rocksdb = { version = "0.16.0", features = [
   "snappy",
   "lz4",
   "zstd",
@@ -144,9 +144,32 @@ aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "
 aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "dfe3407d6b51617aa0cf901133263ebd1d56af15" }
 aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "dfe3407d6b51617aa0cf901133263ebd1d56af15" }
 
+move-binary-format = { git = "https://github.com/diem/move" }
+move-table-extension = { git = "https://github.com/diem/move" }
+move-core-types = { git = "https://github.com/diem/move" }
+
+# https://github.com/paradigmxyz/reth/tree/c0655fed8915490f82d4acf8900a16a10554cbfb
+reth-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb", default-features = false }
+reth-interfaces = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+reth-rpc-types = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+reth-revm = { git = "https://github.com/paradigmxyz/reth", rev = "c0655fed8915490f82d4acf8900a16a10554cbfb" }
+
+# Matches reth dependency. Using exact revision for matching our tightly coupled usage of both reth and revm crates
+revm = { version = "8.0.0", default-features = false, features = ["serde"] }
+# Used just to be safe about breaking changes
+revm-primitives = { version = "=2.0.0", default-features = false }
+secp256k1 = { version = "0.27", default-features = false, features = [
+    "global-context",
+    "rand-std",
+    "recovery",
+] }
+
 # celestia dependencies
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
+
+
 
 
 [workspace.lints.rust]
