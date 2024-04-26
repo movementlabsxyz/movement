@@ -131,7 +131,7 @@ mod opt_tests {
 			0,
 			gas_unit_price,
 			0,
-			ChainId::new(10), // This is the value used in aptos testing code.
+			ChainId::test(), // This is the value used in aptos testing code.
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}

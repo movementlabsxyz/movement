@@ -34,6 +34,10 @@ use aptos_types::{
     transaction::Version,
 	trusted_state::{TrustedState, TrustedStateChange},
     waypoint::Waypoint,
+	transaction::signature_verified_transaction::{
+		into_signature_verified_block,
+		SignatureVerifiedTransaction
+	}
 };
 use aptos_crypto::HashValue;
 // use aptos_types::test_helpers::transaction_test_helpers::block;
@@ -191,7 +195,7 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let chain_id = ChainId::new(10);
+		let chain_id = ChainId::test();
 
 		Self::bootstrap(
 			db_dir,
@@ -211,12 +215,12 @@ impl Executor {
 		version: Version,
 	) -> LedgerInfoWithSignatures {
 		let block_info = BlockInfo::new(
-			1,        /* epoch */
-			0,        /* round, doesn't matter */
-			block_id, /* id, doesn't matter */
+			1,      
+			0,        
+			block_id,
 			root_hash, version, 
 			0,    /* timestamp_usecs, doesn't matter */
-			None, /* next_epoch_state */
+			None, 
 		);
 		let ledger_info = LedgerInfo::new(
 			block_info,
@@ -246,13 +250,15 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
+		println!("State compute: {:?}", state_compute);
+
 		let latest_version = {
 			let reader = self.db.read().await.reader.clone();
 			reader.get_latest_version()?
 		};
 
 		{
-			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(block_id, state_compute.root_hash(), latest_version + 1);
+			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(block_id, state_compute.root_hash(), state_compute.version());
 			let block_executor = self.block_executor.write().await;
 			block_executor.commit_blocks(
 				vec![block_id],
@@ -262,9 +268,10 @@ impl Executor {
 
 		{
 			let reader = self.db.read().await.reader.clone();
-			reader.get_state_proof(
+			let proof = reader.get_state_proof(
 				state_compute.version(),
 			)?;
+			println!("State proof: {:?}", proof);
 		}
 
 		Ok(())
@@ -517,11 +524,13 @@ use super::*;
 			let create_tx_hash = create1_tx.clone().committed_hash();
 			let create1_txn = Transaction::UserTransaction(create1_tx);
 
-			let txs = ExecutableTransactions::Unsharded(vec![
-				SignatureVerifiedTransaction::Valid(block1_meta),
-				SignatureVerifiedTransaction::Valid(create1_txn),
-				SignatureVerifiedTransaction::Valid(state_checkpoint),
-			]);
+			let txs = ExecutableTransactions::Unsharded(
+				into_signature_verified_block(vec![
+					// block1_meta,
+					create1_txn,
+					// state_checkpoint
+				])
+			);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
 			let res = executor.execute_block(block).await?;
 
@@ -529,7 +538,7 @@ use super::*;
 			let version = reader.get_latest_version()?;
 			let transaction = reader.get_transaction_by_hash(
 				create_tx_hash,
-				version,
+				0,
 				false
 			)?;
 			assert!(transaction.is_some());
