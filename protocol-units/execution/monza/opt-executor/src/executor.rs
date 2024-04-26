@@ -246,8 +246,13 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
+		let latest_version = {
+			let reader = self.db.read().await.reader.clone();
+			reader.get_latest_version()?
+		};
+
 		{
-			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(block_id, state_compute.root_hash(), state_compute.version());
+			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(block_id, state_compute.root_hash(), latest_version + 1);
 			let block_executor = self.block_executor.write().await;
 			block_executor.commit_blocks(
 				vec![block_id],
@@ -509,6 +514,7 @@ use super::*;
 			let account1_address = account1.address();
 			let create1_tx = core_resources_account
 				.sign_with_transaction_builder(tx_factory.mint(account1.address(), 2000));
+			let create_tx_hash = create1_tx.clone().committed_hash();
 			let create1_txn = Transaction::UserTransaction(create1_tx);
 
 			let txs = ExecutableTransactions::Unsharded(vec![
@@ -521,15 +527,23 @@ use super::*;
 
 			let reader = executor.db.read().await.reader.clone();
 			let version = reader.get_latest_version()?;
+			let transaction = reader.get_transaction_by_hash(
+				create_tx_hash,
+				version,
+				false
+			)?;
+			assert!(transaction.is_some());
+
 			let state_view = reader.state_view_at_version(Some(version))?;
 			let account1_state_view = state_view.as_account_with_state_view(&account1_address);
 			let account_address = account1_state_view.get_account_address()?;
 			assert!(account_address.is_some());
 			println!("Account Address: {:?}", account_address);
-			let account_version = account1_state_view.get_version()?;
-			assert!(account_version.is_some());
-			let account_version = account_version.unwrap();
-			println!("Account Version: {:?}", account_version);
+			let account_resource = account1_state_view.get_account_resource()?;
+
+			assert!(account_resource.is_some());
+			let account_resource = account_resource.unwrap();
+			println!("Account Version: {:?}", account_resource);
 
 		}
 
