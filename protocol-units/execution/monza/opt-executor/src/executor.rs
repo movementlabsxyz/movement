@@ -7,7 +7,7 @@ use aptos_mempool::{
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock}, chain_id::ChainId, transaction::{
-		SignedTransaction, Transaction, WriteSetPayload
+		ChangeSet, SignedTransaction, Transaction, WriteSetPayload
 	}, validator_signer::ValidatorSigner
 };
 use aptos_vm::AptosVM;
@@ -32,6 +32,10 @@ use aptos_types::{
     transaction::Version
 };
 use aptos_crypto::HashValue;
+use aptos_vm_genesis::{TestValidator, Validator, encode_genesis_change_set, GenesisConfiguration, default_gas_schedule};
+use aptos_sdk::types::on_chain_config::{
+	OnChainConsensusConfig, OnChainExecutionConfig
+};
 // use aptos_types::test_helpers::transaction_test_helpers::block;
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
@@ -96,12 +100,58 @@ impl Executor {
 		}
 	}
 
-	pub fn bootstrap_empty_db(db_dir : PathBuf) -> Result<(
+	pub fn genesis_change_set_and_validators(
+		chain_id: ChainId, 
+		count : Option<usize>
+	) -> (ChangeSet, Vec<TestValidator>) {
+
+		let framework = aptos_cached_packages::head_release_bundle();
+		let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
+		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
+		let validators = &validators_;
+
+		let genesis = encode_genesis_change_set(
+			&GENESIS_KEYPAIR.1,
+			validators,
+			framework,
+			chain_id,
+			// todo: get this config from somewhere
+			&GenesisConfiguration {
+				allow_new_validators: true,
+				epoch_duration_secs: 3600,
+				is_test: true,
+				min_stake: 0,
+				min_voting_threshold: 0,
+				// 1M APTOS coins (with 8 decimals).
+				max_stake: 100_000_000_000_000,
+				recurring_lockup_duration_secs: 7200,
+				required_proposer_stake: 0,
+				rewards_apy_percentage: 10,
+				voting_duration_secs: 3600,
+				voting_power_increase_limit: 50,
+				employee_vesting_start: 1663456089,
+				employee_vesting_period_duration: 5 * 60, // 5 minutes
+				initial_features_override: None,
+				randomness_config_override: None,
+				jwk_consensus_config_override: None,
+			},
+			&OnChainConsensusConfig::default_for_genesis(),
+			&OnChainExecutionConfig::default_for_genesis(),
+			&default_gas_schedule(),
+		);
+		(genesis, test_validators)
+	
+	}
+
+	pub fn bootstrap_empty_db(
+		db_dir : PathBuf,
+		chain_id: ChainId
+	) -> Result<(
 		DbReaderWriter,
 		ValidatorSigner
 	), anyhow::Error> {
 		
-		let (genesis, validators) = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
+		let (genesis, validators) = Self::genesis_change_set_and_validators(chain_id, Some(1));
 		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(&db_dir));
 		
@@ -149,7 +199,7 @@ impl Executor {
 		std::fs::write(public_key_path, public_key_hex)?;
 		std::fs::write(chain_id_path, chain_id_str)?;
 
-		let (db_rw, signer) = Self::bootstrap_empty_db(db_dir)?;
+		let (db_rw, signer) = Self::bootstrap_empty_db( db_dir, chain_id)?;
 		let reader = db_rw.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
@@ -191,7 +241,6 @@ impl Executor {
 
 		Self::bootstrap(
 			db_dir,
-
 			mempool_client_sender,
 			mempool_client_receiver,
 			node_config,
@@ -287,6 +336,7 @@ impl Executor {
 
 		let ui = api_service.swagger_ui();
 	
+		// todo: add cors
 		let app = Route::new()
 			.nest("/v1", api_service)
 			.nest("/spec", ui);
@@ -421,7 +471,7 @@ mod tests {
 		ed25519::{Ed25519PrivateKey, Ed25519Signature}, HashValue, PrivateKey, Uniform
 	};
 	use aptos_types::{
-		account_address::AccountAddress, block_executor::partitioner::ExecutableTransactions, block_metadata::BlockMetadata, chain_id::ChainId, transaction::{
+		account_address::AccountAddress, block_executor::partitioner::ExecutableTransactions, block_metadata::BlockMetadata, chain_id::{self, ChainId}, transaction::{
 			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
 			SignedTransaction, Transaction, TransactionPayload
 		}
@@ -443,7 +493,7 @@ mod tests {
 	use aptos_types::account_view::AccountView;
 	use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 
-	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
+	fn create_signed_transaction(gas_unit_price: u64, chain_id : ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let public_key = private_key.public_key();
 		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
@@ -454,7 +504,7 @@ mod tests {
 			0,
 			gas_unit_price,
 			0,
-			ChainId::test(), // This is the value used in aptos testing code.
+			chain_id // This is the value used in aptos testing code.
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
@@ -465,7 +515,7 @@ mod tests {
 		let executor = Executor::try_from_env()?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0),
+			create_signed_transaction(0, executor.chain_id.clone()),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);

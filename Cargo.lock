@@ -6203,6 +6203,12 @@ dependencies = [
 [[package]]
 name = "monza-execution-util"
 version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-sdk",
+ "aptos-types",
+ "m1-da-light-node-util",
+]
 
 [[package]]
 name = "monza-executor"
@@ -6335,6 +6341,7 @@ dependencies = [
  "aptos-api-types",
  "aptos-bitvec",
  "aptos-block-executor",
+ "aptos-cached-packages",
  "aptos-config",
  "aptos-consensus-types",
  "aptos-crypto",

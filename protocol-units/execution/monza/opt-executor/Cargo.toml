@@ -58,6 +58,7 @@ aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 aptos-faucet-core = { workspace = true }
+aptos-cached-packages = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
 

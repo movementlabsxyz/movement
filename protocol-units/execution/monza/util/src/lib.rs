@@ -1,6 +1,4 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FinalityMode {
-    Dyn,
-    Opt,
-    Fin
-}
+pub mod finality_mode;
+pub mod config;
+
+pub use finality_mode::*;
