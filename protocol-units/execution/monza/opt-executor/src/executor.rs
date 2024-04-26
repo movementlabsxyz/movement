@@ -1,19 +1,17 @@
-use aptos_api_types::transaction;
-use aptos_consensus_types::block;
 use aptos_db::AptosDB;
-use aptos_executor_types::{state_checkpoint_output::StateCheckpointOutput, BlockExecutorTrait, StateComputeResult};
+use aptos_executor_types::BlockExecutorTrait;
 use aptos_mempool::{
 	core_mempool::{CoreMempool, TimelineState},
 	MempoolClientRequest, MempoolClientSender,
 };
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
-	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock}, chain_id::ChainId, ledger_info, on_chain_config::OnChainConfig, transaction::{
+	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock}, chain_id::ChainId, transaction::{
 		SignedTransaction, Transaction, WriteSetPayload
 	}, validator_signer::ValidatorSigner
 };
 use aptos_vm::AptosVM;
-use std::{collections::BTreeMap, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use aptos_config::config::NodeConfig;
 use aptos_executor::{
@@ -31,13 +29,7 @@ use aptos_types::{
     aggregate_signature::AggregateSignature,
     block_info::BlockInfo,
     ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-    transaction::Version,
-	trusted_state::{TrustedState, TrustedStateChange},
-    waypoint::Waypoint,
-	transaction::signature_verified_transaction::{
-		into_signature_verified_block,
-		SignatureVerifiedTransaction
-	}
+    transaction::Version
 };
 use aptos_crypto::HashValue;
 // use aptos_types::test_helpers::transaction_test_helpers::block;
@@ -250,8 +242,6 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
-		println!("State compute: {:?}", state_compute);
-
 		let latest_version = {
 			let reader = self.db.read().await.reader.clone();
 			reader.get_latest_version()?
@@ -271,7 +261,6 @@ impl Executor {
 			let proof = reader.get_state_proof(
 				state_compute.version(),
 			)?;
-			println!("State proof: {:?}", proof);
 		}
 
 		Ok(())
@@ -345,7 +334,7 @@ impl Executor {
 										let status = core_mempool.add_txn(
 											transaction.clone(),
 											0,
-											0,
+											transaction.sequence_number(),
 											TimelineState::NonQualified,
 											true
 										);
@@ -425,11 +414,11 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 
-	use std::collections::{BTreeSet, HashSet};
+	use std::collections::BTreeSet;
 
-use super::*;
+	use super::*;
 	use aptos_crypto::{
-		ed25519::{Ed25519PrivateKey, Ed25519Signature}, hash::TestOnlyHash, HashValue, PrivateKey, Uniform
+		ed25519::{Ed25519PrivateKey, Ed25519Signature}, HashValue, PrivateKey, Uniform
 	};
 	use aptos_types::{
 		account_address::AccountAddress, block_executor::partitioner::ExecutableTransactions, block_metadata::BlockMetadata, chain_id::ChainId, transaction::{
@@ -452,6 +441,7 @@ use super::*;
 	use aptos_types::account_config::aptos_test_root_address;
 	use aptos_types::state_store::account_with_state_view::AsAccountWithStateView;
 	use aptos_types::account_view::AccountView;
+	use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -464,7 +454,7 @@ use super::*;
 			0,
 			gas_unit_price,
 			0,
-			ChainId::new(10), // This is the value used in aptos testing code.
+			ChainId::test(), // This is the value used in aptos testing code.
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
@@ -486,74 +476,92 @@ use super::*;
 	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/execution/executor-test-helpers/src/integration_test_impl.rs#L535
 	#[tokio::test]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
-
-		let core_resources_account: LocalAccount = LocalAccount::new(
-            aptos_test_root_address(),
-            AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
-            0,
-        );
-        let seed = [3u8; 32];
-        let mut rng = ::rand::rngs::StdRng::from_seed(seed);
-
-		let executor = Executor::try_from_env()?;
-
-		let tx_factory = TransactionFactory::new(
-			executor.chain_id.clone()
+		// Initialize a root account using a predefined keypair and the test root address.
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+			0,
 		);
 
-		for i in 0..10 {
-			let block_id = HashValue::random();
-			let signer = executor.signer.clone();
-			let unix_now_micro = chrono::Utc::now().timestamp_micros() as u64;
+		// Seed for random number generator, used here to generate predictable results in a test environment.
+		let seed = [3u8; 32];
+		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
-			let block1_meta = Transaction::BlockMetadata(BlockMetadata::new(
+		// Create an executor instance from the environment configuration.
+		let executor = Executor::try_from_env()?;
+		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
+		let tx_factory = TransactionFactory::new(executor.chain_id.clone());
+
+		// Loop to simulate the execution of multiple blocks.
+		for _ in 0..10 {
+			// Generate a random block ID.
+			let block_id = HashValue::random();
+			// Clone the signer from the executor for signing the metadata.
+			// let signer = executor.signer.clone();
+			// Get the current time in microseconds for the block timestamp.
+			// let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+			// Create a block metadata transaction.
+			/*let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 				block_id,
 				1,
 				0,
 				signer.author(),
 				vec![0],
 				vec![],
-				unix_now_micro,
-			));
+				current_time_micros,
+			));*/
 
-			let state_checkpoint = Transaction::StateCheckpoint(block_id.clone());
-			let account1 = LocalAccount::generate(&mut rng);
-			let account1_address = account1.address();
-			let create1_tx = core_resources_account
-				.sign_with_transaction_builder(tx_factory.mint(account1.address(), 2000));
-			let create_tx_hash = create1_tx.clone().committed_hash();
-			let create1_txn = Transaction::UserTransaction(create1_tx);
+			// Create a state checkpoint transaction using the block ID.
+			// let state_checkpoint_tx = Transaction::StateCheckpoint(block_id.clone());
+			// Generate a new account for transaction tests.
+			let new_account = LocalAccount::generate(&mut rng);
+			let new_account_address = new_account.address();
 
-			let txs = ExecutableTransactions::Unsharded(
+			// Create a user account creation transaction.
+			let user_account_creation_tx = root_account
+				.sign_with_transaction_builder(tx_factory.create_user_account(new_account.public_key()));
+
+			// Create a mint transaction to provide the new account with some initial balance.
+			let mint_tx = root_account
+				.sign_with_transaction_builder(tx_factory.mint(new_account.address(), 2000));
+			// Store the hash of the committed transaction for later verification.
+			let mint_tx_hash = mint_tx.clone().committed_hash();
+
+			// Group all transactions into a single unsharded block for execution.
+			let transactions = ExecutableTransactions::Unsharded(
 				into_signature_verified_block(vec![
-					// block1_meta,
-					create1_txn,
-					// state_checkpoint
+					// block_metadata,
+					Transaction::UserTransaction(user_account_creation_tx),
+					Transaction::UserTransaction(mint_tx),
+					// state_checkpoint_tx,
 				])
 			);
-			let block = ExecutableBlock::new(block_id.clone(), txs);
-			let res = executor.execute_block(block).await?;
 
-			let reader = executor.db.read().await.reader.clone();
-			let version = reader.get_latest_version()?;
-			let transaction = reader.get_transaction_by_hash(
-				create_tx_hash,
-				0,
-				false
+			// Create and execute the block.
+			let block = ExecutableBlock::new(block_id.clone(), transactions);
+			executor.execute_block(block).await?;
+
+			// Access the database reader to verify state after execution.
+			let db_reader = executor.db.read().await.reader.clone();
+			// Get the latest version of the blockchain state from the database.
+			let latest_version = db_reader.get_latest_version()?;
+			// Verify the transaction by its hash to ensure it was committed.
+			let transaction_result = db_reader.get_transaction_by_hash(
+				mint_tx_hash,
+				latest_version,
+				false,
 			)?;
-			assert!(transaction.is_some());
+			assert!(transaction_result.is_some());
 
-			let state_view = reader.state_view_at_version(Some(version))?;
-			let account1_state_view = state_view.as_account_with_state_view(&account1_address);
-			let account_address = account1_state_view.get_account_address()?;
-			assert!(account_address.is_some());
-			println!("Account Address: {:?}", account_address);
-			let account_resource = account1_state_view.get_account_resource()?;
-
+			// Create a state view at the latest version to inspect account states.
+			let state_view = db_reader.state_view_at_version(Some(latest_version))?;
+			// Access the state view of the new account to verify its state and existence.
+			let account_state_view = state_view.as_account_with_state_view(&new_account_address);
+			let queried_account_address = account_state_view.get_account_address()?;
+			assert!(queried_account_address.is_some());
+			let account_resource = account_state_view.get_account_resource()?;
 			assert!(account_resource.is_some());
-			let account_resource = account_resource.unwrap();
-			println!("Account Version: {:?}", account_resource);
-
 		}
 
 		Ok(())
@@ -562,62 +570,59 @@ use super::*;
 	#[tokio::test]
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 
-		let core_resources_account: LocalAccount = LocalAccount::new(
-            aptos_test_root_address(),
-            AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
-            0,
-        );
-        let seed = [3u8; 32];
-        let mut rng = ::rand::rngs::StdRng::from_seed(seed);
-
-		let executor = Executor::try_from_env()?;
-		let mempool_executor = executor.clone();
-
-		let (tx, rx) = async_channel::unbounded();
-		let mempool_handle = tokio::spawn(async move {
-			loop {
-				mempool_executor.tick_transaction_pipe(tx.clone()).await?;
-				tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-			};
-			Ok(()) as Result<(), anyhow::Error>
-		});
-
-		let block_id = HashValue::random();
-
-		let tx_factory = TransactionFactory::new(
-			executor.chain_id.clone()
+		// Initialize a root account using a predefined keypair and the test root address.
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+			0,
 		);
-
-		let account1 = LocalAccount::generate(&mut rng);
-        let account1_address = account1.address();
-        let create1_tx = core_resources_account
-            .sign_with_transaction_builder(tx_factory.create_user_account(account1.public_key()));
-		let transaction_hash = create1_tx.clone().committed_hash();
-        let create1_txn = Transaction::UserTransaction(create1_tx);
-
-		let txs = ExecutableTransactions::Unsharded(vec![
-			SignatureVerifiedTransaction::Valid(create1_txn),
-		]);
-		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(block).await?;
-
-		let reader = executor.db.read().await.reader.clone();
-        let version = reader.get_latest_version()?;
-        let state_view = reader.state_view_at_version(Some(version))?;
-        let account1_state_view = state_view.as_account_with_state_view(&account1_address);
-        let account_resource = account1_state_view.get_account_address()?;
-        assert!(account_resource.is_some());
-
-		let apis = executor.try_get_apis().await?;
-		let result = apis.transactions.get_transaction_by_hash_inner(
-			&AcceptType::Bcs,
-			transaction_hash.into()
-		).await?;
-
-		mempool_handle.abort();
-
+	
+		// Seed for random number generator, used here to generate predictable results in a test environment.
+		let seed = [3u8; 32];
+		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
+	
+		// Create an executor instance from the environment configuration.
+		let executor = Executor::try_from_env()?;
+	
+		// Create a transaction factory with the chain ID of the executor.
+		let tx_factory = TransactionFactory::new(executor.chain_id.clone());
+	
+		// Simulate the execution of multiple blocks.
+		for _ in 0..10 {  // For example, create and execute 3 blocks.
+			let block_id = HashValue::random();  // Generate a random block ID for each block.
+	
+			// Generate new accounts and create transactions for each block.
+			let mut transactions = Vec::new();
+			let mut transaction_hashes = Vec::new();
+			for _ in 0..2 {  // Each block will contain 2 transactions.
+				let new_account = LocalAccount::generate(&mut rng);
+				let user_account_creation_tx = root_account
+					.sign_with_transaction_builder(tx_factory.create_user_account(new_account.public_key()));
+				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				transaction_hashes.push(tx_hash);
+				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
+			}
+	
+			// Group all transactions into an unsharded block for execution.
+			let executable_transactions = ExecutableTransactions::Unsharded(
+				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
+			);
+			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
+			executor.execute_block(block).await?;
+	
+			// Retrieve the executor's API interface and fetch the transaction by each hash.
+			let apis = executor.try_get_apis().await?;
+			for hash in transaction_hashes {
+				let _ = apis.transactions.get_transaction_by_hash_inner(
+					&AcceptType::Bcs,
+					hash.into()
+				).await?;
+			}
+		}
+	
 		Ok(())
 	}
+	
 
 	#[tokio::test]
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {

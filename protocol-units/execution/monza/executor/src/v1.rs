@@ -1,7 +1,5 @@
 use crate::*;
 use monza_opt_executor::Executor;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
 
@@ -52,7 +50,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
         &self,
         mode : &FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<StateCheckpointOutput, anyhow::Error> {
+    ) -> Result<(), anyhow::Error> {
 
         match mode {
             FinalityMode::Dyn => unimplemented!(),
