@@ -100,10 +100,13 @@ impl Executor {
 		}
 	}
 
-	pub fn bootstrap_empty_db(db_dir : PathBuf) -> Result<DbReaderWriter, anyhow::Error> {
+	pub fn bootstrap_empty_db(db_dir : PathBuf) -> Result<(
+		DbReaderWriter,
+		ValidatorSigner
+	), anyhow::Error> {
 		
-		let genesis = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
-		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis.0));
+		let (genesis, validators) = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
+		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(&db_dir));
 		
 		assert!(db_rw.reader.get_latest_ledger_info_option()?.is_none());
@@ -116,12 +119,16 @@ impl Executor {
 		)?;
 		assert!(db_rw.reader.get_latest_ledger_info_option()?.is_some());
 
-		Ok(db_rw)
+		let validator_signer = ValidatorSigner::new(
+			validators[0].data.owner_address,
+			validators[0].consensus_key.clone(),
+		);
+
+		Ok((db_rw, validator_signer))
 	}
 
 	pub fn bootstrap(
 		db_dir : PathBuf,
-		signer: ValidatorSigner,
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
@@ -146,7 +153,7 @@ impl Executor {
 		std::fs::write(public_key_path, public_key_hex)?;
 		std::fs::write(chain_id_path, chain_id_str)?;
 
-		let db_rw = Self::bootstrap_empty_db(db_dir)?;
+		let (db_rw, signer) = Self::bootstrap_empty_db(db_dir)?;
 		let reader = db_rw.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
@@ -182,14 +189,13 @@ impl Executor {
 		};
 
 		// use the default signer, block executor, and mempool
-		let signer = ValidatorSigner::random(None);
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
 		let chain_id = ChainId::new(10);
 
 		Self::bootstrap(
 			db_dir,
-			signer,
+
 			mempool_client_sender,
 			mempool_client_receiver,
 			node_config,
@@ -502,31 +508,19 @@ use super::*;
 			let account1 = LocalAccount::generate(&mut rng);
 			let account1_address = account1.address();
 			let create1_tx = core_resources_account
-				.sign_with_transaction_builder(tx_factory.create_user_account(account1.public_key()));
+				.sign_with_transaction_builder(tx_factory.mint(account1.address(), 2000));
 			let create1_txn = Transaction::UserTransaction(create1_tx);
 
 			let txs = ExecutableTransactions::Unsharded(vec![
-				// SignatureVerifiedTransaction::Valid(block1_meta),
+				SignatureVerifiedTransaction::Valid(block1_meta),
 				SignatureVerifiedTransaction::Valid(create1_txn),
-				// SignatureVerifiedTransaction::Valid(state_checkpoint),
+				SignatureVerifiedTransaction::Valid(state_checkpoint),
 			]);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
 			let res = executor.execute_block(block).await?;
 
 			let reader = executor.db.read().await.reader.clone();
 			let version = reader.get_latest_version()?;
-			let txn = reader.get_transaction_by_version(i, version, false)?;
-			/*let version = reader.get_latest_version()?;
-			println!("Version: {:?}", version);
-			let state_view = reader.state_view_at_version(Some(version))?;
-			let account1_state_view = state_view.as_account_with_state_view(&account1_address);
-			let account_address = account1_state_view.get_account_address()?;
-			assert!(account_address.is_some());
-			let account_version = account1_state_view.get_version()?;
-			assert!(account_version.is_some());
-			let account_version = account_version.unwrap();
-			println!("Account Version: {:?}", account_version);*/
-
 			let state_view = reader.state_view_at_version(Some(version))?;
 			let account1_state_view = state_view.as_account_with_state_view(&account1_address);
 			let account_address = account1_state_view.get_account_address()?;
