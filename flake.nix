@@ -26,6 +26,32 @@
 
         # celestia-app
         celestia-app = import ./celestia-app.nix { inherit pkgs; };
+
+        # monza-aptos
+        monza-aptos = pkgs.stdenv.mkDerivation {
+          pname = "monza-aptos";
+          version = "branch-monza";
+
+          src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "aptos-core";
+              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
+              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
+          };
+
+          installPhase = ''
+              ls -al && sleep 30
+              mkdir -p $out
+              cp -r ./* $out/
+          '';
+
+          meta = with pkgs.lib; {
+              description = "Aptos core repository on the monza branch";
+              homepage = "https://github.com/movementlabsxyz/aptos-core";
+              license = licenses.asl20;
+          };
+
+        };
        
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
@@ -65,6 +91,7 @@
         testingDependencies = with pkgs; [
             celestia-node
             celestia-app
+            monza-aptos
         ]
         ++ buildDependencies;
 
@@ -76,12 +103,15 @@
       in
         with pkgs; {
 
+          packages.monza-aptos = monza-aptos;
+
           # Development Shell
           devShells.default = mkShell {
             buildInputs = developmentDependencies;
 
             shellHook = ''
               #!/bin/bash
+              export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

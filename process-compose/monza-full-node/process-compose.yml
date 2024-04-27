@@ -42,3 +42,14 @@ processes:
       exec:
         command: |
           echo "true"
+
+  monza-faucet:
+    command : |
+      ./scripts/monza/faucet
+    depends_on:
+      monza-full-node:
+        condition: process_healthy
+    readiness_probe:
+      exec:
+        command: echo "true"
+

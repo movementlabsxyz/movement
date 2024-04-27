@@ -61,6 +61,7 @@ aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
+monza-execution-util = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"

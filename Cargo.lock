@@ -6201,13 +6201,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "monza-config"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "monza-execution-util",
+ "tokio",
+]
+
+[[package]]
 name = "monza-execution-util"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
  "aptos-sdk",
  "aptos-types",
  "m1-da-light-node-util",
+ "rand 0.7.3",
+ "tempfile",
 ]
 
 [[package]]
@@ -6375,6 +6387,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "log",
+ "monza-execution-util",
  "poem",
  "poem-openapi",
  "rand 0.7.3",

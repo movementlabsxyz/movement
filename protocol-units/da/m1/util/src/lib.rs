@@ -48,6 +48,14 @@ impl Config {
 
     }
 
+    pub fn write_to_env(&self) -> Result<(), anyhow::Error> {
+        std::env::set_var("CELESTIA_NODE_URL", self.celestia_url.clone());
+        std::env::set_var("CELESTIA_NODE_AUTH_TOKEN", self.celestia_token.clone());
+        std::env::set_var("CELESTIA_NAMESPACE_BYTES", hex::encode(&self.celestia_namespace.as_bytes()));
+        std::env::set_var("VERIFICATION_MODE", self.verification_mode.as_str_name());
+        Ok(())
+    }
+
     pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
         let client = Client::new(&self.celestia_url, Some(&self.celestia_token)).await.map_err(|e| anyhow::anyhow!("Failed to connect to Celestia client at {}: {}", self.celestia_url, e))?;
         Ok(client)

@@ -1,15 +1,14 @@
-#!/bin/bash
-export PRIVATE_KEY=$(cat ./.etc/monza/private_key)
-export PUBLIC_KEY=$(cat ./.etc/monza/public_key)
-export CHAIN_ID=$(cat ./.etc/monza/chain_id)
+#!/bin/bash -e
+# Change directory to the one specified in the environment variable
+cd "$MONZA_APTOS_PATH" # this should be provided by nix
 
-# create system tempdir
-mkdir -p /tmp/monza-faucet
-cd /tmp/monza-faucet
+# Split the listen addresses into an array
+IFS=':' read -r -a listener_array <<< "$MONZA_APTOS_FAUCET_LISTEN_ADDR"
 
-# clone aptos-core
-git clone https://github.com/aptos-labs/aptos-core
-cd aptos-core
+# Extract the listen address and port
+LISTEN_ADDR="${listener_array[0]}"
+LISTEN_PORT="${listener_array[1]}"
 
-# run the faucet
-cargo run -p aptos-faucet-service -- run-simple --key $PRIVATE_KEY --node-url http://localhost:3000 --chain-id $CHAIN_ID
+# Run the faucet service using cargo
+cargo run -p aptos-faucet-service -- run-simple --key "$MONZA_PRIVATE_KEY" \
+    --node-url "http://$MONZA_APTOS_REST_LISTEN_ADDR" --chain-id "$MONZA_CHAIN_ID"
