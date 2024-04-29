@@ -1,0 +1,15 @@
+#!/bin/bash
+export PRIVATE_KEY=$(cat ./.etc/monza/private_key)
+export PUBLIC_KEY=$(cat ./.etc/monza/public_key)
+export CHAIN_ID=$(cat ./.etc/monza/chain_id)
+
+# create system tempdir
+mkdir -p /tmp/monza-faucet
+cd /tmp/monza-faucet
+
+# clone aptos-core
+git clone https://github.com/aptos-labs/aptos-core
+cd aptos-core
+
+# run the faucet
+cargo run -p aptos-faucet-service -- run-simple --key $PRIVATE_KEY --node-url http://localhost:3000 --chain-id $CHAIN_ID

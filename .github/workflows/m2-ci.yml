@@ -1,0 +1,65 @@
+name: M2 CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: movement-runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install build essentials
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential lld libpq-dev unzip
+          sudo apt install -y pkg-config libusb-1.0-0-dev libftdi1-dev
+          sudo apt-get install libudev-dev libdw1 libdw-dev 
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.75.0
+          components: rustfmt, clippy
+          override: true
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo- 
+
+      - name: Install risc0
+        shell: bash
+        run: |
+          cargo install cargo-binstall
+          echo -e "yes\n" | cargo binstall --github-token ${{ secrets.GITHUB_TOKEN }} cargo-risczero
+          cargo risczero install 
+
+      - name: cargo check
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+          export RUSTUP_HOME=$HOME/.rustup
+          export CARGO_HOME=$HOME/.cargo
+          export PATH=$CARGO_HOME/bin:$PATH
+          cargo check --verbose
+
+      - name: cargo test
+        run: cargo test --verbose
