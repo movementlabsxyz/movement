@@ -2,9 +2,10 @@
 pragma solidity ^0.8.13;
 
 import {Output, OutputLib, Receipt, ReceiptClaim, ReceiptClaimLib, IRiscZeroVerifier, SystemExitCode, ExitCode} from "./IRiscZeroVerifier.sol";
+import {Groth16Verifier} from "./groth16/Groth16Verifier.sol";
 import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
-contract Dispute is IRISC0Verifier {
+contract Dispute is IRiscZeroVerifier, Groth16Verifier {
     struct Validator {
         bool isRegistered;
         uint256 stake;
@@ -42,12 +43,14 @@ contract Dispute is IRISC0Verifier {
     uint256 public constant MIN_STAKE = 1 ether;
     uint256 public delta; // Time window for filing a dispute
     uint256 public p; // Time to run the zero-knowledge proof
+    uint256 public m; // Minimum number of validators required to accept a block
 
     mapping(address => Validator) public validators;
     mapping(bytes => Dispute) public disputes;
     mapping(bytes32 => Proof) public verifiedProofs; // Maps blockHash to Proof
+    mapping(bytes32 => OptimisticCommitment) public optimisticCommitments; // Maps blockHash to OptimisticCommitment
 
-    IRISC0Verifier public verifier;
+    IRiscZeroVerifier public verifier;
 
     event ValidatorRegistered(address indexed validator, uint256 stake);
     event ValidatorDeregistered(address indexed validator);
@@ -55,11 +58,14 @@ contract Dispute is IRISC0Verifier {
     event DisputeResolved(bytes indexed disputeHash, DisputeState state);
     event ProofSubmitted(bytes32 indexed blockHash, bool isValid);
     event ProofVerified(bytes32 indexed blockHash, bool isValid);
+    event BlockAccepted(bytes32 indexed blockHash);
+    event OptimisticCommitmentSubmitted(bytes32 indexed blockHash, bytes stateCommitment, uint256 validatorCount);
 
-    constructor(uint256 _delta, uint256 _p, address _verifier) {
+    constructor(uint256 _delta, uint256 _p, uint256 _m, address _verifier) {
         delta = _delta;
         p = _p;
-        verifier = IRISC0Verifier(_verifier);
+        m = _m;
+        verifier = IRiscZeroVerifier(_verifier);
     }
 
     function registerValidator() external payable {
@@ -96,9 +102,9 @@ contract Dispute is IRISC0Verifier {
         emit DisputeResolved(disputeHash, state);
     }
 
-    function submitProof(bytes32 blockHash, bytes calldata proof, bytes32[] calldata publicInputs) external {
+    function submitProof(bytes32 blockHash, Receipt calldata receipt, bytes32[] calldata publicInputs) external {
         require(!verifiedProofs[blockHash].exists, "Proof already submitted for this block");
-        bool isValid = verifier.verifyProof(proof, publicInputs);
+        bool isValid = verifier.verify_integrity(receipt);
         verifiedProofs[blockHash] = Proof(blockHash, isValid, true);
         emit ProofSubmitted(blockHash, isValid);
     }
