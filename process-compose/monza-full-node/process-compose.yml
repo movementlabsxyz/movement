@@ -4,12 +4,13 @@ environment:
 
 processes:
 
+  build:
+    command : |
+      exit 0
+
   celestia-light-node:
     command: |
       exit 1
-    readiness_probe:
-      exec:
-        command: echo "true"
 
   celestia-light-node-synced:
     command: |
@@ -21,7 +22,7 @@ processes:
 
   m1-da-light-node:
     command: |
-      cargo run -p m1-da-light-node --features "sequencer"
+      ./target/debug/m1-da-light-node
     depends_on:
       celestia-light-node-synced:
         condition: process_completed
@@ -33,7 +34,7 @@ processes:
 
   monza-full-node:
     command: |
-      cargo run -p monza-full-node
+      ./target/debug/monza-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy

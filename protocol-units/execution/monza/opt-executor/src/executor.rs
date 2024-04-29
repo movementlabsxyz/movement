@@ -1,3 +1,4 @@
+use anyhow::Context as _;
 use aptos_db::AptosDB;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_mempool::{
@@ -210,7 +211,9 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let monza_config = monza_execution_util::config::just_monza::Config::try_from_env()?;
+		let monza_config = monza_execution_util::config::just_monza::Config::try_from_env().context(
+			"Failed to create Monza config"
+		)?;
 
 		Self::bootstrap(
 			mempool_client_sender,
@@ -300,13 +303,21 @@ impl Executor {
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 
+		#[cfg(feature = "logging")]
+		{
+			// log out to tracing
+			tracing::info!(
+				"Starting monza-opt-executor services at: {:?}",
+				self.monza_config.aptos_rest_listen_url
+			);
+
+		}
+
+
 		let context = self.try_get_context().await?;
-		let api_service = get_api_service(context).server("http://127.0.0.1:3000");
-
-		/*let basic_api = BasicApi {
-			concurrent_requests_semaphore : None,
-
-		};*/
+		let api_service = get_api_service(context).server(
+			format!("http://{:?}", self.monza_config.aptos_rest_listen_url)
+		);
 
 		let ui = api_service.swagger_ui();
 	
@@ -314,7 +325,9 @@ impl Executor {
 		let app = Route::new()
 			.nest("/v1", api_service)
 			.nest("/spec", ui);
-		Server::new(TcpListener::bind("127.0.0.1:3000"))
+		Server::new(TcpListener::bind(
+			self.monza_config.aptos_rest_listen_url.clone()
+		))
 			.run(app)
 			.await.map_err(
 				|e| anyhow::anyhow!("Server error: {:?}", e)

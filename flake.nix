@@ -40,9 +40,7 @@
           };
 
           installPhase = ''
-              ls -al && sleep 30
-              mkdir -p $out
-              cp -r ./* $out/
+              cp -r . $out
           '';
 
           meta = with pkgs.lib; {
