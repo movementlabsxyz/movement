@@ -4,3 +4,9 @@
 [submodule "protocol-units/dispute/lib/openzeppelin-contracts"]
     path = protocol-units/dispute/lib/openzeppelin-contracts
     url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "protocol-units/dispute/lib/murky"]
+		path = protocol-units/dispute/lib/murky
+		url = https://github.com/dmfxyz/murky
+[submodule "protocol-units/dispute/protocol-units/dispute/lib/murky"]
+	path = protocol-units/dispute/protocol-units/dispute/lib/murky
+	url = https://github.com/dmfxyz/murky
