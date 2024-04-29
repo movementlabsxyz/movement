@@ -1,0 +1,12 @@
+version: "3"
+
+environment:
+
+processes:
+
+  celestia-light-node:
+      command: |
+        celestia light start --core.ip validator-1.celestia-arabica-11.com --p2p.network arabica
+      readiness_probe:
+        exec:
+          command: echo "true"

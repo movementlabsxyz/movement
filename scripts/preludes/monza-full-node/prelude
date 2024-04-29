@@ -1,0 +1,4 @@
+#!/bin/bash -e
+export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
+export MOVE_ROCKS_PATH="./.etc/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
+. ./scripts/celestia/celestia-env
