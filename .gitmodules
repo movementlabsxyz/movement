@@ -1,9 +1,6 @@
 [submodule "protocol-units/dispute/lib/forge-std"]
-	path = protocol-units/dispute/lib/forge-std
-	url = https://github.com/foundry-rs/forge-std
+    path = protocol-units/dispute/lib/forge-std
+    url = https://github.com/foundry-rs/forge-std
 [submodule "protocol-units/dispute/lib/openzeppelin-contracts"]
-	path = protocol-units/dispute/lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "protocol-units/eth-settlement/lib/openzeppelin-contracts"]
-	path = protocol-units/eth-settlement/lib/openzeppelin-contracts
-	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+    path = protocol-units/dispute/lib/openzeppelin-contracts
+    url = https://github.com/OpenZeppelin/openzeppelin-contracts
