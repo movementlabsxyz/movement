@@ -12,7 +12,7 @@
     flake-utils,
     ...
     }:
-    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux"] (
+    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux" "aarch64-linux"] (
       system: let
         overlays = [(import rust-overlay)];
         pkgs = import nixpkgs {
@@ -101,6 +101,7 @@
       in
         with pkgs; {
 
+          # Monza Aptos
           packages.monza-aptos = monza-aptos;
 
           # Development Shell
