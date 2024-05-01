@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {Output, OutputLib, Receipt, ReceiptClaim, ReceiptClaimLib, IRiscZeroVerifier, SystemExitCode, ExitCode} from "./IRiscZeroVerifier.sol";
 import {Groth16Verifier} from "./groth16/Groth16Verifier.sol";
 import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
+import "forge-std/console2.sol";
 
 /// @notice A Groth16 seal over the claimed receipt claim.
 struct Seal {
@@ -100,12 +101,15 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         //verifier = IRiscZeroVerifier(_verifier);
     }
 
-
     function registerValidator() external payable {
         require(msg.value >= MIN_STAKE, "Insufficient stake");
         require(!validators[msg.sender].isRegistered, "Validator already registered");
         validators[msg.sender] = Validator(true, msg.value);
         emit ValidatorRegistered(msg.sender, msg.value);
+    }
+
+    function getValidator(address validator) external view returns (bool, uint256) {
+        return (validators[validator].isRegistered, validators[validator].stake);
     }
 
     function deregisterValidator() external {

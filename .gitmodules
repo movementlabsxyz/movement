@@ -7,6 +7,4 @@
 [submodule "protocol-units/dispute/lib/murky"]
 	path = protocol-units/dispute/lib/murky
 	url = https://github.com/dmfxyz/murky
-[submodule "protocol-units/dispute/lib/murkys"]
-	path = protocol-units/dispute/lib/murkys
-	url = https://github.com/dmfxyz/murky
+

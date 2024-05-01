@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {console2} from "forge-std/console2.sol";
 
 import "ds-test/test.sol";
+import "forge-std/console2.sol";
 import "../src/RStarM.sol";
 import "forge-std/Vm.sol";
 import {
@@ -43,28 +44,22 @@ contract RStartM is DSTest {
     );
 
     function setUp() public {
-        rStarM = new RStarM(1, 15, 1, ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
-        rStarM.registerValidator();
+        rStarM = new RStarM(1, 15, 2, ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
+        vm.deal(address(this), rStarM.MIN_STAKE());
     }
 
     function testRegisterValidator() public {
-      vm.deal(validator, rStarM.MIN_STAKE());
-      vm.prank(validator);
-      rStarM.registerValidator();
+      uint256 initialBalance = 100 ether;
+      vm.deal(signer1, initialBalance);
+      uint256 minStake = rStarM.MIN_STAKE();
 
-      (bool isRegistered, uint256 stake) = rStarM.validators(validator);
+      vm.prank(signer1);
+      rStarM.registerValidator{value: minStake}();
+
+      (bool isRegistered, uint256 stake) = rStarM.getValidator(signer1);
       assertTrue(isRegistered, "Validator should be registered");
-      assertEq(stake, rStarM.MIN_STAKE(), "Validator stake should match the minimum stake");
-    }
-
-    // function testAddSigner() public {
-    //     assertTrue(rStarM.isSigner(signer1), "signer1 should be a signer after addition");
-    // }
-
-    // function testRemoveSigner() public {
-    //     rStarM.removeSigner(signer1);
-    //     assertTrue(!rStarM.isSigner(signer1), "signer1 should not be a signer after removal");
-    // }
+      assertEq(stake, minStake, "Validator stake should match the provided stake");
+    } 
 
     function testVerifyKnownGoodReceipt() external view {
         require(rStarM.verify_integrity(TEST_RECEIPT), "verification failed");
