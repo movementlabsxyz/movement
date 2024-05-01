@@ -51,10 +51,13 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         UNVERIFIABLE
     }
 
+    uint256 public constant SECONDS_IN_DAY = 86400; // Number of seconds in a day
+    uint256 public constant SECONDS_IN_MINUTE = 60; // Number of seconds in a minute
+
     uint256 public constant MIN_STAKE = 1 ether;
-    uint256 public delta; // Time window for filing a dispute
-    uint256 public p; // Time to run the zero-knowledge proof
-    uint256 public m; // Minimum number of validators required to accept a block
+    uint256 public delta = 1 * SECONDS_IN_DAY; // Time window for filing a dispute (e.g., 1 day)
+    uint256 public p = 1 * SECONDS_IN_MINUTE; 
+    uint256 public m; // Minimum number of validators requried
 
     /// @notice Control ID hash for the identity_p254 predicate decomposed by `splitDigest`.
     /// @dev This value controls what set of recursion programs, and therefore what version of the
@@ -82,12 +85,21 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     event BlockAccepted(bytes32 indexed blockHash);
     event OptimisticCommitmentSubmitted(bytes32 indexed blockHash, bytes stateCommitment, uint256 validatorCount);
 
-    constructor(uint256 _delta, uint256 _p, uint256 _m, address _verifier) {
+    constructor(
+        uint256 _delta, 
+        uint256 _p, 
+        uint256 _m, 
+        uint256 control_id_0, 
+        uint256 control_id_1
+    ) {
         delta = _delta;
         p = _p;
         m = _m;
-        verifier = IRiscZeroVerifier(_verifier);
+        CONTROL_ID_0 = control_id_0;
+        CONTROL_ID_1 = control_id_1;
+        //verifier = IRiscZeroVerifier(_verifier);
     }
+
 
     function registerValidator() external payable {
         require(msg.value >= MIN_STAKE, "Insufficient stake");
