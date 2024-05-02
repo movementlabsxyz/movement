@@ -10,7 +10,7 @@ tracing-subscriber = { workspace = true }
 tempfile = { workspace = true }
 serde = { workspace = true } 
 
-methods = { path = "../methods" }
+methods = { workspace = true }
 
 
 

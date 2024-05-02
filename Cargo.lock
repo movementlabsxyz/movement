@@ -19,6 +19,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "abstract-domain-derive"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "proc-macro2 1.0.81",
+ "quote 1.0.36",
+ "syn 2.0.60",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -213,11 +223,11 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-gas-algebra",
- "aptos-gas-meter",
- "aptos-gas-schedule",
- "aptos-vm-types",
- "move-binary-format",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
 ]
 
 [[package]]
@@ -226,8 +236,8 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
 ]
 
 [[package]]
@@ -236,13 +246,28 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-logger",
- "aptos-types",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "claims",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+]
+
+[[package]]
+name = "aptos-aggregator"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "claims",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
 ]
 
 [[package]]
@@ -255,19 +280,19 @@ dependencies = [
  "aptos-bcs-utils",
  "aptos-build-info",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db-indexer",
- "aptos-framework",
- "aptos-gas-schedule",
- "aptos-global-constants",
- "aptos-logger",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-mempool",
- "aptos-metrics-core",
- "aptos-runtimes",
- "aptos-storage-interface",
- "aptos-types",
- "aptos-utils",
- "aptos-vm",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-trait",
  "bcs 0.1.4",
  "bytes",
@@ -278,7 +303,7 @@ dependencies = [
  "itertools 0.10.5",
  "mime",
  "mini-moka",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "num_cpus",
  "once_cell",
  "paste",
@@ -298,21 +323,21 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db-indexer",
- "aptos-framework",
- "aptos-logger",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-openapi",
- "aptos-storage-interface",
- "aptos-types",
- "aptos-vm",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-trait",
  "bcs 0.1.4",
  "hex",
  "indoc",
- "move-binary-format",
- "move-core-types",
- "move-resource-viewer",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "once_cell",
  "poem",
  "poem-openapi",
@@ -340,20 +365,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-bitvec"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "aptos-block-executor"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-drop-helper",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-mvhashmap",
- "aptos-types",
- "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-mvhashmap 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arc-swap",
  "bcs 0.1.4",
  "bytes",
@@ -363,9 +397,45 @@ dependencies = [
  "dashmap",
  "derivative",
  "fail 0.5.1",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num_cpus",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "rand 0.7.3",
+ "rayon",
+ "scopeguard",
+ "serde",
+]
+
+[[package]]
+name = "aptos-block-executor"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-mvhashmap 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "arc-swap",
+ "bcs 0.1.4",
+ "bytes",
+ "claims",
+ "concurrent-queue",
+ "crossbeam",
+ "dashmap",
+ "derivative",
+ "fail 0.5.1",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num_cpus",
  "once_cell",
  "parking_lot 0.12.1",
@@ -381,16 +451,38 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "clap 4.5.4",
  "dashmap",
  "itertools 0.10.5",
  "jemallocator",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+]
+
+[[package]]
+name = "aptos-block-partitioner"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "clap 4.5.4",
+ "dashmap",
+ "itertools 0.10.5",
+ "jemallocator",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "rand 0.7.3",
  "rayon",
@@ -421,12 +513,12 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-package-builder",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "include_dir 0.7.3",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "once_cell",
 ]
 
@@ -436,9 +528,9 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "futures",
 ]
 
@@ -447,8 +539,8 @@ name = "aptos-compression"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "lz4",
  "once_cell",
  "thiserror",
@@ -460,14 +552,14 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-global-constants",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-secure-storage",
  "aptos-short-hex-str",
  "aptos-temppath",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
@@ -494,14 +586,14 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-bitvec",
- "aptos-crypto",
- "aptos-crypto-derive",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-executor-types",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-short-hex-str",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "futures",
  "itertools 0.10.5",
@@ -519,7 +611,7 @@ version = "0.0.3"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto-derive",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "ark-bn254",
  "ark-ec",
  "ark-ff 0.4.2",
@@ -560,9 +652,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-crypto"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-std 0.4.0",
+ "base64 0.13.1",
+ "bcs 0.1.4",
+ "blst",
+ "bulletproofs",
+ "bytes",
+ "curve25519-dalek",
+ "curve25519-dalek-ng",
+ "digest 0.9.0",
+ "ed25519-dalek",
+ "hex",
+ "hkdf 0.10.0",
+ "libsecp256k1",
+ "merlin",
+ "more-asserts",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "once_cell",
+ "p256",
+ "poseidon-ark",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "ring 0.16.20",
+ "serde",
+ "serde-name",
+ "serde_bytes",
+ "sha2 0.10.8",
+ "sha2 0.9.9",
+ "signature 2.2.0",
+ "static_assertions",
+ "thiserror",
+ "tiny-keccak",
+ "x25519-dalek",
+]
+
+[[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+dependencies = [
+ "proc-macro2 1.0.81",
+ "quote 1.0.36",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "aptos-crypto-derive"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
 dependencies = [
  "proc-macro2 1.0.81",
  "quote 1.0.36",
@@ -575,18 +722,18 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-id-generator",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-netcore",
  "aptos-network",
- "aptos-storage-interface",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-storage-service-client",
  "aptos-storage-service-types",
  "aptos-time-service",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arc-swap",
  "async-trait",
  "dashmap",
@@ -608,23 +755,23 @@ dependencies = [
  "anyhow",
  "aptos-accumulator",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db-indexer",
  "aptos-executor",
  "aptos-executor-types",
- "aptos-experimental-runtimes",
- "aptos-infallible",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-jellyfish-merkle",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-proptest-helpers",
  "aptos-rocksdb-options",
  "aptos-schemadb",
- "aptos-scratchpad",
- "aptos-storage-interface",
+ "aptos-scratchpad 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arc-swap",
  "arr_macro",
  "bcs 0.1.4",
@@ -634,9 +781,9 @@ dependencies = [
  "either",
  "itertools 0.10.5",
  "lru 0.7.8",
- "move-core-types",
- "move-resource-viewer",
- "num-derive",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num-derive 0.3.3",
  "num_cpus",
  "once_cell",
  "proptest",
@@ -655,23 +802,23 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "aptos-config",
- "aptos-crypto",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-rocksdb-options",
  "aptos-schemadb",
- "aptos-scratchpad",
- "aptos-storage-interface",
- "aptos-types",
- "aptos-vm",
+ "aptos-scratchpad 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "byteorder",
  "bytes",
  "dashmap",
- "move-core-types",
- "move-resource-viewer",
- "num-derive",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num-derive 0.3.3",
  "serde",
 ]
 
@@ -681,9 +828,42 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-runtimes",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "bcs 0.1.4",
+ "bellman",
+ "blst",
+ "blstrs",
+ "criterion",
+ "ff 0.13.0",
+ "group 0.13.0",
+ "hex",
+ "merlin",
+ "more-asserts",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "pairing",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "rayon",
+ "serde",
+ "serde_bytes",
+ "sha3",
+ "static_assertions",
+]
+
+[[package]]
+name = "aptos-dkg"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "bcs 0.1.4",
  "bellman",
  "blst",
@@ -713,9 +893,21 @@ name = "aptos-drop-helper"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-experimental-runtimes",
- "aptos-infallible",
- "aptos-metrics-core",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "threadpool",
+]
+
+[[package]]
+name = "aptos-drop-helper"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "threadpool",
 ]
@@ -728,9 +920,9 @@ dependencies = [
  "anyhow",
  "aptos-channels",
  "aptos-id-generator",
- "aptos-infallible",
- "aptos-storage-interface",
- "aptos-types",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-trait",
  "futures",
  "serde",
@@ -743,28 +935,28 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-block-partitioner",
+ "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-consensus-types",
- "aptos-crypto",
- "aptos-drop-helper",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-executor-service",
  "aptos-executor-types",
- "aptos-experimental-runtimes",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-scratchpad",
- "aptos-secure-net",
- "aptos-storage-interface",
- "aptos-types",
- "aptos-vm",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-scratchpad 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-secure-net 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arr_macro",
  "bcs 0.1.4",
  "bytes",
  "dashmap",
  "fail 0.5.1",
  "itertools 0.10.5",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "num_cpus",
  "once_cell",
  "rayon",
@@ -777,21 +969,21 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-block-partitioner",
+ "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-executor-types",
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-language-e2e-tests",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-node-resource-metrics",
  "aptos-push-metrics",
- "aptos-retrier",
- "aptos-secure-net",
- "aptos-storage-interface",
- "aptos-types",
- "aptos-vm",
+ "aptos-retrier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-secure-net 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "clap 4.5.4",
  "crossbeam-channel",
@@ -817,16 +1009,16 @@ dependencies = [
  "aptos-cached-packages",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db",
  "aptos-executor",
  "aptos-executor-types",
  "aptos-genesis",
  "aptos-sdk",
- "aptos-storage-interface",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-genesis",
  "rand 0.7.3",
 ]
@@ -837,13 +1029,13 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-block-partitioner",
- "aptos-crypto",
- "aptos-drop-helper",
- "aptos-scratchpad",
- "aptos-secure-net",
- "aptos-storage-interface",
- "aptos-types",
+ "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-scratchpad 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-secure-net 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "criterion",
  "dashmap",
@@ -858,7 +1050,21 @@ name = "aptos-experimental-runtimes"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "core_affinity",
+ "libc",
+ "num_cpus",
+ "once_cell",
+ "rayon",
+ "tokio",
+]
+
+[[package]]
+name = "aptos-experimental-runtimes"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "core_affinity",
  "libc",
  "num_cpus",
@@ -875,8 +1081,8 @@ dependencies = [
  "anyhow",
  "aptos-config",
  "aptos-faucet-metrics-server",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-sdk",
  "async-trait",
  "captcha",
@@ -907,8 +1113,8 @@ version = "2.0.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "once_cell",
  "poem",
  "prometheus",
@@ -922,16 +1128,16 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-crypto",
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-move-stdlib",
- "aptos-native-interface",
- "aptos-sdk-builder",
- "aptos-table-natives",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-sdk-builder 0.2.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-table-natives 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "ark-bls12-381",
  "ark-bn254",
  "ark-ec",
@@ -957,20 +1163,95 @@ dependencies = [
  "log",
  "lru 0.7.8",
  "merlin",
- "move-binary-format",
- "move-cli",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-docgen",
- "move-model",
- "move-package",
- "move-prover",
- "move-prover-boogie-backend",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-cli 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num-traits",
+ "once_cell",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "rayon",
+ "ripemd",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "sha2 0.10.8",
+ "sha2 0.9.9",
+ "sha3",
+ "siphasher",
+ "smallvec",
+ "tempfile",
+ "thiserror",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "aptos-framework"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-sdk-builder 0.2.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-table-natives 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "ark-bls12-381",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "base64 0.13.1",
+ "bcs 0.1.4",
+ "better_any",
+ "blake2-rfc",
+ "blst",
+ "bulletproofs",
+ "byteorder",
+ "clap 4.5.4",
+ "codespan-reporting",
+ "curve25519-dalek-ng",
+ "either",
+ "flate2",
+ "hex",
+ "include_dir 0.7.3",
+ "itertools 0.10.5",
+ "libsecp256k1",
+ "log",
+ "lru 0.7.8",
+ "merlin",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-cli 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num-traits",
  "once_cell",
  "rand 0.7.3",
@@ -997,7 +1278,16 @@ version = "0.0.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "either",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+]
+
+[[package]]
+name = "aptos-gas-algebra"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "either",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
 ]
 
 [[package]]
@@ -1005,15 +1295,31 @@ name = "aptos-gas-meter"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-logger",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+]
+
+[[package]]
+name = "aptos-gas-meter"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
 ]
 
 [[package]]
@@ -1022,18 +1328,18 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-framework",
- "aptos-gas-algebra",
- "aptos-gas-meter",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-package-builder",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "handlebars",
  "inferno",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "regex",
  "serde_json",
  "smallvec",
@@ -1044,12 +1350,27 @@ name = "aptos-gas-schedule"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-global-constants",
- "aptos-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "either",
- "move-core-types",
- "move-vm-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "paste",
+ "rand 0.7.3",
+]
+
+[[package]]
+name = "aptos-gas-schedule"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "either",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "paste",
  "rand 0.7.3",
 ]
@@ -1062,16 +1383,16 @@ dependencies = [
  "anyhow",
  "aptos-cached-packages",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db",
  "aptos-executor",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-keygen",
- "aptos-logger",
- "aptos-storage-interface",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-genesis",
  "bcs 0.1.4",
  "rand 0.7.3",
@@ -1085,6 +1406,11 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 
 [[package]]
+name = "aptos-global-constants"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+
+[[package]]
 name = "aptos-id-generator"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
@@ -1095,24 +1421,29 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 
 [[package]]
+name = "aptos-infallible"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+
+[[package]]
 name = "aptos-jellyfish-merkle"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-experimental-runtimes",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-storage-interface",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
  "itertools 0.10.5",
- "num-derive",
+ "num-derive 0.3.3",
  "num-traits",
  "once_cell",
  "proptest",
@@ -1127,8 +1458,8 @@ name = "aptos-keygen"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-crypto",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "rand 0.7.3",
 ]
 
@@ -1139,36 +1470,36 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
- "aptos-aggregator",
- "aptos-bitvec",
- "aptos-block-executor",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-cached-packages",
- "aptos-crypto",
- "aptos-framework",
- "aptos-gas-algebra",
- "aptos-gas-meter",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-gas-profiling",
- "aptos-gas-schedule",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-keygen",
- "aptos-memory-usage-tracker",
- "aptos-native-interface",
+ "aptos-memory-usage-tracker 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-proptest-helpers",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-genesis",
- "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "bytes",
  "goldenfile",
  "hex",
- "move-binary-format",
- "move-command-line-common",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "move-ir-compiler",
- "move-model",
- "move-vm-types",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "num_cpus",
  "once_cell",
  "petgraph 0.5.1",
@@ -1184,8 +1515,8 @@ name = "aptos-ledger"
 version = "0.2.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-crypto",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "hex",
  "ledger-apdu",
  "ledger-transport-hid",
@@ -1204,13 +1535,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-log-derive"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "proc-macro2 1.0.81",
+ "quote 1.0.36",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "aptos-logger"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-infallible",
- "aptos-log-derive",
- "aptos-node-identity",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-log-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-node-identity 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "backtrace",
+ "chrono",
+ "erased-serde",
+ "futures",
+ "hostname",
+ "once_cell",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "aptos-logger"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-log-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-node-identity 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "backtrace",
  "chrono",
  "erased-serde",
@@ -1232,13 +1597,27 @@ name = "aptos-memory-usage-tracker"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-gas-meter",
- "aptos-types",
- "aptos-vm-types",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+]
+
+[[package]]
+name = "aptos-memory-usage-tracker"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
 ]
 
 [[package]]
@@ -1251,19 +1630,19 @@ dependencies = [
  "aptos-channels",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-data-client",
  "aptos-event-notifications",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-mempool-notifications",
- "aptos-metrics-core",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-netcore",
  "aptos-network",
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-short-hex-str",
- "aptos-storage-interface",
- "aptos-types",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-validator",
  "async-trait",
  "bcs 0.1.4",
@@ -1286,8 +1665,8 @@ name = "aptos-mempool-notifications"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-runtimes",
- "aptos-types",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-trait",
  "futures",
  "serde",
@@ -1300,7 +1679,7 @@ name = "aptos-memsocket"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bytes",
  "futures",
  "once_cell",
@@ -1316,25 +1695,60 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-metrics-core"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "prometheus",
+]
+
+[[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-gas-schedule",
- "aptos-native-interface",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "either",
  "hex",
  "log",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-prover",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "sha2 0.9.9",
+ "sha3",
+ "smallvec",
+ "walkdir",
+]
+
+[[package]]
+name = "aptos-move-stdlib"
+version = "0.1.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "either",
+ "hex",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "sha2 0.9.9",
  "sha3",
  "smallvec",
@@ -1347,20 +1761,43 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-crypto",
- "aptos-infallible",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "bytes",
  "claims",
  "crossbeam",
  "dashmap",
  "derivative",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "serde",
+]
+
+[[package]]
+name = "aptos-mvhashmap"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "bytes",
+ "claims",
+ "crossbeam",
+ "dashmap",
+ "derivative",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "serde",
 ]
 
@@ -1369,15 +1806,32 @@ name = "aptos-native-interface"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "bytes",
- "move-binary-format",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "smallvec",
+]
+
+[[package]]
+name = "aptos-native-interface"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "bytes",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "smallvec",
 ]
 
@@ -1388,7 +1842,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bytes",
  "futures",
  "pin-project",
@@ -1404,23 +1858,23 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-bitvec",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-channels",
  "aptos-compression",
  "aptos-config",
- "aptos-crypto",
- "aptos-crypto-derive",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-id-generator",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-netcore",
  "aptos-num-variants",
  "aptos-peer-monitoring-service-types",
  "aptos-rate-limiter",
  "aptos-short-hex-str",
  "aptos-time-service",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arc-swap",
  "async-trait",
  "bcs 0.1.4",
@@ -1452,7 +1906,19 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "claims",
+ "hostname",
+ "once_cell",
+]
+
+[[package]]
+name = "aptos-node-identity"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "claims",
  "hostname",
  "once_cell",
@@ -1464,9 +1930,9 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "aptos-build-info",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "cfg-if",
  "once_cell",
  "procfs",
@@ -1503,10 +1969,10 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "itertools 0.10.5",
- "move-command-line-common",
- "move-package",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "tempfile",
 ]
 
@@ -1516,7 +1982,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "aptos-config",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "cfg_block",
  "serde",
@@ -1547,6 +2013,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-protos"
+version = "1.3.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "futures-core",
+ "pbjson",
+ "prost",
+ "prost-types",
+ "serde",
+ "tonic",
+]
+
+[[package]]
 name = "aptos-proxy"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
@@ -1559,8 +2038,8 @@ name = "aptos-push-metrics"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "ureq",
  "url",
 ]
@@ -1570,9 +2049,9 @@ name = "aptos-rate-limiter"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "futures",
  "pin-project",
  "tokio",
@@ -1586,16 +2065,16 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "aptos-api-types",
- "aptos-crypto",
- "aptos-infallible",
- "aptos-logger",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "bytes",
  "futures",
  "hex",
- "move-binary-format",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "poem-openapi",
  "reqwest",
  "serde",
@@ -1610,7 +2089,16 @@ name = "aptos-retrier"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "tokio",
+]
+
+[[package]]
+name = "aptos-retrier"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "tokio",
 ]
 
@@ -1633,15 +2121,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-runtimes"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "rayon",
+ "tokio",
+]
+
+[[package]]
 name = "aptos-schemadb"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-storage-interface",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "dunce",
  "once_cell",
  "proptest",
@@ -1654,17 +2151,36 @@ name = "aptos-scratchpad"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-crypto",
- "aptos-drop-helper",
- "aptos-experimental-runtimes",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bitvec 1.0.1",
  "itertools 0.10.5",
  "once_cell",
  "proptest",
+ "rayon",
+ "thiserror",
+]
+
+[[package]]
+name = "aptos-scratchpad"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bitvec 1.0.1",
+ "itertools 0.10.5",
+ "once_cell",
  "rayon",
  "thiserror",
 ]
@@ -1677,14 +2193,14 @@ dependencies = [
  "anyhow",
  "aptos-api-types",
  "aptos-cached-packages",
- "aptos-crypto",
- "aptos-global-constants",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-ledger",
  "aptos-rest-client",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "ed25519-dalek-bip32",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "rand_core 0.5.1",
  "serde",
  "tiny-bip39",
@@ -1696,11 +2212,30 @@ version = "0.2.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "clap 4.5.4",
  "heck 0.4.1",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "regex",
+ "serde-generate",
+ "serde-reflection",
+ "serde_yaml 0.8.26",
+ "textwrap 0.15.2",
+]
+
+[[package]]
+name = "aptos-sdk-builder"
+version = "0.2.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "clap 4.5.4",
+ "heck 0.4.1",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "regex",
  "serde-generate",
@@ -1714,10 +2249,29 @@ name = "aptos-secure-net"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-protos",
- "aptos-retrier",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-retrier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "bcs 0.1.4",
+ "crossbeam-channel",
+ "once_cell",
+ "serde",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tonic-reflection",
+]
+
+[[package]]
+name = "aptos-secure-net"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-retrier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "bcs 0.1.4",
  "crossbeam-channel",
  "once_cell",
@@ -1734,9 +2288,9 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
  "aptos-time-service",
  "aptos-vault-client",
@@ -1767,7 +2321,19 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "crossbeam",
+ "once_cell",
+ "rayon",
+]
+
+[[package]]
+name = "aptos-speculative-state-helper"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "crossbeam",
  "once_cell",
  "rayon",
@@ -1779,21 +2345,53 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-experimental-runtimes",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-scratchpad",
- "aptos-secure-net",
- "aptos-types",
- "aptos-vm",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-scratchpad 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-secure-net 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "arr_macro",
  "bcs 0.1.4",
  "bytes",
  "crossbeam-channel",
  "dashmap",
  "itertools 0.10.5",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "parking_lot 0.12.1",
+ "proptest",
+ "proptest-derive 0.4.0",
+ "rayon",
+ "rocksdb",
+ "serde",
+ "thiserror",
+ "threadpool",
+]
+
+[[package]]
+name = "aptos-storage-interface"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-scratchpad 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-secure-net 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "arr_macro",
+ "bcs 0.1.4",
+ "bytes",
+ "crossbeam-channel",
+ "dashmap",
+ "itertools 0.10.5",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "parking_lot 0.12.1",
  "proptest",
@@ -1814,7 +2412,7 @@ dependencies = [
  "aptos-config",
  "aptos-network",
  "aptos-storage-service-types",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-trait",
  "thiserror",
 ]
@@ -1826,9 +2424,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "aptos-compression",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-time-service",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "num-traits",
  "serde",
@@ -1841,17 +2439,38 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-gas-schedule",
- "aptos-native-interface",
- "aptos-types",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "better_any",
  "bytes",
- "move-binary-format",
- "move-core-types",
- "move-table-extension",
- "move-vm-runtime",
- "move-vm-test-utils",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "sha3",
+ "smallvec",
+]
+
+[[package]]
+name = "aptos-table-natives"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "better_any",
+ "bytes",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "sha3",
  "smallvec",
 ]
@@ -1870,7 +2489,7 @@ name = "aptos-time-service"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "enum_dispatch",
  "futures",
  "pin-project",
@@ -1884,11 +2503,11 @@ version = "0.0.3"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-bitvec",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-dkg",
- "aptos-experimental-runtimes",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-dkg 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "ark-bn254",
  "ark-ff 0.4.2",
  "ark-groth16",
@@ -1903,12 +2522,12 @@ dependencies = [
  "hex",
  "itertools 0.10.5",
  "jsonwebtoken",
- "move-binary-format",
- "move-core-types",
- "move-table-extension",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "num-bigint 0.3.3",
- "num-derive",
+ "num-derive 0.3.3",
  "num-traits",
  "once_cell",
  "passkey-types",
@@ -1930,16 +2549,71 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-types"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-dkg 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "ark-bn254",
+ "ark-ff 0.4.2",
+ "ark-groth16",
+ "ark-serialize 0.4.2",
+ "arr_macro",
+ "base64 0.13.1",
+ "bcs 0.1.4",
+ "bytes",
+ "chrono",
+ "derivative",
+ "fixed",
+ "hex",
+ "itertools 0.10.5",
+ "jsonwebtoken",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "num-bigint 0.3.3",
+ "num-derive 0.3.3",
+ "num-traits",
+ "once_cell",
+ "passkey-types",
+ "rand 0.7.3",
+ "rayon",
+ "ring 0.16.20",
+ "rsa",
+ "serde",
+ "serde-big-array",
+ "serde_bytes",
+ "serde_json",
+ "serde_with",
+ "serde_yaml 0.8.26",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "thiserror",
+ "tiny-keccak",
+]
+
+[[package]]
 name = "aptos-utils"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+
+[[package]]
+name = "aptos-utils"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
 
 [[package]]
 name = "aptos-vault-client"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "base64 0.13.1",
  "chrono",
  "native-tls",
@@ -1956,29 +2630,29 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-bitvec",
- "aptos-block-executor",
- "aptos-block-partitioner",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-experimental-runtimes",
- "aptos-framework",
- "aptos-gas-algebra",
- "aptos-gas-meter",
- "aptos-gas-schedule",
- "aptos-infallible",
- "aptos-logger",
- "aptos-memory-usage-tracker",
- "aptos-metrics-core",
- "aptos-move-stdlib",
- "aptos-mvhashmap",
- "aptos-native-interface",
- "aptos-table-natives",
- "aptos-types",
- "aptos-utils",
- "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-memory-usage-tracker 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-mvhashmap 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-table-natives 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "base64-url",
  "bcs 0.1.4",
  "bytes",
@@ -1990,12 +2664,69 @@ dependencies = [
  "futures",
  "hex",
  "jsonwebtoken",
- "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num_cpus",
+ "once_cell",
+ "ouroboros 0.15.6",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "tracing",
+]
+
+[[package]]
+name = "aptos-vm"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-memory-usage-tracker 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-mvhashmap 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-table-natives 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "base64-url",
+ "bcs 0.1.4",
+ "bytes",
+ "claims",
+ "crossbeam-channel",
+ "dashmap",
+ "derive_more",
+ "fail 0.5.1",
+ "futures",
+ "hex",
+ "jsonwebtoken",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num_cpus",
  "once_cell",
  "ouroboros 0.15.6",
@@ -2014,16 +2745,16 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
- "aptos-crypto",
- "aptos-framework",
- "aptos-gas-schedule",
- "aptos-types",
- "aptos-vm",
- "aptos-vm-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "bytes",
- "move-core-types",
- "move-vm-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "once_cell",
  "rand 0.7.3",
  "serde",
@@ -2034,11 +2765,26 @@ name = "aptos-vm-logging"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "aptos-crypto",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-speculative-state-helper",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-speculative-state-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "arc-swap",
+ "once_cell",
+ "serde",
+]
+
+[[package]]
+name = "aptos-vm-logging"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-speculative-state-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "arc-swap",
  "once_cell",
  "serde",
@@ -2050,17 +2796,38 @@ version = "0.0.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bcs 0.1.4",
  "bytes",
  "claims",
  "either",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "rand 0.7.3",
+ "serde",
+]
+
+[[package]]
+name = "aptos-vm-types"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "bcs 0.1.4",
+ "bytes",
+ "claims",
+ "either",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "rand 0.7.3",
  "serde",
 ]
@@ -2072,11 +2839,11 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "aptos-event-notifications",
- "aptos-logger",
- "aptos-storage-interface",
- "aptos-types",
- "aptos-vm",
- "aptos-vm-logging",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "fail 0.5.1",
 ]
 
@@ -2480,6 +3247,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1fdabc7756949593fe60f30ec81974b613357de856987752631dea1e3394c80"
 
 [[package]]
+name = "autotools"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef941527c41b0fc0dd48511a8154cd5fc7e29200a0ff8b7203c5d777dbc795cf"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "axum"
 version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2845,13 +3621,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "bonsai-sdk"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e0f26687ed447c77b1a40a3665bf88e8327b6de65a74f521544bd225982f589"
+dependencies = [
+ "reqwest",
+ "risc0-groth16",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "borsh"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4114279215a005bc675e386011e594e1d9b800918cea18fcadadcce864a2046b"
 dependencies = [
  "borsh-derive",
- "bytes",
  "hashbrown 0.13.2",
 ]
 
@@ -2991,6 +3778,20 @@ name = "bytemuck"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d6d68c57235a3a081186990eca2867354726650f42f7516ca50c28d6281fd15"
+dependencies = [
+ "bytemuck_derive",
+]
+
+[[package]]
+name = "bytemuck_derive"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4da9a32f3fed317401fa3c862968128267c3106685286e15d5aaa3d7389c2f60"
+dependencies = [
+ "proc-macro2 1.0.81",
+ "quote 1.0.36",
+ "syn 2.0.60",
+]
 
 [[package]]
 name = "byteorder"
@@ -3049,9 +3850,9 @@ dependencies = [
 
 [[package]]
 name = "cargo-platform"
-version = "0.1.8"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24b1f0365a6c6bb4020cd05806fd0d33c44d38046b8bd7f0e40814b9763cabfc"
+checksum = "e34637b3140142bdf929fb439e8aa4ebad7651ebf7b1080b3930aa16ac1459ff"
 dependencies = [
  "serde",
 ]
@@ -3067,6 +3868,20 @@ dependencies = [
  "semver 1.0.22",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7daec1a2a2129eeba1644b220b4647ec537b0b5d4bfd6876fcc5a540056b592"
+dependencies = [
+ "camino",
+ "cargo-platform",
+ "semver 1.0.22",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -3156,7 +3971,7 @@ checksum = "b8f7d49c1ececa30a4587c5fe8a4035b786b78a3253ed0f9636de591b3dc2b37"
 dependencies = [
  "bytes",
  "flex-error",
- "num-derive",
+ "num-derive 0.3.3",
  "num-traits",
  "prost",
  "prost-types",
@@ -4157,6 +4972,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
+name = "docker-generate"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccf673e0848ef09fa4aeeba78e681cf651c0c7d35f76ee38cec8e55bc32fa111"
+
+[[package]]
+name = "downcast-rs"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75b325c5dbd37f80359721ad39aca5a29fb04c89279657cffdda8736d0c0b9d2"
+
+[[package]]
 name = "dunce"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4247,6 +5074,12 @@ name = "either"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a47c1c47d2f5964e29c61246e81db715514cd532db6b5116a25ea3c03d6780a2"
+
+[[package]]
+name = "elf"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4445909572dbd556c457c849c4ca58623d84b27c8fff1e74b0b4227d8b90d17b"
 
 [[package]]
 name = "elliptic-curve"
@@ -4840,6 +5673,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "guest"
+version = "0.1.0"
+dependencies = [
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "risc0-zkvm",
+ "tempfile",
+]
+
+[[package]]
 name = "h2"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5054,6 +5898,18 @@ dependencies = [
  "digest 0.9.0",
  "generic-array",
  "hmac 0.8.1",
+]
+
+[[package]]
+name = "host"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "methods",
+ "risc0-zkvm",
+ "serde",
+ "tempfile",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -6134,6 +6990,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "methods"
+version = "0.1.0"
+dependencies = [
+ "risc0-build",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6195,7 +7058,7 @@ dependencies = [
  "anyhow",
  "aptos-sdk",
  "once_cell",
- "rand 0.7.3",
+ "rand 0.8.5",
  "tokio",
  "url",
 ]
@@ -6211,26 +7074,26 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
- "aptos-bitvec",
- "aptos-block-executor",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db",
  "aptos-executor",
  "aptos-executor-test-helpers",
  "aptos-executor-types",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-language-e2e-tests",
  "aptos-mempool",
  "aptos-sdk",
- "aptos-storage-interface",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-genesis",
- "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-channel",
  "async-trait",
  "bcs 0.1.4",
@@ -6248,7 +7111,7 @@ dependencies = [
  "monza-execution-util",
  "monza-opt-executor",
  "poem-openapi",
- "rand 0.7.3",
+ "rand 0.8.5",
  "rand_core 0.5.1",
  "schemars",
  "serde",
@@ -6267,26 +7130,26 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
- "aptos-bitvec",
- "aptos-block-executor",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db",
  "aptos-executor",
  "aptos-executor-test-helpers",
  "aptos-executor-types",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-language-e2e-tests",
  "aptos-mempool",
  "aptos-sdk",
- "aptos-storage-interface",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-genesis",
- "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-trait",
  "borsh",
  "bytes",
@@ -6299,7 +7162,7 @@ dependencies = [
  "lazy_static",
  "log",
  "poem-openapi",
- "rand 0.7.3",
+ "rand 0.8.5",
  "rand_core 0.5.1",
  "schemars",
  "serde",
@@ -6333,27 +7196,27 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
- "aptos-bitvec",
- "aptos-block-executor",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-db",
  "aptos-executor",
  "aptos-executor-test-helpers",
  "aptos-executor-types",
  "aptos-faucet-core",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-language-e2e-tests",
  "aptos-mempool",
  "aptos-sdk",
- "aptos-storage-interface",
+ "aptos-storage-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-temppath",
- "aptos-types",
- "aptos-vm",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-vm-genesis",
- "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-logging 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "async-channel",
  "async-trait",
  "bcs 0.1.4",
@@ -6370,7 +7233,7 @@ dependencies = [
  "log",
  "poem",
  "poem-openapi",
- "rand 0.7.3",
+ "rand 0.8.5",
  "rand_core 0.5.1",
  "schemars",
  "serde",
@@ -6396,11 +7259,28 @@ dependencies = [
  "bcs 0.1.4",
  "heck 0.3.3",
  "log",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-core-types",
- "move-model",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "serde",
+]
+
+[[package]]
+name = "move-abigen"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "heck 0.3.3",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "serde",
 ]
 
@@ -6412,7 +7292,22 @@ dependencies = [
  "anyhow",
  "backtrace",
  "indexmap 1.9.3",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "ref-cast",
+ "serde",
+ "variant_count",
+]
+
+[[package]]
+name = "move-binary-format"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "backtrace",
+ "indexmap 1.9.3",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "ref-cast",
  "serde",
@@ -6425,17 +7320,37 @@ version = "0.0.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 
 [[package]]
+name = "move-borrow-graph"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+
+[[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "move-binary-format",
- "move-command-line-common",
- "move-core-types",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "serde",
+]
+
+[[package]]
+name = "move-bytecode-source-map"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "serde",
 ]
 
@@ -6445,8 +7360,20 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
  "anyhow",
- "move-binary-format",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "petgraph 0.5.1",
+ "serde-reflection",
+]
+
+[[package]]
+name = "move-bytecode-utils"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "petgraph 0.5.1",
  "serde-reflection",
 ]
@@ -6458,9 +7385,24 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "fail 0.4.0",
- "move-binary-format",
- "move-borrow-graph",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "petgraph 0.5.1",
+ "serde",
+ "typed-arena",
+]
+
+[[package]]
+name = "move-bytecode-verifier"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "fail 0.4.0",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "petgraph 0.5.1",
  "serde",
  "typed-arena",
@@ -6474,11 +7416,28 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "crossterm 0.26.1",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-disassembler",
- "move-ir-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "regex",
+ "tui",
+]
+
+[[package]]
+name = "move-bytecode-viewer"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "clap 4.5.4",
+ "crossterm 0.26.1",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "regex",
  "tui",
 ]
@@ -6496,29 +7455,75 @@ dependencies = [
  "colored",
  "difference",
  "itertools 0.10.5",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-utils",
- "move-bytecode-verifier",
- "move-bytecode-viewer",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-coverage",
- "move-disassembler",
- "move-docgen",
- "move-errmapgen",
- "move-ir-types",
- "move-model",
- "move-package",
- "move-prover",
- "move-resource-viewer",
- "move-stdlib",
- "move-symbol-pool",
- "move-unit-test",
- "move-vm-runtime",
- "move-vm-test-utils",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-unit-test 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml 0.8.26",
+ "tempfile",
+ "toml_edit 0.14.4",
+ "walkdir",
+]
+
+[[package]]
+name = "move-cli"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "bytes",
+ "clap 4.5.4",
+ "codespan-reporting",
+ "colored",
+ "difference",
+ "itertools 0.10.5",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-unit-test 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "reqwest",
  "serde",
@@ -6538,7 +7543,24 @@ dependencies = [
  "difference",
  "dirs-next",
  "hex",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num-bigint 0.4.4",
+ "once_cell",
+ "serde",
+ "sha2 0.9.9",
+ "walkdir",
+]
+
+[[package]]
+name = "move-command-line-common"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "difference",
+ "dirs-next",
+ "hex",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num-bigint 0.4.4",
  "once_cell",
  "serde",
@@ -6557,15 +7579,44 @@ dependencies = [
  "codespan-reporting",
  "difference",
  "hex",
- "move-binary-format",
- "move-borrow-graph",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-core-types",
- "move-ir-to-bytecode",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num-bigint 0.4.4",
+ "once_cell",
+ "petgraph 0.5.1",
+ "regex",
+ "sha3",
+ "tempfile",
+ "walkdir",
+]
+
+[[package]]
+name = "move-compiler"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.4",
+ "codespan-reporting",
+ "difference",
+ "hex",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num-bigint 0.4.4",
  "once_cell",
  "petgraph 0.5.1",
@@ -6580,7 +7631,7 @@ name = "move-compiler-v2"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "abstract-domain-derive",
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.4",
@@ -6592,16 +7643,49 @@ dependencies = [
  "itertools 0.10.5",
  "lazy_static",
  "log",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-disassembler",
- "move-ir-types",
- "move-model",
- "move-stackless-bytecode",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "once_cell",
+ "petgraph 0.6.4",
+ "serde",
+]
+
+[[package]]
+name = "move-compiler-v2"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.4",
+ "codespan",
+ "codespan-reporting",
+ "ethnum",
+ "flexi_logger",
+ "im",
+ "itertools 0.10.5",
+ "lazy_static",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "once_cell",
  "petgraph 0.6.4",
@@ -6634,6 +7718,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-core-types"
+version = "0.0.4"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "bytes",
+ "ethnum",
+ "hashbrown 0.14.3",
+ "hex",
+ "num",
+ "once_cell",
+ "primitive-types 0.10.1",
+ "rand 0.8.5",
+ "ref-cast",
+ "serde",
+ "serde_bytes",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
 name = "move-coverage"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
@@ -6643,11 +7749,31 @@ dependencies = [
  "clap 4.5.4",
  "codespan",
  "colored",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-core-types",
- "move-ir-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "petgraph 0.5.1",
+ "serde",
+]
+
+[[package]]
+name = "move-coverage"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.4",
+ "codespan",
+ "colored",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "petgraph 0.5.1",
  "serde",
@@ -6661,14 +7787,32 @@ dependencies = [
  "anyhow",
  "clap 4.5.4",
  "colored",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-coverage",
- "move-ir-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+]
+
+[[package]]
+name = "move-disassembler"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "clap 4.5.4",
+ "colored",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
 ]
 
 [[package]]
@@ -6681,9 +7825,28 @@ dependencies = [
  "codespan-reporting",
  "itertools 0.10.5",
  "log",
- "move-compiler",
- "move-core-types",
- "move-model",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "once_cell",
+ "regex",
+ "serde",
+]
+
+[[package]]
+name = "move-docgen"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "codespan",
+ "codespan-reporting",
+ "itertools 0.10.5",
+ "log",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "once_cell",
  "regex",
@@ -6698,9 +7861,23 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "log",
- "move-command-line-common",
- "move-core-types",
- "move-model",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "serde",
+]
+
+[[package]]
+name = "move-errmapgen"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "log",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "serde",
 ]
 
@@ -6712,14 +7889,14 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.4",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-core-types",
- "move-ir-to-bytecode",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "serde_json",
 ]
 
@@ -6731,13 +7908,32 @@ dependencies = [
  "anyhow",
  "codespan-reporting",
  "log",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-core-types",
- "move-ir-to-bytecode-syntax",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-to-bytecode-syntax 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "ouroboros 0.9.5",
+ "thiserror",
+]
+
+[[package]]
+name = "move-ir-to-bytecode"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "codespan-reporting",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-to-bytecode-syntax 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "ouroboros 0.9.5",
  "thiserror",
 ]
@@ -6749,10 +7945,23 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "hex",
- "move-command-line-common",
- "move-core-types",
- "move-ir-types",
- "move-symbol-pool",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+]
+
+[[package]]
+name = "move-ir-to-bytecode-syntax"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "hex",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
 ]
 
 [[package]]
@@ -6762,9 +7971,23 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "hex",
- "move-command-line-common",
- "move-core-types",
- "move-symbol-pool",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "serde",
+]
+
+[[package]]
+name = "move-ir-types"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "hex",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "serde",
 ]
@@ -6780,15 +8003,43 @@ dependencies = [
  "internment",
  "itertools 0.10.5",
  "log",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-disassembler",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "num-traits",
+ "once_cell",
+ "regex",
+ "serde",
+ "trace",
+]
+
+[[package]]
+name = "move-model"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "codespan",
+ "codespan-reporting",
+ "internment",
+ "itertools 0.10.5",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "num-traits",
  "once_cell",
@@ -6808,17 +8059,54 @@ dependencies = [
  "colored",
  "dirs-next",
  "itertools 0.10.5",
- "move-abigen",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-utils",
- "move-command-line-common",
- "move-compiler",
- "move-compiler-v2",
- "move-core-types",
- "move-docgen",
- "move-model",
- "move-symbol-pool",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "named-lock",
+ "once_cell",
+ "petgraph 0.5.1",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_yaml 0.8.26",
+ "sha2 0.9.9",
+ "tempfile",
+ "termcolor",
+ "toml 0.5.11",
+ "walkdir",
+ "whoami",
+]
+
+[[package]]
+name = "move-package"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.4",
+ "colored",
+ "dirs-next",
+ "itertools 0.10.5",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "named-lock",
  "once_cell",
  "petgraph 0.5.1",
@@ -6849,19 +8137,58 @@ dependencies = [
  "hex",
  "itertools 0.10.5",
  "log",
- "move-abigen",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-compiler-v2",
- "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-ir-types",
- "move-model",
- "move-prover-boogie-backend",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "once_cell",
+ "pretty",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "simplelog",
+ "tokio",
+ "toml 0.5.11",
+]
+
+[[package]]
+name = "move-prover"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "atty",
+ "clap 4.5.4",
+ "codespan",
+ "codespan-reporting",
+ "futures",
+ "hex",
+ "itertools 0.10.5",
+ "log",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "once_cell",
  "pretty",
@@ -6885,13 +8212,43 @@ dependencies = [
  "futures",
  "itertools 0.10.5",
  "log",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-model",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "once_cell",
+ "pretty",
+ "rand 0.8.5",
+ "regex",
+ "serde",
+ "serde_json",
+ "tera",
+ "tokio",
+]
+
+[[package]]
+name = "move-prover-boogie-backend"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "codespan",
+ "codespan-reporting",
+ "futures",
+ "itertools 0.10.5",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "once_cell",
  "pretty",
@@ -6908,7 +8265,7 @@ name = "move-prover-bytecode-pipeline"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "abstract-domain-derive",
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "anyhow",
  "async-trait",
  "atty",
@@ -6919,10 +8276,41 @@ dependencies = [
  "hex",
  "itertools 0.10.5",
  "log",
- "move-binary-format",
- "move-core-types",
- "move-model",
- "move-stackless-bytecode",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "once_cell",
+ "pretty",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "simplelog",
+ "tokio",
+ "toml 0.5.11",
+]
+
+[[package]]
+name = "move-prover-bytecode-pipeline"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "anyhow",
+ "async-trait",
+ "atty",
+ "clap 4.5.4",
+ "codespan",
+ "codespan-reporting",
+ "futures",
+ "hex",
+ "itertools 0.10.5",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "once_cell",
  "pretty",
@@ -6942,9 +8330,24 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "hex",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "serde",
+]
+
+[[package]]
+name = "move-resource-viewer"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "hex",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "serde",
 ]
@@ -6967,21 +8370,48 @@ name = "move-stackless-bytecode"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
 dependencies = [
- "abstract-domain-derive",
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "codespan",
  "codespan-reporting",
  "ethnum",
  "im",
  "itertools 0.10.5",
  "log",
- "move-binary-format",
- "move-borrow-graph",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-ir-to-bytecode",
- "move-model",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "num",
+ "once_cell",
+ "paste",
+ "petgraph 0.5.1",
+ "serde",
+]
+
+[[package]]
+name = "move-stackless-bytecode"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "codespan",
+ "codespan-reporting",
+ "ethnum",
+ "im",
+ "itertools 0.10.5",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num",
  "once_cell",
  "paste",
@@ -6997,15 +8427,38 @@ dependencies = [
  "anyhow",
  "hex",
  "log",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-prover",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "sha2 0.9.9",
+ "sha3",
+ "smallvec",
+ "walkdir",
+]
+
+[[package]]
+name = "move-stdlib"
+version = "0.1.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "hex",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "sha2 0.9.9",
  "sha3",
  "smallvec",
@@ -7022,6 +8475,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-symbol-pool"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "once_cell",
+ "serde",
+]
+
+[[package]]
 name = "move-table-extension"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
@@ -7030,10 +8492,28 @@ dependencies = [
  "bcs 0.1.4",
  "better_any",
  "bytes",
- "move-binary-format",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "sha3",
+ "smallvec",
+]
+
+[[package]]
+name = "move-table-extension"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "better_any",
+ "bytes",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "sha3",
  "smallvec",
@@ -7051,20 +8531,51 @@ dependencies = [
  "codespan-reporting",
  "colored",
  "itertools 0.10.5",
- "move-binary-format",
- "move-bytecode-utils",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-ir-types",
- "move-model",
- "move-resource-viewer",
- "move-stdlib",
- "move-symbol-pool",
- "move-table-extension",
- "move-vm-runtime",
- "move-vm-test-utils",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "rayon",
+ "regex",
+]
+
+[[package]]
+name = "move-unit-test"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "better_any",
+ "bytes",
+ "clap 4.5.4",
+ "codespan-reporting",
+ "colored",
+ "itertools 0.10.5",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "rayon",
  "regex",
@@ -7081,10 +8592,35 @@ dependencies = [
  "hashbrown 0.14.3",
  "lazy_static",
  "lru 0.7.8",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "parking_lot 0.11.2",
+ "serde",
+ "sha3",
+ "smallbitvec",
+ "tracing",
+ "triomphe",
+ "typed-arena",
+]
+
+[[package]]
+name = "move-vm-runtime"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "better_any",
+ "bytes",
+ "fail 0.4.0",
+ "hashbrown 0.14.3",
+ "lazy_static",
+ "lru 0.7.8",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "parking_lot 0.11.2",
  "serde",
@@ -7102,10 +8638,25 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a15
 dependencies = [
  "anyhow",
  "bytes",
- "move-binary-format",
- "move-core-types",
- "move-table-extension",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "serde",
+]
+
+[[package]]
+name = "move-vm-test-utils"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "serde",
 ]
@@ -7118,8 +8669,25 @@ dependencies = [
  "bcs 0.1.4",
  "derivative",
  "itertools 0.10.5",
- "move-binary-format",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+ "once_cell",
+ "serde",
+ "smallbitvec",
+ "smallvec",
+ "triomphe",
+]
+
+[[package]]
+name = "move-vm-types"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01a2c0be09757bba77c3dc6d1ce6b3e4d6"
+dependencies = [
+ "bcs 0.1.4",
+ "derivative",
+ "itertools 0.10.5",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
  "serde",
  "smallbitvec",
@@ -7396,6 +8964,17 @@ dependencies = [
  "proc-macro2 1.0.81",
  "quote 1.0.36",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "num-derive"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
+dependencies = [
+ "proc-macro2 1.0.81",
+ "quote 1.0.36",
+ "syn 2.0.60",
 ]
 
 [[package]]
@@ -8421,6 +10000,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "protobuf-src"
+version = "1.1.0+21.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7ac8852baeb3cc6fb83b93646fb93c0ffe5d14bf138c945ceb4b9948ee0e3c1"
+dependencies = [
+ "autotools",
+]
+
+[[package]]
 name = "psl-types"
 version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8781,6 +10369,7 @@ dependencies = [
  "http",
  "http-body",
  "hyper",
+ "hyper-rustls",
  "hyper-tls",
  "ipnet",
  "js-sys",
@@ -8790,6 +10379,7 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
+ "rustls 0.21.11",
  "rustls-pemfile 1.0.4",
  "serde",
  "serde_json",
@@ -8798,6 +10388,7 @@ dependencies = [
  "system-configuration",
  "tokio",
  "tokio-native-tls",
+ "tokio-rustls 0.24.1",
  "tokio-util",
  "tower-service",
  "url",
@@ -8805,6 +10396,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams",
  "web-sys",
+ "webpki-roots",
  "winreg",
 ]
 
@@ -8882,6 +10474,158 @@ dependencies = [
 ]
 
 [[package]]
+name = "risc0-binfmt"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ae2939426c60756f910352184716a3538748208c9e11ade4a507db3b2757157"
+dependencies = [
+ "anyhow",
+ "elf",
+ "risc0-zkp",
+ "risc0-zkvm-platform",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "risc0-build"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7a6a0138c9ae1d82eaa2ab6047535481a17641ba6c354890770bf94fbef8049"
+dependencies = [
+ "anyhow",
+ "cargo-platform",
+ "cargo_metadata 0.17.0",
+ "docker-generate",
+ "risc0-binfmt",
+ "risc0-zkp",
+ "risc0-zkvm-platform",
+ "serde",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "risc0-circuit-recursion"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a43cade35f73ad81ba974fe1d5e1513331f87052af8377b26b00a838f39c6920"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "hex",
+ "risc0-core",
+ "risc0-zkp",
+ "tracing",
+]
+
+[[package]]
+name = "risc0-circuit-rv32im"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31440989146b342a7d37c15079c9568c69b7f988f3b789f422c7d4ed76526ddb"
+dependencies = [
+ "anyhow",
+ "risc0-core",
+ "risc0-zkp",
+ "risc0-zkvm-platform",
+ "tracing",
+]
+
+[[package]]
+name = "risc0-core"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02e0cbd09d03c23b572b66cd96a56143adb22bf895aca89c1a153ccebedaa0b4"
+dependencies = [
+ "bytemuck",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "risc0-groth16"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da1e9b8dae3f9c3862b6278b2812989a2f5a537975e5bd6a687f07cf1df68a36"
+dependencies = [
+ "anyhow",
+ "ark-bn254",
+ "ark-groth16",
+ "ark-serialize 0.4.2",
+ "hex",
+ "num-bigint 0.4.4",
+ "num-derive 0.4.2",
+ "num-traits",
+ "risc0-zkp",
+ "serde",
+]
+
+[[package]]
+name = "risc0-zkp"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b96b035f744ecaaa7e9809c699bc85cf669cbab6f297f141d918e9b4c8098b79"
+dependencies = [
+ "anyhow",
+ "blake2",
+ "bytemuck",
+ "digest 0.10.7",
+ "hex",
+ "paste",
+ "rand_core 0.6.4",
+ "risc0-core",
+ "risc0-zkvm-platform",
+ "serde",
+ "sha2 0.10.8",
+ "tracing",
+]
+
+[[package]]
+name = "risc0-zkvm"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a1275834c86176efc122a172c2b5f271a8a5d792de7efbc47dfbecaaaff9432"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bonsai-sdk",
+ "bytemuck",
+ "bytes",
+ "cfg-if",
+ "getrandom 0.2.14",
+ "hex",
+ "num-derive 0.4.2",
+ "num-traits",
+ "prost",
+ "prost-build",
+ "protobuf-src",
+ "risc0-binfmt",
+ "risc0-circuit-recursion",
+ "risc0-circuit-rv32im",
+ "risc0-core",
+ "risc0-groth16",
+ "risc0-zkp",
+ "risc0-zkvm-platform",
+ "rrs-lib",
+ "semver 1.0.22",
+ "serde",
+ "sha2 0.10.8",
+ "tempfile",
+ "tracing",
+]
+
+[[package]]
+name = "risc0-zkvm-platform"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03b6378c9e407be18a1560ed030fd87fb6056293c56263efac46c507ae97e0d7"
+dependencies = [
+ "bytemuck",
+ "getrandom 0.2.14",
+ "libm",
+]
+
+[[package]]
 name = "rlp"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8899,6 +10643,16 @@ checksum = "bb6f170a4041d50a0ce04b0d2e14916d6ca863ea2e422689a5b694395d299ffe"
 dependencies = [
  "libc",
  "librocksdb-sys",
+]
+
+[[package]]
+name = "rrs-lib"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4382d3af3a4ebdae7f64ba6edd9114fff92c89808004c4943b393377a25d001"
+dependencies = [
+ "downcast-rs",
+ "paste",
 ]
 
 [[package]]
@@ -9684,7 +11438,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16d23b015676c90a0f01c197bfdc786c20342c73a0afdda9025adb0bc42940a8"
 dependencies = [
  "bytecount",
- "cargo_metadata",
+ "cargo_metadata 0.14.2",
  "error-chain",
  "glob",
  "pulldown-cmark",
@@ -10977,8 +12731,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "wait-timeout"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
+source = "git+https://github.com/movementlabsxyz/wait-timeout?branch=risc0#ac614bd19dff5fae67b48e6c5e623fb4880600bf"
 dependencies = [
  "libc",
 ]
@@ -11108,6 +12861,12 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "webpki-roots"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "whoami"
