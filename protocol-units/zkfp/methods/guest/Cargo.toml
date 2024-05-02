@@ -1,0 +1,13 @@
+[package]
+name = "guest"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+risc0-zkvm = { workspace = true, features = ["std", "getrandom"] }
+tempfile = { workspace = true }
+
+# Aptos dependencies
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "zkfp" }
