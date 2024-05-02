@@ -17,7 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
-
+import "forge-std/console2.sol";
 pragma solidity >=0.7.0 <0.9.0;
 
 contract Groth16Verifier {

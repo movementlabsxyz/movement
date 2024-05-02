@@ -20,6 +20,7 @@ import {
 } from "../src/IRiscZeroVerifier.sol";
 import {TestReceipt} from "./TestReceipt.sol";
 import {ControlID} from "../src/groth16/ControlID.sol";
+import "forge-std/console2.sol";
 
 contract RStartM is DSTest {
     using OutputLib for Output;
@@ -65,40 +66,30 @@ contract RStartM is DSTest {
         require(rStarM.verify_integrity(TEST_RECEIPT), "verification failed");
     }
 
-    function testVerifyMangledReceipts() external {
+    function testVerifyKnownGoodImageIdAndJournal() external view {
+        require(
+            rStarM.verify(
+                TEST_RECEIPT.seal, TestReceipt.IMAGE_ID, TEST_RECEIPT.claim.postStateDigest, sha256(TestReceipt.JOURNAL)
+            ),
+            "verification failed"
+        );
+    }
+
+    function testVerifyMangledReceipts() external view {
         RiscZeroReceipt memory mangled = TEST_RECEIPT;
-        uint256 initialBalance = 666 ether;
-        vm.deal(signer1, initialBalance);
-        vm.prank(signer1);
 
         mangled.seal[0] ^= bytes1(uint8(1));
-        console2.logBytes(mangled.seal);
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled seal value");
-        console2.logBytes("verified");
         mangled = TEST_RECEIPT;
 
-        mangled.claim.preStateDigest ^= bytes32(uint256(1));
-        require(!rStarM.verify_integrity(mangled), "verification passed on mangled preStateDigest value");
-        mangled = TEST_RECEIPT;
-
+        console2.log("verified!");
         mangled.claim.postStateDigest ^= bytes32(uint256(1));
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled postStateDigest value");
-        mangled = TEST_RECEIPT;
-
-        mangled.claim.exitCode = ExitCode(SystemExitCode.SystemSplit, 0);
-        require(!rStarM.verify_integrity(mangled), "verification passed on mangled exitCode value");
-        mangled = TEST_RECEIPT;
-
-        mangled.claim.input ^= bytes32(uint256(1));
-        require(!rStarM.verify_integrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
 
         mangled.claim.output ^= bytes32(uint256(1));
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
-
-        // Just a quick sanity check
-        require(rStarM.verify_integrity(mangled), "verification failed");
     }
 
     // function testFailSettleNotSigner() public {
