@@ -44,7 +44,7 @@ contract RStartM is DSTest {
     );
 
     function setUp() public {
-        rStarM = new RStarM(1, 15, 2, ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1);
+        rStarM = new RStarM(1, 15, 2, ControlID.CONTROL_ID_0, ControlID.CONTROL_ID_1, ControlID.BN254_CONTROL_ID);
         vm.deal(address(this), rStarM.MIN_STAKE());
     }
 

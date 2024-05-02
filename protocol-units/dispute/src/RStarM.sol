@@ -6,6 +6,47 @@ import {Groth16Verifier} from "./groth16/Groth16Verifier.sol";
 import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 import "forge-std/console2.sol";
 
+/// @notice reverse the byte order of the uint256 value.
+/// @dev Soldity uses a big-endian ABI encoding. Reversing the byte order before encoding
+/// ensure that the encoded value will be little-endian.
+/// Written by k06a. https://ethereum.stackexchange.com/a/83627
+function reverseByteOrderUint256(uint256 input) pure returns (uint256 v) {
+    v = input;
+
+    // swap bytes
+    v = ((v & 0xFF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00) >> 8)
+        | ((v & 0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF) << 8);
+
+    // swap 2-byte long pairs
+    v = ((v & 0xFFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000) >> 16)
+        | ((v & 0x0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF) << 16);
+
+    // swap 4-byte long pairs
+    v = ((v & 0xFFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000) >> 32)
+        | ((v & 0x00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF) << 32);
+
+    // swap 8-byte long pairs
+    v = ((v & 0xFFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF0000000000000000) >> 64)
+        | ((v & 0x0000000000000000FFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF) << 64);
+
+    // swap 16-byte long pairs
+    v = (v >> 128) | (v << 128);
+}
+
+/// @notice reverse the byte order of the uint32 value.
+/// @dev Soldity uses a big-endian ABI encoding. Reversing the byte order before encoding
+/// ensure that the encoded value will be little-endian.
+/// Written by k06a. https://ethereum.stackexchange.com/a/83627
+function reverseByteOrderUint32(uint32 input) pure returns (uint32 v) {
+    v = input;
+
+    // swap bytes
+    v = ((v & 0xFF00FF00) >> 8) | ((v & 0x00FF00FF) << 8);
+
+    // swap 2-byte long pairs
+    v = (v >> 16) | (v << 16);
+}
+
 /// @notice A Groth16 seal over the claimed receipt claim.
 struct Seal {
     uint256[2] a;
@@ -69,6 +110,7 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     /// obtained by running `cargo run --bin bonsai-ethereum-contracts -F control-id`
     uint256 public immutable CONTROL_ID_0;
     uint256 public immutable CONTROL_ID_1;
+    uint256 public immutable BN254_CONTROL_ID;
 
     mapping(address => Validator) public validators;
     mapping(bytes32 => Dispute) public disputes;
@@ -91,14 +133,25 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         uint256 _p, 
         uint256 _m, 
         uint256 control_id_0, 
-        uint256 control_id_1
+        uint256 control_id_1,
+        uint256 bn254_control_id
     ) {
         delta = _delta;
         p = _p;
         m = _m;
         CONTROL_ID_0 = control_id_0;
         CONTROL_ID_1 = control_id_1;
+        BN254_CONTROL_ID = bn254_control_id;
         //verifier = IRiscZeroVerifier(_verifier);
+    }
+
+    /// @notice splits a digest into two 128-bit words to use as public signal inputs.
+    /// @dev RISC Zero's Circom verifier circuit takes each of two hash digests in two 128-bit
+    /// chunks. These values can be derived from the digest by splitting the digest in half and
+    /// then reversing the bytes of each.
+    function splitDigest(bytes32 digest) internal pure returns (uint256, uint256) {
+        uint256 reversed = reverseByteOrderUint256(uint256(digest));
+        return (uint256(uint128(uint256(reversed))), uint256(reversed >> 128));
     }
 
     function registerValidator() external payable {
@@ -149,15 +202,6 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         emit ProofSubmitted(blockHash, isValid);
     }
 
-    /// @notice splits a digest into two 128-bit words to use as public signal inputs.
-    /// @dev RISC Zero's Circom verifier circuit takes each of two hash digests in two 128-bit
-    /// chunks. These values can be derived from the digest by splitting the digest in half and
-    /// then reversing the bytes of each.
-    function splitDigest(bytes32 digest) internal pure returns (uint256, uint256) {
-        uint256 reversed = reverseByteOrderUint256(uint256(digest));
-        return (uint256(uint128(uint256(reversed))), uint256(reversed >> 128));
-    }
-
     function verify(bytes calldata seal, bytes32 imageId, bytes32 postStateDigest, bytes32 journalDigest)
         public
         view
@@ -180,14 +224,16 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     function grothVerify(Receipt memory receipt) public view returns (bool) {
         (uint256 claim0, uint256 claim1) = splitDigest(receipt.claim.digest());
         Seal memory seal = abi.decode(receipt.seal, (Seal));
-        return this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1]);
+        return this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1, BN254_CONTROL_ID]);
     }
 
     // The camel case here is not standard solidity practice. But we use it because its the implemntation of the interface.
     function verify_integrity(Receipt memory receipt) public view returns (bool) {
         (uint256 claim0, uint256 claim1) = splitDigest(receipt.claim.digest());
+        console2.log("claim0: %d", claim0);
+        console2.log("claim1: %d", claim1);
         Seal memory seal = abi.decode(receipt.seal, (Seal));
-        return this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1]);
+        return this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1, BN254_CONTROL_ID]);
     }
 
     function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external {
@@ -208,32 +254,5 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
             // Block is accepted optimistically after receiving minimum number of commitments
             emit BlockAccepted(blockHash);
         }
-    }
-
-    /// @notice reverse the byte order of the uint256 value.
-    /// @dev Soldity uses a big-endian ABI encoding. Reversing the byte order before encoding
-    /// ensure that the encoded value will be little-endian.
-    /// Written by k06a. https://ethereum.stackexchange.com/a/83627
-    function reverseByteOrderUint256(uint256 input) public pure returns (uint256 v) {
-        v = input;
-
-        // swap bytes
-        v = ((v & 0xFF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00) >> 8)
-            | ((v & 0x00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF) << 8);
-
-        // swap 2-byte long pairs
-        v = ((v & 0xFFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000) >> 16)
-            | ((v & 0x0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF0000FFFF) << 16);
-
-        // swap 4-byte long pairs
-        v = ((v & 0xFFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000) >> 32)
-            | ((v & 0x00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF00000000FFFFFFFF) << 32);
-
-        // swap 8-byte long pairs
-        v = ((v & 0xFFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF0000000000000000) >> 64)
-            | ((v & 0x0000000000000000FFFFFFFFFFFFFFFF0000000000000000FFFFFFFFFFFFFFFF) << 64);
-
-        // swap 16-byte long pairs
-        v = (v >> 128) | (v << 128);
     }
 }
