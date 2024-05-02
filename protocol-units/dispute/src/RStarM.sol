@@ -142,7 +142,6 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         CONTROL_ID_0 = control_id_0;
         CONTROL_ID_1 = control_id_1;
         BN254_CONTROL_ID = bn254_control_id;
-        //verifier = IRiscZeroVerifier(_verifier);
     }
 
     /// @notice splits a digest into two 128-bit words to use as public signal inputs.
@@ -194,7 +193,6 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         emit DisputeResolved(disputeHash, state);
     }
 
-    // removed publicInputs from the function signature as I don't think we need it. 
     function submitProof(bytes32 blockHash, Receipt calldata receipt) external {
         require(!verifiedProofs[blockHash].exists, "Proof already submitted for this block");
         bool isValid = verifier.verify_integrity(receipt);
