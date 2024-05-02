@@ -230,8 +230,6 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     // The camel case here is not standard solidity practice. But we use it because its the implemntation of the interface.
     function verify_integrity(Receipt memory receipt) public view returns (bool) {
         (uint256 claim0, uint256 claim1) = splitDigest(receipt.claim.digest());
-        console2.log("claim0: %d", claim0);
-        console2.log("claim1: %d", claim1);
         Seal memory seal = abi.decode(receipt.seal, (Seal));
         return this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1, BN254_CONTROL_ID]);
     }

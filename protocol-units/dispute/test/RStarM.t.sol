@@ -49,7 +49,7 @@ contract RStartM is DSTest {
     }
 
     function testRegisterValidator() public {
-      uint256 initialBalance = 100 ether;
+      uint256 initialBalance = 666 ether;
       vm.deal(signer1, initialBalance);
       uint256 minStake = rStarM.MIN_STAKE();
 
@@ -65,12 +65,16 @@ contract RStartM is DSTest {
         require(rStarM.verify_integrity(TEST_RECEIPT), "verification failed");
     }
 
-    // Make sure changing the bits causes a failure.
-    function testVerifyMangledReceipts() external view {
+    function testVerifyMangledReceipts() external {
         RiscZeroReceipt memory mangled = TEST_RECEIPT;
+        uint256 initialBalance = 666 ether;
+        vm.deal(signer1, initialBalance);
+        vm.prank(signer1);
 
         mangled.seal[0] ^= bytes1(uint8(1));
+        console2.logBytes(mangled.seal);
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled seal value");
+        console2.logBytes("verified");
         mangled = TEST_RECEIPT;
 
         mangled.claim.preStateDigest ^= bytes32(uint256(1));
