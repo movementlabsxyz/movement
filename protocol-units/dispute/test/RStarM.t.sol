@@ -91,18 +91,4 @@ contract RStartM is DSTest {
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
     }
-
-    // function testFailSettleNotSigner() public {
-    //     vm.prank(signer2);
-    //     rStarM.settle(1, exampleProofData);
-    // }
-
-    // function testSettleAndRetrieve() public {
-    //     vm.prank(signer1);
-    //     rStarM.settle(1, exampleProofData);
-    //
-    //     bytes[] memory proofs = rStarM.getProofsAtHeight(1);
-    //     assertEq(proofs.length, 1, "There should be one proof for block height 1");
-    //     assertEq(string(proofs[0]), string(exampleProofData), "The proofData should match exampleProofData");
-    // }
 }
