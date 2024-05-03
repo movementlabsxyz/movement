@@ -215,6 +215,7 @@ mod opt_tests {
 		let executor = MonzaExecutorV1::try_from_env(tx).await?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
+
 		let services_handle = tokio::spawn(async move {
 			services_executor.run_service().await?;
 			Ok(()) as Result<(), anyhow::Error>
@@ -247,6 +248,7 @@ mod opt_tests {
 		    executor.execute_block(&FinalityMode::Opt, block).await?;
 		}
 
+		let db = executor.executor.db.clone();
 		services_handle.abort();
 		background_handle.abort();
 
