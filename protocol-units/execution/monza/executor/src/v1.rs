@@ -1,7 +1,5 @@
 use crate::*;
 use monza_opt_executor::Executor;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
 
@@ -52,11 +50,12 @@ impl MonzaExecutor for MonzaExecutorV1 {
         &self,
         mode : &FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<StateCheckpointOutput, anyhow::Error> {
+    ) -> Result<(), anyhow::Error> {
 
         match mode {
             FinalityMode::Dyn => unimplemented!(),
             FinalityMode::Opt => {
+                println!("Executing opt block: {:?}", block.block_id);
                 self.executor.execute_block(block).await
             },
             FinalityMode::Fin => unimplemented!(),
@@ -130,7 +129,7 @@ mod opt_tests {
 			0,
 			gas_unit_price,
 			0,
-			ChainId::new(10), // This is the value used in aptos testing code.
+			ChainId::test(), // This is the value used in aptos testing code.
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}

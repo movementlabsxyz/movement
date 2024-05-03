@@ -11,7 +11,7 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "abstract-domain-derive"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "proc-macro2 1.0.81",
  "quote 1.0.36",
@@ -220,7 +220,7 @@ checksum = "f538837af36e6f6a9be0faa67f9a314f8119e4e4b5867c6ab40ed60360142519"
 [[package]]
 name = "aptos-abstract-gas-usage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -233,7 +233,7 @@ dependencies = [
 [[package]]
 name = "aptos-accumulator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -243,7 +243,7 @@ dependencies = [
 [[package]]
 name = "aptos-aggregator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -273,7 +273,7 @@ dependencies = [
 [[package]]
 name = "aptos-api"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -319,7 +319,7 @@ dependencies = [
 [[package]]
 name = "aptos-api-types"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -349,7 +349,7 @@ dependencies = [
 [[package]]
 name = "aptos-bcs-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "hex",
@@ -358,7 +358,7 @@ dependencies = [
 [[package]]
 name = "aptos-bitvec"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -376,7 +376,7 @@ dependencies = [
 [[package]]
 name = "aptos-block-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -438,7 +438,7 @@ dependencies = [
  "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "num_cpus",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "rand 0.7.3",
  "rayon",
  "scopeguard",
@@ -448,7 +448,7 @@ dependencies = [
 [[package]]
 name = "aptos-block-partitioner"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -492,7 +492,7 @@ dependencies = [
 [[package]]
 name = "aptos-bounded-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "futures",
  "rustversion",
@@ -502,7 +502,7 @@ dependencies = [
 [[package]]
 name = "aptos-build-info"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "shadow-rs",
 ]
@@ -510,7 +510,7 @@ dependencies = [
 [[package]]
 name = "aptos-cached-packages"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -525,7 +525,7 @@ dependencies = [
 [[package]]
 name = "aptos-channels"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -537,7 +537,7 @@ dependencies = [
 [[package]]
 name = "aptos-compression"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -549,7 +549,7 @@ dependencies = [
 [[package]]
 name = "aptos-config"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -583,7 +583,7 @@ dependencies = [
 [[package]]
 name = "aptos-consensus-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -608,7 +608,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -699,7 +699,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "proc-macro2 1.0.81",
  "quote 1.0.36",
@@ -719,7 +719,7 @@ dependencies = [
 [[package]]
 name = "aptos-data-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-config",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -750,7 +750,7 @@ dependencies = [
 [[package]]
 name = "aptos-db"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-accumulator",
@@ -798,7 +798,7 @@ dependencies = [
 [[package]]
 name = "aptos-db-indexer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -825,7 +825,7 @@ dependencies = [
 [[package]]
 name = "aptos-dkg"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -891,7 +891,7 @@ dependencies = [
 [[package]]
 name = "aptos-drop-helper"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -915,7 +915,7 @@ dependencies = [
 [[package]]
 name = "aptos-event-notifications"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-channels",
@@ -932,7 +932,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -966,7 +966,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor-service"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1003,7 +1003,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor-test-helpers"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1026,7 +1026,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-block-partitioner 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1048,7 +1048,7 @@ dependencies = [
 [[package]]
 name = "aptos-experimental-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "core_affinity",
@@ -1076,7 +1076,7 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-core"
 version = "2.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1110,7 +1110,7 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-metrics-server"
 version = "2.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1125,7 +1125,7 @@ dependencies = [
 [[package]]
 name = "aptos-framework"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1275,7 +1275,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-algebra"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "either",
  "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1293,7 +1293,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-meter"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1325,7 +1325,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-profiling"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1348,7 +1348,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-schedule"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1378,7 +1378,7 @@ dependencies = [
 [[package]]
 name = "aptos-genesis"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1403,7 +1403,7 @@ dependencies = [
 [[package]]
 name = "aptos-global-constants"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 
 [[package]]
 name = "aptos-global-constants"
@@ -1413,12 +1413,12 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01
 [[package]]
 name = "aptos-id-generator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 
 [[package]]
 name = "aptos-infallible"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 
 [[package]]
 name = "aptos-infallible"
@@ -1428,7 +1428,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01
 [[package]]
 name = "aptos-jellyfish-merkle"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "aptos-keygen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1466,7 +1466,7 @@ dependencies = [
 [[package]]
 name = "aptos-language-e2e-tests"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
@@ -1513,7 +1513,7 @@ dependencies = [
 [[package]]
 name = "aptos-ledger"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1527,7 +1527,7 @@ dependencies = [
 [[package]]
 name = "aptos-log-derive"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "proc-macro2 1.0.81",
  "quote 1.0.36",
@@ -1547,7 +1547,7 @@ dependencies = [
 [[package]]
 name = "aptos-logger"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-log-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1595,7 +1595,7 @@ dependencies = [
 [[package]]
 name = "aptos-memory-usage-tracker"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-gas-meter 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1623,7 +1623,7 @@ dependencies = [
 [[package]]
 name = "aptos-mempool"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-bounded-executor",
@@ -1663,7 +1663,7 @@ dependencies = [
 [[package]]
 name = "aptos-mempool-notifications"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1677,7 +1677,7 @@ dependencies = [
 [[package]]
 name = "aptos-memsocket"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "bytes",
@@ -1688,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "aptos-metrics-core"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "prometheus",
@@ -1706,7 +1706,7 @@ dependencies = [
 [[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1758,7 +1758,7 @@ dependencies = [
 [[package]]
 name = "aptos-mvhashmap"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1804,7 +1804,7 @@ dependencies = [
 [[package]]
 name = "aptos-native-interface"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1838,7 +1838,7 @@ dependencies = [
 [[package]]
 name = "aptos-netcore"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
@@ -1855,7 +1855,7 @@ dependencies = [
 [[package]]
 name = "aptos-network"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1903,7 +1903,7 @@ dependencies = [
 [[package]]
 name = "aptos-node-identity"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1927,7 +1927,7 @@ dependencies = [
 [[package]]
 name = "aptos-node-resource-metrics"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-build-info",
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1943,7 +1943,7 @@ dependencies = [
 [[package]]
 name = "aptos-num-variants"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "proc-macro2 1.0.81",
  "quote 1.0.36",
@@ -1953,7 +1953,7 @@ dependencies = [
 [[package]]
 name = "aptos-openapi"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -1966,7 +1966,7 @@ dependencies = [
 [[package]]
 name = "aptos-package-builder"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1979,7 +1979,7 @@ dependencies = [
 [[package]]
 name = "aptos-peer-monitoring-service-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-config",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -1992,7 +1992,7 @@ dependencies = [
 [[package]]
 name = "aptos-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "crossbeam",
  "proptest",
@@ -2002,7 +2002,7 @@ dependencies = [
 [[package]]
 name = "aptos-protos"
 version = "1.3.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "futures-core",
  "pbjson",
@@ -2028,7 +2028,7 @@ dependencies = [
 [[package]]
 name = "aptos-proxy"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "ipnet",
 ]
@@ -2036,7 +2036,7 @@ dependencies = [
 [[package]]
 name = "aptos-push-metrics"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2047,7 +2047,7 @@ dependencies = [
 [[package]]
 name = "aptos-rate-limiter"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2061,7 +2061,7 @@ dependencies = [
 [[package]]
 name = "aptos-rest-client"
 version = "0.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2087,7 +2087,7 @@ dependencies = [
 [[package]]
 name = "aptos-retrier"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "tokio",
@@ -2105,7 +2105,7 @@ dependencies = [
 [[package]]
 name = "aptos-rocksdb-options"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-config",
  "rocksdb",
@@ -2114,7 +2114,7 @@ dependencies = [
 [[package]]
 name = "aptos-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "rayon",
  "tokio",
@@ -2132,7 +2132,7 @@ dependencies = [
 [[package]]
 name = "aptos-schemadb"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2149,7 +2149,7 @@ dependencies = [
 [[package]]
 name = "aptos-scratchpad"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-drop-helper 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2188,7 +2188,7 @@ dependencies = [
 [[package]]
 name = "aptos-sdk"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2209,7 +2209,7 @@ dependencies = [
 [[package]]
 name = "aptos-sdk-builder"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "aptos-secure-net"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-metrics-core 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2285,7 +2285,7 @@ dependencies = [
 [[package]]
 name = "aptos-secure-storage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2307,7 +2307,7 @@ dependencies = [
 [[package]]
 name = "aptos-short-hex-str"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -2318,7 +2318,7 @@ dependencies = [
 [[package]]
 name = "aptos-speculative-state-helper"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2342,7 +2342,7 @@ dependencies = [
 [[package]]
 name = "aptos-storage-interface"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2393,7 +2393,7 @@ dependencies = [
  "itertools 0.10.5",
  "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp)",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "proptest",
  "proptest-derive 0.4.0",
  "rayon",
@@ -2406,7 +2406,7 @@ dependencies = [
 [[package]]
 name = "aptos-storage-service-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-channels",
  "aptos-config",
@@ -2420,7 +2420,7 @@ dependencies = [
 [[package]]
 name = "aptos-storage-service-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-compression",
  "aptos-config",
@@ -2436,7 +2436,7 @@ dependencies = [
 [[package]]
 name = "aptos-table-natives"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2478,7 +2478,7 @@ dependencies = [
 [[package]]
 name = "aptos-temppath"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -2487,7 +2487,7 @@ dependencies = [
 [[package]]
 name = "aptos-time-service"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "enum_dispatch",
@@ -2500,7 +2500,7 @@ dependencies = [
 [[package]]
 name = "aptos-types"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2601,7 +2601,7 @@ dependencies = [
 [[package]]
 name = "aptos-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 
 [[package]]
 name = "aptos-utils"
@@ -2611,7 +2611,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01
 [[package]]
 name = "aptos-vault-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "base64 0.13.1",
@@ -2627,7 +2627,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2741,7 +2741,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-genesis"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -2763,7 +2763,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-logging"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2793,7 +2793,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -2835,7 +2835,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-validator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "aptos-event-notifications",
@@ -4540,7 +4540,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "signal-hook",
  "signal-hook-mio",
  "winapi 0.3.9",
@@ -4556,7 +4556,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "signal-hook",
  "signal-hook-mio",
  "winapi 0.3.9",
@@ -4767,7 +4767,7 @@ dependencies = [
  "hashbrown 0.14.3",
  "lock_api",
  "once_cell",
- "parking_lot_core 0.9.9",
+ "parking_lot_core 0.9.10",
 ]
 
 [[package]]
@@ -6302,7 +6302,7 @@ dependencies = [
  "dashmap",
  "hashbrown 0.12.3",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
 ]
 
 [[package]]
@@ -6767,9 +6767,9 @@ checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
 
 [[package]]
 name = "lock_api"
-version = "0.4.11"
+version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c168f8615b12bc01f9c17e2eb0cc07dcae1940121185446edc3744920e8ef45"
+checksum = "07af8b9cdd281b7915f413fa73f29ebd5d55d0d3f0155584dade1ff18cea1b17"
 dependencies = [
  "autocfg",
  "scopeguard",
@@ -7066,6 +7066,12 @@ dependencies = [
 [[package]]
 name = "monza-execution-util"
 version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-sdk",
+ "aptos-types",
+ "m1-da-light-node-util",
+]
 
 [[package]]
 name = "monza-executor"
@@ -7196,8 +7202,14 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
+<<<<<<< HEAD
  "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-block-executor 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
+=======
+ "aptos-bitvec",
+ "aptos-block-executor",
+ "aptos-cached-packages",
+>>>>>>> partial-monza/broken-executor
  "aptos-config",
  "aptos-consensus-types",
  "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -7253,7 +7265,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7287,7 +7299,7 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -7317,7 +7329,7 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 
 [[package]]
 name = "move-borrow-graph"
@@ -7327,7 +7339,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?branch=zkfp#9139fb01
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7357,7 +7369,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
@@ -7381,7 +7393,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "fail 0.4.0",
@@ -7411,7 +7423,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "clap 4.5.4",
@@ -7445,7 +7457,7 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7537,7 +7549,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "difference",
@@ -7571,7 +7583,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7629,7 +7641,7 @@ dependencies = [
 [[package]]
 name = "move-compiler-v2"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "anyhow",
@@ -7695,7 +7707,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -7742,7 +7754,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7782,7 +7794,7 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "clap 4.5.4",
@@ -7818,7 +7830,7 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "codespan",
@@ -7856,7 +7868,7 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7884,7 +7896,7 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7903,7 +7915,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -7941,7 +7953,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "hex",
@@ -7967,7 +7979,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "hex",
@@ -7995,7 +8007,7 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "codespan",
@@ -8051,7 +8063,7 @@ dependencies = [
 [[package]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8125,7 +8137,7 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8203,7 +8215,7 @@ dependencies = [
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -8263,7 +8275,7 @@ dependencies = [
 [[package]]
 name = "move-prover-bytecode-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "anyhow",
@@ -8325,7 +8337,7 @@ dependencies = [
 [[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8368,7 +8380,7 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "codespan",
@@ -8422,7 +8434,7 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "hex",
@@ -8468,7 +8480,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "once_cell",
  "serde",
@@ -8486,7 +8498,7 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8522,7 +8534,7 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "better_any",
@@ -8584,7 +8596,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "better_any",
  "bytes",
@@ -8634,7 +8646,7 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "anyhow",
  "bytes",
@@ -8664,7 +8676,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#2027a153efa4fda4a2d0abe5e4ded8f95ce49ee7"
+source = "git+https://github.com/movementlabsxyz/aptos-core?branch=monza#06443b81f6b8b8742c4aa47eba9e315b5e6502ff"
 dependencies = [
  "bcs 0.1.4",
  "derivative",
@@ -8779,7 +8791,7 @@ checksum = "40a3eb6b7c682b65d1f631ec3176829d72ab450b3aacdd3f719bf220822e59ac"
 dependencies = [
  "libc",
  "once_cell",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "thiserror",
  "widestring",
  "winapi 0.3.9",
@@ -9289,12 +9301,12 @@ dependencies = [
 
 [[package]]
 name = "parking_lot"
-version = "0.12.1"
+version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f"
+checksum = "7e4af0ca4f6caed20e900d564c242b8e5d4903fdacf31d3daf527b66fe6f42fb"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.9",
+ "parking_lot_core 0.9.10",
 ]
 
 [[package]]
@@ -9313,15 +9325,15 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.9.9"
+version = "0.9.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c42a9226546d68acdd9c0a280d17ce19bfe27a46bf68784e4066115788d008e"
+checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.4.1",
+ "redox_syscall 0.5.1",
  "smallvec",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.5",
 ]
 
 [[package]]
@@ -9628,7 +9640,7 @@ dependencies = [
  "mime",
  "multer",
  "nix 0.27.1",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "percent-encoding",
  "pin-project-lite",
  "poem-derive",
@@ -9900,7 +9912,7 @@ dependencies = [
  "fnv",
  "lazy_static",
  "memchr",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "thiserror",
 ]
 
@@ -10275,6 +10287,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa"
 dependencies = [
  "bitflags 1.3.2",
+]
+
+[[package]]
+name = "redox_syscall"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "469052894dcb553421e483e4209ee581a45100d31b4018de03e5a7ad86374a7e"
+dependencies = [
+ "bitflags 2.5.0",
 ]
 
 [[package]]
@@ -11980,7 +12001,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
- "parking_lot 0.12.1",
+ "parking_lot 0.12.2",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",

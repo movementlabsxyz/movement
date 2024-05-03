@@ -2,7 +2,7 @@ use celestia_types::nmt::Namespace;
 use celestia_rpc::Client;
 use m1_da_light_node_grpc::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     pub celestia_url : String,
     pub celestia_token : String,
