@@ -90,17 +90,17 @@ mod opt_tests {
 		HashValue, PrivateKey, Uniform,
 	};
 	use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
-	use aptos_types::{
-		account_address::AccountAddress,
-		block_executor::partitioner::ExecutableTransactions,
-		chain_id::ChainId,
-		transaction::{
-			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
+	use aptos_sdk::{transaction_builder::TransactionFactory, types::{AccountKey, LocalAccount}};
+use aptos_storage_interface::state_view::DbStateViewAtVersion;
+use aptos_types::{
+		account_address::AccountAddress, account_config::aptos_test_root_address, account_view::AccountView, block_executor::partitioner::ExecutableTransactions, chain_id::ChainId, state_store::account_with_state_view::AsAccountWithStateView, transaction::{
+			signature_verified_transaction::{into_signature_verified_block, SignatureVerifiedTransaction}, RawTransaction, Script,
 			SignedTransaction, Transaction, TransactionPayload,
-		},
+		}
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
+use rand::SeedableRng;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -113,7 +113,7 @@ mod opt_tests {
 			0,
 			gas_unit_price,
 			0,
-			ChainId::new(10), // This is the value used in aptos testing code.
+			ChainId::test(),
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
@@ -254,4 +254,99 @@ mod opt_tests {
 
 		Ok(())
 	}
+
+	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/execution/executor-test-helpers/src/integration_test_impl.rs#L535
+	#[tokio::test]
+	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
+		// Initialize a root account using a predefined keypair and the test root address.
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(aptos_vm_genesis::GENESIS_KEYPAIR.0.clone()),
+			0,
+		);
+
+		// Seed for random number generator, used here to generate predictable results in a test environment.
+		let seed = [3u8; 32];
+		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
+
+		// Create an executor instance from the environment configuration.
+		let executor = Executor::try_from_env()?;
+		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
+		let tx_factory = TransactionFactory::new(executor.chain_id.clone());
+
+		// Loop to simulate the execution of multiple blocks.
+		for _ in 0..10 {
+			// Generate a random block ID.
+			let block_id = HashValue::random();
+			// Clone the signer from the executor for signing the metadata.
+			// let signer = executor.signer.clone();
+			// Get the current time in microseconds for the block timestamp.
+			// let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+			// Create a block metadata transaction.
+			/*let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+				block_id,
+				1,
+				0,
+				signer.author(),
+				vec![0],
+				vec![],
+				current_time_micros,
+			));*/
+
+			// Create a state checkpoint transaction using the block ID.
+			// let state_checkpoint_tx = Transaction::StateCheckpoint(block_id.clone());
+			// Generate a new account for transaction tests.
+			let new_account = LocalAccount::generate(&mut rng);
+			let new_account_address = new_account.address();
+
+			// Create a user account creation transaction.
+			let user_account_creation_tx = root_account
+				.sign_with_transaction_builder(tx_factory.create_user_account(new_account.public_key()));
+
+			// Create a mint transaction to provide the new account with some initial balance.
+			let mint_tx = root_account
+				.sign_with_transaction_builder(tx_factory.mint(new_account.address(), 2000));
+			// Store the hash of the committed transaction for later verification.
+			let mint_tx_hash = mint_tx.clone().committed_hash();
+
+			// Group all transactions into a single unsharded block for execution.
+			let transactions = ExecutableTransactions::Unsharded(
+				into_signature_verified_block(vec![
+					// block_metadata,
+					Transaction::UserTransaction(user_account_creation_tx),
+					Transaction::UserTransaction(mint_tx),
+					// state_checkpoint_tx,
+				])
+			);
+
+			// Create and execute the block.
+			let block = ExecutableBlock::new(block_id.clone(), transactions);
+			executor.execute_block(block).await?;
+
+			// Access the database reader to verify state after execution.
+			let db_reader = executor.db.read().await.reader.clone();
+			// Get the latest version of the blockchain state from the database.
+			let latest_version = db_reader.get_latest_version()?;
+			// Verify the transaction by its hash to ensure it was committed.
+			let transaction_result = db_reader.get_transaction_by_hash(
+				mint_tx_hash,
+				latest_version,
+				false,
+			)?;
+			assert!(transaction_result.is_some());
+
+			// Create a state view at the latest version to inspect account states.
+			let state_view = db_reader.state_view_at_version(Some(latest_version))?;
+			// Access the state view of the new account to verify its state and existence.
+			let account_state_view = state_view.as_account_with_state_view(&new_account_address);
+			let queried_account_address = account_state_view.get_account_address()?;
+			assert!(queried_account_address.is_some());
+			let account_resource = account_state_view.get_account_resource()?;
+			assert!(account_resource.is_some());
+		}
+
+		Ok(())
+	}
+
 }
