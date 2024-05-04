@@ -236,4 +236,48 @@ mod opt_tests {
 		Ok(())
 	}
 
+	#[tokio::test]
+	async fn test_revert_chain_state() -> Result<(), anyhow::Error> {
+		let (tx, rx) = async_channel::unbounded::<SignedTransaction>();
+		let executor = MonzaExecutorV1::try_from_env(tx).await?;
+		let services_executor = executor.clone();
+		let background_executor = executor.clone();
+		let services_handle = tokio::spawn(async move {
+			services_executor.run_service().await?;
+			Ok(()) as Result<(), anyhow::Error>
+		});
+
+		let background_handle = tokio::spawn(async move {
+			background_executor.run_background_tasks().await?;
+			Ok(()) as Result<(), anyhow::Error>
+		});
+
+		for _ in 0..10 {
+			let user_transaction = create_signed_transaction(0);
+			let comparison_user_transaction = user_transaction.clone();
+			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
+
+			let request =
+				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
+			let api = executor.get_api(&FinalityMode::Opt).await?;
+			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
+
+			let received_transaction = rx.recv().await?;
+			assert_eq!(received_transaction, comparison_user_transaction);
+
+            // Now execute the block
+		    let block_id = HashValue::random();
+		    let tx =
+			    SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(received_transaction));
+		    let txs = ExecutableTransactions::Unsharded(vec![tx]);
+		    let block = ExecutableBlock::new(block_id.clone(), txs);
+		    executor.execute_block(&FinalityMode::Opt, block).await?;
+		}
+
+		services_handle.abort();
+		background_handle.abort();
+
+		Ok(())
+	}
+
 }
