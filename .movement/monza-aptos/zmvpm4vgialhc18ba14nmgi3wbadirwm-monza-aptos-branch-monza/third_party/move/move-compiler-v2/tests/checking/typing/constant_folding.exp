@@ -1,3 +1,0 @@
-// -- Model dump before bytecode pipeline
-module 0x42::constant_folding {
-} // end 0x42::constant_folding
