@@ -7,7 +7,6 @@ pub use aptos_types::{
     transaction::{SignedTransaction, Transaction}
 };
 pub use aptos_crypto::hash::HashValue;
-use aptos_executor_types::state_checkpoint_output::StateCheckpointOutput;
 use async_channel::Sender;
 use aptos_api::runtime::Apis;
 pub use monza_execution_util::FinalityMode;
@@ -27,7 +26,7 @@ pub trait MonzaExecutor {
         &self,
         mode : &FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<StateCheckpointOutput, anyhow::Error>;
+    ) -> Result<(), anyhow::Error>;
 
     /// Sets the transaction channel.
     async fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) -> Result<(), anyhow::Error>;

@@ -13,8 +13,11 @@ members = [
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
 
-    "networks/monza/*"
+    "networks/monza/*",
 
+    "protocol-units/zkfp/host",
+    "protocol-units/zkfp/methods",
+    "protocol-units/zkfp/methods/guest",
 ]
 
 [workspace.package]
@@ -51,51 +54,26 @@ move-rocks = { path = "protocol-units/mempool/move-rocks" }
 ## sequencing
 sequencing-util = { path = "protocol-units/sequencing/util" }
 memseq = { path = "protocol-units/sequencing/memseq" }
+# random
+rand = "0.8.4"
+
+anyhow = "1.0"
+# To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
+risc0-zkvm = { version = "0.21",  features = ["std", "getrandom"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# serialization, deserialization
+borsh = { version = "0.10" } # todo: internalize jmt and bump
+serde = "1.0"
+serde_json = "1.0"
 
 
-auto_impl = "1.2.0"
-chrono = "0.4.37"
-serde = { version = "1.0.192", features = ["derive", "rc"] }
-serde_json = { version = "1.0.81", features = [
-    "preserve_order",
-    "arbitrary_precision",
-] } # Note: arbitrary_precision is required to parse u256 in JSON
-serde_with = "3.7.0"
-derivative = "2.2.0"
-anyhow = "1.0.68"
-derive_more = { version = "0.99.11", default-features = false }
-bytes = { version = "1.2.1", default-features = false }
-clap = { version = "4.4.10", features = ["derive"] }
-log = "0.4.21"
-hex = { version = "0.4.3", default-features = false, features = [
-    "alloc",
-    "serde",
-] }
-async-trait = "0.1.71"
-borsh = { version = "0.10.3", features = ["rc", "bytes"] }
-tracing = "0.1.40"
-tokio = { version = "1.35.1", features = ["full"] }
-tokio-stream = "0.1.15"
-async-stream = "0.3.0"
-tempfile = "3.5"
-fail = "0.5.1"
-jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
-proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
-poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
-poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
-schemars = { version = "0.8.16", features = ["derive"] }
-thiserror = "1.0.50"
-x25519-dalek = "1.0.1"
-rand = "0.7.3"
-rand_core = "0.5.1"
-zstd-sys = "2.0.9"
-async-channel = "2.2.1"
-sha2 = "0.10.8"
-once_cell = "1.8.0"
-url = "2.2.2"
+tempfile = "3.2.0"
 
-risc0-build = "0.20"
+# runtime
+tokio = { version = "1.36.0", features = ["fs", "rt-multi-thread"] }
 
+# storage
 rocksdb = { version = "0.21.0", features = [
   "snappy",
   "lz4",
@@ -103,7 +81,59 @@ rocksdb = { version = "0.21.0", features = [
   "zlib",
   "multi-threaded-cf",
 ], default-features = false }
-bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
+
+# cryptography
+jmt = "0.9.0"
+trie-db = "0.28.0"
+sha2 = "0.10"
+
+# for jmt
+digest = "0.10" 
+hashbrown = "0.14.3"
+itertools = { version = "0.12.1", default-features = false }
+mirai-annotations = "1.10.1"
+num-derive = "0.4.2"
+num-traits = "0.2.14"
+parking_lot = { version = "0.12.1" } 
+thiserror = { version = "1.0.24" } 
+blake3 = { version = "1.4.0", features = ["traits-preview"] } 
+hex = { vesion = "0.4.3", features = ["serde"] }
+tracing = "0.1"
+ics23 = { version = "0.11.0" }
+
+
+proptest = "1.0"
+proptest-derive = "0.4"
+
+# internal
+# tentacles = { path = "protocol-units/cryptography/tentacles" }
+move-vm-integration-test-helpers = { path = "test-helpers/move-vm-integration-test-helpers" }
+move-vm-ext = { path = "types/move-vm-ext" }
+
+auto_impl = "1.2.0"
+chrono = "0.4.37"
+serde_with = "3.7.0"
+derivative = "2.2.0"
+derive_more = { version = "0.99.11", default-features = false }
+bytes = { version = "1.2.1", default-features = false }
+clap = { version = "4.4.10", features = ["derive"] }
+log = "0.4.21"
+async-trait = "0.1.71"
+tokio-stream = "0.1.15"
+async-stream = "0.3.0"
+fail = "0.5.1"
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
+poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
+poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
+schemars = { version = "0.8.16", features = ["derive"] }
+x25519-dalek = "1.0.1"
+rand_core = "0.5.1"
+zstd-sys = "2.0.9"
+async-channel = "2.2.1"
+once_cell = "1.8.0"
+url = "2.2.2"
+
+risc0-build = "0.20"
 
 # tonic
 tonic = "0.11"
@@ -131,30 +161,31 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
 # to be avoid depenedency conflicts with other Sovereign Labs crates.
-aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
-aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "8bf8f2a9cf4061c045de0c6d3b0cd69747ddb88f" }
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "monza" }
+aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "monza" }
+aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
 move-table-extension = { git = "https://github.com/diem/move" }
@@ -176,6 +207,7 @@ secp256k1 = { version = "0.27", default-features = false, features = [
     "rand-std",
     "recovery",
 ] }
+aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 
 # celestia dependencies
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
@@ -184,6 +216,9 @@ celestia-types = { git = "https://github.com/eigerco/lumina" }
 # other
 futures = "0.3.17"
 
+
+# zkfp
+methods = { path = "protocol-units/zkfp/methods" }
 
 
 [workspace.lints.rust]
@@ -202,12 +237,13 @@ doc_link_with_quotes = "deny"
 match_same_arms = "deny"
 semicolon_if_nothing_returned = "deny"
 
-
+[profile.release.build-override]
+opt-level = 3
 
 [patch.crates-io]
-serde-reflection = { git = "https://github.com/aptos-labs/serde-reflection", rev = "73b6bbf748334b71ff6d7d09d06a29e3062ca075" }
 merlin = { git = "https://github.com/aptos-labs/merlin" }
-# x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.8-risczero.0" }
 ed25519-dalek = { git = "https://github.com/risc0/curve25519-dalek", tag = "curve25519-4.1.0-risczero.1" }
 zstd-sys = { git = "https://github.com/gyscos/zstd-rs.git", rev = "1779b385b42b08f958b767a37878dfa6a0b4f6a4" }
+wait-timeout = { git = "https://github.com/movementlabsxyz/wait-timeout", branch = "risc0" }

@@ -2,8 +2,8 @@ use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
 use monza_opt_executor::Executor;
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use async_channel::Sender;
+use aptos_types::transaction::SignedTransaction;
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -39,21 +39,27 @@ impl MonzaExecutor for MonzaExecutorV1 {
 			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
 		}
 
-		Ok(())
-	}
+        Ok(())
 
-	/// Executes a block dynamically
-	async fn execute_block(
-		&self,
-		mode: &FinalityMode,
-		block: ExecutableBlock,
-	) -> Result<StateCheckpointOutput, anyhow::Error> {
-		match mode {
-			FinalityMode::Dyn => unimplemented!(),
-			FinalityMode::Opt => self.executor.execute_block(block).await,
-			FinalityMode::Fin => unimplemented!(),
-		}
-	}
+    }
+    
+    /// Executes a block dynamically
+    async fn execute_block(
+        &self,
+        mode : &FinalityMode, 
+        block: ExecutableBlock,
+    ) -> Result<(), anyhow::Error> {
+
+        match mode {
+            FinalityMode::Dyn => unimplemented!(),
+            FinalityMode::Opt => {
+                println!("Executing opt block: {:?}", block.block_id);
+                self.executor.execute_block(block).await
+            },
+            FinalityMode::Fin => unimplemented!(),
+        }
+
+    }
 
 	/// Sets the transaction channel.
 	async fn set_tx_channel(
@@ -113,7 +119,7 @@ use rand::SeedableRng;
 			0,
 			gas_unit_price,
 			0,
-			ChainId::test(),
+			ChainId::test(), // This is the value used in aptos testing code.
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}

@@ -163,10 +163,13 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
                 block_hash,
                 block
             );
+            let block_id = executable_block.block_id;
             self.executor.execute_block(
                 &FinalityMode::Opt,
                 executable_block
             ).await?;
+
+            println!("Executed block: {:?}", block_id);
 
         }
 
