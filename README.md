@@ -19,3 +19,7 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 # example test with local  Celestia Data Availability service
 just m1-da-light-node test.local
 ```
+
+## License
+
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
