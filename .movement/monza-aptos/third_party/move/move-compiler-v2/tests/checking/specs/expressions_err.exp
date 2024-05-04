@@ -1,0 +1,49 @@
+
+Diagnostics:
+error: undeclared `x`
+   ┌─ tests/checking/specs/expressions_err.move:11:7
+   │
+11 │       x // Undeclared simple name.
+   │       ^
+
+error: no function named `not_declared` found
+   ┌─ tests/checking/specs/expressions_err.move:15:7
+   │
+15 │       not_declared() // Undeclared function.
+   │       ^^^^^^^^^^^^^^
+
+error: cannot return `bool` from a function with result type `num`
+   ┌─ tests/checking/specs/expressions_err.move:19:7
+   │
+19 │       false // Wrong result type.
+   │       ^^^^^
+
+error: cannot use `vector<num>` with an operator which expects a value of type `num`
+   ┌─ tests/checking/specs/expressions_err.move:23:7
+   │
+23 │       x > y // No matching function.
+   │       ^
+
+error: cannot return `bool` from a function with result type `(num, bool)`
+   ┌─ tests/checking/specs/expressions_err.move:27:7
+   │
+27 │       false // Wrong result type tuple.
+   │       ^^^^^
+
+error: cannot pass `u256` to a function which expects argument of type `bool`
+   ┌─ tests/checking/specs/expressions_err.move:32:31
+   │
+32 │       wrongly_typed_callee(1, 1) // Wrongly typed function application
+   │                               ^
+
+error: cannot pass `|num|bool` to a function which expects argument of type `|num|num`
+   ┌─ tests/checking/specs/expressions_err.move:37:36
+   │
+37 │       wrongly_typed_fun_arg_callee(|x| false) // Wrongly typed function argument.
+   │                                    ^^^^^^^^^
+
+error: the function expected 2 type arguments but 1 were provided
+   ┌─ tests/checking/specs/expressions_err.move:42:7
+   │
+42 │       wrong_instantiation<u64>(x) // Wrong instantiation
+   │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^

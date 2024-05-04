@@ -1,0 +1,19 @@
+
+Diagnostics:
+error: cannot adapt `()` to annotated type `u64`
+  ┌─ tests/checking/typing/spec_block_fail.move:3:10
+  │
+3 │         (spec {}: u64);
+  │          ^^^^^^^
+
+error: cannot adapt `()` to annotated type `&u64`
+  ┌─ tests/checking/typing/spec_block_fail.move:4:10
+  │
+4 │         (spec {}: &u64);
+  │          ^^^^^^^
+
+error: expected 2 items but found 0
+  ┌─ tests/checking/typing/spec_block_fail.move:5:10
+  │
+5 │         (spec {}: (u64, u64));
+  │          ^^^^^^^

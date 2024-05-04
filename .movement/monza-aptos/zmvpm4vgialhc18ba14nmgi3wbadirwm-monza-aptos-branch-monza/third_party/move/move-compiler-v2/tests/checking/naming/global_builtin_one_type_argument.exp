@@ -1,0 +1,26 @@
+// -- Model dump before bytecode pipeline
+module 0x8675309::M {
+    struct R {
+        dummy_field: bool,
+    }
+    private fun t(account: &signer)
+        acquires M::R(*)
+     {
+        {
+          let _: bool = exists<M::R>(0x0);
+          {
+            let (): () = MoveTo<M::R>(account, pack M::R(false));
+            {
+              let _: &M::R = BorrowGlobal(Immutable)<M::R>(0x0);
+              {
+                let _: &mut M::R = BorrowGlobal(Mutable)<M::R>(0x0);
+                {
+                  let M::R{ dummy_field: _ }: M::R = MoveFrom<M::R>(0x0);
+                  Tuple()
+                }
+              }
+            }
+          }
+        }
+    }
+} // end 0x8675309::M

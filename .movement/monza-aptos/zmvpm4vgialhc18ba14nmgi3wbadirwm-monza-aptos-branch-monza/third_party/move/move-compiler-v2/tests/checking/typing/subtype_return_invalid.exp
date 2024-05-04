@@ -1,0 +1,31 @@
+
+Diagnostics:
+error: the function returns `&mut` but `&` was provided
+  ┌─ tests/checking/typing/subtype_return_invalid.move:5:9
+  │
+5 │         u
+  │         ^
+
+error: the function returns `&mut` but `&` was provided
+  ┌─ tests/checking/typing/subtype_return_invalid.move:9:9
+  │
+9 │         s
+  │         ^
+
+error: the function returns `&mut` but `&` was provided
+   ┌─ tests/checking/typing/subtype_return_invalid.move:13:9
+   │
+13 │         (u1, u2)
+   │         ^^^^^^^^
+
+error: the function returns `&mut` but `&` was provided
+   ┌─ tests/checking/typing/subtype_return_invalid.move:17:9
+   │
+17 │         (u1, u2)
+   │         ^^^^^^^^
+
+error: the function returns `&mut` but `&` was provided
+   ┌─ tests/checking/typing/subtype_return_invalid.move:21:9
+   │
+21 │         (u1, u2)
+   │         ^^^^^^^^

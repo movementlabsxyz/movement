@@ -1,0 +1,19 @@
+processed 1 task
+
+task 0 'print-bytecode'. lines 1-14:
+// Move bytecode v6
+module cafe.Nop {
+
+
+nop_valid() /* def_idx: 0 */ {
+B0:
+	0: Nop
+	1: Ret
+}
+nop_invalid() /* def_idx: 1 */ {
+B0:
+	0: Nop
+	1: Pop
+	2: Ret
+}
+}

@@ -1,0 +1,19 @@
+// -- Model dump before bytecode pipeline
+module 0x8675309::M {
+    struct R {
+        f: bool,
+    }
+    private fun t0(x: bool,r: M::R) {
+        false;
+        false;
+        false;
+        true;
+        And(Copy(x), Move(x));
+        And(select M::R.f(r), select M::R.f(r));
+        false;
+        {
+          let M::R{ f: _ }: M::R = r;
+          Tuple()
+        }
+    }
+} // end 0x8675309::M

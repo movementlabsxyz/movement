@@ -1,0 +1,7 @@
+
+Diagnostics:
+error: unable to infer instantiation of type `S<_>` (consider providing type arguments or annotating the type)
+  ┌─ tests/checking/typing/uninferred_type_unpack_assign.move:5:15
+  │
+5 │         S{} = S{};
+  │               ^^^

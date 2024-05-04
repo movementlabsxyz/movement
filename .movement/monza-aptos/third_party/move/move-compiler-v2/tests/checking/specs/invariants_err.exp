@@ -1,0 +1,25 @@
+
+Diagnostics:
+error: data invariants cannot depend on global state but found dependency to `M::S`
+  ┌─ tests/checking/specs/invariants_err.move:9:9
+  │
+9 │         invariant exists<S>(@0x0);
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: data invariants cannot depend on global state but found dependency to `M::S`
+   ┌─ tests/checking/specs/invariants_err.move:10:9
+   │
+10 │         invariant global<S>(@0x0).x == x;
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: data invariants cannot depend on global state but found dependency to `M::spec_var`
+   ┌─ tests/checking/specs/invariants_err.move:11:9
+   │
+11 │         invariant spec_var > 0;
+   │         ^^^^^^^^^^^^^^^^^^^^^^^
+
+error: data invariants cannot depend on global state but found dependency to `M::spec_var`
+   ┌─ tests/checking/specs/invariants_err.move:13:9
+   │
+13 │         invariant rec_fun(true);
+   │         ^^^^^^^^^^^^^^^^^^^^^^^^

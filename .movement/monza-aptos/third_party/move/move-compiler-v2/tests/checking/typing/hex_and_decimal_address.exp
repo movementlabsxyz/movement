@@ -1,0 +1,21 @@
+// -- Model dump before bytecode pipeline
+module 0x7b::M {
+    struct S {
+        dummy_field: bool,
+    }
+    public fun s(): M::S {
+        pack M::S(false)
+    }
+    public fun take(_s: M::S) {
+        Tuple()
+    }
+} // end 0x7b::M
+module <SELF>_0 {
+    private fun main() {
+        M::take(M::s());
+        M::take(M::s());
+        M::take(M::s());
+        M::take(M::s());
+        Tuple()
+    }
+} // end <SELF>_0

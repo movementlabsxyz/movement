@@ -1,0 +1,107 @@
+
+Diagnostics:
+warning: Unused parameter `a`. Consider removing or prefixing with an underscore: `_a`
+   ┌─ tests/checking/access_specifiers/access_ok.move:35:12
+   │
+35 │     fun f9(a: address) acquires *(a) {
+   │            ^
+
+warning: Unused parameter `x`. Consider removing or prefixing with an underscore: `_x`
+   ┌─ tests/checking/access_specifiers/access_ok.move:38:13
+   │
+38 │     fun f10(x: u64) acquires *(make_up_address(x)) {
+   │             ^
+
+warning: Unused parameter `x`. Consider removing or prefixing with an underscore: `_x`
+   ┌─ tests/checking/access_specifiers/access_ok.move:41:25
+   │
+41 │     fun make_up_address(x: u64): address {
+   │                         ^
+
+// -- Model dump before bytecode pipeline
+module 0x42::m {
+    struct T {
+        dummy_field: bool,
+    }
+    struct G {
+        dummy_field: bool,
+    }
+    struct R {
+        dummy_field: bool,
+    }
+    struct S {
+        dummy_field: bool,
+    }
+    private fun f1()
+        acquires m::S(*)
+     {
+        Tuple()
+    }
+    private fun f10(x: u64)
+        acquires *(m::make_up_address(x))
+     {
+        Tuple()
+    }
+    private fun f11()
+        !reads *(0x42)
+        !reads *(0x43)
+     {
+        Tuple()
+    }
+    private fun f12()
+     {
+        Tuple()
+    }
+    private fun f2()
+        reads m::S(*)
+     {
+        Tuple()
+    }
+    private fun f3()
+        writes m::S(*)
+     {
+        Tuple()
+    }
+    private fun f4()
+        acquires m::S(*)
+     {
+        Tuple()
+    }
+    private fun f5()
+        acquires 0x42::*(*)
+     {
+        Tuple()
+    }
+    private fun f6()
+        acquires 0x42::m::*(*)
+     {
+        Tuple()
+    }
+    private fun f7()
+        acquires *(*)
+     {
+        Tuple()
+    }
+    private fun f8()
+        acquires *(0x42)
+     {
+        Tuple()
+    }
+    private fun f9(a: address)
+        acquires *(a)
+     {
+        Tuple()
+    }
+    private fun f_multiple()
+        acquires m::R(*)
+        reads m::R(*)
+        writes m::T(*)
+        writes m::S(*)
+        reads m::G<u64>(*)
+     {
+        Tuple()
+    }
+    private fun make_up_address(x: u64): address {
+        0x42
+    }
+} // end 0x42::m

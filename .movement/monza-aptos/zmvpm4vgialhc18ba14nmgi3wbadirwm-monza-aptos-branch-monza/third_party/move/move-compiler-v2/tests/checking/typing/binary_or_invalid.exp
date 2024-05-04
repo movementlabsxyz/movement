@@ -1,0 +1,67 @@
+
+Diagnostics:
+error: cannot use `integer` with an operator which expects a value of type `bool`
+  ┌─ tests/checking/typing/binary_or_invalid.move:8:9
+  │
+8 │         0 || 1;
+  │         ^
+
+error: cannot use `integer` with an operator which expects a value of type `bool`
+  ┌─ tests/checking/typing/binary_or_invalid.move:9:9
+  │
+9 │         1 || false;
+  │         ^
+
+error: cannot use `integer` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:10:18
+   │
+10 │         false || 1;
+   │                  ^
+
+error: cannot use `address` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:11:9
+   │
+11 │         @0x0 || @0x1;
+   │         ^^^^
+
+error: cannot use `u8` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:12:10
+   │
+12 │         (0: u8) || (1: u128);
+   │          ^
+
+error: cannot use `R` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:13:9
+   │
+13 │         r || r;
+   │         ^
+
+error: cannot use `S` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:14:9
+   │
+14 │         s || s;
+   │         ^
+
+error: cannot use `()` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:15:9
+   │
+15 │         () || ();
+   │         ^^
+
+error: cannot use `()` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:16:17
+   │
+16 │         true || ();
+   │                 ^^
+
+error: cannot use `(bool, bool)` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:17:9
+   │
+17 │         (true, false) || (true, false, true);
+   │         ^^^^^^^^^^^^^
+
+error: cannot use `(bool, bool)` with an operator which expects a value of type `bool`
+   ┌─ tests/checking/typing/binary_or_invalid.move:18:9
+   │
+18 │         (true, true) || (false, false);
+   │         ^^^^^^^^^^^^

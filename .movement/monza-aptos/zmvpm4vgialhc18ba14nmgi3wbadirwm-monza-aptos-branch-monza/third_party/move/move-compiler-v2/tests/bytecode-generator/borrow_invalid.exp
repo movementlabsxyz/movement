@@ -1,0 +1,7 @@
+
+Diagnostics:
+error: cannot mutably borrow from an immutable ref
+  ┌─ tests/bytecode-generator/borrow_invalid.move:8:17
+  │
+8 │         let r = &mut s.f;
+  │                 ^^^^^^^^

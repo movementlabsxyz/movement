@@ -1,0 +1,35 @@
+// -- Model dump before bytecode pipeline
+module 0x8675309::M {
+    private fun t0() {
+        loop {
+          if true {
+            Tuple()
+          } else {
+            break
+          }
+        };
+        loop {
+          if false {
+            Tuple()
+          } else {
+            break
+          }
+        }
+    }
+    private fun t1() {
+        loop {
+          if true {
+            Tuple()
+          } else {
+            break
+          }
+        };
+        loop {
+          if false {
+            Tuple()
+          } else {
+            break
+          }
+        }
+    }
+} // end 0x8675309::M

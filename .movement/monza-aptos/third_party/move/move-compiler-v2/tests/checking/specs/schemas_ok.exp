@@ -1,0 +1,25 @@
+// -- Model dump before bytecode pipeline
+module 0x42::M {
+    struct S {
+        x: #0,
+    }
+    private fun add(x: u64): u64 {
+        Add<u64>(x, 1)
+    }
+    spec {
+      requires Gt($t0, 0);
+      ensures Ge(result0(), $t0);
+      ensures Eq<num>($t0, result0());
+    }
+
+    private fun id(x: u64): u64 {
+        x
+    }
+    private fun multiple(_x: u64,_y: u64) {
+        Tuple()
+    }
+    spec {
+      requires Gt($t0, $t1);
+    }
+
+} // end 0x42::M
