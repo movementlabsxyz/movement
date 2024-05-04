@@ -11,7 +11,8 @@ if [ ! -f $PROC_COMP_CONFIG/settings.yaml ]; then
     touch $PROC_COMP_CONFIG/settings.yaml
 fi
 
-export MOVEMENT_BASE_STORAGE_PATH=$(mktemp -d -t m2-XXXXXXXX)
+export MOVEMENT_BASE_STORAGE_PATH="./.movement"
+mkdir -p $MOVEMENT_BASE_STORAGE_PATH
 echo "Using sequencer storage path: $MOVEMENT_BASE_STORAGE_PATH"
 
 # If keeping the storage path, is desired for debugging, comment out the line
@@ -20,7 +21,7 @@ trap "exit" INT TERM
 trap cleanup EXIT
 cleanup(){
     echo "Cleaning up storage: $MOVEMENT_BASE_STORAGE_PATH"
-    rm -rv "$MOVEMENT_BASE_STORAGE_PATH"
+    # rm -rv "$MOVEMENT_BASE_STORAGE_PATH"
     rm -rv "$PC_LOG_FILE"
 }
 

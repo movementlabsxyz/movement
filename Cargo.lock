@@ -4911,11 +4911,20 @@ dependencies = [
 
 [[package]]
 name = "dirs"
+version = "3.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30baa043103c9d0c2a57cf537cc2f35623889dc0d405e6c3cccfadbc81c71309"
+dependencies = [
+ "dirs-sys 0.3.7",
+]
+
+[[package]]
+name = "dirs"
 version = "5.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44c45a9d03d6676652bcb5e724c7e988de1acad23a711b5217ab9cbecbec2225"
 dependencies = [
- "dirs-sys",
+ "dirs-sys 0.4.1",
 ]
 
 [[package]]
@@ -4926,6 +4935,17 @@ checksum = "b98cf8ebf19c3d1b223e151f99a4f9f0690dca41414773390fc824184ac833e1"
 dependencies = [
  "cfg-if",
  "dirs-sys-next",
+]
+
+[[package]]
+name = "dirs-sys"
+version = "0.3.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b1d1d91c932ef41c0f2663aa8b0ca0342d444d842c06914aa0a7e352d0bada6"
+dependencies = [
+ "libc",
+ "redox_users",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -5115,11 +5135,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "env_filter"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a009aa4810eb158359dda09d0c87378e4bbb89b5a801f016885a4707ba24f7ea"
+dependencies = [
+ "log",
+ "regex",
+]
+
+[[package]]
 name = "env_logger"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
 dependencies = [
+ "log",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38b35839ba51819680ba087cd351788c9a3c476841207e0b8cee0b04722343b9"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "env_filter",
+ "humantime",
  "log",
 ]
 
@@ -5965,6 +6008,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
 name = "hyper"
 version = "0.14.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6248,7 +6297,7 @@ dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
  "dashmap",
- "env_logger",
+ "env_logger 0.10.2",
  "indexmap 2.2.6",
  "is-terminal",
  "itoa",
@@ -6835,6 +6884,7 @@ dependencies = [
  "async-stream",
  "celestia-rpc",
  "celestia-types",
+ "env_logger 0.11.3",
  "hex",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
@@ -6849,6 +6899,8 @@ dependencies = [
  "tonic",
  "tonic-reflection",
  "tonic-web",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -7049,10 +7101,20 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
+ "monza-execution-util",
  "once_cell",
- "rand 0.8.5",
+ "rand 0.7.3",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "monza-config"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "monza-execution-util",
+ "tokio",
 ]
 
 [[package]]
@@ -7060,9 +7122,13 @@ name = "monza-execution-util"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "aptos-sdk",
  "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?branch=monza)",
  "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -7100,7 +7166,7 @@ dependencies = [
  "chrono",
  "clap 4.5.4",
  "derive_more",
- "dirs",
+ "dirs 5.0.1",
  "fail 0.5.1",
  "futures",
  "hex",
@@ -7109,7 +7175,7 @@ dependencies = [
  "monza-execution-util",
  "monza-opt-executor",
  "poem-openapi",
- "rand 0.8.5",
+ "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
  "serde",
@@ -7154,13 +7220,13 @@ dependencies = [
  "chrono",
  "clap 4.5.4",
  "derive_more",
- "dirs",
+ "dirs 5.0.1",
  "fail 0.5.1",
  "hex",
  "lazy_static",
  "log",
  "poem-openapi",
- "rand 0.8.5",
+ "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
  "serde",
@@ -7177,6 +7243,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "env_logger 0.11.3",
  "m1-da-light-node-client",
  "monza-executor",
  "movement-types",
@@ -7185,6 +7252,8 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -7224,15 +7293,17 @@ dependencies = [
  "chrono",
  "clap 4.5.4",
  "derive_more",
- "dirs",
+ "dirs 3.0.2",
+ "env_logger 0.11.3",
  "fail 0.5.1",
  "futures",
  "hex",
  "lazy_static",
  "log",
+ "monza-execution-util",
  "poem",
  "poem-openapi",
- "rand 0.8.5",
+ "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
  "serde",
@@ -7241,6 +7312,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

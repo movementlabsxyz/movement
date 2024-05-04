@@ -17,12 +17,31 @@ pub struct LightNodeV1 {
 impl LightNodeV1Operations for LightNodeV1 {
 
     async fn try_from_env() -> Result<Self, anyhow::Error> {
+
+        #[cfg(feature = "logging")]
+        {
+            
+            tracing::info!("Initializing LightNodeV1 in sequencer mode from environment.");
+
+        }
+
         let pass_through = LightNodeV1PassThrough::try_from_env().await?;
+        #[cfg(feature = "logging")]
+        {
+            tracing::info!("Initialized pass through for LightNodeV1 in sequencer mode.");
+        }
+
         let memseq = memseq::Memseq::try_move_rocks_from_env()?;
+        #[cfg(feature = "logging")]
+        {
+            tracing::info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
+        }
+
         Ok(Self {
             pass_through,
             memseq
         })
+        
     }
 
     async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
