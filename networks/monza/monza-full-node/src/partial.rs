@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Context;
 use monza_executor::{
     MonzaExecutor,
     ExecutableBlock,
@@ -221,7 +222,9 @@ impl MonzaPartialFullNode<MonzaExecutorV1> {
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
         let light_node_client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
-        let executor = MonzaExecutorV1::try_from_env(tx).await?;
+        let executor = MonzaExecutorV1::try_from_env(tx).await.context(
+            "Failed to get executor from environment"
+        )?;
         Self::bound(executor, light_node_client).await
     }
 

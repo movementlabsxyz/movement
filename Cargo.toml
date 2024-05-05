@@ -37,6 +37,7 @@ monza-opt-executor = { path = "protocol-units/execution/monza/opt-executor" }
 monza-fin-executor = { path = "protocol-units/execution/monza/fin-executor" }
 monza-execution-util = { path = "protocol-units/execution/monza/util" }
 monza-executor = { path = "protocol-units/execution/monza/executor" }
+
 ## types
 movement-types = { path = "util/movement-types"}
 ## buildtime
@@ -55,7 +56,7 @@ move-rocks = { path = "protocol-units/mempool/move-rocks" }
 sequencing-util = { path = "protocol-units/sequencing/util" }
 memseq = { path = "protocol-units/sequencing/memseq" }
 # random
-rand = "0.8.4"
+rand = "0.7.3"
 
 anyhow = "1.0"
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
@@ -68,10 +69,41 @@ serde = "1.0"
 serde_json = "1.0"
 
 
-tempfile = "3.2.0"
-
-# runtime
-tokio = { version = "1.36.0", features = ["fs", "rt-multi-thread"] }
+auto_impl = "1.2.0"
+chrono = "0.4.37"
+serde_with = "3.7.0"
+derivative = "2.2.0"
+derive_more = { version = "0.99.11", default-features = false }
+bytes = { version = "1.2.1", default-features = false }
+clap = { version = "4.4.10", features = ["derive"] }
+log = "0.4.21"
+hex = { version = "0.4.3", default-features = false, features = [
+    "alloc",
+    "serde",
+] }
+async-trait = "0.1.71"
+tracing = "0.1.40"
+tracing-log = "0.2.0"
+env_logger = "0.11.0"
+tokio = { version = "1.35.1", features = ["full"] }
+tokio-stream = "0.1.15"
+async-stream = "0.3.0"
+tempfile = "3.5"
+fail = "0.5.1"
+jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
+proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
+poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
+poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
+schemars = { version = "0.8.16", features = ["derive"] }
+thiserror = "1.0.50"
+x25519-dalek = "1.0.1"
+rand_core = "0.5.1"
+zstd-sys = "2.0.9"
+async-channel = "2.2.1"
+sha2 = "0.10.8"
+once_cell = "1.8.0"
+url = "2.2.2"
+dirs = "3.0.2"
 
 # storage
 rocksdb = { version = "0.21.0", features = [
@@ -85,7 +117,6 @@ rocksdb = { version = "0.21.0", features = [
 # cryptography
 jmt = "0.9.0"
 trie-db = "0.28.0"
-sha2 = "0.10"
 
 # for jmt
 digest = "0.10" 
@@ -95,14 +126,9 @@ mirai-annotations = "1.10.1"
 num-derive = "0.4.2"
 num-traits = "0.2.14"
 parking_lot = { version = "0.12.1" } 
-thiserror = { version = "1.0.24" } 
 blake3 = { version = "1.4.0", features = ["traits-preview"] } 
-hex = { vesion = "0.4.3", features = ["serde"] }
-tracing = "0.1"
 ics23 = { version = "0.11.0" }
 
-
-proptest = "1.0"
 proptest-derive = "0.4"
 
 # internal
@@ -110,28 +136,6 @@ proptest-derive = "0.4"
 move-vm-integration-test-helpers = { path = "test-helpers/move-vm-integration-test-helpers" }
 move-vm-ext = { path = "types/move-vm-ext" }
 
-auto_impl = "1.2.0"
-chrono = "0.4.37"
-serde_with = "3.7.0"
-derivative = "2.2.0"
-derive_more = { version = "0.99.11", default-features = false }
-bytes = { version = "1.2.1", default-features = false }
-clap = { version = "4.4.10", features = ["derive"] }
-log = "0.4.21"
-async-trait = "0.1.71"
-tokio-stream = "0.1.15"
-async-stream = "0.3.0"
-fail = "0.5.1"
-jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
-poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
-poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
-schemars = { version = "0.8.16", features = ["derive"] }
-x25519-dalek = "1.0.1"
-rand_core = "0.5.1"
-zstd-sys = "2.0.9"
-async-channel = "2.2.1"
-once_cell = "1.8.0"
-url = "2.2.2"
 
 risc0-build = "0.20"
 
@@ -164,7 +168,9 @@ ethers-middleware = { version = "=2.0.10", default-features = false }
 aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza", features = [
+    "cloneable-private-keys",
+] }
 aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", branch = "monza" }
 aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
 aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", branch = "monza" }
