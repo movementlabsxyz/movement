@@ -86,7 +86,7 @@ mod tests {
 
 	use std::collections::HashMap;
 
-use super::*;
+	use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
@@ -99,10 +99,15 @@ use super::*;
 	};
 	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
-		account_address::AccountAddress, account_config::aptos_test_root_address, block_executor::partitioner::ExecutableTransactions, chain_id::ChainId, ledger_info::LedgerInfoWithSignatures, transaction::{
+		account_address::AccountAddress,
+		account_config::aptos_test_root_address,
+		block_executor::partitioner::ExecutableTransactions,
+		chain_id::ChainId,
+		ledger_info::LedgerInfoWithSignatures,
+		transaction::{
 			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
 			SignedTransaction, Transaction, TransactionPayload, Version,
-		}
+		},
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
@@ -216,9 +221,9 @@ use super::*;
 	}
 
 	#[tokio::test]
-	async fn test_revert_chain_state() -> Result<(), anyhow::Error> {
-		use aptos_proptest_helpers::ValueGenerator;
+	async fn test_revert_chain_state_at_nth_commit() -> Result<(), anyhow::Error> {
 		use aptos_db::db::test_helper::arb_blocks_to_commit_with_block_nums;
+		use aptos_proptest_helpers::ValueGenerator;
 
 		#[derive(Debug)]
 		struct Commit {
@@ -240,14 +245,14 @@ use super::*;
 			background_executor.run_background_tasks().await?;
 			Ok(()) as Result<(), anyhow::Error>
 		});
-		let committed_blocks = HashMap::new();
+		let mut committed_blocks = HashMap::new();
 
 		let mut val_generator = ValueGenerator::new();
 		// set range of min and max blocks to 5 to always gen 5 blocks
 		let (blocks, _) = val_generator.generate(arb_blocks_to_commit_with_block_nums(5, 5));
 		let mut blockheight = 0;
 		let mut cur_ver: Version = 0;
-		let commit_versions = vec![];
+		let mut commit_versions = vec![];
 
 		for (txns_to_commit, ledger_info_with_sigs) in &blocks {
 			let user_transaction = create_signed_transaction(0);
@@ -292,14 +297,19 @@ use super::*;
 		// Get the version to revert to
 		let version_to_revert = revert.cur_ver - 1;
 
-		let mut db_writer = executor.executor.db.write_owned().await.writer.clone();
-
-		db_writer.revert_commit(
-			version_to_revert,
-			latest_version,
-			new_root_hash,
-			ledger_info_with_sigs,
-		)?;
+		if let Some((max_blockheight, last_commit)) =
+			committed_blocks.iter().max_by_key(|(&k, _)| k)
+		{
+			let mut db_writer = executor.executor.db.write_owned().await.writer.clone();
+			db_writer.revert_commit(
+				version_to_revert,
+				last_commit.cur_ver,
+				revert.hash,
+				revert.info.clone(),
+			)?;
+		} else {
+			panic!("No blocks to revert");
+		}
 
 		services_handle.abort();
 		background_handle.abort();
