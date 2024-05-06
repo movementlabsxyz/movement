@@ -84,24 +84,29 @@ impl MonzaExecutor for MonzaExecutorV1 {
 #[cfg(test)]
 mod tests {
 
-	use super::*;
+	use std::collections::HashMap;
+
+use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
 	use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
-	use aptos_sdk::{transaction_builder::TransactionFactory, types::{AccountKey, LocalAccount}};
+	use aptos_sdk::{
+		transaction_builder::TransactionFactory,
+		types::{AccountKey, LocalAccount},
+	};
 	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
-		account_address::AccountAddress, account_config::aptos_test_root_address, block_executor::partitioner::ExecutableTransactions, chain_id::ChainId, transaction::{
+		account_address::AccountAddress, account_config::aptos_test_root_address, block_executor::partitioner::ExecutableTransactions, chain_id::ChainId, ledger_info::LedgerInfoWithSignatures, transaction::{
 			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
-			SignedTransaction, Transaction, TransactionPayload,
+			SignedTransaction, Transaction, TransactionPayload, Version,
 		}
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
-use rand::SeedableRng;
+	use rand::SeedableRng;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -212,6 +217,16 @@ use rand::SeedableRng;
 
 	#[tokio::test]
 	async fn test_revert_chain_state() -> Result<(), anyhow::Error> {
+		use aptos_proptest_helpers::ValueGenerator;
+		use aptos_db::db::test_helper::arb_blocks_to_commit_with_block_nums;
+
+		#[derive(Debug)]
+		struct Commit {
+			hash: HashValue,
+			info: LedgerInfoWithSignatures,
+			cur_ver: Version,
+		}
+
 		let (tx, rx) = async_channel::unbounded::<SignedTransaction>();
 		let executor = MonzaExecutorV1::try_from_env(tx).await?;
 		let services_executor = executor.clone();
@@ -225,8 +240,16 @@ use rand::SeedableRng;
 			background_executor.run_background_tasks().await?;
 			Ok(()) as Result<(), anyhow::Error>
 		});
+		let committed_blocks = HashMap::new();
 
-		for _ in 0..10 {
+		let mut val_generator = ValueGenerator::new();
+		// set range of min and max blocks to 5 to always gen 5 blocks
+		let (blocks, _) = val_generator.generate(arb_blocks_to_commit_with_block_nums(5, 5));
+		let mut blockheight = 0;
+		let mut cur_ver: Version = 0;
+		let commit_versions = vec![];
+
+		for (txns_to_commit, ledger_info_with_sigs) in &blocks {
 			let user_transaction = create_signed_transaction(0);
 			let comparison_user_transaction = user_transaction.clone();
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
@@ -247,10 +270,36 @@ use rand::SeedableRng;
 			let txs = ExecutableTransactions::Unsharded(vec![tx]);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
 			executor.execute_block(&FinalityMode::Opt, block).await?;
+
+			blockheight += 1;
+			committed_blocks.insert(
+				blockheight,
+				Commit {
+					hash: ledger_info_with_sigs.commit_info().executed_state_id(),
+					info: ledger_info_with_sigs.clone(),
+					cur_ver,
+				},
+			);
+			commit_versions.push(cur_ver);
+			cur_ver += txns_to_commit.len() as u64;
+			blockheight += 1;
 		}
 
+		// Get the 3rd block back from the latest block
+		let revert_block_num = blockheight - 3;
+		let revert = committed_blocks.get(&revert_block_num).unwrap();
+
+		// Get the version to revert to
+		let version_to_revert = revert.cur_ver - 1;
 
 		let mut db_writer = executor.executor.db.write_owned().await.writer.clone();
+
+		db_writer.revert_commit(
+			version_to_revert,
+			latest_version,
+			new_root_hash,
+			ledger_info_with_sigs,
+		)?;
 
 		services_handle.abort();
 		background_handle.abort();
@@ -260,7 +309,6 @@ use rand::SeedableRng;
 
 	#[tokio::test]
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
-
 		// Create an executor instance from the environment configuration.
 		let executor = Executor::try_from_env()?;
 
@@ -270,47 +318,50 @@ use rand::SeedableRng;
 			AccountKey::from_private_key(executor.monza_config.aptos_private_key.clone()),
 			0,
 		);
-	
+
 		// Seed for random number generator, used here to generate predictable results in a test environment.
 		let seed = [3u8; 32];
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
-	
+
 		// Create a transaction factory with the chain ID of the executor.
 		let tx_factory = TransactionFactory::new(executor.monza_config.chain_id.clone());
-	
+
 		// Simulate the execution of multiple blocks.
-		for _ in 0..10 {  // For example, create and execute 3 blocks.
-			let block_id = HashValue::random();  // Generate a random block ID for each block.
-	
+		for _ in 0..10 {
+			// For example, create and execute 3 blocks.
+			let block_id = HashValue::random(); // Generate a random block ID for each block.
+
 			// Generate new accounts and create transactions for each block.
 			let mut transactions = Vec::new();
 			let mut transaction_hashes = Vec::new();
-			for _ in 0..2 {  // Each block will contain 2 transactions.
+			for _ in 0..2 {
+				// Each block will contain 2 transactions.
 				let new_account = LocalAccount::generate(&mut rng);
-				let user_account_creation_tx = root_account
-					.sign_with_transaction_builder(tx_factory.create_user_account(new_account.public_key()));
+				let user_account_creation_tx = root_account.sign_with_transaction_builder(
+					tx_factory.create_user_account(new_account.public_key()),
+				);
 				let tx_hash = user_account_creation_tx.clone().committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}
-	
+
 			// Group all transactions into an unsharded block for execution.
 			let executable_transactions = ExecutableTransactions::Unsharded(
 				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
 			);
 			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
 			executor.execute_block(block).await?;
-	
+
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
 			let apis = executor.try_get_apis().await?;
 			for hash in transaction_hashes {
-				let _ = apis.transactions.get_transaction_by_hash_inner(
-					&AcceptType::Bcs,
-					hash.into()
-				).await?;
+				let _ = apis
+					.transactions
+					.get_transaction_by_hash_inner(&AcceptType::Bcs, hash.into())
+					.await?;
 			}
 		}
-	
+
 		Ok(())
 	}
 }

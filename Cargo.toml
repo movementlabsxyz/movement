@@ -192,6 +192,7 @@ aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "
 aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "27c8c965c119cdecad830866ff4a5c3fafaf8b89" }
 aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "27c8c965c119cdecad830866ff4a5c3fafaf8b89" }
 aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "27c8c965c119cdecad830866ff4a5c3fafaf8b89" }
+aptos-proptest-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "27c8c965c119cdecad830866ff4a5c3fafaf8b89" }
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 
 move-binary-format = { git = "https://github.com/diem/move" }
