@@ -250,7 +250,7 @@ use rand::SeedableRng;
 		}
 
 
-		let db_writer = executor.executor.db.write().await.reader.clone();
+		let mut db_writer = executor.executor.db.write_owned().await.writer.clone();
 
 		services_handle.abort();
 		background_handle.abort();
