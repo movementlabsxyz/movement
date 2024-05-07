@@ -76,7 +76,7 @@
             rustPlatform.bindgenHook
             lld
             coreutils
-            libudev
+            systemd
           ]
           ++ runtimeDependencies
           # Be it Darwin
