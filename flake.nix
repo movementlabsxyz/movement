@@ -76,7 +76,6 @@
             rustPlatform.bindgenHook
             lld
             coreutils
-            systemd
           ]
           ++ runtimeDependencies
           # Be it Darwin
@@ -85,6 +84,9 @@
             frameworks.CoreServices
             frameworks.SystemConfiguration
             frameworks.AppKit
+          ]
+          ++ lib.optionals stdenv.isLinux [
+            systemd
           ];
 
         testingDependencies = with pkgs; [
