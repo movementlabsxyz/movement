@@ -10,7 +10,10 @@ cargo build -p monza-full-node
 
 # build aptos
 WORKING_DIR=$(pwd)
-cd ./.movement/monza-aptos
+temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+cp -R "$MONZA_APTOS_PATH" "$temp_dir"
+chmod -R 755 $temp_dir
+cd $MOVEMENT_BASE_STORAGE_PATH/monza-aptos
 cargo build -p aptos-faucet-service
 cd $WORKING_DIR
 

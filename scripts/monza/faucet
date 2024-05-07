@@ -1,16 +1,7 @@
 #!/bin/bash -e
 
-# Setup a trap to clean up the temporary directory on EXIT
-cleanup() {
-    echo "Cleaning up temporary directory."
-    rm -rf "$temp_dir"
-}
-trap cleanup EXIT
-
 # Copy the directory from the Nix store to a temporary location
 temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
-cp -R "$MONZA_APTOS_PATH" "$temp_dir"
-chmod -R 755 $temp_dir
 
 # Change to the temporary directory
 cd "$temp_dir"
