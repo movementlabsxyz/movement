@@ -66,8 +66,9 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
 
     struct OptimisticCommitment {
         bytes32 blockHash;
-        bytes stateCommitment; // The state commitment associated with the block
-        uint256 validatorCount; // Number of validators who have submitted this commitment
+        mapping(bytes => uint256) stateCommitments;
+        bytes highestCommitState;
+        uint256 highestCommitCount;
     }
 
     struct Dispute {
@@ -125,7 +126,7 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     event DisputeResolved(bytes32 indexed disputeHash, DisputeState state);
     event ProofSubmitted(bytes32 indexed blockHash, bool isValid);
     event ProofVerified(bytes32 indexed blockHash, bool isValid);
-    event BlockAccepted(bytes32 indexed blockHash);
+    event BlockAccepted(bytes32 indexed blockHash, bytes stateCommitment);
     event OptimisticCommitmentSubmitted(bytes32 indexed blockHash, bytes stateCommitment, uint256 validatorCount);
 
     constructor(
@@ -153,7 +154,7 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         return (uint256(uint128(uint256(reversed))), uint256(reversed >> 128));
     }
 
-    function registerValidator() external payable {
+    function stake() external payable {
         require(msg.value >= MIN_STAKE, "Insufficient stake");
         require(!validators[msg.sender].isRegistered, "Validator already registered");
         validators[msg.sender] = Validator(true, msg.value);
@@ -164,14 +165,14 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         return (validators[validator].isRegistered, validators[validator].stake);
     }
 
-    function deregisterValidator() external {
+    function unstake() external {
         Validator storage validator = validators[msg.sender];
         require(validator.isRegistered, "Validator not registered");
         require(validator.stake > 0, "No stake to withdraw");
-        uint256 stake = validator.stake;
+        uint256 validatorStake = validator.stake;
         validator.isRegistered = false;
         validator.stake = 0;
-        payable(msg.sender).transfer(stake);
+        payable(msg.sender).transfer(validatorStake);
         emit ValidatorDeregistered(msg.sender);
     }
 
@@ -228,32 +229,29 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     // The camel case here is not standard solidity practice. But we use it because its the implemntation of the interface.
     function verify_integrity(Receipt memory receipt) public view returns (bool) {
         (uint256 claim0, uint256 claim1) = splitDigest(receipt.claim.digest());
-        console2.log("claim0: ", claim0);
-        console2.log("claim1: ", claim1);
         Seal memory seal = abi.decode(receipt.seal, (Seal));
-        console2.log("sealed");
         bool is_verified = this.verifyProof(seal.a, seal.b, seal.c, [CONTROL_ID_0, CONTROL_ID_1, claim0, claim1, BN254_CONTROL_ID]);
-        console2.log("verified", is_verified);
         return is_verified;
     }
 
     function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external {
         require(validators[msg.sender].isRegistered, "Validator not registered");
         OptimisticCommitment storage commitment = optimisticCommitments[blockHash];
-        if (commitment.validatorCount == 0) {
-            commitment.blockHash = blockHash;
-            commitment.stateCommitment = stateCommitment;
-            commitment.validatorCount = 1;
-        } else {
-            require(keccak256(commitment.stateCommitment) == keccak256(stateCommitment), "State commitment mismatch");
-            commitment.validatorCount += 1;
+    
+        // Increment the count for the submitted stateCommitment
+        uint256 currentCount = ++commitment.stateCommitments[stateCommitment];
+    
+        // Update the highest commit count and state if the current count is higher
+        if (currentCount > commitment.highestCommitCount) {
+            commitment.highestCommitCount = currentCount;
+            commitment.highestCommitState = stateCommitment;
         }
-
-        emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, commitment.validatorCount);
-
-        if (commitment.validatorCount >= m) {
+    
+        emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, currentCount);
+    
+        if (commitment.highestCommitCount >= m) {
             // Block is accepted optimistically after receiving minimum number of commitments
-            emit BlockAccepted(blockHash);
+            emit BlockAccepted(blockHash, commitment.highestCommitState);
         }
     }
 }

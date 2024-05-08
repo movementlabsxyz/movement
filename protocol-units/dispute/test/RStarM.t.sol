@@ -55,7 +55,7 @@ contract RStartM is DSTest {
       uint256 minStake = rStarM.MIN_STAKE();
 
       vm.prank(signer1);
-      rStarM.registerValidator{value: minStake}();
+      rStarM.stake{value: minStake}();
 
       (bool isRegistered, uint256 stake) = rStarM.validators(signer1);
       assertTrue(isRegistered, "Validator should be registered");
