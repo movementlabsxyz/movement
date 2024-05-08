@@ -99,6 +99,8 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     uint256 public constant SECONDS_IN_DAY = 86400; // Number of seconds in a day
     uint256 public constant SECONDS_IN_MINUTE = 60; // Number of seconds in a minute
 
+
+    uint256 public currentRound;
     uint256 public constant MIN_STAKE = 1 ether;
     uint256 public delta = 1 * SECONDS_IN_DAY; // Time window for filing a dispute (e.g., 1 day)
     uint256 public p = 1 * SECONDS_IN_MINUTE; 
@@ -119,6 +121,8 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     mapping(bytes32 => Dispute) public disputes;
     mapping(bytes32 => Proof) public verifiedProofs; // Maps blockHash to Proof
     mapping(bytes32 => OptimisticCommitment) public optimisticCommitments; // Maps blockHash to OptimisticCommitment
+    mapping(uint256 => mapping(bytes => OptimisticCommitment)) public roundCommitments; //Maps round to blockHash to OptimisticCommitment
+
 
     IRiscZeroVerifier public verifier;
 
@@ -236,19 +240,31 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         return is_verified;
     }
 
-    function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external {
+    // Gets the stake amount for the current round which exponentially increases with each round.
+    function getStakeAmount() public view returns (uint256) {
+        uint256 incrementFactor = 2 ** currentRound;
+        return MIN_STAKE * (100 + incrementFactor) / 100;
+    }
+
+    // Submit an optimistic commitment
+    function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external payable {
         require(validators[msg.sender].isRegistered, "Validator not registered");
-        OptimisticCommitment storage commitment = optimisticCommitments[blockHash];
-    
+
+        uint256 requiredStake = getStakeAmount();
+        require(msg.value >= requiredStake, "Insufficient stake for the current round");
+
+        OptimisticCommitment storage commitment = roundCommitments[currentRound][stateCommitment];
+        commitment.blockHash = blockHash;
+
         // Increment the count for the submitted stateCommitment
         uint256 currentCount = ++commitment.stateCommitments[stateCommitment];
-    
+
         // Update the highest commit count and state if the current count is higher
         if (currentCount > commitment.highestCommitCount) {
             commitment.highestCommitCount = currentCount;
             commitment.highestCommitState = stateCommitment;
         }
-    
+
         if (!commitment.isAccepted) {
             if (commitment.highestCommitCount >= m) {
                 commitment.isAccepted = true;
@@ -264,7 +280,12 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
                 commitment.agreeingValidatorCount++;
             }
         }
-    
+
         emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, currentCount);
+
+        // Move to the next round if the block is not accepted
+        if (!commitment.isAccepted) {
+            currentRound++;
+        }
     }
-}
+} 
