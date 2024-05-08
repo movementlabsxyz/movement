@@ -255,8 +255,12 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
                 emit BlockAccepted(blockHash, commitment.highestCommitState);
             }
         } else {
+            // Convert stateCommitment and highestCommitState to bytes memory for comparison
+            bytes memory stateCommitmentBytes = bytes(stateCommitment);
+            bytes memory highestCommitStateBytes = bytes(commitment.highestCommitState);
+
             // Update the agreeing validator count if the submitted commitment matches the highest commit state
-            if (stateCommitment == commitment.highestCommitState) {
+            if (keccak256(stateCommitmentBytes) == keccak256(highestCommitStateBytes)) {
                 commitment.agreeingValidatorCount++;
             }
         }
