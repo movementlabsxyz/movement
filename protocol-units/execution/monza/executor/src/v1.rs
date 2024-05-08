@@ -317,9 +317,9 @@ mod tests {
 		let db_reader = executor.executor.db.read_owned().await.reader.clone();
 		let latest_version = db_reader.get_latest_version()?;
 		assert_eq!(db_reader.get_latest_version().unwrap(), version_to_revert - 1);
+
 		services_handle.abort();
 		background_handle.abort();
-
 		Ok(())
 	}
 
