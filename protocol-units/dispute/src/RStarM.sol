@@ -121,8 +121,8 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     mapping(bytes32 => Dispute) public disputes;
     mapping(bytes32 => Proof) public verifiedProofs; // Maps blockHash to Proof
     mapping(bytes32 => OptimisticCommitment) public optimisticCommitments; // Maps blockHash to OptimisticCommitment
-    mapping(uint256 => mapping(bytes => OptimisticCommitment)) public roundCommitments; //Maps round to blockHash to OptimisticCommitment
 
+    OptimisticCommitment[] public commitmentRounds;
 
     IRiscZeroVerifier public verifier;
 
@@ -246,6 +246,16 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         return MIN_STAKE * (100 + incrementFactor) / 100;
     }
 
+function getCommitmentHighestCommitState(uint256 index) public view returns (bytes memory) {
+    require(index < commitmentRounds.length, "Index out of bounds");
+    return commitmentRounds[index].highestCommitState;
+}
+
+function isCommitmentAccepted(uint256 index) public view returns (bool) {
+    require(index < commitmentRounds.length, "Index out of bounds");
+    return commitmentRounds[index].isAccepted;
+}
+
     // Submit an optimistic commitment
     function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external payable {
         require(validators[msg.sender].isRegistered, "Validator not registered");
@@ -253,7 +263,7 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         uint256 requiredStake = getStakeAmount();
         require(msg.value >= requiredStake, "Insufficient stake for the current round");
 
-        OptimisticCommitment storage commitment = roundCommitments[currentRound][stateCommitment];
+        OptimisticCommitment storage commitment = commitmentRounds[currentRound];
         commitment.blockHash = blockHash;
 
         // Increment the count for the submitted stateCommitment
