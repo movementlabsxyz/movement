@@ -69,6 +69,8 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         mapping(bytes => uint256) stateCommitments;
         bytes highestCommitState;
         uint256 highestCommitCount;
+        uint256 agreeingValidatorCount; // Count of validators agreeing on the highest commit state
+        bool isAccepted; // Flag indicating if the state is accepted
     }
 
     struct Dispute {
@@ -247,11 +249,18 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
             commitment.highestCommitState = stateCommitment;
         }
     
-        emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, currentCount);
-    
-        if (commitment.highestCommitCount >= m) {
-            // Block is accepted optimistically after receiving minimum number of commitments
-            emit BlockAccepted(blockHash, commitment.highestCommitState);
+        if (!commitment.isAccepted) {
+            if (commitment.highestCommitCount >= m) {
+                commitment.isAccepted = true;
+                emit BlockAccepted(blockHash, commitment.highestCommitState);
+            }
+        } else {
+            // Update the agreeing validator count if the submitted commitment matches the highest commit state
+            if (stateCommitment == commitment.highestCommitState) {
+                commitment.agreeingValidatorCount++;
+            }
         }
+    
+        emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, currentCount);
     }
 }
