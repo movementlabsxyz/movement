@@ -1,5 +1,5 @@
 [package]
-name = "monza-config"
+name = "suzuka-config"
 description = "Config tool for Monza"
 authors = { workspace = true }
 edition = { workspace = true }
@@ -13,8 +13,8 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [[bin]]
-name = "monza-config"
-path = "src/bin/monza_config.rs"
+name = "suzuka-config"
+path = "src/bin/suzuka_config.rs"
 
 [dependencies]
 movement-execution-util = { workspace = true }

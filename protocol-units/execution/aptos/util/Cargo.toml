@@ -1,5 +1,5 @@
 [package]
-name = "monza-execution-util"
+name = "movement-execution-util"
 description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }

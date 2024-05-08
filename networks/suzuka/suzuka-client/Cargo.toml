@@ -1,5 +1,5 @@
 [package]
-name = "monza-client"
+name = "suzuka-client"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }

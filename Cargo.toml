@@ -1,7 +1,10 @@
 [workspace]
 
 members = [
+    "protocol-units/execution/aptos/opt-executor",
+    "protocol-units/execution/aptos/util",
     "protocol-units/execution/monza/*",
+    "protocol-units/execution/suzuka/*",
 
     "protocol-units/da/m1/*",
 
@@ -13,7 +16,13 @@ members = [
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
 
-    "networks/monza/*",
+    "networks/monza/monza-client",
+    "networks/monza/monza-config",
+    "networks/monza/monza-full-node",
+
+    "networks/suzuka/suzuka-client",
+    "networks/suzuka/suzuka-config",
+    "networks/suzuka/suzuka-full-node",
 
     "protocol-units/zkfp/host",
     "protocol-units/zkfp/methods",
@@ -33,11 +42,15 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
+## execution/aptos
+movement-opt-executor = { path = "protocol-units/execution/aptos/opt-executor" }
+movement-execution-util = { path = "protocol-units/execution/aptos/util" }
 ## execution/monza
-monza-opt-executor = { path = "protocol-units/execution/monza/opt-executor" }
 monza-fin-executor = { path = "protocol-units/execution/monza/fin-executor" }
-monza-execution-util = { path = "protocol-units/execution/monza/util" }
 monza-executor = { path = "protocol-units/execution/monza/executor" }
+## execution/monza
+suzuka-fin-executor = { path = "protocol-units/execution/suzuka/fin-executor" }
+suzuka-executor = { path = "protocol-units/execution/suzuka/executor" }
 
 ## types
 movement-types = { path = "util/movement-types"}

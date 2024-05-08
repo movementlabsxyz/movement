@@ -62,7 +62,7 @@ pub struct Executor {
 	/// Context 
 	pub context : Arc<Context>,
 	/// The Monza configuration.
-	pub monza_config : monza_execution_util::config::just_monza::Config,
+	pub monza_config : movement_execution_util::config::just_monza::Config,
 }
 
 
@@ -75,7 +75,7 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		monza_config : monza_execution_util::config::just_monza::Config
+		monza_config : movement_execution_util::config::just_monza::Config
 	) -> Self {
 
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&monza_config.aptos_db_path));
@@ -179,7 +179,7 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		monza_config : monza_execution_util::config::just_monza::Config
+		monza_config : movement_execution_util::config::just_monza::Config
 	) -> Result<Self, anyhow::Error> {
 
 		let (db_rw, signer) = Self::bootstrap_empty_db(&monza_config.aptos_db_path, monza_config.chain_id.clone(), &monza_config.aptos_public_key)?;
@@ -211,7 +211,7 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let monza_config = monza_execution_util::config::just_monza::Config::try_from_env().context(
+		let monza_config = movement_execution_util::config::just_monza::Config::try_from_env().context(
 			"Failed to create Monza config"
 		)?;
 
