@@ -300,17 +300,23 @@ mod tests {
 		if let Some((max_blockheight, last_commit)) =
 			committed_blocks.iter().max_by_key(|(&k, _)| k)
 		{
-			let mut db_writer = executor.executor.db.write_owned().await.writer.clone();
+			let db = executor.executor.db.clone();
+			let mut db_writer = db.write_owned().await.writer.clone();
 			db_writer.revert_commit(
 				version_to_revert,
 				last_commit.cur_ver,
 				revert.hash,
 				revert.info.clone(),
 			)?;
+
+			drop(db_writer);
 		} else {
 			panic!("No blocks to revert");
 		}
 
+		let db_reader = executor.executor.db.read_owned().await.reader.clone();
+		let latest_version = db_reader.get_latest_version()?;
+		assert_eq!(db_reader.get_latest_version().unwrap(), version_to_revert - 1);
 		services_handle.abort();
 		background_handle.abort();
 
