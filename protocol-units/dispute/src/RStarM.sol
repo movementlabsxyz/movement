@@ -247,29 +247,31 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     }
 
     // Submit an optimistic commitment
-function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external payable {
-    require(validators[msg.sender].isRegistered, "Validator not registered");
+    function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external payable {
+        require(validators[msg.sender].isRegistered, "Validator not registered");
 
-    OptimisticCommitment storage commitment = rounds[currentRound];
-    commitment.blockHash = blockHash;
+        OptimisticCommitment storage commitment = rounds[currentRound];
+        commitment.blockHash = blockHash;
 
-    // Increment the count for the submitted stateCommitment
-    commitment.stateCommitmentCount++;
+        // Increment the count for the submitted stateCommitment
+        commitment.stateCommitmentCount++;
 
-    if (!commitment.isAccepted) {
-        if (commitment.stateCommitmentCount >= m) {
-            commitment.isAccepted = true;
-            emit BlockAccepted(blockHash, stateCommitment);
+        if (!commitment.isAccepted) {
+            if (commitment.stateCommitmentCount >= m) {
+                commitment.isAccepted = true;
+                emit BlockAccepted(blockHash, stateCommitment);
 
-            // Move to the next round
-            currentRound++;
-            OptimisticCommitment storage newCommitment = rounds[currentRound];
-            newCommitment.blockHash = bytes32(0);
-            newCommitment.stateCommitmentCount = 0;
-            newCommitment.isAccepted = false;
+                // Move to the next round
+                currentRound++;
+                OptimisticCommitment storage newCommitment = rounds[currentRound];
+                newCommitment.blockHash = bytes32(0);
+                newCommitment.stateCommitmentCount = 0;
+                newCommitment.isAccepted = false;
+            }
         }
+
+        emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, commitment.stateCommitmentCount);
     }
 
-    emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, commitment.stateCommitmentCount);
-}
+    
 } 
