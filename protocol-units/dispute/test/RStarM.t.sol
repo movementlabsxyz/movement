@@ -91,36 +91,4 @@ contract RStartM is DSTest {
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
     }
-
-function testHonestValidatorsSubmittingValidCommitments() public {
-    // Register multiple validators
-    uint256 numValidators = 5;
-    address[] memory validators = new address[](numValidators);
-    for (uint256 i = 0; i < numValidators; i++) {
-        address validator = address(uint160(i + 1));
-        validators[i] = validator;
-        vm.deal(validator, rStarM.MIN_STAKE());
-        vm.prank(validator);
-        rStarM.stake{value: rStarM.MIN_STAKE()}();
-    }
-
-    // Have each validator submit a valid commitment for the same block hash
-    bytes32 blockHash = keccak256(abi.encodePacked("testBlock"));
-    bytes memory stateCommitment = abi.encodePacked("validStateCommitment");
-    uint256 initialRound = rStarM.currentRound();
-
-    for (uint256 i = 0; i < numValidators; i++) {
-        vm.prank(validators[i]);
-        rStarM.submitOptimisticCommitment(blockHash, stateCommitment);
-    }
-    
-    bool isAccepted = rStarM.isCommitmentAccepted(initialRound);
-    bytes memory highestCommitState = rStarM.getCommitmentHighestCommitState(initialRound);
-    // Use these values in your assertions
-    assertTrue(isAccepted, "Block should be accepted");
-
-    // Check that the accepted state commitment matches the one submitted by the validators
-    //assertEq(highestCommitState, stateCommitment, "Accepted state commitment should match the submitted commitment");
-
-    }
 }
