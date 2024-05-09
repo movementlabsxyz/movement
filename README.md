@@ -13,11 +13,22 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - **Features**:
     - `local`: Run a local Celestia Data Availability service. (Default.)
     - `arabica`: Run an Arabica Celestia Data Availability service. (Overrides local.)
-    - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`.)
+    - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
 
 ```bash
 # example test with local  Celestia Data Availability service
 just m1-da-light-node test.local
+```
+
+# `monza-full-node`
+
+- **Features**:
+    - `local`: Run a local Celesta Data Availability service. 
+    - `test`: run the test suite for `monza-full-node`. (Can be combined with `local`. Exits on completion by default.)
+
+```bash
+# example test with local
+just monza-full-node test.local
 ```
 
 ## License
