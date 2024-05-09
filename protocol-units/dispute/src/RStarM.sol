@@ -66,10 +66,7 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
 
     struct OptimisticCommitment {
         bytes32 blockHash;
-        mapping(bytes => uint256) stateCommitments;
-        bytes highestCommitState;
-        uint256 highestCommitCount;
-        uint256 agreeingValidatorCount; // Count of validators agreeing on the highest commit state
+        uint256 stateCommitmentCount;
         bool isAccepted; // Flag indicating if the state is accepted
     }
 
@@ -121,8 +118,7 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
     mapping(bytes32 => Dispute) public disputes;
     mapping(bytes32 => Proof) public verifiedProofs; // Maps blockHash to Proof
     mapping(bytes32 => OptimisticCommitment) public optimisticCommitments; // Maps blockHash to OptimisticCommitment
-
-    OptimisticCommitment[] public commitmentRounds;
+    mapping(uint256 => OptimisticCommitment) public rounds; // Maps round number to OptimisticCommitment
 
     IRiscZeroVerifier public verifier;
 
@@ -162,13 +158,12 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
 
     function stake() external payable {
         require(msg.value >= MIN_STAKE, "Insufficient stake");
-        require(!validators[msg.sender].isRegistered, "Validator already registered");
         validators[msg.sender] = Validator(true, msg.value);
         emit ValidatorRegistered(msg.sender, msg.value);
     }
 
-    function getValidator(address validator) external view returns (bool, uint256) {
-        return (validators[validator].isRegistered, validators[validator].stake);
+    function getValidatorStatus() external view returns (bool, uint256) {
+        return (validators[msg.sender].isRegistered, validators[msg.sender].stake);
     }
 
     function unstake() external {
@@ -246,56 +241,35 @@ contract RStarM is IRiscZeroVerifier, Groth16Verifier {
         return MIN_STAKE * (100 + incrementFactor) / 100;
     }
 
-function getCommitmentHighestCommitState(uint256 index) public view returns (bytes memory) {
-    require(index < commitmentRounds.length, "Index out of bounds");
-    return commitmentRounds[index].highestCommitState;
-}
 
-function isCommitmentAccepted(uint256 index) public view returns (bool) {
-    require(index < commitmentRounds.length, "Index out of bounds");
-    return commitmentRounds[index].isAccepted;
-}
+    function isCommitmentAccepted(uint256 round) public view returns (bool) {
+        return rounds[round].isAccepted;
+    }
 
     // Submit an optimistic commitment
-    function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external payable {
-        require(validators[msg.sender].isRegistered, "Validator not registered");
+function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external payable {
+    require(validators[msg.sender].isRegistered, "Validator not registered");
 
-        uint256 requiredStake = getStakeAmount();
-        require(msg.value >= requiredStake, "Insufficient stake for the current round");
+    OptimisticCommitment storage commitment = rounds[currentRound];
+    commitment.blockHash = blockHash;
 
-        OptimisticCommitment storage commitment = commitmentRounds[currentRound];
-        commitment.blockHash = blockHash;
+    // Increment the count for the submitted stateCommitment
+    commitment.stateCommitmentCount++;
 
-        // Increment the count for the submitted stateCommitment
-        uint256 currentCount = ++commitment.stateCommitments[stateCommitment];
+    if (!commitment.isAccepted) {
+        if (commitment.stateCommitmentCount >= m) {
+            commitment.isAccepted = true;
+            emit BlockAccepted(blockHash, stateCommitment);
 
-        // Update the highest commit count and state if the current count is higher
-        if (currentCount > commitment.highestCommitCount) {
-            commitment.highestCommitCount = currentCount;
-            commitment.highestCommitState = stateCommitment;
-        }
-
-        if (!commitment.isAccepted) {
-            if (commitment.highestCommitCount >= m) {
-                commitment.isAccepted = true;
-                emit BlockAccepted(blockHash, commitment.highestCommitState);
-            }
-        } else {
-            // Convert stateCommitment and highestCommitState to bytes memory for comparison
-            bytes memory stateCommitmentBytes = bytes(stateCommitment);
-            bytes memory highestCommitStateBytes = bytes(commitment.highestCommitState);
-
-            // Update the agreeing validator count if the submitted commitment matches the highest commit state
-            if (keccak256(stateCommitmentBytes) == keccak256(highestCommitStateBytes)) {
-                commitment.agreeingValidatorCount++;
-            }
-        }
-
-        emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, currentCount);
-
-        // Move to the next round if the block is not accepted
-        if (!commitment.isAccepted) {
+            // Move to the next round
             currentRound++;
+            OptimisticCommitment storage newCommitment = rounds[currentRound];
+            newCommitment.blockHash = bytes32(0);
+            newCommitment.stateCommitmentCount = 0;
+            newCommitment.isAccepted = false;
         }
     }
+
+    emit OptimisticCommitmentSubmitted(blockHash, stateCommitment, commitment.stateCommitmentCount);
+}
 } 

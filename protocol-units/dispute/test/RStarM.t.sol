@@ -82,7 +82,6 @@ contract RStartM is DSTest {
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled seal value");
         mangled = TEST_RECEIPT;
 
-        console2.log("verified!");
         mangled.claim.postStateDigest ^= bytes32(uint256(1));
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled postStateDigest value");
         mangled = TEST_RECEIPT;
@@ -91,4 +90,48 @@ contract RStartM is DSTest {
         require(!rStarM.verify_integrity(mangled), "verification passed on mangled input value");
         mangled = TEST_RECEIPT;
     }
+
+function testHonestValidatorsSubmittingValidCommitments() public {
+    bytes32 blockHash = keccak256(abi.encodePacked("testBlock"));
+    bytes memory stateCommitment = abi.encodePacked("validStateCommitment");
+    uint256 initialRound = rStarM.currentRound();
+    console2.log("Initial round:", initialRound);
+
+    // Register multiple validators
+    uint256 numValidators = 5;
+    address[] memory validators = new address[](numValidators);
+
+    for (uint256 i = 0; i < numValidators; i++) {
+        address validator = address(uint160(i + 1));
+        validators[i] = validator;
+        vm.deal(validator, rStarM.MIN_STAKE() * 2);
+        vm.prank(validator);
+        uint256 balance = address(validator).balance - 100000;
+        rStarM.stake{value: balance}();
+
+        vm.prank(validator);
+        (bool isRegistered, uint256 stake) = rStarM.getValidatorStatus();
+        console2.log("Validator registered:", validator);
+        console2.log("Validator registered:", isRegistered);
+        console2.log("Validator stake:", stake);
+
+        console2.log("calling validator:", msg.sender);
+        vm.prank(validator);
+        rStarM.submitOptimisticCommitment(blockHash, stateCommitment);
+    }
+
+    // Get the current round after submitting optimistic commitments
+    uint256 currentRound = rStarM.currentRound();
+    assertTrue(currentRound > initialRound, "Current round should have increased");
+
+    // Total validators are 5. So, the threshold is 3. So the round would have incremented by 2
+    assertEq(currentRound, initialRound + 2, "Current round should have increased");
+
+    // Calculate the previous round
+    uint256 prevRound = currentRound - 1;
+
+    // Assert that the block is accepted in the previous round
+    bool isAccepted = rStarM.isCommitmentAccepted(prevRound);
+    assertTrue(isAccepted, "Block should be accepted in the previous round");
+}
 }
