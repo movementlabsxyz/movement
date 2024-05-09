@@ -8,6 +8,8 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
+- **Note:** unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.
+
 # `m1-da-light-node`
 
 - **Features**:
