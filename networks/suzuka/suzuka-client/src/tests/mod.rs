@@ -8,8 +8,8 @@ use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
 
-static SUZUKA_CONFIG : Lazy<movement_execution_util::config::Config> = Lazy::new(|| {
-    movement_execution_util::config::Config::try_from_env().context("Failed to create the config").unwrap()
+static SUZUKA_CONFIG : Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
+    maptos_execution_util::config::Config::try_from_env().context("Failed to create the config").unwrap()
 });
 
 // :!:>section_1c

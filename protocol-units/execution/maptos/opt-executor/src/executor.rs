@@ -62,7 +62,7 @@ pub struct Executor {
 	/// Context 
 	pub context : Arc<Context>,
 	/// The Aptos VM configuration.
-	pub aptos_config : movement_execution_util::config::just_aptos::Config,
+	pub aptos_config : maptos_execution_util::config::just_aptos::Config,
 }
 
 
@@ -75,7 +75,7 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config : movement_execution_util::config::just_aptos::Config
+		aptos_config : maptos_execution_util::config::just_aptos::Config
 	) -> Self {
 
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.aptos_db_path));
@@ -179,7 +179,7 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config : movement_execution_util::config::just_aptos::Config
+		aptos_config : maptos_execution_util::config::just_aptos::Config
 	) -> Result<Self, anyhow::Error> {
 
 		let (db_rw, signer) = Self::bootstrap_empty_db(&aptos_config.aptos_db_path, aptos_config.chain_id.clone(), &aptos_config.aptos_public_key)?;
@@ -211,7 +211,7 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let aptos_config = movement_execution_util::config::just_aptos::Config::try_from_env().context(
+		let aptos_config = maptos_execution_util::config::just_aptos::Config::try_from_env().context(
 			"Failed to create Aptos config"
 		)?;
 
@@ -307,7 +307,7 @@ impl Executor {
 		{
 			// log out to tracing
 			tracing::info!(
-				"Starting movement-opt-executor services at: {:?}",
+				"Starting maptos-opt-executor services at: {:?}",
 				self.aptos_config.aptos_rest_listen_url
 			);
 

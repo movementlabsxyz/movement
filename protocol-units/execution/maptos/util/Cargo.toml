@@ -1,5 +1,5 @@
 [package]
-name = "movement-execution-util"
+name = "maptos-execution-util"
 description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }

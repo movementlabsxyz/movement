@@ -9,7 +9,7 @@ pub use aptos_types::{
 pub use aptos_crypto::hash::HashValue;
 use async_channel::Sender;
 use aptos_api::runtime::Apis;
-pub use movement_execution_util::FinalityMode;
+pub use maptos_execution_util::FinalityMode;
 
 
 #[tonic::async_trait]

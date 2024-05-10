@@ -17,6 +17,6 @@ name = "suzuka-config"
 path = "src/bin/suzuka_config.rs"
 
 [dependencies]
-movement-execution-util = { workspace = true }
+maptos-execution-util = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }

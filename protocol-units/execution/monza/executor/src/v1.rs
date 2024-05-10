@@ -1,7 +1,7 @@
 use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
-use movement_opt_executor::Executor;
+use maptos_opt_executor::Executor;
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {

@@ -60,8 +60,8 @@ aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 
-movement-opt-executor = { workspace = true }
-movement-execution-util = { workspace = true }
+maptos-opt-executor = { workspace = true }
+maptos-execution-util = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"
