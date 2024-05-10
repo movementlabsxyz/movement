@@ -25,10 +25,6 @@ members = [
     "networks/suzuka/suzuka-client",
     "networks/suzuka/suzuka-config",
     "networks/suzuka/suzuka-full-node",
-
-    "protocol-units/zkfp/host",
-    "protocol-units/zkfp/methods",
-    "protocol-units/zkfp/methods/guest",
 ]
 
 [workspace.package]
@@ -238,10 +234,6 @@ celestia-types = { git = "https://github.com/eigerco/lumina" }
 
 # other
 futures = "0.3.17"
-
-
-# zkfp
-methods = { path = "protocol-units/zkfp/methods" }
 
 
 [workspace.lints.rust]
