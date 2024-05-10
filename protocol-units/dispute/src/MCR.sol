@@ -55,6 +55,7 @@ contract MCR {
     uint256 public delta = 1 * SECONDS_IN_DAY;
     uint256 public p = 1 * SECONDS_IN_MINUTE;
     uint256 public supermajorityStake;
+    uint256 public epochStartTimestamp;
 
     mapping(address => Validator) public validators;
     mapping(bytes32 => Dispute) public disputes;
@@ -76,7 +77,7 @@ contract MCR {
     constructor(
         uint256 _delta,
         uint256 _supermajorityStake,
-        uint256 _epochDurationInDays,
+        uint256 _epochDurationInDays
     ) {
         delta = _delta;
         supermajorityStake = _supermajorityStake;
@@ -88,6 +89,7 @@ contract MCR {
         if (epochsPassed > 0) {
             currentEpoch += epochsPassed;
             epochStartTimestamp += epochsPassed * epochDuration;
+            epochStartTimestamp = block.timestamp;
         }
     }
 
