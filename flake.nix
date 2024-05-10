@@ -76,6 +76,7 @@
             rustPlatform.bindgenHook
             lld
             coreutils
+            gcc
           ]
           ++ runtimeDependencies
           # Be it Darwin
