@@ -6,3 +6,4 @@ ledger_db/
 state_merkle_db/
 .etc
 .movement
+.idea
