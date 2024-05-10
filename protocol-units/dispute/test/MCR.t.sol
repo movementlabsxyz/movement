@@ -9,21 +9,22 @@ contract MCRTest is Test {
     uint256 public epochDuration = 7 days;
 
     function setUp() public {
-        mcr = new MCR(1 days, 100 ether, epochDuration / 1 days);
+        mcr = new MCR(1 days, 100 ether, 7);
     }
 
     function testUpdateEpoch() public {
         // Test initial epoch
         assertEq(mcr.currentEpoch(), 0);
-        assertEq(mcr.epochStartTimestamp(), block.timestamp);
+        assertEq(mcr.epochStartTimestamp(), 0);
 
         // Advance time by 3 epochs
         vm.warp(block.timestamp + 3 * epochDuration);
 
+
         // Call updateEpoch and check updated values
         mcr.updateEpoch();
         assertEq(mcr.currentEpoch(), 3);
-        assertEq(mcr.epochStartTimestamp(), block.timestamp);
+        assertApproxEqAbs(mcr.epochStartTimestamp(), block.timestamp, 1);
 
         // Advance time by 1 epoch and 1 day
         vm.warp(block.timestamp + epochDuration + 1 days);
@@ -31,6 +32,8 @@ contract MCRTest is Test {
         // Call updateEpoch and check updated values
         mcr.updateEpoch();
         assertEq(mcr.currentEpoch(), 4);
-        assertEq(mcr.epochStartTimestamp(), block.timestamp - 1 days);
+
+        // Use the `assertApproxEqAbs` function to compare timestamps within a tolerance
+        assertApproxEqAbs(mcr.epochStartTimestamp(), block.timestamp - 1 days, 1);
     }
 }

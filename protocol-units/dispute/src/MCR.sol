@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
@@ -86,11 +85,8 @@ contract MCR {
 
     function updateEpoch() public {
         uint256 epochsPassed = (block.timestamp - epochStartTimestamp) / epochDuration;
-        if (epochsPassed > 0) {
-            currentEpoch += epochsPassed;
-            epochStartTimestamp += epochsPassed * epochDuration;
-            epochStartTimestamp = block.timestamp;
-        }
+        currentEpoch += epochsPassed;
+        epochStartTimestamp += epochsPassed * epochDuration;
     }
 
     function getCurrentEpoch() public view returns (uint256) {
