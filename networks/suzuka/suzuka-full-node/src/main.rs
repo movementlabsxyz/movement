@@ -1,7 +1,7 @@
 use anyhow::Context;
-use monza_full_node::{
-    MonzaFullNode,
-    partial::MonzaPartialNode,
+use suzuka_full_node::{
+    SuzukaFullNode,
+    partial::SuzukaPartialNode,
 };
 
 #[tokio::main]
@@ -18,7 +18,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
     }
 
-    let executor = MonzaPartialNode::try_from_env().await.context(
+    let executor = SuzukaPartialNode::try_from_env().await.context(
         "Failed to create the executor"
     )?;
 

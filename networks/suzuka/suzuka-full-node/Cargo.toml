@@ -1,0 +1,42 @@
+[package]
+name = "suzuka-full-node"
+version = { workspace = true }
+edition  = { workspace = true }
+license  = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+suzuka-executor = { workspace = true }
+m1-da-light-node-client = { workspace = true }
+async-channel = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+sha2 = { workspace = true }
+tonic = { workspace = true }
+movement-types = { workspace = true }
+
+env_logger = { workspace = true, optional = true }
+tracing = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true, optional = true }
+
+[features]
+default = [
+    "logging"
+]
+logging = [
+    "env_logger", 
+    "tracing", 
+    "tracing-subscriber"
+]
+
+
+[lints]
+workspace = true
