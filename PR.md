@@ -7,44 +7,19 @@
 Add your summary text here. 
  -->
 
-# Core Software Components
+# Changelog
 
-<!--
-Describe core software components added or modified by the PR. 
--->
-
-# Ancillary Software Components
-<!--
-Describe components added or modified while working on core software components.
+<!-- 
+Describe your changes. List roughly in order of importance.
 -->
 
 # Testing
 
-## e2e and Integration Tests
-
-### Test Plan
-<!---
-Describe how your PR is tested. 
--->
-
-### Test Components
 <!--
-List the test components added or modified in this PR.
+Describe your Test Plan and explain added or modified test components.
 -->
 
-## Unit Tests
-
-### Test Plan
-<!---
-Describe how your PR is tested. 
--->
-
-### Test Components
-<!--
-List the test components added or modified in this PR.
--->
-
-# Outstanding Issues
+# Outstanding issues
 <!--
 List any outstanding issues that need to be addressed in future PRs, but which do not block merging this PR.
 -->
