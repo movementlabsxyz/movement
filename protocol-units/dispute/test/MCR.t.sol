@@ -88,4 +88,47 @@ contract MCRTest is Test {
         // Check if the new block is accepted
         assertTrue(mcr.isCommitmentAccepted(mcr.currentEpoch() - 1));
     }
+
+    function testDishonestValidatorsMinorityCommit() public {
+        uint256 honestValidatorCount = 4;
+        uint256 dishonestValidatorCount = 1;
+
+        // Register honest validators and stake
+        for (uint256 i = 0; i < honestValidatorCount; i++) {
+            vm.deal(validators[i], 25 ether);
+            vm.prank(validators[i]);
+            mcr.stake{value: 25 ether}();
+        }
+
+        // Register dishonest validators and stake
+        for (uint256 i = honestValidatorCount; i < honestValidatorCount + dishonestValidatorCount; i++) {
+            vm.deal(validators[i], 25 ether);
+            vm.prank(validators[i]);
+            mcr.stake{value: 25 ether}();
+        }
+
+        // Submit optimistic commitments from honest validators
+        bytes32 blockHash = keccak256(abi.encodePacked("Block 1"));
+        bytes memory stateCommitment = abi.encodePacked("State 1");
+
+        for (uint256 i = 0; i < honestValidatorCount; i++) {
+            vm.prank(validators[i]);
+            mcr.submitOptimisticCommitment(blockHash, stateCommitment);
+        }
+
+        // Submit different optimistic commitments from dishonest validators
+        bytes32 dishonestBlockHash = keccak256(abi.encodePacked("Dishonest Block"));
+        bytes memory dishonestStateCommitment = abi.encodePacked("Dishonest State");
+
+        for (uint256 i = honestValidatorCount; i < honestValidatorCount + dishonestValidatorCount; i++) {
+            vm.prank(validators[i]);
+            mcr.submitOptimisticCommitment(dishonestBlockHash, dishonestStateCommitment);
+        }
+
+        // Check if the epoch commitment is accepted (honest validators' commitment)
+        assertTrue(mcr.isCommitmentAccepted(mcr.currentEpoch() - 1));
+
+        // Check if the dishonest validators' commitment is not accepted
+        assertFalse(mcr.optimisticCommitments[dishonestBlockHash].isAccepted);
+    }
 }
