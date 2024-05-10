@@ -7,9 +7,16 @@ import "../src/MCR.sol";
 contract MCRTest is Test {
     MCR public mcr;
     uint256 public epochDuration = 7 days;
+    uint256 public supermajorityStake = 100 ether;
+    uint256 public validatorCount = 5;
+    address[] public validators;
 
     function setUp() public {
-        mcr = new MCR(1 days, 100 ether, 7);
+        mcr = new MCR(1 days, supermajorityStake, 7);
+        validators = new address[](validatorCount);
+        for (uint256 i = 0; i < validatorCount; i++) {
+            validators[i] = address(uint160(i + 1));
+        }
     }
 
     function testUpdateEpoch() public {
@@ -35,5 +42,50 @@ contract MCRTest is Test {
 
         // Use the `assertApproxEqAbs` function to compare timestamps within a tolerance
         assertApproxEqAbs(mcr.epochStartTimestamp(), block.timestamp - 1 days, 1);
+    }
+
+    function testHonestValidatorsCommit() public {
+        // Register validators and stake
+        for (uint256 i = 0; i < validatorCount; i++) {
+            vm.deal(validators[i], 25 ether);
+            vm.prank(validators[i]);
+            mcr.stake{value: 25 ether}();
+        }
+
+        // Check validators' stakes
+        for (uint256 i = 0; i < validatorCount; i++) {
+            vm.prank(validators[i]);
+            (bool isRegistered, uint256 stake) = mcr.getValidatorStatus();
+            assertTrue(isRegistered);
+            assertEq(stake, 25 ether);
+        }
+
+        // Submit optimistic commitments
+        bytes32 blockHash = keccak256(abi.encodePacked("Block 1"));
+        bytes memory stateCommitment = abi.encodePacked("State 1");
+
+        for (uint256 i = 0; i < validatorCount; i++) {
+            vm.prank(validators[i]);
+            mcr.submitOptimisticCommitment(blockHash, stateCommitment);
+        }
+
+        // The epoch has been updated in the previous step so we want to 
+        // check that the previous epoch commitment is accepted ( - 1)
+        assertTrue(mcr.isCommitmentAccepted(mcr.currentEpoch() - 1));
+
+        // Advance to the next epoch
+        vm.warp(block.timestamp + epochDuration);
+
+        // Submit new optimistic commitments
+        bytes32 newBlockHash = keccak256(abi.encodePacked("Block 2"));
+        bytes memory newStateCommitment = abi.encodePacked("State 2");
+
+        for (uint256 i = 0; i < validatorCount; i++) {
+            vm.prank(validators[i]);
+            mcr.submitOptimisticCommitment(newBlockHash, newStateCommitment);
+        }
+
+        // Check if the new block is accepted
+        assertTrue(mcr.isCommitmentAccepted(mcr.currentEpoch() - 1));
     }
 }

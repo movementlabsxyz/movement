@@ -55,6 +55,8 @@ contract MCR {
     uint256 public p = 1 * SECONDS_IN_MINUTE;
     uint256 public supermajorityStake;
     uint256 public epochStartTimestamp;
+    uint256 public totalStake;
+
 
     mapping(address => Validator) public validators;
     mapping(bytes32 => Dispute) public disputes;
@@ -89,14 +91,10 @@ contract MCR {
         epochStartTimestamp += epochsPassed * epochDuration;
     }
 
-    function getCurrentEpoch() public view returns (uint256) {
-        uint256 epochsPassed = (block.timestamp - epochStartTimestamp) / epochDuration;
-        return currentEpoch + epochsPassed;
-    }
-
     function stake() external payable {
         validators[msg.sender].isRegistered = true;
         validators[msg.sender].stake += msg.value;
+        totalStake += msg.value;
         emit ValidatorRegistered(msg.sender, msg.value);
     }
 
@@ -105,6 +103,7 @@ contract MCR {
         require(validator.isRegistered, "Validator not registered");
         require(validator.stake >= amount, "Insufficient stake");
         validator.stake -= amount;
+        totalStake -= amount;
         if (validator.stake == 0) {
             validator.isRegistered = false;
         }
@@ -148,7 +147,7 @@ contract MCR {
         commitment.totalStake += validators[msg.sender].stake;
 
         if (!commitment.isAccepted) {
-            if (commitment.totalStake >= supermajorityStake) {
+            if (commitment.totalStake >= (totalStake * 2) / 3) {
                 commitment.isAccepted = true;
                 emit BlockAccepted(blockHash, stateCommitment);
 
