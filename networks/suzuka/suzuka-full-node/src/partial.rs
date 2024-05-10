@@ -22,14 +22,14 @@ use movement_types::Block;
 
 
 #[derive(Clone)]
-pub struct SuzukaPartialFullNode<T : SuzukaExecutor + Send + Sync + Clone> {
+pub struct SuzukaPartialNode<T : SuzukaExecutor + Send + Sync + Clone> {
     executor: T,
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialFullNode<T> {
+impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
 
     pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
         let (transaction_sender, transaction_receiver) = async_channel::unbounded();
@@ -180,7 +180,7 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialFullNode<T> {
 
 }
 
-impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialFullNode<T> {
+impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialNode<T> {
     
         /// Runs the services until crash or shutdown.
         async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -217,7 +217,7 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialF
 
 }
 
-impl SuzukaPartialFullNode<SuzukaExecutorV1> {
+impl SuzukaPartialNode<SuzukaExecutorV1> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();

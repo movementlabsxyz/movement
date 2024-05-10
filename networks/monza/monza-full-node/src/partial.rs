@@ -22,14 +22,14 @@ use movement_types::Block;
 
 
 #[derive(Clone)]
-pub struct MonzaPartialFullNode<T : MonzaExecutor + Send + Sync + Clone> {
+pub struct MonzaPartialNode<T : MonzaExecutor + Send + Sync + Clone> {
     executor: T,
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
+impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
     pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
         let (transaction_sender, transaction_receiver) = async_channel::unbounded();
@@ -180,7 +180,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
 
 }
 
-impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFullNode<T> {
+impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialNode<T> {
     
         /// Runs the services until crash or shutdown.
         async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -217,7 +217,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFull
 
 }
 
-impl MonzaPartialFullNode<MonzaExecutorV1> {
+impl MonzaPartialNode<MonzaExecutorV1> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
