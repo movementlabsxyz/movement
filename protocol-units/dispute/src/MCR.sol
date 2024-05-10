@@ -1,3 +1,4 @@
+
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
@@ -49,14 +50,11 @@ contract MCR {
     uint256 public constant SECONDS_IN_MINUTE = 60;
 
     uint256 public currentEpoch;
+    uint256 public epochDuration;
     uint256 public constant MIN_STAKE = 1 ether;
     uint256 public delta = 1 * SECONDS_IN_DAY;
     uint256 public p = 1 * SECONDS_IN_MINUTE;
     uint256 public supermajorityStake;
-
-    uint256 public immutable CONTROL_ID_0;
-    uint256 public immutable CONTROL_ID_1;
-    uint256 public immutable BN254_CONTROL_ID;
 
     mapping(address => Validator) public validators;
     mapping(bytes32 => Dispute) public disputes;
@@ -78,15 +76,24 @@ contract MCR {
     constructor(
         uint256 _delta,
         uint256 _supermajorityStake,
-        uint256 control_id_0,
-        uint256 control_id_1,
-        uint256 bn254_control_id
+        uint256 _epochDurationInDays,
     ) {
         delta = _delta;
         supermajorityStake = _supermajorityStake;
-        CONTROL_ID_0 = control_id_0;
-        CONTROL_ID_1 = control_id_1;
-        BN254_CONTROL_ID = bn254_control_id;
+        epochDuration = _epochDurationInDays * SECONDS_IN_DAY;
+    }
+
+    function updateEpoch() public {
+        uint256 epochsPassed = (block.timestamp - epochStartTimestamp) / epochDuration;
+        if (epochsPassed > 0) {
+            currentEpoch += epochsPassed;
+            epochStartTimestamp += epochsPassed * epochDuration;
+        }
+    }
+
+    function getCurrentEpoch() public view returns (uint256) {
+        uint256 epochsPassed = (block.timestamp - epochStartTimestamp) / epochDuration;
+        return currentEpoch + epochsPassed;
     }
 
     function stake() external payable {
@@ -133,6 +140,8 @@ contract MCR {
 
     function submitOptimisticCommitment(bytes32 blockHash, bytes calldata stateCommitment) external {
         require(validators[msg.sender].isRegistered, "Validator not registered");
+
+        updateEpoch();
 
         OptimisticCommitment storage commitment = epochs[currentEpoch];
         commitment.blockHash = blockHash;
