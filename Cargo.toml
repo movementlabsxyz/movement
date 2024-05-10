@@ -1,5 +1,7 @@
 [workspace]
 
+resolver = "2"
+
 members = [
     "protocol-units/execution/aptos/opt-executor",
     "protocol-units/execution/aptos/util",
