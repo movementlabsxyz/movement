@@ -3,7 +3,7 @@ pub mod partial;
 #[cfg(test)]
 pub mod tests;
 
-pub trait MonzaFullNode {
+pub trait SuzukaFullNode {
 
     /// Runs the services until crash or shutdown.
     async fn run_services(&self) -> Result<(), anyhow::Error>;

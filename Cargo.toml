@@ -50,7 +50,7 @@ movement-execution-util = { path = "protocol-units/execution/aptos/util" }
 ## execution/monza
 monza-fin-executor = { path = "protocol-units/execution/monza/fin-executor" }
 monza-executor = { path = "protocol-units/execution/monza/executor" }
-## execution/monza
+## execution/suzuka
 suzuka-fin-executor = { path = "protocol-units/execution/suzuka/fin-executor" }
 suzuka-executor = { path = "protocol-units/execution/suzuka/executor" }
 

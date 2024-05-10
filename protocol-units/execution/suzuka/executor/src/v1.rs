@@ -1,16 +1,16 @@
 use crate::*;
-use monza_opt_executor::Executor;
+use movement_opt_executor::Executor;
 use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
 
 #[derive(Clone)]
-pub struct MonzaExecutorV1 {
+pub struct SuzukaExecutorV1 {
     // this rwlock may be somewhat redundant
     pub executor: Executor,
     pub transaction_channel: Sender<SignedTransaction>,
 }
 
-impl MonzaExecutorV1 {
+impl SuzukaExecutorV1 {
     pub fn new(executor : Executor, transaction_channel: Sender<SignedTransaction>) -> Self {
         Self {
             executor,
@@ -26,7 +26,7 @@ impl MonzaExecutorV1 {
 }
 
 #[tonic::async_trait]
-impl MonzaExecutor for MonzaExecutorV1 {
+impl SuzukaExecutor for SuzukaExecutorV1 {
 
     /// Runs the service.
     async fn run_service(&self) -> Result<(), anyhow::Error> {
@@ -138,7 +138,7 @@ mod opt_tests {
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
         let (tx, rx) = async_channel::unbounded();
-		let mut executor = MonzaExecutorV1::try_from_env(tx).await?;
+		let mut executor = SuzukaExecutorV1::try_from_env(tx).await?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
@@ -154,7 +154,7 @@ mod opt_tests {
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
 
         let (tx, rx) = async_channel::unbounded();
-		let executor = MonzaExecutorV1::try_from_env(tx).await?;
+		let executor = SuzukaExecutorV1::try_from_env(tx).await?;
 		let services_executor = executor.clone();
         let background_executor = executor.clone();
 
@@ -192,7 +192,7 @@ mod opt_tests {
 	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
 
         let (tx, rx) = async_channel::unbounded();
-		let executor = MonzaExecutorV1::try_from_env(tx).await?;
+		let executor = SuzukaExecutorV1::try_from_env(tx).await?;
 		let services_executor = executor.clone();
         let background_executor = executor.clone();
 

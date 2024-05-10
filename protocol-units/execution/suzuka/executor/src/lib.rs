@@ -13,7 +13,7 @@ pub use movement_execution_util::FinalityMode;
 
 
 #[tonic::async_trait]
-pub trait MonzaExecutor {
+pub trait SuzukaExecutor {
 
     /// Runs the service
     async fn run_service(&self) -> Result<(), anyhow::Error>;

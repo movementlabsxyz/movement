@@ -1,6 +1,6 @@
 [package]
 name = "suzuka-config"
-description = "Config tool for Monza"
+description = "Config tool for Suzuka"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

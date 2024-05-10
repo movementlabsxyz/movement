@@ -1,4 +1,4 @@
-pub mod just_monza {
+pub mod just_aptos {
 
     use std::path::PathBuf;
 
@@ -121,33 +121,33 @@ pub mod just_monza {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
-    pub monza_config : just_monza::Config,
+    pub aptos_config : just_aptos::Config,
     pub light_node_config : m1_da_light_node_util::Config,
 }
 
 impl Config {
 
-    pub fn new(monza_config : just_monza::Config, light_node_config : m1_da_light_node_util::Config) -> Self {
+    pub fn new(aptos_config : just_aptos::Config, light_node_config : m1_da_light_node_util::Config) -> Self {
         Self {
-            monza_config,
+            aptos_config,
             light_node_config,
         }
     }
 
     pub fn try_from_env() -> Result<Self, anyhow::Error> {
 
-        let monza_config = just_monza::Config::try_from_env()?;
+        let aptos_config = just_aptos::Config::try_from_env()?;
         let light_node_config = m1_da_light_node_util::Config::try_from_env()?;
 
         Ok(Self {
-            monza_config,
+            aptos_config,
             light_node_config,
         })
         
     }
 
     pub fn write_to_env(&self) -> Result<(), anyhow::Error>{
-        self.monza_config.write_to_env()?;
+        self.aptos_config.write_to_env()?;
         self.light_node_config.write_to_env()?;
         Ok(())
     }
@@ -155,7 +155,7 @@ impl Config {
     pub fn write_bash_export_string(&self) -> Result<String, anyhow::Error> {
         Ok(format!(
             "{}\n{}",
-            self.monza_config.write_bash_export_string()?,
+            self.aptos_config.write_bash_export_string()?,
             self.light_node_config.write_bash_export_string()?
         ))
     }

@@ -8,7 +8,7 @@ use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
 
-static MONZA_CONFIG : Lazy<movement_execution_util::config::Config> = Lazy::new(|| {
+static SUZUKA_CONFIG : Lazy<movement_execution_util::config::Config> = Lazy::new(|| {
     movement_execution_util::config::Config::try_from_env().context("Failed to create the config").unwrap()
 });
 
@@ -16,7 +16,7 @@ static MONZA_CONFIG : Lazy<movement_execution_util::config::Config> = Lazy::new(
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
     Url::from_str(
-       format!("http://{}", MONZA_CONFIG.monza_config.aptos_rest_listen_url.as_str()).as_str()
+       format!("http://{}", SUZUKA_CONFIG.aptos_config.aptos_rest_listen_url.as_str()).as_str()
     ).unwrap()
     
 });
@@ -24,7 +24,7 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
     
     Url::from_str(
-        format!("http://{}", MONZA_CONFIG.monza_config.aptos_faucet_listen_url.as_str()).as_str()
+        format!("http://{}", SUZUKA_CONFIG.aptos_config.aptos_faucet_listen_url.as_str()).as_str()
     ).unwrap()
 
 });

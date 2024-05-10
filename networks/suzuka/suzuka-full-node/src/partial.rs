@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
-use monza_executor::{
-    MonzaExecutor,
+use suzuka_executor::{
+    SuzukaExecutor,
     ExecutableBlock,
     HashValue,
     FinalityMode,
@@ -10,7 +10,7 @@ use monza_executor::{
     SignatureVerifiedTransaction,
     SignedTransaction,
     ExecutableTransactions,
-    v1::MonzaExecutorV1,
+    v1::SuzukaExecutorV1,
 };
 use m1_da_light_node_client::*;
 use async_channel::{Sender, Receiver};
@@ -22,14 +22,14 @@ use movement_types::Block;
 
 
 #[derive(Clone)]
-pub struct MonzaPartialFullNode<T : MonzaExecutor + Send + Sync + Clone> {
+pub struct SuzukaPartialFullNode<T : SuzukaExecutor + Send + Sync + Clone> {
     executor: T,
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
+impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialFullNode<T> {
 
     pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
         let (transaction_sender, transaction_receiver) = async_channel::unbounded();
@@ -180,7 +180,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialFullNode<T> {
 
 }
 
-impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFullNode<T> {
+impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialFullNode<T> {
     
         /// Runs the services until crash or shutdown.
         async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -217,12 +217,12 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialFull
 
 }
 
-impl MonzaPartialFullNode<MonzaExecutorV1> {
+impl SuzukaPartialFullNode<SuzukaExecutorV1> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
         let light_node_client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
-        let executor = MonzaExecutorV1::try_from_env(tx).await.context(
+        let executor = SuzukaExecutorV1::try_from_env(tx).await.context(
             "Failed to get executor from environment"
         )?;
         Self::bound(executor, light_node_client).await

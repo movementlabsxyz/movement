@@ -61,8 +61,8 @@ pub struct Executor {
 	pub node_config: NodeConfig,
 	/// Context 
 	pub context : Arc<Context>,
-	/// The Monza configuration.
-	pub monza_config : movement_execution_util::config::just_monza::Config,
+	/// The Aptos VM configuration.
+	pub aptos_config : movement_execution_util::config::just_aptos::Config,
 }
 
 
@@ -75,10 +75,10 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		monza_config : movement_execution_util::config::just_monza::Config
+		aptos_config : movement_execution_util::config::just_aptos::Config
 	) -> Self {
 
-		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&monza_config.aptos_db_path));
+		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.aptos_db_path));
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
 		Self {
@@ -90,13 +90,13 @@ impl Executor {
 			node_config : node_config.clone(),
 			mempool_client_receiver : Arc::new(RwLock::new(mempool_client_receiver)),
 			context : Arc::new(Context::new(
-				monza_config.chain_id.clone(),
+				aptos_config.chain_id.clone(),
 				reader,
 				mempool_client_sender,
 				node_config ,
 				None
 			)),
-			monza_config
+			aptos_config
 		}
 	}
 
@@ -179,10 +179,10 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		monza_config : movement_execution_util::config::just_monza::Config
+		aptos_config : movement_execution_util::config::just_aptos::Config
 	) -> Result<Self, anyhow::Error> {
 
-		let (db_rw, signer) = Self::bootstrap_empty_db(&monza_config.aptos_db_path, monza_config.chain_id.clone(), &monza_config.aptos_public_key)?;
+		let (db_rw, signer) = Self::bootstrap_empty_db(&aptos_config.aptos_db_path, aptos_config.chain_id.clone(), &aptos_config.aptos_public_key)?;
 		let reader = db_rw.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
@@ -195,13 +195,13 @@ impl Executor {
 			mempool_client_receiver : Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config : node_config.clone(),
 			context : Arc::new(Context::new(
-				monza_config.chain_id.clone(),
+				aptos_config.chain_id.clone(),
 				reader,
 				mempool_client_sender,
 				node_config,
 				None
 			)),
-			monza_config
+			aptos_config
 		})
 
 	}
@@ -211,15 +211,15 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) = futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let monza_config = movement_execution_util::config::just_monza::Config::try_from_env().context(
-			"Failed to create Monza config"
+		let aptos_config = movement_execution_util::config::just_aptos::Config::try_from_env().context(
+			"Failed to create Aptos config"
 		)?;
 
 		Self::bootstrap(
 			mempool_client_sender,
 			mempool_client_receiver,
 			node_config,
-			monza_config
+			aptos_config
 		)
 
 	}
@@ -307,8 +307,8 @@ impl Executor {
 		{
 			// log out to tracing
 			tracing::info!(
-				"Starting monza-opt-executor services at: {:?}",
-				self.monza_config.aptos_rest_listen_url
+				"Starting movement-opt-executor services at: {:?}",
+				self.aptos_config.aptos_rest_listen_url
 			);
 
 		}
@@ -316,7 +316,7 @@ impl Executor {
 
 		let context = self.try_get_context().await?;
 		let api_service = get_api_service(context).server(
-			format!("http://{:?}", self.monza_config.aptos_rest_listen_url)
+			format!("http://{:?}", self.aptos_config.aptos_rest_listen_url)
 		);
 
 		let ui = api_service.swagger_ui();
@@ -326,7 +326,7 @@ impl Executor {
 			.nest("/v1", api_service)
 			.nest("/spec", ui);
 		Server::new(TcpListener::bind(
-			self.monza_config.aptos_rest_listen_url.clone()
+			self.aptos_config.aptos_rest_listen_url.clone()
 		))
 			.run(app)
 			.await.map_err(
@@ -502,7 +502,7 @@ mod tests {
 		let executor = Executor::try_from_env()?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0, executor.monza_config.chain_id.clone()),
+			create_signed_transaction(0, executor.aptos_config.chain_id.clone()),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
@@ -520,7 +520,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.monza_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
 			0,
 		);
 
@@ -529,7 +529,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
-		let tx_factory = TransactionFactory::new(executor.monza_config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
 
 		// Loop to simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -615,7 +615,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.monza_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
 			0,
 		);
 	
@@ -624,7 +624,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 	
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(executor.monza_config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
 	
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {  // For example, create and execute 3 blocks.
@@ -668,7 +668,7 @@ mod tests {
 
 		// header
 		let mut executor = Executor::try_from_env()?;
-		let user_transaction = create_signed_transaction(0, executor.monza_config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -702,7 +702,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error> 
 		});
 
-		let user_transaction = create_signed_transaction(0, executor.monza_config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -744,7 +744,7 @@ mod tests {
 		});
 
 		let api = executor.try_get_apis().await?;
-		let user_transaction = create_signed_transaction(0, executor.monza_config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(
@@ -779,7 +779,7 @@ mod tests {
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
 
-			let user_transaction = create_signed_transaction(0, executor.monza_config.chain_id.clone());
+			let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 

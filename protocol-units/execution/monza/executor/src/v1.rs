@@ -1,7 +1,7 @@
 use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
-use monza_opt_executor::Executor;
+use movement_opt_executor::Executor;
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -331,7 +331,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.monza_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
 			0,
 		);
 
@@ -340,7 +340,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(executor.monza_config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
