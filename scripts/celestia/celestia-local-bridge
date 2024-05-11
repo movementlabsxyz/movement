@@ -5,11 +5,19 @@ NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 GENESIS=
 CNT=0
 MAX=30
-while [ "${#GENESIS}" -le 4 -a $CNT -ne $MAX ]; do
-	GENESIS=$(curl -s http://127.0.0.1:26657/block?height=1 | jq '.result.block_id.hash' | tr -d '"')
-	((CNT++))
-	sleep 1
+
+while [ "${#GENESIS}" -le 4 ] && [ $CNT -lt $MAX ]; do
+    echo "Waiting for genesis block..."
+    GENESIS=$(curl -s http://127.0.0.1:26657/block?height=1 | jq '.result.block_id.hash' | tr -d '"')
+    echo "Genesis: $GENESIS"
+    ((CNT++))
+    sleep 1
 done
+
+if [ "${#GENESIS}" -le 4 ]; then
+    echo "Failed to retrieve genesis block after $MAX attempts."
+    exit 1
+fi
 
 export CELESTIA_CUSTOM=$CELESTIA_CHAIN_ID:$GENESIS
 echo "$CELESTIA_CUSTOM"
