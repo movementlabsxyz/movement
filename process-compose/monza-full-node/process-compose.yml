@@ -10,7 +10,6 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      echo "Running!"
       cargo run --bin wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
@@ -18,7 +17,6 @@ processes:
 
   m1-da-light-node:
     command: |
-      cargo run --bin wait-for-celestia-light-node
       ./target/debug/m1-da-light-node
     depends_on:
       celestia-light-node-synced:
