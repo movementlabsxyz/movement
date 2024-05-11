@@ -14,7 +14,6 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      sleep 10
       cargo run --bin wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
@@ -29,6 +28,7 @@ processes:
       celestia-light-node:
         condition: process_healthy
     readiness_probe:
+      initial_delay_seconds: 30
       exec:
         command: echo "true"
 
@@ -39,7 +39,7 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 60
+      initial_delay_seconds: 30
       exec:
         command: |
           echo "true"
