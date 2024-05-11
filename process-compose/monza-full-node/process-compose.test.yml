@@ -6,7 +6,6 @@ processes:
 
   monza-client-tests:
     command: |
-      sleep 20
       cargo test -p monza-client -- --test-threads=1
     depends_on:
       monza-full-node:
@@ -14,6 +13,5 @@ processes:
       monza-faucet:
         condition: process_healthy
     availability:
-      # NOTE: `restart: exit_on_failure` is not needed since
-      # exit_on_end implies it.
       exit_on_end: true
+      exit_on_failure: true
