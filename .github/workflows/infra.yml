@@ -1,8 +1,9 @@
 name: Infra
 
 on:
-  issue_comment:
-    types: [created]
+  workflow_dispatch:
+  issue_comment:                                     
+    types: [created, edited, deleted]
 
 jobs:
   manage-infra-pr:
