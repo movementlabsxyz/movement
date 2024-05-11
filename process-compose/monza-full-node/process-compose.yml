@@ -4,6 +4,10 @@ environment:
 
 processes:
 
+  celestia-light-node:
+    command: |
+      exit 1
+
   celestia-light-node-synced:
     command: |
       cargo run --bin wait-for-celestia-light-node
