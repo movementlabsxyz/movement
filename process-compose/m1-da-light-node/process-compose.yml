@@ -23,7 +23,7 @@ processes:
       ./target/debug/m1-da-light-node
     depends_on:
       m1-da-light-node-verifier-tests:
-        condition: process_completed
+        condition: process_completed_successfull
       celestia-light-node:
         condition: process_healthy
     readiness_probe:

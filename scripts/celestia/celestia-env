@@ -30,5 +30,5 @@ else
     ./scripts/celestia/celestia-local-init
     export CELESTIA_NODE_AUTH_TOKEN="$(celestia bridge auth admin --node.store ${NODE_PATH})"
     export CELESTIA_ADDRESS=$(./scripts/celestia/get-local-address)
-    echo "CELESTIA_ADDRESS=${CELESTIA_ADDRESS}"
+    echo "CELESTIA_ADDRESS=$CELESTIA_ADDRESS"
 fi
