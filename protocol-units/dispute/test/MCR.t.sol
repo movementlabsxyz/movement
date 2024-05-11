@@ -27,7 +27,6 @@ contract MCRTest is Test {
         // Advance time by 3 epochs
         vm.warp(block.timestamp + 3 * epochDuration);
 
-
         // Call updateEpoch and check updated values
         mcr.updateEpoch();
         assertEq(mcr.currentEpoch(), 3);
@@ -129,6 +128,7 @@ contract MCRTest is Test {
         assertTrue(mcr.isCommitmentAccepted(mcr.currentEpoch() - 1));
 
         // Check if the dishonest validators' commitment is not accepted
-        assertFalse(mcr.optimisticCommitments[dishonestBlockHash].isAccepted);
+        ( , , , bool isAccepted) = mcr.optimisticCommitments(dishonestBlockHash);
+        assertFalse(isAccepted);
     }
 }
