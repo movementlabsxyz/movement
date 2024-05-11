@@ -1,4 +1,4 @@
-name: Manage Infra PRs Based on Comments
+name: Infra
 
 on:
   issue_comment:
@@ -47,12 +47,21 @@ jobs:
           pr_body: "Automated PR for changes related to ${{ github.event.issue.html_url }}. \n\n Original comment: ${{ github.event.comment.body }}"
           destination_repo: "movementlabsxyz/infra"
 
-      - name: Comment on the Original PR with new or existing PR link
+      - name: Comment on the Original PR with new PR link
+        if: steps.search-prs.outputs.result == ''
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue_number: ${{ github.event.issue.number }}
-          body: ${{ steps.search-prs.outputs.result == '' && steps.create-pr.outputs.pr_url || 'A related PR already exists and you can follow it here: ' + steps.search-prs.outputs.result }}
+          body: ${{ steps.create-pr.outputs.pr_url }}
+
+      - name: Comment on Original PR with PR link if PR already exists
+        if: steps.search-prs.outputs.result != ''
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          body: "A related PR already exists and you can follow it here: ${{ steps.search-prs.outputs.result }}"
 
       - name: Comment on the Infra PR if created
         if: steps.search-prs.outputs.result == ''
