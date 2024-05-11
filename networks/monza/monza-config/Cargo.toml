@@ -1,0 +1,22 @@
+[package]
+name = "monza-config"
+description = "Config tool for Monza"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "monza-config"
+path = "src/bin/monza_config.rs"
+
+[dependencies]
+maptos-execution-util = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }

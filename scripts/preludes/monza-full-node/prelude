@@ -2,3 +2,19 @@
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
 export MOVE_ROCKS_PATH="./.etc/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
 . ./scripts/celestia/celestia-env
+
+# build monza
+cargo build --bin monza-config
+cargo build -p m1-da-light-node --features "sequencer"
+cargo build -p monza-full-node
+
+# build aptos
+WORKING_DIR=$(pwd)
+temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+cp -R "$MONZA_APTOS_PATH" "$temp_dir"
+chmod -R 755 $temp_dir
+cd $MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+cargo build -p aptos-faucet-service
+cd $WORKING_DIR
+
+eval $(./target/debug/monza-config)

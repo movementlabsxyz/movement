@@ -1,15 +1,26 @@
-#!/bin/bash
-export PRIVATE_KEY=$(cat ./.etc/monza/private_key)
-export PUBLIC_KEY=$(cat ./.etc/monza/public_key)
-export CHAIN_ID=$(cat ./.etc/monza/chain_id)
+#!/bin/bash -e
 
-# create system tempdir
-mkdir -p /tmp/monza-faucet
-cd /tmp/monza-faucet
+# Copy the directory from the Nix store to a temporary location
+temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
 
-# clone aptos-core
-git clone https://github.com/aptos-labs/aptos-core
-cd aptos-core
+# Change to the temporary directory
+cd "$temp_dir"
 
-# run the faucet
-cargo run -p aptos-faucet-service -- run-simple --key $PRIVATE_KEY --node-url http://localhost:3000 --chain-id $CHAIN_ID
+# Split the listen addresses into an array
+IFS=':' read -r -a listener_array <<< "$MONZA_APTOS_FAUCET_LISTEN_ADDR"
+
+# Extract the listen address and port
+LISTEN_ADDR="${listener_array[0]}"
+LISTEN_PORT="${listener_array[1]}"
+
+echo "Starting faucet service with the following configuration:"
+echo "  - Chain ID: $MONZA_CHAIN_ID"
+echo "  - Node URL: $MONZA_APTOS_REST_LISTEN_ADDR"
+echo "  - Faucet URL: $MONZA_APTOS_FAUCET_LISTEN_ADDR"
+
+# Run the faucet service using cargo
+cargo run -p aptos-faucet-service -- run-simple --key "$MONZA_APTOS_PRIVATE_KEY" \
+    --node-url "http://$MONZA_APTOS_REST_LISTEN_ADDR" --chain-id "$MONZA_CHAIN_ID" \
+    --listen-address "$LISTEN_ADDR" --listen-port "$LISTEN_PORT"
+
+# The script automatically calls cleanup when it exits due to the trap
