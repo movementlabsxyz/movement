@@ -4,10 +4,6 @@ environment:
 
 processes:
 
-  build:
-    command : |
-      exit 0
-
   celestia-light-node:
     command: |
       exit 1
@@ -25,8 +21,6 @@ processes:
     depends_on:
       celestia-light-node-synced:
         condition: process_completed
-      celestia-light-node:
-        condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
       exec:
