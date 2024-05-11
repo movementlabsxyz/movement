@@ -1,6 +1,6 @@
 #!/bin/bash -e
-APP_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
-NODE_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/bridge"
+APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
+NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 
 GENESIS=
 CNT=0
