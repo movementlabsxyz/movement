@@ -41,6 +41,8 @@ processes:
       exec:
         command: |
           echo "true"
+    availability:
+      exit_on_failure: true
 
   monza-faucet:
     command : |
@@ -51,4 +53,6 @@ processes:
     readiness_probe:
       exec:
         command: echo "true"
+    availability:
+      exit_on_failure: true
 
