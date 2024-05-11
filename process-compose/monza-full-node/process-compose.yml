@@ -10,6 +10,7 @@ processes:
 
   celestia-light-node-synced:
     command: |
+      echo "Running!"
       cargo run --bin wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
