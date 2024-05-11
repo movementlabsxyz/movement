@@ -7,6 +7,11 @@ processes:
   celestia-light-node:
     command: |
       exit 1
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: |
+          cargo run --bin wait-for-celestia-light-node
 
   celestia-light-node-synced:
     command: |
