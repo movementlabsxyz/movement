@@ -10,9 +10,11 @@ while [ "${#GENESIS}" -le 4 ] && [ $CNT -lt $MAX ]; do
     echo "Waiting for genesis block..."
     GENESIS=$(curl -s http://127.0.0.1:26657/block?height=1 | jq '.result.block_id.hash' | tr -d '"')
     echo "Genesis: $GENESIS"
-    ((CNT++))
+    CNT=$((CNT+1))
     sleep 1
+    echo "Attempt $CNT"
 done
+echo "Discovered genesis: $GENESIS"
 
 if [ "${#GENESIS}" -le 4 ]; then
     echo "Failed to retrieve genesis block after $MAX attempts."
