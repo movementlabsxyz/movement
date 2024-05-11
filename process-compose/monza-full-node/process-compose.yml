@@ -18,6 +18,7 @@ processes:
 
   m1-da-light-node:
     command: |
+      cargo run --bin wait-for-celestia-light-node
       ./target/debug/m1-da-light-node
     depends_on:
       celestia-light-node-synced:
