@@ -40,5 +40,6 @@ for element in "${split[@]}"; do
     override_files+=("process-compose/$1/process-compose.$element.yml")
 done
 
+echo "Running process-compose for $1 with override files: ${override_files[@]}..."
 process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}"  "${@:3}"
 cat $PC_LOG_FILE
