@@ -13,6 +13,7 @@
     ...
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux" "aarch64-linux"] (
+
       system: let
 
         overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
@@ -64,7 +65,7 @@
           rustc = rust;
         };
 
-        runtimeDependencies = with pkgs; [
+        dependencies = with pkgs; [
           llvmPackages.bintools
           openssl
           openssl.dev
@@ -73,46 +74,28 @@
           process-compose
           just
           jq
+          libclang.lib
+          libz
+          clang
+          pkg-config
+          protobuf
+          rustPlatform.bindgenHook
+          lld
+          coreutils
+          gcc
+          rust
+          celestia-node
+          celestia-app
+          monza-aptos
         ] ++ lib.optionals stdenv.isDarwin [
-
+          frameworks.Security
+          frameworks.CoreServices
+          frameworks.SystemConfiguration
+          frameworks.AppKit
         ] ++ lib.optionals stdenv.isLinux [
           udev
+          systemd
         ];
-
-
-        buildDependencies = with pkgs; [
-            libclang.lib
-            libz
-            clang
-            pkg-config
-            protobuf
-            rustPlatform.bindgenHook
-            lld
-            coreutils
-            gcc
-          ]
-          ++ runtimeDependencies
-          # Be it Darwin
-          ++ lib.optionals stdenv.isDarwin [
-            frameworks.Security
-            frameworks.CoreServices
-            frameworks.SystemConfiguration
-            frameworks.AppKit
-          ]
-          ++ lib.optionals stdenv.isLinux [
-            systemd
-          ];
-
-        testingDependencies = with pkgs; [
-            celestia-node
-            celestia-app
-            monza-aptos
-        ]
-        ++ buildDependencies;
-
-        developmentDependencies = with pkgs; [
-          rust
-        ] ++ testingDependencies;
 
     
       in
@@ -124,10 +107,10 @@
           # Development Shell
           devShells.default = mkShell {
 
-            buildInputs = developmentDependencies;
-            nativeBuildInputs = developmentDependencies;
+            buildInputs = dependencies;
+            nativeBuildInputs = dependencies;
 
-            LD_LIBRARY_PATH = lib.makeLibraryPath buildDependencies;
+            LD_LIBRARY_PATH = lib.makeLibraryPath dependencies;
 
             RUSTC_VERSION = overrides.toolchain.channel;
 
