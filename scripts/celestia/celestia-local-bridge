@@ -1,5 +1,4 @@
 #!/bin/bash -e
-exec > /dev/null 2>&1
 APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
 NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 
@@ -8,6 +7,7 @@ CNT=0
 MAX=30
 
 while [ "${#GENESIS}" -le 4 ] && [ $CNT -lt $MAX ]; do
+    # FIXME(nix-ci-fix): if nix environment is set up incorrectly, we will get something similar to: https://github.com/commercialhaskell/stack/issues/6331
     echo "Waiting for genesis block..."
     GENESIS=$(curl -s http://127.0.0.1:26657/block?height=1 | jq '.result.block_id.hash' | tr -d '"')
     echo "Genesis: $GENESIS"
@@ -25,6 +25,7 @@ fi
 export CELESTIA_CUSTOM=$CELESTIA_CHAIN_ID:$GENESIS
 echo "$CELESTIA_CUSTOM"
 
+exec > /dev/null 2>&1 # TODO: drop when we have debugged
 celestia bridge init --node.store $NODE_PATH
 celestia bridge start \
   --node.store $NODE_PATH --gateway \

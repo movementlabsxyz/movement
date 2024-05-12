@@ -1,5 +1,5 @@
 #!/bin/bash -e
-exec > /dev/null 2>&1
+exec > /dev/null 2>&1 # TODO: drop this line once we have debugged
 APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
 NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 celestia-appd start --grpc.enable --home $APP_PATH

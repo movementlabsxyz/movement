@@ -19,6 +19,7 @@ processes:
 
   m1-da-light-node:
     command: |
+      # FIXME(nix-ci-fix): when we modify LD_PATH directly, we get a missing libstdc++ here
       ./target/debug/m1-da-light-node
     depends_on:
       celestia-light-node-synced:
@@ -48,6 +49,7 @@ processes:
 
   monza-faucet:
     command : |
+      # FIXME(nix-ci-fix): this is the latest we can push linking issues, here and in the Monza client tests we will get a libssl linking issue
       ./scripts/monza/faucet
     depends_on:
       monza-full-node:
