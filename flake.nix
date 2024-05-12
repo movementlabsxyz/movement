@@ -1,4 +1,5 @@
 {
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/f1010e0469db743d14519a1efd37e23f8513d714";
     rust-overlay.url = "github:oxalica/rust-overlay";
@@ -11,12 +12,11 @@
     rust-overlay,
     flake-utils,
     ...
-    }:
+  }:
+    
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux" "aarch64-linux"] (
 
       system: let
-
-        overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
 
         overlays = [(import rust-overlay)];
 
@@ -33,29 +33,7 @@
         celestia-app = import ./celestia-app.nix { inherit pkgs; };
 
         # monza-aptos
-        monza-aptos = pkgs.stdenv.mkDerivation {
-          pname = "monza-aptos";
-          version = "branch-monza";
-
-          src = pkgs.fetchFromGitHub {
-              owner = "movementlabsxyz";
-              repo = "aptos-core";
-              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
-          };
-
-          installPhase = ''
-              cp -r . $out
-          '';
-
-          meta = with pkgs.lib; {
-              description = "Aptos core repository on the monza branch";
-              homepage = "https://github.com/movementlabsxyz/aptos-core";
-              license = licenses.asl20;
-          };
-
-
-        };
+        monza-aptos =  import ./monza-aptos.nix { inherit pkgs; };
        
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
@@ -115,8 +93,6 @@
             shellHook = ''
               #!/bin/bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
-              export PATH=$PATH:''${CARGO_HOME:-~/.cargo}/bin
-              export PATH=$PATH:''${RUSTUP_HOME:-~/.rustup}/toolchains/$RUSTC_VERSION-x86_64-unknown-linux-gnu/bin/
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
