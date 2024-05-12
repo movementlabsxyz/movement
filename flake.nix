@@ -60,6 +60,8 @@
         };
 
         runtimeDependencies = with pkgs; [
+          libiconv 
+          pkg-config
           openssl
           openssl.dev
           process-compose
@@ -68,7 +70,7 @@
         ] ++ lib.optionals stdenv.isDarwin [
         
         ] ++ lib.optionals stdenv.isLinux [
-          pkg-config
+          
         ];
 
 
@@ -115,6 +117,9 @@
 
           # Development Shell
           devShells.default = mkShell {
+
+            OPENSSL_DEV=pkgs.openssl.dev;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = developmentDependencies;
 
             # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
