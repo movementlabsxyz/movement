@@ -34,7 +34,7 @@
 
         # monza-aptos
         monza-aptos = import ./monza-aptos.nix { inherit pkgs; };
-       
+        
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
