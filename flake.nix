@@ -107,12 +107,10 @@
           # Development Shell
           devShells.default = mkShell {
 
-            buildInputs = dependencies;
-            # nativeBuildInputs = dependencies;
-
-            # LD_LIBRARY_PATH = lib.makeLibraryPath dependencies;
-
-            # RUSTC_VERSION = overrides.toolchain.channel;
+            OPENSSL_DEV=pkgs.openssl.dev;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            buildInputs = developmentDependencies;
+            nativeBuildInputs = developmentDependencies;
 
             shellHook = ''
               #!/bin/bash
