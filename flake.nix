@@ -117,7 +117,7 @@
           devShells.default = mkShell {
             buildInputs = developmentDependencies;
 
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
 
             shellHook = ''
               #!/bin/bash
