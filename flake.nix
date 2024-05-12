@@ -61,9 +61,14 @@
 
         runtimeDependencies = with pkgs; [
           openssl
+          openssl.dev
           process-compose
           just
           jq
+        ] ++ lib.optionals stdenv.isDarwin [
+        
+        ] ++ lib.optionals stdenv.isLinux [
+          pkg-config
         ];
 
 
@@ -111,6 +116,8 @@
           # Development Shell
           devShells.default = mkShell {
             buildInputs = developmentDependencies;
+
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
 
             shellHook = ''
               #!/bin/bash
