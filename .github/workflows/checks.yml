@@ -5,7 +5,23 @@ on:
 
 jobs:
   build:
-    runs-on: movement-runner
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: ubuntu-22.04
+            arch: arm64
+            runs-on: buildjet-8vcpu-ubuntu-2204-arm
+          - os: macos-13-latest
+            arch: x86_64
+            runs-on: macos-13-large
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
     - name: Checkout repository
