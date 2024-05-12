@@ -74,5 +74,5 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           repository: "movementlabsxyz/infra"
-          issue_number: ${{ steps.create-pr.outputs.pr_number }}
+          # issue_number: ${{ steps.create-pr.outputs.pr_number }}
           body: "This PR relates to changes triggered by an issue in another repository. Original PR: ${{ github.event.issue.html_url }} \n\n Details: ${{ github.event.comment.body }}"
