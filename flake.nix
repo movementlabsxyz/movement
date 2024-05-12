@@ -70,7 +70,7 @@
         ] ++ lib.optionals stdenv.isDarwin [
 
         ] ++ lib.optionals stdenv.isLinux [
-
+          udev
         ];
 
 
