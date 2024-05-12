@@ -62,15 +62,15 @@
         runtimeDependencies = with pkgs; [
           libiconv 
           pkg-config
-          openssl
-          openssl.dev
           process-compose
           just
           jq
         ] ++ lib.optionals stdenv.isDarwin [
-        
+          openssl
+          openssl.dev
         ] ++ lib.optionals stdenv.isLinux [
-          
+          openssl_1_1 
+          openssl_1_1.dev
         ];
 
 
@@ -118,8 +118,8 @@
           # Development Shell
           devShells.default = mkShell {
 
-            OPENSSL_DEV=pkgs.openssl.dev;
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            # OPENSSL_DEV=pkgs.openssl.dev;
+            # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = developmentDependencies;
 
             # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
