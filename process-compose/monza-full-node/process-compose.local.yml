@@ -15,6 +15,8 @@ processes:
       initial_delay_seconds: 10
       exec:
         command: echo "true"
+    availability:
+      exit_on_failure: true
 
   celestia-bridge:
     command: |
@@ -30,6 +32,8 @@ processes:
     depends_on:
        celestia-node-appd:
         condition: process_healthy
+    availability:
+      exit_on_failure: true
 
   celestia-light-node:
     command: |
@@ -50,3 +54,5 @@ processes:
         condition: process_healthy
       celestia-bridge:
         condition: process_healthy
+    availability:
+      exit_on_failure: true
