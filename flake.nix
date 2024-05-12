@@ -113,9 +113,10 @@
           devShells.default = mkShell {
             buildInputs = developmentDependencies;
 
+            LD_LIBRARY_PATH=${lib.makeLibraryPath [ pkgs.gcc.cc.lib pkgs.openssl ]
+
             shellHook = ''
               #!/bin/bash
-              export LD_LIBRARY_PATH=${lib.makeLibraryPath [ pkgs.gcc.cc.lib pkgs.openssl ]}:$LD_LIBRARY_PATH
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
