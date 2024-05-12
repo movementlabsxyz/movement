@@ -14,9 +14,6 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Garbage collect nix to help clean build environment
-      run: sudo nix-collect-garbage -d
-
     - name: Run test in nix environment
       run: nix develop --command bash  -c "cargo check"  
 
