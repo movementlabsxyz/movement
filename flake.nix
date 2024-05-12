@@ -108,17 +108,15 @@
           devShells.default = mkShell {
 
             buildInputs = dependencies;
-            nativeBuildInputs = dependencies;
+            # nativeBuildInputs = dependencies;
 
-            LD_LIBRARY_PATH = lib.makeLibraryPath dependencies;
+            # LD_LIBRARY_PATH = lib.makeLibraryPath dependencies;
 
-            RUSTC_VERSION = overrides.toolchain.channel;
+            # RUSTC_VERSION = overrides.toolchain.channel;
 
             shellHook = ''
               #!/bin/bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
-              export PATH=$PATH:''${CARGO_HOME:-~/.cargo}/bin
-              export PATH=$PATH:''${RUSTUP_HOME:-~/.rustup}/toolchains/$RUSTC_VERSION-x86_64-unknown-linux-gnu/bin/
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
