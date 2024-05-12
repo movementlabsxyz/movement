@@ -16,3 +16,9 @@ jobs:
 
     - name: Run test in nix environment
       run: nix develop --command bash  -c "cargo check"  
+
+    - name: Run test in nix environment
+      run: nix develop --command bash  -c "just m1-da-light-node test.local -t=false"  
+
+    - name: Run test in nix environment
+      run: nix develop --command bash  -c "just monza-full-node test.local -t=false"  
