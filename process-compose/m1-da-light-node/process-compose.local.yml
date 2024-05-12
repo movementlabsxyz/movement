@@ -10,8 +10,6 @@ processes:
     readiness_probe:
       exec:
         command: echo "true"
-    availability:
-      restart: exit_on_failure
 
   celestia-bridge:
     command: |
@@ -22,8 +20,6 @@ processes:
     depends_on:
        celestia-node-appd:
         condition: process_healthy
-    availability:
-      restart: exit_on_failure
 
   celestia-light-node:
     command: |
