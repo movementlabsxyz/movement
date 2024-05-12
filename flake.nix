@@ -113,7 +113,7 @@
           devShells.default = mkShell {
             buildInputs = developmentDependencies;
 
-            LD_LIBRARY_PATH=${lib.makeLibraryPath [ pkgs.gcc.cc.lib pkgs.openssl ]
+            LD_LIBRARY_PATH=lib.makeLibraryPath [ pkgs.gcc.cc.lib pkgs.openssl ];
 
             shellHook = ''
               #!/bin/bash
