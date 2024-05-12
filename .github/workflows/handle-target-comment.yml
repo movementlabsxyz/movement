@@ -41,7 +41,7 @@ jobs:
         with:
           github-token: ${{ secrets.GH_PAT }}
           script: |
-            const title = `${process.env.REPO_NAME}/${{ github.event.issue.title }}`;
+            const title = `${process.env.REPO_NAME}/${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}`;
             const prs = await github.rest.pulls.list({
               owner: 'movementlabsxyz',
               repo: 'infra',
@@ -53,6 +53,10 @@ jobs:
               return existingPr.html_url;
             }
             return '';
+
+      - name: Echo search result
+        run: |
+          echo "Search result: ${{ steps.search-prs.outputs.result }}"
 
       - name: Create PR in Infra Repo if not exist
         id: create-new-pr
@@ -66,7 +70,7 @@ jobs:
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ github.event.inputs.issue_number }}
+          issue-number: ${{ github.event.inputs.issue_number }}
           body: ${{ steps.create-new-pr.outputs.pr_url }}
 
       - name: Comment on Original PR with PR link if PR already exists
@@ -75,5 +79,5 @@ jobs:
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ github.event.inputs.issue_number }}
+          issue-number: ${{ github.event.inputs.issue_number }}
           body: "A related PR already exists and you can follow it here: ${{ steps.search-prs.outputs.result }}"
