@@ -92,12 +92,6 @@
 
             shellHook = ''
               #!/bin/bash
-
-              # Detect if the system is Debian-based and install libssl-dev if it is
-              if [[ -f /etc/debian_version ]]; then
-                sudo apt-get update && sudo apt-get install libssl-dev
-              fi
-              
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
