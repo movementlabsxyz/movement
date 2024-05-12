@@ -14,4 +14,3 @@ processes:
         condition: process_healthy
     availability:
       exit_on_end: true
-      exit_on_failure: true

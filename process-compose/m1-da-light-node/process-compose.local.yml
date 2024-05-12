@@ -11,7 +11,7 @@ processes:
       exec:
         command: echo "true"
     availability:
-      exit_on_failure: true
+      restart: exit_on_failure
 
   celestia-bridge:
     command: |
@@ -23,7 +23,7 @@ processes:
        celestia-node-appd:
         condition: process_healthy
     availability:
-      exit_on_failure: true
+      restart: exit_on_failure
 
   celestia-light-node:
     command: |

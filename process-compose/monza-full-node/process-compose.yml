@@ -15,7 +15,7 @@ processes:
       celestia-light-node:
         condition: process_healthy
     availability:
-      exit_on_failure: true
+      restart: exit_on_failure
 
   m1-da-light-node:
     command: |
@@ -31,6 +31,8 @@ processes:
       initial_delay_seconds: 10
       exec:
         command: echo "true"
+    availability:
+      restart: exit_on_failure
 
   monza-full-node:
     command: |
@@ -44,7 +46,7 @@ processes:
         command: |
           echo "true"
     availability:
-      exit_on_failure: true
+      restart: exit_on_failure
 
   monza-faucet:
     command : |
@@ -57,5 +59,5 @@ processes:
       exec:
         command: echo "true"
     availability:
-      exit_on_failure: true
+      restart: exit_on_failure
 
