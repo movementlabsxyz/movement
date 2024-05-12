@@ -7,6 +7,14 @@ on:
         description: 'Comment from issue_comment event'
         required: true
         type: string
+      issue_number:
+        description: 'Issue number from issue_comment event'
+        required: true
+        type: string
+      html_url:
+        description: 'HTML URl from issue_comment event'
+        required: true
+        type: string
 
 jobs:
   handle-comment:
