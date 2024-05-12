@@ -13,7 +13,7 @@ jobs:
             runs-on: movement-runner
           - os: ubuntu-22.04
             arch: arm64
-            runs-on: buildjet-8vcpu-ubuntu-2204-arm
+            runs-on: buildjet-16vcpu-ubuntu-2204-arm
           - os: macos-13-latest
             arch: x86_64
             runs-on: macos-13-large
