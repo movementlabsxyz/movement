@@ -121,16 +121,7 @@
             OPENSSL_DEV=pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = developmentDependencies;
-
-            environment.systemPackages = with pkgs; [
-              openssl
-            ];
-
-            environment.variables = {
-              PKG_CONFIG_PATH="${pkgs.openssl.dev}/lib/pkgconfig";
-            };
-
-            # PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            nativeBuildInputs = developmentDependencies;
 
             shellHook = ''
               #!/bin/bash
