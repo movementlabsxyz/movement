@@ -1,10 +1,8 @@
 name: Infra
 
 on:
-  push:
-  workflow_dispatch:
   issue_comment:                                     
-    types: [created, edited, deleted]
+    types: [created, edited]
 
 jobs:
   manage-infra-pr:
@@ -39,15 +37,9 @@ jobs:
 
       - name: Create PR in Infra Repo if not exist
         if: steps.search-prs.outputs.result == ''
-        id: create-pr
-        uses: repo-sync/pull-request@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_branch: "auto-update-refs"
-          destination_branch: "main"
-          pr_title: "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.event.issue.title }}"
-          pr_body: "Automated PR for changes related to ${{ github.event.issue.html_url }}. \n\n Original comment: ${{ github.event.comment.body }}"
-          destination_repo: "movementlabsxyz/infra"
+        run: |
+          gh_pr_up() { gh pr create $* || gh pr edit $* }
+          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.event.issue.title }}" --body "**Infrastructure requested:** ${{ github.event.issue.html_url }}\n\n${{ github.event.comment.body }} --repo movementlabsxyz/infra"
 
       - name: Comment on the Original PR with new PR link
         if: steps.search-prs.outputs.result == ''
