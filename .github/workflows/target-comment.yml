@@ -38,7 +38,8 @@ jobs:
           inputs: >
             {
               "comment": "${{ github.event.comment.body }}",
-              "issue_number": "${{ github.event.issue.number }}"
+              "issue_number": "${{ github.event.issue.number }}",
+              "html_url" : "${{ github.event.issue.html_url }}"
             }
           ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
           repo: ${{ fromJson(steps.get_pr.outputs.data).head.repo.full_name }}
