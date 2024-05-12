@@ -2,7 +2,7 @@ name: Infra
 
 on:
   issue_comment:                                     
-    types: [created, edited, deleted]
+    types: [created, edited]
 
 jobs:
   manage-infra-pr:
