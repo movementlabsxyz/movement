@@ -33,7 +33,7 @@ jobs:
         if: steps.check_pr.outputs.is_pr == 'true'
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: Triggered by Comment
+          workflow: Handle Target Comment
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{"comment": "${{ github.event.comment.body }}"}'
           ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
