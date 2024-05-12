@@ -1,12 +1,23 @@
-name: Infra
+name: Handle Target Comment
 
 on:
-  issue_comment:                                     
-    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      comment:
+        description: 'Comment from issue_comment event'
+        required: true
+        type: string
 
 jobs:
+  handle-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output the comment
+        run: |
+         echo "Comment was: ${{ github.event.inputs.comment }}"
+    
   manage-infra-pr:
-    if: github.event.issue.pull_request && startsWith(github.event.comment.body, 'infra')
+    if: startsWith(github.event.inputs.comment, 'infra')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
