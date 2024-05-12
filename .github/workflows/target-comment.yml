@@ -34,7 +34,7 @@ jobs:
         uses: benc-uk/workflow-dispatch@v1
         with:
           workflow: Handle Target Comment
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
           inputs: '{"comment": "${{ github.event.comment.body }}"}'
           ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
           repo: ${{ fromJson(steps.get_pr.outputs.data).head.repo.full_name }}
