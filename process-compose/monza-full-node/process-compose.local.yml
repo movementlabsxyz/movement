@@ -6,7 +6,7 @@ processes:
 
   celestia-node-appd:
     command: |
-      ./scripts/celestia/celestia-local-appd > /dev/null
+      ./scripts/celestia/celestia-local-appd
     readiness_probe:
       initial_delay_seconds: 10
       exec:
@@ -18,7 +18,7 @@ processes:
 
   celestia-bridge:
     command: |
-      ./scripts/celestia/celestia-local-bridge > /dev/null
+      ./scripts/celestia/celestia-local-bridge
     readiness_probe:
       initial_delay_seconds: 10
       exec:
