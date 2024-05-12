@@ -47,32 +47,25 @@ jobs:
             return '';
 
       - name: Create PR in Infra Repo if not exist
+        id: create-new-pr
         if: steps.search-prs.outputs.result == ''
         run: |
           gh_pr_up() { gh pr create $* || gh pr edit $* }
-          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.event.issue.title }}" --body "**Infrastructure requested:** ${{ github.event.issue.html_url }}\n\n${{ github.event.comment.body }} --repo movementlabsxyz/infra"
+          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}" --body "**Infrastructure requested:** ${{ github.event.inputs.html_url }}\n\n${{ github.event.inputs.comment }} --repo movementlabsxyz/infra"
 
       - name: Comment on the Original PR with new PR link
         if: steps.search-prs.outputs.result == ''
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ github.event.issue.number }}
-          body: ${{ steps.create-pr.outputs.pr_url }}
+          issue_number: ${{ github.event.inputs.issue_number }}
+          body: ${{ steps.create-new-pr.outputs.pr_url }}
 
       - name: Comment on Original PR with PR link if PR already exists
+        id: respond-pr
         if: steps.search-prs.outputs.result != ''
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          issue_number: ${{ github.event.issue.number }}
+          issue_number: ${{ github.event.inputs.issue_number }}
           body: "A related PR already exists and you can follow it here: ${{ steps.search-prs.outputs.result }}"
-
-      - name: Comment on the Infra PR if created
-        if: steps.search-prs.outputs.result == ''
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: "movementlabsxyz/infra"
-          # issue_number: ${{ steps.create-pr.outputs.pr_number }}
-          body: "This PR relates to changes triggered by an issue in another repository. Original PR: ${{ github.event.issue.html_url }} \n\n Details: ${{ github.event.comment.body }}"

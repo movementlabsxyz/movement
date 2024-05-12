@@ -34,6 +34,10 @@ jobs:
         with:
           workflow: Triggered by Comment
           token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{"comment": "${{ github.event.comment.body }}"}'
+          inputs: >
+            {
+              "comment": "${{ github.event.comment.body }}",
+              "issue_number": "${{ github.event.issue.number }}"
+            }
           ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
           repo: ${{ fromJson(steps.get_pr.outputs.data).head.repo.full_name }}
