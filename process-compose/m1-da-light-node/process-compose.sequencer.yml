@@ -9,7 +9,7 @@ processes:
       cargo run -p m1-da-light-node --features "sequencer"
     depends_on:
       m1-da-light-node-verifier-tests:
-        condition: process_completed_successfull
+        condition: process_completed_successfully
       celestia-light-node:
         condition: process_healthy
     readiness_probe:
@@ -26,4 +26,4 @@ processes:
       m1-da-light-node: 
         condition: process_healthy
       m1-da-light-node-verifier-tests:
-        condition: process_completed_successfull
+        condition: process_completed_successfully

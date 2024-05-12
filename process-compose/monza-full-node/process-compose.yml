@@ -14,6 +14,8 @@ processes:
     depends_on:
       celestia-light-node:
         condition: process_healthy
+    availability:
+      restart: exit_on_failure
 
   m1-da-light-node:
     command: |

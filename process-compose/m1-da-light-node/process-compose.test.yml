@@ -11,7 +11,7 @@ processes:
       celestia-light-node: 
         condition: process_healthy
       celestia-light-node-synced:
-        condition: process_completed_successfull
+        condition: process_completed_successfully
 
     readiness_probe:
       exec:
@@ -27,7 +27,7 @@ processes:
       m1-da-light-node: 
         condition: process_healthy
       m1-da-light-node-verifier-tests:
-        condition: process_completed_successfull
+        condition: process_completed_successfully
     availability:
       # NOTE: `restart: exit_on_failure` is not needed since
       # exit_on_end implies it.
