@@ -14,7 +14,11 @@
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux" "aarch64-linux"] (
       system: let
+
+        overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
+
         overlays = [(import rust-overlay)];
+
         pkgs = import nixpkgs {
           inherit system overlays;
         };
@@ -49,6 +53,7 @@
               license = licenses.asl20;
           };
 
+
         };
        
         # Specific version of toolchain
@@ -60,6 +65,7 @@
         };
 
         runtimeDependencies = with pkgs; [
+          llvmPackages.bintools
           openssl
           openssl.dev
           libiconv 
@@ -121,9 +127,15 @@
             buildInputs = developmentDependencies;
             nativeBuildInputs = developmentDependencies;
 
+            LD_LIBRARY_PATH = lib.makeLibraryPath buildDependencies;
+
+            RUSTC_VERSION = overrides.toolchain.channel;
+
             shellHook = ''
               #!/bin/bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
+              export PATH=$PATH:''${CARGO_HOME:-~/.cargo}/bin
+              export PATH=$PATH:''${RUSTUP_HOME:-~/.rustup}/toolchains/$RUSTC_VERSION-x86_64-unknown-linux-gnu/bin/
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
