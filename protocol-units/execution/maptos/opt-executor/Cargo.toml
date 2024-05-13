@@ -1,5 +1,5 @@
 [package]
-name = "monza-opt-executor"
+name = "maptos-opt-executor"
 description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }
@@ -60,7 +60,7 @@ aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
-monza-execution-util = { workspace = true }
+maptos-execution-util = { workspace = true }
 
 dirs = { workspace = true }
 tempfile = { workspace = true }
