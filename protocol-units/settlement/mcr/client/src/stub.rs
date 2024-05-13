@@ -2,14 +2,7 @@ use movement_types::BlockCommitment;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, mpsc};
-use crate::CommitmentStream;
-
-#[tonic::async_trait]
-pub trait McrSettlementClientOperations {
-    async fn post_block_commitment(&self, block_commitment: BlockCommitment) -> Result<(), anyhow::Error>;
-    async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error>;
-    async fn get_commitment_at_height(&self, height: u64) -> Result<Option<BlockCommitment>, anyhow::Error>;
-}
+use crate::{McrSettlementClientOperations, CommitmentStream};
 
 pub struct McrSettlementClient {
     commitments: Arc<Mutex<HashMap<u64, BlockCommitment>>>,
