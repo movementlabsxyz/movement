@@ -12,7 +12,7 @@
     flake-utils,
     ...
     }:
-    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux"] (
+    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux" "aarch64-linux"] (
       system: let
         overlays = [(import rust-overlay)];
         pkgs = import nixpkgs {
@@ -29,6 +29,29 @@
 
         # foundry
         foundry = import ./foundry.nix { inherit pkgs; };
+        # monza-aptos
+        monza-aptos = pkgs.stdenv.mkDerivation {
+          pname = "monza-aptos";
+          version = "branch-monza";
+
+          src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "aptos-core";
+              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
+              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
+          };
+
+          installPhase = ''
+              cp -r . $out
+          '';
+
+          meta = with pkgs.lib; {
+              description = "Aptos core repository on the monza branch";
+              homepage = "https://github.com/movementlabsxyz/aptos-core";
+              license = licenses.asl20;
+          };
+
+        };
        
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
@@ -63,12 +86,16 @@
             frameworks.CoreServices
             frameworks.SystemConfiguration
             frameworks.AppKit
+          ]
+          ++ lib.optionals stdenv.isLinux [
+            systemd
           ];
 
         testingDependencies = with pkgs; [
             celestia-node
             celestia-app
             foundry
+            monza-aptos
         ]
         ++ buildDependencies;
 
@@ -80,12 +107,16 @@
       in
         with pkgs; {
 
+          # Monza Aptos
+          packages.monza-aptos = monza-aptos;
+
           # Development Shell
           devShells.default = mkShell {
             buildInputs = developmentDependencies;
 
             shellHook = ''
               #!/bin/bash
+              export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

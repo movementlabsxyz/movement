@@ -1,0 +1,78 @@
+name: Handle Target Comment
+
+on:
+  workflow_dispatch:
+    inputs:
+      comment:
+        description: 'Comment from issue_comment event'
+        required: true
+        type: string
+
+jobs:
+  handle-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output the comment
+        run: |
+         echo "Comment was: ${{ github.event.inputs.comment }}"
+    
+  manage-infra-pr:
+    if: startsWith(github.event.inputs.comment, 'infra')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract repository name
+        id: repo-name
+        run: echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d '/' -f2)" >> $GITHUB_ENV
+
+      - name: Search for existing PRs
+        id: search-prs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = `${process.env.REPO_NAME}/${{ github.event.issue.title }}`;
+            const prs = await github.rest.pulls.list({
+              owner: 'movementlabsxyz',
+              repo: 'infra',
+              state: 'open',
+              head: 'main'
+            });
+            const existingPr = prs.data.find(pr => pr.title === title);
+            if (existingPr) {
+              return existingPr.html_url;
+            }
+            return '';
+
+      - name: Create PR in Infra Repo if not exist
+        if: steps.search-prs.outputs.result == ''
+        run: |
+          gh_pr_up() { gh pr create $* || gh pr edit $* }
+          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.event.issue.title }}" --body "**Infrastructure requested:** ${{ github.event.issue.html_url }}\n\n${{ github.event.comment.body }} --repo movementlabsxyz/infra"
+
+      - name: Comment on the Original PR with new PR link
+        if: steps.search-prs.outputs.result == ''
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          body: ${{ steps.create-pr.outputs.pr_url }}
+
+      - name: Comment on Original PR with PR link if PR already exists
+        if: steps.search-prs.outputs.result != ''
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue_number: ${{ github.event.issue.number }}
+          body: "A related PR already exists and you can follow it here: ${{ steps.search-prs.outputs.result }}"
+
+      - name: Comment on the Infra PR if created
+        if: steps.search-prs.outputs.result == ''
+        uses: peter-evans/create-or-update-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: "movementlabsxyz/infra"
+          issue_number: ${{ steps.create-pr.outputs.pr_number }}
+          body: "This PR relates to changes triggered by an issue in another repository. Original PR: ${{ github.event.issue.html_url }} \n\n Details: ${{ github.event.comment.body }}"
