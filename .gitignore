@@ -5,4 +5,5 @@ target/
 ledger_db/
 state_merkle_db/
 .etc
+idea
 .movement
