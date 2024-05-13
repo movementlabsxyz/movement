@@ -27,6 +27,8 @@
         # celestia-app
         celestia-app = import ./celestia-app.nix { inherit pkgs; };
 
+        # foundry
+        foundry = import ./foundry.nix { inherit pkgs; };
         # monza-aptos
         monza-aptos = pkgs.stdenv.mkDerivation {
           pname = "monza-aptos";
@@ -92,6 +94,7 @@
         testingDependencies = with pkgs; [
             celestia-node
             celestia-app
+            foundry
             monza-aptos
         ]
         ++ buildDependencies;

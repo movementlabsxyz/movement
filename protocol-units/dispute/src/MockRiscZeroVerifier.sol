@@ -1,4 +1,5 @@
 // Copyright 2024 RISC Zero, Inc.
+
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +17,7 @@
 
 pragma solidity ^0.8.20;
 
-import {SafeCast} from "openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeCast} from "openzeppelin-contracts/contracts/utils/math/SafeCast.sol";
 
 import {
     ExitCode,
