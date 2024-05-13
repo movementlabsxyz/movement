@@ -35,6 +35,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
+use movement_types::Commitment;
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
@@ -256,7 +257,7 @@ impl Executor {
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
-	) -> Result<(), anyhow::Error> {
+	) -> Result<Commitment, anyhow::Error> {
 
 		let block_id = block.block_id.clone();
 		let parent_block_id = {
@@ -285,14 +286,14 @@ impl Executor {
 			)?;
 		} 
 
-		{
+		let proof = {
 			let reader = self.db.read().await.reader.clone();
-			let proof = reader.get_state_proof(
+			reader.get_state_proof(
 				state_compute.version(),
-			)?;
-		}
+			)?
+		};
 
-		Ok(())
+		Ok(Commitment::digest_state_proof(&proof))
 	}
 
 	pub async fn try_get_context(&self) -> Result<Arc<Context>, anyhow::Error> {
@@ -582,7 +583,9 @@ mod tests {
 
 			// Create and execute the block.
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			executor.execute_block(block).await?;
+			let commitment = executor.execute_block(block).await?;
+
+			// TODO: verify commitment against the state.
 
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db.read().await.reader.clone();

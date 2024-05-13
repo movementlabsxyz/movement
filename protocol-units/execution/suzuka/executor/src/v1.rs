@@ -2,6 +2,7 @@ use crate::*;
 use maptos_opt_executor::Executor;
 use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
+use movement_types::Commitment;
 
 #[derive(Clone)]
 pub struct SuzukaExecutorV1 {
@@ -50,7 +51,7 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
         &self,
         mode : &FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<Commitment, anyhow::Error> {
 
         match mode {
             FinalityMode::Dyn => unimplemented!(),
@@ -138,7 +139,7 @@ mod opt_tests {
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
         let (tx, rx) = async_channel::unbounded();
-		let mut executor = SuzukaExecutorV1::try_from_env(tx).await?;
+		let executor = SuzukaExecutorV1::try_from_env(tx).await?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
@@ -228,7 +229,11 @@ mod opt_tests {
         ));
         let txs = ExecutableTransactions::Unsharded(vec![tx]);
         let block = ExecutableBlock::new(block_id.clone(), txs);
-        executor.execute_block(&FinalityMode::Opt, block).await?;
+        let commitment = executor.execute_block(&FinalityMode::Opt, block).await?;
+
+        println!("Commitment: {:?}", commitment);
+
+        // TODO: test the commitment
 
         services_handle.abort();
         background_handle.abort();
