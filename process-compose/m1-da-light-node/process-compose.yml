@@ -13,7 +13,6 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      sleep 10
       cargo run --bin wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
@@ -21,10 +20,10 @@ processes:
 
   m1-da-light-node:
     command: |
-      cargo run -p m1-da-light-node
+      ./target/debug/m1-da-light-node
     depends_on:
       m1-da-light-node-verifier-tests:
-        condition: process_completed
+        condition: process_completed_successfully
       celestia-light-node:
         condition: process_healthy
     readiness_probe:

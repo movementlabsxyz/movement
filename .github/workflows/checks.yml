@@ -1,0 +1,34 @@
+name: Checks
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run test in nix environment
+      run: nix develop --command bash  -c "cargo check"  
+
+    - name: Run test in nix environment
+      run: nix develop --command bash  -c "just m1-da-light-node test.local -t=false"  
+
+    - name: Run test in nix environment
+      run: nix develop --command bash  -c "just monza-full-node test.local -t=false"  

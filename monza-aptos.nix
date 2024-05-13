@@ -8,13 +8,11 @@ pkgs.stdenv.mkDerivation {
         owner = "movementlabsxyz";
         repo = "aptos-core";
         rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-        sha256 = "sha256-bmFcJrC4ocbCw1pew2HKEdLj6+1D/0VuWtdoTs1S2sU=";
+        sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
     };
 
     installPhase = ''
-        ls -al && sleep 30
-        mkdir -p $out
-        cp -r ./* $out/
+        cp -r . $out
     '';
 
     meta = with pkgs.lib; {

@@ -19,7 +19,8 @@ echo "  - Node URL: $MONZA_APTOS_REST_LISTEN_ADDR"
 echo "  - Faucet URL: $MONZA_APTOS_FAUCET_LISTEN_ADDR"
 
 # Run the faucet service using cargo
-cargo run -p aptos-faucet-service -- run-simple --key "$MONZA_APTOS_PRIVATE_KEY" \
+echo "Starting faucet service..."
+./target/debug/aptos-faucet-service run-simple --key "$MONZA_APTOS_PRIVATE_KEY" \
     --node-url "http://$MONZA_APTOS_REST_LISTEN_ADDR" --chain-id "$MONZA_CHAIN_ID" \
     --listen-address "$LISTEN_ADDR" --listen-port "$LISTEN_PORT"
 

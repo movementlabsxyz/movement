@@ -4,17 +4,12 @@ environment:
 
 processes:
 
-  build:
-    command : |
-      exit 0
-
   celestia-light-node:
     command: |
       exit 1
 
   celestia-light-node-synced:
     command: |
-      sleep 10
       cargo run --bin wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
@@ -22,13 +17,17 @@ processes:
 
   m1-da-light-node:
     command: |
+      # FIXME(nix-ci-fix): when we modify LD_PATH directly, we get a missing libstdc++ here
       ./target/debug/m1-da-light-node
     depends_on:
       celestia-light-node-synced:
-        condition: process_completed
-      celestia-light-node:
-        condition: process_healthy
+        condition: process_completed_successfully
     readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 
@@ -39,18 +38,20 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 60
+      initial_delay_seconds: 10
       exec:
         command: |
           echo "true"
 
   monza-faucet:
     command : |
+      # FIXME(nix-ci-fix): this is the latest we can push linking issues, here and in the Monza client tests we will get a libssl linking issue
       ./scripts/monza/faucet
     depends_on:
       monza-full-node:
         condition: process_healthy
     readiness_probe:
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 
