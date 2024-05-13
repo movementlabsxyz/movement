@@ -63,7 +63,7 @@ jobs:
         if: steps.search-prs.outputs.result == 'false'
         run: |
           gh_pr_up() { gh pr create $* || gh pr edit $* }
-          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}" --body "**Infrastructure requested:** ${{ github.event.inputs.html_url }}\n\n${{ github.event.inputs.comment }} --repo movementlabsxyz/infra"
+          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}" --body "**Infrastructure requested:** ${{ github.event.inputs.html_url }}\n\n${{ github.event.inputs.comment }}" --repo "movementlabsxyz/infra"
 
       - name: Comment on the Original PR with new PR link
         if: steps.search-prs.outputs.result == 'false'
