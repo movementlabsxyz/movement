@@ -10,6 +10,15 @@ contract MCR {
 
     uint256 public epochDuration;
 
+    // the number of blocks that can be submitted ahead of the lastAcceptedBlockHeight
+    // this allows for things like batching to take place without some validators locking down the validator set by pushing too far ahead
+    // ? this could be replaced by a 2/3 stake vote on the block height to epoch assignment
+    // ? however, this protocol becomes more complex as you to take steps to ensure that...
+    // ? 1. Block heights have a non-decreasing mapping to epochs
+    // ? 2. Votes get accumulated reasonable near the end of the epoch (i.e., your vote is cast for the epoch you vote fore and the next)
+    // ? if howevever, you simply allow a race with the tolerance below, both of these are satisfied without the added complexity
+    uint256 public leadingBlockTolerance;
+
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
     uint256 public lastAcceptedBlockHeight;
 
@@ -19,8 +28,8 @@ contract MCR {
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
         uint256 height;
-        bytes commitment;
-        bytes blockId;
+        bytes32 commitment;
+        bytes32 blockId;
     }
 
     // ! ledger for staking and unstaking
@@ -30,27 +39,32 @@ contract MCR {
     // preserved records of unstake by address per epoch
     mapping(uint256 => mapping( address => uint256)) public epochUnstakes;
 
-    // map each block height 
+    // map each block height to an epoch
     mapping(uint256 => uint256) public blockHeightEpochAssignments;
 
     // track each commitment from each validator for each block height
     mapping(uint256 => mapping(address => BlockCommitment)) public commitments;
 
     // track the total stake accumulate for each commitment for each block height
-    mapping(uint256 => mapping(bytes => uint256)) public commitmentStakes;
+    mapping(uint256 => mapping(bytes32=> uint256)) public commitmentStakes;
 
     // map block height to accepted block hash 
     mapping(uint256 => BlockCommitment) public acceptedBlocks;
 
     event ValidatorStaked(address indexed validator, uint256 stake, uint256 epoch);
     event ValidatorUnstaked(address indexed validator, uint256 stake, uint256 epoch);
-    event BlockAccepted(bytes32 indexed blockHash, bytes stateCommitment);
-    event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes stateCommitment, uint256 validatorStake);
+    event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment);
+    event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 validatorStake);
 
     constructor(
         uint256 _epochDurationSecs
     ) {
         epochDuration = _epochDurationSecs;
+    }
+
+    // gets the max tolerable block height
+    function getMaxTolerableBlockHeight() public view returns (uint256) {
+        return lastAcceptedBlockHeight + leadingBlockTolerance;
     }
 
     // gets the would be epoch for the current block time
@@ -134,13 +148,16 @@ contract MCR {
     }
     
     // rolls over the stake and unstake for a given validator
-    function rollOverValidator(address validatorAddress) {
+    function rollOverValidator(
+        address validatorAddress,
+        uint256 epochNumber
+    ) {
 
         // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
-        epochStakes[getNextEpoch()][validatorAddress] = epochStakes[getCurrentEpoch()][validatorAddress] - epochUnstakes[getNextEpoch()][validatorAddress];
+        epochStakes[epochNumber + 1][validatorAddress] = epochStakes[epochNumber][validatorAddress] - epochUnstakes[epochNumber + 1][validatorAddress];
 
         // the unstake is then paid out
-        payable(validatorAddress).transfer(epochUnstakes[getNextEpoch()][validatorAddress]);
+        payable(validatorAddress).transfer(epochUnstakes[epochNumber + 1][validatorAddress]);
 
     }
 
@@ -150,14 +167,14 @@ contract MCR {
         BlockCommitment memory blockCommitment
     ) external {
 
-        require(blockCommitment.height == lastAcceptedBlockHeight + 1, "Validator must commit to one greater than the last accepted block height");
+        require(commitments[blockCommitment.height][validatorAddress].height != 0, "Validator has already committed to a block at this height");
 
-        require(commitments[comitment.blockHeight].height != 0, "Validator has already committed to a block at this height");
+        require(commitments[blockCommitment.height][validatorAddress].height < lastAcceptedBlockHeight + leadingBlockTolerance, "Validator has committed to a block too far ahead of the last accepted block");
 
         // assign the block height to the current epoch if it hasn't been assigned yet
-        if (!blockHeightEpochAssignments[blockCommitment.height].isAssigned) {
-            blockHeightEpochAssignments[blockCommitment.height].epoch = getCurrentEpoch();
-            blockHeightEpochAssignments[blockCommitment.height].isAssigned = true;
+        if (!blockHeightEpochAssignments[blockCommitment.height] == 0) {
+            // note: this is an intended race condition, but it is benign because of the tolerance
+            blockHeightEpochAssignments[blockCommitment.height] = getCurrentEpoch();
         }
 
         // register the validator's commitment
@@ -166,13 +183,44 @@ contract MCR {
         // increment the commitment count by stake
         commitmentStakes[blockCommitment.height][blockCommitment.commitment] += getCurrentEpochStake(validatorAddress);
 
-        // if the commitment count is greater than the supermajority stake, accept the block
-        uint256 totalStake = getTotalStakeForCurrentEpoch();
-        uint256 totalStakeOnCommitment = commitmentStake[blockCommitment.height][blockCommitment.commitment];
-        if (totalStakeOnCommitment > (2 * totalStake)/3 ) {
-            acceptBlockCommitment(blockCommitment);
-        }
+        // keep ticking through to find accepted blocks
+        while (tickOnBlockHeight(blockCommitment.height)) {}
       
+    }
+
+    function tickOnBlockHeight(uint256 blockHeight) returns (bool) {
+
+        // get the epoch assigned to the block height
+        uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
+
+        // note: we could keep track of seen commitments in a set
+        // but since the operations we're doing are very cheap, the set actually adds overhead
+
+        // iterate over the validator set
+        for (uint256 i = 0; i < validators.length(); i++){
+
+            address validatorAddress = validators.at(i);
+
+            // get a commitment for the validator at the block height
+            BlockCommitment memory blockCommitment = commitments[blockHeight][validatorAddress];
+
+            // check the total stake on the commitment
+            uint256 totalStakeOnCommitment = commitmentStake[blockCommitment.height][blockCommitment.commitment];
+
+            if (totalStakeOnCommitment > (2 * getTotalStakeForEpoch(blockEpoch))/3 ) {
+
+                // accept the block commitment (this may trigger a roll over of the epoch)
+                acceptBlockCommitment(blockCommitment, blockEpoch);
+
+                // we found a commitment that was accepted
+                return true;
+
+            }
+
+        }
+
+        return false;
+
     }
 
     function submitBlockCommitment(
@@ -183,8 +231,20 @@ contract MCR {
 
     }
 
+    function submitBatchBlockCommitment(
+        BlockCommitment[] memory blockCommitments
+    ) public {
 
-    function acceptBlockCommitment(BlockCommitment memory blockCommitment) internal {
+        for (uint256 i = 0; i < blockCommitments.length; i++){
+            submitBlockCommitment(blockCommitments[i]);
+        }
+
+    }
+
+    function acceptBlockCommitment(
+        BlockCommitment memory blockCommitment,
+        uint256 epochNumber
+    ) internal {
       
         // set accepted block commitment
         acceptedBlocks[blockCommitment.height] = blockCommitment;
@@ -199,27 +259,31 @@ contract MCR {
         emit BlockAccepted(blockCommitment.blockId, blockCommitment.commitment);
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if ( getEpochByBlockTime() > getCurrentEpoch() ) {
-            rollOverEpoch();
+        if (getEpochByBlockTime() > epoch) {
+            rollOverEpoch(epochNumber);
         }
        
     }
 
-    function slashMinority(BlockCommitment memory blockCommitment) internal {
+    function slashMinority(
+        BlockCommitment memory blockCommitment,
+        uint256 totalStake
+    ) internal {
 
 
     }
 
-    function rollOverEpoch() internal {
+    function rollOverEpoch(uint256 epochNumber) internal {
 
         // iterate over the validator set
         for (uint256 i = 0; i < validators.length(); i++){
             address validatorAddress = validators.at(i);
-            rollOverValidator(validatorAddress);
+            rollOverValidator(validatorAddress, epochNumber);
         }
 
         // increment the current epoch
         curentEpoch += 1;
+        
 
     }
 
