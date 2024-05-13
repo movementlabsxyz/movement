@@ -1,0 +1,17 @@
+name: Handle Target Comment
+
+on:
+  workflow_dispatch:
+    inputs:
+      comment:
+        description: 'Comment from issue_comment event'
+        required: true
+        type: string
+
+jobs:
+  handle-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output the comment
+        run: |
+         echo "Comment was: ${{ github.event.inputs.comment }}"

@@ -1,6 +1,6 @@
 [package]
-name = "monza-executor"
-description = "Monza executor containing dyn, opt, and fin execution paths."
+name = "suzuka-fin-executor"
+description = "Executor for the AptosVM"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -32,10 +32,6 @@ lazy_static = "1.4.0"
 tokio = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
-async-channel = { workspace = true }
-tonic = { workspace = true }
-futures = { workspace = true}
-bcs = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
@@ -59,10 +55,6 @@ aptos-executor-test-helpers = { workspace = true }
 aptos-bitvec = { workspace = true }
 aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
-aptos-proptest-helpers = { workspace = true }
-
-maptos-opt-executor = { workspace = true }
-maptos-execution-util = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"
