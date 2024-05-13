@@ -1,6 +1,9 @@
-use core::fmt::Display;
+use aptos_types::state_proof::StateProof;
+
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
+
+use core::fmt;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id(pub Vec<u8>);
@@ -20,8 +23,8 @@ impl Id {
 
 }
 
-impl Display for Id {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", &self.0)
     }
 }
@@ -146,6 +149,13 @@ pub struct Commitment(pub Vec<u8>);
 impl Commitment {
     pub fn test() -> Self {
         Self(vec![0])
+    }
+
+    /// Creates a commitment by making a cryptographic digest of the state proof.
+    pub fn digest_state_proof(state_proof: &StateProof) -> Self {
+        let mut hasher = sha2::Sha256::new();
+        bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
+        Self(hasher.finalize().to_vec())
     }
 }
 
