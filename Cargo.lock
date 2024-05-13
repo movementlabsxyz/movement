@@ -7216,7 +7216,6 @@ name = "movement-types"
 version = "0.3.0"
 dependencies = [
  "anyhow",
- "derivative",
  "serde",
  "serde_with",
  "sha2 0.10.8",

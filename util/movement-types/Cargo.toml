@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
-derivative = { workspace = true }
+# derivative = { workspace = true }
 anyhow = { workspace = true }
 sha2 = { workspace = true }
 

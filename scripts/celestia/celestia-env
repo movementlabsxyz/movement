@@ -4,8 +4,8 @@ export CELESTIA_NODE_AUTH_TOKEN=
 export CELESTIA_ADDRESS=
 export CELESTIA_NAMESPACE_BYTES="$(openssl rand -hex 10)"
 export CELESTIA_CHAIN_ID="$(openssl rand -hex 10)"
-export APP_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
-export NODE_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/bridge"
+export APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
+export NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 
 contains() {
     local value="$1"
@@ -30,5 +30,5 @@ else
     ./scripts/celestia/celestia-local-init
     export CELESTIA_NODE_AUTH_TOKEN="$(celestia bridge auth admin --node.store ${NODE_PATH})"
     export CELESTIA_ADDRESS=$(./scripts/celestia/get-local-address)
-    echo "CELESTIA_ADDRESS=${CELESTIA_ADDRESS}"
+    echo "CELESTIA_ADDRESS=$CELESTIA_ADDRESS"
 fi

@@ -1,19 +1,31 @@
 #!/bin/bash -e
-APP_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
-NODE_PATH="./.etc/celestia/${CELESTIA_CHAIN_ID}/bridge"
+APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
+NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 
 GENESIS=
 CNT=0
 MAX=30
-while [ "${#GENESIS}" -le 4 -a $CNT -ne $MAX ]; do
-	GENESIS=$(curl -s http://127.0.0.1:26657/block?height=1 | jq '.result.block_id.hash' | tr -d '"')
-	((CNT++))
-	sleep 1
+
+while [ "${#GENESIS}" -le 4 ] && [ $CNT -lt $MAX ]; do
+    # FIXME(nix-ci-fix): if nix environment is set up incorrectly, we will get something similar to: https://github.com/commercialhaskell/stack/issues/6331
+    echo "Waiting for genesis block..."
+    GENESIS=$(curl -s http://127.0.0.1:26657/block?height=1 | jq '.result.block_id.hash' | tr -d '"')
+    echo "Genesis: $GENESIS"
+    CNT=$((CNT+1))
+    sleep 1
+    echo "Attempt $CNT"
 done
+echo "Discovered genesis: $GENESIS"
+
+if [ "${#GENESIS}" -le 4 ]; then
+    echo "Failed to retrieve genesis block after $MAX attempts."
+    exit 1
+fi
 
 export CELESTIA_CUSTOM=$CELESTIA_CHAIN_ID:$GENESIS
 echo "$CELESTIA_CUSTOM"
 
+exec > /dev/null 2>&1 # TODO: drop when we have debugged
 celestia bridge init --node.store $NODE_PATH
 celestia bridge start \
   --node.store $NODE_PATH --gateway \
