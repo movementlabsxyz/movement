@@ -9,6 +9,8 @@ members = [
 
     "protocol-units/mempool/*",
 
+    "protocol-units/settlement/mcr/*",
+
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",

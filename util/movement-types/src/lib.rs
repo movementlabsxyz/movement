@@ -139,3 +139,31 @@ impl Block {
     }
 
 }
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Commitment(pub Vec<u8>);
+
+impl Commitment {
+    pub fn test() -> Self {
+        Self(vec![0])
+    }
+}
+
+impl From<Vec<u8>> for Commitment {
+    fn from(data : Vec<u8>) -> Self {
+        Self(data)
+    }
+}
+
+impl From<Commitment> for Vec<u8> {
+    fn from(commitment : Commitment) -> Vec<u8> {
+        commitment.0
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct BlockCommitment {
+    pub height : u64,
+    pub block_id : Id,
+    pub commitment : Commitment,
+}
