@@ -66,7 +66,7 @@ jobs:
           gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}" --body "**Infrastructure requested:** ${{ github.event.inputs.html_url }}\n\n${{ github.event.inputs.comment }} --repo movementlabsxyz/infra"
 
       - name: Comment on the Original PR with new PR link
-        if: steps.search-prs.outputs.result == false
+        if: steps.search-prs.outputs.result == 'false'
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -75,7 +75,7 @@ jobs:
 
       - name: Comment on Original PR with PR link if PR already exists
         id: respond-pr
-        if: steps.search-prs.outputs.result != ''
+        if: steps.search-prs.outputs.result != 'false'
         uses: peter-evans/create-or-update-comment@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
