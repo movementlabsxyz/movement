@@ -5,4 +5,5 @@ libs = ["lib"]
 ffi = true
 gas_limit = 10000000
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[profile.dependencies]
+openzeppelin = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts", tag = "v4.7.0" }
