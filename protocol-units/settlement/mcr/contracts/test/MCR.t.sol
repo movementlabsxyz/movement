@@ -257,7 +257,7 @@ contract MCRTest is Test {
         // dishonest signers
         dishonestSigners.push(signer3);
 
-        for (uint i = 0; i < 10; i++) {
+        for (uint i = 0; i < 50; i++) {
 
             for(uint j = 0; j < 10; j++) {
 
