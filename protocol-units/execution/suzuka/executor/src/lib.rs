@@ -7,10 +7,12 @@ pub use aptos_types::{
     transaction::{SignedTransaction, Transaction}
 };
 pub use aptos_crypto::hash::HashValue;
-use async_channel::Sender;
 use aptos_api::runtime::Apis;
-pub use maptos_execution_util::FinalityMode;
 
+pub use maptos_execution_util::FinalityMode;
+use movement_types::Commitment;
+
+use async_channel::Sender;
 
 #[tonic::async_trait]
 pub trait SuzukaExecutor {
@@ -26,7 +28,7 @@ pub trait SuzukaExecutor {
         &self,
         mode : &FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<(), anyhow::Error>;
+    ) -> Result<Commitment, anyhow::Error>;
 
     /// Sets the transaction channel.
     async fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) -> Result<(), anyhow::Error>;

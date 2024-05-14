@@ -6175,6 +6175,7 @@ dependencies = [
  "lazy_static",
  "log",
  "maptos-execution-util",
+ "movement-types",
  "poem",
  "poem-openapi",
  "rand 0.7.3",
@@ -6383,6 +6384,7 @@ dependencies = [
  "log",
  "maptos-execution-util",
  "maptos-opt-executor",
+ "movement-types",
  "poem-openapi",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -7216,6 +7218,8 @@ name = "movement-types"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-types",
+ "bcs 0.1.4",
  "serde",
  "serde_with",
  "sha2 0.10.8",
@@ -10087,6 +10091,7 @@ dependencies = [
  "log",
  "maptos-execution-util",
  "maptos-opt-executor",
+ "movement-types",
  "poem-openapi",
  "rand 0.7.3",
  "rand_core 0.5.1",
