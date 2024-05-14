@@ -8,6 +8,7 @@ pkgs.stdenv.mkDerivation rec {
     mkdir -p $out/bin
     echo "#!${pkgs.stdenv.shell}" > $out/bin/install-foundry
     echo "curl -L https://foundry.paradigm.xyz | bash" >> $out/bin/install-foundry
+    cp $(which foundryup) $out/bin/foundryup
     echo "foundryup" >> $out/bin/install-foundry
     chmod +x $out/bin/install-foundry
     '';

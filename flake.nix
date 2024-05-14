@@ -27,13 +27,17 @@
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
         # celestia-node
-        celestia-node = import ./celestia-node.nix { inherit pkgs; };
+        celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
 
         # celestia-app
-        celestia-app = import ./celestia-app.nix { inherit pkgs; };
+        celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
         # foundry
-        foundry = import ./foundry.nix { inherit pkgs; };
+        forge = import ./nix/foundry.nix { inherit pkgs; };
+
+        # anvil
+        anvil = import ./nix/anvil.nix { inherit pkgs; };
+
         # monza-aptos
         monza-aptos = import ./monza-aptos.nix { inherit pkgs; };
 
@@ -46,7 +50,8 @@
         };
 
         dependencies = with pkgs; [
-          foundry
+          forge
+          anvil
           llvmPackages.bintools
           openssl
           openssl.dev
