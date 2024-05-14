@@ -6,7 +6,7 @@ module 0x1::M2ETHBridge {
     use aptos_framework::event::{EventHandle};
     use aptos_framework::account;
 
-    const BRIDGE_ACCOUNT: address = @0x1;  //Should change this later to actual bridge address
+    const BRIDGE_ACCOUNT: address = @0x1; //Should change this later to actual bridge address
 
     struct Deposit has drop, store {
         owner: address,
@@ -36,15 +36,24 @@ module 0x1::M2ETHBridge {
 
     public entry fun deposit(
         trusted: &signer,
-        deposit: Deposit
+        owner: address,
+        token_id: u128,
+        nonce: u256,
+        amount: u64
     ) acquires BridgeAccount {
         let trusted_address = signer::address_of(trusted);
         assert!(trusted_address == BRIDGE_ACCOUNT, 1); // Verify trusted signer
 
         let bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
-        let coin = coin::withdraw<AptosCoin>(trusted, deposit.amount);
-        coin::deposit(deposit.owner, coin);
+        let coin = coin::withdraw<AptosCoin>(trusted, amount);
+        coin::deposit(owner, coin);
 
+        let deposit = Deposit {
+            owner,
+            token_id,
+            nonce,
+            amount,
+        };
         event::emit_event(
             &mut bridge_account.deposit_events,
             DepositEvent { deposit }
@@ -53,22 +62,24 @@ module 0x1::M2ETHBridge {
 
     public entry fun withdraw(
         owner: &signer,
-        request: PendingWithdrawalRequest
+        token_id: u128,
+        amount: u64
     ) acquires BridgeAccount {
-        let owner_address = signer::address_of(owner);
-        let coin = coin::withdraw<AptosCoin>(owner, request.amount);
-
+        let coin = coin::withdraw<AptosCoin>(owner, amount);
         let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
         coin::deposit(BRIDGE_ACCOUNT, coin);
-
         let nonce = bridge_account.nonce;
         bridge_account.nonce = nonce + 1;
 
+        let request = PendingWithdrawalRequest {
+            owner: signer::address_of(owner),
+            token_id,
+            amount,
+        };
         let pending_withdrawal = PendingWithdrawal {
             request,
             nonce,
         };
-
         event::emit_event(
             &mut bridge_account.pending_withdrawal_events,
             PendingWithdrawalEvent { pending_withdrawal }
@@ -77,24 +88,26 @@ module 0x1::M2ETHBridge {
 
     public entry fun close_withdrawal_request(
         trusted: &signer,
-        pending_withdrawal: PendingWithdrawal
+        owner: address,
+        token_id: u128,
+        nonce: u256
     ) acquires BridgeAccount {
         let trusted_address = signer::address_of(trusted);
         assert!(trusted_address == BRIDGE_ACCOUNT, 1); // Verify trusted signer
+        let _bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
 
-        let bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
         // Implement logic to confirm and close the withdrawal request
         // Remove the pending withdrawal from bridge_account
     }
 
     public entry fun claim_withdrawal_request(
         owner: &signer,
-        pending_withdrawal: PendingWithdrawal
+        token_id: u128,
+        nonce: u256
     ) acquires BridgeAccount {
         let owner_address = signer::address_of(owner);
-        assert!(pending_withdrawal.request.owner == owner_address, 1); // Verify owner
-
         let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
+
         // Implement logic to claim unsuccessful withdrawal request and close it
         // Remove the pending withdrawal from bridge_account and transfer coins back to owner
     }
