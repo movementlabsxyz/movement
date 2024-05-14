@@ -43,7 +43,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	/// Executes a block dynamically
 	async fn execute_block(
 		&self,
-		mode: &FinalityMode,
+		mode: FinalityMode,
 		block: ExecutableBlock,
 	) -> Result<(), anyhow::Error> {
 		match mode {
@@ -57,19 +57,18 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	}
 
 	/// Sets the transaction channel.
-	async fn set_tx_channel(
+	fn set_tx_channel(
 		&mut self,
 		tx_channel: Sender<SignedTransaction>,
-	) -> Result<(), anyhow::Error> {
+	) {
 		self.transaction_channel = tx_channel;
-		Ok(())
 	}
 
 	/// Gets the API.
-	async fn get_api(&self, _mode: &FinalityMode) -> Result<Apis, anyhow::Error> {
-		match _mode {
+	fn get_api(&self, mode: FinalityMode) -> Apis {
+		match mode {
 			FinalityMode::Dyn => unimplemented!(),
-			FinalityMode::Opt => Ok(self.executor.try_get_apis().await?),
+			FinalityMode::Opt => self.executor.get_apis(),
 			FinalityMode::Fin => unimplemented!(),
 		}
 	}
@@ -131,15 +130,15 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
-		let (tx, rx) = async_channel::unbounded();
-		let mut executor = MonzaExecutorV1::try_from_env(tx).await?;
+		let (tx, _rx) = async_channel::unbounded();
+		let executor = MonzaExecutorV1::try_from_env(tx).await?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(&FinalityMode::Opt, block).await?;
+		executor.execute_block(FinalityMode::Opt, block).await?;
 		Ok(())
 	}
 
@@ -166,7 +165,7 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		let api = executor.get_api(&FinalityMode::Opt).await?;
+		let api = executor.get_api(FinalityMode::Opt);
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -200,7 +199,7 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		let api = executor.get_api(&FinalityMode::Opt).await?;
+		let api = executor.get_api(FinalityMode::Opt);
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
@@ -212,7 +211,7 @@ mod tests {
 			SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(received_transaction));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(&FinalityMode::Opt, block).await?;
+		executor.execute_block(FinalityMode::Opt, block).await?;
 
 		services_handle.abort();
 		background_handle.abort();
@@ -261,7 +260,7 @@ mod tests {
 
 			let request =
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-			let api = executor.get_api(&FinalityMode::Opt).await?;
+			let api = executor.get_api(FinalityMode::Opt);
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 			let received_transaction = rx.recv().await?;
@@ -274,7 +273,7 @@ mod tests {
 			));
 			let txs = ExecutableTransactions::Unsharded(vec![tx]);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
-			executor.execute_block(&FinalityMode::Opt, block).await?;
+			executor.execute_block(FinalityMode::Opt, block).await?;
 
 			blockheight += 1;
 			committed_blocks.insert(
@@ -369,7 +368,7 @@ mod tests {
 			executor.execute_block(block).await?;
 
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
-			let apis = executor.try_get_apis().await?;
+			let apis = executor.get_apis();
 			for hash in transaction_hashes {
 				let _ = apis
 					.transactions

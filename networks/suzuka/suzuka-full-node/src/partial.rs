@@ -41,16 +41,18 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
         }
     }
 
-    pub async fn bind_transaction_channel(&mut self) -> Result<(), anyhow::Error> {
-        self.executor.set_tx_channel(self.transaction_sender.clone()).await?;
-        Ok(())
-    }
+	fn bind_transaction_channel(&mut self) {
+		self.executor.set_tx_channel(self.transaction_sender.clone());
+	}
 
-    pub async fn bound(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Result<Self, anyhow::Error> {
-        let mut node = Self::new(executor, light_node_client);
-        node.bind_transaction_channel().await?;
-        Ok(node)
-    }
+	pub fn bound(
+		executor: T,
+		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	) -> Result<Self, anyhow::Error> {
+		let mut node = Self::new(executor, light_node_client);
+		node.bind_transaction_channel();
+		Ok(node)
+	}
 
     pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
         
@@ -166,7 +168,7 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
             );
             let block_id = executable_block.block_id;
             self.executor.execute_block(
-                &FinalityMode::Opt,
+                FinalityMode::Opt,
                 executable_block
             ).await?;
 
@@ -225,7 +227,7 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
         let executor = SuzukaExecutorV1::try_from_env(tx).await.context(
             "Failed to get executor from environment"
         )?;
-        Self::bound(executor, light_node_client).await
+        Self::bound(executor, light_node_client)
     }
 
 }
