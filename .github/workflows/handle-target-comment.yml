@@ -35,7 +35,7 @@ jobs:
         id: gali-id
         run: |
           REPO_NAME=$(echo ${{ github.repository }} | cut -d '/' -f2)
-          echo "GALI_ID=$REPO_NAME/${{ github.event.inputs.issue_number }}/${{ github.ref_name }}/" >> $GITHUB_ENV
+          echo "GALI_ID=$REPO_NAME/${{ github.event.inputs.issue_number }}/${{ github.ref_name }}" >> $GITHUB_ENV
           echo "GALI_SHA=${{ github.sha }}" >> $GITHUB_ENV
 
       - name: Create PR in Infra Repo if not exist
