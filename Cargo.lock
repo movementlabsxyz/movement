@@ -6216,11 +6216,11 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-stream",
+ "async-trait",
  "movement-types",
  "serde_json",
  "tokio",
  "tokio-stream",
- "tonic",
 ]
 
 [[package]]

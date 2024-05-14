@@ -23,7 +23,7 @@ impl McrSettlementClient {
 }
 
 
-#[tonic::async_trait]
+#[async_trait::async_trait]
 impl McrSettlementClientOperations for McrSettlementClient {
 
     async fn post_block_commitment(&self, block_commitment: BlockCommitment) -> Result<(), anyhow::Error> {
