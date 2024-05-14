@@ -1,6 +1,6 @@
 .DS_Store
 methods/guest/Cargo.lock
-protocol-units/bridge/build/*
+protocol-units/bridge/build/
 .idea/
 target/
 ledger_db/
