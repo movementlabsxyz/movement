@@ -61,6 +61,8 @@ contract MCR {
     event ValidatorUnstaked(address indexed validator, uint256 stake, uint256 epoch);
     event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment);
     event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 validatorStake);
+    event ValidatorEpochRolledOver(address indexed validator, uint256 epoch, uint256 stake, uint256 unstake);
+    event EpochRolledOver(uint256 epoch, uint256 totalStake);
 
     constructor(
         uint256 epochDurationSecs,
@@ -238,6 +240,8 @@ contract MCR {
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
         payable(validatorAddress).transfer(epochUnstakes[epochNumber + 1][validatorAddress]);
 
+        emit ValidatorEpochRolledOver(validatorAddress, epochNumber, epochStakes[epochNumber][validatorAddress], epochUnstakes[epochNumber + 1][validatorAddress]);
+
     }
 
     // commits a validator to a particular block
@@ -382,6 +386,7 @@ contract MCR {
         // increment the current epoch
         currentEpoch += 1;
         
+        emit EpochRolledOver(epochNumber, getTotalStakeForEpoch(epochNumber));
 
     }
 
