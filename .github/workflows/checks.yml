@@ -24,11 +24,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo check"  
-
     - name: Run MCR tests in nix environment
       run: nix develop --command bash  -c "just mcr-contract-tests"
+
+    - name: Run Cargo Check in nix environment
+      run: nix develop --command bash  -c "cargo check"  
 
     - name: Run M1 DA Light Node tests in nix environment
       run: nix develop --command bash  -c "just m1-da-light-node test.local -t=false"  
