@@ -15,6 +15,8 @@ pub trait McrSettlementClientOperations {
 
     async fn post_block_commitment(&self, block_commitment : BlockCommitment) -> Result<(), anyhow::Error>;
 
+    async fn post_block_commitment_batch(&self, block_commitment: Vec<BlockCommitment>) -> Result<(), anyhow::Error>;
+
     async fn stream_block_commitments(&self) -> Result<
         CommitmentStream,
         anyhow::Error

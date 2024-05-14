@@ -33,6 +33,14 @@ impl McrSettlementClientOperations for McrSettlementClient {
         Ok(())
     }
 
+    async fn post_block_commitment_batch(&self, block_commitment: Vec<BlockCommitment>) -> Result<(), anyhow::Error> {
+        for commitment in block_commitment {
+            self.post_block_commitment(commitment).await?;
+        }
+        Ok(())
+    }
+
+
     async fn stream_block_commitments(&self) -> Result<
         CommitmentStream, 
         anyhow::Error
@@ -73,6 +81,29 @@ pub mod test {
         client.post_block_commitment(commitment.clone()).await.unwrap();
         let guard = client.commitments.lock().await;
         assert_eq!(guard.get(&1), Some(&commitment));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_post_block_commitment_batch() -> Result<(), anyhow::Error> {
+        let client = McrSettlementClient::new();
+        let commitment = BlockCommitment {
+            height: 1,
+            block_id: Default::default(),
+            commitment: Commitment::test(),
+        };
+        let commitment2 = BlockCommitment {
+            height: 2,
+            block_id: Default::default(),
+            commitment: Commitment::test(),
+        };
+        client.post_block_commitment_batch(vec![
+            commitment.clone(),
+            commitment2.clone(),
+        ]).await.unwrap();
+        let guard = client.commitments.lock().await;
+        assert_eq!(guard.get(&1), Some(&commitment));
+        assert_eq!(guard.get(&2), Some(&commitment2));
         Ok(())
     }
 

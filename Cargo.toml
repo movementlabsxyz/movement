@@ -9,7 +9,7 @@ members = [
 
     "protocol-units/mempool/*",
 
-    "protocol-units/settlement/mcr/*",
+    "protocol-units/settlement/mcr/client",
 
     "util/*",
     "util/buildtime/buildtime-helpers",
