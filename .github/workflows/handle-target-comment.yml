@@ -32,8 +32,16 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Extract repository name
-        id: repo-name
-        run: echo "REPO_NAME=$(echo ${{ github.repository }} | cut -d '/' -f2)" >> $GITHUB_ENV
+        id: gali-id
+        run: |
+          REPO_NAME=$(echo ${{ github.repository }} | cut -d '/' -f2)
+          echo "GALI_ID=$REPO_NAME/${{ github.event.inputs.issue_number }}/${{ github.ref_name }}/" >> $GITHUB_ENV
+          echo "GALI_SHA=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Check Gali parameters
+        run: |
+          echo "GALI_ID=$GALI_ID"
+          echo "GALI_SHA=$GALI_SHA"
 
       - name: Search for existing PRs
         id: search-prs
@@ -41,7 +49,7 @@ jobs:
         with:
           github-token: ${{ secrets.GH_PAT }}
           script: |
-            const title = `${process.env.REPO_NAME}/${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}`;
+            const title = `$${{ steps.gali-id.outputs.GALI_ID }}`;
             const prs = await github.rest.pulls.list({
               owner: 'movementlabsxyz',
               repo: 'infra',
