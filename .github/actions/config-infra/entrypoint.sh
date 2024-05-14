@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-# Set up authentication
-echo "${GITHUB_TOKEN}" | gh auth login --with-token
-
 # Clone and configure the repository
 git clone https://github.com/${REPOSITORY}.git repo
 cd repo
