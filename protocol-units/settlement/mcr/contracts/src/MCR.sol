@@ -42,6 +42,9 @@ contract MCR {
     // preserved records of unstake by address per epoch
     mapping(uint256 => mapping( address => uint256)) public epochUnstakes;
 
+    // track the total stake of the epoch (computed at rollover)
+    mapping(uint256 => uint256) public epochTotalStake;
+
     // map each block height to an epoch
     mapping(uint256 => uint256) public blockHeightEpochAssignments;
 
@@ -79,26 +82,6 @@ contract MCR {
         bytes32 blockId
     ) public pure returns (BlockCommitment memory) {
         return BlockCommitment(height, commitment, blockId);
-    }
-
-    // gets the the genesis stake required
-    function getGenesisStakeRequired() public view returns (uint256) {
-        return genesisStakeRequired;
-    }
-
-    // gets the the genesis stake accumulated
-    function getGenesisStakeAccumulated() public view returns (uint256) {
-        return genesisStakeAccumulated;
-    }
-
-    // gets the epoch duration
-    function getEpochDuration() public view returns (uint256) {
-        return epochDuration;
-    }
-
-    // gets the leading block tolerance
-    function getLeadingBlockTolerance() public view returns (uint256) {
-        return leadingBlockTolerance;
     }
 
     // gets whether the genesis ceremony has ended
@@ -148,12 +131,7 @@ contract MCR {
 
     // gets the total stake for a given epoch
     function getTotalStakeForEpoch(uint256 epoch) public view returns (uint256) {
-        
-        uint256 totalStake = 0;
-        for (uint256 i = 0; i < validators.length(); i++){
-            totalStake += getStakeAtEpoch(validators.at(i), epoch);
-        }
-        return totalStake;
+        return epochTotalStake[epoch];
     }
 
     // gets the total stake for the current epoch
@@ -206,7 +184,9 @@ contract MCR {
             // roll over the genesis epoch to a timestamp epoch
             for (uint256 i = 0; i < validators.length(); i++){
                 address validatorAddress = validators.at(i);
-                epochStakes[getCurrentEpoch()][validatorAddress] = epochStakes[0][validatorAddress];
+                uint256 stake = epochStakes[0][validatorAddress];
+                epochStakes[getCurrentEpoch()][validatorAddress] = stake;
+                epochTotalStake[getCurrentEpoch()] += stake;
             }
 
 
@@ -248,6 +228,9 @@ contract MCR {
 
         // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
         epochStakes[epochNumber + 1][validatorAddress] += epochStakes[epochNumber][validatorAddress] - epochUnstakes[epochNumber + 1][validatorAddress];
+
+        // also precompute the total stake for the epoch
+        epochTotalStake[epochNumber + 1] += epochStakes[epochNumber + 1][validatorAddress];
 
         // the unstake is then paid out
         // note: this is the only place this takes place
@@ -307,6 +290,8 @@ contract MCR {
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
+        uint256 supermajority = (2 * getTotalStakeForEpoch(blockEpoch))/3;
+
         // iterate over the validator set
         for (uint256 i = 0; i < validators.length(); i++){
 
@@ -318,7 +303,7 @@ contract MCR {
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[blockCommitment.height][blockCommitment.commitment];
 
-            if (totalStakeOnCommitment > (2 * getTotalStakeForEpoch(blockEpoch))/3 ) {
+            if (totalStakeOnCommitment > supermajority) {
 
                 // accept the block commitment (this may trigger a roll over of the epoch)
                 acceptBlockCommitment(blockCommitment, blockEpoch);
