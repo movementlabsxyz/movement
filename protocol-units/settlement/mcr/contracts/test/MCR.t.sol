@@ -13,6 +13,7 @@ contract MCRTest is Test {
             5, 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -83,6 +84,7 @@ contract MCRTest is Test {
             5, // 5 second block time 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -164,6 +166,7 @@ contract MCRTest is Test {
             5, // 5 second block time 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -229,6 +232,7 @@ contract MCRTest is Test {
             5, // 5 second block time 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 

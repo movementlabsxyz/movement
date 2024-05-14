@@ -4,8 +4,6 @@ pkgs.stdenv.mkDerivation rec {
     pname = "foundry";
     version = "latest";
 
-    # Note: In a real Nix build, you wouldn't be able to fetch from the internet like this.
-    # This script is for illustrative purposes and would be run post-build or would need to be adapted.
     buildCommand = ''
     mkdir -p $out/bin
     echo "#!${pkgs.stdenv.shell}" > $out/bin/install-foundry

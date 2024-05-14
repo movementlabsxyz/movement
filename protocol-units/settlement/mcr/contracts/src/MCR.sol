@@ -9,6 +9,7 @@ contract MCR {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     uint256 public genesisStakeRequired;
+    uint256 public maxGenesisStakePerValidator;
     uint256 public genesisStakeAccumulated;
 
     uint256 public epochDuration;
@@ -68,11 +69,13 @@ contract MCR {
         uint256 epochDurationSecs,
         uint256 _leadingBlockTolerance,
         uint256 _genesisStakeRequired,
+        uint256 _maxGenesisStakePerValidator,
         uint256 _lastAcceptedBlockHeight // in case of a restart
     ) {
         epochDuration = epochDurationSecs;
         leadingBlockTolerance = _leadingBlockTolerance;
         genesisStakeRequired = _genesisStakeRequired;
+        maxGenesisStakePerValidator = _maxGenesisStakePerValidator;
         genesisStakeAccumulated = 0;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
     }
@@ -171,6 +174,11 @@ contract MCR {
         require(
             genesisStakeAccumulated < genesisStakeRequired,
             "Genesis ceremony has ended."
+        );
+
+        require(
+            epochStakes[0][msg.sender] + msg.value <= maxGenesisStakePerValidator,
+            "Stake exceeds maximum genesis stake."
         );
 
         validators.add(msg.sender);
