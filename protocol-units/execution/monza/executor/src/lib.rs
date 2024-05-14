@@ -24,7 +24,7 @@ pub trait MonzaExecutor {
     /// Executes a block dynamically
     async fn execute_block(
         &self,
-        mode : &FinalityMode, 
+        mode: FinalityMode, 
         block: ExecutableBlock,
     ) -> Result<(), anyhow::Error>;
 

@@ -48,7 +48,7 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
     /// Executes a block dynamically
     async fn execute_block(
         &self,
-        mode : &FinalityMode, 
+        mode: FinalityMode, 
         block: ExecutableBlock,
     ) -> Result<(), anyhow::Error> {
 
@@ -137,15 +137,15 @@ mod opt_tests {
 
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
-        let (tx, rx) = async_channel::unbounded();
-		let mut executor = SuzukaExecutorV1::try_from_env(tx).await?;
+        let (tx, _rx) = async_channel::unbounded();
+		let executor = SuzukaExecutorV1::try_from_env(tx).await?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(&FinalityMode::Opt, block).await?;
+		executor.execute_block(FinalityMode::Opt, block).await?;
 		Ok(())
 	}
 
@@ -228,7 +228,7 @@ mod opt_tests {
         ));
         let txs = ExecutableTransactions::Unsharded(vec![tx]);
         let block = ExecutableBlock::new(block_id.clone(), txs);
-        executor.execute_block(&FinalityMode::Opt, block).await?;
+        executor.execute_block(FinalityMode::Opt, block).await?;
 
         services_handle.abort();
         background_handle.abort();

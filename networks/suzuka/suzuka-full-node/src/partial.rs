@@ -166,7 +166,7 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
             );
             let block_id = executable_block.block_id;
             self.executor.execute_block(
-                &FinalityMode::Opt,
+                FinalityMode::Opt,
                 executable_block
             ).await?;
 
