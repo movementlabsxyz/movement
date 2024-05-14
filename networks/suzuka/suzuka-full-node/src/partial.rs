@@ -17,6 +17,7 @@ use async_channel::{Sender, Receiver};
 use sha2::Digest;
 use crate::*;
 use tokio_stream::StreamExt;
+use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::sync::RwLock;
 use movement_types::Block;
 use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
@@ -122,9 +123,11 @@ where
     // receive transactions from the transaction channel and send them to be executed
     // ! This assumes the m1 da light node is running sequencer mode
     pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
-        
+
         let block_head_height = self.executor.get_block_head_height().await?;
-        
+
+        let (sender, receiver) = mpsc::channel(16);
+
         let mut stream = {
             let client_ptr = self.light_node_client.clone();
             let mut light_node_client =  client_ptr.write().await;
@@ -179,13 +182,22 @@ where
                 block
             );
             let block_id = executable_block.block_id;
-            self.executor.execute_block(
+            let commitment = self.executor.execute_block(
                 FinalityMode::Opt,
                 executable_block
             ).await?;
 
             println!("Executed block: {:?}", block_id);
 
+            match sender.try_send(commitment) {
+                Ok(_) => {},
+                Err(TrySendError::Closed(_)) => {
+                    break;
+                },
+                Err(TrySendError::Full(_commitment)) => {
+                    println!("Commitment channel full, dropping commitment");
+                }
+            }
         }
 
         Ok(())

@@ -2,7 +2,7 @@ use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
 use maptos_opt_executor::Executor;
-use movement_types::Commitment;
+use movement_types::BlockCommitment;
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -46,7 +46,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		&self,
 		mode: FinalityMode,
 		block: ExecutableBlock,
-	) -> Result<Commitment, anyhow::Error> {
+	) -> Result<BlockCommitment, anyhow::Error> {
 		match mode {
 			FinalityMode::Dyn => unimplemented!(),
 			FinalityMode::Opt => {

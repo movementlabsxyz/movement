@@ -10,7 +10,7 @@ pub use aptos_crypto::hash::HashValue;
 use aptos_api::runtime::Apis;
 
 pub use maptos_execution_util::FinalityMode;
-use movement_types::Commitment;
+use movement_types::BlockCommitment;
 
 use async_channel::Sender;
 
@@ -28,7 +28,7 @@ pub trait MonzaExecutor {
         &self,
         mode: FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<Commitment, anyhow::Error>;
+    ) -> Result<BlockCommitment, anyhow::Error>;
 
 	/// Sets the transaction channel.
 	fn set_tx_channel(

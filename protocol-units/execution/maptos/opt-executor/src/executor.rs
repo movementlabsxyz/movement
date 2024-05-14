@@ -35,7 +35,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
-use movement_types::Commitment;
+use movement_types::{Id, Commitment, BlockCommitment};
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
@@ -257,7 +257,7 @@ impl Executor {
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
-	) -> Result<Commitment, anyhow::Error> {
+	) -> Result<BlockCommitment, anyhow::Error> {
 
 		let block_id = block.block_id.clone();
 		let parent_block_id = {
@@ -293,7 +293,12 @@ impl Executor {
 			)?
 		};
 
-		Ok(Commitment::digest_state_proof(&proof))
+		let commitment = Commitment::digest_state_proof(&proof);
+		Ok(BlockCommitment {
+			block_id: Id(block_id.to_vec()),
+			commitment,
+			height: latest_version,
+		})
 	}
 
 	fn context(&self) -> Arc<Context> {

@@ -2,7 +2,7 @@ use crate::*;
 use maptos_opt_executor::Executor;
 use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
-use movement_types::Commitment;
+use movement_types::BlockCommitment;
 
 #[derive(Clone)]
 pub struct SuzukaExecutorV1 {
@@ -51,7 +51,7 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
         &self,
         mode: FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<Commitment, anyhow::Error> {
+    ) -> Result<BlockCommitment, anyhow::Error> {
 
         match mode {
             FinalityMode::Dyn => unimplemented!(),
