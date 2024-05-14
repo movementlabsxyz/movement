@@ -64,21 +64,18 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
     }
 
     /// Sets the transaction channel.
-    async fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) -> Result<(), anyhow::Error> {
+    fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
         self.transaction_channel = tx_channel;
-        Ok(())
     }
 
     /// Gets the API.
-    async fn get_api(
+    fn get_api(
         &self,
-        _mode : &FinalityMode, 
-    ) -> Result<Apis, anyhow::Error> {
-        match _mode {
+        mode: FinalityMode, 
+    ) -> Apis {
+        match mode {
             FinalityMode::Dyn => unimplemented!(),
-            FinalityMode::Opt => {
-                Ok(self.executor.try_get_apis().await?)
-            },
+            FinalityMode::Opt => self.executor.get_apis(),
             FinalityMode::Fin => unimplemented!(),
         }
     }
@@ -177,7 +174,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(&FinalityMode::Opt).await?;
+		let api = executor.get_api(FinalityMode::Opt);
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -215,7 +212,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(&FinalityMode::Opt).await?;
+		let api = executor.get_api(FinalityMode::Opt);
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
