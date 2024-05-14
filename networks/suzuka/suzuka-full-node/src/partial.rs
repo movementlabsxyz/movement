@@ -19,25 +19,36 @@ use crate::*;
 use tokio_stream::StreamExt;
 use tokio::sync::RwLock;
 use movement_types::Block;
-
+use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
 
 #[derive(Clone)]
-pub struct SuzukaPartialNode<T : SuzukaExecutor + Send + Sync + Clone> {
+pub struct SuzukaPartialNode<T, C>
+{
     executor: T,
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
+    settlement_client: C,
 }
 
-impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
+impl<T, C> SuzukaPartialNode<T, C>
+where
+    T: SuzukaExecutor + Send + Sync,
+    C: McrSettlementClientOperations
+{
 
-    pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
+    pub fn new(
+        executor: T,
+        light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+        settlement_client: C,
+    ) -> Self {
         let (transaction_sender, transaction_receiver) = async_channel::unbounded();
         Self {
             executor : executor,
             transaction_sender,
             transaction_receiver,
             light_node_client : Arc::new(RwLock::new(light_node_client)),
+            settlement_client
         }
     }
 
@@ -46,8 +57,12 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
         Ok(())
     }
 
-    pub async fn bound(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Result<Self, anyhow::Error> {
-        let mut node = Self::new(executor, light_node_client);
+    pub async fn bound(
+        executor: T,
+        light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+        settlement_client: C,
+    ) -> Result<Self, anyhow::Error> {
+        let mut node = Self::new(executor, light_node_client, settlement_client);
         node.bind_transaction_channel().await?;
         Ok(node)
     }
@@ -180,7 +195,11 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
 
 }
 
-impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialNode<T> {
+impl<T, C> SuzukaFullNode for SuzukaPartialNode<T, C>
+where
+    T: SuzukaExecutor + Send + Sync,
+    C: McrSettlementClientOperations + Send + Sync,
+{
     
         /// Runs the services until crash or shutdown.
         async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -217,7 +236,7 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialN
 
 }
 
-impl SuzukaPartialNode<SuzukaExecutorV1> {
+impl SuzukaPartialNode<SuzukaExecutorV1, McrSettlementClient> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
@@ -225,7 +244,8 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
         let executor = SuzukaExecutorV1::try_from_env(tx).await.context(
             "Failed to get executor from environment"
         )?;
-        Self::bound(executor, light_node_client).await
+        let settlement_client = McrSettlementClient::new();
+        Self::bound(executor, light_node_client, settlement_client).await
     }
 
 }
