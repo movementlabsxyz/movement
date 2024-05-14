@@ -17,6 +17,6 @@ name = "monza-config"
 path = "src/bin/monza_config.rs"
 
 [dependencies]
-monza-execution-util = { workspace = true }
+maptos-execution-util = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }

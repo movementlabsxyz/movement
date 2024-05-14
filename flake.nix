@@ -1,8 +1,9 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/6143fc5eeb9c4f00163267708e26191d1e918932";
+    nixpkgs.url = "github:NixOS/nixpkgs/f1010e0469db743d14519a1efd37e23f8513d714";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
+    foundry.url = "github:shazow/foundry.nix/monthly"; 
   };
 
   outputs = {
@@ -10,47 +11,60 @@
     nixpkgs,
     rust-overlay,
     flake-utils,
+    foundry,
     ...
     }:
-    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-linux" "aarch64-linux"] (
+    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
+
       system: let
-        overlays = [(import rust-overlay)];
+
+        overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
+
+        overlays = [
+          (import rust-overlay)
+          foundry.overlay
+        ];
+
         pkgs = import nixpkgs {
           inherit system overlays;
         };
 
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-        # celestia-node
-        celestia-node = import ./celestia-node.nix { inherit pkgs; };
+         dependencies = with pkgs; [
+          foundry-bin
+          solc
+          llvmPackages.bintools
+          openssl
+          openssl.dev
+          libiconv 
+          pkg-config
+          process-compose
+          just
+          jq
+          libclang.lib
+          libz
+          clang
+          pkg-config
+          protobuf
+          rustPlatform.bindgenHook
+          lld
+          coreutils
+          gcc
+          rust
+          celestia-node
+          celestia-app
+          monza-aptos
+        ] ++ lib.optionals stdenv.isDarwin [
+          frameworks.Security
+          frameworks.CoreServices
+          frameworks.SystemConfiguration
+          frameworks.AppKit
+        ] ++ lib.optionals stdenv.isLinux [
+          udev
+          systemd
+        ];
 
-        # celestia-app
-        celestia-app = import ./celestia-app.nix { inherit pkgs; };
-
-        # monza-aptos
-        monza-aptos = pkgs.stdenv.mkDerivation {
-          pname = "monza-aptos";
-          version = "branch-monza";
-
-          src = pkgs.fetchFromGitHub {
-              owner = "movementlabsxyz";
-              repo = "aptos-core";
-              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
-          };
-
-          installPhase = ''
-              cp -r . $out
-          '';
-
-          meta = with pkgs.lib; {
-              description = "Aptos core repository on the monza branch";
-              homepage = "https://github.com/movementlabsxyz/aptos-core";
-              license = licenses.asl20;
-          };
-
-        };
-       
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
@@ -59,47 +73,14 @@
           rustc = rust;
         };
 
-        runtimeDependencies = with pkgs; [
-          openssl
-          process-compose
-          just
-          jq
-        ];
+        # celestia-node
+        celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
 
+        # celestia-app
+        celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-        buildDependencies = with pkgs; [
-            libclang.lib
-            libz
-            clang
-            pkg-config
-            protobuf
-            rustPlatform.bindgenHook
-            lld
-            coreutils
-          ]
-          ++ runtimeDependencies
-          # Be it Darwin
-          ++ lib.optionals stdenv.isDarwin [
-            frameworks.Security
-            frameworks.CoreServices
-            frameworks.SystemConfiguration
-            frameworks.AppKit
-          ]
-          ++ lib.optionals stdenv.isLinux [
-            systemd
-          ];
-
-        testingDependencies = with pkgs; [
-            celestia-node
-            celestia-app
-            monza-aptos
-        ]
-        ++ buildDependencies;
-
-        developmentDependencies = with pkgs; [
-          rust
-        ] ++ testingDependencies;
-
+        # monza-aptos
+        monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
     
       in
         with pkgs; {
@@ -109,11 +90,16 @@
 
           # Development Shell
           devShells.default = mkShell {
-            buildInputs = developmentDependencies;
+
+            OPENSSL_DEV=pkgs.openssl.dev;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            buildInputs = dependencies;
+            nativeBuildInputs = dependencies;
 
             shellHook = ''
               #!/bin/bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
+              install-foundry
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

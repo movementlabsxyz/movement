@@ -18,7 +18,7 @@ once_cell = { workspace = true }
 tokio = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
-monza-execution-util = { workspace = true }
+maptos-execution-util = { workspace = true }
 
 [lints]
 workspace = true

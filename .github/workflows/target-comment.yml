@@ -17,6 +17,7 @@ jobs:
           else
             echo "PR URL: ${{ github.event.issue.pull_request.url }}"
             echo "::set-output name=is_pr::true"
+          fi
 
       - name: Fetch PR Details
         if: steps.check_pr.outputs.is_pr == 'true'
@@ -32,12 +33,22 @@ jobs:
         if: steps.check_pr.outputs.is_pr == 'true'
         uses: benc-uk/workflow-dispatch@v1
         with:
+<<<<<<< HEAD
           workflow: Triggered by Comment
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: >
             {
               "comment": "${{ github.event.comment.body }}",
               "issue_number": "${{ github.event.issue.number }}"
+=======
+          workflow: Handle Target Comment
+          token: ${{ secrets.GH_PAT }}
+          inputs: >
+            {
+              "comment": "${{ github.event.comment.body }}",
+              "issue_number": "${{ github.event.issue.number }}",
+              "html_url" : "${{ github.event.issue.html_url }}"
+>>>>>>> main
             }
           ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
           repo: ${{ fromJson(steps.get_pr.outputs.data).head.repo.full_name }}

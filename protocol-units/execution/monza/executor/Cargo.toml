@@ -61,8 +61,8 @@ aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 aptos-proptest-helpers = { workspace = true }
 
-monza-opt-executor = { workspace = true }
-monza-execution-util = { workspace = true }
+maptos-opt-executor = { workspace = true }
+maptos-execution-util = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"

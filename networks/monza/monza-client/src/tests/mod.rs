@@ -8,15 +8,15 @@ use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
 
-static MONZA_CONFIG : Lazy<monza_execution_util::config::Config> = Lazy::new(|| {
-    monza_execution_util::config::Config::try_from_env().context("Failed to create the config").unwrap()
+static MONZA_CONFIG : Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
+    maptos_execution_util::config::Config::try_from_env().context("Failed to create the config").unwrap()
 });
 
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
     Url::from_str(
-       format!("http://{}", MONZA_CONFIG.monza_config.aptos_rest_listen_url.as_str()).as_str()
+       format!("http://{}", MONZA_CONFIG.aptos_config.aptos_rest_listen_url.as_str()).as_str()
     ).unwrap()
     
 });
@@ -24,7 +24,7 @@ static NODE_URL: Lazy<Url> = Lazy::new(|| {
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
     
     Url::from_str(
-        format!("http://{}", MONZA_CONFIG.monza_config.aptos_faucet_listen_url.as_str()).as_str()
+        format!("http://{}", MONZA_CONFIG.aptos_config.aptos_faucet_listen_url.as_str()).as_str()
     ).unwrap()
 
 });

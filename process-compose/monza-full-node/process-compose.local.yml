@@ -8,6 +8,11 @@ processes:
     command: |
       ./scripts/celestia/celestia-local-appd
     readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 
@@ -15,6 +20,10 @@ processes:
     command: |
       ./scripts/celestia/celestia-local-bridge
     readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+    liveness_probe:
       initial_delay_seconds: 10
       exec:
         command: echo "true"
@@ -27,7 +36,12 @@ processes:
       sleep 999999999d
       echo "started"
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 10
+      exec:
+        command: |
+          echo "true"
+    liveness_probe:
+      initial_delay_seconds: 10
       exec:
         command: |
           echo "true"
