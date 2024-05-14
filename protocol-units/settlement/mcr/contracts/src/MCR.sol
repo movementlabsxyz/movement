@@ -184,9 +184,9 @@ contract MCR {
             // roll over the genesis epoch to a timestamp epoch
             for (uint256 i = 0; i < validators.length(); i++){
                 address validatorAddress = validators.at(i);
-                uint256 stake = epochStakes[0][validatorAddress];
-                epochStakes[getCurrentEpoch()][validatorAddress] = stake;
-                epochTotalStake[getCurrentEpoch()] += stake;
+                uint256 validatorStake = epochStakes[0][validatorAddress];
+                epochStakes[getCurrentEpoch()][validatorAddress] = validatorStake;
+                epochTotalStake[getCurrentEpoch()] += validatorStake;
             }
 
 
@@ -264,6 +264,8 @@ contract MCR {
 
         // increment the commitment count by stake
         commitmentStakes[blockCommitment.height][blockCommitment.commitment] += getCurrentEpochStake(validatorAddress);
+
+        emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, getCurrentEpochStake(validatorAddress));
 
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
