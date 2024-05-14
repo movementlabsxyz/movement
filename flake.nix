@@ -33,10 +33,10 @@
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
         # forge
-        forge = import ./nix/forge.nix { inherit pkgs; };
+        forge = import ./nix/foundry/forge.nix { inherit pkgs; };
 
         # anvil
-        anvil = import ./nix/anvil.nix { inherit pkgs; };
+        anvil = import ./nix/foundry/anvil.nix { inherit pkgs; };
 
         # monza-aptos
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
