@@ -61,13 +61,18 @@ jobs:
       - name: Create PR in Infra Repo if not exist
         id: create-new-pr
         if: steps.search-prs.outputs.result == 'false'
-        run: |
-          gh_pr_up() { 
-            gh pr create "$@" || gh pr edit "$@" 
-          }
-          gh_pr_up --title "${{ steps.repo-name.outputs.REPO_NAME }}/${{ github.ref_name }}/${{ github.event.inputs.issue_number }}" --body "**Infrastructure requested:** ${{ github.event.inputs.html_url }}\n\n${{ github.event.inputs.comment }}" --repo "movementlabsxyz/infra"
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+        uses: ./.github/actions/config-infra
+        with:
+          github_token: ${{ secrets.GH_PAT }}
+          new_branch: ${{ github.ref_name }}/${{ github.event.inputs.issue_number }}
+          file_path: 'infra.yaml'
+          file_content: |
+            - **Name**: ${{ github.ref_name }}
+            - **Url**: ${{ github.event.inputs.html_url }}
+            - **Issue number**: ${{ github.event.inputs.issue_number }}
+          pr_title: ${{ github.ref_name }}
+          pr_body: 'Add new infra config'
+          repository: 'movementlabsxyz/infra'
 
       - name: Comment on the Original PR with new PR link
         if: steps.search-prs.outputs.result == 'false'

@@ -1,0 +1,36 @@
+name: 'Update Infra Repo'
+description: 'Create a branch, edit a file, and create a pull request in another repository.'
+inputs:
+  github_token:
+    description: 'GitHub Token for authentication.'
+    required: true
+  new_branch:
+    description: 'The name of the new branch to create.'
+    required: true
+  file_path:
+    description: 'Path to the file to edit.'
+    required: true
+  file_content:
+    description: 'Content to append to the file.'
+    required: true
+  pr_title:
+    description: 'Title for the pull request.'
+    required: true
+  pr_body:
+    description: 'Body of the pull request.'
+    required: true
+  repository:
+    description: 'Repository to operate on. Format "owner/repo".'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    NEW_BRANCH: ${{ inputs.new_branch }}
+    FILE_PATH: ${{ inputs.file_path }}
+    FILE_CONTENT: ${{ inputs.file_content }}
+    PR_TITLE: ${{ inputs.pr_title }}
+    PR_BODY: ${{ inputs.pr_body }}
+    REPOSITORY: ${{ inputs.repository }}
