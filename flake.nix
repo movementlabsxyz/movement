@@ -32,14 +32,14 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-        # foundry
-        forge = import ./nix/foundry.nix { inherit pkgs; };
+        # forge
+        forge = import ./nix/forge.nix { inherit pkgs; };
 
         # anvil
         anvil = import ./nix/anvil.nix { inherit pkgs; };
 
         # monza-aptos
-        monza-aptos = import ./monza-aptos.nix { inherit pkgs; };
+        monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
 
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;

@@ -8,10 +8,10 @@ pkgs.rustPlatform.buildRustPackage rec {
     owner = "foundry-rs";
     repo = "foundry";
     rev = "cafc2606a2187a42b236df4aa65f4e8cdfcea970";
-    sha256 = "sha256_hash_of_the_source";
+    sha256 = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";
   };
 
-  cargoSha256 = "sha256_hash_of_cargo_dependencies";
+  cargoSha256 = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";
 
   meta = with pkgs.lib; {
     description = "Foundry Forge";
