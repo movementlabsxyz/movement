@@ -43,13 +43,8 @@ jobs:
         uses: ./.github/actions/config-infra
         with:
           github_token: ${{ secrets.GH_PAT }}
-          new_branch: ${{ steps.gali-id.outputs.gali-id }}
-          file_path: 'infra.yaml'
-          file_content: |
-            - **Name**: ${{ github.ref_name }}
-            - **Url**: ${{ github.event.inputs.html_url }}
-            - **Issue number**: ${{ github.event.inputs.issue_number }}
-            - **SHA**: ${{ github.sha }}
-          pr_title: ${{ steps.gali-id.outputs.gali-id }}
-          pr_body: ${{ github.event.inputs.comment }}
-          repository: 'movementlabsxyz/infra'
+          gali_id: ${{ steps.gali-id.outputs.gali-id }}
+          gali_sha: ${{ steps.gali-id.outputs.gali-sha }}
+          comment: ${{ github.event.inputs.comment }}
+          source_repo: ${{ github.repository }}
+          target_repo: 'movementlabsxyz/infra'
