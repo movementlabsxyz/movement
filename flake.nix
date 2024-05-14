@@ -79,12 +79,6 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-        # forge
-        # forge = import ./nix/foundry/forge.nix { inherit pkgs; };
-
-        # anvil
-        # anvil = import ./nix/foundry/anvil.nix { inherit pkgs; };
-
         # monza-aptos
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
     
