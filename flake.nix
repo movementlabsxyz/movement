@@ -32,6 +32,8 @@
         # celestia-app
         celestia-app = import ./celestia-app.nix { inherit pkgs; };
 
+        # foundry
+        foundry = import ./foundry.nix { inherit pkgs; };
         # monza-aptos
         monza-aptos = import ./monza-aptos.nix { inherit pkgs; };
 

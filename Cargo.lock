@@ -6117,6 +6117,79 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
+name = "maptos-execution-util"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-crypto",
+ "aptos-sdk",
+ "aptos-types",
+ "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
+name = "maptos-opt-executor"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "aptos-api-types",
+ "aptos-bitvec",
+ "aptos-block-executor",
+ "aptos-cached-packages",
+ "aptos-config",
+ "aptos-consensus-types",
+ "aptos-crypto",
+ "aptos-db",
+ "aptos-executor",
+ "aptos-executor-test-helpers",
+ "aptos-executor-types",
+ "aptos-faucet-core",
+ "aptos-framework",
+ "aptos-language-e2e-tests",
+ "aptos-mempool",
+ "aptos-sdk",
+ "aptos-storage-interface",
+ "aptos-temppath",
+ "aptos-types",
+ "aptos-vm",
+ "aptos-vm-genesis",
+ "aptos-vm-logging",
+ "aptos-vm-types",
+ "async-channel",
+ "async-trait",
+ "bcs 0.1.4",
+ "borsh",
+ "bytes",
+ "chrono",
+ "clap 4.5.4",
+ "derive_more",
+ "dirs 3.0.2",
+ "env_logger 0.11.3",
+ "fail 0.5.1",
+ "futures",
+ "hex",
+ "lazy_static",
+ "log",
+ "maptos-execution-util",
+ "poem",
+ "poem-openapi",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "match_cfg"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6250,7 +6323,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
- "monza-execution-util",
+ "maptos-execution-util",
  "once_cell",
  "rand 0.7.3",
  "tokio",
@@ -6262,22 +6335,8 @@ name = "monza-config"
 version = "0.3.0"
 dependencies = [
  "anyhow",
- "monza-execution-util",
+ "maptos-execution-util",
  "tokio",
-]
-
-[[package]]
-name = "monza-execution-util"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-crypto",
- "aptos-sdk",
- "aptos-types",
- "m1-da-light-node-util",
- "rand 0.7.3",
- "serde_json",
- "tempfile",
 ]
 
 [[package]]
@@ -6322,8 +6381,8 @@ dependencies = [
  "hex",
  "lazy_static",
  "log",
- "monza-execution-util",
- "monza-opt-executor",
+ "maptos-execution-util",
+ "maptos-opt-executor",
  "poem-openapi",
  "rand 0.7.3",
  "rand_core 0.5.1",
@@ -6402,65 +6461,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "monza-opt-executor"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-api",
- "aptos-api-types",
- "aptos-bitvec",
- "aptos-block-executor",
- "aptos-cached-packages",
- "aptos-config",
- "aptos-consensus-types",
- "aptos-crypto",
- "aptos-db",
- "aptos-executor",
- "aptos-executor-test-helpers",
- "aptos-executor-types",
- "aptos-faucet-core",
- "aptos-framework",
- "aptos-language-e2e-tests",
- "aptos-mempool",
- "aptos-sdk",
- "aptos-storage-interface",
- "aptos-temppath",
- "aptos-types",
- "aptos-vm",
- "aptos-vm-genesis",
- "aptos-vm-logging",
- "aptos-vm-types",
- "async-channel",
- "async-trait",
- "bcs 0.1.4",
- "borsh",
- "bytes",
- "chrono",
- "clap 4.5.4",
- "derive_more",
- "dirs 3.0.2",
- "env_logger 0.11.3",
- "fail 0.5.1",
- "futures",
- "hex",
- "lazy_static",
- "log",
- "monza-execution-util",
- "poem",
- "poem-openapi",
- "rand 0.7.3",
- "rand_core 0.5.1",
- "schemars",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror",
- "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]
@@ -10021,6 +10021,153 @@ name = "subtle-ng"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
+
+[[package]]
+name = "suzuka-client"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-sdk",
+ "maptos-execution-util",
+ "once_cell",
+ "rand 0.7.3",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "suzuka-config"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "maptos-execution-util",
+ "tokio",
+]
+
+[[package]]
+name = "suzuka-executor"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "aptos-api-types",
+ "aptos-bitvec",
+ "aptos-block-executor",
+ "aptos-config",
+ "aptos-consensus-types",
+ "aptos-crypto",
+ "aptos-db",
+ "aptos-executor",
+ "aptos-executor-test-helpers",
+ "aptos-executor-types",
+ "aptos-framework",
+ "aptos-language-e2e-tests",
+ "aptos-mempool",
+ "aptos-sdk",
+ "aptos-storage-interface",
+ "aptos-temppath",
+ "aptos-types",
+ "aptos-vm",
+ "aptos-vm-genesis",
+ "aptos-vm-logging",
+ "aptos-vm-types",
+ "async-channel",
+ "async-trait",
+ "bcs 0.1.4",
+ "borsh",
+ "bytes",
+ "chrono",
+ "clap 4.5.4",
+ "derive_more",
+ "dirs 5.0.1",
+ "fail 0.5.1",
+ "futures",
+ "hex",
+ "lazy_static",
+ "log",
+ "maptos-execution-util",
+ "maptos-opt-executor",
+ "poem-openapi",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tonic",
+ "tracing",
+]
+
+[[package]]
+name = "suzuka-fin-executor"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "aptos-api-types",
+ "aptos-bitvec",
+ "aptos-block-executor",
+ "aptos-config",
+ "aptos-consensus-types",
+ "aptos-crypto",
+ "aptos-db",
+ "aptos-executor",
+ "aptos-executor-test-helpers",
+ "aptos-executor-types",
+ "aptos-framework",
+ "aptos-language-e2e-tests",
+ "aptos-mempool",
+ "aptos-sdk",
+ "aptos-storage-interface",
+ "aptos-temppath",
+ "aptos-types",
+ "aptos-vm",
+ "aptos-vm-genesis",
+ "aptos-vm-logging",
+ "aptos-vm-types",
+ "async-trait",
+ "borsh",
+ "bytes",
+ "chrono",
+ "clap 4.5.4",
+ "derive_more",
+ "dirs 5.0.1",
+ "fail 0.5.1",
+ "hex",
+ "lazy_static",
+ "log",
+ "poem-openapi",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "schemars",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "suzuka-full-node"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "env_logger 0.11.3",
+ "m1-da-light-node-client",
+ "movement-types",
+ "serde_json",
+ "sha2 0.10.8",
+ "suzuka-executor",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
 
 [[package]]
 name = "syn"
