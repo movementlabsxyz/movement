@@ -4,13 +4,13 @@ set -e
 echo "$TARGET_REPO"
 
 GALI_FILE_PATH=gali/${SOURCE_REPO}
-mkdir -p $(dirname "${GALI_FILE_PATH}")
 
 ESCAPED_SOURCE_REPO="${SOURCE_REPO//\//_}"
 
 # Clone and configure the repository
 git clone https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} repo
 cd repo
+mkdir -p $(dirname "${GALI_FILE_PATH}")
 git config user.name "GitHub Action"
 git config user.email "action@github.com"
 
