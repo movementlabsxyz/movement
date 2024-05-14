@@ -52,19 +52,18 @@ where
         }
     }
 
-    pub async fn bind_transaction_channel(&mut self) -> Result<(), anyhow::Error> {
-        self.executor.set_tx_channel(self.transaction_sender.clone()).await?;
-        Ok(())
-    }
+	fn bind_transaction_channel(&mut self) {
+		self.executor.set_tx_channel(self.transaction_sender.clone());
+	}
 
-    pub async fn bound(
-        executor: T,
-        light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+	pub fn bound(
+		executor: T,
+		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
         settlement_client: C,
-    ) -> Result<Self, anyhow::Error> {
-        let mut node = Self::new(executor, light_node_client, settlement_client);
-        node.bind_transaction_channel().await?;
-        Ok(node)
+	) -> Result<Self, anyhow::Error> {
+		let mut node = Self::new(executor, light_node_client, settlement_client);
+		node.bind_transaction_channel();
+		Ok(node)
     }
 
     pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
@@ -181,7 +180,7 @@ where
             );
             let block_id = executable_block.block_id;
             self.executor.execute_block(
-                &FinalityMode::Opt,
+                FinalityMode::Opt,
                 executable_block
             ).await?;
 
@@ -245,7 +244,7 @@ impl SuzukaPartialNode<SuzukaExecutorV1, McrSettlementClient> {
             "Failed to get executor from environment"
         )?;
         let settlement_client = McrSettlementClient::new();
-        Self::bound(executor, light_node_client, settlement_client).await
+        Self::bound(executor, light_node_client, settlement_client)
     }
 
 }

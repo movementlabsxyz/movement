@@ -26,18 +26,18 @@ pub trait MonzaExecutor {
     /// Executes a block dynamically
     async fn execute_block(
         &self,
-        mode : &FinalityMode, 
+        mode: FinalityMode, 
         block: ExecutableBlock,
     ) -> Result<Commitment, anyhow::Error>;
 
-    /// Sets the transaction channel.
-    async fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) -> Result<(), anyhow::Error>;
+	/// Sets the transaction channel.
+	fn set_tx_channel(
+		&mut self,
+		tx_channel: Sender<SignedTransaction>,
+	);
 
-    /// Gets the dyn API.
-    async fn get_api(
-        &self,
-        mode : &FinalityMode, 
-    ) -> Result<Apis, anyhow::Error>;
+	/// Gets the dyn API.
+	fn get_api(&self, mode: FinalityMode) -> Apis;
 
     /// Get block head height.
     async fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;

@@ -296,13 +296,12 @@ impl Executor {
 		Ok(Commitment::digest_state_proof(&proof))
 	}
 
-	pub async fn try_get_context(&self) -> Result<Arc<Context>, anyhow::Error> {
-		Ok(self.context.clone())
+	fn context(&self) -> Arc<Context> {
+		self.context.clone()
 	}
 
-	pub async fn try_get_apis(&self) -> Result<Apis, anyhow::Error> {
-		let context = self.try_get_context().await?;
-		Ok(get_apis(context))
+	pub fn get_apis(&self) -> Apis {
+		get_apis(self.context())
 	}
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
@@ -317,9 +316,7 @@ impl Executor {
 
 		}
 
-
-		let context = self.try_get_context().await?;
-		let api_service = get_api_service(context).server(
+		let api_service = get_api_service(self.context()).server(
 			format!("http://{:?}", self.aptos_config.aptos_rest_listen_url)
 		);
 
@@ -656,7 +653,7 @@ mod tests {
 			executor.execute_block(block).await?;
 	
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
-			let apis = executor.try_get_apis().await?;
+			let apis = executor.get_apis();
 			for hash in transaction_hashes {
 				let _ = apis.transactions.get_transaction_by_hash_inner(
 					&AcceptType::Bcs,
@@ -749,7 +746,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let api = executor.try_get_apis().await?;
+		let api = executor.get_apis();
 		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
@@ -780,7 +777,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let api = executor.try_get_apis().await?;
+		let api = executor.get_apis();
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
