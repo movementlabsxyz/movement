@@ -40,7 +40,7 @@ jobs:
 
       - name: Create PR in Infra Repo if not exist
         id: create-new-pr
-        uses: ./.github/actions/config-infra
+        uses: ./.github/actions/gali
         with:
           github_token: ${{ secrets.GH_PAT }}
           gali_id: ${{ steps.gali-id.outputs.gali-id }}
