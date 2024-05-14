@@ -2,22 +2,26 @@ use crate::{CommitmentStream, McrSettlementClientOperations};
 use movement_types::BlockCommitment;
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{mpsc, RwLock};
 
 pub struct McrSettlementClient {
-	commitments: Arc<Mutex<HashMap<u64, BlockCommitment>>>,
+	commitments: Arc<RwLock<HashMap<u64, BlockCommitment>>>,
 	stream_sender: mpsc::Sender<Result<BlockCommitment, anyhow::Error>>,
 	// todo: this is logically dangerous, but it's just a stub
-	stream_receiver: Arc<Mutex<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>,
+	stream_receiver: Arc<RwLock<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>,
+    pub current_height: Arc<RwLock<u64>>,
+    pub block_lead_tolerance: u64
 }
 
 impl McrSettlementClient {
 	pub fn new() -> Self {
 		let (stream_sender, receiver) = mpsc::channel(10);
 		McrSettlementClient {
-			commitments: Arc::new(Mutex::new(HashMap::new())),
+			commitments: Arc::new(RwLock::new(HashMap::new())),
 			stream_sender,
-			stream_receiver: Arc::new(Mutex::new(receiver)),
+			stream_receiver: Arc::new(RwLock::new(receiver)),
+            current_height: Arc::new(RwLock::new(0)),
+            block_lead_tolerance: 16,
 		}
 	}
 }
@@ -29,9 +33,22 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		let mut commitments = self.commitments.lock().await;
-		commitments.insert(block_commitment.height, block_commitment.clone());
-		self.stream_sender.send(Ok(block_commitment)).await?; // Simulate sending to the stream.
+
+        let height = block_commitment.height;
+
+        {
+            let mut commitments = self.commitments.write().await;
+            commitments.insert(block_commitment.height, block_commitment.clone());
+            self.stream_sender.send(Ok(block_commitment)).await?; // Simulate sending to the stream.
+        }
+
+        {
+            let mut current_height = self.current_height.write().await;
+            if height > *current_height {
+                *current_height = height;
+            }
+        }
+
 		Ok(())
 	}
 
@@ -45,7 +62,7 @@ impl McrSettlementClientOperations for McrSettlementClient {
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		let receiver = self.stream_receiver.clone();
 		let stream = async_stream::try_stream! {
-			let mut receiver = receiver.lock().await;
+			let mut receiver = receiver.write().await;
 			while let Some(commitment) = receiver.recv().await {
 				yield commitment?;
 			}
@@ -57,9 +74,14 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		&self,
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
-		let guard = self.commitments.lock().await;
+		let guard = self.commitments.write().await;
 		Ok(guard.get(&height).cloned())
 	}
+
+    async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
+        Ok(*self.current_height.read().await + self.block_lead_tolerance)
+    }
+
 }
 
 #[cfg(test)]
@@ -71,6 +93,7 @@ pub mod test {
 
     #[tokio::test]
 	async fn test_post_block_commitment() -> Result<(), anyhow::Error> {
+
 		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
@@ -78,8 +101,12 @@ pub mod test {
 			commitment: Commitment::test(),
 		};
 		client.post_block_commitment(commitment.clone()).await.unwrap();
-		let guard = client.commitments.lock().await;
+		let guard = client.commitments.write().await;
 		assert_eq!(guard.get(&1), Some(&commitment));
+
+        assert_eq!(*client.current_height.read().await, 1);
+        assert_eq!(client.get_max_tolerable_block_height().await?, 17);
+
 		Ok(())
 	}
 
@@ -100,7 +127,7 @@ pub mod test {
             commitment.clone(),
             commitment2.clone(),
         ]).await.unwrap();
-        let guard = client.commitments.lock().await;
+        let guard = client.commitments.write().await;
         assert_eq!(guard.get(&1), Some(&commitment));
         assert_eq!(guard.get(&2), Some(&commitment2));
         Ok(())
