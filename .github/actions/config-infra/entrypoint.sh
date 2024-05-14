@@ -4,7 +4,7 @@ set -e
 echo "$REPOSITORY"
 
 # Clone and configure the repository
-git clone https://x-access-token:$GITHUB_TOKEN@github.com/${REPOSITORY}
+git clone https://x-access-token:$GITHUB_TOKEN@github.com/${REPOSITORY} repo
 cd repo
 git config user.name "GitHub Action"
 git config user.email "action@github.com"
