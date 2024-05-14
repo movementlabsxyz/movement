@@ -17,6 +17,7 @@ git config user.email "action@github.com"
 # Creata new branch or checkout existing branch
 if git show-ref --verify --quiet "refs/heads/${GALI_ID}"; then
     git checkout "${GALI_ID}"
+    git pull origin "${GALI_ID}"
     echo "::set-output name=branch_message::$(echo 'Branch already exists, checking out existing branch')"
 else
     git checkout main
