@@ -38,63 +38,18 @@ jobs:
           echo "GALI_ID=$REPO_NAME/${{ github.event.inputs.issue_number }}/${{ github.ref_name }}/" >> $GITHUB_ENV
           echo "GALI_SHA=${{ github.sha }}" >> $GITHUB_ENV
 
-      - name: Check Gali parameters
-        run: |
-          echo "GALI_ID=$GALI_ID"
-          echo "GALI_SHA=$GALI_SHA"
-
-      - name: Search for existing PRs
-        id: search-prs
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.GH_PAT }}
-          script: |
-            const title = `$${{ steps.gali-id.outputs.GALI_ID }}`;
-            const prs = await github.rest.pulls.list({
-              owner: 'movementlabsxyz',
-              repo: 'infra',
-              state: 'open',
-              head: 'main'
-            });
-            const existingPr = prs.data.find(pr => pr.title === title);
-            if (existingPr) {
-              return existingPr.html_url;
-            }
-            return false;
-
-      - name: Echo search result
-        run: |
-          echo "Search result: ${{ steps.search-prs.outputs.result }}"
-
       - name: Create PR in Infra Repo if not exist
         id: create-new-pr
-        if: steps.search-prs.outputs.result == 'false'
         uses: ./.github/actions/config-infra
         with:
           github_token: ${{ secrets.GH_PAT }}
-          new_branch: ${{ github.ref_name }}/${{ github.event.inputs.issue_number }}
+          new_branch: ${{ steps.gali-id.outputs.gali-id }}
           file_path: 'infra.yaml'
           file_content: |
             - **Name**: ${{ github.ref_name }}
             - **Url**: ${{ github.event.inputs.html_url }}
             - **Issue number**: ${{ github.event.inputs.issue_number }}
-          pr_title: ${{ github.ref_name }}
-          pr_body: 'Add new infra config'
+            - **SHA**: ${{ github.sha }}
+          pr_title: ${{ steps.gali-id.outputs.gali-id }}
+          pr_body: ${{ github.event.inputs.comment }}
           repository: 'movementlabsxyz/infra'
-
-      - name: Comment on the Original PR with new PR link
-        if: steps.search-prs.outputs.result == 'false'
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.inputs.issue_number }}
-          body: ${{ steps.create-new-pr.outputs.pr_url }}
-
-      - name: Comment on Original PR with PR link if PR already exists
-        id: respond-pr
-        if: steps.search-prs.outputs.result != 'false'
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          issue-number: ${{ github.event.inputs.issue_number }}
-          body: "A related PR already exists and you can follow it here: ${{ steps.search-prs.outputs.result }}"
