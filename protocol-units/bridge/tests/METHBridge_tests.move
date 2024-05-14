@@ -1,6 +1,7 @@
 #[test_only]
-module 0x1::M2ETHBridgeTests {
-    use 0x1::M2ETHBridge;
+module 0x1::METHBridgeTests {
+    use 0x1::METHBridge;
+    use 0x1::string;
     use std::signer;
     use aptos_framework::coin;
     use aptos_framework::aptos_coin::AptosCoin;
@@ -12,28 +13,37 @@ module 0x1::M2ETHBridgeTests {
 
     #[test(bridge = @0x1, user = @0x2)]
     fun test_deposit(bridge: signer, user: signer)
-    acquires M2ETHBridge::BridgeAccount {
+    acquires 0x1::METHBridge::BridgeAccount {
         // Initialize the module
-        M2ETHBridge::init_module(&bridge);
+        METHBridge::init_module(&bridge);
 
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<AptosCoin>(
+            &bridge,
+            string::utf8(b"MethCoin"),
+            string::utf8(b"METH"),
+            10,
+            false,
+        );
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_freeze_cap(freeze_cap);
         // Mint some coins to the user account
         let user_addr = signer::address_of(&user);
         create_account_for_test(user_addr);
-        let coins = coin::mint<AptosCoin>(100, &user);
+        let coins = coin::mint<AptosCoin>(100, &mint_cap);
         coin::deposit(user_addr, coins);
 
         // Deposit coins from user to bridge
         let token_id = 1;
         let nonce = 1;
         let amount = 50;
-        M2ETHBridge::deposit(&bridge, user_addr, token_id, nonce, amount);
+        METHBridge::deposit(&bridge, user_addr, token_id, nonce, amount);
 
         // Verify user's balance
         assert!(coin::balance<AptosCoin>(user_addr) == 50, 1);
 
         // Verify event
-        let bridge_account = borrow_global<M2ETHBridge::BridgeAccount>(BRIDGE_ACCOUNT);
-        let deposit_event = event::borrow_event<M2ETHBridge::DepositEvent>(
+        let bridge_account = borrow_global<METHBridge::BridgeAccount>(BRIDGE_ACCOUNT);
+        let deposit_event = event::borrow_event<METHBridge::DepositEvent>(
             &bridge_account.deposit_events, 0
         );
         assert!(deposit_event.deposit.owner == user_addr, 1);
@@ -44,7 +54,7 @@ module 0x1::M2ETHBridgeTests {
 
     #[test(bridge = @0x1, user = @0x2)]
     fun test_withdraw(bridge: signer, user: signer)
-    acquires M2ETHBridge::BridgeAccount {
+    acquires 0x1::METHBridge::BridgeAccount {
         // Initialize the module
         M2ETHBridge::init_module(&bridge);
 
@@ -57,14 +67,14 @@ module 0x1::M2ETHBridgeTests {
         // Withdraw coins from user to bridge
         let token_id = 1;
         let amount = 50;
-        M2ETHBridge::withdraw(&user, token_id, amount);
+        METHBridge::withdraw(&user, token_id, amount);
 
         // Verify user's balance
         assert!(coin::balance<AptosCoin>(user_addr) == 50, 1);
 
         // Verify event
-        let bridge_account = borrow_global<M2ETHBridge::BridgeAccount>(BRIDGE_ACCOUNT);
-        let withdrawal_event = event::borrow_event<M2ETHBridge::PendingWithdrawalEvent>(
+        let bridge_account = borrow_global<METHBridge::BridgeAccount>(BRIDGE_ACCOUNT);
+        let withdrawal_event = event::borrow_event<METHBridge::PendingWithdrawalEvent>(
             &bridge_account.pending_withdrawal_events, 0
         );
         assert!(withdrawal_event.pending_withdrawal.request.owner == user_addr, 1);
@@ -72,5 +82,4 @@ module 0x1::M2ETHBridgeTests {
         assert!(withdrawal_event.pending_withdrawal.request.amount == amount, 1);
         assert!(withdrawal_event.pending_withdrawal.nonce == 0, 1);
     }
-
 }

@@ -1,4 +1,4 @@
-module 0x1::M2ETHBridge {
+module 0x1::METHBridge {
     use std::signer;
     use aptos_framework::coin;
     use aptos_framework::event;
@@ -36,7 +36,7 @@ module 0x1::M2ETHBridge {
 
     public entry fun deposit(
         trusted: &signer,
-        owner: address,
+        deposit_owner: address,
         token_id: u128,
         nonce: u256,
         amount: u64
@@ -46,10 +46,10 @@ module 0x1::M2ETHBridge {
 
         let bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
         let coin = coin::withdraw<AptosCoin>(trusted, amount);
-        coin::deposit(owner, coin);
+        coin::deposit(deposit_owner, coin);
 
         let deposit = Deposit {
-            owner,
+            owner: deposit_owner,
             token_id,
             nonce,
             amount,
@@ -62,6 +62,7 @@ module 0x1::M2ETHBridge {
 
     public entry fun withdraw(
         owner: &signer,
+        owner_address: address,
         token_id: u128,
         amount: u64
     ) acquires BridgeAccount {
@@ -72,7 +73,7 @@ module 0x1::M2ETHBridge {
         bridge_account.nonce = nonce + 1;
 
         let request = PendingWithdrawalRequest {
-            owner: signer::address_of(owner),
+            owner: owner_address,
             token_id,
             amount,
         };
@@ -94,20 +95,21 @@ module 0x1::M2ETHBridge {
     ) acquires BridgeAccount {
         let trusted_address = signer::address_of(trusted);
         assert!(trusted_address == BRIDGE_ACCOUNT, 1); // Verify trusted signer
-        let _bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
 
+        let bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
         // Implement logic to confirm and close the withdrawal request
         // Remove the pending withdrawal from bridge_account
     }
 
     public entry fun claim_withdrawal_request(
         owner: &signer,
+        owner_address: address,
         token_id: u128,
         nonce: u256
     ) acquires BridgeAccount {
-        let owner_address = signer::address_of(owner);
-        let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
+        assert!(owner_address == signer::address_of(owner), 1); // Verify owner
 
+        let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
         // Implement logic to claim unsuccessful withdrawal request and close it
         // Remove the pending withdrawal from bridge_account and transfer coins back to owner
     }
