@@ -19,7 +19,7 @@ use crate::*;
 use tokio_stream::StreamExt;
 use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::sync::RwLock;
-use movement_types::Block;
+use movement_types::{Block, BlockCommitment};
 use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
 
 #[derive(Clone)]
@@ -29,13 +29,13 @@ pub struct SuzukaPartialNode<T, C>
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
-    settlement_client: C,
+    settlement_client: Arc<C>,
 }
 
 impl<T, C> SuzukaPartialNode<T, C>
 where
     T: SuzukaExecutor + Send + Sync,
-    C: McrSettlementClientOperations
+    C: McrSettlementClientOperations + Send + Sync + 'static,
 {
 
     pub fn new(
@@ -49,7 +49,7 @@ where
             transaction_sender,
             transaction_receiver,
             light_node_client : Arc::new(RwLock::new(light_node_client)),
-            settlement_client
+            settlement_client: Arc::new(settlement_client)
         }
     }
 
@@ -138,6 +138,14 @@ where
             ).await?
         }.into_inner();
 
+        let settlement_client = self.settlement_client.clone();
+        // TODO: consume the commitment stream to finalize blocks
+        let commitment_stream = settlement_client.stream_block_commitments().await?;
+
+        tokio::spawn(async move {
+            process_commitments(receiver, settlement_client).await;
+        });
+
         while let Some(blob) = stream.next().await {
 
             println!("Stream hot!");
@@ -206,10 +214,24 @@ where
 
 }
 
+async fn process_commitments<C>(
+    mut receiver: mpsc::Receiver<BlockCommitment>,
+    settlement_client: Arc<C>,
+) -> Result<(), anyhow::Error>
+where
+    C: McrSettlementClientOperations,
+{
+    while let Some(commitment) = receiver.recv().await {
+        println!("Got commitment: {:?}", commitment);
+        settlement_client.post_block_commitment(commitment).await?;
+    }
+    Ok(())
+}
+
 impl<T, C> SuzukaFullNode for SuzukaPartialNode<T, C>
 where
     T: SuzukaExecutor + Send + Sync,
-    C: McrSettlementClientOperations + Send + Sync,
+    C: McrSettlementClientOperations + Send + Sync + 'static,
 {
     
         /// Runs the services until crash or shutdown.
