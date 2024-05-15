@@ -143,7 +143,9 @@ where
         let commitment_stream = settlement_client.stream_block_commitments().await?;
 
         tokio::spawn(async move {
-            process_commitments(receiver, settlement_client).await;
+            if let Err(e) = process_commitments(receiver, settlement_client).await {
+                eprintln!("Error processing commitments: {:?}", e);
+            }
         });
 
         while let Some(blob) = stream.next().await {
