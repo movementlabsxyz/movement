@@ -18,7 +18,7 @@ git config user.email "action@github.com"
 echo "Branch does not exist, creating new branch"
 git checkout main
 git checkout -b "${GALI_ID}"
-git pull origin "${GALI_ID}"
+git pull origin "${GALI_ID}" || true # ignore failure if branch does not exist
 echo "::set-output name=branch_message::$(echo 'Branch does not exist, creating new branch')"
 
 
