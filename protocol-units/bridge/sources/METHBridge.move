@@ -105,8 +105,7 @@ module 0x1::METHBridge {
         assert!(trusted_address == BRIDGE_ACCOUNT, 1); // Verify trusted signer
 
         let bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
-        // Implement logic to confirm and close the withdrawal request
-        // Remove the pending withdrawal from bridge_account
+
         // Find the pending withdrawal with the matching owner, token_id, and nonce
         let pending_withdrawal_index = find_pending_withdrawal_index(bridge_account, owner, token_id, nonce);
         assert!(pending_withdrawal_index >= 0, 2); // Ensure the pending withdrawal exists
