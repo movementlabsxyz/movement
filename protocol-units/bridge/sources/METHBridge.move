@@ -62,10 +62,10 @@ module 0x1::METHBridge {
 
     public entry fun withdraw(
         owner: &signer,
-        owner_address: address,
         token_id: u128,
         amount: u64
     ) acquires BridgeAccount {
+        let owner_address = signer::address_of(owner);
         let coin = coin::withdraw<AptosCoin>(owner, amount);
         let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
         coin::deposit(BRIDGE_ACCOUNT, coin);
@@ -173,7 +173,7 @@ module 0x1::METHBridge {
 
     #[test(bridge = @0x1, user = @0x2)]
     fun test_withdraw(bridge: signer, user: signer)
-    acquires 0x1::METHBridge::BridgeAccount {
+    acquires BridgeAccount {
         let (burn_cap, freeze_cap, mint_cap) = coin::initialize<AptosCoin>(
             &bridge,
             string::utf8(b"MethCoin"),
