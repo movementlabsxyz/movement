@@ -225,6 +225,14 @@ where
 {
     while let Some(commitment) = receiver.recv().await {
         println!("Got commitment: {:?}", commitment);
+        let max_height = settlement_client.get_max_tolerable_block_height().await?;
+        if commitment.height > max_height {
+            println!(
+                "Commitment height {} is greater than max tolerable height {}, skipping.",
+                commitment.height, max_height
+            );
+            continue;
+        }
         settlement_client.post_block_commitment(commitment).await?;
     }
     Ok(())
