@@ -141,41 +141,39 @@ module 0x1::METHBridge {
         nonce: u256
     ) acquires BridgeAccount {
         // Verify that the caller of this function owns the address they claim to
-    assert!(owner_address == signer::address_of(owner), 1); // 1 indicates an authorization error
+        assert!(owner_address == signer::address_of(owner), 1); // 1 indicates an authorization error
 
-    let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
+        let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
     
-    // Find the index of the pending withdrawal that matches the provided parameters
-    let pending_withdrawal_index = find_pending_withdrawal_index(
-        bridge_account, 
-        owner_address, 
-        token_id, 
-        nonce
-    );
-    assert!(pending_withdrawal_index != 0, 2); // 2 indicates that the pending withdrawal was not found
+        // Find the index of the pending withdrawal that matches the provided parameters
+        let pending_withdrawal_index = find_pending_withdrawal_index(
+            bridge_account, 
+            owner_address, 
+            token_id, 
+            nonce
+        );
+        assert!(pending_withdrawal_index != 0, 2); // 2 indicates that the pending withdrawal was not found
     
-    // Remove the pending withdrawal from the list
-    let PendingWithdrawal { request: _, nonce: _ } = vector::remove(
-        &mut bridge_account.pending_withdrawals, 
-        pending_withdrawal_index
-    );
+        // Remove the pending withdrawal from the list
+        let PendingWithdrawal { request: _, nonce: _ } = vector::remove(
+            &mut bridge_account.pending_withdrawals, 
+            pending_withdrawal_index
+        );
     
-    // The coins are already with the bridge, so we just need to validate and close the request
-
-    // Emit an event to signal that the withdrawal claim was processed
-    event::emit_event(
-        &mut bridge_account.pending_withdrawal_events, 
-        PendingWithdrawalEvent {
-            pending_withdrawal: PendingWithdrawal {
-                request: PendingWithdrawalRequest {
-                    owner: owner_address,
-                    token_id,
-                    amount: 0 // Since we're only closing the request, no actual transfer occurs
-                },
-                nonce
+        // Emit an event to signal that the withdrawal claim was processed
+        event::emit_event(
+            &mut bridge_account.pending_withdrawal_events, 
+            PendingWithdrawalEvent {
+                pending_withdrawal: PendingWithdrawal {
+                    request: PendingWithdrawalRequest {
+                        owner: owner_address,
+                        token_id,
+                        amount: 0 // Since we're only closing the request, no actual transfer occurs
+                    },
+                    nonce
+                }
             }
-        }
-    );
+        );
     }
 
     fun find_pending_withdrawal_index(
@@ -316,6 +314,68 @@ module 0x1::METHBridge {
         let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
         assert!(event::counter(&bridge_account.pending_withdrawal_events) == 1, 1);
 
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[test(bridge = @0x1, user = @0x2)]
+    fun test_close_withdrawal_request(bridge: signer, user: signer)
+    acquires BridgeAccount {
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<AptosCoin>(
+            &bridge,
+            string::utf8(b"MethCoin"),
+            string::utf8(b"METH"),
+            10,
+            false,
+        );
+
+        // Destroy unused capabilities
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_freeze_cap(freeze_cap);
+
+        // Create the Account resource for the user and the bridge account
+        let user_addr = signer::address_of(&user);
+        account::create_account_for_test(user_addr);
+        account::create_account_for_test(BRIDGE_ACCOUNT);
+
+        // Register the user and bridge account to receive coins
+        coin::register<AptosCoin>(&user);
+        coin::register<AptosCoin>(&bridge);
+
+        // Mint some coins to the user account
+        let coins = coin::mint<AptosCoin>(100, &mint_cap);
+        coin::deposit(user_addr, coins);
+
+        // Initialize the BridgeAccount resource
+        init_module(&bridge);
+
+        // Perform a deposit and then a withdrawal to generate a pending withdrawal
+        let token_id = 1;
+        let nonce = 1;
+        let deposit_amount = 50;
+        let withdraw_amount = 30;
+        deposit(&bridge, user_addr, token_id, nonce, deposit_amount);
+        withdraw(&user, token_id, withdraw_amount);
+
+        // Explicitly drop bridge_account borrow before calling close_withdrawal_request
+        {
+            let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
+
+            // Verify initial state
+            assert!(coin::balance<AptosCoin>(user_addr) == 70, 1); // 100 - 30 = 70
+            assert!(event::counter(&bridge_account.pending_withdrawal_events) == 1, 2);
+            // Explicitly end the scope of `bridge_account` to release borrow
+        };
+
+        // Close the withdrawal request
+        close_withdrawal_request(&bridge, user_addr, token_id, nonce);
+
+        // Verify the pending withdrawals are cleared and coins are refunded
+        let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT); // Re-borrow bridge_account
+        assert!(vector::is_empty<PendingWithdrawal>(&bridge_account.pending_withdrawals), 3);
+        assert!(coin::balance<AptosCoin>(user_addr) == 100, 4); // 70 + 30 = 100
+        assert!(event::counter<PendingWithdrawalEvent>(&bridge_account.pending_withdrawal_events) == 2, 5); // One for withdrawal and one for closure
+
+        // Clean up
         coin::destroy_mint_cap(mint_cap);
     }
 }
