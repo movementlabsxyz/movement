@@ -14,18 +14,13 @@ mkdir -p $(dirname "${GALI_FILE_PATH}")
 git config user.name "GitHub Action"
 git config user.email "action@github.com"
 
-# Creata new branch or checkout existing branch
-if git show-ref --verify --quiet "refs/heads/${GALI_ID}"; then
-    echo "Branch already exists, checking out existing branch"
-    git checkout "${GALI_ID}"
-    git pull origin "${GALI_ID}"
-    echo "::set-output name=branch_message::$(echo 'Branch already exists, checking out existing branch')"
-else
-    echo "Branch does not exist, creating new branch"
-    git checkout main
-    git checkout -b "${GALI_ID}"
-    echo "::set-output name=branch_message::$(echo 'Branch does not exist, creating new branch')"
-fi
+
+echo "Branch does not exist, creating new branch"
+git checkout main
+git checkout -b "${GALI_ID}"
+git pull origin "${GALI_ID}"
+echo "::set-output name=branch_message::$(echo 'Branch does not exist, creating new branch')"
+
 
 cat <<EOF > "${GALI_FILE_PATH}"
 # non-namespaced values, never use these when loaded as an environment variable
