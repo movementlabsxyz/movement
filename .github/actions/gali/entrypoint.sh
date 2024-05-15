@@ -29,9 +29,9 @@ GALI_SHA=${GALI_SHA}
 GALI_SOURCE_REPO=${SOURCE_REPO}
 
 # namespaced values, use these when loaded as an environment variable
-${ESCAPED_SOURCE_REPO}_GALI_ID=\${GALI_ID}
-${ESCAPED_SOURCE_REPO}_GALI_SHA=\${GALI_SHA}
-${ESCAPED_SOURCE_REPO}_GALI_SOURCE_REPO=\${GALI_SOURCE_REPO}
+${ESCAPED_SOURCE_REPO}_GALI_ID=${GALI_ID}
+${ESCAPED_SOURCE_REPO}_GALI_SHA=${GALI_SHA}
+${ESCAPED_SOURCE_REPO}_GALI_SOURCE_REPO=${GALI_SOURCE_REPO}
 EOF
 
 # Modify the file
@@ -49,10 +49,12 @@ echo "::set-output name=pr_link::$(gh pr view -w --json number --repo ${TARGET_R
 
 EXISTING_PR_URL=$(gh pr list --base "main" --head "$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 
+echo "EXISTING_PR_URL: $EXISTING_PR_URL"
 if [ -z "$EXISTING_PR_URL" ]; then
     # No existing PR, create a new one
     gh pr create --base "main" --head "$GALI_ID" --title "$GALI_ID" --body "$COMMENT" --repo "$TARGET_REPO"
     # Fetch the URL of the newly created PR
     EXISTING_PR_URL=$(gh pr list --base "main" --head "$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 fi
+echo "EXISTING_PR_URL: $EXISTING_PR_URL"
 echo "::set-output name=pr_link::$EXISTING_PR_URL"
