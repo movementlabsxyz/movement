@@ -130,4 +130,80 @@ module 0x1::METHBridge {
             nonce: 0,
         });
     }
+    
+    #[test_only]
+    use aptos_framework::string;
+
+    #[test(bridge = @0x1, user = @0x2)]
+    fun test_deposit(bridge: signer, user: signer)
+    acquires BridgeAccount {
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<AptosCoin>(
+            &bridge,
+            string::utf8(b"MethCoin"),
+            string::utf8(b"METH"),
+            10,
+            false,
+        );
+
+        // We don't need these capabilities, we must explicitly destroy them 
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_freeze_cap(freeze_cap);
+
+        // Mint some coins to the user account
+        let user_addr = signer::address_of(&user);
+        account::create_signer_for_test(user_addr);
+        let coins = coin::mint<AptosCoin>(100, &mint_cap);
+        coin::deposit(user_addr, coins);
+
+        // Deposit coins from user to bridge
+        let token_id = 1;
+        let nonce = 1;
+        let amount = 50;
+        deposit(&bridge, user_addr, token_id, nonce, amount);
+
+        // Verify user's balance
+        assert!(coin::balance<AptosCoin>(user_addr) == 50, 1);
+
+        // Verify event
+        let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
+        assert!(event::counter(&bridge_account.deposit_events) == 1, 1);
+
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[test(bridge = @0x1, user = @0x2)]
+    fun test_withdraw(bridge: signer, user: signer)
+    acquires 0x1::METHBridge::BridgeAccount {
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<AptosCoin>(
+            &bridge,
+            string::utf8(b"MethCoin"),
+            string::utf8(b"METH"),
+            10,
+            false,
+        );
+
+        // We don't need these capabilities, we must explicitly destroy them 
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_freeze_cap(freeze_cap);
+
+        // Mint some coins to the user account
+        let user_addr = signer::address_of(&user);
+        account::create_signer_for_test(user_addr);
+        let coins = coin::mint<AptosCoin>(100, &mint_cap);
+        coin::deposit(user_addr, coins);
+
+        // Withdraw coins from user to bridge
+        let token_id = 1;
+        let amount = 50;
+        0x1::METHBridge::withdraw(&user, token_id, amount);
+
+        // Verify user's balance
+        assert!(coin::balance<AptosCoin>(user_addr) == 50, 1);
+
+        // Verify event
+        let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT); 
+        assert!(event::counter(&bridge_account.pending_withdrawal_events) == 1, 1);
+
+        coin::destroy_mint_cap(mint_cap);
+    } 
 }
