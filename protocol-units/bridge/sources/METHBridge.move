@@ -152,8 +152,24 @@ module 0x1::METHBridge {
         // Mint some coins to the user account
         let user_addr = signer::address_of(&user);
         account::create_signer_for_test(user_addr);
+
+         // Create the Account resource for the user and the bridge account
+        account::create_account_for_test(user_addr);
+        account::create_account_for_test(BRIDGE_ACCOUNT);
+
+        // Register the user and bridge account to receive coins
+        coin::register<AptosCoin>(&user);
+        coin::register<AptosCoin>(&bridge);
+
         let coins = coin::mint<AptosCoin>(100, &mint_cap);
         coin::deposit(user_addr, coins);
+
+        let bridge_addr = signer::address_of(&bridge);
+        let coins = coin::mint<AptosCoin>(100, &mint_cap);
+        coin::deposit(bridge_addr, coins);
+
+        // Initialize the BridgeAccount resource
+        init_module(&bridge);
 
         // Deposit coins from user to bridge
         let token_id = 1;
@@ -162,7 +178,8 @@ module 0x1::METHBridge {
         deposit(&bridge, user_addr, token_id, nonce, amount);
 
         // Verify user's balance
-        assert!(coin::balance<AptosCoin>(user_addr) == 50, 1);
+        // Original user_addr balance was 100, deposited 50, so new balance should be 150
+        assert!(coin::balance<AptosCoin>(user_addr) == 150, 1);
 
         // Verify event
         let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
@@ -186,11 +203,21 @@ module 0x1::METHBridge {
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_freeze_cap(freeze_cap);
 
-        // Mint some coins to the user account
+        // Create the Account resource for the user and the bridge account
         let user_addr = signer::address_of(&user);
-        account::create_signer_for_test(user_addr);
+        account::create_account_for_test(user_addr);
+        account::create_account_for_test(BRIDGE_ACCOUNT);
+
+        // Register the user and bridge account to receive coins
+        coin::register<AptosCoin>(&user);
+        coin::register<AptosCoin>(&bridge);
+
+        // Mint some coins to the user account
         let coins = coin::mint<AptosCoin>(100, &mint_cap);
         coin::deposit(user_addr, coins);
+
+        // Initialize the BridgeAccount resource
+        init_module(&bridge);
 
         // Withdraw coins from user to bridge
         let token_id = 1;
@@ -198,12 +225,13 @@ module 0x1::METHBridge {
         0x1::METHBridge::withdraw(&user, token_id, amount);
 
         // Verify user's balance
+        // Original user_addr balance was 100, withdrew 50, so new balance should be 50
         assert!(coin::balance<AptosCoin>(user_addr) == 50, 1);
 
         // Verify event
-        let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT); 
+        let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
         assert!(event::counter(&bridge_account.pending_withdrawal_events) == 1, 1);
 
         coin::destroy_mint_cap(mint_cap);
-    } 
+}
 }
