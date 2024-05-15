@@ -60,7 +60,6 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
         
         let mut transactions = Vec::new();
 
-
         while let Ok(transaction_result) = tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await {
 
             match transaction_result {
