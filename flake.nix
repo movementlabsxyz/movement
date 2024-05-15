@@ -81,12 +81,18 @@
 
         # monza-aptos
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
+
+        # m1-da-light-node
+        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs; };
     
       in
         with pkgs; {
 
           # Monza Aptos
           packages.monza-aptos = monza-aptos;
+
+          # M1 DA Light Node
+          packages.m1-da-light-node = m1-da-light-node;
 
           # Development Shell
           devShells.default = mkShell {
