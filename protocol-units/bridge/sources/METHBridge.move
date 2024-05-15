@@ -117,6 +117,21 @@ module 0x1::METHBridge {
         let PendingWithdrawalRequest { owner, token_id: _, amount } = request;
         let coin = coin::withdraw<AptosCoin>(trusted, amount);
         coin::deposit(owner, coin);
+
+        // Emit an event to signal that the withdrawal request was closed
+        event::emit_event(
+            &mut bridge_account.pending_withdrawal_events,
+            PendingWithdrawalEvent {
+                pending_withdrawal: PendingWithdrawal {
+                    request: PendingWithdrawalRequest {
+                        owner,
+                        token_id,
+                        amount,
+                    },
+                    nonce,
+                },
+            },
+        );
     }
 
     public entry fun claim_withdrawal_request(
@@ -125,11 +140,42 @@ module 0x1::METHBridge {
         token_id: u128,
         nonce: u256
     ) acquires BridgeAccount {
-        assert!(owner_address == signer::address_of(owner), 1); // Verify owner
+        // Verify that the caller of this function owns the address they claim to
+    assert!(owner_address == signer::address_of(owner), 1); // 1 indicates an authorization error
 
-        let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
+    let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
+    
+    // Find the index of the pending withdrawal that matches the provided parameters
+    let pending_withdrawal_index = find_pending_withdrawal_index(
+        bridge_account, 
+        owner_address, 
+        token_id, 
+        nonce
+    );
+    assert!(pending_withdrawal_index != 0, 2); // 2 indicates that the pending withdrawal was not found
+    
+    // Remove the pending withdrawal from the list
+    let PendingWithdrawal { request: _, nonce: _ } = vector::remove(
+        &mut bridge_account.pending_withdrawals, 
+        pending_withdrawal_index
+    );
+    
+    // The coins are already with the bridge, so we just need to validate and close the request
 
-        
+    // Emit an event to signal that the withdrawal claim was processed
+    event::emit_event(
+        &mut bridge_account.pending_withdrawal_events, 
+        PendingWithdrawalEvent {
+            pending_withdrawal: PendingWithdrawal {
+                request: PendingWithdrawalRequest {
+                    owner: owner_address,
+                    token_id,
+                    amount: 0 // Since we're only closing the request, no actual transfer occurs
+                },
+                nonce
+            }
+        }
+    );
     }
 
     fun find_pending_withdrawal_index(
@@ -147,7 +193,7 @@ module 0x1::METHBridge {
                 pending_withdrawal.request.token_id == token_id &&
                 pending_withdrawal.nonce == nonce) {
 
-                return i;
+                return i
             };
             i = i + 1;
         };
