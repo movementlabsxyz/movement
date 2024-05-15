@@ -1,5 +1,6 @@
 module 0x1::METHBridge {
     use std::signer;
+    use std::vector;
     use aptos_framework::coin;
     use aptos_framework::event;
     use aptos_framework::aptos_coin::AptosCoin;
@@ -7,6 +8,13 @@ module 0x1::METHBridge {
     use aptos_framework::account;
 
     const BRIDGE_ACCOUNT: address = @0x1; //Should change this later to actual bridge address
+
+    struct BridgeAccount has key {
+        deposit_events: EventHandle<DepositEvent>,
+        pending_withdrawal_events: EventHandle<PendingWithdrawalEvent>,
+        pending_withdrawals: vector<PendingWithdrawal>,
+        nonce: u256,
+    }
 
     struct Deposit has drop, store {
         owner: address,
@@ -99,6 +107,17 @@ module 0x1::METHBridge {
         let bridge_account = borrow_global_mut<BridgeAccount>(trusted_address);
         // Implement logic to confirm and close the withdrawal request
         // Remove the pending withdrawal from bridge_account
+        // Find the pending withdrawal with the matching owner, token_id, and nonce
+        let pending_withdrawal_index = find_pending_withdrawal_index(bridge_account, owner, token_id, nonce);
+        assert!(pending_withdrawal_index >= 0, 2); // Ensure the pending withdrawal exists
+
+        // Remove the pending withdrawal from bridge_account
+        let PendingWithdrawal { request, nonce: _ } = vector::remove(&mut bridge_account.pending_withdrawals, pending_withdrawal_index);
+
+        // Transfer the coins back to the owner
+        let PendingWithdrawalRequest { owner, token_id: _, amount } = request;
+        let coin = coin::withdraw<AptosCoin>(trusted, amount);
+        coin::deposit(owner, coin);
     }
 
     public entry fun claim_withdrawal_request(
@@ -110,15 +129,34 @@ module 0x1::METHBridge {
         assert!(owner_address == signer::address_of(owner), 1); // Verify owner
 
         let bridge_account = borrow_global_mut<BridgeAccount>(BRIDGE_ACCOUNT);
-        // Implement logic to claim unsuccessful withdrawal request and close it
-        // Remove the pending withdrawal from bridge_account and transfer coins back to owner
+
+        
     }
 
-    struct BridgeAccount has key {
-        deposit_events: EventHandle<DepositEvent>,
-        pending_withdrawal_events: EventHandle<PendingWithdrawalEvent>,
+    fun find_pending_withdrawal_index(
+        bridge_account: &BridgeAccount,
+        owner: address,
+        token_id: u128,
         nonce: u256,
+    ): u64 {
+        let pending_withdrawals = &bridge_account.pending_withdrawals;
+        let i = 0;
+        let len = vector::length(pending_withdrawals);
+        while(i < len) {
+            let pending_withdrawal = vector::borrow(pending_withdrawals, i);
+            if (pending_withdrawal.request.owner == owner &&
+                pending_withdrawal.request.token_id == token_id &&
+                pending_withdrawal.nonce == nonce) {
+
+                return i;
+            };
+            i = i + 1;
+        };
+
+        return 0 // Return 0 if not found. Maybe also an error.
     }
+
+
 
     fun init_module(bridge: &signer) {
         let bridge_address = signer::address_of(bridge);
@@ -127,6 +165,7 @@ module 0x1::METHBridge {
         move_to(bridge, BridgeAccount {
             deposit_events: account::new_event_handle<DepositEvent>(bridge),
             pending_withdrawal_events: account::new_event_handle<PendingWithdrawalEvent>(bridge),
+            pending_withdrawals: vector::empty(),
             nonce: 0,
         });
     }
@@ -233,5 +272,5 @@ module 0x1::METHBridge {
         assert!(event::counter(&bridge_account.pending_withdrawal_events) == 1, 1);
 
         coin::destroy_mint_cap(mint_cap);
-}
+    }
 }
