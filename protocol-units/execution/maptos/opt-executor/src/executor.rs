@@ -638,7 +638,7 @@ mod tests {
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
 			let expected_commitment = Commitment::digest_state_proof(&state_proof);
-			assert_eq!(block_commitment.height, i);
+			assert_eq!(block_commitment.height, i + 1);
 			assert_eq!(block_commitment.commitment, expected_commitment);
 		}
 
