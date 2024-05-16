@@ -15,6 +15,7 @@ members = [
     "protocol-units/mempool/*",
 
     "protocol-units/settlement/mcr/client",
+    "protocol-units/settlement/mcr/manager",
 
     "util/*",
     "util/buildtime/buildtime-helpers",
@@ -65,6 +66,7 @@ m1-da-light-node-verifier = { path = "protocol-units/da/m1/light-node-verifier" 
 m1-da-light-node-client = { path = "protocol-units/da/m1/light-node-client" }
 ## settlement
 mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }
+mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 ## mempool
 mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }

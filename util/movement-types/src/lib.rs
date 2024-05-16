@@ -144,29 +144,30 @@ impl Block {
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Commitment(pub Vec<u8>);
+pub struct Commitment(pub [u8; 32]);
 
 impl Commitment {
     pub fn test() -> Self {
-        Self(vec![0])
+        Self([0; 32])
     }
 
     /// Creates a commitment by making a cryptographic digest of the state proof.
     pub fn digest_state_proof(state_proof: &StateProof) -> Self {
         let mut hasher = sha2::Sha256::new();
         bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
-        Self(hasher.finalize().to_vec())
+        todo!("finish implementing digest_state_proof")
+        // Self(hasher.finalize().as_slice())
     }
 }
 
-impl From<Vec<u8>> for Commitment {
-    fn from(data : Vec<u8>) -> Self {
+impl From<[u8;32]> for Commitment {
+    fn from(data : [u8;32]) -> Self {
         Self(data)
     }
 }
 
-impl From<Commitment> for Vec<u8> {
-    fn from(commitment : Commitment) -> Vec<u8> {
+impl From<Commitment> for  [u8;32] {
+    fn from(commitment : Commitment) ->  [u8;32] {
         commitment.0
     }
 }
@@ -176,4 +177,18 @@ pub struct BlockCommitment {
     pub height : u64,
     pub block_id : Id,
     pub commitment : Commitment,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum BlockCommitmentRejectionReason {
+    InvalidBlockId,
+    InvalidCommitment,
+    InvalidHeight,
+    ContractError,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum BlockCommitmentEvent {
+    Accepted(BlockCommitment),
+    Rejected(BlockCommitment, BlockCommitmentRejectionReason),
 }

@@ -6225,6 +6225,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcr-settlement-manager"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "mcr-settlement-client",
+ "movement-types",
+ "serde_json",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
