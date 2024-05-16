@@ -272,13 +272,14 @@ impl Executor {
 
 		println!("State compute: {:?}", state_compute);
 
-		let latest_version = {
-			let reader = self.db.read().await.reader.clone();
-			reader.get_latest_version()?
-		};
+		let version = state_compute.version();
 
 		{
-			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(block_id, state_compute.root_hash(), state_compute.version());
+			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(
+				block_id,
+				state_compute.root_hash(),
+				version,
+			);
 			let block_executor = self.block_executor.write().await;
 			block_executor.commit_blocks(
 				vec![block_id],
@@ -288,16 +289,14 @@ impl Executor {
 
 		let proof = {
 			let reader = self.db.read().await.reader.clone();
-			reader.get_state_proof(
-				state_compute.version(),
-			)?
+			reader.get_state_proof(version)?
 		};
 
 		let commitment = Commitment::digest_state_proof(&proof);
 		Ok(BlockCommitment {
 			block_id: Id(block_id.to_vec()),
 			commitment,
-			height: latest_version,
+			height: version,
 		})
 	}
 
