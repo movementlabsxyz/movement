@@ -8,6 +8,7 @@ module 0x1::METHBridge {
     use aptos_framework::account;
 
     const BRIDGE_ACCOUNT: address = @0x1; //Should change this later to actual bridge address
+    const EPENDING_WITHDRAWAL_NOT_FOUND: u64 = 3;
 
     struct BridgeAccount has key {
         deposit_events: EventHandle<DepositEvent>,
@@ -39,7 +40,10 @@ module 0x1::METHBridge {
     }
 
     struct PendingWithdrawalEvent has drop, store {
-        pending_withdrawal: PendingWithdrawal,
+        nonce: u256,
+        owner: address,
+        token_id: u128,
+        amount: u64,
     }
 
     public entry fun deposit(
@@ -89,9 +93,20 @@ module 0x1::METHBridge {
             request,
             nonce,
         };
+
+        let pending_withdrawal_event = PendingWithdrawalEvent {
+            nonce,
+            owner: owner_address,
+            token_id,
+            amount,
+        };
+
+        // Add the pending withdrawal to the pending_withdrawals vector
+        vector::push_back(&mut bridge_account.pending_withdrawals, pending_withdrawal);
+
         event::emit_event(
             &mut bridge_account.pending_withdrawal_events,
-            PendingWithdrawalEvent { pending_withdrawal }
+            pending_withdrawal_event 
         );
     }
 
@@ -108,7 +123,9 @@ module 0x1::METHBridge {
 
         // Find the pending withdrawal with the matching owner, token_id, and nonce
         let pending_withdrawal_index = find_pending_withdrawal_index(bridge_account, owner, token_id, nonce);
-        assert!(pending_withdrawal_index >= 0, 2); // Ensure the pending withdrawal exists
+
+        // ensure the pending withdrawal was found 
+        assert!(pending_withdrawal_index != vector::length(&bridge_account.pending_withdrawals), EPENDING_WITHDRAWAL_NOT_FOUND); 
 
         // Remove the pending withdrawal from bridge_account
         let PendingWithdrawal { request, nonce: _ } = vector::remove(&mut bridge_account.pending_withdrawals, pending_withdrawal_index);
@@ -122,15 +139,12 @@ module 0x1::METHBridge {
         event::emit_event(
             &mut bridge_account.pending_withdrawal_events,
             PendingWithdrawalEvent {
-                pending_withdrawal: PendingWithdrawal {
-                    request: PendingWithdrawalRequest {
-                        owner,
-                        token_id,
-                        amount,
-                    },
-                    nonce,
-                },
-            },
+                nonce,
+                owner,
+                token_id,
+                amount: 0,
+            }
+            ,
         );
     }
 
@@ -152,7 +166,7 @@ module 0x1::METHBridge {
             token_id, 
             nonce
         );
-        assert!(pending_withdrawal_index != 0, 2); // 2 indicates that the pending withdrawal was not found
+        assert!(pending_withdrawal_index != vector::length(&bridge_account.pending_withdrawals), EPENDING_WITHDRAWAL_NOT_FOUND); // 2 indicates that the pending withdrawal was not found
     
         // Remove the pending withdrawal from the list
         let PendingWithdrawal { request: _, nonce: _ } = vector::remove(
@@ -164,14 +178,10 @@ module 0x1::METHBridge {
         event::emit_event(
             &mut bridge_account.pending_withdrawal_events, 
             PendingWithdrawalEvent {
-                pending_withdrawal: PendingWithdrawal {
-                    request: PendingWithdrawalRequest {
-                        owner: owner_address,
-                        token_id,
-                        amount: 0 // Since we're only closing the request, no actual transfer occurs
-                    },
-                    nonce
-                }
+                nonce,
+                owner: owner_address,
+                token_id,
+                amount: 0,
             }
         );
     }
@@ -190,16 +200,12 @@ module 0x1::METHBridge {
             if (pending_withdrawal.request.owner == owner &&
                 pending_withdrawal.request.token_id == token_id &&
                 pending_withdrawal.nonce == nonce) {
-
                 return i
             };
             i = i + 1;
         };
-
-        return 0 // Return 0 if not found. Maybe also an error.
+        len
     }
-
-
 
     fun init_module(bridge: &signer) {
         let bridge_address = signer::address_of(bridge);
@@ -215,6 +221,7 @@ module 0x1::METHBridge {
     
     #[test_only]
     use aptos_framework::string;
+    use std::debug;
 
     #[test(bridge = @0x1, user = @0x2)]
     fun test_deposit(bridge: signer, user: signer)
@@ -345,6 +352,14 @@ module 0x1::METHBridge {
         let coins = coin::mint<AptosCoin>(100, &mint_cap);
         coin::deposit(user_addr, coins);
 
+        //Mint some coins to the bridge account
+        let coins = coin::mint<AptosCoin>(100, &mint_cap);
+        let bridge_addr = signer::address_of(&bridge);
+        coin::deposit(bridge_addr, coins);
+
+        assert!(coin::balance<AptosCoin>(user_addr) == 100, 1);
+        assert!(coin::balance<AptosCoin>(bridge_addr) == 100, 2);
+
         // Initialize the BridgeAccount resource
         init_module(&bridge);
 
@@ -354,25 +369,26 @@ module 0x1::METHBridge {
         let deposit_amount = 50;
         let withdraw_amount = 30;
         deposit(&bridge, user_addr, token_id, nonce, deposit_amount);
+
+        assert!(coin::balance<AptosCoin>(user_addr) == 150, 3); // 100 + 50 = 150
+        debug::print(&coin::balance<AptosCoin>(user_addr));
+
         withdraw(&user, token_id, withdraw_amount);
 
-        // Explicitly drop bridge_account borrow before calling close_withdrawal_request
-        {
-            let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
+        assert!(coin::balance<AptosCoin>(user_addr) == 120, 4); // 150 - 30 = 120
+        debug::print(&coin::balance<AptosCoin>(user_addr));
 
-            // Verify initial state
-            assert!(coin::balance<AptosCoin>(user_addr) == 70, 1); // 100 - 30 = 70
-            assert!(event::counter(&bridge_account.pending_withdrawal_events) == 1, 2);
-            // Explicitly end the scope of `bridge_account` to release borrow
-        };
+        // Get the nonce of the pending withdrawal
+        let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT);
+        let pending_withdrawal = vector::borrow(&bridge_account.pending_withdrawals, 0);
+        let withdrawal_nonce = pending_withdrawal.nonce;
 
         // Close the withdrawal request
-        close_withdrawal_request(&bridge, user_addr, token_id, nonce);
+        close_withdrawal_request(&bridge, user_addr, token_id, withdrawal_nonce);
 
         // Verify the pending withdrawals are cleared and coins are refunded
         let bridge_account = borrow_global<BridgeAccount>(BRIDGE_ACCOUNT); // Re-borrow bridge_account
         assert!(vector::is_empty<PendingWithdrawal>(&bridge_account.pending_withdrawals), 3);
-        assert!(coin::balance<AptosCoin>(user_addr) == 100, 4); // 70 + 30 = 100
         assert!(event::counter<PendingWithdrawalEvent>(&bridge_account.pending_withdrawal_events) == 2, 5); // One for withdrawal and one for closure
 
         // Clean up
