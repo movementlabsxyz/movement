@@ -155,8 +155,7 @@ impl Commitment {
     pub fn digest_state_proof(state_proof: &StateProof) -> Self {
         let mut hasher = sha2::Sha256::new();
         bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
-        todo!("finish implementing digest_state_proof")
-        // Self(hasher.finalize().as_slice())
+        Self(hasher.finalize().into())
     }
 }
 
