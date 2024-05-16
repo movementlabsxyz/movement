@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration, collections::BTreeMap};
 
 use anyhow::Context;
 use suzuka_executor::{
@@ -139,8 +139,8 @@ where
         }.into_inner();
 
         let settlement_client = self.settlement_client.clone();
-        // TODO: consume the commitment stream to finalize blocks
-        let commitment_stream = settlement_client.stream_block_commitments().await?;
+        let mut commitment_stream = settlement_client.stream_block_commitments().await?;
+        let mut commitments_to_settle = BTreeMap::new();
 
         tokio::spawn(async move {
             if let Err(e) = process_commitments(receiver, settlement_client).await {
@@ -148,64 +148,39 @@ where
             }
         });
 
-        while let Some(blob) = stream.next().await {
-
-            println!("Stream hot!");
-            // get the block
-            let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
-                blob_response::BlobType::SequencedBlobBlock(blob) => {
-                    blob.data
+        loop {
+            tokio::select! {
+                Some(blob) = stream.next() => {
+                    println!("Block stream hot!");
+                    let block_commitment = parse_and_execute_block(blob?, &self.executor).await?;
+                    commitments_to_settle.insert(
+                        block_commitment.height,
+                        block_commitment.commitment.clone(),
+                    );
+                    match sender.try_send(block_commitment) {
+                        Ok(_) => {},
+                        Err(TrySendError::Closed(_)) => {
+                            break;
+                        },
+                        Err(TrySendError::Full(_commitment)) => {
+                            println!("Commitment channel full, dropping commitment");
+                        }
+                    }
                 },
-                _ => { anyhow::bail!("Invalid blob type in response") }
-            };
-
-            // get the block
-            let block : Block = serde_json::from_slice(&block_bytes)?;
-            println!("Received block: {:?}", block);
-
-            // get the transactions
-            let mut block_transactions = Vec::new();
-            for transaction in block.transactions {
-                let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
-                let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
-                    Transaction::UserTransaction(
-                        signed_transaction
-                    )
-                );
-                block_transactions.push(signature_verified_transaction);
-            }
-
-            // form the executable transactions vec
-            let block = ExecutableTransactions::Unsharded(
-                block_transactions
-            );
-            
-            // hash the block bytes
-            let mut hasher = sha2::Sha256::new();
-            hasher.update(&block_bytes);
-            let slice = hasher.finalize();
-            let block_hash = HashValue::from_slice(slice.as_slice())?;
-
-            // form the executable block and execute it
-            let executable_block = ExecutableBlock::new(
-                block_hash,
-                block
-            );
-            let block_id = executable_block.block_id;
-            let commitment = self.executor.execute_block(
-                FinalityMode::Opt,
-                executable_block
-            ).await?;
-
-            println!("Executed block: {:?}", block_id);
-
-            match sender.try_send(commitment) {
-                Ok(_) => {},
-                Err(TrySendError::Closed(_)) => {
+                Some(res) = commitment_stream.next() => {
+                    let settled_commitment = res?;
+                    let height = settled_commitment.height;
+                    if let Some(commitment) = commitments_to_settle.remove(&height) {
+                        if commitment != settled_commitment.commitment {
+                            println!("Commitment mismatch at height {}: expected {:?}, got {:?}", height, commitment, settled_commitment.commitment);
+                        }
+                    } else {
+                        println!("No block commitment found for height {}", height);
+                    }
+                },
+                else => {
+                    println!("Streams ended");
                     break;
-                },
-                Err(TrySendError::Full(_commitment)) => {
-                    println!("Commitment channel full, dropping commitment");
                 }
             }
         }
@@ -214,6 +189,64 @@ where
 
     }
 
+}
+
+async fn parse_and_execute_block<T>(
+    block_data: StreamReadFromHeightResponse,
+    executor: &T,
+) -> Result<BlockCommitment, anyhow::Error>
+where
+    T: SuzukaExecutor,
+{
+    // get the block
+    let block_bytes = match block_data.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
+        blob_response::BlobType::SequencedBlobBlock(blob) => {
+            blob.data
+        },
+        _ => { anyhow::bail!("Invalid blob type in response") }
+    };
+
+    // get the block
+    let block : Block = serde_json::from_slice(&block_bytes)?;
+    println!("Received block: {:?}", block);
+
+    // get the transactions
+    let mut block_transactions = Vec::new();
+    for transaction in block.transactions {
+        let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
+        let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
+            Transaction::UserTransaction(
+                signed_transaction
+            )
+        );
+        block_transactions.push(signature_verified_transaction);
+    }
+
+    // form the executable transactions vec
+    let block = ExecutableTransactions::Unsharded(
+        block_transactions
+    );
+    
+    // hash the block bytes
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(&block_bytes);
+    let slice = hasher.finalize();
+    let block_hash = HashValue::from_slice(slice.as_slice())?;
+
+    // form the executable block and execute it
+    let executable_block = ExecutableBlock::new(
+        block_hash,
+        block
+    );
+    let block_id = executable_block.block_id;
+    let block_commitment = executor.execute_block(
+        FinalityMode::Opt,
+        executable_block
+    ).await?;
+
+    println!("Executed block: {:?}", block_id);
+
+    Ok(block_commitment)
 }
 
 async fn process_commitments<C>(
