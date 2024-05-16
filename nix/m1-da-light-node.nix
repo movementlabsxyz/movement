@@ -32,19 +32,22 @@ pkgs.rustPlatform.buildRustPackage rec {
         systemd
     ];
 
-    src = pkgs.lib.sourceByRegex ./. [".*"];
+    src = ./..;
 
     cargoSha256 = pkgs.lib.fakeSha256;
 
     # several of these 
     buildPhase = ''
-        # export HOME=$(mktemp -d)
+        export HOME=$(mktemp -d)
         export RUSTFLAGS="${RUSTFLAGS}"
-        cargo build --release
+        cargo clean
+        cargo build --release -p monza-full-node
     '';
 
+    ## buildAndTestSubdir = "protocol-units/da/m1/light-node";
+
     cargoLock = {
-        lockFile = ./Cargo.lock;
+        lockFile = ../Cargo.lock;
         outputHashes = {
             "abstract-domain-derive-0.1.0" = "sha256-53ObE7yoEMuZWjIAXXAm4hDBBKU1VhgEj/Zc9EQ4MBA=";
             "bcs-0.1.4" = "sha256-SzODBDLSQRXExjke0/7FN/wQQq3vxcwFeGOa37H3Gtg=";
@@ -56,8 +59,6 @@ pkgs.rustPlatform.buildRustPackage rec {
             "x25519-dalek-1.2.0" = "sha256-AHjhccCqacu0WMTFyxIret7ghJ2V+8wEAwR5L6Hy1KY=";
             "zstd-sys-2.0.9+zstd.1.5.5" = "sha256-n7abNAHEfDeRSjhh7SpI/BpkJCVLONJwKvaXwVB4PXs=";
         };
-        # just setting $HOME to a temporary directory probably takes care of this
-        allowBuiltinFetchGit = true;
     };
 
     meta = with pkgs.lib; {

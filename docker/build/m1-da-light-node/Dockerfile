@@ -6,10 +6,14 @@ COPY . /tmp/build
 WORKDIR /tmp/build
 
 # Build our Nix environment
+# RUN nix \
+#    --extra-experimental-features "nix-command flakes" \
+#    --option filter-syscalls false \
+#    build '.#m1-da-light-node'
 RUN nix \
     --extra-experimental-features "nix-command flakes" \
     --option filter-syscalls false \
-    build '.#m1-da-light-node'
+    develop --command bash  -c "cargo build -p m1-da-light-node"
 
 # Copy the Nix store closure into a directory. The Nix store closure is the
 # entire set of Nix store values that we need for our build.
