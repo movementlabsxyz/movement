@@ -7,7 +7,7 @@ This directory contains the implementation of the MRC settlement smart contract.
 forge test
 ```
 
-There is a long-running test cover over 50 epochs. It will take about a minute and a half to complete on most machines.
+There is a long-running test covering over 50 epochs. It will likely take a few seconds to run.
 
 # Implementation 
 ## Description

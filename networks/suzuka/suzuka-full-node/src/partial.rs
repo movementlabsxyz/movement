@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration, collections::BTreeMap};
 
 use anyhow::Context;
 use suzuka_executor::{
@@ -17,39 +17,54 @@ use async_channel::{Sender, Receiver};
 use sha2::Digest;
 use crate::*;
 use tokio_stream::StreamExt;
+use tokio::sync::mpsc::{self, error::TrySendError};
 use tokio::sync::RwLock;
-use movement_types::Block;
-
+use movement_types::{Block, BlockCommitment};
+use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
 
 #[derive(Clone)]
-pub struct SuzukaPartialNode<T : SuzukaExecutor + Send + Sync + Clone> {
+pub struct SuzukaPartialNode<T, C>
+{
     executor: T,
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
+    settlement_client: Arc<C>,
 }
 
-impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
+impl<T, C> SuzukaPartialNode<T, C>
+where
+    T: SuzukaExecutor + Send + Sync,
+    C: McrSettlementClientOperations + Send + Sync + 'static,
+{
 
-    pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
+    pub fn new(
+        executor: T,
+        light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+        settlement_client: C,
+    ) -> Self {
         let (transaction_sender, transaction_receiver) = async_channel::unbounded();
         Self {
             executor : executor,
             transaction_sender,
             transaction_receiver,
             light_node_client : Arc::new(RwLock::new(light_node_client)),
+            settlement_client: Arc::new(settlement_client)
         }
     }
 
-    pub async fn bind_transaction_channel(&mut self) -> Result<(), anyhow::Error> {
-        self.executor.set_tx_channel(self.transaction_sender.clone()).await?;
-        Ok(())
-    }
+	fn bind_transaction_channel(&mut self) {
+		self.executor.set_tx_channel(self.transaction_sender.clone());
+	}
 
-    pub async fn bound(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Result<Self, anyhow::Error> {
-        let mut node = Self::new(executor, light_node_client);
-        node.bind_transaction_channel().await?;
-        Ok(node)
+	pub fn bound(
+		executor: T,
+		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
+        settlement_client: C,
+	) -> Result<Self, anyhow::Error> {
+		let mut node = Self::new(executor, light_node_client, settlement_client);
+		node.bind_transaction_channel();
+		Ok(node)
     }
 
     pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
@@ -108,9 +123,11 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
     // receive transactions from the transaction channel and send them to be executed
     // ! This assumes the m1 da light node is running sequencer mode
     pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
-        
+
         let block_head_height = self.executor.get_block_head_height().await?;
-        
+
+        let (sender, receiver) = mpsc::channel(16);
+
         let mut stream = {
             let client_ptr = self.light_node_client.clone();
             let mut light_node_client =  client_ptr.write().await;
@@ -121,57 +138,51 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
             ).await?
         }.into_inner();
 
-        while let Some(blob) = stream.next().await {
+        let settlement_client = self.settlement_client.clone();
+        let mut commitment_stream = settlement_client.stream_block_commitments().await?;
+        let mut commitments_to_settle = BTreeMap::new();
 
-            println!("Stream hot!");
-            // get the block
-            let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
-                blob_response::BlobType::SequencedBlobBlock(blob) => {
-                    blob.data
-                },
-                _ => { anyhow::bail!("Invalid blob type in response") }
-            };
-
-            // get the block
-            let block : Block = serde_json::from_slice(&block_bytes)?;
-            println!("Received block: {:?}", block);
-
-            // get the transactions
-            let mut block_transactions = Vec::new();
-            for transaction in block.transactions {
-                let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
-                let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
-                    Transaction::UserTransaction(
-                        signed_transaction
-                    )
-                );
-                block_transactions.push(signature_verified_transaction);
+        tokio::spawn(async move {
+            if let Err(e) = process_commitments(receiver, settlement_client).await {
+                eprintln!("Error processing commitments: {:?}", e);
             }
+        });
 
-            // form the executable transactions vec
-            let block = ExecutableTransactions::Unsharded(
-                block_transactions
-            );
-            
-            // hash the block bytes
-            let mut hasher = sha2::Sha256::new();
-            hasher.update(&block_bytes);
-            let slice = hasher.finalize();
-            let block_hash = HashValue::from_slice(slice.as_slice())?;
-
-            // form the executable block and execute it
-            let executable_block = ExecutableBlock::new(
-                block_hash,
-                block
-            );
-            let block_id = executable_block.block_id;
-            self.executor.execute_block(
-                &FinalityMode::Opt,
-                executable_block
-            ).await?;
-
-            println!("Executed block: {:?}", block_id);
-
+        loop {
+            tokio::select! {
+                Some(blob) = stream.next() => {
+                    println!("Block stream hot!");
+                    let block_commitment = parse_and_execute_block(blob?, &self.executor).await?;
+                    commitments_to_settle.insert(
+                        block_commitment.height,
+                        block_commitment.commitment.clone(),
+                    );
+                    match sender.try_send(block_commitment) {
+                        Ok(_) => {},
+                        Err(TrySendError::Closed(_)) => {
+                            break;
+                        },
+                        Err(TrySendError::Full(_commitment)) => {
+                            println!("Commitment channel full, dropping commitment");
+                        }
+                    }
+                },
+                Some(res) = commitment_stream.next() => {
+                    let settled_commitment = res?;
+                    let height = settled_commitment.height;
+                    if let Some(commitment) = commitments_to_settle.remove(&height) {
+                        if commitment != settled_commitment.commitment {
+                            println!("Commitment mismatch at height {}: expected {:?}, got {:?}", height, commitment, settled_commitment.commitment);
+                        }
+                    } else {
+                        println!("No block commitment found for height {}", height);
+                    }
+                },
+                else => {
+                    println!("Streams ended");
+                    break;
+                }
+            }
         }
 
         Ok(())
@@ -180,7 +191,91 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaPartialNode<T> {
 
 }
 
-impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialNode<T> {
+async fn parse_and_execute_block<T>(
+    block_data: StreamReadFromHeightResponse,
+    executor: &T,
+) -> Result<BlockCommitment, anyhow::Error>
+where
+    T: SuzukaExecutor,
+{
+    // get the block
+    let block_bytes = match block_data.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
+        blob_response::BlobType::SequencedBlobBlock(blob) => {
+            blob.data
+        },
+        _ => { anyhow::bail!("Invalid blob type in response") }
+    };
+
+    // get the block
+    let block : Block = serde_json::from_slice(&block_bytes)?;
+    println!("Received block: {:?}", block);
+
+    // get the transactions
+    let mut block_transactions = Vec::new();
+    for transaction in block.transactions {
+        let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
+        let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
+            Transaction::UserTransaction(
+                signed_transaction
+            )
+        );
+        block_transactions.push(signature_verified_transaction);
+    }
+
+    // form the executable transactions vec
+    let block = ExecutableTransactions::Unsharded(
+        block_transactions
+    );
+    
+    // hash the block bytes
+    let mut hasher = sha2::Sha256::new();
+    hasher.update(&block_bytes);
+    let slice = hasher.finalize();
+    let block_hash = HashValue::from_slice(slice.as_slice())?;
+
+    // form the executable block and execute it
+    let executable_block = ExecutableBlock::new(
+        block_hash,
+        block
+    );
+    let block_id = executable_block.block_id;
+    let block_commitment = executor.execute_block(
+        FinalityMode::Opt,
+        executable_block
+    ).await?;
+
+    println!("Executed block: {:?}", block_id);
+
+    Ok(block_commitment)
+}
+
+async fn process_commitments<C>(
+    mut receiver: mpsc::Receiver<BlockCommitment>,
+    settlement_client: Arc<C>,
+) -> Result<(), anyhow::Error>
+where
+    C: McrSettlementClientOperations,
+{
+    while let Some(commitment) = receiver.recv().await {
+        println!("Got commitment: {:?}", commitment);
+        let max_height = settlement_client.get_max_tolerable_block_height().await?;
+        if commitment.height > max_height {
+            println!(
+                "Commitment height {} is greater than max tolerable height {}, skipping.",
+                commitment.height, max_height
+            );
+            continue;
+        }
+        settlement_client.post_block_commitment(commitment).await?;
+    }
+    Ok(())
+}
+
+impl<T, C> SuzukaFullNode for SuzukaPartialNode<T, C>
+where
+    T: SuzukaExecutor + Send + Sync,
+    C: McrSettlementClientOperations + Send + Sync + 'static,
+{
     
         /// Runs the services until crash or shutdown.
         async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -217,7 +312,7 @@ impl <T : SuzukaExecutor + Send + Sync + Clone>SuzukaFullNode for SuzukaPartialN
 
 }
 
-impl SuzukaPartialNode<SuzukaExecutorV1> {
+impl SuzukaPartialNode<SuzukaExecutorV1, McrSettlementClient> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
@@ -225,7 +320,8 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
         let executor = SuzukaExecutorV1::try_from_env(tx).await.context(
             "Failed to get executor from environment"
         )?;
-        Self::bound(executor, light_node_client).await
+        let settlement_client = McrSettlementClient::new();
+        Self::bound(executor, light_node_client, settlement_client)
     }
 
 }

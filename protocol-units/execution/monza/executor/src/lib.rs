@@ -10,7 +10,7 @@ pub use aptos_crypto::hash::HashValue;
 use aptos_api::runtime::Apis;
 
 pub use maptos_execution_util::FinalityMode;
-use movement_types::Commitment;
+use movement_types::BlockCommitment;
 
 use async_channel::Sender;
 
@@ -26,18 +26,18 @@ pub trait MonzaExecutor {
     /// Executes a block dynamically
     async fn execute_block(
         &self,
-        mode : &FinalityMode, 
+        mode: FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<Commitment, anyhow::Error>;
+    ) -> Result<BlockCommitment, anyhow::Error>;
 
-    /// Sets the transaction channel.
-    async fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) -> Result<(), anyhow::Error>;
+	/// Sets the transaction channel.
+	fn set_tx_channel(
+		&mut self,
+		tx_channel: Sender<SignedTransaction>,
+	);
 
-    /// Gets the dyn API.
-    async fn get_api(
-        &self,
-        mode : &FinalityMode, 
-    ) -> Result<Apis, anyhow::Error>;
+	/// Gets the dyn API.
+	fn get_api(&self, mode: FinalityMode) -> Apis;
 
     /// Get block head height.
     async fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;

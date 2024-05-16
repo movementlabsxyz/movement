@@ -3,6 +3,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/f1010e0469db743d14519a1efd37e23f8513d714";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
+    foundry.url = "github:shazow/foundry.nix/monthly"; 
   };
 
   outputs = {
@@ -10,6 +11,7 @@
     nixpkgs,
     rust-overlay,
     flake-utils,
+    foundry,
     ...
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
@@ -18,7 +20,10 @@
 
         overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
 
-        overlays = [(import rust-overlay)];
+        overlays = [
+          (import rust-overlay)
+          foundry.overlay
+        ];
 
         pkgs = import nixpkgs {
           inherit system overlays;
@@ -26,26 +31,9 @@
 
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-        # celestia-node
-        celestia-node = import ./celestia-node.nix { inherit pkgs; };
-
-        # celestia-app
-        celestia-app = import ./celestia-app.nix { inherit pkgs; };
-
-        # foundry
-        foundry = import ./foundry.nix { inherit pkgs; };
-        # monza-aptos
-        monza-aptos = import ./monza-aptos.nix { inherit pkgs; };
-
-        # Specific version of toolchain
-        rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-
-        rustPlatform = pkgs.makeRustPlatform {
-          cargo = rust;
-          rustc = rust;
-        };
-
-        dependencies = with pkgs; [
+         dependencies = with pkgs; [
+          foundry-bin
+          solc
           llvmPackages.bintools
           openssl
           openssl.dev
@@ -77,6 +65,22 @@
           systemd
         ];
 
+        # Specific version of toolchain
+        rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rust;
+          rustc = rust;
+        };
+
+        # celestia-node
+        celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
+
+        # celestia-app
+        celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
+
+        # monza-aptos
+        monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
     
       in
         with pkgs; {
@@ -95,6 +99,7 @@
             shellHook = ''
               #!/bin/bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
+              install-foundry
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

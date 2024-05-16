@@ -2,7 +2,7 @@ use crate::*;
 use maptos_opt_executor::Executor;
 use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
-use movement_types::Commitment;
+use movement_types::BlockCommitment;
 
 #[derive(Clone)]
 pub struct SuzukaExecutorV1 {
@@ -49,9 +49,9 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
     /// Executes a block dynamically
     async fn execute_block(
         &self,
-        mode : &FinalityMode, 
+        mode: FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<Commitment, anyhow::Error> {
+    ) -> Result<BlockCommitment, anyhow::Error> {
 
         match mode {
             FinalityMode::Dyn => unimplemented!(),
@@ -65,21 +65,18 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
     }
 
     /// Sets the transaction channel.
-    async fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) -> Result<(), anyhow::Error> {
+    fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
         self.transaction_channel = tx_channel;
-        Ok(())
     }
 
     /// Gets the API.
-    async fn get_api(
+    fn get_api(
         &self,
-        _mode : &FinalityMode, 
-    ) -> Result<Apis, anyhow::Error> {
-        match _mode {
+        mode: FinalityMode, 
+    ) -> Apis {
+        match mode {
             FinalityMode::Dyn => unimplemented!(),
-            FinalityMode::Opt => {
-                Ok(self.executor.try_get_apis().await?)
-            },
+            FinalityMode::Opt => self.executor.get_apis(),
             FinalityMode::Fin => unimplemented!(),
         }
     }
@@ -138,7 +135,7 @@ mod opt_tests {
 
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
-        let (tx, rx) = async_channel::unbounded();
+        let (tx, _rx) = async_channel::unbounded();
 		let executor = SuzukaExecutorV1::try_from_env(tx).await?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
@@ -146,7 +143,7 @@ mod opt_tests {
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(&FinalityMode::Opt, block).await?;
+		executor.execute_block(FinalityMode::Opt, block).await?;
 		Ok(())
 	}
 
@@ -178,7 +175,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(&FinalityMode::Opt).await?;
+		let api = executor.get_api(FinalityMode::Opt);
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -216,7 +213,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(&FinalityMode::Opt).await?;
+		let api = executor.get_api(FinalityMode::Opt);
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
@@ -229,7 +226,7 @@ mod opt_tests {
         ));
         let txs = ExecutableTransactions::Unsharded(vec![tx]);
         let block = ExecutableBlock::new(block_id.clone(), txs);
-        let commitment = executor.execute_block(&FinalityMode::Opt, block).await?;
+        let commitment = executor.execute_block(FinalityMode::Opt, block).await?;
 
         println!("Commitment: {:?}", commitment);
 

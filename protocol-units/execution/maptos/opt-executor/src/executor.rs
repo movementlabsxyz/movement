@@ -35,7 +35,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
-use movement_types::Commitment;
+use movement_types::{Id, Commitment, BlockCommitment};
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
@@ -257,7 +257,7 @@ impl Executor {
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
-	) -> Result<Commitment, anyhow::Error> {
+	) -> Result<BlockCommitment, anyhow::Error> {
 
 		let block_id = block.block_id.clone();
 		let parent_block_id = {
@@ -272,13 +272,14 @@ impl Executor {
 
 		println!("State compute: {:?}", state_compute);
 
-		let latest_version = {
-			let reader = self.db.read().await.reader.clone();
-			reader.get_latest_version()?
-		};
+		let version = state_compute.version();
 
 		{
-			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(block_id, state_compute.root_hash(), state_compute.version());
+			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(
+				block_id,
+				state_compute.root_hash(),
+				version,
+			);
 			let block_executor = self.block_executor.write().await;
 			block_executor.commit_blocks(
 				vec![block_id],
@@ -288,21 +289,23 @@ impl Executor {
 
 		let proof = {
 			let reader = self.db.read().await.reader.clone();
-			reader.get_state_proof(
-				state_compute.version(),
-			)?
+			reader.get_state_proof(version)?
 		};
 
-		Ok(Commitment::digest_state_proof(&proof))
+		let commitment = Commitment::digest_state_proof(&proof);
+		Ok(BlockCommitment {
+			block_id: Id(block_id.to_vec()),
+			commitment,
+			height: version,
+		})
 	}
 
-	pub async fn try_get_context(&self) -> Result<Arc<Context>, anyhow::Error> {
-		Ok(self.context.clone())
+	fn context(&self) -> Arc<Context> {
+		self.context.clone()
 	}
 
-	pub async fn try_get_apis(&self) -> Result<Apis, anyhow::Error> {
-		let context = self.try_get_context().await?;
-		Ok(get_apis(context))
+	pub fn get_apis(&self) -> Apis {
+		get_apis(self.context())
 	}
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
@@ -317,9 +320,7 @@ impl Executor {
 
 		}
 
-
-		let context = self.try_get_context().await?;
-		let api_service = get_api_service(context).server(
+		let api_service = get_api_service(self.context()).server(
 			format!("http://{:?}", self.aptos_config.aptos_rest_listen_url)
 		);
 
@@ -536,7 +537,7 @@ mod tests {
 		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
 
 		// Loop to simulate the execution of multiple blocks.
-		for _ in 0..10 {
+		for i in 0..10 {
 			// Generate a random block ID.
 			let block_id = HashValue::random();
 			// Clone the signer from the executor for signing the metadata.
@@ -583,9 +584,7 @@ mod tests {
 
 			// Create and execute the block.
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			let commitment = executor.execute_block(block).await?;
-
-			// TODO: verify commitment against the state.
+			let block_commitment = executor.execute_block(block).await?;
 
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db.read().await.reader.clone();
@@ -607,6 +606,12 @@ mod tests {
 			assert!(queried_account_address.is_some());
 			let account_resource = account_state_view.get_account_resource()?;
 			assert!(account_resource.is_some());
+
+			// Check the commitment against state proof
+			let state_proof = db_reader.get_state_proof(latest_version)?;
+			let expected_commitment = Commitment::digest_state_proof(&state_proof);
+			// assert_eq!(block_commitment.height, i);
+			assert_eq!(block_commitment.commitment, expected_commitment);
 		}
 
 		Ok(())
@@ -656,7 +661,7 @@ mod tests {
 			executor.execute_block(block).await?;
 	
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
-			let apis = executor.try_get_apis().await?;
+			let apis = executor.get_apis();
 			for hash in transaction_hashes {
 				let _ = apis.transactions.get_transaction_by_hash_inner(
 					&AcceptType::Bcs,
@@ -749,7 +754,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let api = executor.try_get_apis().await?;
+		let api = executor.get_apis();
 		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
@@ -780,7 +785,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let api = executor.try_get_apis().await?;
+		let api = executor.get_apis();
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
