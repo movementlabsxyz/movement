@@ -12,6 +12,19 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+#move to workspace with impl is done.
+alloy-primitives = { version = "0.7.2", default-features = false }
+alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider"}
+alloy-sol-types = { version = "0.7.2", features = ["json"] }
+alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network"}
+alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport"}
+alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http"}
+alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract"}
+alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet"}
+
+thiserror = "1.0.60"
+
+
 async-trait = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
@@ -25,6 +38,9 @@ futures = { workspace = true }
 
 [features]
 mock = []
+default = ["eth"]
+stub = []
+eth = []
 
 [lints]
 workspace = true
