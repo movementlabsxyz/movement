@@ -109,6 +109,27 @@ pub mod test {
 	use tempfile::tempdir;
 
 	#[tokio::test]
+	async fn test_memseq_initialization() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+
+		let mem_pool = Arc::new(RwLock::new(RocksdbMempool::try_new(
+			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
+		)?));
+		let block_size = 50;
+		let building_time_ms = 2000;
+		let parent_block = Arc::new(RwLock::new(Id::default()));
+
+		let memseq = Memseq::new(mem_pool, block_size, Arc::clone(&parent_block), building_time_ms);
+
+		assert_eq!(memseq.block_size, block_size);
+		assert_eq!(memseq.building_time_ms, building_time_ms);
+		assert_eq!(*memseq.parent_block.read().await, *parent_block.read().await);
+
+		Ok(())
+	}
+
+	#[tokio::test]
 	async fn test_memseq() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
@@ -214,4 +235,3 @@ pub mod test {
 		Ok(())
 	}
 }
-
