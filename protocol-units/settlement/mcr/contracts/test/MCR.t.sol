@@ -13,6 +13,7 @@ contract MCRTest is Test {
             5, 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -83,6 +84,7 @@ contract MCRTest is Test {
             5, // 5 second block time 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -164,6 +166,7 @@ contract MCRTest is Test {
             5, // 5 second block time 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -229,6 +232,7 @@ contract MCRTest is Test {
             5, // 5 second block time 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
 
@@ -257,9 +261,11 @@ contract MCRTest is Test {
         // dishonest signers
         dishonestSigners.push(signer3);
 
-        for (uint i = 0; i < 50; i++) {
+        uint reorgs = 50;
+        for (uint i = 0; i < reorgs; i++) {
 
-            for(uint j = 0; j < 10; j++) {
+            uint commitmentHeights = 10;
+            for(uint j = 0; j < commitmentHeights; j++) {
 
                 uint256 blockHeight = i * 10 + j + 1;
                 blockTime += 1;
