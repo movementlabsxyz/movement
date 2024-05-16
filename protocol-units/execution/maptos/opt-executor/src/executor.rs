@@ -268,11 +268,16 @@ impl Executor {
 			reader.get_state_proof(version)?
 		};
 
+		// Context has a reach-around to the db so the block height should
+		// have been updated to the most recently committed block.
+		// Race conditions, anyone?
+		let block_height = self.context.get_latest_ledger_info_wrapped()?.block_height;
+
 		let commitment = Commitment::digest_state_proof(&proof);
 		Ok(BlockCommitment {
 			block_id: Id(block_id.to_vec()),
 			commitment,
-			height: version,
+			height: block_height.into(),
 		})
 	}
 
