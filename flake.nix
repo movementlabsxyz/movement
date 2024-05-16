@@ -18,6 +18,14 @@
 
       system: let
 
+        # nix does not handle .cargo/config.toml
+        RUSTFLAGS = if pkgs.stdenv.hostPlatform.isLinux then
+          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=-fuse-ld=lld -C target-feature=+sse4.2"
+        else if pkgs.stdenv.hostPlatform.isWindows then
+          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=/STACK:8000000"
+        else
+          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes";
+
         overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
 
         overlays = [
@@ -83,7 +91,7 @@
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
 
         # m1-da-light-node
-        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs; };
+        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
     
       in
         with pkgs; {

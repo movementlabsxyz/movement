@@ -34,7 +34,6 @@ license = "MIT OR Apache-2.0"
 authors = ["Movement Labs"]
 repository = "www.github.com/movementlabs/movement"
 homepage = "www.homepage.com"
-resolver = "2"
 publish = false
 rust-version = "1.75"
 
