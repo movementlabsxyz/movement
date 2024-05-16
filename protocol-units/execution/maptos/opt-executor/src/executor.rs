@@ -228,30 +228,6 @@ impl Executor {
 
 	}
 
-	pub fn get_ledger_info_with_sigs(
-		&self,
-		block_id: HashValue,
-		root_hash: HashValue,
-		version: Version,
-	) -> LedgerInfoWithSignatures {
-		let block_info = BlockInfo::new(
-			1,      
-			0,        
-			block_id,
-			root_hash, version, 
-			0,    /* timestamp_usecs, doesn't matter */
-			None, 
-		);
-		let ledger_info = LedgerInfo::new(
-			block_info,
-			HashValue::zero(), /* consensus_data_hash, doesn't matter */
-		);
-		LedgerInfoWithSignatures::new(
-			ledger_info,
-			AggregateSignature::empty(), /* signatures */
-		)
-	}
-
 	/// Execute a block which gets committed to the state.
 	/// `ExecutorState` must be set to `Commit` before calling this method.
 	pub async fn execute_block(
@@ -275,7 +251,7 @@ impl Executor {
 		let version = state_compute.version();
 
 		{
-			let ledger_info_with_sigs = self.get_ledger_info_with_sigs(
+			let ledger_info_with_sigs = ledger_info_with_sigs(
 				block_id,
 				state_compute.root_hash(),
 				version,
@@ -451,6 +427,30 @@ impl Executor {
 		Ok(())
 	}
 
+}
+
+fn ledger_info_with_sigs(
+	block_id: HashValue,
+	root_hash: HashValue,
+	version: Version,
+) -> LedgerInfoWithSignatures {
+	let block_info = BlockInfo::new(
+		1,
+		0,
+		block_id,
+		root_hash,
+		version, 
+		0,    /* timestamp_usecs, doesn't matter */
+		None, 
+	);
+	let ledger_info = LedgerInfo::new(
+		block_info,
+		HashValue::zero(), /* consensus_data_hash, doesn't matter */
+	);
+	LedgerInfoWithSignatures::new(
+		ledger_info,
+		AggregateSignature::empty(), /* signatures */
+	)
 }
 
 #[cfg(test)]
