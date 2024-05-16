@@ -91,7 +91,7 @@
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
 
         # m1-da-light-node
-        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
+        m1-da-light-node = import ./m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
     
       in
         with pkgs; {

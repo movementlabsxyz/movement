@@ -32,21 +32,19 @@ pkgs.rustPlatform.buildRustPackage rec {
         systemd
     ];
 
-    src = builtins.filterSource
-  (path: type: baseNameOf path != ".git")
-  ./..; # Use the current directory as the source
+    src = "./";
 
     cargoSha256 = pkgs.lib.fakeSha256;
 
     buildPhase = ''
-        # export HOME=$(mktemp -d)
+        export HOME=$(mktemp -d)
         # export RUSTFLAGS="${RUSTFLAGS}"
         cat .cargo/config.toml
         cargo build --release
     '';
 
     cargoLock = {
-        lockFile = ../Cargo.lock;
+        lockFile = ./Cargo.lock;
         outputHashes = {
             "abstract-domain-derive-0.1.0" = "sha256-53ObE7yoEMuZWjIAXXAm4hDBBKU1VhgEj/Zc9EQ4MBA=";
             "bcs-0.1.4" = "sha256-SzODBDLSQRXExjke0/7FN/wQQq3vxcwFeGOa37H3Gtg=";
