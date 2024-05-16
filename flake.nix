@@ -43,7 +43,7 @@
 
          dependencies = with pkgs; [
           foundry-bin
-          solc
+          # solc
           llvmPackages.bintools
           openssl
           openssl.dev
