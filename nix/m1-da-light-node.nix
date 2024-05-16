@@ -32,14 +32,14 @@ pkgs.rustPlatform.buildRustPackage rec {
         systemd
     ];
 
-    src = "./";
+    src = pkgs.lib.sourceByRegex ./. [".*"];
 
     cargoSha256 = pkgs.lib.fakeSha256;
 
+    # several of these 
     buildPhase = ''
-        export HOME=$(mktemp -d)
-        # export RUSTFLAGS="${RUSTFLAGS}"
-        cat .cargo/config.toml
+        # export HOME=$(mktemp -d)
+        export RUSTFLAGS="${RUSTFLAGS}"
         cargo build --release
     '';
 
@@ -56,6 +56,7 @@ pkgs.rustPlatform.buildRustPackage rec {
             "x25519-dalek-1.2.0" = "sha256-AHjhccCqacu0WMTFyxIret7ghJ2V+8wEAwR5L6Hy1KY=";
             "zstd-sys-2.0.9+zstd.1.5.5" = "sha256-n7abNAHEfDeRSjhh7SpI/BpkJCVLONJwKvaXwVB4PXs=";
         };
+        # just setting $HOME to a temporary directory probably takes care of this
         allowBuiltinFetchGit = true;
     };
 
