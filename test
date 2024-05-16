@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+docker run --entrypoint "nix" m1-da-light-node --extra-experimental-features "nix-command flakes" develop --command just monza-full-node test.local -t=false
