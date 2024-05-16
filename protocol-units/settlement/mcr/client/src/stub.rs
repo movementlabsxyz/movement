@@ -9,8 +9,8 @@ pub struct McrSettlementClient {
 	stream_sender: mpsc::Sender<Result<BlockCommitment, anyhow::Error>>,
 	// todo: this is logically dangerous, but it's just a stub
 	stream_receiver: Arc<RwLock<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>,
-    pub current_height: Arc<RwLock<u64>>,
-    pub block_lead_tolerance: u64
+	pub current_height: Arc<RwLock<u64>>,
+	pub block_lead_tolerance: u64,
 }
 
 impl McrSettlementClient {
@@ -20,12 +20,11 @@ impl McrSettlementClient {
 			commitments: Arc::new(RwLock::new(HashMap::new())),
 			stream_sender,
 			stream_receiver: Arc::new(RwLock::new(receiver)),
-            current_height: Arc::new(RwLock::new(0)),
-            block_lead_tolerance: 16,
+			current_height: Arc::new(RwLock::new(0)),
+			block_lead_tolerance: 16,
 		}
 	}
 }
-
 
 #[async_trait::async_trait]
 impl McrSettlementClientOperations for McrSettlementClient {
@@ -33,31 +32,33 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
+		let height = block_commitment.height;
 
-        let height = block_commitment.height;
+		{
+			let mut commitments = self.commitments.write().await;
+			commitments.insert(block_commitment.height, block_commitment.clone());
+			self.stream_sender.send(Ok(block_commitment)).await?; // Simulate sending to the stream.
+		}
 
-        {
-            let mut commitments = self.commitments.write().await;
-            commitments.insert(block_commitment.height, block_commitment.clone());
-            self.stream_sender.send(Ok(block_commitment)).await?; // Simulate sending to the stream.
-        }
-
-        {
-            let mut current_height = self.current_height.write().await;
-            if height > *current_height {
-                *current_height = height;
-            }
-        }
+		{
+			let mut current_height = self.current_height.write().await;
+			if height > *current_height {
+				*current_height = height;
+			}
+		}
 
 		Ok(())
 	}
 
-    async fn post_block_commitment_batch(&self, block_commitment: Vec<BlockCommitment>) -> Result<(), anyhow::Error> {
-        for commitment in block_commitment {
-            self.post_block_commitment(commitment).await?;
-        }
-        Ok(())
-    }
+	async fn post_block_commitment_batch(
+		&self,
+		block_commitment: Vec<BlockCommitment>,
+	) -> Result<(), anyhow::Error> {
+		for commitment in block_commitment {
+			self.post_block_commitment(commitment).await?;
+		}
+		Ok(())
+	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		let receiver = self.stream_receiver.clone();
@@ -67,8 +68,8 @@ impl McrSettlementClientOperations for McrSettlementClient {
 				yield commitment?;
 			}
 		};
-        Ok(Box::pin(stream) as CommitmentStream)
-    }
+		Ok(Box::pin(stream) as CommitmentStream)
+	}
 
 	async fn get_commitment_at_height(
 		&self,
@@ -78,10 +79,9 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		Ok(guard.get(&height).cloned())
 	}
 
-    async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
-        Ok(*self.current_height.read().await + self.block_lead_tolerance)
-    }
-
+	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
+		Ok(*self.current_height.read().await + self.block_lead_tolerance)
+	}
 }
 
 #[cfg(test)]
@@ -91,9 +91,8 @@ pub mod test {
 	use movement_types::Commitment;
 	use tokio_stream::StreamExt;
 
-    #[tokio::test]
+	#[tokio::test]
 	async fn test_post_block_commitment() -> Result<(), anyhow::Error> {
-
 		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
@@ -104,35 +103,35 @@ pub mod test {
 		let guard = client.commitments.write().await;
 		assert_eq!(guard.get(&1), Some(&commitment));
 
-        assert_eq!(*client.current_height.read().await, 1);
-        assert_eq!(client.get_max_tolerable_block_height().await?, 17);
+		assert_eq!(*client.current_height.read().await, 1);
+		assert_eq!(client.get_max_tolerable_block_height().await?, 17);
 
 		Ok(())
 	}
 
-    #[tokio::test]
-    async fn test_post_block_commitment_batch() -> Result<(), anyhow::Error> {
-        let client = McrSettlementClient::new();
-        let commitment = BlockCommitment {
-            height: 1,
-            block_id: Default::default(),
-            commitment: Commitment::test(),
-        };
-        let commitment2 = BlockCommitment {
-            height: 2,
-            block_id: Default::default(),
-            commitment: Commitment::test(),
-        };
-        client.post_block_commitment_batch(vec![
-            commitment.clone(),
-            commitment2.clone(),
-        ]).await.unwrap();
-        let guard = client.commitments.write().await;
-        assert_eq!(guard.get(&1), Some(&commitment));
-        assert_eq!(guard.get(&2), Some(&commitment2));
-        Ok(())
-    }
-	
+	#[tokio::test]
+	async fn test_post_block_commitment_batch() -> Result<(), anyhow::Error> {
+		let client = McrSettlementClient::new();
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment::test(),
+		};
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment::test(),
+		};
+		client
+			.post_block_commitment_batch(vec![commitment.clone(), commitment2.clone()])
+			.await
+			.unwrap();
+		let guard = client.commitments.write().await;
+		assert_eq!(guard.get(&1), Some(&commitment));
+		assert_eq!(guard.get(&2), Some(&commitment2));
+		Ok(())
+	}
+
 	#[tokio::test]
 	async fn test_stream_block_commitments() -> Result<(), anyhow::Error> {
 		let client = McrSettlementClient::new();

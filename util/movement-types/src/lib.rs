@@ -6,19 +6,19 @@ use sha2::Digest;
 use core::fmt;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Id(pub Vec<u8>);
+pub struct Id(pub [u8; 32]);
 
 impl Id {
     pub fn test() -> Self {
-        Self(vec![0])
+        Self([0; 32])
     }
 
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.clone()
+        self.0.into()
     }
 
     pub fn genesis_block() -> Self {
-        Self(vec![0])
+        Self([0; 32])
     }
 
 }
@@ -46,7 +46,7 @@ impl Transaction {
     pub fn id(&self) -> Id {
         let mut hasher = sha2::Sha256::new();
         hasher.update(&self.0);
-        Id(hasher.finalize().to_vec())
+        Id(hasher.finalize().into())
     }
 
     pub fn test() -> Self {
@@ -126,7 +126,7 @@ impl Block {
         for transaction in &self.transactions {
             hasher.update(&transaction.0);
         }
-        Id(hasher.finalize().to_vec())
+        Id(hasher.finalize().into())
     }
 
     pub fn test() -> Self {
@@ -144,30 +144,38 @@ impl Block {
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Commitment(pub Vec<u8>);
+pub struct Commitment(pub [u8;32]);
 
 impl Commitment {
     pub fn test() -> Self {
-        Self(vec![0])
+        Self([0;32])
     }
 
     /// Creates a commitment by making a cryptographic digest of the state proof.
     pub fn digest_state_proof(state_proof: &StateProof) -> Self {
         let mut hasher = sha2::Sha256::new();
         bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
-        Self(hasher.finalize().to_vec())
+        Self(hasher.finalize().into())
     }
 }
 
-impl From<Vec<u8>> for Commitment {
-    fn from(data : Vec<u8>) -> Self {
+impl TryFrom<Vec<u8>> for Commitment {
+    type Error = std::array::TryFromSliceError;
+
+    fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
+        Ok(Self(data[..32].try_into()?))
+    }
+}
+
+impl From<[u8;32]> for Commitment {
+    fn from(data : [u8;32]) -> Self {
         Self(data)
     }
 }
 
 impl From<Commitment> for Vec<u8> {
     fn from(commitment : Commitment) -> Vec<u8> {
-        commitment.0
+        commitment.0.into()
     }
 }
 
