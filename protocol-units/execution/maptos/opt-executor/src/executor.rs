@@ -250,8 +250,13 @@ impl Executor {
 
 		let version = state_compute.version();
 
+
+		let (epoch, round) = self.get_next_epoch_and_round().await?;
+
 		{
 			let ledger_info_with_sigs = ledger_info_with_sigs(
+				epoch, 
+				round,
 				block_id,
 				state_compute.root_hash(),
 				version,
@@ -418,6 +423,13 @@ impl Executor {
 		Ok(())
 	}
 
+	pub async fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
+		let db = self.db.read().await;
+		let epoch = db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
+		// let round = db.reader.get_latest_ledger_info()?.ledger_info().round();
+		Ok((epoch, 0))
+	}
+
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub async fn tick_transaction_pipe(
@@ -435,13 +447,15 @@ impl Executor {
 }
 
 fn ledger_info_with_sigs(
+	epoch : u64,
+	round : u64,
 	block_id: HashValue,
 	root_hash: HashValue,
 	version: Version,
 ) -> LedgerInfoWithSignatures {
 	let block_info = BlockInfo::new(
-		1,
-		0,
+		epoch,
+		round,
 		block_id,
 		root_hash,
 		version, 
@@ -543,26 +557,29 @@ mod tests {
 
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
+
+			let (epoch, round) = executor.get_next_epoch_and_round().await?;
+
 			// Generate a random block ID.
 			let block_id = HashValue::random();
 			// Clone the signer from the executor for signing the metadata.
-			// let signer = executor.signer.clone();
+			let signer = executor.signer.clone();
 			// Get the current time in microseconds for the block timestamp.
-			// let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+			let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
 
 			// Create a block metadata transaction.
-			/*let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 				block_id,
-				1,
-				0,
+				epoch,
+				round,
 				signer.author(),
-				vec![0],
+				vec![],
 				vec![],
 				current_time_micros,
-			));*/
+			));
 
 			// Create a state checkpoint transaction using the block ID.
-			// let state_checkpoint_tx = Transaction::StateCheckpoint(block_id.clone());
+			let state_checkpoint_tx = Transaction::StateCheckpoint(block_id.clone());
 			// Generate a new account for transaction tests.
 			let new_account = LocalAccount::generate(&mut rng);
 			let new_account_address = new_account.address();
@@ -577,17 +594,23 @@ mod tests {
 			// Store the hash of the committed transaction for later verification.
 			let mint_tx_hash = mint_tx.clone().committed_hash();
 
-			// Group all transactions into a single unsharded block for execution.
+			// Block Metadata
 			let transactions = ExecutableTransactions::Unsharded(
 				into_signature_verified_block(vec![
-					// block_metadata,
-					Transaction::UserTransaction(user_account_creation_tx),
-					Transaction::UserTransaction(mint_tx),
-					// state_checkpoint_tx,
+					block_metadata,
 				])
 			);
+			let block = ExecutableBlock::new(block_id.clone(), transactions);
+			let block_commitment = executor.execute_block(block).await?;
 
-			// Create and execute the block.
+			// Next block
+			let block_id = HashValue::random();
+			let transactions = ExecutableTransactions::Unsharded(
+				into_signature_verified_block(vec![
+					Transaction::UserTransaction(user_account_creation_tx),
+					Transaction::UserTransaction(mint_tx),
+				])
+			);
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
 			let block_commitment = executor.execute_block(block).await?;
 
@@ -615,7 +638,7 @@ mod tests {
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
 			let expected_commitment = Commitment::digest_state_proof(&state_proof);
-			// assert_eq!(block_commitment.height, i);
+			assert_eq!(block_commitment.height, i);
 			assert_eq!(block_commitment.commitment, expected_commitment);
 		}
 
