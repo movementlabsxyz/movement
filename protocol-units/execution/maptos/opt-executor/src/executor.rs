@@ -538,7 +538,7 @@ mod tests {
 		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
 
 		// Loop to simulate the execution of multiple blocks.
-		for _ in 0..10 {
+		for i in 0..10 {
 			// Generate a random block ID.
 			let block_id = HashValue::random();
 			// Clone the signer from the executor for signing the metadata.
@@ -585,9 +585,7 @@ mod tests {
 
 			// Create and execute the block.
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			let commitment = executor.execute_block(block).await?;
-
-			// TODO: verify commitment against the state.
+			let block_commitment = executor.execute_block(block).await?;
 
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db.read().await.reader.clone();
@@ -609,6 +607,12 @@ mod tests {
 			assert!(queried_account_address.is_some());
 			let account_resource = account_state_view.get_account_resource()?;
 			assert!(account_resource.is_some());
+
+			// Check the commitment against state proof
+			let state_proof = db_reader.get_state_proof(latest_version)?;
+			let expected_commitment = Commitment::digest_state_proof(&state_proof);
+			// assert_eq!(block_commitment.height, i);
+			assert_eq!(block_commitment.commitment, expected_commitment);
 		}
 
 		Ok(())
