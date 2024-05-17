@@ -1,2 +1,2 @@
-#!/usr/env/bin bash
+#!/bin/bash
 docker build -f $1 -t $2:$(git rev-parse HEAD) . --push
