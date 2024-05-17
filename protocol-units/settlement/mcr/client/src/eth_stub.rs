@@ -1,8 +1,13 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use alloy_network::Ethereum;
+use alloy_provider::ProviderBuilder;
+use alloy_provider::RootProvider;
 use alloy_transport::Transport;
 use alloy_transport::TransportError;
+use movement_types::Commitment;
+use movement_types::Id;
 use std::marker::PhantomData;
+use tokio_stream::StreamExt;
 //use alloy_network::Network;
 use alloy_provider::Provider;
 use thiserror::Error;
@@ -11,6 +16,8 @@ use alloy_primitives::U256;
 //use alloy_provider::ProviderBuilder;
 use alloy_sol_types::sol;
 //use alloy_transport_http::Http;
+use alloy::pubsub::PubSubFrontend;
+use alloy_transport_ws::WsConnect;
 use movement_types::BlockCommitment;
 
 #[derive(Error, Debug)]
@@ -25,6 +32,10 @@ pub enum McrEthConnectorError {
 	SendTxError(#[from] alloy_contract::Error),
 	#[error("MCR Settlement Tx send fail because of RPC error :{0}")]
 	RpcTxError(String),
+	#[error("MCR Settlement BlockAccepted event notification error :{0}")]
+	EventNotificationError(#[from] alloy_sol_types::Error),
+	#[error("MCR Settlement BlockAccepted event notification stream close")]
+	EventNotificationStreamClosed,
 }
 
 // Codegen from artifact.
@@ -35,18 +46,35 @@ sol!(
 	"abi/mcr.json"
 );
 
-const MRC_CONTRACT_ADDRESS: &str = "0xA12eA6B7A168b67925beeAf363AF25e891fE5D6c";
+const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const MAX_TX_SEND_RETRY: usize = 3;
 
 pub struct McrEthSettlementClient<P: Provider<T, Ethereum>, T: Transport + Clone> {
-	provider: P,
+	rpc_provider: P,
+	ws_provider: RootProvider<PubSubFrontend>,
 	gas_limit: u128,
 	_marker: PhantomData<T>,
 }
 
 impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrEthSettlementClient<P, T> {
-	pub fn build_provider(provider: P, gas_limit: u128) -> Self {
-		McrEthSettlementClient { provider, gas_limit, _marker: Default::default() } //unwrap ok because define in the code
+	pub async fn build_with_provider<S>(
+		rpc_provider: P,
+		ws_url: S,
+		gas_limit: u128,
+	) -> Result<Self, anyhow::Error>
+	where
+		S: Into<String>,
+	{
+		let ws = WsConnect::new(ws_url);
+
+		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+
+		Ok(McrEthSettlementClient {
+			rpc_provider,
+			ws_provider,
+			gas_limit,
+			_marker: Default::default(),
+		})
 	}
 }
 
@@ -58,7 +86,7 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		let contract = MCR::new(MRC_CONTRACT_ADDRESS.parse().unwrap(), &self.provider);
+		let contract = MCR::new(MRC_CONTRACT_ADDRESS.parse().unwrap(), &self.rpc_provider);
 		let call_builder = contract.createBlockCommitment(
 			U256::from(block_commitment.height),
 			alloy_primitives::FixedBytes(block_commitment.commitment.0[..32].try_into()?),
@@ -137,7 +165,26 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
-		todo!()
+		//register to contract BlockCommitmentSubmitted event
+
+		let contract = MCR::new(MRC_CONTRACT_ADDRESS.parse().unwrap(), &self.ws_provider);
+		let event_filter = contract.BlockAccepted_filter().watch().await?;
+
+		let stream = async_stream::stream! {
+			let mut stream = event_filter.into_stream();
+			while let Some(event) = stream.next().await {
+				let to_yield = event
+					.map(|(commitment, _)| BlockCommitment {
+						height: 0, //wait PR 65 to be merged
+						block_id: Id(commitment.blockHash.0),
+						commitment: Commitment(commitment.stateCommitment.0),
+					})
+					.map_err(|err| McrEthConnectorError::EventNotificationError(err).into());
+				yield to_yield;
+			}
+			yield Err(McrEthConnectorError::EventNotificationStreamClosed.into())
+		};
+		Ok(Box::pin(stream) as CommitmentStream)
 	}
 
 	async fn get_commitment_at_height(
@@ -161,17 +208,35 @@ pub mod test {
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
 
+	#[ignore]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		let signer: LocalWallet = "XXX".parse()?;
-
+		let api_key = "XXX";
 		// Build a provider.
 		let provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer))
-			.on_builtin("https://eth-sepolia.g.alchemy.com/v2/XXX")
+			.on_builtin(&format!("https://eth-sepolia.g.alchemy.com/v2/{api_key}"))
 			.await?;
-		let client = McrEthSettlementClient::build_provider(provider, 10000000000000000);
+		let client = McrEthSettlementClient::build_with_provider(
+			provider,
+			format!("wss://eth-sepolia.g.alchemy.com/v2/{api_key}"),
+			10000000000000000,
+		)
+		.await
+		.unwrap();
+
+		let mut stream = client.stream_block_commitments().await.unwrap();
+		// tokio::spawn(async move {
+		// 	// Process each socket concurrently.
+		// 	while let Some(event) = stream.next().await {
+		// 		match event {
+		// 			Ok(commitment) => println!("commitment:{commitment:?}"),
+		// 			Err(err) => println!("event stream error:{err:?}"),
+		// 		}
+		// 	}
+		// });
 
 		let commitment = BlockCommitment {
 			height: 1,
@@ -182,6 +247,10 @@ pub mod test {
 		let res = client.post_block_commitment(commitment).await;
 		println!("result {res:?}",);
 		assert!(res.is_ok());
+
+		let event = stream.next().await;
+		println!("event:{event:?}");
+		//tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
 		Ok(())
 	}
 }
