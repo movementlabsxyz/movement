@@ -106,7 +106,59 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 pub mod test {
 
 	use super::*;
+	use futures::stream::FuturesUnordered;
+	use futures::StreamExt;
 	use tempfile::tempdir;
+
+	#[tokio::test]
+	async fn test_concurrent_access_spawn() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+		let memseq = Arc::new(Memseq::try_move_rocks(path)?);
+
+		let mut handles = vec![];
+
+		for i in 0..100 {
+			let memseq_clone = Arc::clone(&memseq);
+			let handle = tokio::spawn(async move {
+				let transaction = Transaction::new(vec![i as u8]);
+				memseq_clone.publish(transaction).await.unwrap();
+			});
+			handles.push(handle);
+		}
+
+		for handle in handles {
+			handle.await.expect("Task failed");
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_concurrent_access_futures() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+		let memseq = Arc::new(Memseq::try_move_rocks(path)?);
+
+		let futures = FuturesUnordered::new();
+
+		for i in 0..10 {
+			let memseq_clone = Arc::clone(&memseq);
+			let handle = async move {
+				for n in 0..10 {
+					let transaction = Transaction::new(vec![i * 10 + n as u8]);
+					memseq_clone.publish(transaction).await?;
+				}
+				Ok::<_, anyhow::Error>(())
+			};
+			futures.push(handle);
+		}
+
+		let all_executed_correctly = futures.all(|result| async move { result.is_ok() }).await;
+		assert!(all_executed_correctly);
+
+		Ok(())
+	}
 
 	#[tokio::test]
 	async fn test_try_move_rocks() -> Result<(), anyhow::Error> {
