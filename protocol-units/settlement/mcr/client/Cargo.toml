@@ -12,15 +12,18 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#move to workspace with impl is done.
+#move to workspace when impl is done.
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub"]}
 alloy-primitives = { version = "0.7.2", default-features = false }
-alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider"}
+alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = ["ws"]}
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network"}
 alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport"}
 alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http"}
 alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract"}
 alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet"}
+alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types"}
+alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws"}
 
 thiserror = "1.0.60"
 
