@@ -1,3 +1,4 @@
+use crate::AcceptedBlockCommitment;
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use alloy_network::Ethereum;
 use alloy_provider::ProviderBuilder;
@@ -174,8 +175,8 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 			let mut stream = event_filter.into_stream();
 			while let Some(event) = stream.next().await {
 				let to_yield = event
-					.map(|(commitment, _)| BlockCommitment {
-						height: 0, //wait PR 65 to be merged
+					.map(|(commitment, _)| AcceptedBlockCommitment {
+						height: commitment.height.try_into().unwrap(),
 						block_id: Id(commitment.blockHash.0),
 						commitment: Commitment(commitment.stateCommitment.0),
 					})
