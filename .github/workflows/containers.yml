@@ -24,3 +24,4 @@ jobs:
     - name: Build and Push Docker image movement
       run: |
         ./scripts/movement/build-push-image movement
+      shell: bash
