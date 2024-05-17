@@ -192,6 +192,18 @@ pub mod test {
 	}
 
 	#[tokio::test]
+	async fn test_wait_for_next_block_no_transactions() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+		let memseq = Memseq::try_move_rocks(path)?.with_block_size(10).with_building_time_ms(500);
+
+		let block = memseq.wait_for_next_block().await?;
+		assert!(block.is_none());
+
+		Ok(())
+	}
+
+	#[tokio::test]
 	async fn test_memseq() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
