@@ -112,6 +112,29 @@ pub mod test {
 	use tempfile::tempdir;
 
 	#[tokio::test]
+	async fn test_wait_for_next_block_building_time_expires() -> Result<(), anyhow::Error> {
+		let dir = tempdir()?;
+		let path = dir.path().to_path_buf();
+		let memseq = Memseq::try_move_rocks(path)?.with_block_size(10).with_building_time_ms(500);
+
+		// Add some transactions
+		for i in 0..5 {
+			let transaction = Transaction::new(vec![i as u8]);
+			memseq.publish(transaction).await?;
+		}
+
+		// Wait for the block to be built, not enough transactions as such
+		// the building time should expire
+		let block = memseq.wait_for_next_block().await?;
+		assert!(block.is_some());
+
+		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
+		assert_eq!(block.transactions.len(), 5);
+
+		Ok(())
+	}
+
+	#[tokio::test]
 	async fn test_publish_error_propagation() -> Result<(), anyhow::Error> {
 		let mempool = Arc::new(RwLock::new(MockMempool));
 		let parent_block = Arc::new(RwLock::new(Id::default()));
@@ -324,7 +347,7 @@ pub mod test {
 	}
 
 	#[tokio::test]
-	async fn test_respects_time() -> Result<(), anyhow::Error> {
+	async fn test_wait_next_block_respects_time() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 		let block_size = 100;
