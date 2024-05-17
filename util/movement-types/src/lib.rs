@@ -189,5 +189,8 @@ pub enum BlockCommitmentRejectionReason {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BlockCommitmentEvent {
     Accepted(BlockCommitment),
-    Rejected(BlockCommitment, BlockCommitmentRejectionReason),
+    Rejected {
+        height: u64,
+        reason: BlockCommitmentRejectionReason,
+    },
 }

@@ -1,7 +1,9 @@
 use movement_types::{BlockCommitment, BlockCommitmentEvent};
 use tokio_stream::Stream;
 
-pub mod manager;
+mod manager;
+
+pub use manager::Manager as McrSettlementManager;
 
 type CommitmentEventStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitmentEvent, anyhow::Error>> + Send>>;
@@ -14,8 +16,5 @@ pub trait McrSettlementManagerOperations {
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error>;
-
-	/// Streams block commitment events.
-    async fn stream_block_commitment_events(&self) -> Result<CommitmentEventStream, anyhow::Error>;
 
 }

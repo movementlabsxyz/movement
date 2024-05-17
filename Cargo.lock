@@ -10177,7 +10177,7 @@ dependencies = [
  "async-channel",
  "env_logger 0.11.3",
  "m1-da-light-node-client",
- "mcr-settlement-client",
+ "mcr-settlement-manager",
  "movement-types",
  "serde_json",
  "sha2 0.10.8",
