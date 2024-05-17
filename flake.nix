@@ -118,7 +118,7 @@
             nativeBuildInputs = dependencies;
 
             shellHook = ''
-              #!/bin/bash
+              #!/usr/bin/env bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               install-foundry
               cat <<'EOF'
