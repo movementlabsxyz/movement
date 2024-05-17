@@ -60,7 +60,7 @@ contract MCR {
 
     event ValidatorStaked(address indexed validator, uint256 stake, uint256 epoch);
     event ValidatorUnstaked(address indexed validator, uint256 stake, uint256 epoch);
-    event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment);
+    event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 height);
     event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 validatorStake);
     event ValidatorEpochRolledOver(address indexed validator, uint256 epoch, uint256 stake, uint256 unstake);
     event EpochRolledOver(uint256 epoch, uint256 totalStake);
@@ -366,7 +366,7 @@ contract MCR {
         slashMinority(blockCommitment, epochNumber);
 
         // emit the block accepted event
-        emit BlockAccepted(blockCommitment.blockId, blockCommitment.commitment);
+        emit BlockAccepted(blockCommitment.blockId, blockCommitment.commitment, blockCommitment.height);
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
         if (getEpochByBlockTime() > epochNumber) {
