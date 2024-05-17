@@ -108,7 +108,26 @@ pub mod test {
 	use super::*;
 	use futures::stream::FuturesUnordered;
 	use futures::StreamExt;
+	use mempool_util::MempoolTransaction;
 	use tempfile::tempdir;
+
+	#[tokio::test]
+	async fn test_publish_error_propagation() -> Result<(), anyhow::Error> {
+		let mempool = Arc::new(RwLock::new(MockMempool));
+		let parent_block = Arc::new(RwLock::new(Id::default()));
+		let memseq = Memseq::new(mempool, 10, parent_block, 1000);
+
+		let transaction = Transaction::new(vec![1, 2, 3]);
+		let result = memseq.publish(transaction).await;
+		assert!(result.is_err());
+		assert_eq!(result.unwrap_err().to_string(), "Mock add_transaction");
+
+		let result = memseq.wait_for_next_block().await;
+		assert!(result.is_err());
+		assert_eq!(result.unwrap_err().to_string(), "Mock pop_transaction");
+
+		Ok(())
+	}
 
 	#[tokio::test]
 	async fn test_concurrent_access_spawn() -> Result<(), anyhow::Error> {
@@ -359,5 +378,69 @@ pub mod test {
 		tokio::try_join!(building_task, waiting_task)?;
 
 		Ok(())
+	}
+
+	/// Mock Mempool
+	struct MockMempool;
+	impl MempoolTransactionOperations for MockMempool {
+		async fn has_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> Result<bool, anyhow::Error> {
+			Err(anyhow::anyhow!("Mock has_mempool_transaction"))
+		}
+
+		async fn add_mempool_transaction(
+			&self,
+			_tx: MempoolTransaction,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock add_mempool_transaction"))
+		}
+
+		async fn remove_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock remove_mempool_transaction"))
+		}
+
+		async fn pop_mempool_transaction(
+			&self,
+		) -> Result<Option<MempoolTransaction>, anyhow::Error> {
+			Err(anyhow::anyhow!("Mock pop_mempool_transaction"))
+		}
+
+		async fn get_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> Result<Option<MempoolTransaction>, anyhow::Error> {
+			Err(anyhow::anyhow!("Mock get_mempool_transaction"))
+		}
+
+		async fn add_transaction(&self, _transaction: Transaction) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock add_transaction"))
+		}
+
+		async fn pop_transaction(&self) -> Result<Option<Transaction>, anyhow::Error> {
+			Err(anyhow::anyhow!("Mock pop_transaction"))
+		}
+	}
+
+	impl MempoolBlockOperations for MockMempool {
+		async fn has_block(&self, _block_id: Id) -> Result<bool, anyhow::Error> {
+			todo!()
+		}
+
+		async fn add_block(&self, _block: Block) -> Result<(), anyhow::Error> {
+			todo!()
+		}
+
+		async fn remove_block(&self, _block_id: Id) -> Result<(), anyhow::Error> {
+			todo!()
+		}
+
+		async fn get_block(&self, _block_id: Id) -> Result<Option<Block>, anyhow::Error> {
+			todo!()
+		}
 	}
 }
