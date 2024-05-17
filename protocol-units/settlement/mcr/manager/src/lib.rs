@@ -5,7 +5,7 @@ mod manager;
 
 pub use manager::Manager as McrSettlementManager;
 
-type CommitmentEventStream =
+pub type CommitmentEventStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitmentEvent, anyhow::Error>> + Send>>;
 
 #[async_trait::async_trait]

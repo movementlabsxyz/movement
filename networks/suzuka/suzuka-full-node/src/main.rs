@@ -18,9 +18,11 @@ async fn main() -> Result<(), anyhow::Error> {
 
     }
 
-    let executor = SuzukaPartialNode::try_from_env().await.context(
+    let (executor, background_task) = SuzukaPartialNode::try_from_env().await.context(
         "Failed to create the executor"
     )?;
+
+    tokio::spawn(background_task);
 
     executor.run().await.context(
         "Failed to run the executor"

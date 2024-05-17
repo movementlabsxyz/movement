@@ -15,6 +15,7 @@ rust-version = { workspace = true }
 suzuka-executor = { workspace = true }
 m1-da-light-node-client = { workspace = true }
 mcr-settlement-client = { workspace = true }
+mcr-settlement-manager = { workspace = true }
 async-channel = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
