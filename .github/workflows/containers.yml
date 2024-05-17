@@ -19,8 +19,8 @@ jobs:
       uses: docker/login-action@v1
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
-          ./scripts/movement/build-push-image movement
+        ./scripts/movement/build-push-image movement
