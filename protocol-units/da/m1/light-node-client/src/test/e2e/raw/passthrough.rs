@@ -6,7 +6,7 @@ use tokio_stream::StreamExt;
 #[tokio::test]
 async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>{
     
-    let mut client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
+    let mut client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 
     let blob_write = BlobWrite {
         data : vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
@@ -54,7 +54,7 @@ async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>
 #[tokio::test]
 async fn test_submit_and_read() -> Result<(), anyhow::Error>{
     
-    let mut client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
+    let mut client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 
     let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
     let blob_write = BlobWrite {
