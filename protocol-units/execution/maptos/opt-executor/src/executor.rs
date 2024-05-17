@@ -667,8 +667,37 @@ mod tests {
 	
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {  // For example, create and execute 3 blocks.
+			let (epoch, round) = executor.get_next_epoch_and_round().await?;
+
 			let block_id = HashValue::random();  // Generate a random block ID for each block.
-	
+
+			// Clone the signer from the executor for signing the metadata.
+			let signer = executor.signer.clone();
+			// Get the current time in microseconds for the block timestamp.
+			let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+			// Create a block metadata transaction.
+			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+				block_id,
+				epoch,
+				round,
+				signer.author(),
+				vec![],
+				vec![],
+				current_time_micros,
+			));
+			// Block Metadata
+			let transactions = ExecutableTransactions::Unsharded(
+				into_signature_verified_block(vec![
+					block_metadata,
+				])
+			);
+			let block = ExecutableBlock::new(block_id.clone(), transactions);
+			executor.execute_block(block).await?;
+
+			// Next block
+			let block_id = HashValue::random();
+
 			// Generate new accounts and create transactions for each block.
 			let mut transactions = Vec::new();
 			let mut transaction_hashes = Vec::new();
