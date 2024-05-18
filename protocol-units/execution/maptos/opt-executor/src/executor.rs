@@ -289,7 +289,6 @@ impl Executor {
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
 
-	
 		let metadata_block_id = HashValue::random();
 		
 		// pop 0th transaction
