@@ -10,8 +10,6 @@ RUN nix \
     --option filter-syscalls false \
     develop --command bash  -c "cargo build"
 
-RUN mkdir /tmp/nix-store-closure
-
 # Final image is based on scratch. We copy a bunch of Nix dependencies
 # but they're fully self-contained so we don't need Nix anymore.
 FROM scratch
@@ -19,4 +17,4 @@ FROM scratch
 WORKDIR /app
 
 # Copy /nix/store
-COPY --from=builder /tmp/nix-store-closure /nix/store
+COPY --from=builder /nix/store /nix/store
