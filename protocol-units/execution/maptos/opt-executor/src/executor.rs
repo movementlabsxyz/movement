@@ -24,11 +24,12 @@ use aptos_types::{
 	block_info::BlockInfo,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
 	transaction::Version,
+	block_executor::partitioner::ExecutableTransactions,
 };
 use aptos_types::{
 	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
 	chain_id::ChainId,
-	transaction::{ChangeSet, SignedTransaction, Transaction, WriteSetPayload},
+	transaction::{ChangeSet, SignedTransaction, Transaction, WriteSetPayload, signature_verified_transaction::SignatureVerifiedTransaction},
 	validator_signer::ValidatorSigner,
 };
 use aptos_vm::AptosVM;
@@ -229,7 +230,7 @@ impl Executor {
 	}
 
 	/// Execute a block which gets committed to the state.
-	pub async fn execute_block(
+	pub async fn execute_block_inner(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
@@ -244,8 +245,6 @@ impl Executor {
 			let block_executor = self.block_executor.write().await;
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
-
-		println!("State compute: {:?}", state_compute);
 
 		let version = state_compute.version();
 
@@ -283,6 +282,49 @@ impl Executor {
 			commitment,
 			height: block_height.into(),
 		})
+	}
+
+	pub async fn execute_block(
+		&self,
+		block: ExecutableBlock,
+	) -> Result<BlockCommitment, anyhow::Error> {
+
+	
+		let metadata_block_id = HashValue::random();
+		
+		// pop 0th transaction
+		let transactions = block.transactions;
+		let mut transactions = match transactions {
+			ExecutableTransactions::Unsharded(transactions) => transactions,
+			_ => anyhow::bail!("Only unsharded transactions are supported"),
+		};
+		let block_metadate = match transactions.remove(0) { // todo: this panics if index is out of bounds
+			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata)) => block_metadata,
+			_ => anyhow::bail!("Block metadata not found")
+		};
+
+		// execute the block metadata block
+		self.execute_block_inner(
+			ExecutableBlock::new(
+				metadata_block_id.clone(),
+				ExecutableTransactions::Unsharded(
+					vec![SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadate))]
+				)
+			)
+		).await?;
+
+		// execute the rest of the block
+		let commitment = self.execute_block_inner(
+			ExecutableBlock::new(
+				block.block_id.clone(),
+				ExecutableTransactions::Unsharded(
+					transactions
+				)
+			)
+		).await?;
+
+		Ok(commitment)
+
 	}
 
 	fn context(&self) -> Arc<Context> {
@@ -425,8 +467,8 @@ impl Executor {
 	pub async fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
 		let db = self.db.read().await;
 		let epoch = db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
-		// let round = db.reader.get_latest_ledger_info()?.ledger_info().round();
-		Ok((epoch, 0))
+		let round = db.reader.get_latest_ledger_info()?.ledger_info().round();
+		Ok((epoch, round))
 	}
 
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
@@ -481,7 +523,7 @@ mod tests {
 		ed25519::{Ed25519PrivateKey, Ed25519Signature}, HashValue, PrivateKey, Uniform
 	};
 	use aptos_types::{
-		account_address::AccountAddress, block_executor::partitioner::ExecutableTransactions, block_metadata::BlockMetadata, chain_id::{self, ChainId}, transaction::{
+		account_address::AccountAddress, block_executor::partitioner::ExecutableTransactions, block_metadata::BlockMetadata, chain_id::ChainId, transaction::{
 			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
 			SignedTransaction, Transaction, TransactionPayload
 		}
@@ -524,10 +566,22 @@ mod tests {
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let executor = Executor::try_from_env()?;
 		let block_id = HashValue::random();
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			0,
+			0,
+			executor.signer.author(),
+			vec![],
+			vec![],
+			chrono::Utc::now().timestamp_micros() as u64,
+		));
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0, executor.aptos_config.chain_id.clone()),
 		));
-		let txs = ExecutableTransactions::Unsharded(vec![tx]);
+		let txs = ExecutableTransactions::Unsharded(vec![
+			SignatureVerifiedTransaction::Valid(block_metadata),
+			tx,
+		]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		executor.execute_block(block).await?;
 		Ok(())
@@ -597,15 +651,6 @@ mod tests {
 			let transactions = ExecutableTransactions::Unsharded(
 				into_signature_verified_block(vec![
 					block_metadata,
-				])
-			);
-			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			let block_commitment = executor.execute_block(block).await?;
-
-			// Next block
-			let block_id = HashValue::random();
-			let transactions = ExecutableTransactions::Unsharded(
-				into_signature_verified_block(vec![
 					Transaction::UserTransaction(user_account_creation_tx),
 					Transaction::UserTransaction(mint_tx),
 				])
@@ -685,21 +730,11 @@ mod tests {
 				vec![],
 				current_time_micros,
 			));
-			// Block Metadata
-			let transactions = ExecutableTransactions::Unsharded(
-				into_signature_verified_block(vec![
-					block_metadata,
-				])
-			);
-			let block = ExecutableBlock::new(block_id.clone(), transactions);
-			executor.execute_block(block).await?;
-
-			// Next block
-			let block_id = HashValue::random();
 
 			// Generate new accounts and create transactions for each block.
 			let mut transactions = Vec::new();
 			let mut transaction_hashes = Vec::new();
+			transactions.push(block_metadata.clone());
 			for _ in 0..2 {  // Each block will contain 2 transactions.
 				let new_account = LocalAccount::generate(&mut rng);
 				let user_account_creation_tx = root_account
