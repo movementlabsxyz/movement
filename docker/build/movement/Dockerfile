@@ -8,7 +8,7 @@ WORKDIR /tmp/build
 RUN nix \
     --extra-experimental-features "nix-command flakes" \
     --option filter-syscalls false \
-    develop --command bash  -c "cargo build"
+    develop --command bash  -c "cargo build --release"
 
 # Final image still runs on nix os, but only contains the /nix/store
 FROM nixos/nix:latest
