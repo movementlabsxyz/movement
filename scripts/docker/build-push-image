@@ -1,2 +1,4 @@
 #!/bin/bash
-docker build -f $1 -t $2:$(git rev-parse HEAD) . --push
+echo "Building docker image with tag $2:$(git rev-parse HEAD)"
+docker build -f $1 -t $2:$(git rev-parse HEAD) .
+docker push $2:$(git rev-parse HEAD)
