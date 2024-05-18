@@ -1,4 +1,4 @@
 #!/bin/bash
-echo "Building docker image with tag $2:$(git rev-parse HEAD)"
-docker build -f $1 -t $2:$(git rev-parse HEAD) .
-docker push $2:$(git rev-parse HEAD)
+echo "Building docker image with tag $2/$3:$(git rev-parse HEAD)"
+docker build -f $1 -t $2/$3:$(git rev-parse HEAD) .
+docker push $2/$3:$(git rev-parse HEAD)
