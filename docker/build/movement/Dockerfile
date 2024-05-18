@@ -10,9 +10,8 @@ RUN nix \
     --option filter-syscalls false \
     develop --command bash  -c "cargo build"
 
-# Final image is based on scratch. We copy a bunch of Nix dependencies
-# but they're fully self-contained so we don't need Nix anymore.
-FROM scratch
+# Final image still runs on nix os, but only contains the /nix/store
+FROM nixos/nix:latest
 
 WORKDIR /app
 
