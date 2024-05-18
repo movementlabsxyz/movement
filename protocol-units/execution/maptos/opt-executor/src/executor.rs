@@ -229,7 +229,6 @@ impl Executor {
 	}
 
 	/// Execute a block which gets committed to the state.
-	/// `ExecutorState` must be set to `Commit` before calling this method.
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
