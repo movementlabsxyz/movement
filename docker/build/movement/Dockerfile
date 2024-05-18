@@ -17,3 +17,4 @@ WORKDIR /app
 
 # Copy /nix/store
 COPY --from=builder /nix/store /nix/store
+COPY --from=builder /tmp/build /app
