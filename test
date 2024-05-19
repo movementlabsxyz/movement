@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 # docker run --entrypoint "bash" movement -c "echo \$MONZA_APTOS_PATH && nix develop --extra-experimental-features \"nix-command flakes\" --command \"just m1-da-light-node test.local -t=false\""
-docker run --entrypoint "/nix/store/49wgh2fy77pfvcrbnsr0i6mkbhdkwqr7-nix-2.21.2 --version" mvlbs/movement:2a689d6911b3a8bf00660e5822f186022ba83e1f
+# docker run --entrypoint "nix" mvlbs/movement:2a689d6911b3a8bf00660e5822f186022ba83e1f develop --extra-experimental-features "nix-command flakes" --command just monza-full-node test.local -t=false
+docker run --entrypoint "ls" mvlbs/movement:2a689d6911b3a8bf00660e5822f186022ba83e1f -S -alh /nix

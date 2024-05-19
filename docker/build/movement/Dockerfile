@@ -8,27 +8,7 @@ WORKDIR /tmp/build
 RUN nix \
     --extra-experimental-features "nix-command flakes" \
     --option filter-syscalls false \
-    develop --command bash  -c "cargo build --release -p m1-da-light-node"
-
-RUN nix \
-    --extra-experimental-features "nix-command flakes" \
-    --option filter-syscalls false \
-    develop --command bash  -c "cargo build --release -p monza-full-node"
-
-RUN nix \
-    --extra-experimental-features "nix-command flakes" \
-    --option filter-syscalls false \
-    develop --command bash  -c "cargo build --release -p monza-config"
-
-RUN nix \
-    --extra-experimental-features "nix-command flakes" \
-    --option filter-syscalls false \
-    develop --command bash  -c "cargo build --release -p suzuka-full-node"
-
-RUN nix \
-    --extra-experimental-features "nix-command flakes" \
-    --option filter-syscalls false \
-    develop --command bash  -c "cargo build --release -p suzuka-config"
+    develop --command bash  -c "cargo build --release"
 
 # Final image still runs on nix os, but only contains the /nix/store
 FROM nixos/nix:latest
