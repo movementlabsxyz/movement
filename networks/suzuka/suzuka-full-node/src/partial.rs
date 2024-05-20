@@ -3,7 +3,7 @@ use m1_da_light_node_client::{
 	blob_response, BatchWriteRequest, BlobWrite, LightNodeServiceClient,
 	StreamReadFromHeightRequest,
 };
-use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
+use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
@@ -247,7 +247,7 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 		let executor = SuzukaExecutorV1::try_from_env(tx)
 			.await
 			.context("Failed to get executor from environment")?;
-		let settlement_client = McrSettlementClient::new();
+		let settlement_client = MockMcrSettlementClient::new();
 		Self::bound(executor, light_node_client, settlement_client)
 	}
 }
