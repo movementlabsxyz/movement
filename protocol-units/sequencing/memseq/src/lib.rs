@@ -2,6 +2,7 @@ use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{Block, Id, Transaction};
 pub use sequencing_util::Sequencer;
+use sequencing_util::SequencerResult;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -54,13 +55,13 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
-	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
+	async fn publish(&self, transaction: Transaction) -> SequencerResult<()> {
 		let mempool = self.mempool.read().await;
 		mempool.add_transaction(transaction).await?;
 		Ok(())
 	}
 
-	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
+	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>> {
 		let mempool = self.mempool.read().await;
 		let mut transactions = Vec::new();
 
@@ -108,7 +109,9 @@ pub mod test {
 	use super::*;
 	use futures::stream::FuturesUnordered;
 	use futures::StreamExt;
-	use mempool_util::MempoolTransaction;
+	use mempool_util::{
+		MempoolBlockOperationsResult, MempoolTransaction, MempoolTransactionOperationsResult,
+	};
 	use tempfile::tempdir;
 
 	#[tokio::test]
@@ -143,11 +146,17 @@ pub mod test {
 		let transaction = Transaction::new(vec![1, 2, 3]);
 		let result = memseq.publish(transaction).await;
 		assert!(result.is_err());
-		assert_eq!(result.unwrap_err().to_string(), "Mock add_transaction");
+		assert_eq!(
+			result.unwrap_err().to_string(),
+			"MempoolTransactionOperationsError error: Mock error: add_transaction"
+		);
 
 		let result = memseq.wait_for_next_block().await;
 		assert!(result.is_err());
-		assert_eq!(result.unwrap_err().to_string(), "Mock pop_transaction");
+		assert_eq!(
+			result.unwrap_err().to_string(),
+			"MempoolTransactionOperationsError error: Mock error: pop_transaction"
+		);
 
 		Ok(())
 	}
@@ -404,65 +413,78 @@ pub mod test {
 	}
 
 	/// Mock Mempool
+
+	// create a macro generating an Err(MempoolTransactionOperationsError::MockError("message")) out
+	// of "message"
+
+	macro_rules! mock_error {
+		($message:expr) => {
+			Err(mempool_util::MempoolTransactionOperationsError::MockError($message.to_string()))
+		};
+	}
+
 	struct MockMempool;
 	impl MempoolTransactionOperations for MockMempool {
 		async fn has_mempool_transaction(
 			&self,
 			_transaction_id: Id,
-		) -> Result<bool, anyhow::Error> {
-			Err(anyhow::anyhow!("Mock has_mempool_transaction"))
+		) -> MempoolTransactionOperationsResult<bool> {
+			mock_error!("has_mempool_transaction")
 		}
 
 		async fn add_mempool_transaction(
 			&self,
 			_tx: MempoolTransaction,
-		) -> Result<(), anyhow::Error> {
-			Err(anyhow::anyhow!("Mock add_mempool_transaction"))
+		) -> MempoolTransactionOperationsResult<()> {
+			mock_error!("add_mempool_transaction")
 		}
 
 		async fn remove_mempool_transaction(
 			&self,
 			_transaction_id: Id,
-		) -> Result<(), anyhow::Error> {
-			Err(anyhow::anyhow!("Mock remove_mempool_transaction"))
+		) -> MempoolTransactionOperationsResult<()> {
+			mock_error!("remove_mempool_transaction")
 		}
 
 		async fn pop_mempool_transaction(
 			&self,
-		) -> Result<Option<MempoolTransaction>, anyhow::Error> {
-			Err(anyhow::anyhow!("Mock pop_mempool_transaction"))
+		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
+			mock_error!("pop_mempool_transaction")
 		}
 
 		async fn get_mempool_transaction(
 			&self,
 			_transaction_id: Id,
-		) -> Result<Option<MempoolTransaction>, anyhow::Error> {
-			Err(anyhow::anyhow!("Mock get_mempool_transaction"))
+		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
+			mock_error!("get_mempool_transaction")
 		}
 
-		async fn add_transaction(&self, _transaction: Transaction) -> Result<(), anyhow::Error> {
-			Err(anyhow::anyhow!("Mock add_transaction"))
+		async fn add_transaction(
+			&self,
+			_transaction: Transaction,
+		) -> MempoolTransactionOperationsResult<()> {
+			mock_error!("add_transaction")
 		}
 
-		async fn pop_transaction(&self) -> Result<Option<Transaction>, anyhow::Error> {
-			Err(anyhow::anyhow!("Mock pop_transaction"))
+		async fn pop_transaction(&self) -> MempoolTransactionOperationsResult<Option<Transaction>> {
+			mock_error!("pop_transaction")
 		}
 	}
 
 	impl MempoolBlockOperations for MockMempool {
-		async fn has_block(&self, _block_id: Id) -> Result<bool, anyhow::Error> {
+		async fn has_block(&self, _block_id: Id) -> MempoolBlockOperationsResult<bool> {
 			todo!()
 		}
 
-		async fn add_block(&self, _block: Block) -> Result<(), anyhow::Error> {
+		async fn add_block(&self, _block: Block) -> MempoolBlockOperationsResult<()> {
 			todo!()
 		}
 
-		async fn remove_block(&self, _block_id: Id) -> Result<(), anyhow::Error> {
+		async fn remove_block(&self, _block_id: Id) -> MempoolBlockOperationsResult<()> {
 			todo!()
 		}
 
-		async fn get_block(&self, _block_id: Id) -> Result<Option<Block>, anyhow::Error> {
+		async fn get_block(&self, _block_id: Id) -> MempoolBlockOperationsResult<Option<Block>> {
 			todo!()
 		}
 	}

@@ -14,7 +14,8 @@ rust-version = { workspace = true }
 [dependencies]
 tokio = { workspace = true }
 movement-types = { workspace = true }
-anyhow = { workspace = true }
+thiserror = { workspace = true }
+mempool-util = { workspace = true }
 
 [lints]
 workspace = true
