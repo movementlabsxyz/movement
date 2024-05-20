@@ -18,7 +18,7 @@ processes:
   m1-da-light-node:
     command: |
       # FIXME(nix-ci-fix): when we modify LD_PATH directly, we get a missing libstdc++ here
-      ./target/debug/m1-da-light-node
+      ./target/$CARGO_PROFILE/m1-da-light-node
     depends_on:
       celestia-light-node-synced:
         condition: process_completed_successfully
@@ -33,7 +33,7 @@ processes:
 
   monza-full-node:
     command: |
-      ./target/debug/monza-full-node
+      ./target/$CARGO_PROFILE/monza-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy

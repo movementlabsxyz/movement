@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  monza-full-node:
+    image: mvlbs/movement:5803533ab367b8b3d44274f5000fdf2b70ee88a4
+    container_name: monza-full-node-monolith
+    ports:
+      - "30370:30370"
+      - "30371:30371"
+      - "30372:30372"
+    environment:
+      - PROFILE=release
+    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "monza-full-node", "local", "-t=false"]
+    volumes:
+      - data-volume:/data
+
+volumes:
+  data-volume:
+

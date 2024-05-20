@@ -109,13 +109,6 @@
           # M1 DA Light Node
           packages.m1-da-light-node = m1-da-light-node;
 
-          # Docker image of with the shell
-          packages.docker-shell = pkgs.dockerTools.buildImage {
-            name = "docker-shell";
-            tag = "latest";
-            contents = dependencies;
-          };
-
           # Development Shell
           devShells.default = mkShell {
 
@@ -127,6 +120,7 @@
             shellHook = ''
               #!/usr/bin/env bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
+              echo "Monza Aptos Path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

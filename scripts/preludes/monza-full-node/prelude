@@ -1,31 +1,46 @@
 #!/usr/bin/env bash
 set -e
+
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
 export MOVE_ROCKS_PATH="$MOVEMENT_BASE_STORAGE_PATH/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
 . ./scripts/celestia/celestia-env
+export MOVEMENT_PREBUILT=${MOVEMENT_PREBUILT:-false}
+export CARGO_PROFILE=${CARGO_PROFILE:-debug}
 
-# build monza
-echo "Building monza-config..."
-cargo build --bin monza-config
-echo "Built monza-config!"
+if [ "$CARGO_PROFILE" = "release" ]; then
+    CARGO_PROFILE_FLAGS="--release"
+else
+    CARGO_PROFILE_FLAGS=""
+fi
 
-echo "Building m1-da-light-node..."
-cargo build -p m1-da-light-node --features "sequencer"
-echo "Built m1-da-light-node!"
+if [ "$MOVEMENT_PREBUILT" != "true" ]; then
 
-echo "Building monza-full-node..."
-cargo build -p monza-full-node
-echo "Built monza-full-node!"
+    # Build movement components
+    echo "Building monza-config..."
+    cargo build $CARGO_PROFILE_FLAGS --bin monza-config
+    echo "Built monza-config!"
 
-# build aptos
-WORKING_DIR=$(pwd)
-temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
-cp -R "$MONZA_APTOS_PATH" "$temp_dir"
-chmod -R 755 $temp_dir
-cd $MOVEMENT_BASE_STORAGE_PATH/monza-aptos
-echo "Building aptos-faucet-service..."
-cargo build -p aptos-faucet-service
-echo "Built aptos-faucet-service!"
-cd $WORKING_DIR
+    echo "Building m1-da-light-node..."
+    cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node --features "sequencer"
+    echo "Built m1-da-light-node!"
 
-eval $(./target/debug/monza-config)
+    echo "Building monza-full-node..."
+    cargo build $CARGO_PROFILE_FLAGS -p monza-full-node
+    echo "Built monza-full-node!"
+
+    # Build aptos components
+    WORKING_DIR=$(pwd)
+    temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+    cp -R "$MONZA_APTOS_PATH" "$temp_dir"
+    chmod -R 755 $temp_dir
+    cd $MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+    echo "Building aptos-faucet-service..."
+    cargo build $CARGO_PROFILE_FLAGS -p aptos-faucet-service
+    echo "Built aptos-faucet-service!"
+    cd $WORKING_DIR
+
+else
+    echo "MOVEMENT_PREBUILT is set, skipping build."
+fi
+
+eval $(./target/$CARGO_PROFILE/monza-config)
