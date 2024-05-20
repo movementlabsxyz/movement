@@ -21,6 +21,9 @@ serde_json = { workspace = true }
 async-stream = { workspace = true }
 mcr-settlement-client = { workspace = true }
 
+[dev-dependencies]
+mcr-settlement-client = { workspace = true, features = ["mock"] }
+
 [features]
 default = ["stub"]
 stub = []
