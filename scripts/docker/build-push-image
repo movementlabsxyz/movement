@@ -1,4 +1,4 @@
 #!/bin/bash
 echo "Building docker image with tag $2/$3:$(git rev-parse HEAD)"
-docker buildx create --use
-docker buildx build --platform linux/amd64,linux/arm64 -f $1 -t $2/$3:$(git rev-parse HEAD) . --push
+docker build -f $1 -t $2/$3:$(git rev-parse HEAD) .
+docker push $2/$3:$(git rev-parse HEAD)

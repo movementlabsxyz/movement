@@ -6,7 +6,11 @@ on:
 jobs:
   containers:
 
-    runs-on: movement-runner
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-16vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository

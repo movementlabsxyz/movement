@@ -109,6 +109,13 @@
           # M1 DA Light Node
           packages.m1-da-light-node = m1-da-light-node;
 
+          # Docker image of with the shell
+          packages.docker-shell = pkgs.dockerTools.buildImage {
+            name = "docker-shell";
+            tag = "latest";
+            contents = dependencies;
+          };
+
           # Development Shell
           devShells.default = mkShell {
 
@@ -130,6 +137,7 @@
               echo "Develop with Move Anywhere"
             '';
           };
+
         }
     );
 }
