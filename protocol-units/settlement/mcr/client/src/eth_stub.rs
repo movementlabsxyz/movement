@@ -1,12 +1,8 @@
-use crate::AcceptedBlockCommitment;
-use crate::{CommitmentStream, McrSettlementClientOperations};
+use crate::{AcceptedBlockCommitment, CommitmentStream, McrSettlementClientOperations};
 use alloy_network::Ethereum;
-use alloy_provider::ProviderBuilder;
-use alloy_provider::RootProvider;
-use alloy_transport::Transport;
-use alloy_transport::TransportError;
-use movement_types::Commitment;
-use movement_types::Id;
+use alloy_provider::{ProviderBuilder, RootProvider};
+use alloy_transport::{Transport, TransportError};
+use movement_types::{Commitment, Id};
 use std::marker::PhantomData;
 use tokio_stream::StreamExt;
 //use alloy_network::Network;
@@ -171,20 +167,15 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 		let contract = MCR::new(MRC_CONTRACT_ADDRESS.parse().unwrap(), &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
 
-		let stream = async_stream::stream! {
-			let mut stream = event_filter.into_stream();
-			while let Some(event) = stream.next().await {
-				let to_yield = event
-					.map(|(commitment, _)| AcceptedBlockCommitment {
-						height: commitment.height.try_into().unwrap(),
-						block_id: Id(commitment.blockHash.0),
-						commitment: Commitment(commitment.stateCommitment.0),
-					})
-					.map_err(|err| McrEthConnectorError::EventNotificationError(err).into());
-				yield to_yield;
-			}
-			yield Err(McrEthConnectorError::EventNotificationStreamClosed.into())
-		};
+		let stream = event_filter.into_stream().map(|event| {
+			event
+				.map(|(commitment, _)| AcceptedBlockCommitment {
+					height: commitment.height.try_into().unwrap(),
+					block_id: Id(commitment.blockHash.0),
+					commitment: Commitment(commitment.stateCommitment.0),
+				})
+				.map_err(|err| McrEthConnectorError::EventNotificationError(err).into())
+		});
 		Ok(Box::pin(stream) as CommitmentStream)
 	}
 
@@ -209,11 +200,12 @@ pub mod test {
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
 
-	#[ignore]
+	//#[ignore]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
-		let signer: LocalWallet = "XXX".parse()?;
-		let api_key = "XXX";
+		let signer: LocalWallet =
+			"a664d9aada3d793ec8c2c3ac7bc0f900a2f8833fa0a71aa5b3a33e5e3904b3c3".parse()?;
+		let api_key = "P39DFJvglTWtQLx1_HoXhulMLmsY3RiT";
 		// Build a provider.
 		let provider = ProviderBuilder::new()
 			.with_recommended_fillers()
