@@ -19,8 +19,9 @@ pub struct Manager {
 impl Manager {
 	/// Creates a new MCR settlement manager.
 	///
-	/// Returns the handle with the public API, the stream to receive commitment events,
-	/// and a future that drives the background task.
+	/// Returns the handle with the public API and the stream to receive commitment events.
+	/// The stream needs to be polled to drive the MCR settlement client and
+	/// process the commitments.
 	pub fn new<C: McrSettlementClientOperations + Send + 'static>(
 		client: C,
 	) -> (Self, CommitmentEventStream) {
