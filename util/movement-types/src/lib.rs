@@ -1,6 +1,7 @@
 use core::fmt::Display;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
+use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id(pub Vec<u8>);
@@ -23,6 +24,12 @@ impl Display for Id {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{:?}", &self.0)
 	}
+}
+
+#[derive(Error, Debug)]
+pub enum TransactionError {
+	#[error("AtomicTransactionBundle must contain exactly one transaction")]
+	AtomicTransactionBundleMustContainExactlyOneTransaction,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -63,13 +70,13 @@ pub struct AtomicTransactionBundle {
 }
 
 impl TryFrom<AtomicTransactionBundle> for Transaction {
-	type Error = anyhow::Error;
+	type Error = TransactionError;
 
 	fn try_from(value: AtomicTransactionBundle) -> Result<Self, Self::Error> {
 		if value.transactions.len() == 1 {
 			Ok(value.transactions[0].data.clone())
 		} else {
-			Err(anyhow::anyhow!("AtomicTransactionBundle must contain exactly one transaction"))
+			Err(TransactionError::AtomicTransactionBundleMustContainExactlyOneTransaction)
 		}
 	}
 }
