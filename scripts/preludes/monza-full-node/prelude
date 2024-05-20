@@ -4,8 +4,11 @@ set -e
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
 export MOVE_ROCKS_PATH="$MOVEMENT_BASE_STORAGE_PATH/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
 . ./scripts/celestia/celestia-env
-export MOVEMENT_PREBUILT=${MOVEMENT_PREBUILT:-false}
-export CARGO_PROFILE=${CARGO_PROFILE:-debug}
+
+: ${MOVEMENT_PREBUILT:=false}
+export MOVEMENT_PREBUILT
+: ${CARGO_PROFILE:=debug}
+export CARGO_PROFILE
 
 if [ "$CARGO_PROFILE" = "release" ]; then
     CARGO_PROFILE_FLAGS="--release"
