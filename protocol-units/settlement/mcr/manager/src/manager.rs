@@ -117,3 +117,34 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 		}
 	})
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use mcr_settlement_client::McrSettlementClient;
+	use movement_types::{BlockCommitment, Commitment};
+
+	#[tokio::test]
+	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
+		let mut client = McrSettlementClient::new();
+		client.block_lead_tolerance = 1;
+		let (manager, mut event_stream) = Manager::new(client);
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment::test(),
+		};
+		manager.post_block_commitment(commitment.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment::test(),
+		};
+		manager.post_block_commitment(commitment2).await?;
+		let item = event_stream.next().await;
+		let res = item.unwrap();
+		let event = res.unwrap();
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment));
+		Ok(())
+	}
+}
