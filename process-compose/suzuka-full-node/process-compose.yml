@@ -31,9 +31,9 @@ processes:
       exec:
         command: echo "true"
 
-  monza-full-node:
+  suzuka-full-node:
     command: |
-      ./target/debug/monza-full-node
+      ./target/debug/suzuka-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy
@@ -43,12 +43,12 @@ processes:
         command: |
           echo "true"
 
-  monza-faucet:
+  suzuka-faucet:
     command : |
-      # FIXME(nix-ci-fix): this is the latest we can push linking issues, here and in the Monza client tests we will get a libssl linking issue
-      ./scripts/monza/faucet
+      # FIXME(nix-ci-fix): this is the latest we can push linking issues, here and in the Suzuka client tests we will get a libssl linking issue
+      ./scripts/suzuka/faucet
     depends_on:
-      monza-full-node:
+      suzuka-full-node:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10

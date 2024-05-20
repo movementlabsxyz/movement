@@ -1,0 +1,17 @@
+version: "3"
+
+environment:
+
+processes:
+
+  suzuka-client-tests:
+    command: |
+      # FIXME(nix-ci-fix): this is the latest we can push linking issues, here and in the Suzuka faucet process we will get a libssl linking issue
+      cargo test -p suzuka-client -- --test-threads=1
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
