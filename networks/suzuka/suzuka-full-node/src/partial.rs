@@ -247,6 +247,7 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 		let executor = SuzukaExecutorV1::try_from_env(tx)
 			.await
 			.context("Failed to get executor from environment")?;
+		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();
 		Self::bound(executor, light_node_client, settlement_client)
 	}
