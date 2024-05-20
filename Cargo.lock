@@ -6230,6 +6230,7 @@ name = "memseq"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "futures",
  "mempool-util",
  "move-rocks",
  "movement-types",
