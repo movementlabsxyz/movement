@@ -206,14 +206,10 @@ where
 			let commitment =
 				self.executor.execute_block(FinalityMode::Opt, executable_block).await?;
 
-<<<<<<< HEAD
             #[cfg(feature = "logging")]
             {
                 tracing::debug!("Executed block: {:?}", block_id)
             }
-=======
-			println!("Executed block: {:?}", block_id);
->>>>>>> b6eda06a66904bb52ebb0dcdd15f36bbaad3b677
 
 			self.settlement_manager.post_block_commitment(commitment).await?;
 		}
@@ -266,23 +262,10 @@ where
 }
 
 impl SuzukaPartialNode<SuzukaExecutorV1> {
-<<<<<<< HEAD
-
-    pub async fn try_from_env() -> Result<Self, anyhow::Error> {
-        let (tx, _) = async_channel::unbounded();
-        let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-        let executor = SuzukaExecutorV1::try_from_env(tx).await.context(
-            "Failed to get executor from environment"
-        )?;
-        Self::bound(executor, light_node_client)
-    }
-
-}
-=======
 	pub async fn try_from_env(
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
+		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 		let executor = SuzukaExecutorV1::try_from_env(tx)
 			.await
 			.context("Failed to get executor from environment")?;
@@ -291,4 +274,3 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 		Self::bound(executor, light_node_client, settlement_client)
 	}
 }
->>>>>>> b6eda06a66904bb52ebb0dcdd15f36bbaad3b677

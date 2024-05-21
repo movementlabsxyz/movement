@@ -246,14 +246,12 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
-<<<<<<< HEAD
 		#[cfg(feature = "logging")]
 		{
 			tracing::debug!("State compute: {:?}", state_compute)
 		}
-=======
+		
 		let version = state_compute.version();
->>>>>>> b6eda06a66904bb52ebb0dcdd15f36bbaad3b677
 
 
 		let (epoch, round) = self.get_next_epoch_and_round().await?;

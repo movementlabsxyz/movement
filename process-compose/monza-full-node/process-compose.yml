@@ -32,7 +32,7 @@ processes:
 
   suzuka-full-node:
     command: |
-      ./target/debug/suzuka-full-node
+      ./target/$CARGO_PROFILE/monza-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy

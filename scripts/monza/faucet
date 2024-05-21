@@ -8,16 +8,16 @@ temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
 cd "$temp_dir"
 
 # Split the listen addresses into an array
-IFS=':' read -r -a listener_array <<< "$SUZUKA_APTOS_FAUCET_LISTEN_ADDR"
+IFS=':' read -r -a listener_array <<< "$MONZA_APTOS_FAUCET_LISTEN_ADDR"
 
 # Extract the listen address and port
 LISTEN_ADDR="${listener_array[0]}"
 LISTEN_PORT="${listener_array[1]}"
 
 echo "Starting faucet service with the following configuration:"
-echo "  - Chain ID: $SUZUKA_CHAIN_ID"
-echo "  - Node URL: $SUZUKA_APTOS_REST_LISTEN_ADDR"
-echo "  - Faucet URL: $SUZUKA_APTOS_FAUCET_LISTEN_ADDR"
+echo "  - Chain ID: $MONZA_CHAIN_ID"
+echo "  - Node URL: $MONZA_APTOS_REST_LISTEN_ADDR"
+echo "  - Faucet URL: $MONZA_APTOS_FAUCET_LISTEN_ADDR"
 
 # Run the faucet service using cargo
 echo "Starting faucet service..."
