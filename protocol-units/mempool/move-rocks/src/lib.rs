@@ -245,37 +245,42 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	}
 }
 
-impl MempoolBlockOperations for RocksdbMempool {
-	async fn has_block(&self, block_id: Id) -> MempoolBlockOperationsResult<bool> {
+impl MempoolBlockOperations<RocksdbMempoolError> for RocksdbMempool {
+	async fn has_block(
+		&self,
+		block_id: Id,
+	) -> MempoolBlockOperationsResult<bool, RocksdbMempoolError> {
 		let db = self.db.read().await;
-		Ok(db
-			.get_from_handle("blocks", block_id.to_vec())
-			.map_err(MempoolBlockOperationsError::store_error)?
-			.is_some())
+		Ok(db.get_from_handle("blocks", block_id.to_vec())?.is_some())
 	}
 
-	async fn add_block(&self, block: Block) -> MempoolBlockOperationsResult<()> {
+	async fn add_block(
+		&self,
+		block: Block,
+	) -> MempoolBlockOperationsResult<(), RocksdbMempoolError> {
 		let serialized_block = serde_json::to_vec(&block)
 			.map_err(|e| MempoolBlockOperationsError::SerializeError(e.to_string()))?;
 
 		let db = self.db.write().await;
-		db.put_to_handle("blocks", block.id().to_vec(), &serialized_block)
-			.map_err(MempoolBlockOperationsError::store_error)?;
+		db.put_to_handle("blocks", block.id().to_vec(), &serialized_block)?;
 		Ok(())
 	}
 
-	async fn remove_block(&self, block_id: Id) -> MempoolBlockOperationsResult<()> {
+	async fn remove_block(
+		&self,
+		block_id: Id,
+	) -> MempoolBlockOperationsResult<(), RocksdbMempoolError> {
 		let db = self.db.write().await;
-		db.delete_from_handle("blocks", block_id.to_vec())
-			.map_err(MempoolBlockOperationsError::store_error)?;
+		db.delete_from_handle("blocks", block_id.to_vec())?;
 		Ok(())
 	}
 
-	async fn get_block(&self, block_id: Id) -> MempoolBlockOperationsResult<Option<Block>> {
+	async fn get_block(
+		&self,
+		block_id: Id,
+	) -> MempoolBlockOperationsResult<Option<Block>, RocksdbMempoolError> {
 		let db = self.db.read().await;
-		let serialized_block = db
-			.get_from_handle("blocks", block_id.to_vec())
-			.map_err(MempoolBlockOperationsError::store_error)?;
+		let serialized_block = db.get_from_handle("blocks", block_id.to_vec())?;
 		match serialized_block {
 			Some(serialized_block) => {
 				let block: Block = serde_json::from_slice(&serialized_block).map_err(|e| {
