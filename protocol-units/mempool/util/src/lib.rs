@@ -132,36 +132,36 @@ pub trait MempoolTransactionOperations {
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
-pub enum MempoolBlockOperationsError {
+pub enum MempoolBlockOperationsError<E> {
 	#[error("Store error: {0}")]
-	StoreError(#[from] BoxedStoreError),
+	StoreError(E),
 	#[error("Serialization error: {0}")]
 	SerializeError(String),
 	#[error("Deserialization error: {0}")]
 	DeserializationError(String),
 }
 
-impl MempoolBlockOperationsError {
-	pub fn store_error<E: std::error::Error + Send + Sync + 'static>(error: E) -> Self {
-		Self::StoreError(Box::new(error))
+impl<E: std::error::Error + Send + Sync + 'static> From<E> for MempoolBlockOperationsError<E> {
+	fn from(error: E) -> Self {
+		Self::StoreError(error)
 	}
 }
 
-pub type MempoolBlockOperationsResult<T> = Result<T, MempoolBlockOperationsError>;
+pub type MempoolBlockOperationsResult<T, E> = Result<T, MempoolBlockOperationsError<E>>;
 
 #[allow(async_fn_in_trait)]
-pub trait MempoolBlockOperations {
+pub trait MempoolBlockOperations<E> {
 	/// Checks whether a block exists in the mempool.
-	async fn has_block(&self, block_id: Id) -> MempoolBlockOperationsResult<bool>;
+	async fn has_block(&self, block_id: Id) -> MempoolBlockOperationsResult<bool, E>;
 
 	/// Adds a block to the mempool.
-	async fn add_block(&self, block: Block) -> MempoolBlockOperationsResult<()>;
+	async fn add_block(&self, block: Block) -> MempoolBlockOperationsResult<(), E>;
 
 	/// Removes a block from the mempool.
-	async fn remove_block(&self, block_id: Id) -> MempoolBlockOperationsResult<()>;
+	async fn remove_block(&self, block_id: Id) -> MempoolBlockOperationsResult<(), E>;
 
 	/// Gets a block from the mempool.
-	async fn get_block(&self, block_id: Id) -> MempoolBlockOperationsResult<Option<Block>>;
+	async fn get_block(&self, block_id: Id) -> MempoolBlockOperationsResult<Option<Block>, E>;
 }
 
 /// Wraps a transaction with a timestamp for help ordering.
