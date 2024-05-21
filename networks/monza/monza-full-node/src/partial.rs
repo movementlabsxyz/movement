@@ -140,9 +140,9 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
             }
 
             // get the block
-            let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
+            let (block_bytes, block_timestamp) = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
                 blob_response::BlobType::SequencedBlobBlock(blob) => {
-                    blob.data
+                    (blob.data, blob.timestamp)
                 },
                 _ => { anyhow::bail!("Invalid blob type in response") }
             };
@@ -157,6 +157,14 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
             // get the transactions
             let mut block_transactions = Vec::new();
+            let block_metadata = self.executor.build_block_metadata(block_timestamp).await?;
+            let block_metadata_transaction = SignatureVerifiedTransaction::Valid(
+                Transaction::BlockMetadata(
+                    block_metadata
+                )
+            );
+            block_transactions.push(block_metadata_transaction);
+
             for transaction in block.transactions {
                 let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
                 let signature_verified_transaction = SignatureVerifiedTransaction::Valid(

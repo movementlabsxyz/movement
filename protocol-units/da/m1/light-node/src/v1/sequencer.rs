@@ -123,7 +123,8 @@ impl LightNodeV1 {
                 Blob {
                     data,
                     blob_id : "".to_string(),
-                    height
+                    height,
+                    timestamp : 0,
                 }
             ))
         })

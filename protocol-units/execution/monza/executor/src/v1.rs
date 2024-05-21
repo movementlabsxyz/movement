@@ -82,6 +82,31 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		// ideally, this should read from the ledger
 		Ok(1)
 	}
+
+	/// Build block metadata for a timestamp
+	async fn build_block_metadata(&self, timestamp: u64) -> Result<BlockMetadata, anyhow::Error> {
+		
+		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
+
+		// Generate a random block ID.
+		let block_id = HashValue::random();
+		// Clone the signer from the executor for signing the metadata.
+		let signer = self.executor.signer.clone();
+		// Get the current time in microseconds for the block timestamp.
+		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+		// Create a block metadata transaction.
+		Ok(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			current_time_micros,
+		))
+
+	}
 }
 
 #[cfg(test)]

@@ -218,12 +218,16 @@ impl LightNodeV1 {
     }
 
     pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
+
+        let timestamp = chrono::Utc::now().timestamp() as u64;
+    
         Ok(Blob {
             data: blob.data,
             blob_id: serde_json::to_string(&blob.commitment).map_err(
                 |e| anyhow::anyhow!("Failed to serialize commitment: {}", e)
             )?,
-            height
+            height,
+            timestamp,
         })
     }
 
