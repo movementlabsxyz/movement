@@ -89,8 +89,6 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
 		// Clone the signer from the executor for signing the metadata.
 		let signer = self.executor.signer.clone();
-		// Get the current time in microseconds for the block timestamp.
-		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
 
 		// Create a block metadata transaction.
 		Ok(BlockMetadata::new(
@@ -100,7 +98,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 			signer.author(),
 			vec![],
 			vec![],
-			current_time_micros,
+			timestamp,
 		))
 
 	}
