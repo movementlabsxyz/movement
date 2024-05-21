@@ -127,21 +127,18 @@ impl RocksdbMempool {
 	}
 }
 
-impl MempoolTransactionOperations for RocksdbMempool {
+impl MempoolTransactionOperations<RocksdbMempoolError> for RocksdbMempool {
 	async fn has_mempool_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<bool> {
-		let key = self
-			.get_mempool_transaction_key(&transaction_id)
-			.await
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+	) -> MempoolTransactionOperationsResult<bool, RocksdbMempoolError> {
+		let key = self.get_mempool_transaction_key(&transaction_id).await?;
 		match key {
 			Some(k) => {
 				let db = self.db.read().await;
 				db.get_from_handle("mempool_transactions", k)
-					.map_err(MempoolTransactionOperationsError::store_error)
 					.map(|v| v.is_some())
+					.map_err(From::from)
 			},
 			None => Ok(false),
 		}
@@ -150,17 +147,15 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	async fn add_mempool_transaction(
 		&self,
 		tx: MempoolTransaction,
-	) -> MempoolTransactionOperationsResult<()> {
+	) -> MempoolTransactionOperationsResult<(), RocksdbMempoolError> {
 		let serialized_tx = serde_json::to_vec(&tx)
 			.map_err(|e| MempoolTransactionOperationsError::SerializationError(e.to_string()))?;
 
 		let db = self.db.write().await;
 
 		let key = Self::construct_mempool_transaction_key(&tx);
-		db.put_to_handle("mempool_transactions", &key, &serialized_tx)
-			.map_err(MempoolTransactionOperationsError::store_error)?;
-		db.put_to_handle("transaction_lookups", tx.transaction.id().to_vec(), &key)
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+		db.put_to_handle("mempool_transactions", &key, &serialized_tx)?;
+		db.put_to_handle("transaction_lookups", tx.transaction.id().to_vec(), &key)?;
 
 		Ok(())
 	}
@@ -168,19 +163,14 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	async fn remove_mempool_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<()> {
-		let key = self
-			.get_mempool_transaction_key(&transaction_id)
-			.await
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+	) -> MempoolTransactionOperationsResult<(), RocksdbMempoolError> {
+		let key = self.get_mempool_transaction_key(&transaction_id).await?;
 
 		match key {
 			Some(k) => {
 				let db = self.db.write().await;
-				db.delete_from_handle("mempool_transactions", k)
-					.map_err(MempoolTransactionOperationsError::store_error)?;
-				db.delete_from_handle("transaction_lookups", transaction_id.to_vec())
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+				db.delete_from_handle("mempool_transactions", k)?;
+				db.delete_from_handle("transaction_lookups", transaction_id.to_vec())?;
 			},
 			None => (),
 		}
@@ -191,21 +181,14 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	async fn get_mempool_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
-		let key = match self
-			.get_mempool_transaction_key(&transaction_id)
-			.await
-			.map_err(MempoolTransactionOperationsError::store_error)?
-		{
+	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>, RocksdbMempoolError> {
+		let key = match self.get_mempool_transaction_key(&transaction_id).await? {
 			Some(k) => k,
 			None => return Ok(None), // If no key found in lookup, return None
 		};
 
 		let db = self.db.read().await;
-		match db
-			.get_from_handle("mempool_transactions", &key)
-			.map_err(MempoolTransactionOperationsError::store_error)?
-		{
+		match db.get_from_handle("mempool_transactions", &key)? {
 			Some(serialized_tx) => {
 				let tx: MempoolTransaction =
 					serde_json::from_slice(&serialized_tx).map_err(|e| {
@@ -219,26 +202,22 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 	async fn pop_mempool_transaction(
 		&self,
-	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
+	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>, RocksdbMempoolError> {
 		let db = self.db.write().await;
 
-		let (cf_handle, mut iter) = db
-			.iter_from_handle("mempool_transactions")
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+		let (_, mut iter) = db.iter_from_handle("mempool_transactions")?;
 
 		match iter.next() {
 			None => return Ok(None), // No transactions to pop
 			Some(res) => {
-				let (key, value) = res.map_err(MempoolTransactionOperationsError::store_error)?;
+				let (key, value) = res.map_err(RocksdbMempoolError::from)?;
 				let tx: MempoolTransaction = serde_json::from_slice(&value).map_err(|e| {
 					MempoolTransactionOperationsError::DeserializationError(e.to_string())
 				})?;
 
-				db.delete_cf(&cf_handle, &key)
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+				db.delete_from_handle("mempool_transactions", &key)?;
 
-				db.delete_from_handle("transaction_lookups", tx.transaction.id().to_vec())
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+				db.delete_from_handle("transaction_lookups", tx.transaction.id().to_vec())?;
 
 				Ok(Some(tx))
 			},

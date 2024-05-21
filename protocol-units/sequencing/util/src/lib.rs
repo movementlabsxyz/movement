@@ -6,7 +6,7 @@ use thiserror::Error;
 #[non_exhaustive]
 pub enum SequencerError<E> {
 	#[error("MempoolTransactionOperationsError error: {0}")]
-	MempoolTransactionOperationsError(#[from] MempoolTransactionOperationsError),
+	MempoolTransactionOperationsError(#[from] MempoolTransactionOperationsError<E>),
 	#[error("MempoolBlockOperationsError error: {0}")]
 	MempoolBlockOperationsError(#[from] MempoolBlockOperationsError<E>),
 }
