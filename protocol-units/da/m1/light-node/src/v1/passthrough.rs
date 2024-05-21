@@ -91,8 +91,9 @@ impl LightNodeV1 {
             .blob_get_all(height, &[self.celestia_namespace])
             .await;
 
+        #[cfg(feature = "logging")]
         if blobs.is_err() {
-            println!("Error getting blobs: {:?}", blobs.as_ref().err().unwrap());
+            tracing::debug!("Error getting blobs: {:?}", blobs.as_ref().err().unwrap());
         }
 
         let blobs = blobs.unwrap_or_default();
@@ -100,7 +101,10 @@ impl LightNodeV1 {
         let mut verified_blobs = Vec::new();
         for blob in blobs {
 
-            println!("Verifying blob");
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Verifying blob");
+            }
 
             let blob_data = blob.data.clone();
 
@@ -111,8 +115,9 @@ impl LightNodeV1 {
                 height,
             ).await;
 
+            #[cfg(feature = "logging")]
             if verified.is_err() {
-                println!("Error verifying blob: {:?}", verified.as_ref().err().unwrap());
+                tracing::debug!("Error verifying blob: {:?}", verified.as_ref().err().unwrap());
             }
 
             let verified = verified.unwrap_or(true);
@@ -172,7 +177,11 @@ impl LightNodeV1 {
 
                 let header = header_res?;
                 let height = header.height().into();
-                println!("Stream got header: {:?}", header.height());
+
+                #[cfg(feature = "logging")]
+                {
+                    tracing::debug!("Stream got header: {:?}", header.height());
+                }
 
                 // back fetch the blobs
                 if first_flag && (height > start_height) {
@@ -180,7 +189,12 @@ impl LightNodeV1 {
                     let mut blob_stream = me.stream_blobs_in_range(start_height, Some(height)).await?;
                     
                     while let Some(blob) = blob_stream.next().await {
-                        println!("Stream got blob: {:?}", blob);
+                        
+                        #[cfg(feature = "logging")]
+                        {
+                            tracing::debug!("Stream got blob: {:?}", blob);
+                        }
+
                         yield blob?;
                     }
 
@@ -189,7 +203,12 @@ impl LightNodeV1 {
 
                 let blobs = me.get_blobs_at_height(height).await?;
                 for blob in blobs {
-                    println!("Stream got blob: {:?}", blob);
+                    
+                    #[cfg(feature = "logging")]
+                    {
+                        tracing::debug!("Stream got blob: {:?}", blob);
+                    }
+
                     yield blob;
                 }
             }

@@ -67,7 +67,12 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
             match transaction_result {
                 Ok(transaction) => {
-                    println!("Got transaction: {:?}", transaction);
+
+                    #[cfg(feature = "logging")]
+                    {
+                        tracing::debug!("Got transaction: {:?}", transaction)
+                    }
+
                     let serialized_transaction = serde_json::to_vec(&transaction)?;
                     transactions.push(BlobWrite {
                         data: serialized_transaction
@@ -91,7 +96,12 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                     blobs: transactions
                 }
             ).await?;
-            println!("Wrote transactions to DA");
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Wrote transactions to DA")
+            }
+
         }
 
         Ok(())
@@ -125,7 +135,11 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
         while let Some(blob) = stream.next().await {
 
-            println!("Stream hot!");
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Got blob: {:?}", blob)
+            }
+
             // get the block
             let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
                 blob_response::BlobType::SequencedBlobBlock(blob) => {
@@ -136,7 +150,11 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
             // get the block
             let block : Block = serde_json::from_slice(&block_bytes)?;
-            println!("Received block: {:?}", block);
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Got block: {:?}", block)
+            }
 
             // get the transactions
             let mut block_transactions = Vec::new();
@@ -172,7 +190,10 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                 executable_block
             ).await?;
 
-            println!("Executed block: {:?}", block_id);
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Executed block: {:?}", block_id)
+            }
 
         }
 

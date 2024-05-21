@@ -29,7 +29,6 @@ pub mod test {
 
         // Get the cargo workspace
         let workspace = cargo_workspace()?;
-        println!("cargo_workspace: {:?}", workspace);
 
         // Check that a Cargo.toml file exists in the workspace
         assert_eq!(workspace.join("Cargo.toml").exists(), true);

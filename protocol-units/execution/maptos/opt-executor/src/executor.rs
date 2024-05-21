@@ -266,7 +266,10 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
-		println!("State compute: {:?}", state_compute);
+		#[cfg(feature = "logging")]
+		{
+			tracing::debug!("State compute: {:?}", state_compute)
+		}
 
 		let latest_version = {
 			let reader = self.db.read().await.reader.clone();
