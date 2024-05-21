@@ -33,5 +33,5 @@ jobs:
     - name: Run M1 DA Light Node tests in nix environment
       run: nix develop --command bash  -c "just m1-da-light-node test.local -t=false"  
 
-    - name: Run monza tests in nix environment
-      run: nix develop --command bash  -c "just monza-full-node test.local -t=false"  
+    - name: Run suzuka tests in nix environment
+      run: nix develop --command bash  -c "just suzuka-full-node test.local -t=false"  

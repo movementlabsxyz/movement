@@ -33,6 +33,8 @@ tokio = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 bcs = { workspace = true}
+futures = { workspace = true }
+async-channel = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
@@ -58,9 +60,8 @@ aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
-futures = { workspace = true }
-async-channel = { workspace = true }
 maptos-execution-util = { workspace = true }
+movement-types = { workspace = true }
 
 dirs = { workspace = true }
 tempfile = { workspace = true }

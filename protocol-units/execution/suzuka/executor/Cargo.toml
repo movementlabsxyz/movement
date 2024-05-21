@@ -62,6 +62,7 @@ aptos-temppath = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
 maptos-execution-util = { workspace = true }
+movement-types = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"

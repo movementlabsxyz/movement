@@ -42,6 +42,7 @@
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
          dependencies = with pkgs; [
+          rocksdb
           foundry-bin
           # solc
           llvmPackages.bintools
@@ -73,6 +74,8 @@
         ] ++ lib.optionals stdenv.isLinux [
           udev
           systemd
+          snappy
+          bzip2
         ];
 
         # Specific version of toolchain
@@ -111,6 +114,11 @@
 
           # Development Shell
           devShells.default = mkShell {
+
+            ROCKSDB=pkgs.rocksdb;
+            
+            # for linux set SNAPPY variable
+            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
             OPENSSL_DEV=pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";

@@ -44,7 +44,7 @@ processes:
 
   suzuka-faucet:
     command : |
-      ./scripts/monza/faucet
+      ./scripts/suzuka/faucet
     depends_on:
       suzuka-full-node:
         condition: process_healthy
