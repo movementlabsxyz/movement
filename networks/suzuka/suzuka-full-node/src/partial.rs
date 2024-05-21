@@ -154,7 +154,12 @@ where
         }.into_inner();
 
 		while let Some(blob) = stream.next().await {
-			println!("Stream hot!");
+			
+			#[cfg(feature = "logging")]
+			{
+				tracing::debug!("Got blob: {:?}", blob)
+			}
+
 			// get the block
 			let block_bytes = match blob?
 				.blob
@@ -223,10 +228,20 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
-				println!("Commitment accepted: {:?}", commitment);
+				
+				#[cfg(feature = "logging")]
+				{
+					tracing::debug!("Commitment accepted: {:?}", commitment)
+				}
+
 			},
 			BlockCommitmentEvent::Rejected { height, reason } => {
-				println!("Commitment at height {height} rejected: {reason:?}");
+				
+				#[cfg(feature = "logging")]
+				{
+					tracing::debug!("Commitment rejected: {:?} {:?}", height, reason)
+				}
+
 			},
 		}
 	}

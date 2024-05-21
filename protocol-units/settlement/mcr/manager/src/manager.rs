@@ -56,7 +56,6 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 		loop {
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
-					println!("Received commitment: {:?}", block_commitment);
 					commitments_to_settle.insert(
 						block_commitment.height,
 						block_commitment.commitment.clone(),
@@ -79,7 +78,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 							break;
 						}
 					};
-					println!("Received settlement: {:?}", settled_commitment);
+
 					let height = settled_commitment.height;
 					if let Some(commitment) = commitments_to_settle.remove(&height) {
 						let event = if commitment == settled_commitment.commitment {

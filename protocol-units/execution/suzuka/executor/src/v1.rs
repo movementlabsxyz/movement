@@ -231,8 +231,6 @@ mod opt_tests {
         let block = ExecutableBlock::new(block_id.clone(), txs);
         let commitment = executor.execute_block(FinalityMode::Opt, block).await?;
 
-        println!("Commitment: {:?}", commitment);
-
         // TODO: test the commitment
 
         services_handle.abort();
