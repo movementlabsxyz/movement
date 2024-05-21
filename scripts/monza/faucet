@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 
 # Copy the directory from the Nix store to a temporary location
 temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
@@ -20,7 +21,7 @@ echo "  - Faucet URL: $MONZA_APTOS_FAUCET_LISTEN_ADDR"
 
 # Run the faucet service using cargo
 echo "Starting faucet service..."
-./target/debug/aptos-faucet-service run-simple --key "$MONZA_APTOS_PRIVATE_KEY" \
+./target/$CARGO_PROFILE/aptos-faucet-service run-simple --key "$MONZA_APTOS_PRIVATE_KEY" \
     --node-url "http://$MONZA_APTOS_REST_LISTEN_ADDR" --chain-id "$MONZA_CHAIN_ID" \
     --listen-address "$LISTEN_ADDR" --listen-port "$LISTEN_PORT"
 

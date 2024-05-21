@@ -1,2 +1,3 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 cel-key list --node.type light --keyring-backend test --home $APP_PATH --keyring-dir $APP_PATH --output json |  sed '1d' | jq -r '.[0].address'

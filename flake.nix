@@ -4,6 +4,7 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/monthly"; 
+    naersk.url = "github:nix-community/naersk";
   };
 
   outputs = {
@@ -12,11 +13,20 @@
     rust-overlay,
     flake-utils,
     foundry,
+    naersk,
     ...
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
 
       system: let
+
+        # nix does not handle .cargo/config.toml
+        RUSTFLAGS = if pkgs.stdenv.hostPlatform.isLinux then
+          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=-fuse-ld=lld -C target-feature=+sse4.2"
+        else if pkgs.stdenv.hostPlatform.isWindows then
+          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=/STACK:8000000"
+        else
+          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes";
 
         overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
 
@@ -33,7 +43,7 @@
 
          dependencies = with pkgs; [
           foundry-bin
-          solc
+          # solc
           llvmPackages.bintools
           openssl
           openssl.dev
@@ -73,6 +83,11 @@
           rustc = rust;
         };
 
+        naersk' = pkgs.callPackage naersk {
+          cargo = rust;
+          rustc = rust;
+        };
+
         # celestia-node
         celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
 
@@ -81,12 +96,18 @@
 
         # monza-aptos
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
+
+        # m1-da-light-node
+        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
     
       in
         with pkgs; {
 
           # Monza Aptos
           packages.monza-aptos = monza-aptos;
+
+          # M1 DA Light Node
+          packages.m1-da-light-node = m1-da-light-node;
 
           # Development Shell
           devShells.default = mkShell {
@@ -97,8 +118,9 @@
             nativeBuildInputs = dependencies;
 
             shellHook = ''
-              #!/bin/bash
+              #!/usr/bin/env bash
               export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
+              echo "Monza Aptos Path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
@@ -109,6 +131,7 @@
               echo "Develop with Move Anywhere"
             '';
           };
+
         }
     );
 }

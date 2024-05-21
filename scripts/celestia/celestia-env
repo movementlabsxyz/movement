@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 export DA_BLOCK_HEIGHT=0
 export CELESTIA_NODE_AUTH_TOKEN=
 export CELESTIA_ADDRESS=
