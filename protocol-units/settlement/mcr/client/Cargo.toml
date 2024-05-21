@@ -13,7 +13,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 #move to workspace when impl is done.
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub"]}
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub", "signers", "signer-wallet", "signer-yubihsm"]}
 alloy-primitives = { version = "0.7.2", default-features = false }
 alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = ["ws"]}
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
