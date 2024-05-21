@@ -47,3 +47,6 @@ eth = []
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings"}

@@ -1,5 +1,12 @@
 use crate::{AcceptedBlockCommitment, CommitmentStream, McrSettlementClientOperations};
 use alloy_network::Ethereum;
+use alloy_provider::fillers::ChainIdFiller;
+use alloy_provider::fillers::FillProvider;
+use alloy_provider::fillers::GasFiller;
+use alloy_provider::fillers::JoinFill;
+use alloy_provider::fillers::NonceFiller;
+use alloy_provider::fillers::SignerFiller;
+//use alloy_provider::fillers::TxFiller;
 use alloy_provider::{ProviderBuilder, RootProvider};
 use alloy_transport::{Transport, TransportError};
 use movement_types::{Commitment, Id};
@@ -14,6 +21,9 @@ use alloy_primitives::U256;
 use alloy_sol_types::sol;
 //use alloy_transport_http::Http;
 use alloy::pubsub::PubSubFrontend;
+use alloy_network::EthereumSigner;
+use alloy_signer_wallet::LocalWallet;
+use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use movement_types::BlockCommitment;
 
@@ -46,14 +56,53 @@ sol!(
 const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const MAX_TX_SEND_RETRY: usize = 3;
 
-pub struct McrEthSettlementClient<P: Provider<T, Ethereum>, T: Transport + Clone> {
+pub struct McrEthSettlementClient<P, T, N> {
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
 	gas_limit: u128,
-	_marker: PhantomData<T>,
+	_markert: PhantomData<T>,
+	_markern: PhantomData<N>,
 }
 
-impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrEthSettlementClient<P, T> {
+impl
+	McrEthSettlementClient<
+		FillProvider<
+			JoinFill<
+				JoinFill<
+					JoinFill<JoinFill<alloy_provider::Identity, GasFiller>, NonceFiller>,
+					ChainIdFiller,
+				>,
+				SignerFiller<EthereumSigner>,
+			>,
+			RootProvider<BoxTransport>,
+			BoxTransport,
+			Ethereum,
+		>,
+		BoxTransport,
+		Ethereum,
+	>
+{
+	pub async fn build_with_urls<S2>(
+		rpc: &str,
+		ws_url: S2,
+		signer_private_key: &str,
+		gas_limit: u128,
+	) -> Result<Self, anyhow::Error>
+	where
+		S2: Into<String>,
+	{
+		let signer: LocalWallet = signer_private_key.parse()?;
+		let rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.signer(EthereumSigner::from(signer))
+			.on_builtin(rpc)
+			.await?;
+
+		McrEthSettlementClient::build_with_provider(rpc_provider, ws_url, gas_limit).await
+	}
+}
+
+impl<P: Provider<T, Ethereum>, T: Transport + Clone, N> McrEthSettlementClient<P, T, N> {
 	pub async fn build_with_provider<S>(
 		rpc_provider: P,
 		ws_url: S,
@@ -70,14 +119,15 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrEthSettlementClient<P, T
 			rpc_provider,
 			ws_provider,
 			gas_limit,
-			_marker: Default::default(),
+			_markert: Default::default(),
+			_markern: Default::default(),
 		})
 	}
 }
 
 #[async_trait::async_trait]
 impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperations
-	for McrEthSettlementClient<P, T>
+	for McrEthSettlementClient<P, T, Ethereum>
 {
 	async fn post_block_commitment(
 		&self,
@@ -199,17 +249,27 @@ pub mod test {
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
 
-	#[ignore]
+	//#[ignore]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
+		let private_key = "xxxx";
 		let signer: LocalWallet = "xxx".parse()?;
 		let api_key = "xxx";
+		let rpc_url = format!("https://eth-sepolia.g.alchemy.com/v2/{api_key}");
 		// Build a provider.
 		let provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer))
 			.on_builtin(&format!("https://eth-sepolia.g.alchemy.com/v2/{api_key}"))
 			.await?;
+
+		let client = McrEthSettlementClient::build_with_urls(
+			&rpc_url,
+			format!("wss://eth-sepolia.g.alchemy.com/v2/{api_key}"),
+			&private_key,
+			10000000000000000,
+		);
+
 		let client = McrEthSettlementClient::build_with_provider(
 			provider,
 			format!("wss://eth-sepolia.g.alchemy.com/v2/{api_key}"),
