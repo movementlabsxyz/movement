@@ -193,19 +193,17 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 
 #[cfg(test)]
 pub mod test {
-
 	use super::*;
 	use alloy_network::EthereumSigner;
 	use alloy_provider::ProviderBuilder;
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
 
-	//#[ignore]
+	#[ignore]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
-		let signer: LocalWallet =
-			"a664d9aada3d793ec8c2c3ac7bc0f900a2f8833fa0a71aa5b3a33e5e3904b3c3".parse()?;
-		let api_key = "P39DFJvglTWtQLx1_HoXhulMLmsY3RiT";
+		let signer: LocalWallet = "xxx".parse()?;
+		let api_key = "xxx";
 		// Build a provider.
 		let provider = ProviderBuilder::new()
 			.with_recommended_fillers()
