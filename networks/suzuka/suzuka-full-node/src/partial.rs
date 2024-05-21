@@ -154,24 +154,6 @@ where
         }.into_inner();
 
 		while let Some(blob) = stream.next().await {
-			
-			#[cfg(feature = "logging")]
-			{
-				tracing::debug!("Got blob: {:?}", blob)
-			}
-
-			// get the block
-			let block_bytes = match blob?
-				.blob
-				.ok_or(anyhow::anyhow!("No blob in response"))?
-				.blob_type
-				.ok_or(anyhow::anyhow!("No blob type in response"))?
-			{
-				blob_response::BlobType::SequencedBlobBlock(blob) => blob.data,
-				_ => {
-					anyhow::bail!("Invalid blob type in response")
-				},
-			};
 
             #[cfg(feature = "logging")]
             {
@@ -185,6 +167,13 @@ where
                 },
                 _ => { anyhow::bail!("Invalid blob type in response") }
             };
+
+			let block : Block = serde_json::from_slice(&block_bytes)?;
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Got block: {:?}", block)
+            }
 
 			// get the transactions
 			let mut block_transactions = Vec::new();
