@@ -4,8 +4,6 @@ use movement_types::{Block, Id, Transaction};
 use std::cmp::Ordering;
 use thiserror::Error;
 
-pub type BoxedStoreError = Box<dyn std::error::Error + Send + Sync + 'static>;
-
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum MempoolTransactionOperationsError<E> {

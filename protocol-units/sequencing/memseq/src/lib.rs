@@ -8,9 +8,7 @@ use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
-pub struct Memseq<
-	T: MempoolBlockOperations<RocksdbMempoolError> + MempoolTransactionOperations<RocksdbMempoolError>,
-> {
+pub struct Memseq<T> {
 	pub mempool: Arc<RwLock<T>>,
 	// this value should not be changed after initialization
 	block_size: u32,
@@ -19,11 +17,7 @@ pub struct Memseq<
 	building_time_ms: u64,
 }
 
-impl<
-		T: MempoolBlockOperations<RocksdbMempoolError>
-			+ MempoolTransactionOperations<RocksdbMempoolError>,
-	> Memseq<T>
-{
+impl<T> Memseq<T> {
 	pub fn new(
 		mempool: Arc<RwLock<T>>,
 		block_size: u32,
