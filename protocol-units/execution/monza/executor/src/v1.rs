@@ -50,7 +50,10 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		match mode {
 			FinalityMode::Dyn => unimplemented!(),
 			FinalityMode::Opt => {
-				println!("Executing opt block: {:?}", block.block_id);
+				#[cfg(feature = "logging")]
+				{
+					tracing::debug!("Executing opt block: {:?}", block.block_id)
+				}
 				self.executor.execute_block(block).await
 			},
 			FinalityMode::Fin => unimplemented!(),
@@ -78,6 +81,28 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	async fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
 		// ideally, this should read from the ledger
 		Ok(1)
+	}
+
+	/// Build block metadata for a timestamp
+	async fn build_block_metadata(&self, block_id : HashValue,  timestamp: u64) -> Result<BlockMetadata, anyhow::Error> {
+		
+		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
+		// Clone the signer from the executor for signing the metadata.
+		let signer = self.executor.signer.clone();
+		// Get the current time in microseconds for the block timestamp.
+		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+		// Create a block metadata transaction.
+		Ok(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			current_time_micros,
+		))
+
 	}
 }
 

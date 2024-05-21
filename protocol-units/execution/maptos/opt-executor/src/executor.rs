@@ -246,6 +246,11 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
+		#[cfg(feature = "logging")]
+		{
+			tracing::debug!("State compute: {:?}", state_compute)
+		}
+		
 		let version = state_compute.version();
 
 
@@ -289,15 +294,25 @@ impl Executor {
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
 
-		let metadata_block_id = HashValue::random();
-		
+		// todo: this should be deterministic, so let's rehash the block id
+		let hash_str = format!("{:?}", block.block_id);
+		let mut hash_bytes = hash_str.as_bytes().to_vec();
+		hash_bytes.reverse();
+		let metadata_block_id = HashValue::sha3_256_of(&hash_bytes);
+
+		// To correctly update block height, we employ a workaround to execute
+		// the block metadata transaction in its own block first.
+
 		// pop 0th transaction
 		let transactions = block.transactions;
 		let mut transactions = match transactions {
 			ExecutableTransactions::Unsharded(transactions) => transactions,
 			_ => anyhow::bail!("Only unsharded transactions are supported"),
 		};
-		let block_metadate = match transactions.remove(0) { // todo: this panics if index is out of bounds
+		if transactions.len() == 0 {
+			anyhow::bail!("Block must have at least the metadata transaction");
+		}
+		let block_metadata = match transactions.remove(0) {
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata)) => block_metadata,
 			_ => anyhow::bail!("Block metadata not found")
 		};
@@ -307,7 +322,7 @@ impl Executor {
 			ExecutableBlock::new(
 				metadata_block_id.clone(),
 				ExecutableTransactions::Unsharded(
-					vec![SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadate))]
+					vec![SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata))]
 				)
 			)
 		).await?;

@@ -56,7 +56,10 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
         match mode {
             FinalityMode::Dyn => unimplemented!(),
             FinalityMode::Opt => {
-                println!("Executing opt block: {:?}", block.block_id);
+                #[cfg(feature = "logging")]
+                {
+                    tracing::debug!("Executing block: {:?}", block.block_id)
+                }
                 self.executor.execute_block(block).await
             },
             FinalityMode::Fin => unimplemented!(),
@@ -227,8 +230,6 @@ mod opt_tests {
         let txs = ExecutableTransactions::Unsharded(vec![tx]);
         let block = ExecutableBlock::new(block_id.clone(), txs);
         let commitment = executor.execute_block(FinalityMode::Opt, block).await?;
-
-        println!("Commitment: {:?}", commitment);
 
         // TODO: test the commitment
 

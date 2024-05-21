@@ -1,11 +1,8 @@
 use movement_types::BlockCommitment;
 use tokio_stream::Stream;
 
-#[cfg(feature = "stub")]
-pub mod stub;
-
-#[cfg(feature = "stub")]
-pub use stub::*;
+#[cfg(feature = "mock")]
+pub mod mock;
 
 type CommitmentStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitment, anyhow::Error>> + Send>>;

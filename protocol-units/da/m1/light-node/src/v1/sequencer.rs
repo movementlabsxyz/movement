@@ -69,7 +69,12 @@ impl LightNodeV1 {
                 )?;
 
                 let height = self.pass_through.submit_celestia_blob(block_blob).await?;
-                println!("Submitted block: {:?} {:?}", block.id(), height);
+                
+                #[cfg(feature = "logging")]
+                {
+                    tracing::debug!("Submitted block: {:?} {:?}", block.id(), height);
+                }
+
             },
             None => {
                 // no transactions to include
@@ -118,7 +123,8 @@ impl LightNodeV1 {
                 Blob {
                     data,
                     blob_id : "".to_string(),
-                    height
+                    height,
+                    timestamp : 0,
                 }
             ))
         })
@@ -226,7 +232,12 @@ impl LightNodeService for LightNodeV1 {
 
         // publish the transactions
         for transaction in transactions {
-            println!("Publishing transaction: {:?}", transaction.id());
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Publishing transaction: {:?}", transaction.id());
+            }
+
             self.memseq.publish(transaction).await.map_err(
                 |e| tonic::Status::internal(e.to_string())
             )?;

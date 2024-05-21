@@ -1,7 +1,14 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
 export MOVE_ROCKS_PATH="$MOVEMENT_BASE_STORAGE_PATH/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
+
 . ./scripts/celestia/celestia-env
+
+: ${MOVEMENT_PREBUILT:=false}
+export MOVEMENT_PREBUILT
+: ${CARGO_PROFILE:=debug}
+export CARGO_PROFILE
 
 echo "Building m1-da-light-node..."
 cargo build -p m1-da-light-node

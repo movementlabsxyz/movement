@@ -66,7 +66,12 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
             match transaction_result {
                 Ok(transaction) => {
-                    println!("Got transaction: {:?}", transaction);
+
+                    #[cfg(feature = "logging")]
+                    {
+                        tracing::debug!("Got transaction: {:?}", transaction)
+                    }
+
                     let serialized_transaction = serde_json::to_vec(&transaction)?;
                     transactions.push(BlobWrite {
                         data: serialized_transaction
@@ -90,7 +95,12 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                     blobs: transactions
                 }
             ).await?;
-            println!("Wrote transactions to DA");
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Wrote transactions to DA")
+            }
+
         }
 
         Ok(())
@@ -124,21 +134,40 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
         while let Some(blob) = stream.next().await {
 
-            println!("Stream hot!");
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Got blob: {:?}", blob)
+            }
+
             // get the block
-            let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
+            let (block_bytes, block_timestamp, block_id) = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
                 blob_response::BlobType::SequencedBlobBlock(blob) => {
-                    blob.data
+                    (blob.data, blob.timestamp, blob.blob_id)
                 },
                 _ => { anyhow::bail!("Invalid blob type in response") }
             };
 
             // get the block
             let block : Block = serde_json::from_slice(&block_bytes)?;
-            println!("Received block: {:?}", block);
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Got block: {:?}", block)
+            }
 
             // get the transactions
             let mut block_transactions = Vec::new();
+            let block_metadata = self.executor.build_block_metadata(
+                HashValue::sha3_256_of(block_id.as_bytes()),
+                block_timestamp
+            ).await?;
+            let block_metadata_transaction = SignatureVerifiedTransaction::Valid(
+                Transaction::BlockMetadata(
+                    block_metadata
+                )
+            );
+            block_transactions.push(block_metadata_transaction);
+
             for transaction in block.transactions {
                 let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
                 let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
@@ -171,7 +200,10 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                 executable_block
             ).await?;
 
-            println!("Executed block: {:?}", block_id);
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Executed block: {:?}", block_id)
+            }
 
         }
 
@@ -222,7 +254,7 @@ impl MonzaPartialNode<MonzaExecutorV1> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
-        let light_node_client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
+        let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
         let executor = MonzaExecutorV1::try_from_env(tx).await.context(
             "Failed to get executor from environment"
         )?;

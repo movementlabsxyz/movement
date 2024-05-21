@@ -3,7 +3,7 @@ use m1_da_light_node_client::{
 	blob_response, BatchWriteRequest, BlobWrite, LightNodeServiceClient,
 	StreamReadFromHeightRequest,
 };
-use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
+use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
@@ -87,7 +87,12 @@ where
 
             match transaction_result {
                 Ok(transaction) => {
-                    println!("Got transaction: {:?}", transaction);
+                
+                    #[cfg(feature = "logging")]
+                    {
+                        tracing::debug!("Got transaction: {:?}", transaction)
+                    }
+
                     let serialized_transaction = serde_json::to_vec(&transaction)?;
                     transactions.push(BlobWrite {
                         data: serialized_transaction
@@ -111,7 +116,12 @@ where
                     blobs: transactions
                 }
             ).await?;
-            println!("Wrote transactions to DA");
+            
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Wrote transactions to DA")
+            }
+
         }
 
         Ok(())
@@ -144,7 +154,12 @@ where
         }.into_inner();
 
 		while let Some(blob) = stream.next().await {
-			println!("Stream hot!");
+			
+			#[cfg(feature = "logging")]
+			{
+				tracing::debug!("Got blob: {:?}", blob)
+			}
+
 			// get the block
 			let block_bytes = match blob?
 				.blob
@@ -158,9 +173,18 @@ where
 				},
 			};
 
-			// get the block
-			let block: Block = serde_json::from_slice(&block_bytes)?;
-			println!("Received block: {:?}", block);
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Got blob: {:?}", blob)
+            }
+
+            // get the block
+            let block_bytes = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
+                blob_response::BlobType::SequencedBlobBlock(blob) => {
+                    blob.data
+                },
+                _ => { anyhow::bail!("Invalid blob type in response") }
+            };
 
 			// get the transactions
 			let mut block_transactions = Vec::new();
@@ -187,7 +211,10 @@ where
 			let commitment =
 				self.executor.execute_block(FinalityMode::Opt, executable_block).await?;
 
-			println!("Executed block: {:?}", block_id);
+            #[cfg(feature = "logging")]
+            {
+                tracing::debug!("Executed block: {:?}", block_id)
+            }
 
 			self.settlement_manager.post_block_commitment(commitment).await?;
 		}
@@ -201,10 +228,20 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
-				println!("Commitment accepted: {:?}", commitment);
+				
+				#[cfg(feature = "logging")]
+				{
+					tracing::debug!("Commitment accepted: {:?}", commitment)
+				}
+
 			},
 			BlockCommitmentEvent::Rejected { height, reason } => {
-				println!("Commitment at height {height} rejected: {reason:?}");
+				
+				#[cfg(feature = "logging")]
+				{
+					tracing::debug!("Commitment rejected: {:?} {:?}", height, reason)
+				}
+
 			},
 		}
 	}
@@ -243,11 +280,12 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 	pub async fn try_from_env(
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect("http://[::1]:30730").await?;
+		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 		let executor = SuzukaExecutorV1::try_from_env(tx)
 			.await
 			.context("Failed to get executor from environment")?;
-		let settlement_client = McrSettlementClient::new();
+		// TODO: switch to real settlement client
+		let settlement_client = MockMcrSettlementClient::new();
 		Self::bound(executor, light_node_client, settlement_client)
 	}
 }

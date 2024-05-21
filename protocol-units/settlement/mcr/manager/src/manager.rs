@@ -19,8 +19,9 @@ pub struct Manager {
 impl Manager {
 	/// Creates a new MCR settlement manager.
 	///
-	/// Returns the handle with the public API, the stream to receive commitment events,
-	/// and a future that drives the background task.
+	/// Returns the handle with the public API and the stream to receive commitment events.
+	/// The stream needs to be polled to drive the MCR settlement client and
+	/// process the commitments.
 	pub fn new<C: McrSettlementClientOperations + Send + 'static>(
 		client: C,
 	) -> (Self, CommitmentEventStream) {
@@ -55,7 +56,6 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 		loop {
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
-					println!("Received commitment: {:?}", block_commitment);
 					commitments_to_settle.insert(
 						block_commitment.height,
 						block_commitment.commitment.clone(),
@@ -78,7 +78,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 							break;
 						}
 					};
-					println!("Received settlement: {:?}", settled_commitment);
+
 					let height = settled_commitment.height;
 					if let Some(commitment) = commitments_to_settle.remove(&height) {
 						let event = if commitment == settled_commitment.commitment {
@@ -116,4 +116,67 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 			}
 		}
 	})
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use mcr_settlement_client::mock::MockMcrSettlementClient;
+	use movement_types::{BlockCommitment, Commitment};
+
+	#[tokio::test]
+	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
+		let mut client = MockMcrSettlementClient::new();
+		client.block_lead_tolerance = 1;
+		let (manager, mut event_stream) = Manager::new(client.clone());
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		manager.post_block_commitment(commitment.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment([2; 32]),
+		};
+		manager.post_block_commitment(commitment2).await?;
+		let item = event_stream.next().await;
+		let res = item.unwrap();
+		let event = res.unwrap();
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment));
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_block_commitment_rejected() -> Result<(), anyhow::Error> {
+		let mut client = MockMcrSettlementClient::new();
+		client.block_lead_tolerance = 1;
+		let (manager, mut event_stream) = Manager::new(client.clone());
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		client.settle(BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([3; 32]),
+		}).await;
+		manager.post_block_commitment(commitment.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment([2; 32]),
+		};
+		manager.post_block_commitment(commitment2).await?;
+		let item = event_stream.next().await;
+		let res = item.unwrap();
+		let event = res.unwrap();
+		assert_eq!(event, BlockCommitmentEvent::Rejected {
+			height: 1,
+			reason: BlockCommitmentRejectionReason::InvalidCommitment,
+		});
+		Ok(())
+	}
 }

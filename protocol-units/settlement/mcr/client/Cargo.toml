@@ -21,8 +21,7 @@ serde_json = { workspace = true }
 async-stream = { workspace = true }
 
 [features]
-default = ["stub"]
-stub = []
+mock = []
 
 [lints]
 workspace = true

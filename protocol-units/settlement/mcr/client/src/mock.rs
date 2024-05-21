@@ -1,34 +1,43 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use movement_types::BlockCommitment;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
+use tokio_stream::wrappers::ReceiverStream;
 
-pub struct McrSettlementClient {
+#[derive(Clone)]
+pub struct MockMcrSettlementClient {
 	commitments: Arc<RwLock<HashMap<u64, BlockCommitment>>>,
 	stream_sender: mpsc::Sender<Result<BlockCommitment, anyhow::Error>>,
-	// todo: this is logically dangerous, but it's just a stub
-	stream_receiver: Arc<RwLock<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>,
+	stream_receiver: Arc<Mutex<Option<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>>,
     pub current_height: Arc<RwLock<u64>>,
     pub block_lead_tolerance: u64
 }
 
-impl McrSettlementClient {
+impl MockMcrSettlementClient {
 	pub fn new() -> Self {
 		let (stream_sender, receiver) = mpsc::channel(10);
-		McrSettlementClient {
+		MockMcrSettlementClient {
 			commitments: Arc::new(RwLock::new(HashMap::new())),
 			stream_sender,
-			stream_receiver: Arc::new(RwLock::new(receiver)),
+			stream_receiver: Arc::new(Mutex::new(Some(receiver))),
             current_height: Arc::new(RwLock::new(0)),
             block_lead_tolerance: 16,
 		}
 	}
+
+	/// Overrides the commitment to settle on at given height.
+	///
+	/// To have effect, this method needs to be called before a commitment is
+	/// posted for this height with the `McrSettlementClientOperations` API.
+	pub async fn settle(&self, commitment: BlockCommitment) {
+		let mut commitments = self.commitments.write().await;
+		commitments.insert(commitment.height, commitment);
+	}
 }
 
-
 #[async_trait::async_trait]
-impl McrSettlementClientOperations for McrSettlementClient {
+impl McrSettlementClientOperations for MockMcrSettlementClient {
 	async fn post_block_commitment(
 		&self,
 		block_commitment: BlockCommitment,
@@ -38,8 +47,9 @@ impl McrSettlementClientOperations for McrSettlementClient {
 
         {
             let mut commitments = self.commitments.write().await;
-            commitments.insert(block_commitment.height, block_commitment.clone());
-            self.stream_sender.send(Ok(block_commitment)).await?; // Simulate sending to the stream.
+			let settled = commitments.entry(block_commitment.height).or_insert(block_commitment);
+			// Simulate sending to the stream
+            self.stream_sender.send(Ok(settled.clone())).await?;
         }
 
         {
@@ -60,14 +70,12 @@ impl McrSettlementClientOperations for McrSettlementClient {
     }
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
-		let receiver = self.stream_receiver.clone();
-		let stream = async_stream::try_stream! {
-			let mut receiver = receiver.write().await;
-			while let Some(commitment) = receiver.recv().await {
-				yield commitment?;
-			}
-		};
-        Ok(Box::pin(stream) as CommitmentStream)
+		let receiver = self.stream_receiver
+			.lock()
+			.unwrap()
+			.take()
+			.expect("stream_block_commitments already called");
+        Ok(Box::pin(ReceiverStream::new(receiver)))
     }
 
 	async fn get_commitment_at_height(
@@ -94,7 +102,7 @@ pub mod test {
     #[tokio::test]
 	async fn test_post_block_commitment() -> Result<(), anyhow::Error> {
 
-		let client = McrSettlementClient::new();
+		let client = MockMcrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -112,7 +120,7 @@ pub mod test {
 
     #[tokio::test]
     async fn test_post_block_commitment_batch() -> Result<(), anyhow::Error> {
-        let client = McrSettlementClient::new();
+        let client = MockMcrSettlementClient::new();
         let commitment = BlockCommitment {
             height: 1,
             block_id: Default::default(),
@@ -135,13 +143,32 @@ pub mod test {
 	
 	#[tokio::test]
 	async fn test_stream_block_commitments() -> Result<(), anyhow::Error> {
-		let client = McrSettlementClient::new();
+		let client = MockMcrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
 			commitment: Commitment::test(),
 		};
 		client.post_block_commitment(commitment.clone()).await.unwrap();
+		let mut stream = client.stream_block_commitments().await?;
+		assert_eq!(stream.next().await.unwrap().unwrap(), commitment);
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_override_block_commitments() -> Result<(), anyhow::Error> {
+		let client = MockMcrSettlementClient::new();
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment::test(),
+		};
+		client.settle(commitment.clone()).await;
+		client.post_block_commitment(BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		}).await.unwrap();
 		let mut stream = client.stream_block_commitments().await?;
 		assert_eq!(stream.next().await.unwrap().unwrap(), commitment);
 		Ok(())

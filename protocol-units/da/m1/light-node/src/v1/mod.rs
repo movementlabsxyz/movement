@@ -34,7 +34,7 @@ pub trait LightNodeV1Operations : LightNodeService + Send + Sync + Sized + Clone
             .register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
             .build()?;
 
-        let env_addr = std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "[::1]:30730".to_string());
+        let env_addr = std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "0.0.0.0:30730".to_string());
         let addr = env_addr.parse()?;
 
         Server::builder()
