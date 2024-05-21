@@ -33,8 +33,8 @@ pub enum McrEthConnectorError {
 		"MCR Settlement Tx fail because gaz estimation is to high. Estimated gaz:{0} gaz limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
-	#[error("MCR Settlement Tx fail because account fund are insuffisant. error:{0}")]
-	InsuffisantFund(String),
+	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]
+	InsufficientFunds(String),
 	#[error("MCR Settlement Tx send fail because :{0}")]
 	SendTxError(#[from] alloy_contract::Error),
 	#[error("MCR Settlement Tx send fail because of RPC error :{0}")]
@@ -171,7 +171,7 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 								continue;
 							} else if payload.message.contains("insufficient funds") {
 								return Err(
-									McrEthConnectorError::InsuffisantFund(payload.message).into()
+									McrEthConnectorError::InsufficientFunds(payload.message).into()
 								);
 							}
 						},
