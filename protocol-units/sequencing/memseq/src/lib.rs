@@ -55,18 +55,20 @@ impl Memseq<RocksdbMempool> {
 	}
 }
 
-impl<
-		T: MempoolBlockOperations<RocksdbMempoolError>
-			+ MempoolTransactionOperations<RocksdbMempoolError>,
-	> Sequencer<RocksdbMempoolError> for Memseq<T>
+impl<T> Sequencer for Memseq<T>
+where
+	T: MempoolBlockOperations<Error = RocksdbMempoolError>
+		+ MempoolTransactionOperations<Error = RocksdbMempoolError>,
 {
-	async fn publish(&self, transaction: Transaction) -> SequencerResult<(), RocksdbMempoolError> {
+	type Error = RocksdbMempoolError;
+
+	async fn publish(&self, transaction: Transaction) -> SequencerResult<(), Self::Error> {
 		let mempool = self.mempool.read().await;
 		mempool.add_transaction(transaction).await?;
 		Ok(())
 	}
 
-	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>, RocksdbMempoolError> {
+	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>, Self::Error> {
 		let mempool = self.mempool.read().await;
 		let mut transactions = Vec::new();
 
@@ -429,7 +431,9 @@ pub mod test {
 	}
 
 	struct MockMempool;
-	impl MempoolTransactionOperations<RocksdbMempoolError> for MockMempool {
+	impl MempoolTransactionOperations for MockMempool {
+		type Error = RocksdbMempoolError;
+
 		async fn has_mempool_transaction(
 			&self,
 			_transaction_id: Id,
@@ -478,7 +482,9 @@ pub mod test {
 		}
 	}
 
-	impl MempoolBlockOperations<RocksdbMempoolError> for MockMempool {
+	impl MempoolBlockOperations for MockMempool {
+		type Error = RocksdbMempoolError;
+
 		async fn has_block(
 			&self,
 			_block_id: Id,

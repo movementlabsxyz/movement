@@ -14,10 +14,12 @@ pub enum SequencerError<E> {
 pub type SequencerResult<T, E> = Result<T, SequencerError<E>>;
 
 #[allow(async_fn_in_trait)]
-pub trait Sequencer<E> {
-	async fn publish(&self, atb: Transaction) -> SequencerResult<(), E>;
+pub trait Sequencer {
+	type Error;
 
-	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>, E>;
+	async fn publish(&self, atb: Transaction) -> SequencerResult<(), Self::Error>;
+
+	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>, Self::Error>;
 }
 
 #[allow(async_fn_in_trait)]

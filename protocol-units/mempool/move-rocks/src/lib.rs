@@ -127,7 +127,9 @@ impl RocksdbMempool {
 	}
 }
 
-impl MempoolTransactionOperations<RocksdbMempoolError> for RocksdbMempool {
+impl MempoolTransactionOperations for RocksdbMempool {
+	type Error = RocksdbMempoolError;
+
 	async fn has_mempool_transaction(
 		&self,
 		transaction_id: Id,
@@ -225,7 +227,9 @@ impl MempoolTransactionOperations<RocksdbMempoolError> for RocksdbMempool {
 	}
 }
 
-impl MempoolBlockOperations<RocksdbMempoolError> for RocksdbMempool {
+impl MempoolBlockOperations for RocksdbMempool {
+	type Error = RocksdbMempoolError;
+
 	async fn has_block(
 		&self,
 		block_id: Id,
