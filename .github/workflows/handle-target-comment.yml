@@ -42,20 +42,6 @@ jobs:
           comment_id=$(basename "$comment_url")
           echo "::set-output name=comment_id::$comment_id"
 
-      - name: React to PR comment
-        uses: actions/github-script@v4
-        with:
-          github-token: ${{ secrets.GH_PAT }}
-          script: |
-            const commentId = '${{ steps.extract-comment-id.outputs.comment_id }}';
-            const reaction = 'eyes';
-            await github.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: commentId,
-              content: reaction
-            });
-
       - name: Extract repository name
         id: gali-id
         run: |
