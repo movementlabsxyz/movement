@@ -47,3 +47,17 @@ jobs:
           comment: ${{ github.event.inputs.comment }}
           source_repo: ${{ github.repository }}
           target_repo: 'movementlabsxyz/infra'
+
+      - name: Leave a comment on the current PR
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const issue_number = context.payload.inputs.issue_number;
+            const pr_link = `${{ steps.create-new-pr.outputs.pr_link }}`;
+
+            github.issues.createComment({
+              ...context.repo,
+              issue_number: issue_number,
+              body: pr_link
+            });

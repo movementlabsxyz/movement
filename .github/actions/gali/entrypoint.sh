@@ -34,9 +34,19 @@ ${ESCAPED_SOURCE_REPO}_GALI_SHA=${GALI_SHA}
 ${ESCAPED_SOURCE_REPO}_GALI_SOURCE_REPO=${GALI_SOURCE_REPO}
 EOF
 
-# Modify the file
+# Add the modified file.
 git add "${GALI_FILE_PATH}"
-git commit -m "gali: update ${GALI_ID} via GitHub Action"
+
+# Check if there are any changes to commit
+if git diff-index --quiet HEAD --; then
+  echo "No changes to commit."
+else
+  # Commit the changes
+  git commit -m "gali: update ${GALI_ID} via GitHub Action"
+
+  # Push the new branch
+  git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_ID}"
+fi
 
 # Push the new branch
 git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_ID}"
