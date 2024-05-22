@@ -19,6 +19,12 @@ inputs:
   comment:
     description: 'The comment made in the source repo'
     required: true
+  comment_url:
+    description: 'The URL of the comment made in the source repo'
+    required: true
+  pr_url:
+    description: 'The URL of the PR which triggered the workflow'
+    required: true
 
 runs:
   using: 'docker'
@@ -30,3 +36,5 @@ runs:
     SOURCE_REPO: ${{ inputs.source_repo }}
     TARGET_REPO: ${{ inputs.target_repo }}
     COMMENT: ${{ inputs.comment }}
+    COMMENT_URL: ${{ inputs.comment_url }}
+    PR_URL: ${{ inputs.pr_url }}

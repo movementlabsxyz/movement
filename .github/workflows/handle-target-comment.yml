@@ -15,6 +15,10 @@ on:
         description: 'HTML URl from issue_comment event'
         required: true
         type: string
+      pr_url:
+        description: 'URL to the PR which triggered the workflow'
+        required: true
+        type: string
 
 jobs:
   handle-comment:
@@ -31,6 +35,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Extract comment ID
+        id: extract-comment-id
+        run: |
+          comment_url="${{ github.event.inputs.html_url }}"
+          comment_id=$(basename "$comment_url")
+          echo "::set-output name=comment_id::$comment_id"
+
+      - name: React to PR comment
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const commentId = '${{ steps.extract-comment-id.outputs.comment_id }}';
+            const reaction = 'eyes';
+            await github.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: commentId,
+              content: reaction
+            });
+
       - name: Extract repository name
         id: gali-id
         run: |
@@ -45,6 +70,8 @@ jobs:
           gali_id: ${{ steps.gali-id.outputs.gali-id }}
           gali_sha: ${{ steps.gali-id.outputs.gali-sha }}
           comment: ${{ github.event.inputs.comment }}
+          comment_url: ${{ github.event.inputs.html_url }}
+          pr_url: ${{ github.event.inputs.pr_url }}
           source_repo: ${{ github.repository }}
           target_repo: 'movementlabsxyz/infra'
 
@@ -54,7 +81,7 @@ jobs:
           github-token: ${{ secrets.GH_PAT }}
           script: |
             const issue_number = context.payload.inputs.issue_number;
-            const pr_link = `${{ steps.create-new-pr.outputs.pr_link }}`;
+            const pr_link = `**Gali PR:** ${{ steps.create-new-pr.outputs.pr_link }}`;
 
             github.issues.createComment({
               ...context.repo,

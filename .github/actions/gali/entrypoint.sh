@@ -59,7 +59,7 @@ EXISTING_PR_URL=$(gh pr list --base "green" --search "head:$GALI_ID" --repo "$TA
 echo "EXISTING_PR_URL: $EXISTING_PR_URL"
 if [ -z "$EXISTING_PR_URL" ]; then
     # No existing PR, create a new one
-    gh pr create --base "green" --head "$GALI_ID" --title "$GALI_ID" --body "$COMMENT" --repo "$TARGET_REPO"
+    gh pr create --base "green" --head "$GALI_ID" --title "$GALI_ID" --body "# Summary\n**A request for infrastructure was made with Gali...**\n- **From:** $SOURCE_REPO\n- **PR:**$PR_URL\n- **Gali Id:** $GALI_ID\n- **Comment:** $COMMENT_URL" --repo "$TARGET_REPO"
     # Fetch the URL of the newly created PR
     EXISTING_PR_URL=$(gh pr list --base "green" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 fi
