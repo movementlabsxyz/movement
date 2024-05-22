@@ -18,11 +18,11 @@ pub fn to_verifier_error<E: std::error::Error + Send + Sync + 'static>(e: E) -> 
 	VerifierError::Other(Box::new(e))
 }
 
-pub trait ToVerifierError<T> {
+pub trait MapVerifierErr<T> {
 	fn map_verifier_err(self) -> Result<T, VerifierError>;
 }
 
-impl<T, E: std::error::Error + Send + Sync + 'static> ToVerifierError<T> for Result<T, E> {
+impl<T, E: std::error::Error + Send + Sync + 'static> MapVerifierErr<T> for Result<T, E> {
 	fn map_verifier_err(self) -> Result<T, VerifierError> {
 		self.map_err(to_verifier_error)
 	}

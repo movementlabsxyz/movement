@@ -1,4 +1,4 @@
-use crate::{ToVerifierError, Verifier, VerifierError};
+use crate::{MapVerifierErr, Verifier, VerifierError};
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob};
 use m1_da_light_node_grpc::VerificationMode;

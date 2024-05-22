@@ -18,5 +18,8 @@ path = "src/bin/suzuka_config.rs"
 
 [dependencies]
 maptos-execution-util = { workspace = true }
-anyhow = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
