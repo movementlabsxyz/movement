@@ -22,10 +22,13 @@ m1-da-light-node-grpc = { workspace = true, features = [] }
 m1-da-light-node-util = { workspace = true }
 celestia-rpc = { workspace = true }
 celestia-types = { workspace = true }
-anyhow = { workspace = true }
 hex = { workspace = true }
 async-stream = { workspace = true }
 serde_json = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
 
 [lints]
 workspace = true

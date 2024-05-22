@@ -6103,6 +6103,7 @@ dependencies = [
  "m1-da-light-node-util",
  "prost",
  "serde_json",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
