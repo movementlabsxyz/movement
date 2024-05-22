@@ -63,15 +63,15 @@ if [ -z "$EXISTING_PR_URL" ]; then
 # Summary
 **A request for infrastructure was made with Gali...**
 - **From:** $SOURCE_REPO
-- **PR:** $PR_URL
+- **PR:** $COMMENT_URL
 - **Gali Id:** $GALI_ID
-- **Comment:** $COMMENT_URL
 EOF
 )
     # No existing PR, create a new one
     gh pr create --base "green" --head "$GALI_ID" --title "$GALI_ID" --body "$PR_BODY" --repo "$TARGET_REPO"
 
     # Fetch the URL of the newly created PR
+    sleep 5 # github API sometimes needs a moment to catch up
     EXISTING_PR_URL=$(gh pr list --base "green" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 fi
 echo "EXISTING_PR_URL: $EXISTING_PR_URL"
