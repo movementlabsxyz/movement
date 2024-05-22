@@ -8,3 +8,5 @@ mcr-contract-tests:
     cd ./protocol-units/settlement/mcr/contracts && forge test
 build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}
+mcr FEATURES *ARGS:
+    ./scripts/movement/run mcr {{ FEATURES }} {{ ARGS }}
