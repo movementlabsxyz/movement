@@ -7,7 +7,7 @@ use thiserror::Error;
 pub type BoxedStoreError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 #[derive(Error, Debug)]
-pub enum MempoolTransactionOperationsError {
+pub enum MempoolTransactionError {
 	#[error("Serialization error: {0}")]
 	SerializationError(String),
 	#[error("Deserialization error: {0}")]
@@ -18,13 +18,13 @@ pub enum MempoolTransactionOperationsError {
 	MockError(String),
 }
 
-impl MempoolTransactionOperationsError {
+impl MempoolTransactionError {
 	pub fn store_error<E: std::error::Error + Send + Sync + 'static>(error: E) -> Self {
 		Self::StoreError(Box::new(error))
 	}
 }
 
-pub type MempoolTransactionOperationsResult<T> = Result<T, MempoolTransactionOperationsError>;
+pub type MempoolTransactionOperationsResult<T> = Result<T, MempoolTransactionError>;
 
 #[allow(async_fn_in_trait)]
 pub trait MempoolTransactionOperations {

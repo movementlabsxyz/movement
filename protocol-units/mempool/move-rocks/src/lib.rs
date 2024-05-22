@@ -1,6 +1,6 @@
 use mempool_util::{
 	MempoolBlockOperations, MempoolBlockOperationsError, MempoolBlockOperationsResult,
-	MempoolTransaction, MempoolTransactionOperations, MempoolTransactionOperationsError,
+	MempoolTransaction, MempoolTransactionOperations, MempoolTransactionError,
 	MempoolTransactionOperationsResult,
 };
 use movement_types::{Block, Id};
@@ -134,12 +134,12 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let key = self
 			.get_mempool_transaction_key(&transaction_id)
 			.await
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+			.map_err(MempoolTransactionError::store_error)?;
 		match key {
 			Some(k) => {
 				let db = self.db.read().await;
 				db.get_from_handle("mempool_transactions", k)
-					.map_err(MempoolTransactionOperationsError::store_error)
+					.map_err(MempoolTransactionError::store_error)
 					.map(|v| v.is_some())
 			},
 			None => Ok(false),
@@ -151,15 +151,15 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		tx: MempoolTransaction,
 	) -> MempoolTransactionOperationsResult<()> {
 		let serialized_tx = serde_json::to_vec(&tx)
-			.map_err(|e| MempoolTransactionOperationsError::SerializationError(e.to_string()))?;
+			.map_err(|e| MempoolTransactionError::SerializationError(e.to_string()))?;
 
 		let db = self.db.write().await;
 
 		let key = Self::construct_mempool_transaction_key(&tx);
 		db.put_to_handle("mempool_transactions", &key, &serialized_tx)
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+			.map_err(MempoolTransactionError::store_error)?;
 		db.put_to_handle("transaction_lookups", tx.transaction.id().to_vec(), &key)
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+			.map_err(MempoolTransactionError::store_error)?;
 
 		Ok(())
 	}
@@ -171,15 +171,15 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let key = self
 			.get_mempool_transaction_key(&transaction_id)
 			.await
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+			.map_err(MempoolTransactionError::store_error)?;
 
 		match key {
 			Some(k) => {
 				let db = self.db.write().await;
 				db.delete_from_handle("mempool_transactions", k)
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+					.map_err(MempoolTransactionError::store_error)?;
 				db.delete_from_handle("transaction_lookups", transaction_id.to_vec())
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+					.map_err(MempoolTransactionError::store_error)?;
 			},
 			None => (),
 		}
@@ -194,7 +194,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let key = match self
 			.get_mempool_transaction_key(&transaction_id)
 			.await
-			.map_err(MempoolTransactionOperationsError::store_error)?
+			.map_err(MempoolTransactionError::store_error)?
 		{
 			Some(k) => k,
 			None => return Ok(None), // If no key found in lookup, return None
@@ -203,12 +203,12 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let db = self.db.read().await;
 		match db
 			.get_from_handle("mempool_transactions", &key)
-			.map_err(MempoolTransactionOperationsError::store_error)?
+			.map_err(MempoolTransactionError::store_error)?
 		{
 			Some(serialized_tx) => {
 				let tx: MempoolTransaction =
 					serde_json::from_slice(&serialized_tx).map_err(|e| {
-						MempoolTransactionOperationsError::SerializationError(e.to_string())
+						MempoolTransactionError::SerializationError(e.to_string())
 					})?;
 				Ok(Some(tx))
 			},
@@ -223,21 +223,21 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 		let (cf_handle, mut iter) = db
 			.iter_from_handle("mempool_transactions")
-			.map_err(MempoolTransactionOperationsError::store_error)?;
+			.map_err(MempoolTransactionError::store_error)?;
 
 		match iter.next() {
 			None => return Ok(None), // No transactions to pop
 			Some(res) => {
-				let (key, value) = res.map_err(MempoolTransactionOperationsError::store_error)?;
+				let (key, value) = res.map_err(MempoolTransactionError::store_error)?;
 				let tx: MempoolTransaction = serde_json::from_slice(&value).map_err(|e| {
-					MempoolTransactionOperationsError::DeserializationError(e.to_string())
+					MempoolTransactionError::DeserializationError(e.to_string())
 				})?;
 
 				db.delete_cf(&cf_handle, &key)
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+					.map_err(MempoolTransactionError::store_error)?;
 
 				db.delete_from_handle("transaction_lookups", tx.transaction.id().to_vec())
-					.map_err(MempoolTransactionOperationsError::store_error)?;
+					.map_err(MempoolTransactionError::store_error)?;
 
 				Ok(Some(tx))
 			},
