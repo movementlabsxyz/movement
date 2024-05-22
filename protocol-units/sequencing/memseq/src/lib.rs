@@ -419,7 +419,7 @@ pub mod test {
 
 	macro_rules! mock_error {
 		($message:expr) => {
-			Err(mempool_util::MempoolTransactionOperationsError::MockError($message.to_string()))
+			Err(mempool_util::MempoolTransactionOperationsError::Other($message.to_string()))
 		};
 	}
 

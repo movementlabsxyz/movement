@@ -14,8 +14,8 @@ pub enum MempoolTransactionOperationsError {
 	DeserializationError(String),
 	#[error("Underlying store error")]
 	StoreError(#[from] BoxedStoreError),
-	#[error("Mock error: {0}")]
-	MockError(String),
+	#[error("Other error: {0}")]
+	Other(String),
 }
 
 impl MempoolTransactionOperationsError {
