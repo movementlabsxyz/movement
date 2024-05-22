@@ -16,7 +16,7 @@ git config user.email "action@github.com"
 
 
 echo "Branch does not exist, creating new branch"
-git checkout main
+git checkout green
 git checkout -b "${GALI_ID}"
 git pull origin "${GALI_ID}" || true # ignore failure if branch does not exist
 echo "::set-output name=branch_message::$(echo 'Branch does not exist, creating new branch')"
@@ -44,14 +44,14 @@ git push https://x-access-token:$GITHUB_TOKEN@github.com/${TARGET_REPO} "${GALI_
 # set link to pr
 echo "::set-output name=pr_link::$(gh pr view -w --json number --repo ${TARGET_REPO})"
 
-EXISTING_PR_URL=$(gh pr list --base "main" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
+EXISTING_PR_URL=$(gh pr list --base "green" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 
 echo "EXISTING_PR_URL: $EXISTING_PR_URL"
 if [ -z "$EXISTING_PR_URL" ]; then
     # No existing PR, create a new one
-    gh pr create --base "main" --head "$GALI_ID" --title "$GALI_ID" --body "$COMMENT" --repo "$TARGET_REPO"
+    gh pr create --base "green" --head "$GALI_ID" --title "$GALI_ID" --body "$COMMENT" --repo "$TARGET_REPO"
     # Fetch the URL of the newly created PR
-    EXISTING_PR_URL=$(gh pr list --base "main" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
+    EXISTING_PR_URL=$(gh pr list --base "green" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 fi
 echo "EXISTING_PR_URL: $EXISTING_PR_URL"
 echo "::set-output name=pr_link::$EXISTING_PR_URL"

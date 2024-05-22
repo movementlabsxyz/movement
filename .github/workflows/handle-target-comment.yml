@@ -25,7 +25,7 @@ jobs:
          echo "Comment was: ${{ github.event.inputs.comment }}"
     
   manage-infra-pr:
-    if: startsWith(github.event.inputs.comment, 'infra')
+    if: startsWith(github.event.inputs.comment, 'gali')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
