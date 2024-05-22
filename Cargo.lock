@@ -10022,6 +10022,7 @@ dependencies = [
  "maptos-execution-util",
  "once_cell",
  "rand 0.7.3",
+ "thiserror",
  "tokio",
  "url",
 ]
