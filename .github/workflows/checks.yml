@@ -31,7 +31,7 @@ jobs:
       run: nix develop --command bash  -c "cargo check"  
 
     - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo build --release"  
+      run: nix develop --command bash  -c "./scripts/build/prebuild"  
 
     - name: Run M1 DA Light Node tests in nix environment
       # adjust the log level while debugging
