@@ -1,11 +1,11 @@
-use mempool_util::{MempoolBlockOperationsError, MempoolTransactionError};
+use mempool_util::{MempoolBlockOperationsError, MempoolTransactionOperationsError};
 use movement_types::{AtomicTransactionBundle, Block, Transaction};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum SequencerError {
 	#[error("MempoolTransactionOperationsError error: {0}")]
-	MempoolTransactionOperationsError(#[from] MempoolTransactionError),
+	MempoolTransactionOperationsError(#[from] MempoolTransactionOperationsError),
 	#[error("MempoolBlockOperationsError error: {0}")]
 	MempoolBlockOperationsError(#[from] MempoolBlockOperationsError),
 }
