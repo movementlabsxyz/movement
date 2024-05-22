@@ -69,8 +69,8 @@ if [ -z "$EXISTING_PR_URL" ]; then
 EOF
 )
     # No existing PR, create a new one
-    gh pr create --base "green" --head "$GALI_ID" --title "$GALI_ID" --body $PR_BODY --repo "$TARGET_REPO"
-    
+    gh pr create --base "green" --head "$GALI_ID" --title "$GALI_ID" --body "$PR_BODY" --repo "$TARGET_REPO"
+
     # Fetch the URL of the newly created PR
     EXISTING_PR_URL=$(gh pr list --base "green" --search "head:$GALI_ID" --repo "$TARGET_REPO" --json url --jq '.[0].url')
 fi
