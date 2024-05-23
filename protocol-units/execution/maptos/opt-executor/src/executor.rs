@@ -229,11 +229,10 @@ impl Executor {
 
 	}
 
-	/// Execute a block which gets committed to the state.
-	pub async fn execute_block_inner(
+	async fn execute_block_inner(
 		&self,
 		block: ExecutableBlock,
-	) -> Result<BlockCommitment, anyhow::Error> {
+	) -> Result<u64, anyhow::Error> {
 
 		let block_id = block.block_id.clone();
 		let parent_block_id = {
@@ -269,26 +268,11 @@ impl Executor {
 				vec![block_id],
 				ledger_info_with_sigs,
 			)?;
-		} 
-
-		let proof = {
-			let reader = self.db.read().await.reader.clone();
-			reader.get_state_proof(version)?
-		};
-
-		// Context has a reach-around to the db so the block height should
-		// have been updated to the most recently committed block.
-		// Race conditions, anyone?
-		let block_height = self.context.get_latest_ledger_info_wrapped()?.block_height;
-
-		let commitment = Commitment::digest_state_proof(&proof);
-		Ok(BlockCommitment {
-			block_id: Id(block_id.to_vec()),
-			commitment,
-			height: block_height.into(),
-		})
+		}
+		Ok(version)
 	}
 
+	/// Execute a block which gets committed to the state.
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
@@ -328,7 +312,7 @@ impl Executor {
 		).await?;
 
 		// execute the rest of the block
-		let commitment = self.execute_block_inner(
+		let version = self.execute_block_inner(
 			ExecutableBlock::new(
 				block.block_id.clone(),
 				ExecutableTransactions::Unsharded(
@@ -337,8 +321,22 @@ impl Executor {
 			)
 		).await?;
 
-		Ok(commitment)
+		let proof = {
+			let reader = self.db.read().await.reader.clone();
+			reader.get_state_proof(version)?
+		};
 
+		// Context has a reach-around to the db so the block height should
+		// have been updated to the most recently committed block.
+		// Race conditions, anyone?
+		let block_height = self.context.get_latest_ledger_info_wrapped()?.block_height;
+
+		let commitment = Commitment::digest_state_proof(&proof);
+		Ok(BlockCommitment {
+			block_id: Id(block_id.to_vec()),
+			commitment,
+			height: block_height.into(),
+		})
 	}
 
 	fn context(&self) -> Arc<Context> {
