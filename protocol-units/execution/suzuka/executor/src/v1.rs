@@ -90,6 +90,26 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
         Ok(1)
     }
 
+    /// Build block metadata for a timestamp
+	async fn build_block_metadata(&self, block_id : HashValue,  timestamp: u64) -> Result<BlockMetadata, anyhow::Error> {
+		
+		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
+		// Clone the signer from the executor for signing the metadata.
+		let signer = self.executor.signer.clone();
+
+		// Create a block metadata transaction.
+		Ok(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			timestamp,
+		))
+
+	}
+
 }
 
 #[cfg(test)]
