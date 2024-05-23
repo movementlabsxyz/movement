@@ -55,10 +55,13 @@ impl Memseq<RocksdbMempool> {
 	}
 }
 
+#[async_trait::async_trait]
 impl<T> Sequencer for Memseq<T>
 where
 	T: MempoolBlockOperations<Error = RocksdbMempoolError>
-		+ MempoolTransactionOperations<Error = RocksdbMempoolError>,
+		+ MempoolTransactionOperations<Error = RocksdbMempoolError>
+		+ Send
+		+ Sync,
 {
 	type Error = RocksdbMempoolError;
 
@@ -431,6 +434,8 @@ pub mod test {
 	}
 
 	struct MockMempool;
+
+	#[async_trait::async_trait]
 	impl MempoolTransactionOperations for MockMempool {
 		type Error = RocksdbMempoolError;
 
@@ -482,6 +487,7 @@ pub mod test {
 		}
 	}
 
+	#[async_trait::async_trait]
 	impl MempoolBlockOperations for MockMempool {
 		type Error = RocksdbMempoolError;
 

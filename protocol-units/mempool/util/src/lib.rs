@@ -27,7 +27,7 @@ impl<E: std::error::Error + Send + Sync + 'static> From<E>
 	}
 }
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait MempoolTransactionOperations {
 	// todo: move mempool_transaction methods into separate trait
 
@@ -157,7 +157,7 @@ impl<E: std::error::Error + Send + Sync + 'static> From<E> for MempoolBlockOpera
 
 pub type MempoolBlockOperationsResult<T, E> = Result<T, MempoolBlockOperationsError<E>>;
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait MempoolBlockOperations {
 	/// The error type for the trait.
 	type Error;

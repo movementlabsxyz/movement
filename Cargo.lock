@@ -6221,6 +6221,7 @@ checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
 name = "mempool-util"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "movement-types",
  "serde",
  "thiserror",
@@ -6231,6 +6232,7 @@ name = "memseq"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "futures",
  "mempool-util",
  "move-rocks",
@@ -7029,6 +7031,7 @@ name = "move-rocks"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "mempool-util",
  "movement-types",
  "rocksdb",
@@ -9357,6 +9360,7 @@ dependencies = [
 name = "sequencing-util"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "mempool-util",
  "movement-types",
  "thiserror",
@@ -10162,6 +10166,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "async-trait",
  "env_logger 0.11.3",
  "m1-da-light-node-client",
  "movement-types",

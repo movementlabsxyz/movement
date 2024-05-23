@@ -13,7 +13,7 @@ pub enum SequencerError<E> {
 
 pub type SequencerResult<T, E> = Result<T, SequencerError<E>>;
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait Sequencer {
 	type Error;
 
@@ -22,7 +22,7 @@ pub trait Sequencer {
 	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>, Self::Error>;
 }
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait SharedSequencer<E> {
 	async fn publish(&self, atb: AtomicTransactionBundle) -> SequencerResult<(), E>;
 

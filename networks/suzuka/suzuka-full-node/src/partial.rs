@@ -155,6 +155,7 @@ impl<T: ExecutorOps + Send + Sync + Clone> SuzukaPartialNode<T> {
 	}
 }
 
+#[async_trait::async_trait]
 impl<T: ExecutorOps + Send + Sync + Clone> SuzukaNode for SuzukaPartialNode<T> {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {

@@ -17,6 +17,7 @@ m1-da-light-node-client = { workspace = true }
 protocol-unit-types = { workspace = true }
 
 async-channel = { workspace = true }
+async-trait = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }

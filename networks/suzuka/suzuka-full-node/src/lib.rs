@@ -3,7 +3,7 @@ pub mod partial;
 #[cfg(test)]
 pub mod tests;
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait SuzukaNode {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error>;

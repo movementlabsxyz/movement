@@ -127,6 +127,7 @@ impl RocksdbMempool {
 	}
 }
 
+#[async_trait::async_trait]
 impl MempoolTransactionOperations for RocksdbMempool {
 	type Error = RocksdbMempoolError;
 
@@ -227,6 +228,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	}
 }
 
+#[async_trait::async_trait]
 impl MempoolBlockOperations for RocksdbMempool {
 	type Error = RocksdbMempoolError;
 
