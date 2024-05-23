@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-export CELESTIA_LOG_LEVEL=debug
+# export CELESTIA_LOG_LEVEL=debug
 
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
 export MOVE_ROCKS_PATH="$MOVEMENT_BASE_STORAGE_PATH/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
