@@ -37,6 +37,11 @@ tonic = { workspace = true }
 futures = { workspace = true}
 bcs = { workspace = true }
 
+
+# dirs = "5.0.1"
+# tempfile = "3.10.1"
+async-trait = { workspace = true }
+
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
 aptos-sdk = { workspace = true }
@@ -63,6 +68,5 @@ aptos-temppath = { workspace = true }
 maptos-opt-executor = { workspace = true }
 maptos-execution-util = { workspace = true }
 
-dirs = "5.0.1"
-tempfile = "3.10.1"
-async-trait = "0.1.80"
+protocol-unit-types = { workspace = true }
+

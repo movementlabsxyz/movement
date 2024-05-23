@@ -2,6 +2,7 @@ use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
 use maptos_opt_executor::Executor;
+use protocol_unit_types::{Apis, ExecutableBlock, ExecutorOps, FinalityMode};
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -23,8 +24,8 @@ impl MonzaExecutorV1 {
 	}
 }
 
-#[tonic::async_trait]
-impl MonzaExecutor for MonzaExecutorV1 {
+#[async_trait::async_trait]
+impl ExecutorOps for MonzaExecutorV1 {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
 		self.executor.run_service().await
@@ -36,8 +37,6 @@ impl MonzaExecutor for MonzaExecutorV1 {
 			// readers should be able to run concurrently
 			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
 		}
-
-		Ok(())
 	}
 
 	/// Executes a block dynamically
@@ -57,10 +56,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	}
 
 	/// Sets the transaction channel.
-	fn set_tx_channel(
-		&mut self,
-		tx_channel: Sender<SignedTransaction>,
-	) {
+	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
 		self.transaction_channel = tx_channel;
 	}
 

@@ -5,23 +5,24 @@ use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use m1_da_light_node_client::*;
 use movement_types::Block;
-use sha2::Digest;
-use suzuka_executor::{
-	v1::SuzukaExecutorV1, ExecutableBlock, ExecutableTransactions, FinalityMode, HashValue,
-	SignatureVerifiedTransaction, SignedTransaction, SuzukaExecutor, Transaction,
+use protocol_unit_types::{
+	ExecutableBlock, ExecutableTransactions, ExecutorOps, FinalityMode, HashValue,
+	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
+use sha2::Digest;
+use suzuka_executor::v1::SuzukaExecutorV1;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 
 #[derive(Clone)]
-pub struct SuzukaPartialNode<T: SuzukaExecutor + Send + Sync + Clone> {
+pub struct SuzukaPartialNode<T: ExecutorOps + Send + Sync + Clone> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl<T: SuzukaExecutor + Send + Sync + Clone> SuzukaPartialNode<T> {
+impl<T: ExecutorOps + Send + Sync + Clone> SuzukaPartialNode<T> {
 	pub fn new(
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
@@ -154,7 +155,7 @@ impl<T: SuzukaExecutor + Send + Sync + Clone> SuzukaPartialNode<T> {
 	}
 }
 
-impl<T: SuzukaExecutor + Send + Sync + Clone> SuzukaNode for SuzukaPartialNode<T> {
+impl<T: ExecutorOps + Send + Sync + Clone> SuzukaNode for SuzukaPartialNode<T> {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
 		self.executor.run_service().await?;
@@ -189,4 +190,3 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 		Self::bound(executor, light_node_client)
 	}
 }
-

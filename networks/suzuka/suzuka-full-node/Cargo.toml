@@ -14,6 +14,8 @@ rust-version = { workspace = true }
 [dependencies]
 suzuka-executor = { workspace = true }
 m1-da-light-node-client = { workspace = true }
+protocol-unit-types = { workspace = true }
+
 async-channel = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

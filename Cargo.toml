@@ -14,6 +14,8 @@ members = [
 
     "protocol-units/mempool/*",
 
+    "protocol-units/types",
+
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -24,7 +26,7 @@ members = [
 
     "networks/suzuka/suzuka-client",
     "networks/suzuka/suzuka-config",
-    "networks/suzuka/suzuka-full-node",
+    "networks/suzuka/suzuka-full-node", 
 ]
 
 [workspace.package]
@@ -40,6 +42,10 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
+## protocol-units/types
+protocol-unit-types = { path = "protocol-units/types" }
+
+
 ## execution/aptos
 maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
 maptos-execution-util = { path = "protocol-units/execution/maptos/util" }

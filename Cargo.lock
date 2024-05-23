@@ -6373,6 +6373,7 @@ dependencies = [
  "maptos-execution-util",
  "maptos-opt-executor",
  "poem-openapi",
+ "protocol-unit-types",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
@@ -6445,6 +6446,7 @@ dependencies = [
  "m1-da-light-node-client",
  "monza-executor",
  "movement-types",
+ "protocol-unit-types",
  "serde_json",
  "sha2 0.10.8",
  "tokio",
@@ -8494,6 +8496,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-unit-types"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "aptos-crypto",
+ "aptos-types",
+ "async-channel",
+ "async-trait",
+]
+
+[[package]]
 name = "psl-types"
 version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10072,7 +10086,6 @@ dependencies = [
  "chrono",
  "clap 4.5.4",
  "derive_more",
- "dirs 5.0.1",
  "fail 0.5.1",
  "futures",
  "hex",
@@ -10081,12 +10094,12 @@ dependencies = [
  "maptos-execution-util",
  "maptos-opt-executor",
  "poem-openapi",
+ "protocol-unit-types",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
  "serde",
  "serde_json",
- "tempfile",
  "thiserror",
  "tokio",
  "tonic",
@@ -10152,6 +10165,7 @@ dependencies = [
  "env_logger 0.11.3",
  "m1-da-light-node-client",
  "movement-types",
+ "protocol-unit-types",
  "serde_json",
  "sha2 0.10.8",
  "suzuka-executor",
