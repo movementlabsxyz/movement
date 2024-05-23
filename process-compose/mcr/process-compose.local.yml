@@ -14,7 +14,7 @@ processes:
   
   deploy-mcr:
     command: |
-      ./scripts/mcr/deploy-mcr-to-anvil
+      . ./scripts/mcr/deploy-mcr-to-anvil
     depends_on:
       eth:
         condition: process_healthy
