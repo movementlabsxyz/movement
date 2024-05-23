@@ -83,7 +83,6 @@ mod opt_tests {
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
 	use aptos_types::{
 		account_address::AccountAddress,
 		block_executor::partitioner::ExecutableTransactions,
@@ -93,8 +92,6 @@ mod opt_tests {
 			SignedTransaction, Transaction, TransactionPayload,
 		},
 	};
-	use futures::channel::oneshot;
-	use futures::SinkExt;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
