@@ -155,6 +155,7 @@ impl<T: ExecutorOps + Send + Sync + Clone> MonzaPartialNode<T> {
 	}
 }
 
+#[async_trait::async_trait]
 impl<T: ExecutorOps + Send + Sync + Clone> MonzaFullNode for MonzaPartialNode<T> {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -190,4 +191,3 @@ impl MonzaPartialNode<MonzaExecutorV1> {
 		Self::bound(executor, light_node_client)
 	}
 }
-

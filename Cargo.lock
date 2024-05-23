@@ -6445,6 +6445,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "async-trait",
  "env_logger 0.11.3",
  "m1-da-light-node-client",
  "monza-executor",

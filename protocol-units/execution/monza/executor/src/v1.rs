@@ -1,4 +1,3 @@
-use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
 use maptos_opt_executor::Executor;
