@@ -79,8 +79,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 
 	/// Get block head height.
 	async fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
-		// ideally, this should read from the ledger
-		Ok(1)
+		self.executor.get_block_head_height()
 	}
 
 	/// Build block metadata for a timestamp
