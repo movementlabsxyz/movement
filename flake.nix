@@ -98,6 +98,7 @@
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
         # monza-aptos
+        # FIXME: rename, should not be specific to Monza
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
 
         # m1-da-light-node
