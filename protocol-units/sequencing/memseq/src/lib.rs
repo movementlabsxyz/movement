@@ -148,14 +148,14 @@ pub mod test {
 		assert!(result.is_err());
 		assert_eq!(
 			result.unwrap_err().to_string(),
-			"MempoolTransactionOperationsError error: Mock error: add_transaction"
+			"MempoolTransactionOperationsError error: Other error: add_transaction"
 		);
 
 		let result = memseq.wait_for_next_block().await;
 		assert!(result.is_err());
 		assert_eq!(
 			result.unwrap_err().to_string(),
-			"MempoolTransactionOperationsError error: Mock error: pop_transaction"
+			"MempoolTransactionOperationsError error: Other error: pop_transaction"
 		);
 
 		Ok(())
@@ -425,40 +425,6 @@ pub mod test {
 
 	struct MockMempool;
 	impl MempoolTransactionOperations for MockMempool {
-		async fn has_mempool_transaction(
-			&self,
-			_transaction_id: Id,
-		) -> MempoolTransactionOperationsResult<bool> {
-			mock_error!("has_mempool_transaction")
-		}
-
-		async fn add_mempool_transaction(
-			&self,
-			_tx: MempoolTransaction,
-		) -> MempoolTransactionOperationsResult<()> {
-			mock_error!("add_mempool_transaction")
-		}
-
-		async fn remove_mempool_transaction(
-			&self,
-			_transaction_id: Id,
-		) -> MempoolTransactionOperationsResult<()> {
-			mock_error!("remove_mempool_transaction")
-		}
-
-		async fn pop_mempool_transaction(
-			&self,
-		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
-			mock_error!("pop_mempool_transaction")
-		}
-
-		async fn get_mempool_transaction(
-			&self,
-			_transaction_id: Id,
-		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
-			mock_error!("get_mempool_transaction")
-		}
-
 		async fn add_transaction(
 			&self,
 			_transaction: Transaction,
@@ -468,6 +434,40 @@ pub mod test {
 
 		async fn pop_transaction(&self) -> MempoolTransactionOperationsResult<Option<Transaction>> {
 			mock_error!("pop_transaction")
+		}
+
+		async fn add_mempool_transaction(
+			&self,
+			_tx: MempoolTransaction,
+		) -> MempoolTransactionOperationsResult<()> {
+			todo!()
+		}
+
+		async fn pop_mempool_transaction(
+			&self,
+		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
+			todo!()
+		}
+
+		async fn has_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> MempoolTransactionOperationsResult<bool> {
+			todo!()
+		}
+
+		async fn remove_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> MempoolTransactionOperationsResult<()> {
+			todo!()
+		}
+
+		async fn get_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
+			todo!()
 		}
 	}
 
