@@ -3,6 +3,7 @@ use movement_types::{AtomicTransactionBundle, Block, Transaction};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum SequencerError {
 	#[error("MempoolTransactionOperationsError error: {0}")]
 	MempoolTransactionOperationsError(#[from] MempoolTransactionOperationsError),

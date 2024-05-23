@@ -10,6 +10,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum RocksdbMempoolError {
 	#[error("Underlying db error")]
 	RocksDbError(#[from] rocksdb::Error),

@@ -7,6 +7,7 @@ use thiserror::Error;
 pub type BoxedStoreError = Box<dyn std::error::Error + Send + Sync + 'static>;
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum MempoolTransactionOperationsError {
 	#[error("Serialization error: {0}")]
 	SerializationError(String),
@@ -130,6 +131,7 @@ pub trait MempoolTransactionOperations {
 }
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum MempoolBlockOperationsError {
 	#[error("Store error: {0}")]
 	StoreError(#[from] BoxedStoreError),

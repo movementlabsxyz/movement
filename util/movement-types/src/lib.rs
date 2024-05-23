@@ -27,6 +27,7 @@ impl Display for Id {
 }
 
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum TransactionError {
 	#[error("AtomicTransactionBundle must contain exactly one transaction")]
 	AtomicTransactionBundleMustContainExactlyOneTransaction,
@@ -129,4 +130,3 @@ impl Block {
 		self.transactions.push(transaction);
 	}
 }
-
