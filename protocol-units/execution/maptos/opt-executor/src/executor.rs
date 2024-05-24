@@ -329,18 +329,19 @@ impl Executor {
 		// Context has a reach-around to the db so the block height should
 		// have been updated to the most recently committed block.
 		// Race conditions, anyone?
-		let block_height = self.get_block_head_height();
+		let block_height = self.get_block_head_height()?;
 
 		let commitment = Commitment::digest_state_proof(&proof);
 		Ok(BlockCommitment {
-			block_id: Id(block_id.to_vec()),
+			block_id: Id(block.block_id.to_vec()),
 			commitment,
 			height: block_height.into(),
 		})
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
-		self.context.get_latest_ledger_info_wrapped()?.block_height
+		let ledger_info = self.context.get_latest_ledger_info_wrapped()?;
+		Ok(ledger_info.block_height.into())
 	}
 
 	fn context(&self) -> Arc<Context> {
