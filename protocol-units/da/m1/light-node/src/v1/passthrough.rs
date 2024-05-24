@@ -1,15 +1,21 @@
-use m1_da_light_node_grpc::{blob_response, light_node_service_server::LightNodeService};
-use m1_da_light_node_grpc::*;
+use std::sync::Arc;
+
 use tokio_stream::{StreamExt, Stream};
+use tokio::sync::RwLock;
+use tracing::debug;
+
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+
+// FIXME: glob imports are bad style
+use m1_da_light_node_grpc::*;
+use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_util::Config;
 use m1_da_light_node_verifier::{
     Verifier,
     v1::V1Verifier
 };
+
 use crate::v1::LightNodeV1Operations;
 
 
@@ -91,9 +97,8 @@ impl LightNodeV1 {
             .blob_get_all(height, &[self.celestia_namespace])
             .await;
 
-        #[cfg(feature = "logging")]
-        if blobs.is_err() {
-            tracing::debug!("Error getting blobs: {:?}", blobs.as_ref().err().unwrap());
+        if let Err(e) = &blobs {
+            debug!("Error getting blobs: {:?}", e);
         }
 
         let blobs = blobs.unwrap_or_default();
@@ -101,10 +106,7 @@ impl LightNodeV1 {
         let mut verified_blobs = Vec::new();
         for blob in blobs {
 
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Verifying blob");
-            }
+            debug!("Verifying blob");
 
             let blob_data = blob.data.clone();
 
@@ -115,11 +117,11 @@ impl LightNodeV1 {
                 height,
             ).await;
 
-            #[cfg(feature = "logging")]
-            if verified.is_err() {
-                tracing::debug!("Error verifying blob: {:?}", verified.as_ref().err().unwrap());
+            if let Err(e) = &verified {
+                debug!("Error verifying blob: {:?}", e);
             }
 
+            // FIXME: really?
             let verified = verified.unwrap_or(true);
 
             if verified {
@@ -178,10 +180,7 @@ impl LightNodeV1 {
                 let header = header_res?;
                 let height = header.height().into();
 
-                #[cfg(feature = "logging")]
-                {
-                    tracing::debug!("Stream got header: {:?}", header.height());
-                }
+                debug!("Stream got header: {:?}", header.height());
 
                 // back fetch the blobs
                 if first_flag && (height > start_height) {
@@ -189,11 +188,8 @@ impl LightNodeV1 {
                     let mut blob_stream = me.stream_blobs_in_range(start_height, Some(height)).await?;
                     
                     while let Some(blob) = blob_stream.next().await {
-                        
-                        #[cfg(feature = "logging")]
-                        {
-                            tracing::debug!("Stream got blob: {:?}", blob);
-                        }
+
+                        debug!("Stream got blob: {:?}", blob);
 
                         yield blob?;
                     }
@@ -203,11 +199,8 @@ impl LightNodeV1 {
 
                 let blobs = me.get_blobs_at_height(height).await?;
                 for blob in blobs {
-                    
-                    #[cfg(feature = "logging")]
-                    {
-                        tracing::debug!("Stream got blob: {:?}", blob);
-                    }
+
+                    debug!("Stream got blob: {:?}", blob);
 
                     yield blob;
                 }

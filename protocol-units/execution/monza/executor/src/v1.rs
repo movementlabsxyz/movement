@@ -1,8 +1,11 @@
+// FIXME: glob imports are bad style
 use crate::*;
 use aptos_types::transaction::SignedTransaction;
-use async_channel::Sender;
 use maptos_opt_executor::Executor;
 use movement_types::BlockCommitment;
+
+use async_channel::Sender;
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -50,10 +53,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		match mode {
 			FinalityMode::Dyn => unimplemented!(),
 			FinalityMode::Opt => {
-				#[cfg(feature = "logging")]
-				{
-					tracing::debug!("Executing opt block: {:?}", block.block_id)
-				}
+				debug!("Executing opt block: {:?}", block.block_id);
 				self.executor.execute_block(block).await
 			},
 			FinalityMode::Fin => unimplemented!(),

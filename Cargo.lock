@@ -4296,34 +4296,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "env_filter"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a009aa4810eb158359dda09d0c87378e4bbb89b5a801f016885a4707ba24f7ea"
-dependencies = [
- "log",
- "regex",
-]
-
-[[package]]
 name = "env_logger"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
 dependencies = [
- "log",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.11.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38b35839ba51819680ba087cd351788c9a3c476841207e0b8cee0b04722343b9"
-dependencies = [
- "anstream",
- "anstyle",
- "env_filter",
- "humantime",
  "log",
 ]
 
@@ -5146,12 +5123,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
-
-[[package]]
 name = "hyper"
 version = "0.14.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5435,7 +5406,7 @@ dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
  "dashmap",
- "env_logger 0.10.2",
+ "env_logger",
  "indexmap 2.2.6",
  "is-terminal",
  "itoa",
@@ -6023,7 +5994,6 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "chrono",
- "env_logger 0.11.3",
  "hex",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
@@ -6164,7 +6134,6 @@ dependencies = [
  "clap 4.5.4",
  "derive_more",
  "dirs 3.0.2",
- "env_logger 0.11.3",
  "fail 0.5.1",
  "futures",
  "hex",
@@ -6465,7 +6434,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
- "env_logger 0.11.3",
  "m1-da-light-node-client",
  "monza-executor",
  "movement-types",
@@ -10172,7 +10140,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
- "env_logger 0.11.3",
  "m1-da-light-node-client",
  "mcr-settlement-client",
  "mcr-settlement-manager",

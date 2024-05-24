@@ -1,6 +1,13 @@
 use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
+use async_channel::{Sender, Receiver};
+use sha2::Digest;
+use tokio_stream::StreamExt;
+use tokio::sync::RwLock;
+use tracing::debug;
+
+use movement_types::Block;
 use monza_executor::{
     MonzaExecutor,
     ExecutableBlock,
@@ -12,14 +19,9 @@ use monza_executor::{
     ExecutableTransactions,
     v1::MonzaExecutorV1,
 };
+// FIXME: glob imports are bad style
 use m1_da_light_node_client::*;
-use async_channel::{Sender, Receiver};
-use sha2::Digest;
 use crate::*;
-use tokio_stream::StreamExt;
-use tokio::sync::RwLock;
-use movement_types::Block;
-
 
 #[derive(Clone)]
 pub struct MonzaPartialNode<T : MonzaExecutor + Send + Sync + Clone> {
@@ -67,10 +69,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
             match transaction_result {
                 Ok(transaction) => {
 
-                    #[cfg(feature = "logging")]
-                    {
-                        tracing::debug!("Got transaction: {:?}", transaction)
-                    }
+                    debug!("Got transaction: {:?}", transaction);
 
                     let serialized_transaction = serde_json::to_vec(&transaction)?;
                     transactions.push(BlobWrite {
@@ -96,10 +95,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                 }
             ).await?;
             
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Wrote transactions to DA")
-            }
+            tracing::debug!("Wrote transactions to DA");
 
         }
 
@@ -134,10 +130,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
         while let Some(blob) = stream.next().await {
 
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Got blob: {:?}", blob)
-            }
+            debug!("Got blob: {:?}", blob);
 
             // get the block
             let (block_bytes, block_timestamp, block_id) = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
@@ -150,10 +143,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
             // get the block
             let block : Block = serde_json::from_slice(&block_bytes)?;
             
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Got block: {:?}", block)
-            }
+            debug!("Got block: {:?}", block);
 
             // get the transactions
             let mut block_transactions = Vec::new();
@@ -200,10 +190,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                 executable_block
             ).await?;
 
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Executed block: {:?}", block_id)
-            }
+            debug!("Executed block: {:?}", block_id);
 
         }
 

@@ -18,6 +18,7 @@ use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
+use tracing::debug;
 
 use std::future::Future;
 use std::sync::Arc;
@@ -88,10 +89,7 @@ where
             match transaction_result {
                 Ok(transaction) => {
                 
-                    #[cfg(feature = "logging")]
-                    {
-                        tracing::debug!("Got transaction: {:?}", transaction)
-                    }
+                    debug!("Got transaction: {:?}", transaction);
 
                     let serialized_transaction = serde_json::to_vec(&transaction)?;
                     transactions.push(BlobWrite {
@@ -116,11 +114,8 @@ where
                     blobs: transactions
                 }
             ).await?;
-            
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Wrote transactions to DA")
-            }
+
+            debug!("Wrote transactions to DA");
 
         }
 
@@ -155,10 +150,7 @@ where
 
 		while let Some(blob) = stream.next().await {
 
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Got blob: {:?}", blob)
-            }
+            debug!("Got blob: {:?}", blob);
 
             // get the block
             let (block_bytes, block_timestamp, block_id) = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
@@ -170,10 +162,7 @@ where
 
 			let block : Block = serde_json::from_slice(&block_bytes)?;
             
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Got block: {:?}", block)
-            }
+            debug!("Got block: {:?}", block);
 
 			// get the transactions
 			let mut block_transactions = Vec::new();
@@ -213,10 +202,7 @@ where
 			let commitment =
 				self.executor.execute_block(FinalityMode::Opt, executable_block).await?;
 
-            #[cfg(feature = "logging")]
-            {
-                tracing::debug!("Executed block: {:?}", block_id)
-            }
+            debug!("Executed block: {:?}", block_id);
 
 			self.settlement_manager.post_block_commitment(commitment).await?;
 		}
@@ -230,20 +216,10 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
-				
-				#[cfg(feature = "logging")]
-				{
-					tracing::debug!("Commitment accepted: {:?}", commitment)
-				}
-
+				debug!("Commitment accepted: {:?}", commitment);
 			},
 			BlockCommitmentEvent::Rejected { height, reason } => {
-				
-				#[cfg(feature = "logging")]
-				{
-					tracing::debug!("Commitment rejected: {:?} {:?}", height, reason)
-				}
-
+				debug!("Commitment rejected: {:?} {:?}", height, reason);
 			},
 		}
 	}

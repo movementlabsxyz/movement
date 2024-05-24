@@ -29,14 +29,13 @@ async-stream = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tempfile = { workspace = true }
+tracing = { workspace = true }
 chrono = { workspace = true }
 
 
 # sequencer
 memseq = { workspace = true, optional = true }
 
-env_logger = { workspace = true, optional = true }
-tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }
 
 [features]
@@ -45,8 +44,6 @@ default = [
     "logging"
 ]
 logging = [
-    "env_logger", 
-    "tracing", 
     "tracing-subscriber"
 ]
 sequencer = [

@@ -43,6 +43,7 @@ use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use poem::{listener::TcpListener, Route, Server};
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 use std::{path::PathBuf, sync::Arc};
 
@@ -245,11 +246,8 @@ impl Executor {
 			block_executor.execute_block(block, parent_block_id, BlockExecutorConfigFromOnchain::new_no_block_limit())?
 		};
 
-		#[cfg(feature = "logging")]
-		{
-			tracing::debug!("State compute: {:?}", state_compute)
-		}
-		
+		debug!("State compute: {:?}", state_compute);
+
 		let version = state_compute.version();
 
 
@@ -354,15 +352,10 @@ impl Executor {
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 
-		#[cfg(feature = "logging")]
-		{
-			// log out to tracing
-			tracing::info!(
-				"Starting maptos-opt-executor services at: {:?}",
-				self.aptos_config.aptos_rest_listen_url
-			);
-
-		}
+		info!(
+			"Starting maptos-opt-executor services at: {:?}",
+			self.aptos_config.aptos_rest_listen_url
+		);
 
 		let api_service = get_api_service(self.context()).server(
 			format!("http://{:?}", self.aptos_config.aptos_rest_listen_url)
