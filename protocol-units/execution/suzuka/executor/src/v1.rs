@@ -132,11 +132,6 @@ mod opt_tests {
 		accept_type::AcceptType,
 		transactions::SubmitTransactionPost
 	};
-    use futures::SinkExt;
-    use aptos_mempool::{
-        MempoolClientRequest, MempoolClientSender,
-    };
-    use futures::channel::oneshot;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -243,14 +238,19 @@ mod opt_tests {
 
         // Now execute the block
         let block_id = HashValue::random();
-        let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-            received_transaction
-        ));
-        let txs = ExecutableTransactions::Unsharded(vec![tx]);
+        let block_metadata = executor.build_block_metadata(
+            block_id.clone(),
+            chrono::Utc::now().timestamp_micros() as u64,
+        ).await.unwrap();
+        let txs = ExecutableTransactions::Unsharded([
+            Transaction::BlockMetadata(block_metadata),
+            Transaction::UserTransaction(received_transaction),
+        ].into_iter().map(SignatureVerifiedTransaction::Valid).collect());
         let block = ExecutableBlock::new(block_id.clone(), txs);
         let commitment = executor.execute_block(FinalityMode::Opt, block).await?;
 
-        // TODO: test the commitment
+        assert_eq!(commitment.block_id.to_vec(), block_id.to_vec());
+        assert_eq!(commitment.height, 1);
 
         services_handle.abort();
         background_handle.abort();

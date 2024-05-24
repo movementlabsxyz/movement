@@ -14,7 +14,6 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-chrono = { workspace = true }
 fail = { workspace = true }
 log = { workspace = true }
 thiserror = { workspace = true }
@@ -67,3 +66,6 @@ movement-types = { workspace = true }
 dirs = "5.0.1"
 tempfile = "3.10.1"
 async-trait = "0.1.80"
+
+[dev-dependencies]
+chrono = { workspace = true }
