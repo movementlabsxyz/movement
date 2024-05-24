@@ -91,6 +91,7 @@
           # Development Shell
           devShells.default = mkShell {
 
+            MONZA_APTOS_PATH = monza-aptos;
             OPENSSL_DEV=pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = dependencies;
@@ -98,7 +99,6 @@
 
             shellHook = ''
               #!/bin/bash
-              export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
