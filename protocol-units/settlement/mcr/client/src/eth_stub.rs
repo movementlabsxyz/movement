@@ -1,11 +1,15 @@
 use crate::{AcceptedBlockCommitment, CommitmentStream, McrSettlementClientOperations};
+use alloy_contract::CallBuilder;
+use alloy_contract::CallDecoder;
 use alloy_network::Ethereum;
+use alloy_primitives::Address;
 use alloy_provider::fillers::ChainIdFiller;
 use alloy_provider::fillers::FillProvider;
 use alloy_provider::fillers::GasFiller;
 use alloy_provider::fillers::JoinFill;
 use alloy_provider::fillers::NonceFiller;
 use alloy_provider::fillers::SignerFiller;
+use std::array::TryFromSliceError;
 //use alloy_provider::fillers::TxFiller;
 use alloy_provider::{ProviderBuilder, RootProvider};
 use alloy_transport::{Transport, TransportError};
@@ -28,7 +32,7 @@ use alloy_transport_ws::WsConnect;
 use movement_types::BlockCommitment;
 
 const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TX_SEND_RETRY: usize = 3;
+const MAX_TX_SEND_RETRY: usize = 10;
 const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 
 #[derive(Clone, Debug)]
@@ -58,8 +62,8 @@ pub enum McrEthConnectorError {
 	InsufficientFunds(String),
 	#[error("MCR Settlement Tx send fail because :{0}")]
 	SendTxError(#[from] alloy_contract::Error),
-	#[error("MCR Settlement Tx send fail because of RPC error :{0}")]
-	RpcTxError(String),
+	#[error("MCR Settlement Tx send fail during its execution :{0}")]
+	RpcTxExecution(String),
 	#[error("MCR Settlement BlockAccepted event notification error :{0}")]
 	EventNotificationError(#[from] alloy_sol_types::Error),
 	#[error("MCR Settlement BlockAccepted event notification stream close")]
@@ -74,12 +78,12 @@ sol!(
 	"abi/MCR.json"
 );
 
-pub struct McrEthSettlementClient<P, T, N> {
+pub struct McrEthSettlementClient<P, T> {
 	rpc_provider: P,
+	signer_address: Address,
 	ws_provider: RootProvider<PubSubFrontend>,
 	config: McrEthSettlementConfig,
 	_markert: PhantomData<T>,
-	_markern: PhantomData<N>,
 }
 
 impl
@@ -97,7 +101,6 @@ impl
 			Ethereum,
 		>,
 		BoxTransport,
-		Ethereum,
 	>
 {
 	pub async fn build_with_urls<S2>(
@@ -110,19 +113,22 @@ impl
 		S2: Into<String>,
 	{
 		let signer: LocalWallet = signer_private_key.parse()?;
+		let signer_address = signer.address();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer))
 			.on_builtin(rpc)
 			.await?;
 
-		McrEthSettlementClient::build_with_provider(rpc_provider, ws_url, config).await
+		McrEthSettlementClient::build_with_provider(rpc_provider, signer_address, ws_url, config)
+			.await
 	}
 }
 
-impl<P: Provider<T, Ethereum>, T: Transport + Clone, N> McrEthSettlementClient<P, T, N> {
+impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrEthSettlementClient<P, T> {
 	pub async fn build_with_provider<S>(
 		rpc_provider: P,
+		signer_address: Address,
 		ws_url: S,
 		config: McrEthSettlementConfig,
 	) -> Result<Self, anyhow::Error>
@@ -135,53 +141,40 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone, N> McrEthSettlementClient<P
 
 		Ok(McrEthSettlementClient {
 			rpc_provider,
+			signer_address,
 			ws_provider,
 			config,
 			_markert: Default::default(),
-			_markern: Default::default(),
 		})
 	}
-}
 
-#[async_trait::async_trait]
-impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperations
-	for McrEthSettlementClient<P, T, Ethereum>
-{
-	async fn post_block_commitment(
+	async fn send_tx<D: CallDecoder + Clone>(
 		&self,
-		block_commitment: BlockCommitment,
+		base_call_builder: CallBuilder<T, &&P, D, Ethereum>,
 	) -> Result<(), anyhow::Error> {
-		let contract =
-			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.rpc_provider);
-
-		let eth_block_commitment = MCR::BlockCommitment {
-			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
-			height: U256::from(block_commitment.height),
-			commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0.try_into()?),
-			blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0.try_into()?),
-		};
-
-		let base_call_builder = contract.submitBlockCommitment(eth_block_commitment);
-
-		//validate gaz price
+		//validate gaz price.
 		let mut estimate_gas = base_call_builder.estimate_gas().await?;
-		let gas_price = base_call_builder.provider.get_gas_price().await?;
-		let tx_fee_wei = estimate_gas * gas_price;
+		// Add 20% because initial gas estimate are too low.
+		estimate_gas += (estimate_gas * 20) / 100;
 
-		println!("estimate_gas:{estimate_gas} gas_price:{gas_price} tx_fee_wei:{tx_fee_wei}");
-
-		if tx_fee_wei > self.config.gas_limit {
-			return Err(
-				McrEthConnectorError::GasLimitExceed(tx_fee_wei, self.config.gas_limit).into()
-			);
-		}
-
-		// Sending Tx automatically can lead to erros that depend on the state for Eth.
+		// Sending Tx automatically can lead to errors that depend on the state for Eth.
 		// It's convenient to manage some of them automatically to avoid to fail commitment Tx.
 		// I define a first one but other should be added depending on the test with mainnet.
 		for _ in 0..self.config.tx_send_nb_retry {
-			let call_builder = base_call_builder.clone().gas(estimate_gas * 2);
-			//send the Tx and wait for 2 confirmation.
+			let call_builder = base_call_builder.clone().gas(estimate_gas);
+
+			//detect if the gas price doesn't execeed the limit.
+			let gas_price = call_builder.provider.get_gas_price().await?;
+			let tx_fee_wei = estimate_gas * gas_price;
+			if tx_fee_wei > self.config.gas_limit {
+				return Err(McrEthConnectorError::GasLimitExceed(
+					tx_fee_wei,
+					self.config.gas_limit,
+				)
+				.into());
+			}
+
+			//send the Tx and detect send error.
 			let pending_tx = match call_builder.send().await {
 				Err(alloy_contract::Error::TransportError(TransportError::ErrorResp(payload))) => {
 					match payload.code {
@@ -210,21 +203,84 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 				Err(err) => return Err(McrEthConnectorError::from(err).into()),
 			};
 
-			let _tx_receipt = match pending_tx.get_receipt().await {
-				Ok(tx_hash) => tx_hash,
-				Err(err) => return Err(McrEthConnectorError::RpcTxError(err.to_string()).into()),
+			match pending_tx.get_receipt().await {
+				// Tx execution fail
+				Ok(tx_receipt) if !tx_receipt.status() => {
+					tracing::debug!(
+						"tx_receipt.gas_used: {} / estimate_gas: {estimate_gas}",
+						tx_receipt.gas_used
+					);
+					if tx_receipt.gas_used == estimate_gas {
+						tracing::warn!("Send commitment Tx  fail because of insufficient gas, receipt:{tx_receipt:?} ");
+						estimate_gas += (estimate_gas * 10) / 100;
+						continue;
+					} else {
+						return Err(McrEthConnectorError::RpcTxExecution(format!(
+							"Send commitment Tx fail, abort Tx, receipt:{tx_receipt:?}"
+						))
+						.into());
+					}
+				},
+				Ok(_) => return Ok(()),
+				Err(err) => {
+					return Err(McrEthConnectorError::RpcTxExecution(err.to_string()).into())
+				},
 			};
-			//println!("Send commitment tx_receipt:{tx_receipt:?}");
-			break;
 		}
-		Ok(())
+
+		//Max retry exceed
+		Err(McrEthConnectorError::RpcTxExecution(
+			"Send commitment Tx fail because of exceed max retry".to_string(),
+		)
+		.into())
+	}
+}
+
+#[async_trait::async_trait]
+impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClientOperations
+	for McrEthSettlementClient<P, T>
+{
+	async fn post_block_commitment(
+		&self,
+		block_commitment: BlockCommitment,
+	) -> Result<(), anyhow::Error> {
+		let contract =
+			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.rpc_provider);
+
+		let eth_block_commitment = MCR::BlockCommitment {
+			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+			height: U256::from(block_commitment.height),
+			commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
+			blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
+		};
+
+		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
+
+		self.send_tx(call_builder).await
 	}
 
 	async fn post_block_commitment_batch(
 		&self,
-		block_commitment: Vec<BlockCommitment>,
+		block_commitments: Vec<BlockCommitment>,
 	) -> Result<(), anyhow::Error> {
-		todo!()
+		let contract =
+			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.rpc_provider);
+
+		let eth_block_commitment: Vec<_> = block_commitments
+			.into_iter()
+			.map(|block_commitment| {
+				Ok(MCR::BlockCommitment {
+					// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+					height: U256::from(block_commitment.height),
+					commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
+					blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
+				})
+			})
+			.collect::<Result<Vec<_>, TryFromSliceError>>()?;
+
+		let call_builder = contract.submitBatchBlockCommitment(eth_block_commitment);
+
+		self.send_tx(call_builder).await
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
@@ -250,19 +306,34 @@ impl<P: Provider<T, Ethereum>, T: Transport + Clone> McrSettlementClientOperatio
 		&self,
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
-		todo!()
+		let contract =
+			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.ws_provider);
+		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
+			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
+			.call()
+			.await?;
+		let return_height: u64 = commitment.height.try_into()?;
+		// Commitment with height 0 mean not found
+		Ok((return_height != 0).then_some(BlockCommitment {
+			height: commitment.height.try_into()?,
+			block_id: Id(commitment.blockId.into()),
+			commitment: Commitment(commitment.commitment.into()),
+		}))
 	}
 
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
-		todo!()
+		let contract =
+			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.ws_provider);
+		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
+			contract.getMaxTolerableBlockHeight().call().await?;
+		let return_height: u64 = block_height.try_into()?;
+		Ok(return_height)
 	}
 }
 
 #[cfg(test)]
 pub mod test {
 	use super::*;
-	//use alloy_network::EthereumSigner;
-	use alloy_primitives::Address;
 	use alloy_provider::ProviderBuilder;
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
@@ -275,6 +346,15 @@ pub mod test {
 	//#[ignore]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
+		//Activate to debug the test.
+		// use tracing_subscriber::EnvFilter;
+
+		// tracing_subscriber::fmt()
+		// 	.with_env_filter(
+		// 		EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		// 	)
+		// 	.init();
+
 		// Inititalize Test variables
 		let rpc_port = env::var("MCR_ANVIL_PORT").unwrap();
 		let rpc_url = format!("http://localhost:{rpc_port}");
@@ -288,6 +368,7 @@ pub mod test {
 		let mcr_address = read_mcr_sc_adress()?;
 		//Define Signers. Ceremony define 2 signers with half stake each.
 		let signer1: LocalWallet = anvil_address[1].1.parse()?;
+		let signer1_addr = signer1.address();
 
 		//Build client 1 and send first commitment.
 		let provider_client1 = ProviderBuilder::new()
@@ -303,6 +384,7 @@ pub mod test {
 
 		let client1 = McrEthSettlementClient::build_with_provider(
 			provider_client1,
+			signer1_addr,
 			ws_url.clone(),
 			config.clone(),
 		)
@@ -322,12 +404,6 @@ pub mod test {
 		//TODO
 
 		//Build client 2 and send the second commitment.
-		let config = McrEthSettlementConfig {
-			mrc_contract_address: mcr_address.to_string(),
-			gas_limit: DEFAULT_TX_GAS_LIMIT,
-			tx_send_nb_retry: MAX_TX_SEND_RETRY,
-		};
-
 		let client2 =
 			McrEthSettlementClient::build_with_urls(&rpc_url, ws_url, &anvil_address[2].1, config)
 				.await
@@ -340,58 +416,11 @@ pub mod test {
 		assert!(res.is_ok());
 
 		// now we move to block 2 and make some commitment just to trigger the epochRollover
-		let commitment =
-			BlockCommitment { height: 2, block_id: Id([7; 32]), commitment: Commitment([8; 32]) };
-		let res = client2.post_block_commitment(commitment.clone()).await;
+		let commitment2 =
+			BlockCommitment { height: 2, block_id: Id([4; 32]), commitment: Commitment([5; 32]) };
+
+		let res = client2.post_block_commitment(commitment2.clone()).await;
 		assert!(res.is_ok());
-
-		// Print some SC state to see if everything is ok
-		// let signer1_addr: Address = anvil_address[1].0.parse()?;
-		// let signer2: LocalWallet = anvil_address[2].1.parse()?;
-		// let signer2_addr: Address = anvil_address[2].0.parse()?;
-		// let provider2 = ProviderBuilder::new()
-		// 	.with_recommended_fillers()
-		// 	.signer(EthereumSigner::from(signer2))
-		// 	.on_http(rpc_url.parse().unwrap());
-
-		// let signer2_contract = MCR::new(mcr_address, &provider2);
-		// let MCR::getValidatorCommitmentAtBlockHeightReturn {
-		// 	_0: get_validator_commitment_at_block_height,
-		// } = signer2_contract
-		// 	.getValidatorCommitmentAtBlockHeight(U256::from(1), signer1_addr)
-		// 	.call()
-		// 	.await?;
-		// println!(
-		// 	"getValidatorCommitmentAtBlockHeight signer 1 heigth 1: {:?}, {:?}, {:?}",
-		// 	get_validator_commitment_at_block_height.height,
-		// 	get_validator_commitment_at_block_height.commitment,
-		// 	get_validator_commitment_at_block_height.blockId,
-		// );
-
-		// let MCR::getValidatorCommitmentAtBlockHeightReturn {
-		// 	_0: get_validator_commitment_at_block_height,
-		// } = signer2_contract
-		// 	.getValidatorCommitmentAtBlockHeight(U256::from(1), signer2_addr)
-		// 	.call()
-		// 	.await?;
-		// println!(
-		// 	"getValidatorCommitmentAtBlockHeight signer 2 heigth 1: {:?}, {:?}, {:?}",
-		// 	get_validator_commitment_at_block_height.height,
-		// 	get_validator_commitment_at_block_height.commitment,
-		// 	get_validator_commitment_at_block_height.blockId,
-		// );
-		// let MCR::getValidatorCommitmentAtBlockHeightReturn {
-		// 	_0: get_validator_commitment_at_block_height,
-		// } = signer2_contract
-		// 	.getValidatorCommitmentAtBlockHeight(U256::from(2), signer2_addr)
-		// 	.call()
-		// 	.await?;
-		// println!(
-		// 	"getValidatorCommitmentAtBlockHeight signer 2 heigth 2: {:?}, {:?}, {:?}",
-		// 	get_validator_commitment_at_block_height.height,
-		// 	get_validator_commitment_at_block_height.commitment,
-		// 	get_validator_commitment_at_block_height.blockId,
-		// );
 
 		//validate that the accept commitment stream get the event.
 		let event = client1_stream.next().await.unwrap().unwrap();
@@ -400,6 +429,29 @@ pub mod test {
 		let event = client2_stream.next().await.unwrap().unwrap();
 		assert_eq!(event.commitment.0[0], 3);
 		assert_eq!(event.block_id.0[0], 2);
+
+		//test post batch commitment
+		// post the complementary batch on height 2 and one on height 3
+		let commitment3 =
+			BlockCommitment { height: 3, block_id: Id([6; 32]), commitment: Commitment([7; 32]) };
+		let res = client1.post_block_commitment_batch(vec![commitment2, commitment3]).await;
+		assert!(res.is_ok());
+		//validate that the accept commitment stream get the event.
+		let event = client1_stream.next().await.unwrap().unwrap();
+		assert_eq!(event.commitment.0[0], 5);
+		assert_eq!(event.block_id.0[0], 4);
+		let event = client2_stream.next().await.unwrap().unwrap();
+		assert_eq!(event.commitment.0[0], 5);
+		assert_eq!(event.block_id.0[0], 4);
+
+		//test get_commitment_at_height
+		let commitment = client1.get_commitment_at_height(1).await?;
+		assert!(commitment.is_some());
+		let commitment = commitment.unwrap();
+		assert_eq!(commitment.commitment.0[0], 3);
+		assert_eq!(commitment.block_id.0[0], 2);
+		let commitment = client1.get_commitment_at_height(10).await?;
+		assert_eq!(commitment, None);
 
 		Ok(())
 	}
@@ -462,8 +514,6 @@ pub mod test {
 		let MCR::getGenesisStakeRequiredReturn { _0: get_genesis_stake_required } =
 			signer1_contract.getGenesisStakeRequired().call().await?;
 		let get_genesis_stake_required: u128 = get_genesis_stake_required.try_into().unwrap();
-		println!("get_genesis_stake_required: {get_genesis_stake_required:?}");
-
 		stake_genesis(
 			&signer1_rpc_provider,
 			&signer1_contract,
