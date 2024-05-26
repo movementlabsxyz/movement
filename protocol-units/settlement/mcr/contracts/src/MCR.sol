@@ -61,6 +61,8 @@ contract MCR {
     event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 height);
     event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 validatorStake);
 
+    error CustomError();
+
     constructor(
         uint256 epochDurationSecs,
         uint256 _leadingBlockTolerance,
@@ -174,6 +176,49 @@ contract MCR {
     function getTotalStakeForCurrentEpoch() public view returns (uint256) {
         return getTotalStakeForEpoch(getCurrentEpoch());
     }
+
+    // TEST
+    function getFuncMemory() public view returns (uint256) {
+        uint256 currentEp = getCurrentEpoch();
+        return getTotalStakeForEpoch(currentEp);
+    }
+
+    // TEST 
+    function _getCurrentEpoch() internal view returns (uint256){
+        return currentEpoch;
+    }
+    
+    // TEST
+    function getInternal() public view returns (uint256) {
+        return getTotalStakeForEpoch(_getCurrentEpoch());
+    }
+
+    // TEST
+    function getInternalMemory() public view returns (uint256) {
+        uint256 currentEp = _getCurrentEpoch();
+        return getTotalStakeForEpoch(currentEp);
+    }
+
+    // TEST
+    function getState() public view returns (uint256) {
+        return getTotalStakeForEpoch(currentEpoch);
+    }
+
+    // TEST
+    function getStateMemory() public view returns (uint256) {
+        uint256 currentEp = currentEpoch;
+        return getTotalStakeForEpoch(currentEp);
+    }
+    
+    // TEST
+    function getMultiuseState() public view returns (uint256) {
+        return currentEpoch + currentEpoch;
+    }
+    // TEST
+    function getMultiuseMemory() public view returns (uint256) {
+        uint256 currentEp = currentEpoch;
+        return currentEp + currentEp;
+    }
     
     // NOTE: redundant function
     // blockHeightEpochAssignments[blockHeight] is accessible through public function commitments(blockHeight, validatorAddress)
@@ -204,13 +249,53 @@ contract MCR {
 
     }
 
-    // stakes for the genesis epoch
     function stakeGenesis() external payable {
         // NOTE: consider using if genesisStakeAccumulated > genesisStakeRequired, set genesis StakeRequired to requirement-1. revert with CustomError.
         require(
             genesisStakeAccumulated < genesisStakeRequired,
             "Genesis ceremony has ended."
         );
+
+        // NOTE: require a minimal amount
+
+        validators.add(msg.sender);
+        epochStakes[0][msg.sender] += msg.value;
+        genesisStakeAccumulated += msg.value;
+        emit ValidatorStaked(msg.sender, msg.value, 0);
+
+        if (genesisStakeAccumulated >= genesisStakeRequired) {
+
+            // first epoch is whatever the epoch number given is for the block time at which the genesis ceremony ends
+            currentEpoch = getEpochByBlockTime();
+            
+            // roll over the genesis epoch to a timestamp epoch
+            for (uint256 i = 0; i < validators.length(); i++){
+                address validatorAddress = validators.at(i);
+                epochStakes[getCurrentEpoch()][validatorAddress] = epochStakes[0][validatorAddress];
+            }
+
+
+        }
+
+    }
+
+    // TEST
+    function revertRequire() public {
+        require (false, "Returned error data");
+    }
+    //TEST
+    function revertCustom() public {
+        if (true) revert CustomError();
+    }
+    // TEST
+    function stakeGenesisGreaterEq() external payable {
+        // NOTE: consider using if genesisStakeAccumulated > genesisStakeRequired, set genesis StakeRequired to requirement-1. revert with CustomError.
+        require(
+            genesisStakeRequired >= genesisStakeAccumulated,
+            "Genesis ceremony has ended."
+        );
+
+        // NOTE: require a minimal amount
 
         validators.add(msg.sender);
         epochStakes[0][msg.sender] += msg.value;
@@ -280,6 +365,16 @@ contract MCR {
 
     }
 
+    // TEST
+    function differentCheck() public {
+        require(0 != 0);
+    }
+
+    // TEST
+    function higherCheck() public {
+        require(0 > 0);
+    }
+    
     // commits a validator to a particular block
     function submitBlockCommitmentForValidator(
         address validatorAddress, 
@@ -292,7 +387,7 @@ contract MCR {
         // note: do no uncomment the below, we want to allow this in case we have lagging validators
         // require(blockCommitment.height > lastAcceptedBlockHeight, "Validator has committed to an already accepted block");
 
-        // NOTE: consider using if blockCommitment.height > lastAcceptedBlockHeight + leadingBlockTolerance (increase tolerance by 1) revert with CustomError.
+        // NOTE: consider using if lastAcceptedBlockHeight + leadingBlockTolerance < blockCommitment.height revert with CustomError.
         require(blockCommitment.height < lastAcceptedBlockHeight + leadingBlockTolerance, "Validator has committed to a block too far ahead of the last accepted block");
 
         // assign the block height to the current epoch if it hasn't been assigned yet
