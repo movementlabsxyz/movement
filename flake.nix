@@ -4,17 +4,18 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/monthly"; 
-    naersk.url = "github:nix-community/naersk";
+    crane.url = "github:ipetkov/crane";
+    crane.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
     self,
-    nixpkgs,
-    rust-overlay,
-    flake-utils,
-    foundry,
-    naersk,
-    ...
+      nixpkgs,
+      rust-overlay,
+      flake-utils,
+      foundry,
+      crane,
+      ...
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
 
@@ -39,9 +40,12 @@
           inherit system overlays;
         };
 
+        craneLib = crane.mkLib pkgs;
+
+
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-         dependencies = with pkgs; [
+        dependencies = with pkgs; [
           foundry-bin
           # solc
           llvmPackages.bintools
@@ -83,11 +87,6 @@
           rustc = rust;
         };
 
-        naersk' = pkgs.callPackage naersk {
-          cargo = rust;
-          rustc = rust;
-        };
-
         # celestia-node
         celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
 
@@ -98,7 +97,7 @@
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
 
         # m1-da-light-node
-        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
+        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS craneLib; };
     
       in
         with pkgs; {
