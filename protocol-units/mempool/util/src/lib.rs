@@ -4,67 +4,70 @@ use movement_types::{Block, Id, Transaction};
 use std::cmp::Ordering;
 use thiserror::Error;
 
-pub type BoxedStoreError = Box<dyn std::error::Error + Send + Sync + 'static>;
-
 #[derive(Error, Debug)]
 #[non_exhaustive]
-pub enum MempoolTransactionOperationsError {
+pub enum MempoolTransactionOperationsError<E> {
 	#[error("Serialization error: {0}")]
 	SerializationError(String),
 	#[error("Deserialization error: {0}")]
 	DeserializationError(String),
-	#[error("Underlying store error")]
-	StoreError(#[from] BoxedStoreError),
+	#[error("Underlying store error: {0}")]
+	StoreError(E),
 	#[error("Other error: {0}")]
 	Other(String),
 }
 
-impl MempoolTransactionOperationsError {
-	pub fn store_error<E: std::error::Error + Send + Sync + 'static>(error: E) -> Self {
-		Self::StoreError(Box::new(error))
+pub type MempoolTransactionOperationsResult<T, E> = Result<T, MempoolTransactionOperationsError<E>>;
+
+impl<E: std::error::Error + Send + Sync + 'static> From<E>
+	for MempoolTransactionOperationsError<E>
+{
+	fn from(error: E) -> Self {
+		Self::StoreError(error)
 	}
 }
 
-pub type MempoolTransactionOperationsResult<T> = Result<T, MempoolTransactionOperationsError>;
-
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait MempoolTransactionOperations {
 	// todo: move mempool_transaction methods into separate trait
+
+	/// The error type for the trait.
+	type Error;
 
 	/// Checks whether a mempool transaction exists in the mempool.
 	async fn has_mempool_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<bool>;
+	) -> MempoolTransactionOperationsResult<bool, Self::Error>;
 
 	/// Adds a mempool transaction to the mempool.
 	async fn add_mempool_transaction(
 		&self,
 		tx: MempoolTransaction,
-	) -> MempoolTransactionOperationsResult<()>;
+	) -> MempoolTransactionOperationsResult<(), Self::Error>;
 
 	/// Removes a mempool transaction from the mempool.
 	async fn remove_mempool_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<()>;
+	) -> MempoolTransactionOperationsResult<(), Self::Error>;
 
 	/// Pops mempool transaction from the mempool.
 	async fn pop_mempool_transaction(
 		&self,
-	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>>;
+	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>, Self::Error>;
 
 	/// Gets a mempool transaction from the mempool.
 	async fn get_mempool_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>>;
+	) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>, Self::Error>;
 
 	/// Pops the next n mempool transactions from the mempool.
 	async fn pop_mempool_transactions(
 		&self,
 		n: usize,
-	) -> MempoolTransactionOperationsResult<Vec<MempoolTransaction>> {
+	) -> MempoolTransactionOperationsResult<Vec<MempoolTransaction>, Self::Error> {
 		let mut mempool_transactions = Vec::with_capacity(n);
 		for _ in 0..n {
 			if let Some(mempool_transaction) = self.pop_mempool_transaction().await? {
@@ -80,12 +83,15 @@ pub trait MempoolTransactionOperations {
 	async fn has_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<bool> {
+	) -> MempoolTransactionOperationsResult<bool, Self::Error> {
 		self.has_mempool_transaction(transaction_id).await
 	}
 
 	/// Adds a transaction to the mempool.
-	async fn add_transaction(&self, tx: Transaction) -> MempoolTransactionOperationsResult<()> {
+	async fn add_transaction(
+		&self,
+		tx: Transaction,
+	) -> MempoolTransactionOperationsResult<(), Self::Error> {
 		if self.has_transaction(tx.id()).await? {
 			return Ok(());
 		}
@@ -98,12 +104,14 @@ pub trait MempoolTransactionOperations {
 	async fn remove_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<()> {
+	) -> MempoolTransactionOperationsResult<(), Self::Error> {
 		self.remove_mempool_transaction(transaction_id).await
 	}
 
 	/// Pops transaction from the mempool.
-	async fn pop_transaction(&self) -> MempoolTransactionOperationsResult<Option<Transaction>> {
+	async fn pop_transaction(
+		&self,
+	) -> MempoolTransactionOperationsResult<Option<Transaction>, Self::Error> {
 		let mempool_transaction = self.pop_mempool_transaction().await?;
 		Ok(mempool_transaction.map(|mempool_transaction| mempool_transaction.transaction))
 	}
@@ -112,7 +120,7 @@ pub trait MempoolTransactionOperations {
 	async fn get_transaction(
 		&self,
 		transaction_id: Id,
-	) -> MempoolTransactionOperationsResult<Option<Transaction>> {
+	) -> MempoolTransactionOperationsResult<Option<Transaction>, Self::Error> {
 		let mempool_transaction = self.get_mempool_transaction(transaction_id).await?;
 		Ok(mempool_transaction.map(|mempool_transaction| mempool_transaction.transaction))
 	}
@@ -121,7 +129,7 @@ pub trait MempoolTransactionOperations {
 	async fn pop_transactions(
 		&self,
 		n: usize,
-	) -> MempoolTransactionOperationsResult<Vec<Transaction>> {
+	) -> MempoolTransactionOperationsResult<Vec<Transaction>, Self::Error> {
 		let mempool_transactions = self.pop_mempool_transactions(n).await?;
 		Ok(mempool_transactions
 			.into_iter()
@@ -132,36 +140,42 @@ pub trait MempoolTransactionOperations {
 
 #[derive(Error, Debug)]
 #[non_exhaustive]
-pub enum MempoolBlockOperationsError {
+pub enum MempoolBlockOperationsError<E> {
 	#[error("Store error: {0}")]
-	StoreError(#[from] BoxedStoreError),
+	StoreError(E),
 	#[error("Serialization error: {0}")]
 	SerializeError(String),
 	#[error("Deserialization error: {0}")]
 	DeserializationError(String),
 }
 
-impl MempoolBlockOperationsError {
-	pub fn store_error<E: std::error::Error + Send + Sync + 'static>(error: E) -> Self {
-		Self::StoreError(Box::new(error))
+impl<E: std::error::Error + Send + Sync + 'static> From<E> for MempoolBlockOperationsError<E> {
+	fn from(error: E) -> Self {
+		Self::StoreError(error)
 	}
 }
 
-pub type MempoolBlockOperationsResult<T> = Result<T, MempoolBlockOperationsError>;
+pub type MempoolBlockOperationsResult<T, E> = Result<T, MempoolBlockOperationsError<E>>;
 
-#[allow(async_fn_in_trait)]
+#[async_trait::async_trait]
 pub trait MempoolBlockOperations {
+	/// The error type for the trait.
+	type Error;
+
 	/// Checks whether a block exists in the mempool.
-	async fn has_block(&self, block_id: Id) -> MempoolBlockOperationsResult<bool>;
+	async fn has_block(&self, block_id: Id) -> MempoolBlockOperationsResult<bool, Self::Error>;
 
 	/// Adds a block to the mempool.
-	async fn add_block(&self, block: Block) -> MempoolBlockOperationsResult<()>;
+	async fn add_block(&self, block: Block) -> MempoolBlockOperationsResult<(), Self::Error>;
 
 	/// Removes a block from the mempool.
-	async fn remove_block(&self, block_id: Id) -> MempoolBlockOperationsResult<()>;
+	async fn remove_block(&self, block_id: Id) -> MempoolBlockOperationsResult<(), Self::Error>;
 
 	/// Gets a block from the mempool.
-	async fn get_block(&self, block_id: Id) -> MempoolBlockOperationsResult<Option<Block>>;
+	async fn get_block(
+		&self,
+		block_id: Id,
+	) -> MempoolBlockOperationsResult<Option<Block>, Self::Error>;
 }
 
 /// Wraps a transaction with a timestamp for help ordering.

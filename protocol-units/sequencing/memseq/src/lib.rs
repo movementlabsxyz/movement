@@ -1,5 +1,6 @@
 use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
 pub use move_rocks::RocksdbMempool;
+use move_rocks::RocksdbMempoolError;
 pub use movement_types::{Block, Id, Transaction};
 pub use sequencing_util::Sequencer;
 use sequencing_util::SequencerResult;
@@ -7,7 +8,7 @@ use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
-pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
+pub struct Memseq<T> {
 	pub mempool: Arc<RwLock<T>>,
 	// this value should not be changed after initialization
 	block_size: u32,
@@ -16,7 +17,7 @@ pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
 	building_time_ms: u64,
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
+impl<T> Memseq<T> {
 	pub fn new(
 		mempool: Arc<RwLock<T>>,
 		block_size: u32,
@@ -54,14 +55,23 @@ impl Memseq<RocksdbMempool> {
 	}
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
-	async fn publish(&self, transaction: Transaction) -> SequencerResult<()> {
+#[async_trait::async_trait]
+impl<T> Sequencer for Memseq<T>
+where
+	T: MempoolBlockOperations<Error = RocksdbMempoolError>
+		+ MempoolTransactionOperations<Error = RocksdbMempoolError>
+		+ Send
+		+ Sync,
+{
+	type Error = RocksdbMempoolError;
+
+	async fn publish(&self, transaction: Transaction) -> SequencerResult<(), Self::Error> {
 		let mempool = self.mempool.read().await;
 		mempool.add_transaction(transaction).await?;
 		Ok(())
 	}
 
-	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>> {
+	async fn wait_for_next_block(&self) -> SequencerResult<Option<Block>, Self::Error> {
 		let mempool = self.mempool.read().await;
 		let mut transactions = Vec::new();
 
@@ -424,67 +434,88 @@ pub mod test {
 	}
 
 	struct MockMempool;
-	impl MempoolTransactionOperations for MockMempool {
-		async fn add_transaction(
-			&self,
-			_transaction: Transaction,
-		) -> MempoolTransactionOperationsResult<()> {
-			mock_error!("add_transaction")
-		}
 
-		async fn pop_transaction(&self) -> MempoolTransactionOperationsResult<Option<Transaction>> {
-			mock_error!("pop_transaction")
+	#[async_trait::async_trait]
+	impl MempoolTransactionOperations for MockMempool {
+		type Error = RocksdbMempoolError;
+
+		async fn has_mempool_transaction(
+			&self,
+			_transaction_id: Id,
+		) -> MempoolTransactionOperationsResult<bool, RocksdbMempoolError> {
+			mock_error!("has_mempool_transaction")
 		}
 
 		async fn add_mempool_transaction(
 			&self,
 			_tx: MempoolTransaction,
-		) -> MempoolTransactionOperationsResult<()> {
-			todo!()
-		}
-
-		async fn pop_mempool_transaction(
-			&self,
-		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
-			todo!()
-		}
-
-		async fn has_mempool_transaction(
-			&self,
-			_transaction_id: Id,
-		) -> MempoolTransactionOperationsResult<bool> {
-			todo!()
+		) -> MempoolTransactionOperationsResult<(), RocksdbMempoolError> {
+			mock_error!("add_mempool_transaction")
 		}
 
 		async fn remove_mempool_transaction(
 			&self,
 			_transaction_id: Id,
-		) -> MempoolTransactionOperationsResult<()> {
-			todo!()
+		) -> MempoolTransactionOperationsResult<(), RocksdbMempoolError> {
+			mock_error!("remove_mempool_transaction")
+		}
+
+		async fn pop_mempool_transaction(
+			&self,
+		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>, RocksdbMempoolError> {
+			mock_error!("pop_mempool_transaction")
 		}
 
 		async fn get_mempool_transaction(
 			&self,
 			_transaction_id: Id,
-		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>> {
-			todo!()
+		) -> MempoolTransactionOperationsResult<Option<MempoolTransaction>, RocksdbMempoolError> {
+			mock_error!("get_mempool_transaction")
+		}
+
+		async fn add_transaction(
+			&self,
+			_transaction: Transaction,
+		) -> MempoolTransactionOperationsResult<(), RocksdbMempoolError> {
+			mock_error!("add_transaction")
+		}
+
+		async fn pop_transaction(
+			&self,
+		) -> MempoolTransactionOperationsResult<Option<Transaction>, RocksdbMempoolError> {
+			mock_error!("pop_transaction")
 		}
 	}
 
+	#[async_trait::async_trait]
 	impl MempoolBlockOperations for MockMempool {
-		async fn has_block(&self, _block_id: Id) -> MempoolBlockOperationsResult<bool> {
+		type Error = RocksdbMempoolError;
+
+		async fn has_block(
+			&self,
+			_block_id: Id,
+		) -> MempoolBlockOperationsResult<bool, RocksdbMempoolError> {
 			todo!()
 		}
 
-		async fn add_block(&self, _block: Block) -> MempoolBlockOperationsResult<()> {
+		async fn add_block(
+			&self,
+			_block: Block,
+		) -> MempoolBlockOperationsResult<(), RocksdbMempoolError> {
 			todo!()
 		}
 
-		async fn remove_block(&self, _block_id: Id) -> MempoolBlockOperationsResult<()> {
+		async fn remove_block(
+			&self,
+			_block_id: Id,
+		) -> MempoolBlockOperationsResult<(), RocksdbMempoolError> {
 			todo!()
 		}
 
-		async fn get_block(&self, _block_id: Id) -> MempoolBlockOperationsResult<Option<Block>> {
+		async fn get_block(
+			&self,
+			_block_id: Id,
+		) -> MempoolBlockOperationsResult<Option<Block>, RocksdbMempoolError> {
 			todo!()
 		}
 	}

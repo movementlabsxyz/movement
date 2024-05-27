@@ -1,6 +1,6 @@
 use anyhow::Context;
 use suzuka_full_node::{
-    SuzukaFullNode,
+    SuzukaNode,
     partial::SuzukaPartialNode,
 };
 

@@ -6025,6 +6025,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-stream",
+ "async-trait",
  "celestia-rpc",
  "celestia-types",
  "env_logger 0.11.3",
@@ -6103,6 +6104,7 @@ dependencies = [
  "m1-da-light-node-util",
  "prost",
  "serde_json",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -6220,6 +6222,7 @@ checksum = "6c8640c5d730cb13ebd907d8d04b52f55ac9a2eec55b440c8892f40d56c76c1d"
 name = "mempool-util"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "movement-types",
  "serde",
  "thiserror",
@@ -6230,6 +6233,7 @@ name = "memseq"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "futures",
  "mempool-util",
  "move-rocks",
@@ -6372,6 +6376,7 @@ dependencies = [
  "maptos-execution-util",
  "maptos-opt-executor",
  "poem-openapi",
+ "protocol-unit-types",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
@@ -6440,10 +6445,12 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "async-trait",
  "env_logger 0.11.3",
  "m1-da-light-node-client",
  "monza-executor",
  "movement-types",
+ "protocol-unit-types",
  "serde_json",
  "sha2 0.10.8",
  "tokio",
@@ -7026,6 +7033,7 @@ name = "move-rocks"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "mempool-util",
  "movement-types",
  "rocksdb",
@@ -8493,6 +8501,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "protocol-unit-types"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "aptos-crypto",
+ "aptos-types",
+ "async-channel",
+ "async-trait",
+]
+
+[[package]]
 name = "psl-types"
 version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9342,6 +9362,7 @@ dependencies = [
 name = "sequencing-util"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "mempool-util",
  "movement-types",
  "thiserror",
@@ -10021,6 +10042,7 @@ dependencies = [
  "maptos-execution-util",
  "once_cell",
  "rand 0.7.3",
+ "thiserror",
  "tokio",
  "url",
 ]
@@ -10031,6 +10053,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "maptos-execution-util",
+ "thiserror",
  "tokio",
 ]
 
@@ -10069,7 +10092,6 @@ dependencies = [
  "chrono",
  "clap 4.5.4",
  "derive_more",
- "dirs 5.0.1",
  "fail 0.5.1",
  "futures",
  "hex",
@@ -10078,12 +10100,12 @@ dependencies = [
  "maptos-execution-util",
  "maptos-opt-executor",
  "poem-openapi",
+ "protocol-unit-types",
  "rand 0.7.3",
  "rand_core 0.5.1",
  "schemars",
  "serde",
  "serde_json",
- "tempfile",
  "thiserror",
  "tokio",
  "tonic",
@@ -10146,9 +10168,11 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "async-trait",
  "env_logger 0.11.3",
  "m1-da-light-node-client",
  "movement-types",
+ "protocol-unit-types",
  "serde_json",
  "sha2 0.10.8",
  "suzuka-executor",
@@ -11738,8 +11762,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "ed25519-dalek"
-version = "2.0.0"
-source = "git+https://github.com/risc0/curve25519-dalek?tag=curve25519-4.1.0-risczero.1#42c4faf7dc3f640a7e3f7e4cbf43e7d5d6d46b67"

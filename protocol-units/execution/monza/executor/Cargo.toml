@@ -63,6 +63,7 @@ aptos-proptest-helpers = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
 maptos-execution-util = { workspace = true }
+protocol-unit-types = { workspace = true }
 
 dirs = "5.0.1"
 tempfile = "3.10.1"

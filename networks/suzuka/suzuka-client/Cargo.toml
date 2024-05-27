@@ -13,12 +13,15 @@ rust-version = { workspace = true }
 
 [dependencies]
 aptos-sdk = { workspace = true }
-anyhow = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
 maptos-execution-util = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+anyhow = { workspace = true }
 
 [lints]
 workspace = true

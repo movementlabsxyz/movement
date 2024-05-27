@@ -20,6 +20,7 @@ anyhow = { workspace = true }
 move-rocks = { workspace = true }
 tempfile = { workspace = true }
 futures = { workspace = true }
+async-trait = { workspace = true }
 
 [lints]
 workspace = true

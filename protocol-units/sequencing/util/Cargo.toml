@@ -16,6 +16,7 @@ tokio = { workspace = true }
 movement-types = { workspace = true }
 thiserror = { workspace = true }
 mempool-util = { workspace = true }
+async-trait = { workspace = true }
 
 [lints]
 workspace = true

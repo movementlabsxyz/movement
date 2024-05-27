@@ -1,7 +1,7 @@
-use crate::*;
 use aptos_types::transaction::SignedTransaction;
 use async_channel::Sender;
 use maptos_opt_executor::Executor;
+use protocol_unit_types::{Apis, ExecutableBlock, ExecutorOps, FinalityMode};
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -23,8 +23,8 @@ impl MonzaExecutorV1 {
 	}
 }
 
-#[tonic::async_trait]
-impl MonzaExecutor for MonzaExecutorV1 {
+#[async_trait::async_trait]
+impl ExecutorOps for MonzaExecutorV1 {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
 		self.executor.run_service().await
@@ -36,8 +36,6 @@ impl MonzaExecutor for MonzaExecutorV1 {
 			// readers should be able to run concurrently
 			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
 		}
-
-		Ok(())
 	}
 
 	/// Executes a block dynamically
@@ -57,10 +55,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	}
 
 	/// Sets the transaction channel.
-	fn set_tx_channel(
-		&mut self,
-		tx_channel: Sender<SignedTransaction>,
-	) {
+	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
 		self.transaction_channel = tx_channel;
 	}
 
@@ -91,12 +86,10 @@ mod tests {
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
-	use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
 	use aptos_sdk::{
 		transaction_builder::TransactionFactory,
 		types::{AccountKey, LocalAccount},
 	};
-	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
 		account_address::AccountAddress,
 		account_config::aptos_test_root_address,
@@ -108,8 +101,6 @@ mod tests {
 			SignedTransaction, Transaction, TransactionPayload, Version,
 		},
 	};
-	use futures::channel::oneshot;
-	use futures::SinkExt;
 	use rand::SeedableRng;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
@@ -296,11 +287,11 @@ mod tests {
 		// Get the version to revert to
 		let version_to_revert = revert.cur_ver - 1;
 
-		if let Some((max_blockheight, last_commit)) =
+		if let Some((_max_blockheight, last_commit)) =
 			committed_blocks.iter().max_by_key(|(&k, _)| k)
 		{
 			let db = executor.executor.db.clone();
-			let mut db_writer = db.write_owned().await.writer.clone();
+			let db_writer = db.write_owned().await.writer.clone();
 			db_writer.revert_commit(
 				version_to_revert,
 				last_commit.cur_ver,
@@ -314,7 +305,7 @@ mod tests {
 		}
 
 		let db_reader = executor.executor.db.read_owned().await.reader.clone();
-		let latest_version = db_reader.get_latest_version()?;
+		// let latest_version = db_reader.get_latest_version()?;
 		assert_eq!(db_reader.get_latest_version().unwrap(), version_to_revert - 1);
 
 		services_handle.abort();
