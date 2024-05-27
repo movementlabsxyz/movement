@@ -1,4 +1,3 @@
-use movement_types::AcceptedBlockCommitment;
 use movement_types::BlockCommitment;
 use tokio_stream::Stream;
 
@@ -11,7 +10,7 @@ pub mod eth_client;
 mod send_eth_tx;
 
 type CommitmentStream =
-	std::pin::Pin<Box<dyn Stream<Item = Result<AcceptedBlockCommitment, anyhow::Error>> + Send>>;
+	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitment, anyhow::Error>> + Send>>;
 
 #[async_trait::async_trait]
 pub trait McrSettlementClientOperations {

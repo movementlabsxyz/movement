@@ -208,10 +208,3 @@ pub enum BlockCommitmentEvent {
         reason: BlockCommitmentRejectionReason,
     },
 }
-
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct AcceptedBlockCommitment {
-    pub height : u64,
-    pub block_id : Id,
-    pub commitment : Commitment,
-}

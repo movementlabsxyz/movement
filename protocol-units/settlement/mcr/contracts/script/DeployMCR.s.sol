@@ -11,6 +11,7 @@ contract DeployMCR is Script {
             5, 
             128,
             100 ether, // should accumulate 100 ether
+            100 ether, // each genesis validator can stake up to 100 ether
             0
         );
         vm.stopBroadcast();

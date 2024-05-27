@@ -2,7 +2,7 @@ use crate::send_eth_tx::InsufficentFunds;
 use crate::send_eth_tx::SendTxErrorRule;
 use crate::send_eth_tx::UnderPriced;
 use crate::send_eth_tx::VerifyRule;
-use crate::{AcceptedBlockCommitment, CommitmentStream, McrSettlementClientOperations};
+use crate::{CommitmentStream, McrSettlementClientOperations};
 use alloy_network::Ethereum;
 use alloy_primitives::Address;
 use alloy_provider::fillers::ChainIdFiller;
@@ -225,7 +225,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 
 		let stream = event_filter.into_stream().map(|event| {
 			event
-				.map(|(commitment, _)| AcceptedBlockCommitment {
+				.map(|(commitment, _)| BlockCommitment {
 					height: commitment.height.try_into().unwrap(),
 					block_id: Id(commitment.blockHash.0),
 					commitment: Commitment(commitment.stateCommitment.0),
