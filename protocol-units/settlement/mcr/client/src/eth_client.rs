@@ -165,8 +165,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		let contract =
-			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.rpc_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
 
 		let eth_block_commitment = MCR::BlockCommitment {
 			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
@@ -190,8 +189,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		&self,
 		block_commitments: Vec<BlockCommitment>,
 	) -> Result<(), anyhow::Error> {
-		let contract =
-			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.rpc_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
 
 		let eth_block_commitment: Vec<_> = block_commitments
 			.into_iter()
@@ -219,16 +217,22 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		//register to contract BlockCommitmentSubmitted event
 
-		let contract =
-			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.ws_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
 
 		let stream = event_filter.into_stream().map(|event| {
 			event
-				.map(|(commitment, _)| BlockCommitment {
-					height: commitment.height.try_into().unwrap(),
-					block_id: Id(commitment.blockHash.0),
-					commitment: Commitment(commitment.stateCommitment.0),
+				.and_then(|(commitment, _)| {
+					let height = commitment.height.try_into().map_err(
+						|err: alloy::primitives::ruint::FromUintError<u64>| {
+							alloy_sol_types::Error::Other(err.to_string().into())
+						},
+					)?;
+					Ok(BlockCommitment {
+						height,
+						block_id: Id(commitment.blockHash.0),
+						commitment: Commitment(commitment.stateCommitment.0),
+					})
 				})
 				.map_err(|err| McrEthConnectorError::EventNotificationError(err).into())
 		});
@@ -239,8 +243,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		&self,
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
-		let contract =
-			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.ws_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
 		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
 			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
 			.call()
@@ -255,8 +258,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 	}
 
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
-		let contract =
-			MCR::new(self.config.mrc_contract_address.parse().unwrap(), &self.ws_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
 			contract.getMaxTolerableBlockHeight().call().await?;
 		let return_height: u64 = block_height.try_into()?;
