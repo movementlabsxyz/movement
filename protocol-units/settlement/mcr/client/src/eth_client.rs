@@ -1,6 +1,8 @@
+use crate::send_eth_tx::InsufficentFunds;
+use crate::send_eth_tx::SendTxErrorRule;
+use crate::send_eth_tx::UnderPriced;
+use crate::send_eth_tx::VerifyRule;
 use crate::{AcceptedBlockCommitment, CommitmentStream, McrSettlementClientOperations};
-use alloy_contract::CallBuilder;
-use alloy_contract::CallDecoder;
 use alloy_network::Ethereum;
 use alloy_primitives::Address;
 use alloy_provider::fillers::ChainIdFiller;
@@ -12,7 +14,7 @@ use alloy_provider::fillers::SignerFiller;
 use std::array::TryFromSliceError;
 //use alloy_provider::fillers::TxFiller;
 use alloy_provider::{ProviderBuilder, RootProvider};
-use alloy_transport::{Transport, TransportError};
+use alloy_transport::Transport;
 use movement_types::{Commitment, Id};
 use std::marker::PhantomData;
 use tokio_stream::StreamExt;
@@ -83,6 +85,7 @@ pub struct McrEthSettlementClient<P, T> {
 	signer_address: Address,
 	ws_provider: RootProvider<PubSubFrontend>,
 	config: McrEthSettlementConfig,
+	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
 	_markert: PhantomData<T>,
 }
 
@@ -139,100 +142,18 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrEthSettlementCli
 
 		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 
+		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
+		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
+		let send_tx_error_rules = vec![rule1, rule2];
+
 		Ok(McrEthSettlementClient {
 			rpc_provider,
 			signer_address,
 			ws_provider,
+			send_tx_error_rules,
 			config,
 			_markert: Default::default(),
 		})
-	}
-
-	async fn send_tx<D: CallDecoder + Clone>(
-		&self,
-		base_call_builder: CallBuilder<T, &&P, D, Ethereum>,
-	) -> Result<(), anyhow::Error> {
-		//validate gaz price.
-		let mut estimate_gas = base_call_builder.estimate_gas().await?;
-		// Add 20% because initial gas estimate are too low.
-		estimate_gas += (estimate_gas * 20) / 100;
-
-		// Sending Tx automatically can lead to errors that depend on the state for Eth.
-		// It's convenient to manage some of them automatically to avoid to fail commitment Tx.
-		// I define a first one but other should be added depending on the test with mainnet.
-		for _ in 0..self.config.tx_send_nb_retry {
-			let call_builder = base_call_builder.clone().gas(estimate_gas);
-
-			//detect if the gas price doesn't execeed the limit.
-			let gas_price = call_builder.provider.get_gas_price().await?;
-			let tx_fee_wei = estimate_gas * gas_price;
-			if tx_fee_wei > self.config.gas_limit {
-				return Err(McrEthConnectorError::GasLimitExceed(
-					tx_fee_wei,
-					self.config.gas_limit,
-				)
-				.into());
-			}
-
-			//send the Tx and detect send error.
-			let pending_tx = match call_builder.send().await {
-				Err(alloy_contract::Error::TransportError(TransportError::ErrorResp(payload))) => {
-					match payload.code {
-						//transaction underpriced
-						-32000 => {
-							if payload.message.contains("transaction underpriced") {
-								//increase gas of 10% and retry
-								estimate_gas += (estimate_gas * 10) / 100;
-								tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-								continue;
-							} else if payload.message.contains("insufficient funds") {
-								return Err(McrEthConnectorError::InsufficientFunds(
-									payload.message,
-								)
-								.into());
-							}
-						},
-						_ => (),
-					}
-					return Err(McrEthConnectorError::from(alloy_contract::Error::TransportError(
-						TransportError::ErrorResp(payload),
-					))
-					.into());
-				},
-				Ok(pending_tx) => pending_tx,
-				Err(err) => return Err(McrEthConnectorError::from(err).into()),
-			};
-
-			match pending_tx.get_receipt().await {
-				// Tx execution fail
-				Ok(tx_receipt) if !tx_receipt.status() => {
-					tracing::debug!(
-						"tx_receipt.gas_used: {} / estimate_gas: {estimate_gas}",
-						tx_receipt.gas_used
-					);
-					if tx_receipt.gas_used == estimate_gas {
-						tracing::warn!("Send commitment Tx  fail because of insufficient gas, receipt:{tx_receipt:?} ");
-						estimate_gas += (estimate_gas * 10) / 100;
-						continue;
-					} else {
-						return Err(McrEthConnectorError::RpcTxExecution(format!(
-							"Send commitment Tx fail, abort Tx, receipt:{tx_receipt:?}"
-						))
-						.into());
-					}
-				},
-				Ok(_) => return Ok(()),
-				Err(err) => {
-					return Err(McrEthConnectorError::RpcTxExecution(err.to_string()).into())
-				},
-			};
-		}
-
-		//Max retry exceed
-		Err(McrEthConnectorError::RpcTxExecution(
-			"Send commitment Tx fail because of exceed max retry".to_string(),
-		)
-		.into())
 	}
 }
 
@@ -256,7 +177,13 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
 
-		self.send_tx(call_builder).await
+		crate::send_eth_tx::send_tx(
+			call_builder,
+			&self.send_tx_error_rules,
+			self.config.tx_send_nb_retry,
+			self.config.gas_limit,
+		)
+		.await
 	}
 
 	async fn post_block_commitment_batch(
@@ -280,7 +207,13 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 
 		let call_builder = contract.submitBatchBlockCommitment(eth_block_commitment);
 
-		self.send_tx(call_builder).await
+		crate::send_eth_tx::send_tx(
+			call_builder,
+			&self.send_tx_error_rules,
+			self.config.tx_send_nb_retry,
+			self.config.gas_limit,
+		)
+		.await
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
@@ -339,8 +272,8 @@ pub mod test {
 	use movement_types::Commitment;
 	use std::env;
 
-	//define 2 validator (signer1 and signer2) with each 50% of stake.
-	// After after genesis ceremonial, 2 validator send the commitment for height 1.
+	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
+	// After genesis ceremonial, 2 validator send the commitment for height 1.
 	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
 	// Wait the commitment accepted event.
 	//#[ignore]
@@ -401,7 +334,9 @@ pub mod test {
 		assert!(res.is_ok());
 
 		//no notification quorum is not reach
-		//TODO
+		let res =
+			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next()).await;
+		assert!(res.is_err());
 
 		//Build client 2 and send the second commitment.
 		let client2 =
@@ -423,10 +358,20 @@ pub mod test {
 		assert!(res.is_ok());
 
 		//validate that the accept commitment stream get the event.
-		let event = client1_stream.next().await.unwrap().unwrap();
+		let event =
+			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
+				.await
+				.unwrap()
+				.unwrap()
+				.unwrap();
 		assert_eq!(event.commitment.0[0], 3);
 		assert_eq!(event.block_id.0[0], 2);
-		let event = client2_stream.next().await.unwrap().unwrap();
+		let event =
+			tokio::time::timeout(tokio::time::Duration::from_secs(5), client2_stream.next())
+				.await
+				.unwrap()
+				.unwrap()
+				.unwrap();
 		assert_eq!(event.commitment.0[0], 3);
 		assert_eq!(event.block_id.0[0], 2);
 
@@ -437,10 +382,20 @@ pub mod test {
 		let res = client1.post_block_commitment_batch(vec![commitment2, commitment3]).await;
 		assert!(res.is_ok());
 		//validate that the accept commitment stream get the event.
-		let event = client1_stream.next().await.unwrap().unwrap();
+		let event =
+			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
+				.await
+				.unwrap()
+				.unwrap()
+				.unwrap();
 		assert_eq!(event.commitment.0[0], 5);
 		assert_eq!(event.block_id.0[0], 4);
-		let event = client2_stream.next().await.unwrap().unwrap();
+		let event =
+			tokio::time::timeout(tokio::time::Duration::from_secs(5), client2_stream.next())
+				.await
+				.unwrap()
+				.unwrap()
+				.unwrap();
 		assert_eq!(event.commitment.0[0], 5);
 		assert_eq!(event.block_id.0[0], 4);
 
@@ -511,9 +466,6 @@ pub mod test {
 			.on_http(rpc_url.parse()?);
 		let signer1_contract = MCR::new(mcr_address, &signer1_rpc_provider);
 
-		let MCR::getGenesisStakeRequiredReturn { _0: get_genesis_stake_required } =
-			signer1_contract.getGenesisStakeRequired().call().await?;
-		let get_genesis_stake_required: u128 = get_genesis_stake_required.try_into().unwrap();
 		stake_genesis(
 			&signer1_rpc_provider,
 			&signer1_contract,
