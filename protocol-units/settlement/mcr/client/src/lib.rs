@@ -6,7 +6,9 @@ use tokio_stream::Stream;
 pub mod mock;
 
 #[cfg(feature = "eth")]
-pub mod eth_stub;
+pub mod eth_client;
+#[cfg(feature = "eth")]
+mod send_eth_tx;
 
 type CommitmentStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<AcceptedBlockCommitment, anyhow::Error>> + Send>>;

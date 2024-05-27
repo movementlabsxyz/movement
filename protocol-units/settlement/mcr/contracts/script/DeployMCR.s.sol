@@ -8,7 +8,7 @@ contract DeployMCR is Script {
         vm.startBroadcast();
 
         MCR mcr = new MCR(
-            10, 
+            5, 
             128,
             100 ether, // should accumulate 100 ether
             0
