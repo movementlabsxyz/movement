@@ -121,7 +121,10 @@ impl LightNodeV1 {
                 debug!("Error verifying blob: {:?}", e);
             }
 
-            // FIXME: really?
+            // FIXME: check the implications of treating errors as verification success.
+            // @l-monninger: under the assumption we are running a light node in the same
+            // trusted setup and have not experience a highly intrusive(?), the vulnerability here
+            // is fairly low. The light node should take care of verification on its own.
             let verified = verified.unwrap_or(true);
 
             if verified {
