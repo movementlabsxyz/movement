@@ -6183,6 +6183,7 @@ dependencies = [
  "anyhow",
  "async-stream",
  "async-trait",
+ "futures",
  "movement-types",
  "serde_json",
  "tokio",
