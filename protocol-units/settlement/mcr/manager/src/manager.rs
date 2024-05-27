@@ -179,4 +179,63 @@ mod tests {
 		});
 		Ok(())
 	}
+
+	#[tokio::test]
+	async fn test_back_pressure() -> Result<(), anyhow::Error> {
+		let mut client = MockMcrSettlementClient::new();
+		client.block_lead_tolerance = 2;
+		client.pause_after(2).await;
+		let (manager, mut event_stream) = Manager::new(client.clone());
+
+		let commitment1 = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		manager.post_block_commitment(commitment1.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment([2; 32]),
+		};
+		manager.post_block_commitment(commitment2.clone()).await?;
+		let commitment3 = BlockCommitment {
+			height: 3,
+			block_id: Default::default(),
+			commitment: Commitment([3; 32]),
+		};
+		manager.post_block_commitment(commitment3.clone()).await?;
+
+		let event = event_stream.next().await.expect("stream has ended")?;
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment1.clone()));
+		let event = event_stream.next().await.expect("stream has ended")?;
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment2.clone()));
+
+		// The batch of first two should have been posted,
+		// the third commitment is batched in the manager.
+		assert_eq!(client.get_commitment_at_height(1).await?, Some(commitment1.clone()));
+		assert_eq!(client.get_commitment_at_height(2).await?, Some(commitment2.clone()));
+		assert_eq!(client.get_commitment_at_height(3).await?, None);
+
+		// Unblock the client, allowing processing of commitments to resume.
+		client.resume().await;
+
+		let commitment4 = BlockCommitment {
+			height: 4,
+			block_id: Default::default(),
+			commitment: Commitment([4; 32]),
+		};
+		manager.post_block_commitment(commitment4).await?;
+		let commitment5 = BlockCommitment {
+			height: 5,
+			block_id: Default::default(),
+			commitment: Commitment([5; 32]),
+		};
+		manager.post_block_commitment(commitment5).await?;
+
+		let event = event_stream.next().await.expect("stream has ended")?;
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment3.clone()));
+
+		Ok(())
+	}
 }
