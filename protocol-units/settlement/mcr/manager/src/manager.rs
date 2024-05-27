@@ -158,7 +158,7 @@ mod tests {
 			block_id: Default::default(),
 			commitment: Commitment([1; 32]),
 		};
-		client.settle(BlockCommitment {
+		client.override_block_commitment(BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
 			commitment: Commitment([3; 32]),

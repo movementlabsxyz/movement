@@ -30,7 +30,7 @@ impl MockMcrSettlementClient {
 	///
 	/// To have effect, this method needs to be called before a commitment is
 	/// posted for this height with the `McrSettlementClientOperations` API.
-	pub async fn settle(&self, commitment: BlockCommitment) {
+	pub async fn override_block_commitment(&self, commitment: BlockCommitment) {
 		let mut commitments = self.commitments.write().await;
 		commitments.insert(commitment.height, commitment);
 	}
@@ -163,7 +163,7 @@ pub mod test {
 			block_id: Default::default(),
 			commitment: Commitment::test(),
 		};
-		client.settle(commitment.clone()).await;
+		client.override_block_commitment(commitment.clone()).await;
 		client.post_block_commitment(BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
