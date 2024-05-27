@@ -1,28 +1,30 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use movement_types::BlockCommitment;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
 
 #[derive(Clone)]
 pub struct MockMcrSettlementClient {
-	commitments: Arc<RwLock<HashMap<u64, BlockCommitment>>>,
+	commitments: Arc<RwLock<BTreeMap<u64, BlockCommitment>>>,
 	stream_sender: mpsc::Sender<Result<BlockCommitment, anyhow::Error>>,
 	stream_receiver: Arc<Mutex<Option<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>>,
     pub current_height: Arc<RwLock<u64>>,
-    pub block_lead_tolerance: u64
+    pub block_lead_tolerance: u64,
+	paused_at_height: Arc<RwLock<Option<u64>>>,
 }
 
 impl MockMcrSettlementClient {
 	pub fn new() -> Self {
 		let (stream_sender, receiver) = mpsc::channel(10);
 		MockMcrSettlementClient {
-			commitments: Arc::new(RwLock::new(HashMap::new())),
+			commitments: Arc::new(RwLock::new(BTreeMap::new())),
 			stream_sender,
 			stream_receiver: Arc::new(Mutex::new(Some(receiver))),
             current_height: Arc::new(RwLock::new(0)),
             block_lead_tolerance: 16,
+			paused_at_height: Arc::new(RwLock::new(None)),
 		}
 	}
 
@@ -33,6 +35,31 @@ impl MockMcrSettlementClient {
 	pub async fn override_block_commitment(&self, commitment: BlockCommitment) {
 		let mut commitments = self.commitments.write().await;
 		commitments.insert(commitment.height, commitment);
+	}
+
+	/// Stop streaming commitments after the given height.
+	///
+	/// Any posted commitments will be accumulated.
+	pub async fn pause_after(&self, height: u64) {
+		let mut paused_at_height = self.paused_at_height.write().await;
+		*paused_at_height = Some(height);
+	}
+
+	/// Stream any commitments that have been posted following the height
+	/// at which `pause` was called, and resume streaming any newly posted
+	/// commitments
+	pub async fn resume(&self) {
+		let resume_height = {
+			let mut paused_at_height = self.paused_at_height.write().await;
+			paused_at_height.take().expect("not paused")
+		};
+		{
+			let commitments = self.commitments.read().await;
+			for (_, commitment) in commitments.range(resume_height + 1..) {
+				println!("resume sends commitment for height {}", commitment.height);
+				self.stream_sender.send(Ok(commitment.clone())).await.unwrap();
+			}
+		}
 	}
 }
 
@@ -45,11 +72,18 @@ impl McrSettlementClientOperations for MockMcrSettlementClient {
 
         let height = block_commitment.height;
 
-        {
+        let settled = {
             let mut commitments = self.commitments.write().await;
-			let settled = commitments.entry(block_commitment.height).or_insert(block_commitment);
-			// Simulate sending to the stream
-            self.stream_sender.send(Ok(settled.clone())).await?;
+			commitments.entry(block_commitment.height).or_insert(block_commitment).clone()
+		};
+		{
+			let paused_at_height = self.paused_at_height.read().await;
+			match *paused_at_height {
+				Some(ph) if ph < height => {}
+				_ => {
+					self.stream_sender.send(Ok(settled)).await?;
+				}
+			}
         }
 
         {
@@ -82,7 +116,7 @@ impl McrSettlementClientOperations for MockMcrSettlementClient {
 		&self,
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
-		let guard = self.commitments.write().await;
+		let guard = self.commitments.read().await;
 		Ok(guard.get(&height).cloned())
 	}
 
@@ -97,7 +131,10 @@ pub mod test {
 
 	use super::*;
 	use movement_types::Commitment;
+
+	use futures::future;
 	use tokio_stream::StreamExt;
+	use tokio::select;
 
     #[tokio::test]
 	async fn test_post_block_commitment() -> Result<(), anyhow::Error> {
@@ -170,7 +207,56 @@ pub mod test {
 			commitment: Commitment([1; 32]),
 		}).await.unwrap();
 		let mut stream = client.stream_block_commitments().await?;
-		assert_eq!(stream.next().await.unwrap().unwrap(), commitment);
+		assert_eq!(stream.next().await.expect("stream has ended")?, commitment);
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_pause() -> Result<(), anyhow::Error> {
+		let client = MockMcrSettlementClient::new();
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		client.pause_after(1).await;
+		client.post_block_commitment(commitment.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		client.post_block_commitment(commitment2).await?;
+		let mut stream = client.stream_block_commitments().await?;
+		assert_eq!(stream.next().await.expect("stream has ended")?, commitment);
+		select! {
+			biased;
+			_ = stream.next() => panic!("stream should be paused"),
+			_ = future::ready(()) => {}
+		}
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_resume() -> Result<(), anyhow::Error> {
+		let client = MockMcrSettlementClient::new();
+		let commitment = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		client.pause_after(1).await;
+		client.post_block_commitment(commitment.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		client.post_block_commitment(commitment2.clone()).await?;
+		let mut stream = client.stream_block_commitments().await?;
+		assert_eq!(stream.next().await.expect("stream has ended")?, commitment);
+		client.resume().await;
+		assert_eq!(stream.next().await.expect("stream has ended")?, commitment2);
 		Ok(())
 	}
 }

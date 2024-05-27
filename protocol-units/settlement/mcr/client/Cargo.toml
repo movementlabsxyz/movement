@@ -20,6 +20,9 @@ movement-types = { workspace = true }
 serde_json = { workspace = true }
 async-stream = { workspace = true }
 
+[dev-dependencies]
+futures = { workspace = true }
+
 [features]
 mock = []
 
