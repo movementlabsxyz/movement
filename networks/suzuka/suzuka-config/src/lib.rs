@@ -2,12 +2,12 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ConfigError {
-	#[error("Could not read the Environment variables")]
-	EnvReadError,
-	#[error("Could not write the Environment variables")]
-	EnvWriteError,
-	#[error("Could not write the Bash export string")]
-	WriteBashExportStringError,
+	#[error("Could not read the Environment variables: {0}")]
+	EnvReadError(String),
+	#[error("Could not write the Environment variables: {0}")]
+	EnvWriteError(String),
+	#[error("Could not write the Bash export string: {0}")]
+	WriteBashExportStringError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,13 +22,15 @@ impl Config {
 
 	pub fn try_from_env() -> Result<Self, ConfigError> {
 		let execution_config = maptos_execution_util::config::Config::try_from_env()
-			.map_err(|_| ConfigError::EnvReadError)?;
+			.map_err(|e| ConfigError::EnvReadError(e.to_string()))?;
 
 		Ok(Self { execution_config })
 	}
 
 	pub fn write_to_env(&self) -> Result<(), ConfigError> {
-		self.execution_config.write_to_env().map_err(|_| ConfigError::EnvWriteError)?;
+		self.execution_config
+			.write_to_env()
+			.map_err(|e| ConfigError::EnvWriteError(e.to_string()))?;
 		Ok(())
 	}
 
@@ -37,8 +39,7 @@ impl Config {
 			"{}",
 			self.execution_config
 				.write_bash_export_string()
-				.map_err(|_| ConfigError::WriteBashExportStringError)?
+				.map_err(|e| ConfigError::WriteBashExportStringError(e.to_string()))?
 		))
 	}
 }
-
