@@ -12,6 +12,7 @@ use alloy_provider::fillers::JoinFill;
 use alloy_provider::fillers::NonceFiller;
 use alloy_provider::fillers::SignerFiller;
 use std::array::TryFromSliceError;
+use std::str::FromStr;
 //use alloy_provider::fillers::TxFiller;
 use alloy_provider::{ProviderBuilder, RootProvider};
 use alloy_transport::Transport;
@@ -32,6 +33,7 @@ use alloy_signer_wallet::LocalWallet;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use movement_types::BlockCommitment;
+use std::env;
 
 const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const MAX_TX_SEND_RETRY: usize = 10;
@@ -42,6 +44,35 @@ pub struct McrEthSettlementConfig {
 	pub mrc_contract_address: String,
 	pub gas_limit: u128,
 	pub tx_send_nb_retry: usize,
+}
+
+impl McrEthSettlementConfig {
+	fn get_from_env<T: FromStr>(env_var: &str) -> Result<T, McrEthConnectorError>
+	where
+		<T as FromStr>::Err: std::fmt::Display,
+	{
+		Ok(env::var(env_var)
+			.map_err(|err| {
+				McrEthConnectorError::BadlyDefineEnvVariable(format!(
+					"{env_var} env var is not defined :{err}"
+				))
+			})
+			.and_then(|v| {
+				T::from_str(&v).map_err(|err| {
+					McrEthConnectorError::BadlyDefineEnvVariable(format!(
+						"Parse error for {env_var} env var:{err}"
+					))
+				})
+			})?)
+	}
+	pub fn try_from_env() -> Result<Self, McrEthConnectorError> {
+		Ok(McrEthSettlementConfig {
+			mrc_contract_address: env::var("MCR_CONTRACT_ADDRESS")
+				.unwrap_or(MRC_CONTRACT_ADDRESS.to_string()),
+			gas_limit: Self::get_from_env::<u128>("MCR_TXSEND_GASLIMIT")?,
+			tx_send_nb_retry: Self::get_from_env::<usize>("MCR_TXSEND_NBRETRY")?,
+		})
+	}
 }
 
 impl Default for McrEthSettlementConfig {
@@ -70,6 +101,8 @@ pub enum McrEthConnectorError {
 	EventNotificationError(#[from] alloy_sol_types::Error),
 	#[error("MCR Settlement BlockAccepted event notification stream close")]
 	EventNotificationStreamClosed,
+	#[error("MCR Settlement Error environment variable:{0}")]
+	BadlyDefineEnvVariable(String),
 }
 
 // Codegen from artifact.
@@ -272,10 +305,9 @@ pub mod test {
 	use alloy_provider::ProviderBuilder;
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
-	use std::env;
 
 	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
-	// After genesis ceremonial, 2 validator send the commitment for height 1.
+	// After genesis ceremony, 2 validator send the commitment for height 1.
 	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
 	// Wait the commitment accepted event.
 	//#[ignore]
