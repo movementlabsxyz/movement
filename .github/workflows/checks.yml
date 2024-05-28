@@ -24,6 +24,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - name: Install Anvil
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
+
     - name: Run MCR tests in nix environment
       run: nix develop --command bash  -c "just mcr-contract-tests"
 
