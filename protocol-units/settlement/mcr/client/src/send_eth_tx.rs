@@ -20,7 +20,7 @@ pub struct SendTxErrorRule<Kind> {
 
 impl<Kind> SendTxErrorRule<Kind> {
 	pub fn new() -> Self {
-		SendTxErrorRule { _kind: PhantomData::default() }
+		SendTxErrorRule { _kind: PhantomData }
 	}
 }
 

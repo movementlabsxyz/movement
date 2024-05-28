@@ -51,7 +51,7 @@ impl McrEthSettlementConfig {
 	where
 		<T as FromStr>::Err: std::fmt::Display,
 	{
-		Ok(env::var(env_var)
+		env::var(env_var)
 			.map_err(|err| {
 				McrEthConnectorError::BadlyDefineEnvVariable(format!(
 					"{env_var} env var is not defined :{err}"
@@ -63,7 +63,7 @@ impl McrEthSettlementConfig {
 						"Parse error for {env_var} env var:{err}"
 					))
 				})
-			})?)
+			})
 	}
 	pub fn try_from_env() -> Result<Self, McrEthConnectorError> {
 		Ok(McrEthSettlementConfig {
