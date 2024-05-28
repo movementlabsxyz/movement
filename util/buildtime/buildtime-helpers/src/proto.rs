@@ -17,7 +17,6 @@ pub mod test {
 
         // Get the proto directory
         let proto = proto()?;
-        println!("proto: {:?}", proto);
 
         // check that it exists
         assert_eq!(proto.exists(), true);
