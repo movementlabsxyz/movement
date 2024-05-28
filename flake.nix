@@ -116,6 +116,7 @@
           devShells.default = mkShell {
 
             ROCKSDB=pkgs.rocksdb;
+            MONZA_APTOS_PATH = monza-aptos;
             
             # for linux set SNAPPY variable
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
@@ -127,7 +128,6 @@
 
             shellHook = ''
               #!/usr/bin/env bash
-              export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
               echo "Monza Aptos Path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
