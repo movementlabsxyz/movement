@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+LOG_LEVEL=$(echo "$CELESTIA_LOG_LEVEL" | awk '{print tolower($0)}')
 APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
 NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
-celestia-appd start --grpc.enable --home $APP_PATH
+celestia-appd start --grpc.enable --home $APP_PATH --log_level $LOG_LEVEL

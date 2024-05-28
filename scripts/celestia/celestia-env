@@ -8,6 +8,9 @@ export CELESTIA_CHAIN_ID="$(openssl rand -hex 10)"
 export APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
 export NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 
+: ${CELESTIA_LOG_LEVEL:="INFO"}
+export CELESTIA_LOG_LEVEL
+
 contains() {
     local value="$1"
     shift  # Shift the arguments to leave the rest of the array

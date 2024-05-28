@@ -8,6 +8,7 @@ message Blob {
     bytes data = 2;
     uint64 height = 3;
     // bytes signature = 4; // at some point a signature will be added here
+    uint64 timestamp = 5;
 }
 
 enum VerificationMode {

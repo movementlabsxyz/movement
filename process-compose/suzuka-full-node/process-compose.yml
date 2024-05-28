@@ -30,9 +30,9 @@ processes:
       exec:
         command: echo "true"
 
-  monza-full-node:
+  suzuka-full-node:
     command: |
-      ./target/$CARGO_PROFILE/monza-full-node
+      ./target/$CARGO_PROFILE/suzuka-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy
@@ -42,11 +42,11 @@ processes:
         command: |
           echo "true"
 
-  monza-faucet:
+  suzuka-faucet:
     command : |
-      ./scripts/monza/faucet
+      ./scripts/suzuka/faucet
     depends_on:
-      monza-full-node:
+      suzuka-full-node:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10

@@ -4,13 +4,13 @@ environment:
 
 processes:
 
-  monza-client-tests:
+  suzuka-client-tests:
     command: |
-      cargo test -p monza-client -- --test-threads=1
+      cargo test -p suzuka-client -- --test-threads=1
     depends_on:
-      monza-full-node:
+      suzuka-full-node:
         condition: process_healthy
-      monza-faucet:
+      suzuka-faucet:
         condition: process_healthy
     availability:
       exit_on_end: true

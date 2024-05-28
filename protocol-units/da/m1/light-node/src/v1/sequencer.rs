@@ -1,12 +1,17 @@
-use celestia_rpc::HeaderClient;
-use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
-use m1_da_light_node_grpc::*;
 use tokio_stream::Stream;
+use tracing::{info, debug};
+
+use celestia_rpc::HeaderClient;
+
+use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
+// FIXME: glob imports are bad style
+use m1_da_light_node_grpc::*;
+use memseq::{Transaction, Sequencer};
+
 use crate::v1::{
     LightNodeV1Operations,
     passthrough::LightNodeV1 as LightNodeV1PassThrough
 };
-use memseq::{Transaction, Sequencer};
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
@@ -18,24 +23,13 @@ impl LightNodeV1Operations for LightNodeV1 {
 
     async fn try_from_env() -> Result<Self, anyhow::Error> {
 
-        #[cfg(feature = "logging")]
-        {
-            
-            tracing::info!("Initializing LightNodeV1 in sequencer mode from environment.");
-
-        }
+        info!("Initializing LightNodeV1 in sequencer mode from environment.");
 
         let pass_through = LightNodeV1PassThrough::try_from_env().await?;
-        #[cfg(feature = "logging")]
-        {
-            tracing::info!("Initialized pass through for LightNodeV1 in sequencer mode.");
-        }
+        info!("Initialized pass through for LightNodeV1 in sequencer mode.");
 
         let memseq = memseq::Memseq::try_move_rocks_from_env()?;
-        #[cfg(feature = "logging")]
-        {
-            tracing::info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
-        }
+        info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
         Ok(Self {
             pass_through,
@@ -69,7 +63,9 @@ impl LightNodeV1 {
                 )?;
 
                 let height = self.pass_through.submit_celestia_blob(block_blob).await?;
-                println!("Submitted block: {:?} {:?}", block.id(), height);
+                
+                debug!("Submitted block: {:?} {:?}", block.id(), height);
+
             },
             None => {
                 // no transactions to include
@@ -118,7 +114,8 @@ impl LightNodeV1 {
                 Blob {
                     data,
                     blob_id : "".to_string(),
-                    height
+                    height,
+                    timestamp : 0,
                 }
             ))
         })
@@ -226,7 +223,9 @@ impl LightNodeService for LightNodeV1 {
 
         // publish the transactions
         for transaction in transactions {
-            println!("Publishing transaction: {:?}", transaction.id());
+
+            debug!("Publishing transaction: {:?}", transaction.id());
+
             self.memseq.publish(transaction).await.map_err(
                 |e| tonic::Status::internal(e.to_string())
             )?;

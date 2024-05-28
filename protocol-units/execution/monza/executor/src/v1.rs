@@ -1,7 +1,11 @@
+// FIXME: glob imports are bad style
 use crate::*;
 use aptos_types::transaction::SignedTransaction;
-use async_channel::Sender;
 use maptos_opt_executor::Executor;
+use movement_types::BlockCommitment;
+
+use async_channel::Sender;
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct MonzaExecutorV1 {
@@ -45,11 +49,11 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		&self,
 		mode: FinalityMode,
 		block: ExecutableBlock,
-	) -> Result<(), anyhow::Error> {
+	) -> Result<BlockCommitment, anyhow::Error> {
 		match mode {
 			FinalityMode::Dyn => unimplemented!(),
 			FinalityMode::Opt => {
-				println!("Executing opt block: {:?}", block.block_id);
+				debug!("Executing opt block: {:?}", block.block_id);
 				self.executor.execute_block(block).await
 			},
 			FinalityMode::Fin => unimplemented!(),
@@ -75,8 +79,27 @@ impl MonzaExecutor for MonzaExecutorV1 {
 
 	/// Get block head height.
 	async fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
-		// ideally, this should read from the ledger
-		Ok(1)
+		self.executor.get_block_head_height()
+	}
+
+	/// Build block metadata for a timestamp
+	async fn build_block_metadata(&self, block_id : HashValue,  timestamp: u64) -> Result<BlockMetadata, anyhow::Error> {
+		
+		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
+		// Clone the signer from the executor for signing the metadata.
+		let signer = self.executor.signer.clone();
+
+		// Create a block metadata transaction.
+		Ok(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			timestamp,
+		))
+
 	}
 }
 

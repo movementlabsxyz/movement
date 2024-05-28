@@ -30,9 +30,12 @@ poem-openapi = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"
 tokio = { workspace = true }
+tracing = { workspace = true }
 rand = { workspace = true }
 rand_core = { workspace = true }
 bcs = { workspace = true}
+futures = { workspace = true }
+async-channel = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-config = { workspace = true }
@@ -58,17 +61,14 @@ aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
-futures = { workspace = true }
-async-channel = { workspace = true }
 maptos-execution-util = { workspace = true }
+movement-types = { workspace = true }
 
 dirs = { workspace = true }
 tempfile = { workspace = true }
 async-trait = { workspace = true }
 
 # optional logging dependencies
-env_logger = { workspace = true, optional = true }
-tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }
 
 [features]
@@ -76,7 +76,5 @@ default = [
     "logging"
 ]
 logging = [
-    "env_logger", 
-    "tracing", 
     "tracing-subscriber"
 ]

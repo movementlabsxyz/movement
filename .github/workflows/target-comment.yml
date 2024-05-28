@@ -39,7 +39,8 @@ jobs:
             {
               "comment": "${{ github.event.comment.body }}",
               "issue_number": "${{ github.event.issue.number }}",
-              "html_url" : "${{ github.event.issue.html_url }}"
+              "html_url" : "${{ github.event.issue.html_url }}",
+              "pr_url" : "${{ github.event.issue.pull_request.url }}"
             }
           ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
           repo: ${{ fromJson(steps.get_pr.outputs.data).head.repo.full_name }}
