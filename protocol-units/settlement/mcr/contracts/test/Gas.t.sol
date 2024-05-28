@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
 import "../src/MCR.sol";
 import "forge-std/console.sol";
 
 contract GasTest is Test {
-
     // forge test --match-test [testName] --gas-report -vvv
     // forge test --gas-report -vvv
 
@@ -14,19 +13,15 @@ contract GasTest is Test {
     MCR public mcr;
 
     function setUp() public {
-        mcr = new MCR(
-            5, 128, 100 ether, 0
-        );
+        mcr = new MCR(5, 128, 100 ether, 0);
     }
 
     function testGetFunctions() public {
         uint256 snapshot = vm.snapshot();
-        gasConsumption[0] = mcr.getGenesisStakeRequired();
-        vm.revertTo(snapshot);
         gasConsumption[0] = mcr.genesisStakeRequired();
-        // this is crazy for me, difference is abysmal, I've never heard of it.
-        // using this functions during a state write is a lot better
-        // to just use the state read instead of a function
+        vm.revertTo(snapshot);
+        gasConsumption[0] = mcr.getGenesisStakeRequired();
+        // return state is cheaper
     }
 
     function testLesserVSGreaterEq() public {
@@ -59,27 +54,56 @@ contract GasTest is Test {
     }
 
     function testReading() public {
+        uint256 snapshot = vm.snapshot();
         mcr.getTotalStakeForCurrentEpoch();
+        vm.revertTo(snapshot);
         mcr.getFuncMemory();
+        vm.revertTo(snapshot);
         mcr.getInternal();
+        vm.revertTo(snapshot);
         mcr.getInternalMemory();
+        vm.revertTo(snapshot);
         mcr.getState();
+        vm.revertTo(snapshot);
         mcr.getStateMemory();
+        vm.revertTo(snapshot);
         mcr.getMultiuseState();
+        vm.revertTo(snapshot);
+        uint256 snapshot7 = vm.snapshot();
         mcr.getMultiuseMemory();
-        // getState consistently better performant
-        // actually this is weird, trying to figure it out why multiuseState performs better than multiuseMemory
-        // Not public state getting also consistently better performant
+        
+        // apparently currrent implenetation beats everything
+        // this is counter intuitive for me.
+        // if a state is being read/written multiple times, set to memory first then write to storage.
+
     }
 
-    // Test using Struct as parameter vs decomposing it prior to using it.
     function testDifferentHigher() public {
+        uint256 snapshot = vm.snapshot();
+
         vm.expectRevert();
         mcr.differentCheck();
+        vm.revertTo(snapshot);
+
         vm.expectRevert();
         mcr.higherCheck();
         // Higher wins
     }
-    // 
 
+    function testInitializingToZero() public {
+        uint256 snapshot = vm.snapshot();
+        mcr.getTotalStakeForEpoch(0);
+        vm.revertTo(snapshot);
+        mcr.getTotalNotInitiateZero(0);
+        // Not initializing to zero is cheaper
+    }
+
+    // Test using Struct as parameter vs decomposing it prior to using it.
+    function testStructDecomposing() public {
+        uint256 snapshot = vm.snapshot();
+        mcr.returnStruct(0, address(0x0));
+        vm.revertTo(snapshot);
+        mcr.returnDecomposed(0, address(0x0));
+        // Struct is cheaper
+    }
 }

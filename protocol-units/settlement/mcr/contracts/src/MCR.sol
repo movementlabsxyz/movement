@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
+
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "forge-std/console.sol";
 
 contract MCR {
-
     // Use an address set here
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -32,6 +32,7 @@ contract MCR {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
         uint256 height;
         bytes32 commitment;
+        // NOTE: call it blockHash instead of blockId
         bytes32 blockId;
     }
 
@@ -40,9 +41,9 @@ contract MCR {
     // NOTE: Why not just use a mapping of address to stake?
     //       why is it necessary to preserve the epochStakes?
     // preserved records of stake by address per epoch
-    mapping(uint256 => mapping( address => uint256)) public epochStakes;
+    mapping(uint256 => mapping(address => uint256)) public epochStakes;
     // preserved records of unstake by address per epoch
-    mapping(uint256 => mapping( address => uint256)) public epochUnstakes;
+    mapping(uint256 => mapping(address => uint256)) public epochUnstakes;
 
     // map each block height to an epoch
     mapping(uint256 => uint256) public blockHeightEpochAssignments;
@@ -51,9 +52,9 @@ contract MCR {
     mapping(uint256 => mapping(address => BlockCommitment)) public commitments;
 
     // track the total stake accumulate for each commitment for each block height
-    mapping(uint256 => mapping(bytes32=> uint256)) public commitmentStakes;
+    mapping(uint256 => mapping(bytes32 => uint256)) public commitmentStakes;
 
-    // map block height to accepted block hash 
+    // map block height to accepted block hash
     mapping(uint256 => BlockCommitment) public acceptedBlocks;
 
     event ValidatorStaked(address indexed validator, uint256 stake, uint256 epoch);
@@ -76,12 +77,12 @@ contract MCR {
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
     }
 
-    // creates a commitment 
-    function createBlockCommitment(
-        uint256 height,
-        bytes32 commitment,
-        bytes32 blockId
-    ) public pure returns (BlockCommitment memory) {
+    // creates a commitment
+    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId)
+        public
+        pure
+        returns (BlockCommitment memory)
+    {
         return BlockCommitment(height, commitment, blockId);
     }
 
@@ -162,14 +163,21 @@ contract MCR {
 
     // gets the total stake for a given epoch
     function getTotalStakeForEpoch(uint256 epoch) public view returns (uint256) {
-        
         uint256 totalStake = 0;
         // NOTE: very likely .at() isn't the most optimal, would like to take a deeper look into this and test agains't using a simple array
         // TODO: test if validators.at(i) is optimal
-        for (uint256 i = 0; i < validators.length(); i++){
+        for (uint256 i = 0; i < validators.length(); i++) {
             totalStake += getStakeAtEpoch(validators.at(i), epoch);
         }
         return totalStake;
+    }
+
+    // TEST
+    function getTotalNotInitiateZero(uint256 epoch) public view returns (uint256) {
+        uint256 totalStake;
+        for (uint256 i = 0; i < validators.length(); i++) {
+            totalStake += getStakeAtEpoch(validators.at(i), epoch);
+        }
     }
 
     // gets the total stake for the current epoch
@@ -183,14 +191,22 @@ contract MCR {
         return getTotalStakeForEpoch(currentEp);
     }
 
-    // TEST 
-    function _getCurrentEpoch() internal view returns (uint256){
+    // TEST
+    function _getTotalStakeForEpoch(uint256 epoch) internal view returns (uint256) {
+        uint256 totalStake = 0;
+        for (uint256 i = 0; i < validators.length(); i++) {
+            totalStake += getStakeAtEpoch(validators.at(i), epoch);
+        }
+        return totalStake;
+    }
+    // TEST
+    function _getCurrentEpoch() internal view returns (uint256) {
         return currentEpoch;
     }
-    
+
     // TEST
     function getInternal() public view returns (uint256) {
-        return getTotalStakeForEpoch(_getCurrentEpoch());
+        return _getTotalStakeForEpoch(_getCurrentEpoch());
     }
 
     // TEST
@@ -209,22 +225,27 @@ contract MCR {
         uint256 currentEp = currentEpoch;
         return getTotalStakeForEpoch(currentEp);
     }
-    
+
     // TEST
     function getMultiuseState() public view returns (uint256) {
         return currentEpoch + currentEpoch;
     }
     // TEST
+
     function getMultiuseMemory() public view returns (uint256) {
         uint256 currentEp = currentEpoch;
         return currentEp + currentEp;
     }
-    
+
     // NOTE: redundant function
     // blockHeightEpochAssignments[blockHeight] is accessible through public function commitments(blockHeight, validatorAddress)
     // TODO: test if generated public function commitments(uint256, address) returns BlockCommitment and if there is an optimal way to return BlockCommitment
     // gets the commitment at a given block height
-    function getValidatorCommitmentAtBlockHeight(uint256 blockHeight, address validatorAddress) public view returns (BlockCommitment memory) {
+    function getValidatorCommitmentAtBlockHeight(uint256 blockHeight, address validatorAddress)
+        public
+        view
+        returns (BlockCommitment memory)
+    {
         return commitments[blockHeight][validatorAddress];
     }
 
@@ -237,24 +258,16 @@ contract MCR {
 
     // stakes for the next epoch
     function stake() external payable {
-
-        require(
-            genesisStakeAccumulated >= genesisStakeRequired,
-            "Genesis ceremony has not ended."
-        );
+        require(genesisStakeAccumulated >= genesisStakeRequired, "Genesis ceremony has not ended.");
 
         validators.add(msg.sender);
         epochStakes[getNextEpoch()][msg.sender] += msg.value;
         emit ValidatorStaked(msg.sender, msg.value, getNextEpoch());
-
     }
 
     function stakeGenesis() external payable {
         // NOTE: consider using if genesisStakeAccumulated > genesisStakeRequired, set genesis StakeRequired to requirement-1. revert with CustomError.
-        require(
-            genesisStakeAccumulated < genesisStakeRequired,
-            "Genesis ceremony has ended."
-        );
+        require(genesisStakeAccumulated < genesisStakeRequired, "Genesis ceremony has ended.");
 
         // NOTE: require a minimal amount
 
@@ -264,36 +277,31 @@ contract MCR {
         emit ValidatorStaked(msg.sender, msg.value, 0);
 
         if (genesisStakeAccumulated >= genesisStakeRequired) {
-
             // first epoch is whatever the epoch number given is for the block time at which the genesis ceremony ends
             currentEpoch = getEpochByBlockTime();
-            
+
             // roll over the genesis epoch to a timestamp epoch
-            for (uint256 i = 0; i < validators.length(); i++){
+            for (uint256 i = 0; i < validators.length(); i++) {
                 address validatorAddress = validators.at(i);
                 epochStakes[getCurrentEpoch()][validatorAddress] = epochStakes[0][validatorAddress];
             }
-
-
         }
-
     }
 
     // TEST
     function revertRequire() public {
-        require (false, "Returned error data");
+        require(false, "Returned error data");
     }
+
     //TEST
     function revertCustom() public {
         if (true) revert CustomError();
     }
+
     // TEST
     function stakeGenesisGreaterEq() external payable {
         // NOTE: consider using if genesisStakeAccumulated > genesisStakeRequired, set genesis StakeRequired to requirement-1. revert with CustomError.
-        require(
-            genesisStakeRequired >= genesisStakeAccumulated,
-            "Genesis ceremony has ended."
-        );
+        require(genesisStakeRequired >= genesisStakeAccumulated, "Genesis ceremony has ended.");
 
         // NOTE: require a minimal amount
 
@@ -303,58 +311,39 @@ contract MCR {
         emit ValidatorStaked(msg.sender, msg.value, 0);
 
         if (genesisStakeAccumulated >= genesisStakeRequired) {
-
             // first epoch is whatever the epoch number given is for the block time at which the genesis ceremony ends
             currentEpoch = getEpochByBlockTime();
-            
+
             // roll over the genesis epoch to a timestamp epoch
-            for (uint256 i = 0; i < validators.length(); i++){
+            for (uint256 i = 0; i < validators.length(); i++) {
                 address validatorAddress = validators.at(i);
                 epochStakes[getCurrentEpoch()][validatorAddress] = epochStakes[0][validatorAddress];
             }
-
-
         }
-
     }
 
     // unstakes an amount for the next epoch
     function unstake(uint256 amount) external {
-        
         // NOTE: consider using if genesisStakeAccumulated < genesisStakeRequired revert with CustomError.
-        require(
-            genesisStakeAccumulated >= genesisStakeRequired,
-            "Genesis ceremony has not ended."
-        );
+        require(genesisStakeAccumulated >= genesisStakeRequired, "Genesis ceremony has not ended.");
         // NOTE: consider using if genesisStakeAccumulated < genesisStakeRequired revert with CustomError.
-        require(
-            epochStakes[getCurrentEpoch()][msg.sender] >= amount,
-            "Insufficient stake."
-        );
+        require(epochStakes[getCurrentEpoch()][msg.sender] >= amount, "Insufficient stake.");
 
         // indicate that we are going to unstake this amount in the next epoch
         // ! this doesn't actually happen until we roll over the epoch
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
         epochUnstakes[getNextEpoch()][msg.sender] += amount;
 
-        emit ValidatorUnstaked(
-            msg.sender,
-            amount,
-            getNextEpoch()
-        );
-
+        emit ValidatorUnstaked(msg.sender, amount, getNextEpoch());
     }
-    
+
     // rolls over the stake and unstake for a given validator
     // NOTE: are we able to not roll over and use a mapping(address staker => uint256 stakeAmount) ?
     //       this might end up being a problem. It might run out of gas if the network is too big.
-    function rollOverValidator(
-        address validatorAddress,
-        uint256 epochNumber
-    ) internal {
-
+    function rollOverValidator(address validatorAddress, uint256 epochNumber) internal {
         // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
-        epochStakes[epochNumber + 1][validatorAddress] += epochStakes[epochNumber][validatorAddress] - epochUnstakes[epochNumber + 1][validatorAddress];
+        epochStakes[epochNumber + 1][validatorAddress] +=
+            epochStakes[epochNumber][validatorAddress] - epochUnstakes[epochNumber + 1][validatorAddress];
 
         // the unstake is then paid out
         // note: this is the only place this takes place
@@ -362,7 +351,6 @@ contract MCR {
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
         // NOTE: consider using reentrancy guard to prevent double payouts.
         payable(validatorAddress).transfer(epochUnstakes[epochNumber + 1][validatorAddress]);
-
     }
 
     // TEST
@@ -374,21 +362,45 @@ contract MCR {
     function higherCheck() public {
         require(0 > 0);
     }
-    
-    // commits a validator to a particular block
-    function submitBlockCommitmentForValidator(
-        address validatorAddress, 
-        BlockCommitment memory blockCommitment
-    ) internal {
 
+    function returnStruct(uint256 blockHeight, address validatorAddress) public view returns (bytes memory) {
+        return _struct(commitments[blockHeight][validatorAddress]);
+    }
+
+    function returnDecomposed(uint256 blockHeight, address validatorAddress) public view returns (bytes memory) {
+        BlockCommitment memory blockCommitment = commitments[blockHeight][validatorAddress];
+        return _decomposed(blockCommitment.height, blockCommitment.commitment, blockCommitment.blockId);
+    }
+    
+
+    // TEST
+    function _struct(BlockCommitment memory blockCommitment) internal view returns (bytes memory){
+        return abi.encode(blockCommitment.height, blockCommitment.commitment, blockCommitment.blockId);
+    }
+
+    // TEST
+    function _decomposed(uint256 height, bytes32 commitment, bytes32 blockId) internal view returns (bytes memory){
+        return abi.encode(height, commitment, blockId);
+    }
+
+    // commits a validator to a particular block
+    function submitBlockCommitmentForValidator(address validatorAddress, BlockCommitment memory blockCommitment)
+        internal
+    {
         // NOTE: consider using commitments != 0 reverts with CustomError.
-        require(commitments[blockCommitment.height][validatorAddress].height == 0, "Validator has already committed to a block at this height");
+        require(
+            commitments[blockCommitment.height][validatorAddress].height == 0,
+            "Validator has already committed to a block at this height"
+        );
 
         // note: do no uncomment the below, we want to allow this in case we have lagging validators
         // require(blockCommitment.height > lastAcceptedBlockHeight, "Validator has committed to an already accepted block");
 
         // NOTE: consider using if lastAcceptedBlockHeight + leadingBlockTolerance < blockCommitment.height revert with CustomError.
-        require(blockCommitment.height < lastAcceptedBlockHeight + leadingBlockTolerance, "Validator has committed to a block too far ahead of the last accepted block");
+        require(
+            blockCommitment.height < lastAcceptedBlockHeight + leadingBlockTolerance,
+            "Validator has committed to a block too far ahead of the last accepted block"
+        );
 
         // assign the block height to the current epoch if it hasn't been assigned yet
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
@@ -409,11 +421,9 @@ contract MCR {
         // ! however, this does potentially become very costly for whomever submits this last block
         // ! rewards need to be managed accordingly
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
-      
     }
 
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
-
         // get the epoch assigned to the block height
         uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
 
@@ -431,8 +441,7 @@ contract MCR {
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
         // iterate over the validator set
-        for (uint256 i = 0; i < validators.length(); i++){
-
+        for (uint256 i = 0; i < validators.length(); i++) {
             address validatorAddress = validators.at(i);
 
             // get a commitment for the validator at the block height
@@ -441,45 +450,29 @@ contract MCR {
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[blockCommitment.height][blockCommitment.commitment];
 
-            if (totalStakeOnCommitment > (2 * getTotalStakeForEpoch(blockEpoch))/3 ) {
-
+            if (totalStakeOnCommitment > (2 * getTotalStakeForEpoch(blockEpoch)) / 3) {
                 // accept the block commitment (this may trigger a roll over of the epoch)
                 acceptBlockCommitment(blockCommitment, blockEpoch);
 
                 // we found a commitment that was accepted
                 return true;
-
             }
-
         }
 
         return false;
-
     }
 
-    function submitBlockCommitment(
-        BlockCommitment memory blockCommitment
-    ) public {
-
+    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
         submitBlockCommitmentForValidator(msg.sender, blockCommitment);
-
     }
 
-    function submitBatchBlockCommitment(
-        BlockCommitment[] memory blockCommitments
-    ) public {
-
-        for (uint256 i = 0; i < blockCommitments.length; i++){
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+        for (uint256 i = 0; i < blockCommitments.length; i++) {
             submitBlockCommitment(blockCommitments[i]);
         }
-
     }
 
-    function acceptBlockCommitment(
-        BlockCommitment memory blockCommitment,
-        uint256 epochNumber
-    ) internal {
-      
+    function acceptBlockCommitment(BlockCommitment memory blockCommitment, uint256 epochNumber) internal {
         // set accepted block commitment
         acceptedBlocks[blockCommitment.height] = blockCommitment;
 
@@ -496,29 +489,18 @@ contract MCR {
         if (getEpochByBlockTime() > epochNumber) {
             rollOverEpoch(epochNumber);
         }
-       
     }
 
-    function slashMinority(
-        BlockCommitment memory blockCommitment,
-        uint256 totalStake
-    ) internal {
-
-
-    }
+    function slashMinority(BlockCommitment memory blockCommitment, uint256 totalStake) internal {}
 
     function rollOverEpoch(uint256 epochNumber) internal {
-
         // iterate over the validator set
-        for (uint256 i = 0; i < validators.length(); i++){
+        for (uint256 i = 0; i < validators.length(); i++) {
             address validatorAddress = validators.at(i);
-            rollOverValidator(validatorAddress, epochNumber);     
+            rollOverValidator(validatorAddress, epochNumber);
         }
 
         // increment the current epoch
         currentEpoch += 1;
-        
-
     }
-
 }
