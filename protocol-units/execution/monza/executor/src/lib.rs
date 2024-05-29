@@ -10,7 +10,6 @@ pub use aptos_types::{
 pub use aptos_crypto::hash::HashValue;
 pub use aptos_api::runtime::Apis;
 
-pub use maptos_execution_util::FinalityMode;
 pub use movement_types::BlockCommitment;
 
 use async_channel::Sender;
@@ -24,10 +23,9 @@ pub trait MonzaExecutor {
     /// Runs the necessary background tasks.
     async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
 
-    /// Executes a block dynamically
-    async fn execute_block(
+    /// Executes a block optimistically
+    async fn execute_block_opt(
         &self,
-        mode: FinalityMode, 
         block: ExecutableBlock,
     ) -> Result<BlockCommitment, anyhow::Error>;
 
@@ -38,7 +36,7 @@ pub trait MonzaExecutor {
 	);
 
 	/// Gets the dyn API.
-	fn get_api(&self, mode: FinalityMode) -> Apis;
+	fn get_apis(&self) -> Apis;
 
     /// Get block head height.
     async fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;

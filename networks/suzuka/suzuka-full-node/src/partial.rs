@@ -9,7 +9,7 @@ use mcr_settlement_manager::{
 };
 use movement_types::{Block, BlockCommitmentEvent};
 use suzuka_executor::{
-	v1::SuzukaExecutorV1, ExecutableBlock, ExecutableTransactions, FinalityMode, HashValue,
+	v1::SuzukaExecutorV1, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, SuzukaExecutor, Transaction,
 };
 
@@ -200,7 +200,7 @@ where
 			let executable_block = ExecutableBlock::new(block_hash, block);
 			let block_id = executable_block.block_id;
 			let commitment =
-				self.executor.execute_block(FinalityMode::Opt, executable_block).await?;
+				self.executor.execute_block_opt(executable_block).await?;
 
             debug!("Executed block: {:?}", block_id);
 

@@ -12,7 +12,6 @@ use monza_executor::{
     MonzaExecutor,
     ExecutableBlock,
     HashValue,
-    FinalityMode,
     Transaction,
     SignatureVerifiedTransaction,
     SignedTransaction,
@@ -185,10 +184,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
                 block
             );
             let block_id = executable_block.block_id;
-            self.executor.execute_block(
-                FinalityMode::Opt,
-                executable_block
-            ).await?;
+            self.executor.execute_block_opt(executable_block).await?;
 
             debug!("Executed block: {:?}", block_id);
 
