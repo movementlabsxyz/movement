@@ -49,22 +49,12 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
 
     }
     
-    /// Executes a block dynamically
-    async fn execute_block(
+    async fn execute_block_opt(
         &self,
-        mode: FinalityMode, 
         block: ExecutableBlock,
     ) -> Result<BlockCommitment, anyhow::Error> {
-
-        match mode {
-            FinalityMode::Dyn => unimplemented!(),
-            FinalityMode::Opt => {
-                debug!("Executing block: {:?}", block.block_id);
-                self.executor.execute_block(block).await
-            },
-            FinalityMode::Fin => unimplemented!(),
-        }
-
+        debug!("Executing block: {:?}", block.block_id);
+        self.executor.execute_block(block).await
     }
 
     /// Sets the transaction channel.
@@ -73,15 +63,10 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
     }
 
     /// Gets the API.
-    fn get_api(
+    fn get_apis(
         &self,
-        mode: FinalityMode, 
     ) -> Apis {
-        match mode {
-            FinalityMode::Dyn => unimplemented!(),
-            FinalityMode::Opt => self.executor.get_apis(),
-            FinalityMode::Fin => unimplemented!(),
-        }
+        self.executor.get_apis()
     }
 
     /// Get block head height.
@@ -160,7 +145,7 @@ mod opt_tests {
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(FinalityMode::Opt, block).await?;
+		executor.execute_block_opt(block).await?;
 		Ok(())
 	}
 
@@ -192,7 +177,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(FinalityMode::Opt);
+		let api = executor.get_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -230,7 +215,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(FinalityMode::Opt);
+		let api = executor.get_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
@@ -247,7 +232,7 @@ mod opt_tests {
             Transaction::UserTransaction(received_transaction),
         ].into_iter().map(SignatureVerifiedTransaction::Valid).collect());
         let block = ExecutableBlock::new(block_id.clone(), txs);
-        let commitment = executor.execute_block(FinalityMode::Opt, block).await?;
+        let commitment = executor.execute_block_opt(block).await?;
 
         assert_eq!(commitment.block_id.to_vec(), block_id.to_vec());
         assert_eq!(commitment.height, 1);

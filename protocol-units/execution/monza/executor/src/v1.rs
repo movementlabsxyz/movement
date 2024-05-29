@@ -44,20 +44,13 @@ impl MonzaExecutor for MonzaExecutorV1 {
 		Ok(())
 	}
 
-	/// Executes a block dynamically
-	async fn execute_block(
+	/// Executes a block optimistically
+	async fn execute_block_opt(
 		&self,
-		mode: FinalityMode,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		match mode {
-			FinalityMode::Dyn => unimplemented!(),
-			FinalityMode::Opt => {
-				debug!("Executing opt block: {:?}", block.block_id);
-				self.executor.execute_block(block).await
-			},
-			FinalityMode::Fin => unimplemented!(),
-		}
+		debug!("Executing opt block: {:?}", block.block_id);
+		self.executor.execute_block(block).await
 	}
 
 	/// Sets the transaction channel.
@@ -69,12 +62,8 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	}
 
 	/// Gets the API.
-	fn get_api(&self, mode: FinalityMode) -> Apis {
-		match mode {
-			FinalityMode::Dyn => unimplemented!(),
-			FinalityMode::Opt => self.executor.get_apis(),
-			FinalityMode::Fin => unimplemented!(),
-		}
+	fn get_apis(&self) -> Apis {
+		self.executor.get_apis()
 	}
 
 	/// Get block head height.
@@ -161,7 +150,7 @@ mod tests {
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(FinalityMode::Opt, block).await?;
+		executor.execute_block_opt(block).await?;
 		Ok(())
 	}
 
@@ -188,7 +177,7 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		let api = executor.get_api(FinalityMode::Opt);
+		let api = executor.get_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -222,7 +211,7 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		let api = executor.get_api(FinalityMode::Opt);
+		let api = executor.get_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
@@ -234,7 +223,7 @@ mod tests {
 			SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(received_transaction));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(FinalityMode::Opt, block).await?;
+		executor.execute_block_opt(block).await?;
 
 		services_handle.abort();
 		background_handle.abort();
@@ -283,7 +272,7 @@ mod tests {
 
 			let request =
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-			let api = executor.get_api(FinalityMode::Opt);
+			let api = executor.get_apis();
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 			let received_transaction = rx.recv().await?;
@@ -296,7 +285,7 @@ mod tests {
 			));
 			let txs = ExecutableTransactions::Unsharded(vec![tx]);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
-			executor.execute_block(FinalityMode::Opt, block).await?;
+			executor.execute_block_opt(block).await?;
 
 			blockheight += 1;
 			committed_blocks.insert(
@@ -319,11 +308,11 @@ mod tests {
 		// Get the version to revert to
 		let version_to_revert = revert.cur_ver - 1;
 
-		if let Some((max_blockheight, last_commit)) =
+		if let Some((_max_blockheight, last_commit)) =
 			committed_blocks.iter().max_by_key(|(&k, _)| k)
 		{
 			let db = executor.executor.db.clone();
-			let mut db_writer = db.write_owned().await.writer.clone();
+			let db_writer = db.write_owned().await.writer.clone();
 			db_writer.revert_commit(
 				version_to_revert,
 				last_commit.cur_ver,
@@ -338,7 +327,7 @@ mod tests {
 
 		let db_reader = executor.executor.db.read_owned().await.reader.clone();
 		let latest_version = db_reader.get_latest_version()?;
-		assert_eq!(db_reader.get_latest_version().unwrap(), version_to_revert - 1);
+		assert_eq!(latest_version, version_to_revert - 1);
 
 		services_handle.abort();
 		background_handle.abort();
