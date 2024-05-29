@@ -9,6 +9,7 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+<<<<<<< HEAD
 ### define here all scenarios execution binaries 
 [[bin]]
 name = "demoscenario"
@@ -27,6 +28,11 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
+=======
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+>>>>>>> 05eb63d4 (create initial project for testing)
 
 [lints]
 workspace = true
