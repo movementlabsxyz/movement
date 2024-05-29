@@ -41,7 +41,7 @@ use movement_types::{Id, Commitment, BlockCommitment};
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use poem::{listener::TcpListener, middleware::Cors, Route, Server};
+use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -363,13 +363,12 @@ impl Executor {
 
 		let ui = api_service.swagger_ui();
 	
-		// todo: add cors
 		let cors = Cors::new(); 
 		let app = Route::new()
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
 			.with(cors);
-		
+
 		Server::new(TcpListener::bind(
 			self.aptos_config.aptos_rest_listen_url.clone()
 		))
