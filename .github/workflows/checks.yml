@@ -24,16 +24,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Install Anvil
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: nightly
-
     - name: Run MCR tests in nix environment
       run: nix develop --command bash  -c "just mcr-contract-tests"
 
     - name: Run MCR client tests in nix environment
-      run: nix develop --command bash  -c "just mcr test.local"
+      run: CELESTIA_LOG_LEVEL=FATAL MOVEMENT_PREBUILT=false nix develop --command bash  -c "just mcr test.local -t=false"
 
     - name: Run Cargo Check in nix environment
       run: nix develop --command bash  -c "cargo check"  
