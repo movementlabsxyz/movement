@@ -9,6 +9,7 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+<<<<<<< HEAD
 ### define here all scenarios execution binaries 
 [[bin]]
 name = "demoscenario"
@@ -34,6 +35,11 @@ tracing = { workspace = true }
 =======
 
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+>>>>>>> c61b30ec (create initial project for testing)
 
 [lints]
 workspace = true

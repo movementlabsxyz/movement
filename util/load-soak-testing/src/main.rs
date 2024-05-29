@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 use load_soak_testing::execute_test;
 use load_soak_testing::init_test;
 use load_soak_testing::ExecutionConfig;
@@ -11,4 +12,8 @@ fn main() {
 	}
 	let result = execute_test(config);
 	tracing::info!("End Test with result {result:?}",);
+=======
+fn main() {
+	println!("Hello, world!");
+>>>>>>> c61b30ec (create initial project for testing)
 }
