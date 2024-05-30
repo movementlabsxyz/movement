@@ -8,4 +8,4 @@ WORKDIR /tmp/build
 RUN nix \
     --extra-experimental-features "nix-command flakes" \
     --option filter-syscalls false \
-    develop --command bash  -c "echo $MONZA_APTOS_PATH"
+    develop --command bash  -c "echo \$MONZA_APTOS_PATH &&cargo build --release && cd \$MONZA_APTOS_PATH && cargo build --release -p aptos-faucet-service"
