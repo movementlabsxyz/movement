@@ -5,7 +5,7 @@ on:
 
 jobs:
   containers:
-    if: false # Remove this line to enable the job
+    if: true # Remove this line to enable the job
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -25,6 +25,6 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-    - name: Build and Push Docker image movement
+    - name: Build and Push Docker image monza-full-node-monolith
       run: |
-        ./scripts/movement/build-push-image movement
+        ./scripts/movement/build-push-image monza-full-node-monolith
