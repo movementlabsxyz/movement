@@ -1,6 +1,6 @@
 services:
   monza-full-node:
-    image: mvlbs/movement:7cb00d17d88e74a42c201e7993b3c22505d1a833
+    image: mvlbs/movement:{{ rev }}
     container_name: monza-full-node-monolith
     ports:
       - "30370:30730" # m1 da light node rpc
@@ -15,4 +15,3 @@ services:
 
 volumes:
   data-volume:
-
