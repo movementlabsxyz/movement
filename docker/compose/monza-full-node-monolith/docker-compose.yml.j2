@@ -11,7 +11,4 @@ services:
       - MOVEMENT_PREBUILT=true
     command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "monza-full-node", "local", "-t=false"]
     volumes:
-      - data-volume:/data
-
-volumes:
-  data-volume:
+      - {{ dot_movement }}:/app/.movement
