@@ -1,0 +1,40 @@
+name: Gali
+description: 'Create a branch, edit a file, and create a pull request in another repository.'
+inputs:
+  github_token:
+    description: 'GitHub Token for authentication.'
+    required: true
+  gali_id:
+    description: 'The Gali Id of the event'
+    required: true
+  gali_sha:
+    description: 'The Gali Sha of the event'
+    required: true
+  source_repo:
+    description: 'The (GitHub) repo which sent the Gali event'
+    required: true
+  target_repo:
+    description: 'The (GitHub) repo which will receive the Gali event'
+    required: true
+  comment:
+    description: 'The comment made in the source repo'
+    required: true
+  comment_url:
+    description: 'The URL of the comment made in the source repo'
+    required: true
+  pr_url:
+    description: 'The URL of the PR which triggered the workflow'
+    required: true
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github_token }}
+    GALI_ID: ${{ inputs.gali_id }}
+    GALI_SHA: ${{ inputs.gali_sha }}
+    SOURCE_REPO: ${{ inputs.source_repo }}
+    TARGET_REPO: ${{ inputs.target_repo }}
+    COMMENT: ${{ inputs.comment }}
+    COMMENT_URL: ${{ inputs.comment_url }}
+    PR_URL: ${{ inputs.pr_url }}
