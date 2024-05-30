@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -e
-APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
-NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
+source $DOT_MOVEMENT/env/celestia/.env
 
 GENESIS=
 CNT=0
@@ -27,9 +26,9 @@ fi
 export CELESTIA_CUSTOM=$CELESTIA_CHAIN_ID:$GENESIS
 echo "$CELESTIA_CUSTOM"
 
-celestia bridge init --node.store $NODE_PATH
+celestia bridge init --node.store $CELESTIA_NODE_PATH
 celestia bridge start \
-  --node.store $NODE_PATH --gateway \
+  --node.store $CELESTIA_NODE_PATH --gateway \
   --core.ip 0.0.0.0 \
   --keyring.accname validator \
   --gateway.addr 0.0.0.0 \

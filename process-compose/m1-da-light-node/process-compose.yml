@@ -1,8 +1,19 @@
 version: "3"
 
 environment:
+  - DOT_MOVEMENT=./.movement
+  - CARGO_PROFILE=debug
+  - PATH=$PATH:./target/$CARGO_PROFILE
 
 processes:
+
+  build:
+    command: |
+      exit 0
+
+  setup:
+    command: |
+      exit 0
 
   celestia-light-node:
     command: |

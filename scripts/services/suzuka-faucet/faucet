@@ -2,7 +2,7 @@
 set -e
 
 # Copy the directory from the Nix store to a temporary location
-temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+temp_dir=$DOT_MOVEMENT/monza-aptos
 
 # Change to the temporary directory
 cd "$temp_dir"

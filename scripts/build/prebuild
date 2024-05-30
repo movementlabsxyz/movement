@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-MOVEMENT_BASE_STORAGE_PATH=./.movement
+DOT_MOVEMENT=./.movement
 cargo build --release
 
 # Build aptos components
-temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+temp_dir=$DOT_MOVEMENT/monza-aptos
 cp -R "$MONZA_APTOS_PATH" "$temp_dir"
 WORKING_DIR=$(pwd)
-temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+temp_dir=$DOT_MOVEMENT/monza-aptos
 cp -R "$MONZA_APTOS_PATH" "$temp_dir"
 chmod -R 755 $temp_dir
-cd $MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+cd $DOT_MOVEMENT/monza-aptos
 echo "Building aptos-faucet-service..."
 cargo build $CARGO_PROFILE_FLAGS -p aptos-faucet-service
 echo "Built aptos-faucet-service!"

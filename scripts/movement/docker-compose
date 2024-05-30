@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -e
+set -euo pipefail
+
+IFS='.' read -r -a split <<< "$2"
+
+override_files=()
+for element in "${split[@]}"; do
+    override_files+=("-f")
+    override_files+=("process-compose/$1/process-compose.$element.yml")
+done
+
+echo "Running process-compose for $1 with override files: ${override_files[@]}..."
+process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}"  "${@:3}"

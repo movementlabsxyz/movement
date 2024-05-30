@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 set -e
-
-# export CELESTIA_LOG_LEVEL=debug
-
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
-export MOVE_ROCKS_PATH="$MOVEMENT_BASE_STORAGE_PATH/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
+export MOVE_ROCKS_PATH="$DOT_MOVEMENT/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
 . ./scripts/celestia/celestia-env
 
 : ${MOVEMENT_PREBUILT:=false}
@@ -35,10 +32,10 @@ if [ "$MOVEMENT_PREBUILT" != "true" ]; then
 
     # Build aptos components
     WORKING_DIR=$(pwd)
-    temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+    temp_dir=$DOT_MOVEMENT/monza-aptos
     cp -R "$MONZA_APTOS_PATH" "$temp_dir"
     chmod -R 755 $temp_dir
-    cd $MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+    cd $DOT_MOVEMENT/monza-aptos
     echo "Building aptos-faucet-service..."
     cargo build $CARGO_PROFILE_FLAGS -p aptos-faucet-service
     echo "Built aptos-faucet-service!"

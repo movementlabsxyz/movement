@@ -1,0 +1,9 @@
+version: "3"
+
+environment:
+
+processes:
+
+  setup:
+    command: |
+      ./scripts/services/celestia/setup
