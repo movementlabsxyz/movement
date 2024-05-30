@@ -41,7 +41,7 @@ use movement_types::{Id, Commitment, BlockCommitment};
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server, http::Method};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
