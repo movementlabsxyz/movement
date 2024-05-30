@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+anvil --chain-id $BRIDGE_ETH_CHAIN_ID --config-out "$BRIDGE_ETH_ANVIL_APP_PATH/anvil.json" --port $BRIDGE_ETH_ANVIL_PORT

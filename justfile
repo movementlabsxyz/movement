@@ -6,5 +6,7 @@ suzuka-full-node FEATURES *ARGS:
     ./scripts/movement/run suzuka-full-node {{ FEATURES }} {{ ARGS }}
 mcr-contract-tests: 
     cd ./protocol-units/settlement/mcr/contracts && forge test
+bridge-eth FEATURES *ARGS:
+    ./scripts/movement/run bridge-eth {{ FEATURES }} {{ ARGS }}
 build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}

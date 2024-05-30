@@ -1,0 +1,2 @@
+#!/bin/bash -e
+. ./scripts/bridge-eth/env

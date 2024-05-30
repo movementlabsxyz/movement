@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Check if the anvil.json file exists
+if [[ ! -f "$BRIDGE_ETH_ANVIL_JSON_PATH" ]]; then
+  echo "Error: $BRIDGE_ETH_ANVIL_JSON_PATH does not exist."
+  exit 1
+fi
+
+# Read the first private key into the variable $BRIDGE_ETH_PRIVATE_KEY using jq
+BRIDGE_ETH_PRIVATE_KEY=$(jq -r '.private_keys[0]' "$BRIDGE_ETH_ANVIL_JSON_PATH")
+
+# Check if the private key was successfully read
+if [[ -z "$BRIDGE_ETH_PRIVATE_KEY" ]]; then
+  echo "Error: Unable to read .private_keys[0] from $BRIDGE_ETH_ANVIL_JSON_PATH."
+  exit 1
+fi
+
+# Print the private key for verification (optional)
+echo "BRIDGE_ETH_PRIVATE_KEY: $BRIDGE_ETH_PRIVATE_KEY"
+
+# Read the first private key into the variable $BRIDGE_ETH_PRIVATE_KEY using jq
+BRIDGE_ETH_SENDER_ADDRESS=$(jq -r '.available_accounts[0]' "$BRIDGE_ETH_ANVIL_JSON_PATH")
+
+# Check if the private key was successfully read
+if [[ -z "$BRIDGE_ETH_SENDER_ADDRESS" ]]; then
+  echo "Error: Unable to read .available_accounts[0] from $BRIDGE_ETH_ANVIL_JSON_PATH."
+  exit 1
+fi
+
+echo "BRIDGE_ETH_SENDER_ADDRESS: $BRIDGE_ETH_SENDER_ADDRESS"
+
+cd $BRIDGE_ETH_CONTRACT_DIR
+forge build
+
+# TODO build the bridge contract
+output=$(forge script DeployBridge --broadcast --chain-id $BRIDGE_ETH_CHAIN_ID --sender $BRIDGE_ETH_SENDER_ADDRESS --rpc-url "http://localhost:$BRIDGE_ETH_ANVIL_PORT" --private-key $BRIDGE_ETH_PRIVATE_KEY)
+BRIDGE_ETH_ADDRESS=$(echo "$output" | grep "Contract Address:" | awk '{print $3}')
+echo "BRIDGE_ETH_ADDRESS: $BRIDGE_ETH_ADDRESS"
+
+# Write the SC address to a file to send it to Rust Test. 
+echo "$BRIDGE_ETH_ADDRESS" > $BRIDGE_ETH_SC_ADDRESS_FILE
+
+echo "BRIDGE_ETH_ADDRESS_PATH: $BRIDGE_ETH_SC_ADDRESS_FILE"

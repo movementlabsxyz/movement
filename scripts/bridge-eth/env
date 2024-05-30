@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+export BRIDGE_ETH_CONTRACT_DIR="$(pwd)/protocol-units/bridge/eth/contracts"
+export BRIDGE_ETH_ANVIL_PORT=8545
+export BRIDGE_ETH_CHAIN_ID="$(shuf -i 1-32768 -n 1)"
+
+#set the BRIDGE_ETH_ANVIL_APP_PATH absolute if MOVEMENT_BASE_STORAGE_PATH is relatif.
+CURRENT_PATH=$(pwd)
+export BRIDGE_ETH_ANVIL_APP_PATH="$CURRENT_PATH/$MOVEMENT_BASE_STORAGE_PATH/anvil/mcr/$BRIDGE_ETH_CHAIN_ID"
+mkdir -p $BRIDGE_ETH_ANVIL_APP_PATH
+
+# Define the path to the anvil.json file
+export BRIDGE_ETH_ANVIL_JSON_PATH="$BRIDGE_ETH_ANVIL_APP_PATH/anvil.json"
+export BRIDGE_ETH_SC_ADDRESS_FILE="$BRIDGE_ETH_ANVIL_APP_PATH/mcr_adress.txt"
