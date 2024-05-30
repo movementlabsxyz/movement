@@ -34,3 +34,4 @@ celestia bridge start \
   --keyring.accname validator \
   --gateway.addr 0.0.0.0 \
   --rpc.addr 0.0.0.0 \
+  --log.level $CELESTIA_LOG_LEVEL

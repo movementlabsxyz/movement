@@ -1,7 +1,11 @@
+// FIXME: glob imports are bad style
 use crate::*;
 use maptos_opt_executor::Executor;
-use async_channel::Sender;
 use aptos_types::transaction::SignedTransaction;
+use movement_types::BlockCommitment;
+
+use async_channel::Sender;
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct SuzukaExecutorV1 {
@@ -45,22 +49,12 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
 
     }
     
-    /// Executes a block dynamically
-    async fn execute_block(
+    async fn execute_block_opt(
         &self,
-        mode: FinalityMode, 
         block: ExecutableBlock,
-    ) -> Result<(), anyhow::Error> {
-
-        match mode {
-            FinalityMode::Dyn => unimplemented!(),
-            FinalityMode::Opt => {
-                println!("Executing opt block: {:?}", block.block_id);
-                self.executor.execute_block(block).await
-            },
-            FinalityMode::Fin => unimplemented!(),
-        }
-
+    ) -> Result<BlockCommitment, anyhow::Error> {
+        debug!("Executing block: {:?}", block.block_id);
+        self.executor.execute_block(block).await
     }
 
     /// Sets the transaction channel.
@@ -69,22 +63,36 @@ impl SuzukaExecutor for SuzukaExecutorV1 {
     }
 
     /// Gets the API.
-    fn get_api(
+    fn get_apis(
         &self,
-        mode: FinalityMode, 
     ) -> Apis {
-        match mode {
-            FinalityMode::Dyn => unimplemented!(),
-            FinalityMode::Opt => self.executor.get_apis(),
-            FinalityMode::Fin => unimplemented!(),
-        }
+        self.executor.get_apis()
     }
 
     /// Get block head height.
     async fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
-        // ideally, this should read from the ledger
-        Ok(1)
+		self.executor.get_block_head_height()
     }
+
+    /// Build block metadata for a timestamp
+	async fn build_block_metadata(&self, block_id : HashValue,  timestamp: u64) -> Result<BlockMetadata, anyhow::Error> {
+		
+		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
+		// Clone the signer from the executor for signing the metadata.
+		let signer = self.executor.signer.clone();
+
+		// Create a block metadata transaction.
+		Ok(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			timestamp,
+		))
+
+	}
 
 }
 
@@ -109,11 +117,6 @@ mod opt_tests {
 		accept_type::AcceptType,
 		transactions::SubmitTransactionPost
 	};
-    use futures::SinkExt;
-    use aptos_mempool::{
-        MempoolClientRequest, MempoolClientSender,
-    };
-    use futures::channel::oneshot;
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -142,7 +145,7 @@ mod opt_tests {
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![tx]);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
-		executor.execute_block(FinalityMode::Opt, block).await?;
+		executor.execute_block_opt(block).await?;
 		Ok(())
 	}
 
@@ -174,7 +177,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(FinalityMode::Opt);
+		let api = executor.get_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -212,7 +215,7 @@ mod opt_tests {
 		let request = SubmitTransactionPost::Bcs(
 			aptos_api::bcs_payload::Bcs(bcs_user_transaction)
 		);
-		let api = executor.get_api(FinalityMode::Opt);
+		let api = executor.get_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
@@ -220,12 +223,19 @@ mod opt_tests {
 
         // Now execute the block
         let block_id = HashValue::random();
-        let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-            received_transaction
-        ));
-        let txs = ExecutableTransactions::Unsharded(vec![tx]);
+        let block_metadata = executor.build_block_metadata(
+            block_id.clone(),
+            chrono::Utc::now().timestamp_micros() as u64,
+        ).await.unwrap();
+        let txs = ExecutableTransactions::Unsharded([
+            Transaction::BlockMetadata(block_metadata),
+            Transaction::UserTransaction(received_transaction),
+        ].into_iter().map(SignatureVerifiedTransaction::Valid).collect());
         let block = ExecutableBlock::new(block_id.clone(), txs);
-        executor.execute_block(FinalityMode::Opt, block).await?;
+        let commitment = executor.execute_block_opt(block).await?;
+
+        assert_eq!(commitment.block_id.to_vec(), block_id.to_vec());
+        assert_eq!(commitment.height, 1);
 
         services_handle.abort();
         background_handle.abort();

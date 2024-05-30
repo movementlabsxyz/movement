@@ -14,6 +14,8 @@ rust-version = { workspace = true }
 [dependencies]
 suzuka-executor = { workspace = true }
 m1-da-light-node-client = { workspace = true }
+mcr-settlement-client = { workspace = true, features = ["mock"] }
+mcr-settlement-manager = { workspace = true }
 async-channel = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -21,10 +23,9 @@ tokio = { workspace = true }
 tokio-stream = { workspace = true }
 sha2 = { workspace = true }
 tonic = { workspace = true }
+tracing = { workspace = true }
 movement-types = { workspace = true }
 
-env_logger = { workspace = true, optional = true }
-tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }
 
 [features]
@@ -32,8 +33,6 @@ default = [
     "logging"
 ]
 logging = [
-    "env_logger", 
-    "tracing", 
     "tracing-subscriber"
 ]
 
