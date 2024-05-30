@@ -363,7 +363,8 @@ impl Executor {
 
 		let ui = api_service.swagger_ui();
 	
-		let cors = Cors::new(); 
+		let cors = Cors::new() 
+			.allow_credentials(true);
 		let app = Route::new()
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
