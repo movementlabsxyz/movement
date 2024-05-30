@@ -57,7 +57,7 @@ pub struct Executor {
 	/// The executing type.
 	pub block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
 	/// The access to db.
-	pub db: Arc<RwLock<DbReaderWriter>>,
+	pub db: DbReaderWriter,
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	/// The core mempool (used for the api to query the mempool).
@@ -90,7 +90,7 @@ impl Executor {
 		let reader = reader_writer.reader.clone();
 		Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
-			db: Arc::new(RwLock::new(reader_writer)),
+			db: reader_writer,
 			signer,
 			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
@@ -181,17 +181,17 @@ impl Executor {
 		node_config: NodeConfig,
 		aptos_config: maptos_execution_util::config::just_aptos::Config,
 	) -> Result<Self, anyhow::Error> {
-		let (db_rw, signer) = Self::bootstrap_empty_db(
+		let (db, signer) = Self::bootstrap_empty_db(
 			&aptos_config.aptos_db_path,
 			aptos_config.chain_id.clone(),
 			&aptos_config.aptos_public_key,
 		)?;
-		let reader = db_rw.reader.clone();
+		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
 		Ok(Self {
-			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db_rw.clone()))),
-			db: Arc::new(RwLock::new(db_rw)),
+			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db.clone()))),
+			db,
 			signer,
 			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
@@ -298,7 +298,7 @@ impl Executor {
 			.await?;
 
 		let proof = {
-			let reader = self.db.read().await.reader.clone();
+			let reader = self.db.reader.clone();
 			reader.get_state_proof(version)?
 		};
 
@@ -441,9 +441,8 @@ impl Executor {
 	}
 
 	pub async fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
-		let db = self.db.read().await;
-		let epoch = db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
-		let round = db.reader.get_latest_ledger_info()?.ledger_info().round();
+		let epoch = self.db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
+		let round = self.db.reader.get_latest_ledger_info()?.ledger_info().round();
 		Ok((epoch, round))
 	}
 
@@ -624,7 +623,7 @@ mod tests {
 			let block_commitment = executor.execute_block(block).await?;
 
 			// Access the database reader to verify state after execution.
-			let db_reader = executor.db.read().await.reader.clone();
+			let db_reader = executor.db.reader.clone();
 			// Get the latest version of the blockchain state from the database.
 			let latest_version = db_reader.get_latest_version()?;
 			// Verify the transaction by its hash to ensure it was committed.

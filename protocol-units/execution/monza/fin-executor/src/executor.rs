@@ -56,7 +56,7 @@ pub struct Executor {
 	/// The current state of the executor.
 	pub status: ExecutorState,
 	/// The access to db.
-	pub db: Arc<RwLock<DbReaderWriter>>,
+	pub db: DbReaderWriter,
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	/// The access to the core mempool.
@@ -79,7 +79,7 @@ impl Executor {
 		Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
 			status: ExecutorState::Idle,
-			db: Arc::new(RwLock::new(reader_writer)),
+			db: reader_writer,
 			signer,
 			mempool,
 		}
@@ -106,12 +106,12 @@ impl Executor {
 		mempool: CoreMempool
 	) -> Result<Self, anyhow::Error> {
 
-		let db_rw = Self::bootstrap_empty_db(db_dir)?;
+		let db = Self::bootstrap_empty_db(db_dir)?;
 
 		Ok(Self {
-			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db_rw.clone()))),
+			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db.clone()))),
 			status: ExecutorState::Idle,
-			db: Arc::new(RwLock::new(db_rw)),
+			db,
 			signer,
 			mempool,
 		})
