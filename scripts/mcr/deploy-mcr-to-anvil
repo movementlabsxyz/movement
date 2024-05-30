@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# Check if the anvil.json file exists
+if [[ ! -f "$ANVIL_JSON_PATH" ]]; then
+  echo "Error: $ANVIL_JSON_PATH does not exist."
+  exit 1
+fi
+
+# Read the first private key into the variable $MCR_PRIVATE_KEY using jq
+MCR_PRIVATE_KEY=$(jq -r '.private_keys[0]' "$ANVIL_JSON_PATH")
+
+# Check if the private key was successfully read
+if [[ -z "$MCR_PRIVATE_KEY" ]]; then
+  echo "Error: Unable to read .private_keys[0] from $ANVIL_JSON_PATH."
+  exit 1
+fi
+
+# Print the private key for verification (optional)
+echo "MCR_PRIVATE_KEY: $MCR_PRIVATE_KEY"
+
+# Read the first private key into the variable $MCR_PRIVATE_KEY using jq
+MCR_SENDER_ADDRESS=$(jq -r '.available_accounts[0]' "$ANVIL_JSON_PATH")
+
+# Check if the private key was successfully read
+if [[ -z "$MCR_SENDER_ADDRESS" ]]; then
+  echo "Error: Unable to read .available_accounts[0] from $ANVIL_JSON_PATH."
+  exit 1
+fi
+
+echo "MCR_SENDER_ADDRESS: $MCR_SENDER_ADDRESS"
+
+cd $MCR_CONTRACT_DIR
+forge build
+
+# todo: change this to a script
+output=$(forge script DeployMCR --broadcast --chain-id $MCR_CHAIN_ID --sender $MCR_SENDER_ADDRESS --rpc-url "http://localhost:$MCR_ANVIL_PORT" --private-key $MCR_PRIVATE_KEY)
+MCR_ADDRESS=$(echo "$output" | grep "Contract Address:" | awk '{print $3}')
+echo "MCR_ADDRESS: $MCR_ADDRESS"
+
+#Write teh SC address to a file to send it to Rust Test. 
+echo "$MCR_ADDRESS" > $MCR_SC_ADDRESS_FILE
+
+
+echo "MCR_ADDRESS_PATH: $MCR_SC_ADDRESS_FILE"
