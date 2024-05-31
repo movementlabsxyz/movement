@@ -131,6 +131,9 @@ impl TestKind {
 }
 
 /// Execute the test scenarios define in the specified configuration.
+/// scenario are executed by chunk. Chunk execution is called client.
+/// All clients are executed in a different thread in parallel.
+/// Chunk of scenario are executed in a Tokio runtime concurrently.
 pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
 	tracing::info!("Start test scenario execution.");
 
