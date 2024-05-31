@@ -1,7 +1,7 @@
 services:
-  monza-full-node:
+  suzuka-full-node:
     image: mvlbs/movement:7cb00d17d88e74a42c201e7993b3c22505d1a833
-    container_name: monza-full-node-monolith
+    container_name: suzuka-full-node-monolith
     ports:
       - "30370:30730" # m1 da light node rpc
       - "30371:30731" # aptos api
@@ -9,7 +9,7 @@ services:
     environment:
       - CARGO_PROFILE=release
       - MOVEMENT_PREBUILT=true
-    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "monza-full-node", "local", "-t=false"]
+    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "suzuka-full-node", "local", "-t=false"]
     volumes:
       - data-volume:/data
 

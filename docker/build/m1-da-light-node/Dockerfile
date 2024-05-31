@@ -2,8 +2,8 @@
 FROM nixos/nix:latest
 
 # Copy our source and setup our working dir.
-COPY . /tmp/build
-WORKDIR /tmp/build
+COPY . /app
+WORKDIR /app
 
 RUN nix \
     --extra-experimental-features "nix-command flakes" \

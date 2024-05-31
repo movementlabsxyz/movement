@@ -5,7 +5,7 @@ on:
 
 jobs:
   containers:
-    if: false # Remove this line to enable the job
+    if: true # Remove this line to enable the job
     strategy:
       matrix:
         architecture: [x86_64, arm64]

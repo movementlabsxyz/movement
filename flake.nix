@@ -121,15 +121,15 @@
             # for linux set SNAPPY variable
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
+            MONZA_APTOS_PATH = monza-aptos;
             OPENSSL_DEV=pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = dependencies;
             nativeBuildInputs = dependencies;
 
             shellHook = ''
-              #!/usr/bin/env bash
-              export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
-              echo "Monza Aptos Path: $MONZA_APTOS_PATH"
+              #!/bin/bash -e
+              echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
