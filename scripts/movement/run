@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+./scripts/movement/$2 "$@"

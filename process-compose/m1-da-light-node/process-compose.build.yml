@@ -6,4 +6,4 @@ processes:
 
   build:
     command: |
-      ./scripts/services/celestia/build
+      ./scripts/services/m1-da-light-node/build

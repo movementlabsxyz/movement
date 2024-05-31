@@ -6,14 +6,17 @@ processes:
 
   celestia-node-appd:
     command: |
-      ./scripts/celestia/celestia-local-appd
+      ./scripts/services/celestia/celestia-local-appd
     readiness_probe:
       exec:
         command: echo "true"
+    depends_on:
+      setup:
+        condition: process_completed_successfully
 
   celestia-bridge:
     command: |
-      ./scripts/celestia/celestia-local-bridge
+      ./scripts/services/celestia/celestia-local-bridge
     readiness_probe:
       exec:
         command: echo "true"
