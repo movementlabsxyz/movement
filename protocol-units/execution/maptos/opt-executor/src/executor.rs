@@ -44,7 +44,7 @@ use movement_types::{BlockCommitment, Commitment, Id};
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use poem::{listener::TcpListener, Route, Server};
+use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server, http::Method};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -338,10 +338,18 @@ impl Executor {
 			.server(format!("http://{:?}", self.aptos_config.aptos_rest_listen_url));
 
 		let ui = api_service.swagger_ui();
+	
+		let cors = Cors::new() 
+			.allow_methods(vec![Method::GET, Method::POST])
+			.allow_credentials(true);
+		let app = Route::new()
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.with(cors);
 
-		// todo: add cors
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui);
-		Server::new(TcpListener::bind(self.aptos_config.aptos_rest_listen_url.clone()))
+		Server::new(TcpListener::bind(
+			self.aptos_config.aptos_rest_listen_url.clone()
+		))
 			.run(app)
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
