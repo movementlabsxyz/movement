@@ -113,6 +113,7 @@ schemars = { version = "0.8.16", features = ["derive"] }
 thiserror = "1.0.50"
 x25519-dalek = "1.0.1"
 rand_core = "0.5.1"
+rayon = "1.10.0"
 zstd-sys = "2.0.9"
 async-channel = "2.2.1"
 sha2 = "0.10.8"
