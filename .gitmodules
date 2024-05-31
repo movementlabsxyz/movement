@@ -11,3 +11,6 @@
 [submodule "protocol-units/bridge/contracts/lib/forge-std"]
 	path = protocol-units/bridge/contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "protocol-units/bridge/contracts/lib/openzeppelin-contracts"]
+	path = protocol-units/bridge/contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
