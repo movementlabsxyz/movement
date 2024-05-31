@@ -1,0 +1,26 @@
+{"timestamp":"2024-05-31T15:14:54.483710Z","level":"INFO","fields":{"msg":"Scenario:4 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483776Z","level":"INFO","fields":{"msg":"Scenario:2 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483779Z","level":"INFO","fields":{"msg":"Scenario:8 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483779Z","level":"INFO","fields":{"msg":"Scenario:6 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483785Z","level":"INFO","fields":{"msg":"Scenario:0 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483836Z","level":"INFO","fields":{"msg":"Scenario:3 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483840Z","level":"INFO","fields":{"msg":"Scenario:5 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484227Z","level":"INFO","fields":{"msg":"Scenario:1 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483846Z","level":"INFO","fields":{"msg":"Scenario:9 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484327Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":4,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.483851Z","level":"INFO","fields":{"msg":"Scenario:7 ended"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484352Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484377Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":5,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484283Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":2,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484393Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484397Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":8,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484409Z","level":"INFO","fields":{"metrics_client_execution":"{\"avarage_execution_time_milli\":502}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484415Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":6,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484442Z","level":"INFO","fields":{"metrics_client_execution":"{\"avarage_execution_time_milli\":502}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484450Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":9,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484446Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":3,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484460Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":7,\"elaspse_millli\":502,\"is_ok\":true}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484470Z","level":"INFO","fields":{"metrics_client_execution":"{\"avarage_execution_time_milli\":502}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484477Z","level":"INFO","fields":{"metrics_client_execution":"{\"avarage_execution_time_milli\":502}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484480Z","level":"INFO","fields":{"metrics_client_execution":"{\"avarage_execution_time_milli\":502}"},"target":"exec"}
+{"timestamp":"2024-05-31T15:14:54.484567Z","level":"INFO","fields":{"metrics_avarage_exec_time":"502"},"target":"exec"}

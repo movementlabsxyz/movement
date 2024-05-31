@@ -18,7 +18,10 @@ path = "bin/demoscenario.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+<<<<<<< HEAD
 async-trait = { workspace = true }
+=======
+>>>>>>> ff595882 (first version of the scenario executor.)
 itertools = { workspace = true, default-features = true }
 rayon = { workspace = true }
 serde  = { workspace = true, features = ["derive"] }
@@ -27,6 +30,10 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
+<<<<<<< HEAD
+=======
+
+>>>>>>> ff595882 (first version of the scenario executor.)
 
 [lints]
 workspace = true

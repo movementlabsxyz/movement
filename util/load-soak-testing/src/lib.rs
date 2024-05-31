@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 use crate::scenario::CreateScenarioFn;
+=======
+>>>>>>> ff595882 (first version of the scenario executor.)
 use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -7,7 +10,10 @@ use thiserror::Error;
 use tracing_subscriber::{filter, prelude::*};
 
 mod scenario;
+<<<<<<< HEAD
 pub use scenario::Scenario;
+=======
+>>>>>>> ff595882 (first version of the scenario executor.)
 
 const EXEC_LOG_FILTER: &str = "exec";
 
@@ -133,6 +139,7 @@ impl TestKind {
 }
 
 /// Execute the test scenarios define in the specified configuration.
+<<<<<<< HEAD
 /// scenario are executed by chunk. Chunk execution is called client.
 /// All clients are executed in a different thread in parallel.
 /// Chunk of scenario are executed in a Tokio runtime concurrently.
@@ -140,6 +147,9 @@ pub fn execute_test(
 	config: ExecutionConfig,
 	create_scanario: &CreateScenarioFn,
 ) -> Result<(), TestExecutionError> {
+=======
+pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
+>>>>>>> ff595882 (first version of the scenario executor.)
 	tracing::info!("Start test scenario execution.");
 
 	match config.kind {
@@ -157,7 +167,11 @@ pub fn execute_test(
 				.par_iter()
 				.map(|chunk| {
 					let scenarios: Vec<_> =
+<<<<<<< HEAD
 						chunk.into_iter().map(|id| create_scanario(*id)).collect();
+=======
+						chunk.into_iter().map(|id| scenario::Scenario::new(*id)).collect();
+>>>>>>> ff595882 (first version of the scenario executor.)
 					let client = TestClient::new(scenarios);
 					client.run_scenarios()
 					// match client.run_scenarios() {
@@ -190,11 +204,19 @@ pub fn execute_test(
 /// Run the specified scenarios concurrently using Tokio.
 #[derive(Default)]
 struct TestClient {
+<<<<<<< HEAD
 	scenarios: Vec<Box<dyn Scenario>>,
 }
 
 impl TestClient {
 	fn new(scenarios: Vec<Box<dyn Scenario>>) -> Self {
+=======
+	scenarios: Vec<scenario::Scenario>,
+}
+
+impl TestClient {
+	fn new(scenarios: Vec<scenario::Scenario>) -> Self {
+>>>>>>> ff595882 (first version of the scenario executor.)
 		TestClient { scenarios }
 	}
 
