@@ -1,0 +1,48 @@
+name: Comment Trigger Workflow
+
+on:
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  dispatch-workflow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if comment is on a PR
+        id: check_pr
+        run: |
+          if [ "${{ github.event.issue.pull_request }}" == "" ]; then
+            echo "This comment is not on a pull request."
+            echo "::set-output name=is_pr::false"
+          else
+            echo "PR URL: ${{ github.event.issue.pull_request.url }}"
+            echo "::set-output name=is_pr::true"
+          fi
+
+      - name: Fetch PR Details
+        if: steps.check_pr.outputs.is_pr == 'true'
+        id: get_pr
+        uses: octokit/request-action@v2.x
+        with:
+          route: GET ${{ github.event.issue.pull_request.url }}
+          mediaType: '{"previews": ["shadow-cat"]}'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dispatch Target Workflow
+        if: steps.check_pr.outputs.is_pr == 'true'
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Handle Target Comment
+          token: ${{ secrets.GH_PAT }}
+          inputs: >
+            {
+              "comment": "${{ github.event.comment.body }}",
+              "issue_number": "${{ github.event.issue.number }}",
+              "html_url" : "${{ github.event.issue.html_url }}",
+              "pr_url" : "${{ github.event.issue.pull_request.url }}"
+            }
+          ref: ${{ fromJson(steps.get_pr.outputs.data).head.ref }}
+          repo: ${{ fromJson(steps.get_pr.outputs.data).head.repo.full_name }}
+
+      

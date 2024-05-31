@@ -1,0 +1,27 @@
+[package]
+name = "buildtime-macros"
+version = { workspace = true }
+edition  = { workspace = true }
+license  = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = { workspace = true }
+syn = { workspace = true }
+
+# tonic
+# todo: extra to feature flag
+tonic-build = { workspace = true }
+
+# buildtime
+buildtime-helpers = { workspace = true }
+
+[lints]
+workspace = true

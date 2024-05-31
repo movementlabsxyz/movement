@@ -1,0 +1,76 @@
+name: Handle Target Comment
+
+on:
+  workflow_dispatch:
+    inputs:
+      comment:
+        description: 'Comment from issue_comment event'
+        required: true
+        type: string
+      issue_number:
+        description: 'Issue number from issue_comment event'
+        required: true
+        type: string
+      html_url:
+        description: 'HTML URl from issue_comment event'
+        required: true
+        type: string
+      pr_url:
+        description: 'URL to the PR which triggered the workflow'
+        required: true
+        type: string
+
+jobs:
+  handle-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Output the comment
+        run: |
+         echo "Comment was: ${{ github.event.inputs.comment }}"
+    
+  manage-infra-pr:
+    if: startsWith(github.event.inputs.comment, 'gali')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Extract comment ID
+        id: extract-comment-id
+        run: |
+          comment_url="${{ github.event.inputs.html_url }}"
+          comment_id=$(basename "$comment_url")
+          echo "::set-output name=comment_id::$comment_id"
+
+      - name: Extract repository name
+        id: gali-id
+        run: |
+          echo "GALI_ID=${{ github.repository }}/${{ github.event.inputs.issue_number }}/${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "GALI_SHA=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Create PR in Infra Repo if not exist
+        id: create-new-pr
+        uses: ./.github/actions/gali
+        with:
+          github_token: ${{ secrets.GH_PAT }}
+          gali_id: ${{ steps.gali-id.outputs.gali-id }}
+          gali_sha: ${{ steps.gali-id.outputs.gali-sha }}
+          comment: ${{ github.event.inputs.comment }}
+          comment_url: ${{ github.event.inputs.html_url }}
+          pr_url: ${{ github.event.inputs.pr_url }}
+          source_repo: ${{ github.repository }}
+          target_repo: 'movementlabsxyz/infra'
+
+      - name: Leave a comment on the current PR
+        uses: actions/github-script@v4
+        with:
+          github-token: ${{ secrets.GH_PAT }}
+          script: |
+            const issue_number = context.payload.inputs.issue_number;
+            const pr_link = `**Gali PR:** ${{ steps.create-new-pr.outputs.pr_link }}`;
+
+            github.issues.createComment({
+              ...context.repo,
+              issue_number: issue_number,
+              body: pr_link
+            });

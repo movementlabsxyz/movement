@@ -1,0 +1,55 @@
+version: "3"
+
+environment:
+
+processes:
+
+  celestia-light-node:
+    command: |
+      exit 1
+
+  celestia-light-node-synced:
+    command: |
+      cargo run --bin wait-for-celestia-light-node
+    depends_on:
+      celestia-light-node:
+        condition: process_healthy
+
+  m1-da-light-node:
+    command: |
+      ./target/$CARGO_PROFILE/m1-da-light-node
+    depends_on:
+      celestia-light-node-synced:
+        condition: process_completed_successfully
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+
+  suzuka-full-node:
+    command: |
+      ./target/$CARGO_PROFILE/suzuka-full-node
+    depends_on:
+      m1-da-light-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: |
+          echo "true"
+
+  suzuka-faucet:
+    command : |
+      ./scripts/suzuka/faucet
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+

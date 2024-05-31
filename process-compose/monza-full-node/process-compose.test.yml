@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  monza-client-tests:
+    command: |
+      cargo test -p monza-client -- --test-threads=1
+    depends_on:
+      monza-full-node:
+        condition: process_healthy
+      monza-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
