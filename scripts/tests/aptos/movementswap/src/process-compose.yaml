@@ -1,0 +1,14 @@
+version: "3"
+
+environment:
+
+processes:
+
+  movementswap-hey-tests:
+    description: "Compile and run main.rs"
+    dependencies:
+      - build_default_nix
+    run:
+      - name: compile_and_run
+        command: |
+          nix-shell default.nix --run "rustc src/main.rs -o main && ./main"
