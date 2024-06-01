@@ -10,7 +10,7 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
-# `m1-da-light-node`
+## `m1-da-light-node`
 
 - **Features**:
     - `local`: Run a local Celestia Data Availability service. (Default.)
@@ -22,7 +22,7 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 just m1-da-light-node test.local
 ```
 
-# `monza-full-node`
+## `monza-full-node`
 
 - **Features**:
     - `local`: Run a local Celesta Data Availability service. 
@@ -31,6 +31,19 @@ just m1-da-light-node test.local
 ```bash
 # example test with local
 just monza-full-node test.local
+```
+
+## Troubleshooting
+
+If you encounter the error `cp: cannot stat '': No such file or directory`, try the following `nix.conf`:
+
+```bash
+build-users-group = nixbld
+experimental-features = nix-command flakes repl-flake
+bash-prompt-prefix = (nix:$name)\040
+max-jobs = auto
+extra-nix-path = nixpkgs=flake:nixpkgs
+upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/stable/universal
 ```
 
 ## License
