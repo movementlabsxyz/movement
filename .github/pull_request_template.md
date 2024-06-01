@@ -1,5 +1,4 @@
 # Summary
-- **Status**: `draft` <!-- `review`, `suspended` -->
 - **RFCs**: [Link to RFC](#./link/to/rfc), [Link to RFC](#./link/to/rfc), or $\emptyset$.
 - **Categories**: any of `protocol-units`, `networks`, `scripts`, `util`, `cicd`, or `misc`.
 
