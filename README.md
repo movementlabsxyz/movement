@@ -1,4 +1,5 @@
-# `movement-sdk`
+# Movement
+[movement logo](https://blog.movementlabs.xyz/wp-content/uploads/2024/06/movement-frame.jpg)
 The Movement SDK is a collection of tools and libraries for building, deploying, and working with Movement Labs infrastructure. The SDK is designed to be modular and extensible, allowing developers to build custom tools and libraries on top of the core components as well as to interact with Movement Labs' own networks.
 
 **Note:** unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.
@@ -35,7 +36,9 @@ just monza-full-node test.local
 
 ## Troubleshooting
 
-If you encounter the error `cp: cannot stat '': No such file or directory`, try the following `nix.conf`:
+### `cp: cannot stat '': No such file or directory`
+
+Try the following `nix.conf`:
 
 ```bash
 build-users-group = nixbld
