@@ -17,6 +17,9 @@ rust-version.workspace = true
 [[bin]]
 name = "demoscenario"
 path = "bin/demoscenario.rs"
+[[bin]]
+name = "basicalicebob"
+path = "bin/basicalicebob.rs"
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -24,6 +27,11 @@ path = "bin/demoscenario.rs"
 [dependencies]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+anyhow = { workspace = true }
+aptos-sdk = { workspace = true }
+>>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
 async-trait = { workspace = true }
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
@@ -31,6 +39,8 @@ async-trait = { workspace = true }
 async-trait = { workspace = true }
 >>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 itertools = { workspace = true, default-features = true }
+maptos-execution-util = { workspace = true }
+rand = { workspace = true }
 rayon = { workspace = true }
 serde  = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }
@@ -38,6 +48,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
 
@@ -47,6 +58,11 @@ tracing = { workspace = true }
 
 [dependencies]
 >>>>>>> c61b30ec (create initial project for testing)
+=======
+url = { workspace = true }
+
+
+>>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
 
 [lints]
 workspace = true

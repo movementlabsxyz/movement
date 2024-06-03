@@ -6599,6 +6599,11 @@ version = "0.3.0"
 dependencies = [
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+ "anyhow",
+ "aptos-sdk",
+>>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
  "async-trait",
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
@@ -6606,6 +6611,8 @@ dependencies = [
  "async-trait",
 >>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
  "itertools 0.12.1",
+ "maptos-execution-util",
+ "rand 0.7.3",
  "rayon",
  "serde",
  "serde_json",
@@ -6613,6 +6620,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]
