@@ -1,0 +1,20 @@
+query getFungibleAssetActivities($where_condition: fungible_asset_activities_bool_exp, $offset: Int, $limit: Int) {
+  fungible_asset_activities(where: $where_condition, offset: $offset, limit: $limit) {
+    amount
+    asset_type
+    block_height
+    entry_function_id_str
+    event_index
+    gas_fee_payer_address
+    is_frozen
+    is_gas_fee
+    is_transaction_success
+    owner_address
+    storage_id
+    storage_refund_amount
+    token_standard
+    transaction_timestamp
+    transaction_version
+    type
+  }
+}

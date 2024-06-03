@@ -1,0 +1,16 @@
+query getFungibleAssetMetadata($where_condition: fungible_asset_metadata_bool_exp, $offset: Int, $limit: Int) {
+  fungible_asset_metadata(where: $where_condition, offset: $offset, limit: $limit) {
+    icon_uri
+    project_uri
+    supply_aggregator_table_handle_v1
+    supply_aggregator_table_key_v1
+    creator_address
+    asset_type
+    decimals
+    last_transaction_timestamp
+    last_transaction_version
+    name
+    symbol
+    token_standard
+  }
+}

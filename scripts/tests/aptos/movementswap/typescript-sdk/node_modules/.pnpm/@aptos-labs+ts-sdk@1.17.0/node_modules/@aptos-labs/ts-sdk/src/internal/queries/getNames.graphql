@@ -1,0 +1,11 @@
+#import "./AnsTokenFragment";
+query getNames(
+  $offset: Int
+  $limit: Int
+  $where_condition: current_aptos_names_bool_exp
+  $order_by: [current_aptos_names_order_by!]
+) {
+  current_aptos_names(limit: $limit, where: $where_condition, order_by: $order_by, offset: $offset) {
+    ...AnsTokenFragment
+  }
+}

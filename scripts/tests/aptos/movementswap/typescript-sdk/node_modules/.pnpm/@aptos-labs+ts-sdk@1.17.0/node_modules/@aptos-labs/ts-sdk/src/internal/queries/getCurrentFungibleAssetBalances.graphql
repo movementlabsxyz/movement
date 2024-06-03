@@ -1,0 +1,17 @@
+query getCurrentFungibleAssetBalances(
+  $where_condition: current_fungible_asset_balances_bool_exp
+  $offset: Int
+  $limit: Int
+) {
+  current_fungible_asset_balances(where: $where_condition, offset: $offset, limit: $limit) {
+    amount
+    asset_type
+    is_frozen
+    is_primary
+    last_transaction_timestamp
+    last_transaction_version
+    owner_address
+    storage_id
+    token_standard
+  }
+}

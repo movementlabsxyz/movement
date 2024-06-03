@@ -1,0 +1,2 @@
+var n=new Map;function m(r,e,t){return async(...s)=>{if(n.has(e)){let{value:i,timestamp:u}=n.get(e);if(t===void 0||Date.now()-u<=t)return i}let a=await r(...s);return n.set(e,{value:a,timestamp:Date.now()}),a}}function o(r,e,t){return(...s)=>{if(n.has(e)){let{value:i,timestamp:u}=n.get(e);if(t===void 0||Date.now()-u<=t)return i}let a=r(...s);return n.set(e,{value:a,timestamp:Date.now()}),a}}export{m as a,o as b};
+//# sourceMappingURL=chunk-AH44UPM4.mjs.map

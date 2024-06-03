@@ -1,0 +1,12 @@
+query getTableItemsMetadata(
+  $where_condition: table_metadatas_bool_exp!
+  $offset: Int
+  $limit: Int
+  $order_by: [table_metadatas_order_by!]
+) {
+  table_metadatas(where: $where_condition, offset: $offset, limit: $limit, order_by: $order_by){
+     handle
+    key_type
+    value_type
+  }
+}

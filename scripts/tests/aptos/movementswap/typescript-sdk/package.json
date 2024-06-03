@@ -1,0 +1,6 @@
+{
+	"dependencies": {
+		"@aptos-labs/ts-sdk": "^1.17.0",
+		"dotenv": "^16.4.5"
+	}
+}

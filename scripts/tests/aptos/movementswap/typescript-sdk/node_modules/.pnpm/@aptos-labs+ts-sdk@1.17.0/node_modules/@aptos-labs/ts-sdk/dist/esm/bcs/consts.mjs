@@ -1,0 +1,2 @@
+import{a,b,c,d,e,f}from"../chunk-56CNRT2K.mjs";import"../chunk-FVA2OPG4.mjs";export{e as MAX_U128_BIG_INT,b as MAX_U16_NUMBER,f as MAX_U256_BIG_INT,c as MAX_U32_NUMBER,d as MAX_U64_BIG_INT,a as MAX_U8_NUMBER};
+//# sourceMappingURL=consts.mjs.map

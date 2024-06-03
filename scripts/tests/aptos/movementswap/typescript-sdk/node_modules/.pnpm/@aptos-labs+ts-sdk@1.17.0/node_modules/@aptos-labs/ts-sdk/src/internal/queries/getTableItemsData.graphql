@@ -1,0 +1,15 @@
+query getTableItemsData(
+  $where_condition: table_items_bool_exp!
+  $offset: Int
+  $limit: Int
+  $order_by: [table_items_order_by!]
+) {
+  table_items(where: $where_condition, offset: $offset, limit: $limit, order_by: $order_by){
+    decoded_key
+    decoded_value
+    key
+    table_handle
+    transaction_version
+    write_set_change_index
+  }
+}
