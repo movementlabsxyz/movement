@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
+source $DOT_MOVEMENT/env/celestia/.env
+
+./target/$CARGO_PROFILE/wait-for-celestia-light-node

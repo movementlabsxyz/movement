@@ -31,7 +31,7 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      cargo run --bin wait-for-celestia-light-node
+      ./scripts/services/wait-for-celestia-light-node run
     depends_on:
       celestia-light-node:
         condition: process_healthy

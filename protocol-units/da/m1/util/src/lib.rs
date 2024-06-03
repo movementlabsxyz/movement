@@ -18,7 +18,7 @@ impl Config {
 
     pub fn try_from_env() -> Result<Self, anyhow::Error> {
         let token = std::env::var("CELESTIA_NODE_AUTH_TOKEN").map_err(
-            |_| anyhow::anyhow!("Token not provided")
+            |_| anyhow::anyhow!("Celestia node auth token not provided")
         )?; // expect("Token not provided"
         let url = std::env::var("CELESTIA_NODE_URL").unwrap_or_else(|_| Self::DEFAULT_CELESTIA_NODE_URL.to_string());
         
