@@ -6597,6 +6597,7 @@ checksum = "01cda141df6706de531b6c46c3a33ecca755538219bd484262fa09410c13539c"
 name = "load-soak-testing"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "itertools 0.12.1",
  "rayon",
  "serde",
