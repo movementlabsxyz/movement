@@ -1,3 +1,4 @@
+use crate::scenario::CreateScenarioFn;
 use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -6,6 +7,7 @@ use thiserror::Error;
 use tracing_subscriber::{filter, prelude::*};
 
 mod scenario;
+pub use scenario::Scenario;
 
 const EXEC_LOG_FILTER: &str = "exec";
 
@@ -134,7 +136,10 @@ impl TestKind {
 /// scenario are executed by chunk. Chunk execution is called client.
 /// All clients are executed in a different thread in parallel.
 /// Chunk of scenario are executed in a Tokio runtime concurrently.
-pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
+pub fn execute_test(
+	config: ExecutionConfig,
+	create_scanario: &CreateScenarioFn,
+) -> Result<(), TestExecutionError> {
 	tracing::info!("Start test scenario execution.");
 
 	match config.kind {
@@ -152,7 +157,7 @@ pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
 				.par_iter()
 				.map(|chunk| {
 					let scenarios: Vec<_> =
-						chunk.into_iter().map(|id| scenario::Scenario::new(*id)).collect();
+						chunk.into_iter().map(|id| create_scanario(*id)).collect();
 					let client = TestClient::new(scenarios);
 					client.run_scenarios()
 					// match client.run_scenarios() {
@@ -185,11 +190,11 @@ pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
 /// Run the specified scenarios concurrently using Tokio.
 #[derive(Default)]
 struct TestClient {
-	scenarios: Vec<scenario::Scenario>,
+	scenarios: Vec<Box<dyn Scenario>>,
 }
 
 impl TestClient {
-	fn new(scenarios: Vec<scenario::Scenario>) -> Self {
+	fn new(scenarios: Vec<Box<dyn Scenario>>) -> Self {
 		TestClient { scenarios }
 	}
 
