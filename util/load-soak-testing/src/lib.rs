@@ -3,7 +3,6 @@ use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{fs::File, sync::Arc};
-use thiserror::Error;
 use tracing_subscriber::{filter, prelude::*};
 
 mod scenario;
@@ -11,17 +10,9 @@ pub use scenario::Scenario;
 
 const EXEC_LOG_FILTER: &str = "exec";
 
-#[derive(Error, Debug)]
-pub enum TestExecutionError {
-	#[error("Scenario execution fail because: {0}")]
-	ScenarioExec(String),
-	#[error("IO error:{0}")]
-	EventNotificationError(#[from] std::io::Error),
-}
-
 /// Initialize all test components with the configuration.
 /// Must be call before the test start: execute_test
-pub fn init_test(config: &ExecutionConfig) -> Result<(), TestExecutionError> {
+pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 	//do some verification on the config
 	config.verify_config();
 
@@ -136,10 +127,7 @@ impl TestKind {
 /// scenario are executed by chunk. Chunk execution is called client.
 /// All clients are executed in a different thread in parallel.
 /// Chunk of scenario are executed in a Tokio runtime concurrently.
-pub fn execute_test(
-	config: ExecutionConfig,
-	create_scanario: &CreateScenarioFn,
-) -> Result<(), TestExecutionError> {
+pub fn execute_test(config: ExecutionConfig, create_scanario: &CreateScenarioFn) {
 	tracing::info!("Start test scenario execution.");
 
 	match config.kind {
@@ -184,7 +172,6 @@ pub fn execute_test(
 		},
 	}
 	tracing::info!("End test scenario execution.");
-	Ok(())
 }
 
 /// Run the specified scenarios concurrently using Tokio.
@@ -220,13 +207,17 @@ impl TestClient {
 		let mut scenario_results = vec![];
 		while let Some(res) = set.join_next().await {
 			match res {
-				Ok((id, res)) => {
+				Ok(Ok(id)) => {
 					let elapse = start_time.elapsed().as_millis();
-					let metrics = ScenarioExecMetric::new(id, elapse, res.is_ok());
+					let metrics = ScenarioExecMetric::new(id, elapse);
 					let metrics_scenario = serde_json::to_string(&metrics)
 						.unwrap_or("Metric serialization error.".to_string());
 					tracing::info!(target:EXEC_LOG_FILTER, metrics_scenario);
 					scenario_results.push(metrics);
+				},
+				Ok(Err(err)) => {
+					let log = format!("Scenario execution failed because: {err}");
+					tracing::info!(target:EXEC_LOG_FILTER, log);
 				},
 				Err(err) => tracing::warn!("Error during scenario spawning: {err}"),
 			}
@@ -239,12 +230,11 @@ impl TestClient {
 struct ScenarioExecMetric {
 	scenario_id: usize,
 	elaspse_millli: u128,
-	is_ok: bool,
 }
 
 impl ScenarioExecMetric {
-	fn new(scenario_id: usize, elaspse_millli: u128, is_ok: bool) -> Self {
-		ScenarioExecMetric { scenario_id, elaspse_millli, is_ok }
+	fn new(scenario_id: usize, elaspse_millli: u128) -> Self {
+		ScenarioExecMetric { scenario_id, elaspse_millli }
 	}
 }
 
