@@ -1,5 +1,5 @@
-use crate::TestExecutionError;
 use crate::EXEC_LOG_FILTER;
+use anyhow::Result;
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -20,7 +20,7 @@ use crate::EXEC_LOG_FILTER;
 ///  Return the execution result (Result<(), TestExecutionError>) and a usize, id of the scenario or any usize.
 #[async_trait::async_trait]
 pub trait Scenario {
-	async fn run(self: Box<Self>) -> (usize, Result<(), TestExecutionError>);
+	async fn run(self: Box<Self>) -> Result<usize>;
 
 	fn log_exec_info(&self, msg: &str) {
 		tracing::info!(target:EXEC_LOG_FILTER, msg);
