@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Turn on bash safety options: fail on error, variable unset and error in piped process
+set -eou pipefail
+
+# ARGS
+DOKERFILE=$1
+REPOSITORY=$2
+IMAGE_NAME=$3
+
 # Check if the correct number of arguments are passed
 if [ "$#" -ne 3 ]; then
     echo "Usage: $0 <Dockerfile> <repository> <image-name>"
@@ -14,9 +22,15 @@ BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 SANITIZED_BRANCH_NAME=${BRANCH_NAME//\//.}
 
 # Tag and build the Docker image
-echo "Building docker image with tags $2/$3:$COMMIT_HASH and $2/$3:$SANITIZED_BRANCH_NAME"
-docker build -f $1 -t $2/$3:$COMMIT_HASH -t $2/$3:$SANITIZED_BRANCH_NAME .
+IMG_NAME_TAG_COMMIT="${REPOSITORY}/${IMAGE_NAME}:${COMMIT_HASH}"
+IMG_NAME_TAG_BRANCH="${REPOSITORY}/${IMAGE_NAME}:${SANITIZED_BRANCH_NAME}"
+echo "Building docker image with tags ${IMG_NAME_TAG_COMMIT} and ${IMG_NAME_TAG_BRANCH}"
+
+docker build . \
+        -f "${DOKERFILE}" \
+        -t "${IMG_NAME_TAG_COMMIT}" \
+        -t "${IMG_NAME_TAG_BRANCH}"
 
 # Push the Docker images
-docker push $2/$3:$COMMIT_HASH
-docker push $2/$3:$SANITIZED_BRANCH_NAME
+docker push "${IMG_NAME_TAG_COMMIT}"
+docker push "${IMG_NAME_TAG_BRANCH}"

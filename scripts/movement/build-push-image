@@ -1,3 +1,4 @@
 #!/bin/bash
-FILE_PATH=./docker/build/$1/Dockerfile
-./scripts/docker/build-push-image $FILE_PATH mvlbs $1
+IMAGE_NAME=$1
+FILE_PATH=./docker/build/"${IMAGE_NAME}"/Dockerfile
+./scripts/docker/build-push-image "${FILE_PATH}" mvlbs "${IMAGE_NAME}"
