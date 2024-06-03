@@ -1,5 +1,5 @@
 # Movement
-![movement-logo](https://blog.movementlabs.xyz/wp-content/uploads/2024/06/movement-frame.jpg)
+<img src="./img/movement-logo.png" width="500px" />
 
 The Movement SDK is a collection of tools and libraries for building, deploying, and working with Movement Labs infrastructure. The SDK is designed to be modular and extensible, allowing developers to build custom tools and libraries on top of the core components as well as to interact with Movement Labs' own networks.
 
