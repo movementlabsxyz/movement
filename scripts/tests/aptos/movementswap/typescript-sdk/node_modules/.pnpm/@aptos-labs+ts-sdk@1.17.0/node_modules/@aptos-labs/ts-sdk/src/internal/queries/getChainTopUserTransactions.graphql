@@ -1,5 +1,0 @@
-query getChainTopUserTransactions($limit: Int) {
-  user_transactions(limit: $limit, order_by: { version: desc }) {
-    version
-  }
-}
