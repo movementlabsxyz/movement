@@ -28,6 +28,7 @@ members = [
     "networks/suzuka/suzuka-client",
     "networks/suzuka/suzuka-config",
     "networks/suzuka/suzuka-full-node",
+    "scripts/tests/aptos/movementswap",
 ]
 
 [workspace.package]

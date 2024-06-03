@@ -1,0 +1,19 @@
+version: "3"
+
+environment:
+
+processes:
+
+  movementswap-hey-tests:
+    description: "Run MovementSwap test"
+    run:
+      - name: compile_and_run
+        command: |
+          cargo test -p movementswap-load-soak-testing -- --test-thread=1
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
