@@ -6626,6 +6626,7 @@ dependencies = [
 name = "load-soak-testing"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
  "itertools 0.12.1",
  "rayon",
  "serde",

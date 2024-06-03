@@ -11,6 +11,9 @@ rust-version.workspace = true
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 ### define here all scenarios execution binaries 
 [[bin]]
 name = "demoscenario"
@@ -21,9 +24,13 @@ path = "bin/demoscenario.rs"
 
 [dependencies]
 <<<<<<< HEAD
+<<<<<<< HEAD
 async-trait = { workspace = true }
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+async-trait = { workspace = true }
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 itertools = { workspace = true, default-features = true }
 rayon = { workspace = true }
 serde  = { workspace = true, features = ["derive"] }
