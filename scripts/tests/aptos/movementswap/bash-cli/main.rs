@@ -7,7 +7,7 @@ fn main() {
 
 	let config = ExecutionConfig::default();
 	config.logfile_path = "movementswap.log".to_string();
-	config.execfile_path = "../test.sh".to_string();
+	config.execfile_path = "./test.sh".to_string();
 	if let Err(err) = init_test(&config) {
 		println!("Test init fail ; {err}",);
 	}

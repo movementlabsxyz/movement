@@ -6,6 +6,11 @@ PATH_TO_REPO="."
 # Initialize and capture output
 initialize=$(echo -ne '\n' | aptos init --network custom --rest-url $APTOS_URL --faucet-url $APTOS_URL --assume-yes)
 
+CONFIG_FILE=".aptos/config.toml"
+
+# Extract the private_key value from the config file using grep and sed
+PrivateKey=$(grep -oP 'private_key\s*=\s*"\K[^"]+' "$CONFIG_FILE")
+
 # Extract the address
 lookupAddress=$(aptos account lookup-address)
 echo "Lookup Address Output: $lookupAddress"
@@ -116,3 +121,21 @@ aptos move run --function-id ${SwapDeployer}::AnimeSwapPoolV1::withdraw_dao_fee 
 --type-args ${SwapDeployer}::TestCoinsV1::BTC ${SwapDeployer}::TestCoinsV1::USDT
 aptos move run --function-id ${SwapDeployer}::AnimeSwapPoolV1::pause
 aptos move run --function-id ${SwapDeployer}::AnimeSwapPoolV1::unpause
+
+add_or_update_env() {
+    local key=$1
+    local value=$2
+    local file=".env"
+
+    if grep -q "^$key=" "$file"; then
+        sed -i "s/^$key=.*/$key=$value/" "$file"
+    else
+        echo "$key=$value" >> "$file"
+    fi
+}
+
+# Example usage
+add_or_update_env "SWAP_DEPLOYER" $SwapDeployer
+add_or_update_env "RESOURCE_ACCOUNT_DEPLOYER" $ResourceAccountDeployer
+add_or_update_env "PRIVATE_KEY" $PrivateKey
+add_or_update_env "FULLNODE" $APTOS_URL
