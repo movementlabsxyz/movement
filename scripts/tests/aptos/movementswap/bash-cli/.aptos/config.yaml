@@ -1,0 +1,8 @@
+---
+profiles:
+  default:
+    private_key: "0xc25f91d06344ccfd561139df1491bd4671bc95104cb63f5a4a8bff515570b4c1"
+    public_key: "0x262f2e251d7f46e1245f74df9807563a4e47c8a1ab6dd76ff3984ed396af9a9f"
+    account: 162e3c6fcc63eb4a49144bcaa017f98d353a40279ee00ccd2ef7e22a2d58d863
+    rest_url: "https://aptos.devnet.m1.movementlabs.xyz/"
+    faucet_url: "https://aptos.devnet.m1.movementlabs.xyz/"

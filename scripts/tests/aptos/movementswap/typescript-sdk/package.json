@@ -1,6 +1,16 @@
 {
 	"dependencies": {
 		"@aptos-labs/ts-sdk": "^1.17.0",
-		"dotenv": "^16.4.5"
+		"@typescript-eslint/parser": "^7.12.0",
+		"dotenv": "^16.4.5",
+		"eslint-plugin-import": "^2.29.1",
+		"sinon": "^18.0.0",
+		"typescript": "^5.4.5",
+		"@types/jest": "^29.5.12",
+		"@types/mocha": "^10.0.6"
+	},
+	"devDependencies": {
+		"@types/jest": "^29.5.12",
+		"@types/mocha": "^10.0.6"
 	}
 }

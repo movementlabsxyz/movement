@@ -3,27 +3,55 @@
 APTOS_URL="https://aptos.devnet.m1.movementlabs.xyz"
 PATH_TO_REPO="."
 
-# Initialize and capture output
-initialize=$(echo -ne '\n' | aptos init --network custom --rest-url $APTOS_URL --faucet-url $APTOS_URL --assume-yes)
+initialize_output=$(echo -ne '\n' | aptos init --network custom --rest-url $APTOS_URL --faucet-url $APTOS_URL --assume-yes)
 
-CONFIG_FILE=".aptos/config.toml"
+CONFIG_FILE=".aptos/config.yaml"
 
-# Extract the private_key value from the config file using grep and sed
-PrivateKey=$(grep -oP 'private_key\s*=\s*"\K[^"]+' "$CONFIG_FILE")
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "Initialization failed. Config file not found."
+  exit 1
+fi
 
-# Extract the address
-lookupAddress=$(aptos account lookup-address)
-echo "Lookup Address Output: $lookupAddress"
-SwapDeployer=0x$(echo "$lookupAddress" | grep -oP '(?<="Result": ")[0-9a-fA-F]{64}')
+PrivateKey=$(grep 'private_key:' "$CONFIG_FILE" | awk -F': ' '{print $2}' | tr -d '"')
 
-# Test Resource Account and get the address
-testResourceAccount=$(aptos move test --package-dir "$PATH_TO_REPO/Swap/" --filter test_resource_account)
-echo "Test Resource Account Output: $testResourceAccount"
-ResourceAccountDeployer=$(echo "$testResourceAccount" | grep -oP '(?<=\[debug\] @)[^\s]+')
+lookup_address_output=$(aptos account lookup-address)
+echo "Lookup Address Output: $lookup_address_output"
+SwapDeployer=0x$(echo "$lookup_address_output" | grep -o '"Result": "[0-9a-fA-F]\{64\}"' | sed 's/"Result": "\(.*\)"/\1/')
+if [ -z "$SwapDeployer" ]; then
+  echo "SwapDeployer extraction failed."
+  exit 1
+fi
 
-# Print results
+test_resource_account_output=$(aptos move test --package-dir "$PATH_TO_REPO/Swap/" --filter test_resource_account)
+echo "Test Resource Account Output: $test_resource_account_output"
+ResourceAccountDeployer=$(echo "$test_resource_account_output" | grep -o '\[debug\] @[^\s]*' | sed 's/\[debug\] @\(.*\)/\1/')
+
 echo "SwapDeployer: $SwapDeployer"
 echo "ResourceAccountDeployer: $ResourceAccountDeployer"
+
+add_or_update_env() {
+    local key=$1
+    local value=$2
+    local file="../.env"
+    if grep -q "^$key=" "$file"; then
+        # Update the existing key with the new value
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS
+            sed -i '' "s/^$key=.*/$key=$value/" "$file"
+        else
+            # Linux and other Unix-like systems
+            sed -i "s/^$key=.*/$key=$value/" "$file"
+        fi
+    else
+        # Add the key-value pair if it doesn't exist
+        echo "$key=$value" >> "$file"
+    fi
+}
+
+add_or_update_env "SWAP_DEPLOYER" $SwapDeployer
+add_or_update_env "RESOURCE_ACCOUNT_DEPLOYER" $ResourceAccountDeployer
+add_or_update_env "PRIVATE_KEY" $PrivateKey
+add_or_update_env "FULLNODE" $APTOS_URL
 
 # publish 
 aptos move publish --package-dir $PATH_TO_REPO/uq64x64/ --assume-yes --url $APTOS_URL
@@ -122,20 +150,3 @@ aptos move run --function-id ${SwapDeployer}::AnimeSwapPoolV1::withdraw_dao_fee 
 aptos move run --function-id ${SwapDeployer}::AnimeSwapPoolV1::pause
 aptos move run --function-id ${SwapDeployer}::AnimeSwapPoolV1::unpause
 
-add_or_update_env() {
-    local key=$1
-    local value=$2
-    local file=".env"
-
-    if grep -q "^$key=" "$file"; then
-        sed -i "s/^$key=.*/$key=$value/" "$file"
-    else
-        echo "$key=$value" >> "$file"
-    fi
-}
-
-# Example usage
-add_or_update_env "SWAP_DEPLOYER" $SwapDeployer
-add_or_update_env "RESOURCE_ACCOUNT_DEPLOYER" $ResourceAccountDeployer
-add_or_update_env "PRIVATE_KEY" $PrivateKey
-add_or_update_env "FULLNODE" $APTOS_URL
