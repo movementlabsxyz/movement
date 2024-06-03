@@ -9,9 +9,16 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+### define here all scenarios execution binaries 
+[[bin]]
+name = "demoscenario"
+path = "bin/demoscenario.rs"
+
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = { workspace = true }
 itertools = { workspace = true, default-features = true }
 rayon = { workspace = true }
 serde  = { workspace = true, features = ["derive"] }
