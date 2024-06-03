@@ -1,7 +1,11 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 use crate::scenario::CreateScenarioFn;
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+use crate::scenario::CreateScenarioFn;
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -11,9 +15,13 @@ use tracing_subscriber::{filter, prelude::*};
 
 mod scenario;
 <<<<<<< HEAD
+<<<<<<< HEAD
 pub use scenario::Scenario;
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+pub use scenario::Scenario;
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 
 const EXEC_LOG_FILTER: &str = "exec";
 
@@ -147,9 +155,12 @@ pub fn execute_test(
 	config: ExecutionConfig,
 	create_scanario: &CreateScenarioFn,
 ) -> Result<(), TestExecutionError> {
+<<<<<<< HEAD
 =======
 pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 	tracing::info!("Start test scenario execution.");
 
 	match config.kind {
@@ -168,10 +179,14 @@ pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
 				.map(|chunk| {
 					let scenarios: Vec<_> =
 <<<<<<< HEAD
+<<<<<<< HEAD
 						chunk.into_iter().map(|id| create_scanario(*id)).collect();
 =======
 						chunk.into_iter().map(|id| scenario::Scenario::new(*id)).collect();
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+						chunk.into_iter().map(|id| create_scanario(*id)).collect();
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 					let client = TestClient::new(scenarios);
 					client.run_scenarios()
 					// match client.run_scenarios() {
@@ -205,6 +220,7 @@ pub fn execute_test(config: ExecutionConfig) -> Result<(), TestExecutionError> {
 #[derive(Default)]
 struct TestClient {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	scenarios: Vec<Box<dyn Scenario>>,
 }
 
@@ -217,6 +233,13 @@ impl TestClient {
 impl TestClient {
 	fn new(scenarios: Vec<scenario::Scenario>) -> Self {
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+	scenarios: Vec<Box<dyn Scenario>>,
+}
+
+impl TestClient {
+	fn new(scenarios: Vec<Box<dyn Scenario>>) -> Self {
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 		TestClient { scenarios }
 	}
 

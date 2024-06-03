@@ -6598,9 +6598,13 @@ name = "load-soak-testing"
 version = "0.3.0"
 dependencies = [
 <<<<<<< HEAD
+<<<<<<< HEAD
  "async-trait",
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
+=======
+ "async-trait",
+>>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
  "itertools 0.12.1",
  "rayon",
  "serde",
