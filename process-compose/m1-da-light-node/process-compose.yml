@@ -31,7 +31,7 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      ./scripts/services/wait-for-celestia-light-node run
+      ./scripts/services/wait-for-celestia-light-node/run
     depends_on:
       celestia-light-node:
         condition: process_healthy
