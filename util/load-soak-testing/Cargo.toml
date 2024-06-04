@@ -33,11 +33,15 @@ anyhow = { workspace = true }
 aptos-sdk = { workspace = true }
 >>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
 async-trait = { workspace = true }
+<<<<<<< HEAD
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
 =======
 async-trait = { workspace = true }
 >>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
+=======
+futures = { workspace = true }
+>>>>>>> 341e49c5 (add process-compose execution and change some result management behaviours)
 itertools = { workspace = true, default-features = true }
 maptos-execution-util = { workspace = true }
 rand = { workspace = true }

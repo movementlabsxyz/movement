@@ -6605,11 +6605,15 @@ dependencies = [
  "aptos-sdk",
 >>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
  "async-trait",
+<<<<<<< HEAD
 =======
 >>>>>>> ff595882 (first version of the scenario executor.)
 =======
  "async-trait",
 >>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
+=======
+ "futures",
+>>>>>>> 341e49c5 (add process-compose execution and change some result management behaviours)
  "itertools 0.12.1",
  "maptos-execution-util",
  "rand 0.7.3",
