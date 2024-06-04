@@ -4,7 +4,8 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/monthly"; 
-    naersk.url = "github:nix-community/naersk";
+    crane.url = "github:ipetkov/crane";
+    crane.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
@@ -13,7 +14,7 @@
     rust-overlay,
     flake-utils,
     foundry,
-    naersk,
+    crane,
     ...
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
@@ -39,20 +40,16 @@
           inherit system overlays;
         };
 
+        craneLib = crane.mkLib pkgs;
+
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-         dependencies = with pkgs; [
-          rocksdb
-          foundry-bin
-          # solc
+        buildDependencies = with pkgs; [
           llvmPackages.bintools
           openssl
           openssl.dev
           libiconv 
           pkg-config
-          process-compose
-          just
-          jq
           libclang.lib
           libz
           clang
@@ -63,10 +60,10 @@
           coreutils
           gcc
           rust
-          celestia-node
-          celestia-app
-          monza-aptos
-        ] ++ lib.optionals stdenv.isDarwin [
+        ];
+        
+        sysDependencies = with pkgs; [] 
+        ++ lib.optionals stdenv.isDarwin [
           frameworks.Security
           frameworks.CoreServices
           frameworks.SystemConfiguration
@@ -86,11 +83,6 @@
           rustc = rust;
         };
 
-        naersk' = pkgs.callPackage naersk {
-          cargo = rust;
-          rustc = rust;
-        };
-
         # celestia-node
         celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
 
@@ -100,9 +92,6 @@
         # monza-aptos
         # FIXME: rename, should not be specific to Monza
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
-
-        # m1-da-light-node
-        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
     
       in
         with pkgs; {
@@ -110,8 +99,36 @@
           # Monza Aptos
           packages.monza-aptos = monza-aptos;
 
-          # M1 DA Light Node
-          packages.m1-da-light-node = m1-da-light-node;
+          packages.celestia-node = celestia-node;
+
+          packages.celestia-app = celestia-app;
+          
+          devShells.faucet-build = mkShell {
+            buildInputs = [ monza-aptos ] ++buildDependencies ++sysDependencies;
+            nativeBuildInputs = [ monza-aptos ] ++ buildDependencies ++ sysDependencies;
+            OPENSSL_DEV=pkgs.openssl.dev;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
+            shellHook = ''
+              #!/usr/bin/env bash
+              export MONZA_APTOS_PATH=$(nix path-info .#monza-aptos | tail -n 1)
+              echo "Monza Aptos Path: $MONZA_APTOS_PATH"
+              echo "faucet-build shell "
+            '';
+          };
+          
+          # Used for workaround for failing vendor dep builds in nix
+          devShells.docker-build = mkShell {
+            buildInputs = [] ++buildDependencies ++sysDependencies;
+            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
+            OPENSSL_DEV=pkgs.openssl.dev;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
+            shellHook = ''
+              #!/usr/bin/env bash
+              echo "rust-build shell"
+            '';
+          };
 
           # Development Shell
           devShells.default = mkShell {
@@ -121,7 +138,7 @@
             # for linux set SNAPPY variable
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
-            OPENSSL_DEV=pkgs.openssl.dev;
+            OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = dependencies;
             nativeBuildInputs = dependencies;
@@ -140,7 +157,6 @@
               echo "Develop with Move Anywhere"
             '';
           };
-
         }
     );
 }

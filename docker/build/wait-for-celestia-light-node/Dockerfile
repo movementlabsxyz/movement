@@ -8,9 +8,9 @@ WORKDIR /tmp/build
 
 # Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop .#docker-build --command bash -c "cargo build --release -p m1-da-light-node"
+        develop .#docker-build --command bash -c "cargo build --release -p wait-for-celestia-light-node"
 
-RUN rust_binary="./target/release/m1-da-light-node"; dest_dir="/tmp/runtime"; \
+RUN rust_binary="./target/release/wait-for-celestia-light-node"; dest_dir="/tmp/runtime"; \
     mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
     grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
@@ -18,9 +18,9 @@ RUN rust_binary="./target/release/m1-da-light-node"; dest_dir="/tmp/runtime"; \
 FROM scratch
 
 # Copy the build artifact from the builder stage
-COPY --from=builder /tmp/build/target/release/m1-da-light-node /app/m1-da-light-node
+COPY --from=builder /tmp/build/target/release/wait-for-celestia-light-node /app/wait-for-celestia-light-node
 COPY --from=builder /tmp/runtime/nix/store /nix/store
 
 # Set the binary as the entrypoint
-ENTRYPOINT ["/app/m1-da-light-node"]
+ENTRYPOINT ["/app/wait-for-celestia-light-node"]
 
