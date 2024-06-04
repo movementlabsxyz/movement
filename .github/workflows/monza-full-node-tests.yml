@@ -26,4 +26,4 @@ jobs:
 
     - name: Run M1 DA Light Node tests in nix environment
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just monza-full-node build.setup.test.local -t=false"  
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just native monza-full-node build.setup.test.local -t=false"  
