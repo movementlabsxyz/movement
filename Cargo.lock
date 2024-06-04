@@ -6629,6 +6629,7 @@ dependencies = [
  "anyhow",
  "aptos-sdk",
  "async-trait",
+ "futures",
  "itertools 0.12.1",
  "maptos-execution-util",
  "rand 0.7.3",
