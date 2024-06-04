@@ -4,6 +4,7 @@ set -e
 set -a  # Automatically export all variables
 source $DOT_MOVEMENT/env/celestia/.env
 source $DOT_MOVEMENT/env/move/.env
+source $DOT_MOVEMENT/env/monza/.env
 set +a  # Disable automatic export
 
 cargo test -p suzuka-client -- --test-threads=1

@@ -11,6 +11,15 @@ processes:
       build:
         condition: process_completed_successfully
 
+  suzuka-setup:
+    command: |
+      ./scripts/services/suzuka-full-node/setup
+    depends_on:
+      build:
+        condition: process_completed_successfully
+      m1-da-light-node-setup:
+        condition: process_completed_successfully
+
   celestia-setup:
     command: |
       ./scripts/services/celestia/setup
@@ -22,7 +31,9 @@ processes:
     command: |
       exit 0
     depends_on:
-      m1-da-light-node-setup:
+      suzuka-setup:
         condition: process_completed_successfully
       celestia-setup:
         condition: process_completed_successfully
+
+    

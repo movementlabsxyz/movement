@@ -1,0 +1,28 @@
+name: Cargo Check
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run Cargo Check in nix environment
+      run: nix develop --command bash  -c "cargo check"  

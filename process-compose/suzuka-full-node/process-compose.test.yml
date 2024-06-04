@@ -6,7 +6,7 @@ processes:
 
   suzuka-client-tests:
     command: |
-      cargo test -p suzuka-client -- --test-threads=1
+      ./scripts/services/suzuka-full-node/client-tests
     depends_on:
       suzuka-full-node:
         condition: process_healthy

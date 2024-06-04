@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
 set -e
-export MOVE_ENV_STORAGE_PATH="$DOT_MOVEMENT/env/celestia"
-export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
-export MOVE_ROCKS_PATH="$DOT_MOVEMENT/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
 
-env | grep MOVE_ > "$MOVE_ENV_STORAGE_PATH/.env"
+set -a  # Automatically export all variables
+source $DOT_MOVEMENT/env/celestia/.env
+source $DOT_MOVEMENT/env/move/.env
+set +a
+
+export MONZA_ENV_STORAGE_PATH="$DOT_MOVEMENT/env/monza"
+mkdir -p "$MONZA_ENV_STORAGE_PATH"
+
+eval $(./target/$CARGO_PROFILE/suzuka-config)
+
+env | grep MONZA_ > "$MONZA_ENV_STORAGE_PATH/.env"

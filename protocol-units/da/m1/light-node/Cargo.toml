@@ -40,7 +40,7 @@ tracing-subscriber = { workspace = true, optional = true }
 
 [features]
 default = [
-    # "sequencer",
+    "sequencer",
     "logging"
 ]
 logging = [
