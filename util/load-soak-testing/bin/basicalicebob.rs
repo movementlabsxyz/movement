@@ -43,9 +43,12 @@ impl BasicScenario {
 // Scenario trait implementation.
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
-	async fn run(self: Box<Self>) -> Result<usize> {
+	async fn run(self: Box<Self>) -> Result<()> {
+		let _ =
+			tokio::time::sleep(tokio::time::Duration::from_millis(1000 * (self.id as u64))).await;
+
 		let suzuka_config = maptos_execution_util::config::Config::try_from_env()
-			.context("Failed to create the config")?;
+			.context("Failed to create the suzuka_config")?;
 		let node_url = Url::from_str(
 			format!("http://{}", suzuka_config.aptos_config.aptos_rest_listen_url.as_str())
 				.as_str(),
@@ -71,32 +74,28 @@ impl Scenario for BasicScenario {
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 
 		// Print account addresses.
-		tracing::info!("\n=== Addresses ===");
-		tracing::info!("Alice: {}", alice.address().to_hex_literal());
-		tracing::info!("Bob: {}", bob.address().to_hex_literal());
+		tracing::info!(
+			"Scenario:{}\n=== Addresses ===\nAlice: {}\nBob: {}",
+			self.id,
+			alice.address().to_hex_literal(),
+			bob.address().to_hex_literal()
+		);
 
 		// Create the accounts on chain, but only fund Alice.
 		// :!:>section_3
-		faucet_client
-			.fund(alice.address(), 100_000_000)
-			.await
-			.context("Failed to fund Alice's account")?;
-		faucet_client
-			.create_account(bob.address())
-			.await
-			.context("Failed to fund Bob's account")?; // <:!:section_3
+		faucet_client.fund(alice.address(), 100_000_000).await?;
+		//			.context("Failed to fund Alice's account")?;
+		faucet_client.create_account(bob.address()).await?;
+		//			.context("Failed to fund Bob's account")?; // <:!:section_3
 
 		// Print initial balances.
-		tracing::info!("\n=== Initial Balances ===");
 		tracing::info!(
-			"Alice: {:?}",
+			"Scenario:{}\n=== Initial Balances ===\nAlice: {:?}\nBob: {:?}",
+			self.id,
 			coin_client
 				.get_account_balance(&alice.address())
 				.await
-				.context("Failed to get Alice's account balance")?
-		);
-		tracing::info!(
-			"Bob: {:?}",
+				.context("Failed to get Alice's account balance")?,
 			coin_client
 				.get_account_balance(&bob.address())
 				.await
@@ -114,25 +113,24 @@ impl Scenario for BasicScenario {
 			.context("Failed when waiting for the transfer transaction")?;
 
 		// Print intermediate balances.
-		tracing::info!("\n=== Intermediate Balances ===");
-		// :!:>section_4
 		tracing::info!(
-			"Alice: {:?}",
+			"Scenario:{}\n=== Intermediate Balances ===\nAlice: {:?}\nBob: {:?}",
+			self.id,
 			coin_client
 				.get_account_balance(&alice.address())
 				.await
-				.context("Failed to get Alice's account balance the second time")?
-		);
-		tracing::info!(
-			"Bob: {:?}",
+				.context("Failed to get Alice's account balance the second time")?,
 			coin_client
 				.get_account_balance(&bob.address())
 				.await
 				.context("Failed to get Bob's account balance the second time")?
-		); // <:!:section_4
+		);
 
 		self.log_exec_info(&format!("Scenario:{} ended", self.id));
 
-		Ok(self.id)
+		Ok(())
+	}
+	fn get_id(&self) -> usize {
+		self.id
 	}
 }

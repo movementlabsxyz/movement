@@ -20,7 +20,9 @@ use anyhow::Result;
 ///  Return the execution result (Result<(), TestExecutionError>) and a usize, id of the scenario or any usize.
 #[async_trait::async_trait]
 pub trait Scenario {
-	async fn run(self: Box<Self>) -> Result<usize>;
+	async fn run(self: Box<Self>) -> Result<()>;
+
+	fn get_id(&self) -> usize;
 
 	fn log_exec_info(&self, msg: &str) {
 		tracing::info!(target:EXEC_LOG_FILTER, msg);

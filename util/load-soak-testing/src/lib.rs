@@ -61,7 +61,7 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 			})),
 		)
 		.init();
-
+	tracing::info!("Load and Soak test inited with config:{config:?}");
 	Ok(())
 }
 
@@ -70,6 +70,7 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 /// * logfile_path: the file where log WARN and ERROR are written
 /// * execfile_path: File where execution data are written to be processed later.
 /// * define the number of started scenario per client. nb_scenarios / nb_scenario_per_client define the number of client.
+#[derive(Clone, Debug)]
 pub struct ExecutionConfig {
 	kind: TestKind,
 	logfile_path: String,
@@ -99,11 +100,19 @@ impl ExecutionConfig {
 
 impl Default for ExecutionConfig {
 	fn default() -> Self {
+		let nb_scenarios: usize = std::env::var("LOADTEST_NB_SCENARIO")
+			.unwrap_or("10".to_string())
+			.parse()
+			.unwrap_or(10);
+		let nb_scenario_per_client: usize = std::env::var("LOADTEST_NB_SCENARIO_PER_CLIENT")
+			.unwrap_or("2".to_string())
+			.parse()
+			.unwrap_or(2);
 		ExecutionConfig {
-			kind: TestKind::build_load_test(10),
+			kind: TestKind::build_load_test(nb_scenarios),
 			logfile_path: "log_file.txt".to_string(),
 			execfile_path: "test_result.txt".to_string(),
-			nb_scenario_per_client: 2,
+			nb_scenario_per_client,
 		}
 	}
 }
@@ -111,6 +120,7 @@ impl Default for ExecutionConfig {
 /// Define the type of test to Run:
 /// * Load: try to run all scenario (nb_scenarios) concurrently
 /// * Soak: start min_scenarios at first then increase the number to max_scenarios the decrease and do nb_clycle during duration
+#[derive(Clone, Debug)]
 pub enum TestKind {
 	Load {
 		nb_scenarios: usize,
@@ -160,8 +170,8 @@ pub fn execute_test(config: ExecutionConfig, create_scanario: &CreateScenarioFn)
 
 	match config.kind {
 		TestKind::Load { nb_scenarios } => {
-			//build chunk of ids
-			let ids: Vec<_> = (0..nb_scenarios).collect();
+			//build chunk of ids. Start at 1. 0 mean in result execution fail before scenario can execute.
+			let ids: Vec<_> = (1..=nb_scenarios).collect();
 			let chunks: Vec<_> = ids
 				.into_iter()
 				.chunks(config.nb_scenario_per_client)
@@ -184,16 +194,6 @@ pub fn execute_test(config: ExecutionConfig, create_scanario: &CreateScenarioFn)
 >>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 					let client = TestClient::new(scenarios);
 					client.run_scenarios()
-					// match client.run_scenarios() {
-					// 	Ok(exec_result) => exec_result,
-
-					// 	},
-					// 	Err(err) => {
-					// 		tracing::info!(target:EXEC_LOG_FILTER, "Exec error: {err}");
-					// 		tracing::warn!("Scenario error during execution: {err}");
-
-					// 	},
-					// }
 				})
 				.collect();
 			let average_exec_time =
@@ -202,6 +202,7 @@ pub fn execute_test(config: ExecutionConfig, create_scanario: &CreateScenarioFn)
 			let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
 				.unwrap_or("Metric  execution result serialization error.".to_string());
 			tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
+			tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
 		},
 		TestKind::Soak { min_scenarios, max_scenarios, duration, nb_clycle } => {
 			todo!()
@@ -254,25 +255,31 @@ impl TestClient {
 		let mut set = tokio::task::JoinSet::new();
 		let start_time = std::time::Instant::now();
 		self.scenarios.into_iter().for_each(|scenario| {
-			set.spawn(scenario.run());
+			set.spawn(futures::future::join(
+				futures::future::ready(scenario.get_id()),
+				scenario.run(),
+			));
 		});
 		let mut scenario_results = vec![];
 		while let Some(res) = set.join_next().await {
-			match res {
-				Ok(Ok(id)) => {
-					let elapse = start_time.elapsed().as_millis();
-					let metrics = ScenarioExecMetric::new(id, elapse);
-					let metrics_scenario = serde_json::to_string(&metrics)
-						.unwrap_or("Metric serialization error.".to_string());
-					tracing::info!(target:EXEC_LOG_FILTER, metrics_scenario);
-					scenario_results.push(metrics);
-				},
-				Ok(Err(err)) => {
-					let log = format!("Scenario execution failed because: {err}");
+			let elapse = start_time.elapsed().as_millis();
+			let metrics = match res {
+				Ok((id, Ok(()))) => ScenarioExecMetric::new_ok(id, elapse),
+				Ok((id, Err(err))) => {
+					let log = format!("Scenario:{id} execution failed because: {err}");
 					tracing::info!(target:EXEC_LOG_FILTER, log);
+					tracing::warn!(log);
+					ScenarioExecMetric::new_err(id, elapse)
 				},
-				Err(err) => tracing::warn!("Error during scenario spawning: {err}"),
-			}
+				Err(err) => {
+					tracing::warn!("Error during scenario spawning: {err}");
+					ScenarioExecMetric::new_err(0, elapse)
+				},
+			};
+			let metrics_scenario = serde_json::to_string(&metrics)
+				.unwrap_or("Metric serialization error.".to_string());
+			tracing::info!(target:EXEC_LOG_FILTER, metrics_scenario);
+			scenario_results.push(metrics);
 		}
 		scenario_results
 	}
@@ -282,12 +289,29 @@ impl TestClient {
 struct ScenarioExecMetric {
 	scenario_id: usize,
 	elaspse_millli: u128,
+	result: ScenarioExecResult,
 }
 
 impl ScenarioExecMetric {
-	fn new(scenario_id: usize, elaspse_millli: u128) -> Self {
-		ScenarioExecMetric { scenario_id, elaspse_millli }
+	fn new_ok(scenario_id: usize, elaspse_millli: u128) -> Self {
+		ScenarioExecMetric { scenario_id, elaspse_millli, result: ScenarioExecResult::Ok }
 	}
+	fn new_err(scenario_id: usize, elaspse_millli: u128) -> Self {
+		ScenarioExecMetric { scenario_id, elaspse_millli, result: ScenarioExecResult::Fail }
+	}
+
+	fn is_ok(&self) -> bool {
+		match self.result {
+			ScenarioExecResult::Ok => true,
+			ScenarioExecResult::Fail => false,
+		}
+	}
+}
+
+#[derive(Serialize, Deserialize)]
+enum ScenarioExecResult {
+	Ok,
+	Fail,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -298,11 +322,19 @@ struct ClientExecResult {
 impl ClientExecResult {
 	fn new(sceanarios: Vec<ScenarioExecMetric>) -> Self {
 		ClientExecResult {
-			avarage_execution_time_milli: Self::calcualte_avarage_exec_time_milli(&sceanarios),
+			avarage_execution_time_milli: Self::calcualte_average_exec_time_milli(&sceanarios),
 		}
 	}
 
-	pub fn calcualte_avarage_exec_time_milli(sceanarios: &[ScenarioExecMetric]) -> u128 {
-		sceanarios.iter().map(|s| s.elaspse_millli).sum::<u128>() / sceanarios.len() as u128
+	pub fn calcualte_average_exec_time_milli(sceanarios: &[ScenarioExecMetric]) -> u128 {
+		if !sceanarios.is_empty() {
+			sceanarios
+				.iter()
+				.filter_map(|s| if s.is_ok() { Some(s.elaspse_millli) } else { None })
+				.sum::<u128>() / sceanarios.len() as u128
+		} else {
+			tracing::warn!("No result available average exec time is 0");
+			0
+		}
 	}
 }
