@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Building monza-config..."
+cargo build $CARGO_PROFILE_FLAGS --bin monza-config
+echo "Built monza-config!"
+
+echo "Building monza-full-node..."
+cargo build $CARGO_PROFILE_FLAGS -p monza-full-node
+echo "Built monza-full-node!"

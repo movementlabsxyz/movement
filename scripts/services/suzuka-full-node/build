@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+
+echo "Building suzuka-config..."
+cargo build $CARGO_PROFILE_FLAGS --bin suzuka-config
+echo "Built suzuka-config!"
+
+echo "Building suzuka-full-node..."
+cargo build $CARGO_PROFILE_FLAGS -p suzuka-full-node
+echo "Built suzuka-full-node!"

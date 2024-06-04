@@ -6,7 +6,7 @@ processes:
 
   monza-client-tests:
     command: |
-      cargo test -p monza-client -- --test-threads=1
+      ./scripts/services/monza-full-node/client-tests
     depends_on:
       monza-full-node:
         condition: process_healthy

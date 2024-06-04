@@ -1,6 +1,8 @@
 use tokio_stream::Stream;
 use tracing::{info, debug};
 
+use std::fmt::Debug;
+
 use celestia_rpc::HeaderClient;
 
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
@@ -17,6 +19,14 @@ use crate::v1::{
 pub struct LightNodeV1 {
     pub pass_through : LightNodeV1PassThrough,
     pub memseq : memseq::Memseq<memseq::RocksdbMempool>
+}
+
+impl Debug for LightNodeV1 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LightNodeV1")
+            .field("pass_through", &self.pass_through)
+            .finish()
+    }
 }
 
 impl LightNodeV1Operations for LightNodeV1 {

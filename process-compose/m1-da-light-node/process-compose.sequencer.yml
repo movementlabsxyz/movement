@@ -6,7 +6,7 @@ processes:
 
   m1-da-light-node:
     command: |
-      cargo run -p m1-da-light-node --features "sequencer"
+      ./scripts/services/m1-da-light-node/run
     depends_on:
       m1-da-light-node-verifier-tests:
         condition: process_completed_successfully

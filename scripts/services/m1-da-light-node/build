@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+set -e
+
 : ${MOVEMENT_PREBUILT:=false}
 export MOVEMENT_PREBUILT
 : ${CARGO_PROFILE:=debug}
@@ -11,5 +13,5 @@ else
 fi
 
 echo "Building m1-da-light-node..."
-cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node
+cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node --features "sequencer"
 echo "Built m1-da-light-node!"

@@ -6,6 +6,4 @@ source $DOT_MOVEMENT/env/celestia/.env
 source $DOT_MOVEMENT/env/move/.env
 set +a  # Disable automatic export
 
-echo "Running m1-da-light-node..."
-./target/$CARGO_PROFILE/m1-da-light-node
-echo "Did something weird happen? Press enter to continue..."
+cargo test -p suzuka-client -- --test-threads=1

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::fmt::{self, Debug, Formatter};
 
 use tokio_stream::{StreamExt, Stream};
 use tokio::sync::RwLock;
@@ -27,6 +28,16 @@ pub struct LightNodeV1 {
     pub default_client : Arc<Client>,
     pub verification_mode : Arc<RwLock<VerificationMode>>,
     pub verifier : Arc<Box<dyn Verifier + Send + Sync>>,
+}
+
+impl Debug for LightNodeV1 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LightNodeV1")
+            .field("celestia_url", &self.celestia_url)
+            .field("celestia_token", &self.celestia_token)
+            .field("celestia_namespace", &self.celestia_namespace)
+            .finish()
+    }
 }
 
 impl LightNodeV1Operations for LightNodeV1 {
