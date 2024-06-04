@@ -24,6 +24,7 @@ path = "bin/basicalicebob.rs"
 anyhow = { workspace = true }
 aptos-sdk = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
 itertools = { workspace = true, default-features = true }
 maptos-execution-util = { workspace = true }
 rand = { workspace = true }
