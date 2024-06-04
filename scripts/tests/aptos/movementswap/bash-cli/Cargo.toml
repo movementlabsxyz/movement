@@ -20,6 +20,8 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
+movement-swap = { git = "https://github.com/movementlabsxyz/movementswap-core", branch = "main" }
+
 
 
 [lints]

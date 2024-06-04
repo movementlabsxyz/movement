@@ -1,5 +1,6 @@
 [dependencies]
 aptos-sdk = { git = "https://github.com/aptos-labs/aptos-core", branch = "devnet" }
+dotenv = "0.15.0"
 
 [patch.crates-io]
 merlin = { git = "https://github.com/aptos-labs/merlin" }
