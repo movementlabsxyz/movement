@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+set -a  # Automatically export all variables
 source $DOT_MOVEMENT/env/celestia/.env
+set +a  # Disable automatic export
 
 LOG_LEVEL=$(echo "$CELESTIA_LOG_LEVEL" | awk '{print tolower($0)}')
 celestia-appd start --grpc.enable --home $CELESTIA_APP_PATH --log_level $LOG_LEVEL

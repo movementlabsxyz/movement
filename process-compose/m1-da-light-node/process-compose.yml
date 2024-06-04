@@ -38,11 +38,8 @@ processes:
 
   m1-da-light-node:
     command: |
-      ./target/$CARGO_PROFILE/m1-da-light-node
+      ./scripts/services/m1-da-light-node/run
     depends_on:
-      # todo: tidy up
-      m1-da-light-node-verifier-tests:
-        condition: process_completed_successfully
       celestia-light-node:
         condition: process_healthy
     readiness_probe:

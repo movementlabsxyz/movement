@@ -5,4 +5,5 @@ set -a  # Automatically export all variables
 source $DOT_MOVEMENT/env/celestia/.env
 set +a  # Disable automatic export
 
-./target/$CARGO_PROFILE/wait-for-celestia-light-node
+cargo test -p m1-da-light-node-verifier -- --test-threads=1
+cargo test -p m1-da-light-node-client -- --test-threads=1

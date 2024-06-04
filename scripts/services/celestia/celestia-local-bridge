@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
+set -a  # Automatically export all variables
 source $DOT_MOVEMENT/env/celestia/.env
+set +a  # Disable automatic export
 
 GENESIS=
 CNT=0

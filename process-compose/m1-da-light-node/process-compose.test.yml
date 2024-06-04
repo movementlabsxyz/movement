@@ -4,31 +4,13 @@ environment:
 
 processes:
 
-  m1-da-light-node-verifier-tests:
+  m1-da-light-node-e2e-tests:
     command: |
-      cargo test -p m1-da-light-node-verifier -- --test-threads=1
-    depends_on:
-      celestia-light-node: 
-        condition: process_healthy
-      celestia-light-node-synced:
-        condition: process_completed_successfully
-
-    readiness_probe:
-      exec:
-        command: echo "true"
-
-  m1-da-light-node-client-tests:
-    command: |
-      sleep 10
-      cargo test -p m1-da-light-node-client -- --test-threads=1
+      ./scripts/services/m1-da-light-node/e2e-tests
     depends_on:
       celestia-light-node: 
         condition: process_healthy
       m1-da-light-node: 
         condition: process_healthy
-      m1-da-light-node-verifier-tests:
-        condition: process_completed_successfully
     availability:
-      # NOTE: `restart: exit_on_failure` is not needed since
-      # exit_on_end implies it.
       exit_on_end: true
