@@ -1,14 +1,24 @@
 use anyhow::Result;
+use std::sync::Arc;
 /// A simple demo scenario that sleep a few milli second and log some messages.
 /// To run it use: cargo run --release --bin demoscenario
-use load_soak_testing::execute_test;
-use load_soak_testing::init_test;
-use load_soak_testing::ExecutionConfig;
-use load_soak_testing::Scenario;
+use suzuka_load_soak_testing::execute_test;
+use suzuka_load_soak_testing::init_test;
+use suzuka_load_soak_testing::ExecutionConfig;
+use suzuka_load_soak_testing::Scenario;
+use suzuka_load_soak_testing::TestKind;
 
 fn main() {
 	// Define the Test config. Use the default parameters.
-	let config = ExecutionConfig::default();
+	let mut config = ExecutionConfig::default();
+
+	//define soak test. Remove this line for load test.
+	config.kind = TestKind::Soak {
+		min_scenarios: 6,
+		max_scenarios: 10,
+		duration: std::time::Duration::from_secs(20),
+		nb_clycle: 4,
+	};
 
 	// Init the Test before execution
 	if let Err(err) = init_test(&config) {
@@ -16,7 +26,7 @@ fn main() {
 	}
 
 	// Execute the test.
-	let result = execute_test(config, &create_demo_scenario);
+	let result = execute_test(config, Arc::new(create_demo_scenario));
 	tracing::info!("End Test with result {result:?}",);
 }
 
@@ -45,9 +55,5 @@ impl Scenario for ScenarioDemo {
 		// Trace in the json formated execution log file.
 		self.log_exec_info(&format!("Scenario:{} ended", self.id));
 		Ok(())
-	}
-
-	fn get_id(&self) -> usize {
-		self.id
 	}
 }
