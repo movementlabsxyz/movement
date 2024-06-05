@@ -12,7 +12,7 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-monza-executor = { workspace = true }
+maptos-executor = { workspace = true }
 m1-da-light-node-client = { workspace = true }
 async-channel = { workspace = true }
 serde_json = { workspace = true }

@@ -8,29 +8,29 @@ use tokio::sync::RwLock;
 use tracing::debug;
 
 use movement_types::Block;
-use monza_executor::{
-    MonzaExecutor,
+use maptos_executor::{
+    Executor,
     ExecutableBlock,
     HashValue,
     Transaction,
     SignatureVerifiedTransaction,
     SignedTransaction,
     ExecutableTransactions,
-    v1::MonzaExecutorV1,
+    v1::ExecutorV1,
 };
 // FIXME: glob imports are bad style
 use m1_da_light_node_client::*;
 use crate::*;
 
 #[derive(Clone)]
-pub struct MonzaPartialNode<T : MonzaExecutor + Send + Sync + Clone> {
+pub struct MonzaPartialNode<T: Executor + Send + Sync + Clone> {
     executor: T,
     transaction_sender : Sender<SignedTransaction>,
     pub transaction_receiver : Receiver<SignedTransaction>,
     light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
+impl <T: Executor + Send + Sync + Clone>MonzaPartialNode<T> {
 
     pub fn new(executor : T, light_node_client: LightNodeServiceClient<tonic::transport::Channel>) -> Self {
         let (transaction_sender, transaction_receiver) = async_channel::unbounded();
@@ -196,7 +196,7 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaPartialNode<T> {
 
 }
 
-impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialNode<T> {
+impl <T: Executor + Send + Sync + Clone>MonzaFullNode for MonzaPartialNode<T> {
     
         /// Runs the services until crash or shutdown.
         async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -233,12 +233,12 @@ impl <T : MonzaExecutor + Send + Sync + Clone>MonzaFullNode for MonzaPartialNode
 
 }
 
-impl MonzaPartialNode<MonzaExecutorV1> {
+impl MonzaPartialNode<ExecutorV1> {
 
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
         let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-        let executor = MonzaExecutorV1::try_from_env(tx).await.context(
+        let executor = ExecutorV1::try_from_env(tx).await.context(
             "Failed to get executor from environment"
         )?;
         Self::bound(executor, light_node_client)
