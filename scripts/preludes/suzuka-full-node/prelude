@@ -53,6 +53,7 @@ if [ "$MOVEMENT_PREBUILT" != "true" ]; then
     cd $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
     curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
     cd tests/typescript-sdk
+    npm install pnpm
     pnpm install
 
 else
