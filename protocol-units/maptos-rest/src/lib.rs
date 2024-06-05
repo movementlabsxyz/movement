@@ -28,5 +28,5 @@ async fn state_root_hash() -> Response {
 pub fn create_routes() -> Route {
 	Route::new()
 		.at("/health", poem::get(health))
-		.at("/state_root_hash", poem::get(state_root_hash))
+		.at("/movement/v1/state-root-hash", poem::get(state_root_hash))
 }
