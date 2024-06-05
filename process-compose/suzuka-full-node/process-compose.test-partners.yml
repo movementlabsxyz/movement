@@ -9,7 +9,7 @@ processes:
     run:
       - name: compile_and_run
         command: |
-          cargo test -p movementswap-load-soak-testing -- --test-thread=1
+          cargo test -p suzuka-full-node --features "load-soak-hey-partners"
     depends_on:
       suzuka-full-node:
         condition: process_healthy

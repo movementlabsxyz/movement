@@ -5,6 +5,7 @@
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/monthly"; 
     naersk.url = "github:nix-community/naersk";
+    typescript.url = "github:microsoft/TypeScript";
   };
 
   outputs = {
@@ -63,6 +64,7 @@
           coreutils
           gcc
           rust
+          typescript
           celestia-node
           celestia-app
           monza-aptos
@@ -101,6 +103,8 @@
         # FIXME: rename, should not be specific to Monza
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
 
+        movementswap-core = import ./nix/movementswap-core.nix { inherit pkgs; };
+
         # m1-da-light-node
         m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
     
@@ -109,6 +113,9 @@
 
           # Monza Aptos
           packages.monza-aptos = monza-aptos;
+
+          # Movement Swap Core
+          packages.movementswap-core = movementswap-core;
 
           # M1 DA Light Node
           packages.m1-da-light-node = m1-da-light-node;
@@ -122,6 +129,7 @@
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
             MONZA_APTOS_PATH = monza-aptos;
+            MOVEMENT_SWAP_PATH = mmovementswap-core;
             OPENSSL_DEV=pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             buildInputs = dependencies;
@@ -130,6 +138,7 @@
             shellHook = ''
               #!/bin/bash -e
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
+              echo "Movementswap path: $MOVEMENT_SWAP_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

@@ -7928,7 +7928,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "movementswap-load-soak-testing"
+name = "load-soak-hey-partners"
 version = "0.3.0"
 dependencies = [
  "itertools 0.12.1",

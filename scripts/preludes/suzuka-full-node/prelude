@@ -42,7 +42,18 @@ if [ "$MOVEMENT_PREBUILT" != "true" ]; then
     echo "Building aptos-faucet-service..."
     cargo build $CARGO_PROFILE_FLAGS -p aptos-faucet-service
     echo "Built aptos-faucet-service!"
+    cargo build $CARGO_PROFILE_FLAGS -p aptos
+    echo "Built aptos cli!"
+    cp ./target/$CARGO_PROFILE/aptos $MOVEMENT_BASE_STORAGE_PATH/aptos
+    PATH="$PATH:$MOVEMENT_BASE_STORAGE_PATH"
     cd $WORKING_DIR
+    # Movement Swap Core
+    echo "Building movement-swap-core..."
+    cp -R "$MOVEMENT_SWAP_CORE_PATH" $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
+    cd $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
+    curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+    cd tests/typescript-sdk
+    pnpm install
 
 else
     echo "MOVEMENT_PREBUILT is set, skipping build."

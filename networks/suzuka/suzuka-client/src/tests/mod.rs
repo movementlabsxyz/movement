@@ -7,6 +7,12 @@ use crate::{
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
+use load_soak_testing::execute_test;
+use load_soak_testing::init_test;
+use load_soak_testing::ExecutionConfig;
+use load_soak_testing::Scenario;
+
+
 
 static SUZUKA_CONFIG : Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
     maptos_execution_util::config::Config::try_from_env().context("Failed to create the config").unwrap()
@@ -135,4 +141,18 @@ async fn test_example_interaction() -> Result<()> {
     );
 
     Ok(())
+}
+
+#[cfg(feature = "load-soak-hey-partners")]
+fn load_soak_hey_partners() {
+	println!("Initialize movementswap test...");
+
+	let config = ExecutionConfig::default();
+	config.logfile_path = "movementswap.log".to_string();
+	config.execfile_path = "~/.movement/movementswap-core/test.sh"to_string();
+	if let Err(err) = init_test(&config) {
+		println!("Test init fail ; {err}",);
+	}
+	let result = execute_test(config);
+	tracing::info!("End Test with result {result:?}",);
 }

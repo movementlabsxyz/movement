@@ -22,3 +22,6 @@ maptos-execution-util = { workspace = true }
 
 [lints]
 workspace = true
+
+[features]
+load-soak-hey-partners = []
