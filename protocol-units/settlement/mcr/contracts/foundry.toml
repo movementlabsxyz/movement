@@ -4,6 +4,8 @@ out = "out"
 libs = ["lib"]
 ffi = true
 gas_limit = 10000000
+build_info = true
+extra_output = ["storageLayout"]
 
 [profile.dependencies]
 openzeppelin = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts", tag = "v4.7.0" }
