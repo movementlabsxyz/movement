@@ -7,8 +7,8 @@ import "./custodian/CustodianToken.sol";
 contract stlkMOVE is LockedToken, CustodianToken {
 
     /**
-     * @dev Initialize the contract
-     * @param initialOwner The address to set as the owner
+    * @dev Initialize the contract
+    * @param underlyingToken The underlying token to wrap
      */
     function initialize(
         IERC20Upgradeable underlyingToken

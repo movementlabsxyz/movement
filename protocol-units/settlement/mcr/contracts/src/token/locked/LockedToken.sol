@@ -22,10 +22,11 @@ contract LockedToken is BaseToken {
     }
 
     /**
-     * @dev Mint new tokens
-     * @param to The address to mint tokens to
-     * @param amount The amount of tokens to mint
-     */
+    * @dev Mint and lock tokens
+    * @param addresses The addresses to mint and lock tokens for
+    * @param amounts The amounts of tokens to mint and lock
+    * @param lockTimes The times to lock the tokens for
+    */
     function mintAndLock(address[] calldata addresses, uint256[] calldata amounts, uint256[] calldata lockTimes) external onlyRole(MINTER_ROLE) {
         require(addresses.length == amounts.length, "Addresses and amounts length mismatch");
         require(addresses.length == lockTimes.length, "Addresses and lock times length mismatch");

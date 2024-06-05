@@ -10,15 +10,14 @@ contract MintableToken is BaseToken {
 
     /**
      * @dev Initialize the contract
-     * @param initialOwner The address to set as the owner
      */
     function initialize(
         string memory name,
         string memory symbol
     ) initializer public {
         super.initialize(name, symbol);
-        _setupRole(MINTER_ADMIN_ROLE, msg.sender);
-        _setupRole(MINTER_ROLE, msg.sender);
+        _grantRole(MINTER_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
     }
     
     /**

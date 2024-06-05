@@ -2,18 +2,15 @@
 pragma solidity ^0.8.19;
 
 import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
 
-contract BaseToken is Initializable, SafeERC20Upgradeable, GovernorTimelockControlUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
+contract BaseToken is Initializable, ERC20Upgradeable, GovernorTimelockControlUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
 
     /**
      * @dev Initialize the contract
-     * @param initialOwner The address to set as the owner
      */
     function initialize(
         string memory name, 
@@ -24,7 +21,7 @@ contract BaseToken is Initializable, SafeERC20Upgradeable, GovernorTimelockContr
         __UUPSUpgradeable_init();
         __GovernorTimelockControl_init();
 
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         _mint(msg.sender, 1000000 * 10 ** decimals());
     }
