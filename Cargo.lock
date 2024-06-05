@@ -6623,27 +6623,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "load-soak-testing"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-sdk",
- "async-trait",
- "futures",
- "itertools 0.12.1",
- "maptos-execution-util",
- "rand 0.7.3",
- "rayon",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
-]
-
-[[package]]
 name = "lock_api"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11062,6 +11041,27 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "suzuka-load-soak-testing"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-sdk",
+ "async-trait",
+ "futures",
+ "itertools 0.12.1",
+ "maptos-execution-util",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]

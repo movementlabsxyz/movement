@@ -6,19 +6,11 @@ processes:
 
   suzuka-client-loadtests:
     command: |
-<<<<<<< HEAD
       LOADTEST_NB_SCENARIO=1 LOADTEST_NB_SCENARIO_PER_CLIENT=1 cargo run -p suzuka-load-soak-testing --bin basicalicebob
-=======
-      LOADTEST_NB_SCENARIO=2 LOADTEST_NB_SCENARIO_PER_CLIENT=2 cargo run -p load-soak-testing --bin basicalicebob
->>>>>>> 341e49c5 (add process-compose execution and change some result management behaviours)
     depends_on:
       suzuka-full-node:
         condition: process_healthy
       suzuka-faucet:
         condition: process_healthy
     availability:
-<<<<<<< HEAD
       exit_on_end: true
-=======
-      exit_on_end: false
->>>>>>> 341e49c5 (add process-compose execution and change some result management behaviours)
