@@ -3,9 +3,9 @@
 resolver = "2"
 
 members = [
-    "protocol-units/execution/maptos/opt-executor",
-    "protocol-units/execution/maptos/fin-view",
-    "protocol-units/execution/maptos/util",
+    "protocol-units/execution/opt-executor",
+    "protocol-units/execution/fin-view",
+    "protocol-units/execution/util",
     "protocol-units/execution/monza/*",
     "protocol-units/execution/suzuka/*",
 
@@ -44,9 +44,9 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## execution/aptos
-maptos-opt-executor = { path = "protocol-units/execution/maptos/opt-executor" }
-maptos-fin-view = { path = "protocol-units/execution/maptos/fin-view" }
-maptos-execution-util = { path = "protocol-units/execution/maptos/util" }
+maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
+maptos-fin-view = { path = "protocol-units/execution/fin-view" }
+maptos-execution-util = { path = "protocol-units/execution/util" }
 ## execution/monza
 monza-executor = { path = "protocol-units/execution/monza/executor" }
 ## execution/suzuka
