@@ -57,6 +57,7 @@ aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
+maptos-fin-view = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
 

@@ -71,7 +71,7 @@ pub struct Executor {
 	/// Context
 	pub context: Arc<Context>,
 	/// The Aptos VM configuration.
-	pub aptos_config: maptos_execution_util::config::just_aptos::Config,
+	pub aptos_config: maptos_execution_util::config::aptos::Config,
 }
 
 impl Executor {
@@ -82,10 +82,10 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config: maptos_execution_util::config::just_aptos::Config,
+		aptos_config: maptos_execution_util::config::aptos::Config,
 	) -> Self {
 		let (_aptos_db, reader_writer) =
-			DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.aptos_db_path));
+			DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.db_path));
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
 		Self {
@@ -179,12 +179,12 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config: maptos_execution_util::config::just_aptos::Config,
+		aptos_config: maptos_execution_util::config::aptos::Config,
 	) -> Result<Self, anyhow::Error> {
 		let (db, signer) = Self::bootstrap_empty_db(
-			&aptos_config.aptos_db_path,
+			&aptos_config.db_path,
 			aptos_config.chain_id.clone(),
-			&aptos_config.aptos_public_key,
+			&aptos_config.public_key,
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
@@ -213,7 +213,7 @@ impl Executor {
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let aptos_config = maptos_execution_util::config::just_aptos::Config::try_from_env()
+		let aptos_config = maptos_execution_util::config::aptos::Config::try_from_env()
 			.context("Failed to create Aptos config")?;
 
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
@@ -331,11 +331,11 @@ impl Executor {
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 		info!(
 			"Starting maptos-opt-executor services at: {:?}",
-			self.aptos_config.aptos_rest_listen_url
+			self.aptos_config.rest_listen_url
 		);
 
 		let api_service = get_api_service(self.context())
-			.server(format!("http://{:?}", self.aptos_config.aptos_rest_listen_url));
+			.server(format!("http://{:?}", self.aptos_config.rest_listen_url));
 
 		let ui = api_service.swagger_ui();
 	
@@ -348,7 +348,7 @@ impl Executor {
 			.with(cors);
 
 		Server::new(TcpListener::bind(
-			self.aptos_config.aptos_rest_listen_url.clone()
+			self.aptos_config.rest_listen_url.clone()
 		))
 			.run(app)
 			.await
@@ -570,7 +570,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.private_key.clone()),
 			0,
 		);
 
@@ -666,7 +666,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.private_key.clone()),
 			0,
 		);
 

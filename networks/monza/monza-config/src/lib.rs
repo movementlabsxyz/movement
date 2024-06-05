@@ -21,11 +21,6 @@ impl Config {
         
     }
 
-    pub fn write_to_env(&self) -> Result<(), anyhow::Error>{
-        self.execution_config.write_to_env()?;
-        Ok(())
-    }
-
     pub fn write_bash_export_string(&self) -> Result<String, anyhow::Error> {
         Ok(format!(
             "{}",

@@ -5,6 +5,7 @@ use aptos_storage_interface::{finality_view::FinalityView as AptosFinalityView, 
 
 use std::sync::Arc;
 
+#[derive(Clone)]
 /// The API view into the finalized state of the chain.
 pub struct FinalityView {
 	inner: Arc<AptosFinalityView<Arc<dyn DbReader>>>,
@@ -17,7 +18,7 @@ impl FinalityView {
 		db_reader: Arc<dyn DbReader>,
 		mempool_client_sender: MempoolClientSender,
 		node_config: NodeConfig,
-		aptos_config: maptos_execution_util::config::just_aptos::Config,
+		aptos_config: &maptos_execution_util::config::aptos::Config,
 	) -> Self {
 		let inner = Arc::new(AptosFinalityView::new(db_reader));
 		let context = Arc::new(Context::new(
