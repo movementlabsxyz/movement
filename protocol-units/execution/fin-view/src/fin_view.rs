@@ -2,7 +2,6 @@ use aptos_api::{Context, runtime::{Apis, get_apis}};
 use aptos_config::config::NodeConfig;
 use aptos_mempool::MempoolClientSender;
 use aptos_storage_interface::{finality_view::FinalityView as AptosFinalityView, DbReader};
-use aptos_types::ledger_info::LedgerInfoWithSignatures;
 
 use std::sync::Arc;
 
@@ -31,14 +30,14 @@ impl FinalityView {
 		Self { inner, context }
 	}
 
-    /// Sets the ledger state as the latest finalized.
+    /// Update the finalized view with the latest block height.
 	///
-	/// The ledger state must be found on the committed chain.
-	pub fn set_finalized_ledger_info(
+	/// The block must be found on the committed chain.
+	pub fn set_finalized_block_height(
 		&self,
-		ledger_info_with_sigs: LedgerInfoWithSignatures,
+		height: u64,
 	) -> Result<(), anyhow::Error> {
-		self.inner.set_finalized_ledger_info(ledger_info_with_sigs)?;
+		self.inner.set_finalized_block_height(height)?;
 		Ok(())
 	}
 
