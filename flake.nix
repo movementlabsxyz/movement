@@ -92,6 +92,43 @@
         # monza-aptos
         # FIXME: rename, should not be specific to Monza
         monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
+
+        dependencies = with pkgs; [
+          rocksdb
+          foundry-bin
+          # solc
+          llvmPackages.bintools
+          openssl
+          openssl.dev
+          libiconv 
+          pkg-config
+          process-compose
+          just
+          jq
+          libclang.lib
+          libz
+          clang
+          pkg-config
+          protobuf
+          rustPlatform.bindgenHook
+          lld
+          coreutils
+          gcc
+          rust
+          celestia-node
+          celestia-app
+          monza-aptos
+        ] ++ lib.optionals stdenv.isDarwin [
+          frameworks.Security
+          frameworks.CoreServices
+          frameworks.SystemConfiguration
+          frameworks.AppKit
+        ] ++ lib.optionals stdenv.isLinux [
+          udev
+          systemd
+          snappy
+          bzip2
+        ];
     
       in
         with pkgs; {
