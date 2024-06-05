@@ -5,6 +5,9 @@ on:
 
 jobs:
   m1-da-light-node:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -32,6 +35,9 @@ jobs:
         ./scripts/movement/build-push-image m1-da-light-node
 
   monza-full-node:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -59,6 +65,9 @@ jobs:
         ./scripts/movement/build-push-image monza-full-node
 
   monza-config:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -86,6 +95,9 @@ jobs:
         ./scripts/movement/build-push-image monza-config
 
   suzuka-full-node:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -114,6 +126,9 @@ jobs:
 
 
   suzuka-config:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -141,6 +156,9 @@ jobs:
         ./scripts/movement/build-push-image suzuka-config
 
   wait-for-celestia-light-node:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -168,6 +186,9 @@ jobs:
         ./scripts/movement/build-push-image suzuka-config
 
   celestia-app:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -195,6 +216,9 @@ jobs:
         ./scripts/movement/build-push-image celestia-app
 
   celestia-node:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -222,6 +246,9 @@ jobs:
         ./scripts/movement/build-push-image celestia-app
 
   faucet:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
