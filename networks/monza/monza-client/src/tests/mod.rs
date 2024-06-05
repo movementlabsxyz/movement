@@ -16,7 +16,7 @@ static MONZA_CONFIG : Lazy<maptos_execution_util::config::Config> = Lazy::new(||
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 
     Url::from_str(
-       format!("http://{}", MONZA_CONFIG.aptos.rest_listen_url.as_str()).as_str()
+       format!("http://{}", MONZA_CONFIG.aptos.opt_listen_url.as_str()).as_str()
     ).unwrap()
     
 });

@@ -1,6 +1,8 @@
 use crate::{BlockMetadata, ExecutableBlock, Executor, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
+use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
+use maptos_execution_util::config::Config;
 use movement_types::BlockCommitment;
 
 use async_channel::Sender;
@@ -9,19 +11,33 @@ use tracing::debug;
 #[derive(Clone)]
 pub struct ExecutorV1 {
 	pub executor: OptExecutor,
+	finality_view: FinalityView,
 	pub transaction_channel: Sender<SignedTransaction>,
 }
 
 impl ExecutorV1 {
-	pub fn new(executor: OptExecutor, transaction_channel: Sender<SignedTransaction>) -> Self {
-		Self { executor, transaction_channel }
+	pub fn new(executor: OptExecutor, finality_view: FinalityView, transaction_channel: Sender<SignedTransaction>) -> Self {
+		Self { executor, finality_view, transaction_channel }
 	}
 
-	pub async fn try_from_env(
+	pub fn try_from_env(
 		transaction_channel: Sender<SignedTransaction>,
 	) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_env()?;
-		Ok(Self::new(executor, transaction_channel))
+		let config = Config::try_from_env()?;
+		Self::try_from_config(transaction_channel, &config)
+	}
+
+	pub fn try_from_config(
+		transaction_channel: Sender<SignedTransaction>,
+		config: &Config,
+	) -> Result<Self, anyhow::Error> {
+		let executor = OptExecutor::try_from_config(&config.aptos)?;
+		let finality_view = FinalityView::try_from_config(
+			executor.db.reader.clone(),
+			executor.mempool_client_sender.clone(),
+			&config.aptos,
+		)?;
+		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
 }
 
@@ -48,14 +64,21 @@ impl Executor for ExecutorV1 {
 		self.executor.execute_block(block).await
 	}
 
+	fn set_finalized_block_height(&self, height: u64) -> Result<(), anyhow::Error> {
+		self.finality_view.set_finalized_block_height(height)
+	}
+
 	/// Sets the transaction channel.
 	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
 		self.transaction_channel = tx_channel;
 	}
 
-	/// Gets the API.
-	fn get_apis(&self) -> Apis {
+	fn get_opt_apis(&self) -> Apis {
 		self.executor.get_apis()
+	}
+
+	fn get_fin_apis(&self) -> Apis {
+		self.finality_view.get_apis()
 	}
 
 	/// Get block head height.
@@ -123,8 +146,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
+		let config = Config::try_from_env()?;
 		let (tx, _rx) = async_channel::unbounded();
-		let executor = ExecutorV1::try_from_env(tx).await?;
+		let executor = ExecutorV1::try_from_config(tx, &config)?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
@@ -137,8 +161,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
+		let config = Config::try_from_env()?;
 		let (tx, rx) = async_channel::unbounded();
-		let executor = ExecutorV1::try_from_env(tx).await?;
+		let executor = ExecutorV1::try_from_config(tx, &config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 
@@ -158,7 +183,7 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		let api = executor.get_apis();
+		let api = executor.get_opt_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		services_handle.abort();
@@ -171,8 +196,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
+		let config = Config::try_from_env()?;
 		let (tx, rx) = async_channel::unbounded();
-		let executor = ExecutorV1::try_from_env(tx).await?;
+		let executor = ExecutorV1::try_from_config(tx, &config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 
@@ -192,7 +218,7 @@ mod tests {
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		let api = executor.get_apis();
+		let api = executor.get_opt_apis();
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 		let received_transaction = rx.recv().await?;
@@ -237,8 +263,9 @@ mod tests {
 			cur_ver: Version,
 		}
 
+		let config = Config::try_from_env()?;
 		let (tx, rx) = async_channel::unbounded::<SignedTransaction>();
-		let executor = ExecutorV1::try_from_env(tx).await?;
+		let executor = ExecutorV1::try_from_config(tx, &config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 		let services_handle = tokio::spawn(async move {
@@ -266,7 +293,7 @@ mod tests {
 
 			let request =
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-			let api = executor.get_apis();
+			let api = executor.get_opt_apis();
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
 			let received_transaction = rx.recv().await?;
@@ -333,12 +360,13 @@ mod tests {
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
-		let executor = ExecutorV1::try_from_env(tx).await?;
+		let config = Config::try_from_env()?;
+		let executor = ExecutorV1::try_from_config(tx, &config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.executor.aptos_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(config.aptos.private_key.clone()),
 			0,
 		);
 
@@ -347,7 +375,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(executor.executor.aptos_config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(config.aptos.chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -381,7 +409,7 @@ mod tests {
 			executor.execute_block_opt(block).await?;
 
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
-			let apis = executor.get_apis();
+			let apis = executor.get_opt_apis();
 			for hash in transaction_hashes {
 				let _ = apis
 					.transactions

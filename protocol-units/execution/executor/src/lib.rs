@@ -29,14 +29,20 @@ pub trait Executor {
         block: ExecutableBlock,
     ) -> Result<BlockCommitment, anyhow::Error>;
 
-	/// Sets the transaction channel.
+    /// Update the height of the latest finalized block
+    fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;
+
+    /// Sets the transaction channel.
 	fn set_tx_channel(
 		&mut self,
 		tx_channel: Sender<SignedTransaction>,
 	);
 
-	/// Gets the dyn API.
-	fn get_apis(&self) -> Apis;
+	/// Gets the API for the opt (optimistic) state.
+	fn get_opt_apis(&self) -> Apis;
+
+	/// Gets the API for the fin (finalized) state.
+	fn get_fin_apis(&self) -> Apis;
 
     /// Get block head height.
     async fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;

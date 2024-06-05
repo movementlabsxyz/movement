@@ -260,7 +260,6 @@ impl SuzukaPartialNode<ExecutorV1> {
 		let (tx, _) = async_channel::unbounded();
 		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 		let executor = ExecutorV1::try_from_env(tx)
-			.await
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();

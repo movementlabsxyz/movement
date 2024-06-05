@@ -6800,6 +6800,7 @@ dependencies = [
  "hex",
  "lazy_static",
  "maptos-execution-util",
+ "maptos-fin-view",
  "maptos-opt-executor",
  "movement-types",
  "poem-openapi",

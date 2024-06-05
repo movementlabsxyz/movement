@@ -238,7 +238,7 @@ impl MonzaPartialNode<ExecutorV1> {
     pub async fn try_from_env() -> Result<Self, anyhow::Error> {
         let (tx, _) = async_channel::unbounded();
         let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-        let executor = ExecutorV1::try_from_env(tx).await.context(
+        let executor = ExecutorV1::try_from_env(tx).context(
             "Failed to get executor from environment"
         )?;
         Self::bound(executor, light_node_client)

@@ -12,7 +12,8 @@ pub mod aptos {
 
     pub mod env_vars {
         pub const CHAIN_ID : &'static str = "MAPTOS_CHAIN_ID";
-        pub const REST_LISTEN_ADDR : &'static str = "MAPTOS_REST_LISTEN_ADDR";
+        pub const OPT_LISTEN_ADDR : &'static str = "MAPTOS_OPT_LISTEN_ADDR";
+        pub const FIN_LISTEN_ADDR : &'static str = "MAPTOS_FIN_LISTEN_ADDR";
         pub const FAUCET_LISTEN_ADDR : &'static str = "MAPTOS_FAUCET_LISTEN_ADDR";
         pub const PRIVATE_KEY : &'static str = "MAPTOS_PRIVATE_KEY";
         pub const PUBLIC_KEY : &'static str = "MAPTOS_PUBLIC_KEY";
@@ -21,31 +22,34 @@ pub mod aptos {
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Config {
-        pub chain_id : ChainId,
-        pub rest_listen_url : String,
-        pub faucet_listen_url : String,
-        pub private_key : Ed25519PrivateKey,
-        pub public_key : Ed25519PublicKey,
-        pub db_path : PathBuf,
+        pub chain_id: ChainId,
+        pub opt_listen_url: String,
+        pub fin_listen_url: String,
+        pub faucet_listen_url: String,
+        pub private_key: Ed25519PrivateKey,
+        pub public_key: Ed25519PublicKey,
+        pub db_path: PathBuf,
     }
 
     impl Config {
 
         pub fn new(
-            chain_id : ChainId, 
-            aptos_rest_listen_url : String, 
-            aptos_faucet_listen_url : String, 
-            aptos_private_key : Ed25519PrivateKey,
-            aptos_public_key : Ed25519PublicKey,
-            aptos_db_path : PathBuf
+            chain_id: ChainId, 
+            opt_listen_url: String, 
+            fin_listen_url: String, 
+            faucet_listen_url: String, 
+            private_key: Ed25519PrivateKey,
+            public_key: Ed25519PublicKey,
+            db_path: PathBuf
         ) -> Self {
             Self {
                 chain_id,
-                rest_listen_url: aptos_rest_listen_url,
-                faucet_listen_url: aptos_faucet_listen_url,
-                private_key: aptos_private_key,
-                public_key: aptos_public_key,
-                db_path: aptos_db_path
+                opt_listen_url,
+                fin_listen_url,
+                faucet_listen_url,
+                private_key,
+                public_key,
+                db_path
             }
         }
 
@@ -58,11 +62,14 @@ pub mod aptos {
                 Err(_) => ChainId::default()
             };
 
-            let rest_listen_url = std::env::var(env_vars::REST_LISTEN_ADDR)
-            .unwrap_or("0.0.0.0:30731".to_string());
+            let opt_listen_url = std::env::var(env_vars::OPT_LISTEN_ADDR)
+                .unwrap_or("0.0.0.0:30731".to_string());
+
+            let fin_listen_url = std::env::var(env_vars::FIN_LISTEN_ADDR)
+                .unwrap_or("0.0.0.0:30731".to_string());
 
             let faucet_listen_url = std::env::var(env_vars::FAUCET_LISTEN_ADDR)
-            .unwrap_or("0.0.0.0:30732".to_string());
+                .unwrap_or("0.0.0.0:30732".to_string());
 
             let private_key = match std::env::var(env_vars::PRIVATE_KEY) {
                 Ok(private_key) => Ed25519PrivateKey::from_encoded_string(private_key.as_str()).context(
@@ -85,7 +92,8 @@ pub mod aptos {
 
             Ok(Self {
                 chain_id,
-                rest_listen_url,
+                opt_listen_url,
+                fin_listen_url,
                 faucet_listen_url,
                 private_key,
                 public_key,
@@ -95,14 +103,21 @@ pub mod aptos {
         }
 
         pub fn write_bash_export_string(&self) -> Result<String, anyhow::Error> {
-            Ok(format!(
-                "export {}={}\nexport {}={}\nexport {}={}\nexport {}={}\nexport {}={}",
-                env_vars::CHAIN_ID, serde_json::to_string(&self.chain_id)?,
-                env_vars::REST_LISTEN_ADDR, self.rest_listen_url,
-                env_vars::FAUCET_LISTEN_ADDR, self.faucet_listen_url,
-                env_vars::PRIVATE_KEY, self.private_key.to_encoded_string()?,
-                env_vars::PUBLIC_KEY, self.public_key.to_encoded_string()?
-            ))
+            let mut out = String::new();
+            for (name, val) in [
+                (env_vars::CHAIN_ID, &serde_json::to_string(&self.chain_id)?),
+                (env_vars::OPT_LISTEN_ADDR, &self.opt_listen_url),
+                (env_vars::FIN_LISTEN_ADDR, &self.fin_listen_url),
+                (env_vars::FAUCET_LISTEN_ADDR, &self.faucet_listen_url),
+                (env_vars::PRIVATE_KEY, &self.private_key.to_encoded_string()?),
+                (env_vars::PUBLIC_KEY, &self.public_key.to_encoded_string()?),
+            ] {
+                out.push_str(name);
+                out.push('=');
+                out.push_str(val);
+                out.push('\n');
+            }
+            Ok(out)
         }
 
     }
