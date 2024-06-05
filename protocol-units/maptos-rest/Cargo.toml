@@ -1,0 +1,22 @@
+[package]
+name = "maptos-rest"
+description = "additional movement rest api endpoints"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "maptos-rest"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+poem = { workspace = true }
+tokio = { workspace = true }

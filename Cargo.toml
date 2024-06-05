@@ -17,6 +17,8 @@ members = [
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/manager",
 
+    "protocol-units/maptos-rest",
+
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -53,7 +55,7 @@ suzuka-fin-executor = { path = "protocol-units/execution/suzuka/fin-executor" }
 suzuka-executor = { path = "protocol-units/execution/suzuka/executor" }
 
 ## types
-movement-types = { path = "util/movement-types"}
+movement-types = { path = "util/movement-types" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
@@ -77,14 +79,13 @@ rand = "0.7.3"
 
 anyhow = "1.0"
 # To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
-risc0-zkvm = { version = "0.21",  features = ["std", "getrandom"] }
+risc0-zkvm = { version = "0.21", features = ["std", "getrandom"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # serialization, deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
 serde = "1.0"
 serde_json = "1.0"
-
 
 auto_impl = "1.2.0"
 chrono = "0.4.37"
@@ -107,7 +108,7 @@ tempfile = "3.5"
 fail = "0.5.1"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
 proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
-poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
+poem = { version = "=1.3.59", features = ["anyhow", "rustls", "test"] }
 poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
 schemars = { version = "0.8.16", features = ["derive"] }
 thiserror = "1.0.50"
@@ -122,11 +123,11 @@ dirs = "3.0.2"
 
 # storage
 rocksdb = { version = "0.21.0", features = [
-  "snappy",
-  "lz4",
-  "zstd",
-  "zlib",
-  "multi-threaded-cf",
+    "snappy",
+    "lz4",
+    "zstd",
+    "zlib",
+    "multi-threaded-cf",
 ], default-features = false }
 
 # cryptography
@@ -134,14 +135,14 @@ jmt = "0.9.0"
 trie-db = "0.28.0"
 
 # for jmt
-digest = "0.10" 
+digest = "0.10"
 hashbrown = "0.14.3"
 itertools = { version = "0.12.1", default-features = false }
 mirai-annotations = "1.10.1"
 num-derive = "0.4.2"
 num-traits = "0.2.14"
-parking_lot = { version = "0.12.1" } 
-blake3 = { version = "1.4.0", features = ["traits-preview"] } 
+parking_lot = { version = "0.12.1" }
+blake3 = { version = "1.4.0", features = ["traits-preview"] }
 ics23 = { version = "0.11.0" }
 
 proptest-derive = "0.4"
