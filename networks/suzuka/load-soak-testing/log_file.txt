@@ -1,0 +1,2 @@
+[2m2024-06-05T12:24:47.398449Z[0m [33m WARN[0m [2msuzuka_load_soak_testing[0m[2m:[0m No result available average exec time is 0
+[2m2024-06-05T12:24:47.398468Z[0m [33m WARN[0m [2msuzuka_load_soak_testing[0m[2m:[0m No result available average exec time is 0

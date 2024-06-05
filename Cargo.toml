@@ -28,6 +28,7 @@ members = [
     "networks/suzuka/suzuka-client",
     "networks/suzuka/suzuka-config",
     "networks/suzuka/suzuka-full-node",
+    "networks/suzuka/load-soak-testing",
 ]
 
 [workspace.package]
