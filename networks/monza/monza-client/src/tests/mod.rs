@@ -136,9 +136,12 @@ async fn test_example_interaction() -> Result<()> {
 			.context("Failed to get Bob's account balance the second time")?
 	);
 
+<<<<<<< HEAD
 	let (tx, _rx) = async_channel::unbounded();
 	let executor = SuzukaExecutorV1::try_from_env(tx).await?;
 	let api = executor.get_apis();
 
+=======
+>>>>>>> main
 	Ok(())
 }

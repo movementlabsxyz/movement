@@ -31,7 +31,7 @@ impl<T: MonzaExecutor + Send + Sync + Clone> MonzaPartialNode<T> {
 	) -> Self {
 		let (transaction_sender, transaction_receiver) = async_channel::unbounded();
 		Self {
-			executor: executor,
+			executor,
 			transaction_sender,
 			transaction_receiver,
 			light_node_client: Arc::new(RwLock::new(light_node_client)),
