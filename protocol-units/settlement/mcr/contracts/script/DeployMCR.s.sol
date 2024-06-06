@@ -1,11 +1,11 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "../src/MCR.sol";
+// import "../src/MCR.sol";
 
 contract DeployMCR is Script {
     function run() external {
-        vm.startBroadcast();
+        /*vm.startBroadcast();
 
         MCR mcr = new MCR(
             5, 
@@ -14,7 +14,7 @@ contract DeployMCR is Script {
             100 ether, // each genesis validator can stake up to 100 ether
             0
         );
-        vm.stopBroadcast();
+        vm.stopBroadcast();*/
 
         // Comment because the Genesis ceremony works (Assert ok)
         // But in Rust Genesis is not done.

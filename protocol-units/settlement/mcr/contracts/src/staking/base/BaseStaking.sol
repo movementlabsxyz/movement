@@ -11,16 +11,13 @@ contract BaseStaking is Initializable, AccessControlUpgradeable, UUPSUpgradeable
     /**
      * @dev Initialize the contract
      */
-    function initialize(
-        
-    ) initializer public virtual {
+    function initialize() initializer public virtual {
         __AccessControl_init();
         __UUPSUpgradeable_init();
         // __GovernorTimelockControl_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        _mint(address(this), 1000000 * 10 ** decimals());
     }
 
     /**
