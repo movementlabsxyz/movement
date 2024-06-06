@@ -2,7 +2,7 @@ use crate::{BlockMetadata, ExecutableBlock, Executor, HashValue, SignedTransacti
 use aptos_api::runtime::Apis;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
-use maptos_execution_util::config::Config;
+use maptos_execution_util::config::aptos::Config;
 use movement_types::BlockCommitment;
 
 use async_channel::Sender;
@@ -32,11 +32,11 @@ impl ExecutorV1 {
 		transaction_channel: Sender<SignedTransaction>,
 		config: &Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_config(&config.aptos)?;
+		let executor = OptExecutor::try_from_config(&config)?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),
-			&config.aptos,
+			&config,
 		)?;
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
@@ -368,7 +368,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.aptos.private_key.clone()),
+			AccountKey::from_private_key(config.private_key.clone()),
 			0,
 		);
 
@@ -377,7 +377,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.aptos.chain_id.clone());
+		let tx_factory = TransactionFactory::new(config.chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -419,6 +419,79 @@ mod tests {
 					.await?;
 			}
 		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_set_finalized_block_height_get_fin_api() -> Result<(), anyhow::Error> {
+		// Create an executor instance from the environment configuration.
+		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
+		let config = Config::try_from_env()?;
+		let executor = ExecutorV1::try_from_config(tx, &config)?;
+
+		// Initialize a root account using a predefined keypair and the test root address.
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(config.private_key.clone()),
+			0,
+		);
+
+		// Seed for random number generator, used here to generate predictable results in a test environment.
+		let seed = [4u8; 32];
+		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
+
+		// Create a transaction factory with the chain ID of the executor.
+		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+		let mut transaction_hashes = Vec::new();
+
+		// Simulate the execution of multiple blocks.
+		for _ in 0..3 {
+			let block_id = HashValue::random(); // Generate a random block ID for each block.
+			let block_metadata = executor.build_block_metadata(
+				block_id.clone(),
+				chrono::Utc::now().timestamp_micros() as u64,
+			).await.unwrap();
+	
+			// Generate new accounts and create a transaction for each block.
+			let mut transactions = Vec::new();
+			transactions.push(Transaction::BlockMetadata(block_metadata));
+			let new_account = LocalAccount::generate(&mut rng);
+			let user_account_creation_tx = root_account.sign_with_transaction_builder(
+				tx_factory.create_user_account(new_account.public_key()),
+			);
+			let tx_hash = user_account_creation_tx.clone().committed_hash();
+			transaction_hashes.push(tx_hash);
+			transactions.push(Transaction::UserTransaction(user_account_creation_tx));
+
+			// Group all transactions into an unsharded block for execution.
+			let executable_transactions = ExecutableTransactions::Unsharded(
+				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
+			);
+			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
+			executor.execute_block_opt(block).await?;
+		}
+
+		// Set the fin height
+		executor.set_finalized_block_height(2)?;
+
+		// Retrieve the executor's fin API instance
+		let apis = executor.get_fin_apis();
+
+		// Fetch the transaction in block 2
+		let _ = apis
+			.transactions
+			.get_transaction_by_hash_inner(&AcceptType::Bcs, transaction_hashes[1].into())
+			.await?;
+
+		// The API method will not resolve because the transaction is "pending"
+		// in the view of the finalized chain. Go through the context to check
+		// that the transaction is not present in the fin state view.
+		let context = apis.transactions.context.clone();
+		let ledger_info = context.get_latest_ledger_info_wrapped()?;
+		let opt = context
+			.get_transaction_by_hash(transaction_hashes[2].into(), ledger_info.version())?;
+		assert!(opt.is_none(), "transaction from opt block is found in the fin view");
 
 		Ok(())
 	}
