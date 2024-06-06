@@ -1,8 +1,8 @@
-use crate::{BlockMetadata, ExecutableBlock, DynOptFinExecutor, HashValue, SignedTransaction};
+use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
+use maptos_execution_util::config::aptos::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
-use maptos_execution_util::config::aptos::Config;
 use movement_types::BlockCommitment;
 
 use async_channel::Sender;
@@ -17,7 +17,11 @@ pub struct Executor {
 }
 
 impl Executor {
-	pub fn new(executor: OptExecutor, finality_view: FinalityView, transaction_channel: Sender<SignedTransaction>) -> Self {
+	pub fn new(
+		executor: OptExecutor,
+		finality_view: FinalityView,
+		transaction_channel: Sender<SignedTransaction>,
+	) -> Self {
 		Self { executor, finality_view, transaction_channel }
 	}
 
@@ -46,10 +50,7 @@ impl Executor {
 impl DynOptFinExecutor for Executor {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(
-			self.executor.run_service(),
-			self.finality_view.run_service(),
-		)?;
+		tokio::try_join!(self.executor.run_service(), self.finality_view.run_service(),)?;
 		Ok(())
 	}
 
@@ -307,14 +308,22 @@ mod tests {
 
 			// Now execute the block
 			let block_id = HashValue::random();
-			let block_metadata = executor.build_block_metadata(
-				block_id.clone(),
-				chrono::Utc::now().timestamp_micros() as u64,
-			).await.unwrap();
-			let txs = ExecutableTransactions::Unsharded([
-				Transaction::BlockMetadata(block_metadata),
-				Transaction::UserTransaction(received_transaction),
-			].into_iter().map(SignatureVerifiedTransaction::Valid).collect());
+			let block_metadata = executor
+				.build_block_metadata(
+					block_id.clone(),
+					chrono::Utc::now().timestamp_micros() as u64,
+				)
+				.await
+				.unwrap();
+			let txs = ExecutableTransactions::Unsharded(
+				[
+					Transaction::BlockMetadata(block_metadata),
+					Transaction::UserTransaction(received_transaction),
+				]
+				.into_iter()
+				.map(SignatureVerifiedTransaction::Valid)
+				.collect(),
+			);
 			let block = ExecutableBlock::new(block_id.clone(), txs);
 			executor.execute_block_opt(block).await?;
 
@@ -387,11 +396,14 @@ mod tests {
 		for _ in 0..10 {
 			// For example, create and execute 3 blocks.
 			let block_id = HashValue::random(); // Generate a random block ID for each block.
-			let block_metadata = executor.build_block_metadata(
-				block_id.clone(),
-				chrono::Utc::now().timestamp_micros() as u64,
-			).await.unwrap();
-	
+			let block_metadata = executor
+				.build_block_metadata(
+					block_id.clone(),
+					chrono::Utc::now().timestamp_micros() as u64,
+				)
+				.await
+				.unwrap();
+
 			// Generate new accounts and create transactions for each block.
 			let mut transactions = Vec::new();
 			let mut transaction_hashes = Vec::new();
@@ -452,11 +464,14 @@ mod tests {
 		// Simulate the execution of multiple blocks.
 		for _ in 0..3 {
 			let block_id = HashValue::random(); // Generate a random block ID for each block.
-			let block_metadata = executor.build_block_metadata(
-				block_id.clone(),
-				chrono::Utc::now().timestamp_micros() as u64,
-			).await.unwrap();
-	
+			let block_metadata = executor
+				.build_block_metadata(
+					block_id.clone(),
+					chrono::Utc::now().timestamp_micros() as u64,
+				)
+				.await
+				.unwrap();
+
 			// Generate new accounts and create a transaction for each block.
 			let mut transactions = Vec::new();
 			transactions.push(Transaction::BlockMetadata(block_metadata));
@@ -493,8 +508,8 @@ mod tests {
 		// that the transaction is not present in the fin state view.
 		let context = apis.transactions.context.clone();
 		let ledger_info = context.get_latest_ledger_info_wrapped()?;
-		let opt = context
-			.get_transaction_by_hash(transaction_hashes[2].into(), ledger_info.version())?;
+		let opt =
+			context.get_transaction_by_hash(transaction_hashes[2].into(), ledger_info.version())?;
 		assert!(opt.is_none(), "transaction from opt block is found in the fin view");
 
 		Ok(())

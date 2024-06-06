@@ -1,11 +1,14 @@
-use aptos_api::{Context, runtime::{Apis, get_apis, get_api_service}};
+use aptos_api::{
+	runtime::{get_api_service, get_apis, Apis},
+	Context,
+};
 use aptos_config::config::NodeConfig;
 use aptos_mempool::MempoolClientSender;
 use aptos_storage_interface::{finality_view::FinalityView as AptosFinalityView, DbReader};
 use maptos_execution_util::config::aptos::Config as AptosConfig;
 
+use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tracing::info;
-use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server, http::Method};
 
 use std::sync::Arc;
 
@@ -46,13 +49,10 @@ impl FinalityView {
 		Ok(Self::new(db_reader, mempool_client_sender, node_config, aptos_config))
 	}
 
-    /// Update the finalized view with the latest block height.
+	/// Update the finalized view with the latest block height.
 	///
 	/// The block must be found on the committed chain.
-	pub fn set_finalized_block_height(
-		&self,
-		height: u64,
-	) -> Result<(), anyhow::Error> {
+	pub fn set_finalized_block_height(&self, height: u64) -> Result<(), anyhow::Error> {
 		self.inner.set_finalized_block_height(height)?;
 		Ok(())
 	}
@@ -62,27 +62,19 @@ impl FinalityView {
 	}
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
-		info!(
-			"Starting maptos-fin-view services at: {:?}",
-			self.listen_url
-		);
+		info!("Starting maptos-fin-view services at: {:?}", self.listen_url);
 
-		let api_service = get_api_service(self.context.clone())
-			.server(format!("http://{:?}", self.listen_url));
+		let api_service =
+			get_api_service(self.context.clone()).server(format!("http://{:?}", self.listen_url));
 
 		let ui = api_service.swagger_ui();
-	
-		let cors = Cors::new() 
+
+		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new()
-			.nest("/v1", api_service)
-			.nest("/spec", ui)
-			.with(cors);
+		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
 
-		Server::new(TcpListener::bind(
-			self.listen_url.clone()
-		))
+		Server::new(TcpListener::bind(self.listen_url.clone()))
 			.run(app)
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
