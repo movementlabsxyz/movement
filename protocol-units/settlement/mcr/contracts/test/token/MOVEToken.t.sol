@@ -5,16 +5,10 @@ import "forge-std/Test.sol";
 import "../../src/token/MOVEToken.sol";
 
 contract MOVETokenTest is Test {
-    MOVEToken token;
-
-    function setUp() public {
-        token = new MOVEToken();
-    }
 
     function testInitialize() public {
-        // Ensure the contract is not initialized yet
-        vm.expectRevert("Initializable: contract is already initialized");
-        token.initialize();
+
+        MOVEToken token = new MOVEToken();
 
         // Call the initialize function
         token.initialize();
@@ -22,14 +16,20 @@ contract MOVETokenTest is Test {
         // Check the token details
         assertEq(token.name(), "Move Token");
         assertEq(token.symbol(), "MOVE");
+
     }
 
     function testCannotInitializeTwice() public {
-        // Initialize the contract
+
+        MOVEToken token = new MOVEToken();
+
+        // Call the initialize function
         token.initialize();
 
-        // Attempt to initialize again should fail
-        vm.expectRevert("Initializable: contract is already initialized");
+        // Initialize the contract
+        vm.expectRevert(0xf92ee8a9);
         token.initialize();
+
     }
+
 }

@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./governance/MintableToken.sol";
+import "./base/MintableToken.sol";
+// import "./base/BaseToken.sol";
 
 contract MOVEToken is MintableToken {
 
     /**
      * @dev Initialize the contract
      */
-    function initialize() public initializer {
+    function initialize() public {
         super.initialize("Move Token", "MOVE");
     }
 

@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "openzeppelin-contracts-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/access/AccessControlUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/contracts/governance/extensions/GovernorTimelockControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract BaseToken is Initializable, ERC20Upgradeable, GovernorTimelockControlUpgradeable, AccessControlUpgradeable, UUPSUpgradeable {
+contract BaseToken is Initializable, ERC20Upgradeable, AccessControlUpgradeable, UUPSUpgradeable {
 
     /**
      * @dev Initialize the contract
@@ -15,15 +14,15 @@ contract BaseToken is Initializable, ERC20Upgradeable, GovernorTimelockControlUp
     function initialize(
         string memory name, 
         string memory symbol
-    ) initializer public {
+    ) initializer public virtual {
         __ERC20_init(name, symbol);
         __AccessControl_init();
         __UUPSUpgradeable_init();
-        __GovernorTimelockControl_init();
+        // __GovernorTimelockControl_init();
 
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        _mint(msg.sender, 1000000 * 10 ** decimals());
+        _mint(address(this), 1000000 * 10 ** decimals());
     }
 
     /**

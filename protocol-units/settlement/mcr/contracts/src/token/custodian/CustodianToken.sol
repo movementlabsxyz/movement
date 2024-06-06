@@ -1,47 +1,52 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../governance/MintableToken.sol";
+import "../base/MintableToken.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "../base/WrappedToken.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract CustodianToken is MintableToken {
-    using SafeMathUpgradeable for uint256;
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+interface ICustodianToken is IERC20 {
 
-    bytes32 public constant TRANSFER_ROLE = keccak256("TRANSFER_ROLE");
-    bytes32 public constant TRANSFER_ADMIN_ROLE = keccak256("TRANSFER_ADMIN_ROLE");
+    function grantTransferSinkRole(address account) external;
+    function revokeTransferSinkRole(address account) external;
 
-    IERC20 public underlyingToken;
+    function grantBuyerRole(address account) external;
+    function revokeBuyerRole(address account) external;
+
+    function buyCustodialTokenFor(address account, uint256 amount) external;
+}
+
+contract CustodianToken is ICustodianToken, WrappedToken {
+
+    using SafeERC20 for IERC20;
+
+    bytes32 public constant TRANSFER_SINK_ROLE = keccak256("TRANSFER_SINK_ROLE");
+    bytes32 public constant TRANSFER_SINK_ADMIN_ROLE = keccak256("TRANSFER_SINK_ADMIN_ROLE");
+
+    bytes32 public constant BUYER_ROLE = keccak256("BUYER_ROLE");
+    bytes32 public constant BUYER_ADMIN_ROLE = keccak256("BUYER_ADMIN_ROLE");
 
     function initialize(
         string memory name, 
         string memory symbol, 
-        IERC20 _underlyingToken
-    ) public initializer {
+        IMintableToken _underlyingToken
+    ) public override virtual {
         super.initialize(name, symbol);
-        _setupRole(TRANSFER_ADMIN_ROLE, msg.sender);
-        _setupRole(TRANSFER_ROLE, msg.sender);
+        _grantRole(TRANSFER_SINK_ADMIN_ROLE, msg.sender);
+        _grantRole(TRANSFER_SINK_ROLE, msg.sender);
+        _grantRole(BUYER_ADMIN_ROLE, msg.sender);
+        _grantRole(BUYER_ROLE, msg.sender);
         underlyingToken = _underlyingToken;
     }
 
-    /**
-     * @dev Transfer tokens
-     * @param from The address to transfer tokens from
-     * @param to The address to transfer tokens to
-     * @param amount The amount of tokens to transfer
-     */
-    function _transfer(address from, address to, uint256 amount) internal override {
-        // Transfers are restricted to be to or from TRANSFER_ROLE accounts.
-        // This allows moving into contracts such as the staking contract, but not out.
-        require(
-            hasRole(TRANSFER_ROLE, from) || hasRole(TRANSFER_ROLE, to),
-            "Transfer restricted to accounts with TRANSFER_ROLE"
-        );
+    function grantTransferSinkRole(address account) public onlyRole(TRANSFER_SINK_ADMIN_ROLE) {
+        _grantRole(TRANSFER_SINK_ROLE, account);
+    }
 
-        // perform a normal transfer
-        super._transfer(from, to, amount);
-
-        // also perform a safe transfer from this contract to the recipient
-        underlyingToken.safeTransfer(to, amount);
+    function revokeTransferSinkRole(address account) public onlyRole(TRANSFER_SINK_ADMIN_ROLE) {
+        _revokeRole(TRANSFER_SINK_ROLE, account);
     }
 
     /**
@@ -50,42 +55,70 @@ contract CustodianToken is MintableToken {
      * @param amount The amount of tokens to approve
      * @return A boolean indicating whether the approval was successful
      */
-    function approve(address spender, uint256 amount) public override returns (bool) {
-        require(hasRole(TRANSFER_ROLE, msg.sender), "Approval restricted to accounts with TRANSFER_ROLE");
+    function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+        
+        // require the spender is a transfer sink
+        require(hasRole(TRANSFER_SINK_ROLE, spender), "Approval restricted to accounts with TRANSFER_SINK_ROLE");
+
         return underlyingToken.approve(spender, amount);
     }
 
     /** 
      * @dev Transfer tokens from
-     * @param sender The address to transfer tokens from
-     * @param recipient The address to transfer tokens to
+     * @param from The address to transfer tokens from
+     * @param to The address to transfer tokens to
      * @param amount The amount of tokens to transfer
      * @return A boolean indicating whether the transfer was successful
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-        _transfer(from, to, amount);
-        return true;
+    function transferFrom(address from, address to, uint256 amount) public override(IERC20, ERC20Upgradeable) virtual returns (bool) {
+
+        // require the destination is a transfer sink
+        require(hasRole(TRANSFER_SINK_ROLE, to), "Transfer restricted to accounts with TRANSFER_SINK_ROLE");
+
+        // burn the tokens from the sender
+        super.transferFrom(from, address(this), amount);
+
+        // also perform a safe transfer from this contract to the recipient
+        return underlyingToken.transfer(to, amount);
     }
 
     /**
      * @dev Transfer tokens
-     * @param recipient The address to transfer tokens to
+     * @param to The address to transfer tokens to
      * @param amount The amount of tokens to transfer
      * @return A boolean indicating whether the transfer was successful
      */
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        return _transfer(this, to, amount);
-        return true;
+    function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+        
+        // require the destination is a transfer sink
+        require(hasRole(TRANSFER_SINK_ROLE, to), "Transfer restricted to accounts with TRANSFER_SINK_ROLE");
+
+        // burn the tokens from the sender
+        super.transfer(address(this), amount);
+
+        // also perform a safe transfer from this contract to the recipient
+        return underlyingToken.transfer(to, amount);
     }
 
-    /** 
-    * @dev Mint new tokens
-    * @param account The address to mint tokens to
-    * @param amount The amount of tokens to mint
-    */
-    function _mint(address account, uint256 amount) internal override {
+    function grantBuyerRole(address account) public onlyRole(BUYER_ADMIN_ROLE) {
+        _grantRole(BUYER_ROLE, account);
+    }
+
+    function revokeBuyerRole(address account) public onlyRole(BUYER_ADMIN_ROLE) {
+        _revokeRole(BUYER_ROLE, account);
+    }
+
+    function buyCustodialTokenFor(address account, uint256 amount) public override {
+
+        require(hasRole(BUYER_ROLE, msg.sender), "Caller must have BUYER_ROLE");
+
+        // transfer the approved value from the buyer to this contract
+        underlyingToken.transferFrom(msg.sender, address(this), amount);
+
+        // mint the custodial token for the buyer at their desired address
+        // ! maybe this should also be managed through the minter role, so the buyer would have to be buyer and minter
         super._mint(account, amount);
-        underlyingToken.mint(this, amount);
+
     }
 
 }

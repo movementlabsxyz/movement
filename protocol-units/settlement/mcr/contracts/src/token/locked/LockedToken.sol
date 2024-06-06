@@ -2,8 +2,16 @@
 pragma solidity ^0.8.19;
 
 import "../base/BaseToken.sol";
+import "../base/MintableToken.sol";
+import "../base/WrappedToken.sol";
+import "../custodian/CustodianToken.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract LockedToken is BaseToken {
+contract LockedToken is CustodianToken {
+
+    bytes32 public constant MINT_LOCKER_ROLE = keccak256("MINT_LOCKER_ROLE");
+    bytes32 public constant MINT_LOCKER_ADMIN_ROLE = keccak256("MINT_LOCKER_ADMIN_ROLE");
 
     struct Lock {
         uint256 amount;
@@ -11,29 +19,38 @@ contract LockedToken is BaseToken {
     }
 
     mapping(address => Lock[]) public locks;
-    IERC20Upgradeable public underlyingToken;
 
     function initialize(
         string memory name, 
         string memory symbol,
-        IERC20Upgradeable _underlyingToken
-    ) public initializer {
-        super.initialize(name, symbol);
+        IMintableToken _underlyingToken
+    ) public override virtual {
+        super.initialize(name, symbol, _underlyingToken);
+        _grantRole(MINT_LOCKER_ADMIN_ROLE, msg.sender);
+        _grantRole(MINT_LOCKER_ROLE, msg.sender);
     }
 
     /**
     * @dev Mint and lock tokens
     * @param addresses The addresses to mint and lock tokens for
-    * @param amounts The amounts of tokens to mint and lock
+    * @param mintAmounts The amounts to mint.
+    * @param lockAmounts The amount up to which the user is allowed to be unlock, respective of balance
     * @param lockTimes The times to lock the tokens for
     */
-    function mintAndLock(address[] calldata addresses, uint256[] calldata amounts, uint256[] calldata lockTimes) external onlyRole(MINTER_ROLE) {
-        require(addresses.length == amounts.length, "Addresses and amounts length mismatch");
+    function mintAndLock(
+        address[] calldata addresses, 
+        uint256[] calldata mintAmounts,
+        uint256[] calldata lockAmounts,
+        uint256[] calldata lockTimes
+    ) external onlyRole(MINT_LOCKER_ROLE) {
+        require(addresses.length == mintAmounts.length, "Addresses and amounts length mismatch");
+        require(addresses.length == lockAmounts.length, "Addresses and lock amounts length mismatch");
         require(addresses.length == lockTimes.length, "Addresses and lock times length mismatch");
 
         for (uint256 i = 0; i < addresses.length; i++) {
-            _mint(address(this), amounts[i]);
-            _lock(addresses[i], amounts[i], lockTimes[i]);
+            underlyingToken.mint(address(this), mintAmounts[i]);
+            _mint(addresses[i], mintAmounts[i]);
+            _lock(addresses[i], lockAmounts[i], lockTimes[i]);
         }
     }
 
@@ -55,13 +72,31 @@ contract LockedToken is BaseToken {
         Lock[] storage userLocks = locks[msg.sender];
         for (uint256 i = 0; i < userLocks.length; i++) {
             if (block.timestamp >= userLocks[i].releaseTime) {
-                totalUnlocked = totalUnlocked.add(userLocks[i].amount);
-                userLocks[i] = userLocks[userLocks.length - 1];
-                userLocks.pop();
+
+                // compute the max possible amount to withdraw
+                uint256 amount = Math.min(userLocks[i].amount, balanceOf(msg.sender));
+
+                // burn the amount so that the user can't overdraw
+                _transfer(msg.sender, address(this), amount);
+
+                // add to the total unlocked amount
+                totalUnlocked += amount;
+
+                // deduct the amount from the lock
+                userLocks[i].amount -= amount;
+
+                // if the amount on the lock is now 0, remove the lock
+                if (userLocks[i].amount == 0) {
+                    userLocks[i] = userLocks[userLocks.length - 1];
+                    userLocks.pop();
+                }
+
             }
         }
-        require(totalUnlocked > 0, "No tokens to release");
-        moveToken.safeTransfer(msg.sender, totalUnlocked);
+
+        // transfer the underlying token
+        underlyingToken.transfer(msg.sender, totalUnlocked);
+
     }
 
     /**
@@ -73,50 +108,9 @@ contract LockedToken is BaseToken {
         uint256 totalLocked = 0;
         Lock[] memory userLocks = locks[account];
         for (uint256 i = 0; i < userLocks.length; i++) {
-            totalLocked = totalLocked.add(userLocks[i].amount);
+            totalLocked += userLocks[i].amount;
         }
         return totalLocked;
     }
-
-    /**
-     * @dev Transfer tokens
-     * @param from The address to transfer tokens from
-     * @param to The address to transfer tokens to
-     * @param amount The amount of tokens to transfer
-     */
-    function _transfer(address from, address to, uint256 amount) internal override {
-        require(false, "Cannot transfer locked tokens");
-    }
-
-    /**
-     * @dev Approve tokens
-     * @param spender The address to approve tokens for
-     * @param amount The amount of tokens to approve
-     * @return A boolean indicating whether the approval was successful
-     */
-    function approve(address spender, uint256 amount) public override returns (bool) {
-        require(false, "Cannot approve locked tokens");
-    }
-
-    /** 
-     * @dev Transfer tokens from
-     * @param sender The address to transfer tokens from
-     * @param recipient The address to transfer tokens to
-     * @param amount The amount of tokens to transfer
-     * @return A boolean indicating whether the transfer was successful
-     */
-    function transferFrom(address sender, address recipient, uint256 amount) public override returns (bool) {
-        require(false, "Cannot transfer locked tokens");
-    }
-
-    /**
-     * @dev Transfer tokens
-     * @param recipient The address to transfer tokens to
-     * @param amount The amount of tokens to transfer
-     * @return A boolean indicating whether the transfer was successful
-     */
-    function transfer(address recipient, uint256 amount) public override returns (bool) {
-        require(false, "Cannot transfer locked tokens");
-    }
-
+    
 }
