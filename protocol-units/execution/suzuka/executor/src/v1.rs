@@ -31,7 +31,7 @@ impl SuzukaExecutorV1 {
 impl SuzukaExecutor for SuzukaExecutorV1 {
     /// Runs the service.
     async fn run_service(&self) -> Result<(), anyhow::Error> {
-        selfexecutor.run_service().await
+        self.executor.run_service().await
     }
 
     /// Runs the necessary background tasks.
