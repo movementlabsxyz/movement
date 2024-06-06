@@ -1,8 +1,8 @@
 [package]
 name = "suzuka-full-node"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -25,16 +25,13 @@ sha2 = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 movement-types = { workspace = true }
+maptos-rest = { workspace = true }
 
 tracing-subscriber = { workspace = true, optional = true }
 
 [features]
-default = [
-    "logging"
-]
-logging = [
-    "tracing-subscriber"
-]
+default = ["logging"]
+logging = ["tracing-subscriber"]
 
 
 [lints]

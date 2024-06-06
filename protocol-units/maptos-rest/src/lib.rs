@@ -1,32 +1,44 @@
-use poem::{handler, IntoResponse, Response, Route};
+use anyhow::Error;
+use poem::listener::TcpListener;
+use poem::{get, handler, web::Path, IntoResponse, Response, Route, Server};
+use std::env;
+use tracing::info;
 
-pub struct MaptosConfig {
-	pub url: String,
-	// other fields for configs, log verbosite etc.
+pub struct MaptosRest {
+    pub url: String,
+    // More fields to be added here, log verboisty, etc.
 }
 
-impl MaptosConfig {
-	pub const MAPTOS_REST_ENV_VAR: &'static str = "MAPTOS_REST_URL";
+impl MaptosRest {
+    pub const MAPTOS_REST_ENV_VAR: &'static str = "MAPTOS_REST_URL";
 
-	pub fn try_from_env() -> Result<Self, anyhow::Error> {
-		let maptos_rest =
-			std::env::var(Self::MAPTOS_REST_ENV_VAR).unwrap_or("0.0.0.0:30832".to_string());
-		Ok(Self { url: maptos_rest })
-	}
+    pub fn try_from_env() -> Result<Self, Error> {
+        let maptos_rest =
+            env::var(Self::MAPTOS_REST_ENV_VAR).unwrap_or_else(|_| "0.0.0.0:30832".to_string());
+        Ok(Self { url: maptos_rest })
+    }
+
+    pub async fn run_service(&self) -> Result<(), Error> {
+        info!("Starting maptos rest service at {}", self.url);
+        let maptos_rest = create_routes();
+        Server::new(TcpListener::bind(&self.url)).run(maptos_rest).await?;
+        Ok(())
+    }
+}
+
+#[handler]
+async fn state_root_hash(Path(blockheight): Path<u64>) -> Response {
+    // Use the blockheight value here
+    format!("The state root hash for blockheight: {}", blockheight).into_response()
 }
 
 #[handler]
 async fn health() -> Response {
-	"healthy".into_response()
-}
-
-#[handler]
-async fn state_root_hash() -> Response {
-	"the_state_root_hash".into_response()
+    "OK".into_response()
 }
 
 pub fn create_routes() -> Route {
-	Route::new()
-		.at("/health", poem::get(health))
-		.at("/movement/v1/state-root-hash", poem::get(state_root_hash))
+    Route::new()
+        .at("/health", get(health))
+        .at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
 }

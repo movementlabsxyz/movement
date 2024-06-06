@@ -4,7 +4,6 @@ pub mod partial;
 pub mod tests;
 
 pub trait MonzaFullNode {
-
     /// Runs the services until crash or shutdown.
     async fn run_services(&self) -> Result<(), anyhow::Error>;
 
@@ -16,15 +15,9 @@ pub trait MonzaFullNode {
 
     /// Runs the full node until crash or shutdown.
     async fn run(&self) -> Result<(), anyhow::Error> {
-        
         // run services and executor concurrently
-        tokio::try_join!(
-            self.run_background_tasks(),
-            self.run_services(),
-            self.run_executor()
-        )?;
+        tokio::try_join!(self.run_background_tasks(), self.run_services(), self.run_executor())?;
 
         Ok(())
     }
-
 }

@@ -14,15 +14,12 @@ pub mod test {
 
     #[test]
     fn test_proto() -> Result<(), anyhow::Error> {
-
         // Get the proto directory
         let proto = proto()?;
 
         // check that it exists
         assert_eq!(proto.exists(), true);
-    
+
         Ok(())
-
     }
-
 }

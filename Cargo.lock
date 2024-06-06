@@ -6867,6 +6867,7 @@ dependencies = [
  "anyhow",
  "poem",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -11013,6 +11014,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "m1-da-light-node-client",
+ "maptos-rest",
  "mcr-settlement-client",
  "mcr-settlement-manager",
  "movement-types",

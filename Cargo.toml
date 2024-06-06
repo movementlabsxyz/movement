@@ -54,6 +54,8 @@ monza-executor = { path = "protocol-units/execution/monza/executor" }
 suzuka-fin-executor = { path = "protocol-units/execution/suzuka/fin-executor" }
 suzuka-executor = { path = "protocol-units/execution/suzuka/executor" }
 
+maptos-rest = { path = "protocol-units/maptos-rest" }
+
 ## types
 movement-types = { path = "util/movement-types" }
 ## buildtime

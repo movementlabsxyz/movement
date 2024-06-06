@@ -20,3 +20,4 @@ path = "src/main.rs"
 anyhow = { workspace = true }
 poem = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }

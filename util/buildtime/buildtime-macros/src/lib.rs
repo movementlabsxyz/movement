@@ -1,8 +1,8 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, LitStr, punctuated::Punctuated, Token, parse::Parse, Result};
 use std::path::PathBuf;
+use syn::{parse::Parse, parse_macro_input, punctuated::Punctuated, LitStr, Result, Token};
 
 #[proc_macro]
 pub fn cargo_workspace(_input: TokenStream) -> TokenStream {
@@ -39,7 +39,6 @@ impl Parse for ParsablePuncuated {
 
 #[proc_macro]
 pub fn proto_build_main(input: TokenStream) -> TokenStream {
-
     // Use custom parsing struct
     let ParsablePuncuated { list: inputs } = parse_macro_input!(input as ParsablePuncuated);
 
@@ -48,12 +47,15 @@ pub fn proto_build_main(input: TokenStream) -> TokenStream {
     let proto_dir_str = proto_dir.to_str().unwrap();
 
     // Collect input files into a Rust array expression
-    let proto_files: Vec<_> = inputs.iter().map(|lit_str| {
-        let file = lit_str.value();
-        // Combine proto_dir with the relative path
-        let full_path = PathBuf::from(proto_dir_str).join(file).display().to_string();
-        quote! { #full_path }
-    }).collect();
+    let proto_files: Vec<_> = inputs
+        .iter()
+        .map(|lit_str| {
+            let file = lit_str.value();
+            // Combine proto_dir with the relative path
+            let full_path = PathBuf::from(proto_dir_str).join(file).display().to_string();
+            quote! { #full_path }
+        })
+        .collect();
 
     // Generate the code
     let expanded = quote! {
@@ -76,8 +78,8 @@ pub fn proto_build_main(input: TokenStream) -> TokenStream {
             .include_file("all.rs")
             .build_client(client_enabled)
             .build_server(server_enabled);
-          
-                
+
+
             // Compile the proto files based on the configuration
             config.compile(proto_files, proto_include_dirs)?;
 

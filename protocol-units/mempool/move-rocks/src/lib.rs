@@ -1,14 +1,10 @@
-use mempool_util::{
-    MempoolBlockOperations,
-    MempoolTransactionOperations,
-    MempoolTransaction
-};
-use rocksdb::{DB, Options, ColumnFamilyDescriptor};
-use std::sync::Arc;
-use serde_json;
-use tokio::sync::RwLock;
-use movement_types::{Block, Id};
 use anyhow::Error;
+use mempool_util::{MempoolBlockOperations, MempoolTransaction, MempoolTransactionOperations};
+use movement_types::{Block, Id};
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use serde_json;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct RocksdbMempool {
@@ -20,59 +16,60 @@ impl RocksdbMempool {
         options.create_if_missing(true);
         options.create_missing_column_families(true);
 
-        let mempool_transactions_cf = ColumnFamilyDescriptor::new("mempool_transactions", Options::default());
-        let transaction_truths_cf = ColumnFamilyDescriptor::new("transaction_truths", Options::default());
+        let mempool_transactions_cf =
+            ColumnFamilyDescriptor::new("mempool_transactions", Options::default());
+        let transaction_truths_cf =
+            ColumnFamilyDescriptor::new("transaction_truths", Options::default());
         let blocks_cf = ColumnFamilyDescriptor::new("blocks", Options::default());
-        let transaction_lookups_cf = ColumnFamilyDescriptor::new("transaction_lookups", Options::default());
+        let transaction_lookups_cf =
+            ColumnFamilyDescriptor::new("transaction_lookups", Options::default());
 
         let db = DB::open_cf_descriptors(
-            &options, 
-            path, 
-            vec![mempool_transactions_cf, transaction_truths_cf, blocks_cf, transaction_lookups_cf]
-        ).map_err(|e| Error::new(e))?;
+            &options,
+            path,
+            vec![mempool_transactions_cf, transaction_truths_cf, blocks_cf, transaction_lookups_cf],
+        )
+        .map_err(|e| Error::new(e))?;
 
-        Ok(RocksdbMempool {
-            db: Arc::new(RwLock::new(db))
-        })
+        Ok(RocksdbMempool { db: Arc::new(RwLock::new(db)) })
     }
 
     pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
-      
         // pad to 32 characters
         let slot_seconds_str = format!("{:032}", transaction.timestamp);
-    
+
         // Assuming transaction.transaction.id() returns a hex string of length 32
         let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
-    
+
         // Concatenate the two parts to form a 48-character hex string key
         let key = format!("{}:{}", slot_seconds_str, transaction_id_hex);
-    
+
         key
     }
-    
-    
-    
-    
+
     /// Helper function to retrieve the key for mempool transaction from the lookup table.
-    async fn get_mempool_transaction_key(&self, transaction_id: &Id) -> Result<Option<Vec<u8>>, Error> {
+    async fn get_mempool_transaction_key(
+        &self,
+        transaction_id: &Id,
+    ) -> Result<Option<Vec<u8>>, Error> {
         let db = self.db.read().await;
-        let cf_handle = db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
+        let cf_handle =
+            db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
         db.get_cf(&cf_handle, transaction_id.to_vec()).map_err(|e| Error::new(e))
     }
-
 }
 
-
 impl MempoolTransactionOperations for RocksdbMempool {
-
     async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, Error> {
         let key = self.get_mempool_transaction_key(&transaction_id).await?;
         match key {
             Some(k) => {
                 let db = self.db.read().await;
-                let cf_handle = db.cf_handle("mempool_transactions").ok_or_else(|| Error::msg("CF handle not found"))?;
+                let cf_handle = db
+                    .cf_handle("mempool_transactions")
+                    .ok_or_else(|| Error::msg("CF handle not found"))?;
                 Ok(db.get_cf(&cf_handle, k)?.is_some())
-            },
+            }
             None => Ok(false),
         }
     }
@@ -80,13 +77,16 @@ impl MempoolTransactionOperations for RocksdbMempool {
     async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), Error> {
         let serialized_tx = serde_json::to_vec(&tx)?;
         let db = self.db.write().await;
-        let mempool_transactions_cf_handle = db.cf_handle("mempool_transactions").ok_or_else(|| Error::msg("CF handle not found"))?;
-        let transaction_lookups_cf_handle = db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
-        
+        let mempool_transactions_cf_handle = db
+            .cf_handle("mempool_transactions")
+            .ok_or_else(|| Error::msg("CF handle not found"))?;
+        let transaction_lookups_cf_handle =
+            db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
+
         let key = Self::construct_mempool_transaction_key(&tx);
         db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_tx)?;
         db.put_cf(&transaction_lookups_cf_handle, tx.transaction.id().to_vec(), &key)?;
-        
+
         Ok(())
     }
 
@@ -96,36 +96,47 @@ impl MempoolTransactionOperations for RocksdbMempool {
         match key {
             Some(k) => {
                 let db = self.db.write().await;
-                let cf_handle = db.cf_handle("mempool_transactions").ok_or_else(|| Error::msg("CF handle not found"))?;
+                let cf_handle = db
+                    .cf_handle("mempool_transactions")
+                    .ok_or_else(|| Error::msg("CF handle not found"))?;
                 db.delete_cf(&cf_handle, k)?;
-                let lookups_cf_handle = db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
+                let lookups_cf_handle = db
+                    .cf_handle("transaction_lookups")
+                    .ok_or_else(|| Error::msg("CF handle not found"))?;
                 db.delete_cf(&lookups_cf_handle, transaction_id.to_vec())?;
-            },
+            }
             None => (),
         }
         Ok(())
     }
 
-   // Updated method signatures and implementations go here
-   async fn get_mempool_transaction(&self, transaction_id: Id) -> Result<Option<MempoolTransaction>, Error> {
+    // Updated method signatures and implementations go here
+    async fn get_mempool_transaction(
+        &self,
+        transaction_id: Id,
+    ) -> Result<Option<MempoolTransaction>, Error> {
         let key = match self.get_mempool_transaction_key(&transaction_id).await? {
             Some(k) => k,
             None => return Ok(None), // If no key found in lookup, return None
         };
         let db = self.db.read().await;
-        let cf_handle = db.cf_handle("mempool_transactions").ok_or_else(|| Error::msg("CF handle not found"))?;
+        let cf_handle = db
+            .cf_handle("mempool_transactions")
+            .ok_or_else(|| Error::msg("CF handle not found"))?;
         match db.get_cf(&cf_handle, &key)? {
             Some(serialized_tx) => {
                 let tx: MempoolTransaction = serde_json::from_slice(&serialized_tx)?;
                 Ok(Some(tx))
-            },
+            }
             None => Ok(None),
         }
     }
 
     async fn pop_mempool_transaction(&self) -> Result<Option<MempoolTransaction>, Error> {
         let db = self.db.write().await;
-        let cf_handle = db.cf_handle("mempool_transactions").ok_or_else(|| Error::msg("CF handle not found"))?;
+        let cf_handle = db
+            .cf_handle("mempool_transactions")
+            .ok_or_else(|| Error::msg("CF handle not found"))?;
         let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
 
         match iter.next() {
@@ -136,17 +147,16 @@ impl MempoolTransactionOperations for RocksdbMempool {
                 db.delete_cf(&cf_handle, &key)?;
 
                 // Optionally, remove from the lookup table as well
-                let lookups_cf_handle = db.cf_handle("transaction_lookups").ok_or_else(|| Error::msg("CF handle not found"))?;
+                let lookups_cf_handle = db
+                    .cf_handle("transaction_lookups")
+                    .ok_or_else(|| Error::msg("CF handle not found"))?;
                 db.delete_cf(&lookups_cf_handle, tx.transaction.id().to_vec())?;
-                
+
                 Ok(Some(tx))
             }
         }
-
     }
-
 }
-
 
 impl MempoolBlockOperations for RocksdbMempool {
     async fn has_block(&self, block_id: Id) -> Result<bool, Error> {
@@ -178,11 +188,10 @@ impl MempoolBlockOperations for RocksdbMempool {
             Some(serialized_block) => {
                 let block: Block = serde_json::from_slice(&serialized_block)?;
                 Ok(Some(block))
-            },
+            }
             None => Ok(None),
         }
     }
-    
 }
 
 #[cfg(test)]
@@ -193,7 +202,7 @@ pub mod test {
     use tempfile::tempdir;
 
     #[tokio::test]
-    async fn test_rocksdb_mempool_basic_operations() -> Result<(), Error>{
+    async fn test_rocksdb_mempool_basic_operations() -> Result<(), Error> {
         let temp_dir = tempdir().unwrap();
         let path = temp_dir.path().to_str().unwrap();
         let mempool = RocksdbMempool::try_new(path)?;
@@ -243,24 +252,9 @@ pub mod test {
         let path = temp_dir.path().to_str().unwrap();
         let mempool = RocksdbMempool::try_new(path)?;
 
-        let tx1 = MempoolTransaction::at_time(
-            Transaction::new(
-                vec![1],
-            ),
-            2,
-        );
-        let tx2 = MempoolTransaction::at_time(
-            Transaction::new(
-                vec![2],
-            ),
-            64,
-        );
-        let tx3 = MempoolTransaction::at_time(
-            Transaction::new(
-                vec![3],
-            ),
-            128
-        );
+        let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1]), 2);
+        let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2]), 64);
+        let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3]), 128);
 
         mempool.add_mempool_transaction(tx2.clone()).await?;
         mempool.add_mempool_transaction(tx1.clone()).await?;
@@ -273,5 +267,4 @@ pub mod test {
 
         Ok(())
     }
-
 }
