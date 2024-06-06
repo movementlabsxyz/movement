@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
+. ./scripts/suzuka/suzuka-env
+
 # export CELESTIA_LOG_LEVEL=debug
 
 export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
@@ -30,7 +32,7 @@ if [ "$MOVEMENT_PREBUILT" != "true" ]; then
     echo "Built m1-da-light-node!"
 
     echo "Building suzuka-full-node..."
-    cargo build $CARGO_PROFILE_FLAGS -p suzuka-full-node
+    cargo build $CARGO_PROFILE_FLAGS -p suzuka-full-node --features "logging"
     echo "Built suzuka-full-node!"
 
     # Build aptos components

@@ -235,6 +235,20 @@ aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core",
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
+#Allow Eth lib dependencies
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub", "signers", "signer-wallet", "signer-yubihsm"]}
+alloy-primitives = { version = "0.7.2", default-features = false }
+alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = ["ws"]}
+alloy-sol-types = { version = "0.7.2", features = ["json"] }
+alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network"}
+alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport"}
+alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http"}
+alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract"}
+alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet"}
+alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types"}
+alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws"}
+
+
 # other
 futures = "0.3.17"
 

@@ -35,9 +35,9 @@ use alloy_transport_ws::WsConnect;
 use movement_types::BlockCommitment;
 use std::env;
 
-const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TX_SEND_RETRY: usize = 10;
-const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
+pub const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
+pub const MAX_TX_SEND_RETRY: usize = 10;
+pub const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 
 #[derive(Clone, Debug)]
 pub struct McrEthSettlementConfig {
@@ -67,8 +67,8 @@ impl McrEthSettlementConfig {
 	}
 	pub fn try_from_env() -> Result<Self, McrEthConnectorError> {
 		Ok(McrEthSettlementConfig {
-			mrc_contract_address: env::var("MCR_CONTRACT_ADDRESS")
-				.unwrap_or(MRC_CONTRACT_ADDRESS.to_string()),
+			mrc_contract_address: env::var("MRC_CONTRACT_ADDRESS")
+				.unwrap_or(MCR_CONTRACT_ADDRESS.to_string()),
 			gas_limit: Self::get_from_env::<u128>("MCR_TXSEND_GASLIMIT")?,
 			tx_send_nb_retry: Self::get_from_env::<usize>("MCR_TXSEND_NBRETRY")?,
 		})
@@ -78,7 +78,7 @@ impl McrEthSettlementConfig {
 impl Default for McrEthSettlementConfig {
 	fn default() -> Self {
 		McrEthSettlementConfig {
-			mrc_contract_address: MRC_CONTRACT_ADDRESS.to_string(),
+			mrc_contract_address: MCR_CONTRACT_ADDRESS.to_string(),
 			gas_limit: DEFAULT_TX_GAS_LIMIT,
 			tx_send_nb_retry: MAX_TX_SEND_RETRY,
 		}

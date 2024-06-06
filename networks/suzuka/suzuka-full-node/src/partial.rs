@@ -3,7 +3,7 @@ use m1_da_light_node_client::{
 	blob_response, BatchWriteRequest, BlobWrite, LightNodeServiceClient,
 	StreamReadFromHeightRequest,
 };
-use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
+use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
@@ -244,11 +244,54 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
 		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
+
+		println!("suzuka node light node created",);
+
 		let executor = SuzukaExecutorV1::try_from_env(tx)
 			.await
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
-		let settlement_client = MockMcrSettlementClient::new();
+		println!("suzuka node before settlement",);
+		let settlement_client = build_settlement_client().await?;
 		Self::bound(executor, light_node_client, settlement_client)
 	}
+}
+
+pub const ETH_RPC_URL_ENV_VAR: &'static str = "ETH_RPC_URL";
+pub const ETH_WS_URL_ENV_VAR: &'static str = "ETH_WS_URL";
+pub const ETH_MCR_CONTRACT_ADDRESS_VAR: &'static str = "ETH_MCR_CONTRACT_ADDRESS";
+pub const ETH_DEFAULT_TX_GAS_LIMIT_VAR: &'static str = "ETH_DEFAULT_TX_GAS_LIMIT";
+pub const ETH_MAX_TX_SEND_RETRY_VAR: &'static str = "ETH_MAX_TX_SEND_RETRY";
+pub const ETH_VALIDATOR_PRIVATE_ADDRESS_VAR: &'static str = "ETH_VALIDATOR_PRIVATE_ADDRESS";
+
+#[cfg(not(test))]
+use mcr_settlement_client::eth_client::{
+	McrEthSettlementClient, McrEthSettlementConfig, DEFAULT_TX_GAS_LIMIT, MAX_TX_SEND_RETRY,
+	MCR_CONTRACT_ADDRESS,
+};
+#[cfg(not(test))]
+async fn build_settlement_client() -> anyhow::Result<impl McrSettlementClientOperations> {
+	let rpc_url = std::env::var(ETH_RPC_URL_ENV_VAR).unwrap_or("http://localhost:8545".to_string());
+	let ws_url = std::env::var(ETH_WS_URL_ENV_VAR).unwrap_or("ws://localhost:8545".to_string());
+	let gas_limit = std::env::var(ETH_DEFAULT_TX_GAS_LIMIT_VAR)
+		.unwrap_or(DEFAULT_TX_GAS_LIMIT.to_string())
+		.parse()?;
+	let tx_send_nb_retry = std::env::var(ETH_MAX_TX_SEND_RETRY_VAR)
+		.unwrap_or(MAX_TX_SEND_RETRY.to_string())
+		.parse()?;
+	let mrc_contract_address =
+		std::env::var(ETH_MCR_CONTRACT_ADDRESS_VAR).unwrap_or(MCR_CONTRACT_ADDRESS.to_string());
+	let private_address = std::env::var(ETH_VALIDATOR_PRIVATE_ADDRESS_VAR)?;
+
+	let config = McrEthSettlementConfig { mrc_contract_address, gas_limit, tx_send_nb_retry };
+	let client =
+		McrEthSettlementClient::build_with_urls(&rpc_url, ws_url, &private_address, config).await?;
+	Ok(client)
+}
+
+#[cfg(test)]
+use mcr_settlement_client::mock::MockMcrSettlementClient;
+#[cfg(test)]
+async fn build_settlement_client() -> anyhow::Result<impl McrSettlementClientOperations> {
+	Ok(MockMcrSettlementClient::new())
 }

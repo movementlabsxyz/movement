@@ -5,6 +5,7 @@ import "../src/MCR.sol";
 
 contract DeployMCR is Script {
     function run() external {
+
         vm.startBroadcast();
 
         MCR mcr = new MCR(
@@ -14,7 +15,16 @@ contract DeployMCR is Script {
             100 ether, // each genesis validator can stake up to 100 ether
             0
         );
+
         vm.stopBroadcast();
+
+        // address payable signer1 = payable(vm.addr(1));
+        // vm.deal(signer1, 100 ether);
+
+        // //signer1 staking
+        // vm.startBroadcast(signer1);
+        // mcr.stakeGenesis{value : 34 ether}();
+        // vm.stopBroadcast();
 
         // Comment because the Genesis ceremony works (Assert ok)
         // But in Rust Genesis is not done.
