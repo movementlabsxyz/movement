@@ -20,15 +20,6 @@
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
 
       system: let
-
-        # nix does not handle .cargo/config.toml
-        RUSTFLAGS = if pkgs.stdenv.hostPlatform.isLinux then
-          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=-fuse-ld=lld -C target-feature=+sse4.2"
-        else if pkgs.stdenv.hostPlatform.isWindows then
-          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=/STACK:8000000"
-        else
-          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes";
-
         overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
 
         overlays = [
@@ -89,15 +80,32 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-        # monza-aptos
-        # FIXME: rename, should not be specific to Monza
-        monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
+
+        # aptos-faucet-service
+        aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
+          inherit pkgs; 
+          commonArgs = {
+            src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "aptos-core";
+              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
+              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
+            };
+            strictDeps = true;
+            
+            buildInputs = with pkgs; [
+              libiconv 
+              rocksdb
+              rustfmt
+            ] ++ sysDependencies;
+          };
+          inherit craneLib;
+        };
     
       in
         with pkgs; {
 
-          # Monza Aptos
-          packages.monza-aptos = monza-aptos;
+          packages.aptos-faucet-service = aptos-faucet-service;
 
           packages.celestia-node = celestia-node;
 
