@@ -25,7 +25,8 @@ reqwest = { workspace = true }
 alloy_provider = { workspace = true }
 alloy_network = { workspace = true }
 alloy_signer_wallet = { workspace = true }
-alloy_primitives = { workspace = true }
+alloy-primitives = { workspace = true }
+serde_json = { workspace = true }
 
 maptos-execution-util = { workspace = true }
 suzuka-executor = { workspace = true }

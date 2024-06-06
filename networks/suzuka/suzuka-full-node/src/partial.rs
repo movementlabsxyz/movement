@@ -224,6 +224,7 @@ where
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
 		self.executor.run_service().await?;
+		self.run_maptos_rest().await?;
 
 		Ok(())
 	}

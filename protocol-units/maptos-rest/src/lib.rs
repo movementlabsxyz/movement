@@ -22,8 +22,8 @@ impl MaptosRest {
 	pub const MAPTOS_REST_ENV_VAR: &'static str = "MAPTOS_REST_URL";
 
 	pub fn try_from_env(context: Arc<Context>) -> Result<Self, Error> {
-		let url =
-			env::var(Self::MAPTOS_REST_ENV_VAR).unwrap_or_else(|_| "0.0.0.0:30832".to_string());
+		let url = env::var(Self::MAPTOS_REST_ENV_VAR)
+			.unwrap_or_else(|_| "http://localhost:30832".to_string());
 		Ok(Self { url, context })
 	}
 
@@ -38,7 +38,6 @@ impl MaptosRest {
 		Route::new()
 			.at("/health", get(health))
 			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
-			.at("/movement/v1/contracts/state-root-hash/:blockheight" get(mcr_state_root_hash))
 			.data(self.context.clone())
 			.with(Tracing)
 	}

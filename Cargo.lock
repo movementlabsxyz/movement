@@ -10911,6 +10911,7 @@ name = "suzuka-client"
 version = "0.3.0"
 dependencies = [
  "alloy-network",
+ "alloy-primitives",
  "alloy-provider",
  "alloy-signer-wallet",
  "anyhow",
@@ -10921,6 +10922,7 @@ dependencies = [
  "once_cell",
  "rand 0.7.3",
  "reqwest 0.12.4",
+ "serde_json",
  "suzuka-executor",
  "tokio",
  "url",
