@@ -10,11 +10,9 @@ pub type CommitmentEventStream =
 
 #[async_trait::async_trait]
 pub trait McrSettlementManagerOperations {
-
 	/// Adds a block commitment to the manager queue.
 	async fn post_block_commitment(
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error>;
-
 }

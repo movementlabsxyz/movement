@@ -134,9 +134,7 @@
             nativeBuildInputs = dependencies;
 
             shellHook = ''
-              #!/usr/bin/env bash
-              export MONZA_APTOS_PATH=$(nix path-info -r .#monza-aptos | tail -n 1)
-              echo "Monza Aptos Path: $MONZA_APTOS_PATH"
+              #!/bin/bash -e
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

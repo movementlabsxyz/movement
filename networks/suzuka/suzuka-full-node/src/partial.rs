@@ -75,114 +75,100 @@ where
 		Ok((node, background_task))
 	}
 
-    pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
-        
-        // limit the total time batching transactions
-        let start_time = std::time::Instant::now();
-        let end_time = start_time + std::time::Duration::from_millis(100);
-        
-        let mut transactions = Vec::new();
+	pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+		// limit the total time batching transactions
+		let start_time = std::time::Instant::now();
+		let end_time = start_time + std::time::Duration::from_millis(100);
 
+		let mut transactions = Vec::new();
 
-        while let Ok(transaction_result) = tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await {
+		while let Ok(transaction_result) =
+			tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await
+		{
+			match transaction_result {
+				Ok(transaction) => {
+					debug!("Got transaction: {:?}", transaction);
 
-            match transaction_result {
-                Ok(transaction) => {
-                
-                    debug!("Got transaction: {:?}", transaction);
+					let serialized_transaction = serde_json::to_vec(&transaction)?;
+					transactions.push(BlobWrite { data: serialized_transaction });
+				}
+				Err(_) => {
+					break;
+				}
+			}
 
-                    let serialized_transaction = serde_json::to_vec(&transaction)?;
-                    transactions.push(BlobWrite {
-                        data: serialized_transaction
-                    });
-                },
-                Err(_) => {
-                    break;
-                }
-            }
+			if std::time::Instant::now() > end_time {
+				break;
+			}
+		}
 
-            if std::time::Instant::now() > end_time {
-                break;
-            }
-        }
+		if transactions.len() > 0 {
+			let client_ptr = self.light_node_client.clone();
+			let mut light_node_client = client_ptr.write().await;
+			light_node_client.batch_write(BatchWriteRequest { blobs: transactions }).await?;
 
-        if transactions.len() > 0 {
-            let client_ptr = self.light_node_client.clone();
-            let mut light_node_client = client_ptr.write().await;
-            light_node_client.batch_write(
-                BatchWriteRequest {
-                    blobs: transactions
-                }
-            ).await?;
+			debug!("Wrote transactions to DA");
+		}
 
-            debug!("Wrote transactions to DA");
+		Ok(())
+	}
 
-        }
+	pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+		loop {
+			self.tick_write_transactions_to_da().await?;
+		}
+	}
 
-        Ok(())
+	// receive transactions from the transaction channel and send them to be executed
+	// ! This assumes the m1 da light node is running sequencer mode
+	pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
+		let block_head_height = self.executor.get_block_head_height().await?;
 
-
-    }
-
-    pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
-        
-        loop {
-            self.tick_write_transactions_to_da().await?;
-        }
-
-    }
-
-    // receive transactions from the transaction channel and send them to be executed
-    // ! This assumes the m1 da light node is running sequencer mode
-    pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
-
-        let block_head_height = self.executor.get_block_head_height().await?;
-
-        let mut stream = {
-            let client_ptr = self.light_node_client.clone();
-            let mut light_node_client =  client_ptr.write().await;
-            light_node_client.stream_read_from_height(
-                StreamReadFromHeightRequest {
-                    height: block_head_height,
-                }
-            ).await?
-        }.into_inner();
+		let mut stream = {
+			let client_ptr = self.light_node_client.clone();
+			let mut light_node_client = client_ptr.write().await;
+			light_node_client
+				.stream_read_from_height(StreamReadFromHeightRequest { height: block_head_height })
+				.await?
+		}
+		.into_inner();
 
 		while let Some(blob) = stream.next().await {
+			debug!("Got blob: {:?}", blob);
 
-            debug!("Got blob: {:?}", blob);
+			// get the block
+			let (block_bytes, block_timestamp, block_id) = match blob?
+				.blob
+				.ok_or(anyhow::anyhow!("No blob in response"))?
+				.blob_type
+				.ok_or(anyhow::anyhow!("No blob type in response"))?
+			{
+				blob_response::BlobType::SequencedBlobBlock(blob) => {
+					(blob.data, blob.timestamp, blob.blob_id)
+				}
+				_ => {
+					anyhow::bail!("Invalid blob type in response")
+				}
+			};
 
-            // get the block
-            let (block_bytes, block_timestamp, block_id) = match blob?.blob.ok_or(anyhow::anyhow!("No blob in response"))?.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
-                blob_response::BlobType::SequencedBlobBlock(blob) => {
-                    (blob.data, blob.timestamp, blob.blob_id)
-                },
-                _ => { anyhow::bail!("Invalid blob type in response") }
-            };
+			let block: Block = serde_json::from_slice(&block_bytes)?;
 
-			let block : Block = serde_json::from_slice(&block_bytes)?;
-            
-            debug!("Got block: {:?}", block);
+			debug!("Got block: {:?}", block);
 
 			// get the transactions
 			let mut block_transactions = Vec::new();
-			let block_metadata = self.executor.build_block_metadata(
-				HashValue::sha3_256_of(block_id.as_bytes()),
-				block_timestamp
-			).await?;
-			let block_metadata_transaction = SignatureVerifiedTransaction::Valid(
-				Transaction::BlockMetadata(
-					block_metadata
-				)
-			);
+			let block_metadata = self
+				.executor
+				.build_block_metadata(HashValue::sha3_256_of(block_id.as_bytes()), block_timestamp)
+				.await?;
+			let block_metadata_transaction =
+				SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
 			block_transactions.push(block_metadata_transaction);
 
 			for transaction in block.transactions {
-				let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.0)?;
+				let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.0)?;
 				let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
-					Transaction::UserTransaction(
-						signed_transaction
-					)
+					Transaction::UserTransaction(signed_transaction),
 				);
 				block_transactions.push(signature_verified_transaction);
 			}
@@ -199,10 +185,9 @@ where
 			// form the executable block and execute it
 			let executable_block = ExecutableBlock::new(block_hash, block);
 			let block_id = executable_block.block_id;
-			let commitment =
-				self.executor.execute_block_opt(executable_block).await?;
+			let commitment = self.executor.execute_block_opt(executable_block).await?;
 
-            debug!("Executed block: {:?}", block_id);
+			debug!("Executed block: {:?}", block_id);
 
 			self.settlement_manager.post_block_commitment(commitment).await?;
 		}
@@ -217,10 +202,10 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
-			},
+			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
-			},
+			}
 		}
 	}
 	Ok(())
