@@ -4,22 +4,9 @@ pragma solidity ^0.8.19;
 import {WrappedToken} from "../base/WrappedToken.sol";
 import {IMintableToken} from "../base/MintableToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {LockedTokenStorage} from "./LockedTokenStorage.sol";
 
-contract LockedToken is WrappedToken {
-    bytes32 public constant MINT_LOCKER_ROLE = keccak256("MINT_LOCKER_ROLE");
-    bytes32 public constant MINT_LOCKER_ADMIN_ROLE = keccak256("MINT_LOCKER_ADMIN_ROLE");
-
-    struct Lock {
-        uint256 amount;
-        uint256 releaseTime;
-    }
-
-    mapping(address => Lock[]) public locks;
-
-    error AddressesAndMintLengthMismatch();
-    error AddressesAndLockLengthMismatch();
-    error AddressesAndTimeLengthMismatch();
-
+contract LockedToken is WrappedToken, LockedTokenStorage {
     /**
      * @dev Initialize the contract
      * @param name The name of the token
