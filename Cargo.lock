@@ -6865,6 +6865,7 @@ name = "maptos-rest"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-api",
  "poem",
  "tokio",
  "tracing",

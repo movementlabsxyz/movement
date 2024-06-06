@@ -21,3 +21,5 @@ anyhow = { workspace = true }
 poem = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+
+aptos-api = { workspace = true }
