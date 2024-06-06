@@ -1,6 +1,6 @@
 [package]
-name = "maptos-executor"
-description = "The Aptos executor managing optimistic and finalized execution paths"
+name = "maptos-dof-execution"
+description = "Block execution state management for dyn, opt, and fin states"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

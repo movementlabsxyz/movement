@@ -1,4 +1,4 @@
-use crate::{BlockMetadata, ExecutableBlock, Executor, HashValue, SignedTransaction};
+use crate::{BlockMetadata, ExecutableBlock, DynOptFinExecutor, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
@@ -10,13 +10,13 @@ use async_trait::async_trait;
 use tracing::debug;
 
 #[derive(Clone)]
-pub struct ExecutorV1 {
+pub struct Executor {
 	pub executor: OptExecutor,
 	finality_view: FinalityView,
 	pub transaction_channel: Sender<SignedTransaction>,
 }
 
-impl ExecutorV1 {
+impl Executor {
 	pub fn new(executor: OptExecutor, finality_view: FinalityView, transaction_channel: Sender<SignedTransaction>) -> Self {
 		Self { executor, finality_view, transaction_channel }
 	}
@@ -43,7 +43,7 @@ impl ExecutorV1 {
 }
 
 #[async_trait]
-impl Executor for ExecutorV1 {
+impl DynOptFinExecutor for Executor {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
 		tokio::try_join!(
@@ -154,7 +154,7 @@ mod tests {
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
 		let config = Config::try_from_env()?;
 		let (tx, _rx) = async_channel::unbounded();
-		let executor = ExecutorV1::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, &config)?;
 		let block_id = HashValue::random();
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
 			create_signed_transaction(0),
@@ -169,7 +169,7 @@ mod tests {
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
 		let config = Config::try_from_env()?;
 		let (tx, rx) = async_channel::unbounded();
-		let executor = ExecutorV1::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, &config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 
@@ -204,7 +204,7 @@ mod tests {
 	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
 		let config = Config::try_from_env()?;
 		let (tx, rx) = async_channel::unbounded();
-		let executor = ExecutorV1::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, &config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 
@@ -271,7 +271,7 @@ mod tests {
 
 		let config = Config::try_from_env()?;
 		let (tx, rx) = async_channel::unbounded::<SignedTransaction>();
-		let executor = ExecutorV1::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, &config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 		let services_handle = tokio::spawn(async move {
@@ -367,7 +367,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
 		let config = Config::try_from_env()?;
-		let executor = ExecutorV1::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, &config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -432,7 +432,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
 		let config = Config::try_from_env()?;
-		let executor = ExecutorV1::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, &config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(

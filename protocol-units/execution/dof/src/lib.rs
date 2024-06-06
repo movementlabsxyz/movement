@@ -16,7 +16,7 @@ use async_channel::Sender;
 use async_trait::async_trait;
 
 #[async_trait]
-pub trait Executor {
+pub trait DynOptFinExecutor {
 
     /// Runs the service
     async fn run_service(&self) -> Result<(), anyhow::Error>;

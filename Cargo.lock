@@ -6749,21 +6749,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
-name = "maptos-execution-util"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-crypto",
- "aptos-sdk",
- "aptos-types",
- "m1-da-light-node-util",
- "rand 0.7.3",
- "serde_json",
- "tempfile",
-]
-
-[[package]]
-name = "maptos-executor"
+name = "maptos-dof-execution"
 version = "0.3.0"
 dependencies = [
  "anyhow",
@@ -6783,6 +6769,20 @@ dependencies = [
  "rand 0.7.3",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "maptos-execution-util"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-crypto",
+ "aptos-sdk",
+ "aptos-types",
+ "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]
@@ -7047,7 +7047,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "m1-da-light-node-client",
- "maptos-executor",
+ "maptos-dof-execution",
  "movement-types",
  "serde_json",
  "sha2 0.10.8",
@@ -10747,7 +10747,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "m1-da-light-node-client",
- "maptos-executor",
+ "maptos-dof-execution",
  "mcr-settlement-client",
  "mcr-settlement-manager",
  "movement-types",

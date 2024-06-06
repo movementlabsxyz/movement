@@ -8,9 +8,9 @@ use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
 use movement_types::{Block, BlockCommitmentEvent};
-use maptos_executor::{
-	v1::ExecutorV1, ExecutableBlock, ExecutableTransactions, HashValue,
-	SignatureVerifiedTransaction, SignedTransaction, Executor, Transaction,
+use maptos_dof_execution::{
+	v1::Executor, ExecutableBlock, ExecutableTransactions, HashValue,
+	SignatureVerifiedTransaction, SignedTransaction, DynOptFinExecutor, Transaction,
 };
 
 use anyhow::Context;
@@ -34,7 +34,7 @@ pub struct SuzukaPartialNode<T> {
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: Executor + Send + Sync,
+	T: DynOptFinExecutor + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
@@ -228,7 +228,7 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
 where
-	T: Executor + Send + Sync,
+	T: DynOptFinExecutor + Send + Sync,
 {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -254,12 +254,12 @@ where
 	}
 }
 
-impl SuzukaPartialNode<ExecutorV1> {
+impl SuzukaPartialNode<Executor> {
 	pub async fn try_from_env(
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
 		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-		let executor = ExecutorV1::try_from_env(tx)
+		let executor = Executor::try_from_env(tx)
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();

@@ -3,7 +3,7 @@
 resolver = "2"
 
 members = [
-    "protocol-units/execution/executor",
+    "protocol-units/execution/dof",
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
     "protocol-units/execution/util",
@@ -43,7 +43,7 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## execution
-maptos-executor = { path = "protocol-units/execution/executor" }
+maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
 maptos-fin-view = { path = "protocol-units/execution/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/util" }
