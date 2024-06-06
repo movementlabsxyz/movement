@@ -14,7 +14,12 @@ async fn main() -> Result<(), anyhow::Error> {
 			.init();
 	}
 
-	let (suzuka, background_task) = SuzukaPartialNode::try_from_env()
+	// Load variables defined in .env file.
+	dotenv::dotenv().ok();
+
+	println!("start suzuka node",);
+
+	let (executor, background_task) = SuzukaPartialNode::try_from_env()
 		.await
 		.context("Failed to create the executor")?;
 

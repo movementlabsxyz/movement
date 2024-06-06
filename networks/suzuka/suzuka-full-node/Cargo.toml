@@ -29,6 +29,8 @@ maptos-rest = { workspace = true }
 
 tracing-subscriber = { workspace = true, optional = true }
 
+dotenv = "0.15.0"
+
 [features]
 default = ["logging"]
 logging = ["tracing-subscriber"]

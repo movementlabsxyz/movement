@@ -13,6 +13,15 @@ rust-version = { workspace = true }
 
 [dependencies]
 async-channel = { workspace = true }
+alloy-sol-types = { workspace = true  }
+alloy_provider = { workspace = true }
+alloy_signer_wallet = { workspace = true }
+alloy_network = { workspace = true }
+alloy-primitives = { workspace = true  }
+alloy_contract = { workspace = true }
+alloy_transport = { workspace = true }
+alloy_rpc_types = { workspace = true }
+
 aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
 once_cell = { workspace = true }
@@ -31,6 +40,9 @@ serde_json = { workspace = true }
 maptos-execution-util = { workspace = true }
 suzuka-executor = { workspace = true }
 mcr-settlement-client = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
 
 [lints]
 workspace = true

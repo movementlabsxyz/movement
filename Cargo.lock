@@ -4709,6 +4709,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
+name = "dotenv"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
+
+[[package]]
 name = "dunce"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10911,10 +10917,21 @@ checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 name = "suzuka-client"
 version = "0.3.0"
 dependencies = [
+<<<<<<< HEAD
  "alloy-network",
  "alloy-primitives",
  "alloy-provider",
  "alloy-signer-wallet",
+=======
+ "alloy-contract",
+ "alloy-network",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-wallet",
+ "alloy-sol-types",
+ "alloy-transport",
+>>>>>>> 94137ec0 (first version before running)
  "anyhow",
  "aptos-sdk",
  "async-channel",
@@ -10922,9 +10939,13 @@ dependencies = [
  "mcr-settlement-client",
  "once_cell",
  "rand 0.7.3",
+<<<<<<< HEAD
  "reqwest 0.12.4",
  "serde_json",
  "suzuka-executor",
+=======
+ "serde_json",
+>>>>>>> 94137ec0 (first version before running)
  "tokio",
  "url",
 ]
@@ -11051,6 +11072,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "dotenv",
  "m1-da-light-node-client",
  "maptos-rest",
  "mcr-settlement-client",

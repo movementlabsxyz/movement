@@ -18,6 +18,8 @@ use std::str::FromStr;
 use tokio::time::{sleep, Duration};
 use url::Url;
 
+mod settlement_state;
+
 static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
 	maptos_execution_util::config::Config::try_from_env()
 		.context("Failed to create the config")

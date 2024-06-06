@@ -3,7 +3,6 @@ version: "3"
 environment:
 
 processes:
-
   suzuka-client-tests:
     command: |
       cargo test -p suzuka-client -- --test-threads=1 --nocapture 
@@ -12,5 +11,7 @@ processes:
         condition: process_healthy
       suzuka-faucet:
         condition: process_healthy
+      deploy-mcr:
+        condition: process_healthy
     availability:
-      exit_on_end: true
+      exit_on_end: false
