@@ -1,28 +1,59 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./locked/LockedToken.sol";
-import "./base/MintableToken.sol";
-import "./custodian/CustodianToken.sol";
+import {LockedToken} from "./locked/LockedToken.sol";
+import {CustodianToken} from "./custodian/CustodianToken.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {IMintableToken} from "./base/MintableToken.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract stlMoveToken is LockedToken, CustodianToken {
     using SafeERC20 for IERC20;
 
     /**
      * @dev Initialize the contract
-     * @param underlyingToken The underlying token to wrap
+     * @param _underlyingToken The underlying token to wrap
      */
-    function initialize(IMintableToken _underlyingToken) public override initializer {
-        __ERC20_init_unchained("Stakable Locked Move Token", "stlMOVE");
-        __AccessControl_init_unchained();
-        __UUPSUpgradeable_init_unchained();
+    function initialize(IMintableToken _underlyingToken) public {
+        initialize("Stakable Locked Move Token", "stlMOVE", _underlyingToken);
+    }
+
+    function initialize(string memory name, string memory symbol, IMintableToken _underlyingToken)
+        public
+        override(CustodianToken, LockedToken)
+        initializer
+    {
+        __ERC20_init_unchained(name, symbol);
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
         __WrappedToken_init_unchained(_underlyingToken);
         __LockedToken_init_unchained();
         __CustodianToken_init_unchained();
+    }
+
+    function transfer(address to, uint256 amount)
+        public
+        override(CustodianToken, ERC20Upgradeable, IERC20)
+        returns (bool)
+    {
+        return CustodianToken.transfer(to, amount);
+    }
+
+    function transferFrom(address from, address to, uint256 amount)
+        public
+        override(CustodianToken, ERC20Upgradeable, IERC20)
+        returns (bool)
+    {
+        return CustodianToken.transferFrom(from, to, amount);
+    }
+
+    function approve(address spender, uint256 amount)
+        public
+        override(CustodianToken, ERC20Upgradeable, IERC20)
+        returns (bool)
+    {
+        return CustodianToken.approve(spender, amount);
     }
 }
 

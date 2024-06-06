@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../base/BaseToken.sol";
-import "../base/MintableToken.sol";
-import "../base/WrappedToken.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
+import {WrappedToken} from "../base/WrappedToken.sol";
+import {IMintableToken} from "../base/MintableToken.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract LockedToken is WrappedToken {
     bytes32 public constant MINT_LOCKER_ROLE = keccak256("MINT_LOCKER_ROLE");
@@ -18,7 +16,9 @@ contract LockedToken is WrappedToken {
 
     mapping(address => Lock[]) public locks;
 
-    error AddressesAndAmountsLengthMismatch();
+    error AddressesAndMintLengthMismatch();
+    error AddressesAndLockLengthMismatch();
+    error AddressesAndTimeLengthMismatch();
 
     /**
      * @dev Initialize the contract
@@ -30,7 +30,7 @@ contract LockedToken is WrappedToken {
         public
         virtual
         override
-        initialzier
+        initializer
     {
         __LockedToken_init(name, symbol, _underlyingToken);
     }
@@ -40,8 +40,6 @@ contract LockedToken is WrappedToken {
         onlyInitializing
     {
         __ERC20_init_unchained(name, symbol);
-        __AccessControl_init_unchained();
-        __UUPSUpgradeable_init_unchained();
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
         __WrappedToken_init_unchained(_underlyingToken);
@@ -66,9 +64,9 @@ contract LockedToken is WrappedToken {
         uint256[] calldata lockAmounts,
         uint256[] calldata lockTimes
     ) external onlyRole(MINT_LOCKER_ROLE) {
-        if (addresses.length != mintAmounts.length) revert AddressesAndAmountsLengthMismatch();
-        require(addresses.length == lockAmounts.length, "Addresses and lock amounts length mismatch");
-        require(addresses.length == lockTimes.length, "Addresses and lock times length mismatch");
+        if (addresses.length != mintAmounts.length) revert AddressesAndMintLengthMismatch();
+        if (addresses.length != lockAmounts.length) revert AddressesAndLockLengthMismatch();
+        if (addresses.length != lockTimes.length) revert AddressesAndTimeLengthMismatch();
 
         for (uint256 i = 0; i < addresses.length; i++) {
             underlyingToken.mint(address(this), mintAmounts[i]);

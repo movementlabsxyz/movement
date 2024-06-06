@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./BaseToken.sol";
+import {BaseToken} from "./BaseToken.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import "forge-std/console.sol";
@@ -23,14 +23,12 @@ contract MintableToken is IMintableToken, BaseToken {
      * @param name The name of the token
      * @param symbol The symbol of the token
      */
-    function initialize(string memory name, string memory symbol) public virtual initializer {
+    function initialize(string memory name, string memory symbol) public virtual override initializer {
         __MintableToken_init(name, symbol);
     }
 
     function __MintableToken_init(string memory name, string memory symbol) internal onlyInitializing {
         __ERC20_init_unchained(name, symbol);
-        __AccessControl_init_unchained();
-        __UUPSUpgradeable_init_unchained();
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
     }

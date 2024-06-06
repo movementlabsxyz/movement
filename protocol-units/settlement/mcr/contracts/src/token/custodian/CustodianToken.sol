@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../base/MintableToken.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "../base/WrappedToken.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {IMintableToken} from "../base/MintableToken.sol";
+import {WrappedToken} from "../base/WrappedToken.sol";
 
 interface ICustodianToken is IERC20 {
     function grantTransferSinkRole(address account) external;
@@ -25,6 +25,9 @@ contract CustodianToken is ICustodianToken, WrappedToken {
 
     bytes32 public constant BUYER_ROLE = keccak256("BUYER_ROLE");
     bytes32 public constant BUYER_ADMIN_ROLE = keccak256("BUYER_ADMIN_ROLE");
+
+    error RestrictedToTransferSinkRole();
+    error RestrictedToBuyerRole();
 
     /**
      * @dev Initialize the contract
@@ -46,8 +49,6 @@ contract CustodianToken is ICustodianToken, WrappedToken {
         onlyInitializing
     {
         __ERC20_init_unchained(name, symbol);
-        __AccessControl_init_unchained();
-        __UUPSUpgradeable_init_unchained();
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
         __WrappedToken_init_unchained(_underlyingToken);
@@ -75,9 +76,14 @@ contract CustodianToken is ICustodianToken, WrappedToken {
      * @param amount The amount of tokens to approve
      * @return A boolean indicating whether the approval was successful
      */
-    function approve(address spender, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+    function approve(address spender, uint256 amount)
+        public
+        virtual
+        override(IERC20, ERC20Upgradeable)
+        returns (bool)
+    {
         // require the spender is a transfer sink
-        require(hasRole(TRANSFER_SINK_ROLE, spender), "Approval restricted to accounts with TRANSFER_SINK_ROLE");
+        if (!hasRole(TRANSFER_SINK_ROLE, spender)) revert RestrictedToTransferSinkRole();
 
         return underlyingToken.approve(spender, amount);
     }
@@ -96,7 +102,7 @@ contract CustodianToken is ICustodianToken, WrappedToken {
         returns (bool)
     {
         // require the destination is a transfer sink
-        require(hasRole(TRANSFER_SINK_ROLE, to), "Transfer restricted to accounts with TRANSFER_SINK_ROLE");
+        if (!hasRole(TRANSFER_SINK_ROLE, to)) revert RestrictedToTransferSinkRole();
 
         // burn the tokens from the sender
         super.transferFrom(from, address(this), amount);
@@ -111,9 +117,9 @@ contract CustodianToken is ICustodianToken, WrappedToken {
      * @param amount The amount of tokens to transfer
      * @return A boolean indicating whether the transfer was successful
      */
-    function transfer(address to, uint256 amount) public override(IERC20, ERC20Upgradeable) returns (bool) {
+    function transfer(address to, uint256 amount) public virtual override(IERC20, ERC20Upgradeable) returns (bool) {
         // require the destination is a transfer sink
-        require(hasRole(TRANSFER_SINK_ROLE, to), "Transfer restricted to accounts with TRANSFER_SINK_ROLE");
+        if (!hasRole(TRANSFER_SINK_ROLE, to)) revert RestrictedToTransferSinkRole();
 
         // burn the tokens from the sender
         super.transfer(address(this), amount);
@@ -131,7 +137,7 @@ contract CustodianToken is ICustodianToken, WrappedToken {
     }
 
     function buyCustodialTokenFor(address account, uint256 amount) public override {
-        require(hasRole(BUYER_ROLE, msg.sender), "Caller must have BUYER_ROLE");
+        if (!hasRole(BUYER_ROLE, msg.sender)) revert RestrictedToBuyerRole();
 
         // transfer the approved value from the buyer to this contract
         underlyingToken.transferFrom(msg.sender, address(this), amount);

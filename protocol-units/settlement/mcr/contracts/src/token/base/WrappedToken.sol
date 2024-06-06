@@ -3,8 +3,8 @@ pragma solidity ^0.8.19;
 
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "./MintableToken.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {MintableToken, IMintableToken} from "./MintableToken.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract WrappedToken is MintableToken {
     using SafeERC20 for IERC20;
@@ -20,10 +20,9 @@ contract WrappedToken is MintableToken {
     function initialize(string memory name, string memory symbol, IMintableToken _underlyingToken)
         public
         virtual
-        override
         initializer
     {
-        __WrappedToken_init(_underlyingToken);
+        __WrappedToken_init(name, symbol, _underlyingToken);
     }
 
     /**
@@ -35,8 +34,6 @@ contract WrappedToken is MintableToken {
         onlyInitializing
     {
         __ERC20_init_unchained(name, symbol);
-        __AccessControl_init_unchained();
-        __UUPSUpgradeable_init_unchained();
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
         __WrappedToken_init_unchained(_underlyingToken);
