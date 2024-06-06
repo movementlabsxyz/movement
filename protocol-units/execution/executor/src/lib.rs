@@ -13,8 +13,9 @@ use aptos_api::runtime::Apis;
 use movement_types::BlockCommitment;
 
 use async_channel::Sender;
+use async_trait::async_trait;
 
-#[tonic::async_trait]
+#[async_trait]
 pub trait Executor {
 
     /// Runs the service

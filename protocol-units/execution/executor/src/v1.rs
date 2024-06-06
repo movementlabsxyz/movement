@@ -6,6 +6,7 @@ use maptos_execution_util::config::Config;
 use movement_types::BlockCommitment;
 
 use async_channel::Sender;
+use async_trait::async_trait;
 use tracing::debug;
 
 #[derive(Clone)]
@@ -41,7 +42,7 @@ impl ExecutorV1 {
 	}
 }
 
-#[tonic::async_trait]
+#[async_trait]
 impl Executor for ExecutorV1 {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
@@ -109,6 +110,7 @@ mod tests {
 		HashValue, PrivateKey, Uniform,
 	};
 	use aptos_sdk::{
+		bcs,
 		transaction_builder::TransactionFactory,
 		types::{AccountKey, LocalAccount},
 	};

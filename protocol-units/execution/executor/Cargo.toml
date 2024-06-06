@@ -15,46 +15,12 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = { workspace = true }
 async-trait = { workspace = true }
-fail = { workspace = true }
-thiserror = { workspace = true }
-bytes = { workspace = true }
-schemars = { workspace = true, optional = true }
-clap = { workspace = true, optional = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-borsh = { workspace = true, features = ["rc"] }
-hex = { workspace = true }
-poem-openapi = { workspace = true }
 tracing = { workspace = true }
-derive_more = { workspace = true, default-features = true }
-lazy_static = "1.4.0"
-tokio = { workspace = true }
-rand = { workspace = true }
-rand_core = { workspace = true }
 async-channel = { workspace = true }
-tonic = { workspace = true }
-futures = { workspace = true}
-bcs = { workspace = true }
 
-aptos-vm = { workspace = true }
-aptos-config = { workspace = true }
-aptos-sdk = { workspace = true }
 aptos-crypto = { workspace = true }
-aptos-consensus-types = { workspace = true }
-aptos-db = { workspace = true }
 aptos-api = { workspace = true }
-aptos-api-types = { workspace = true }
 aptos-types = { workspace = true }
-aptos-storage-interface = { workspace = true }
-aptos-block-executor = { workspace = true }
-aptos-vm-types = { workspace = true }
-aptos-vm-logging = { workspace = true }
-aptos-vm-genesis = { workspace = true }
-aptos-framework = { workspace = true }
-aptos-executor = { workspace = true }
-aptos-bitvec = { workspace = true }
-aptos-mempool = { workspace = true }
-aptos-temppath = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
 maptos-fin-view = { workspace = true }
@@ -63,4 +29,8 @@ movement-types = { workspace = true }
 
 [dev-dependencies]
 chrono = { workspace = true }
+aptos-db = { workspace = true }
+aptos-sdk = { workspace = true }
 aptos-proptest-helpers = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
