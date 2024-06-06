@@ -17,44 +17,44 @@ use m1_da_light_node_grpc::light_node_service_server::{LightNodeService, LightNo
 use tonic::transport::Server;
 
 pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone {
-    /// Initializes from environment variables.
-    async fn try_from_env() -> Result<Self, anyhow::Error>;
+	/// Initializes from environment variables.
+	async fn try_from_env() -> Result<Self, anyhow::Error>;
 
-    /// Runs the background tasks.
-    async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
+	/// Runs the background tasks.
+	async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
 
-    /// Runs the server
-    async fn run_server(&self) -> Result<(), anyhow::Error> {
-        let reflection = tonic_reflection::server::Builder::configure()
-            .register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
-            .build()?;
+	/// Runs the server
+	async fn run_server(&self) -> Result<(), anyhow::Error> {
+		let reflection = tonic_reflection::server::Builder::configure()
+			.register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
+			.build()?;
 
-        let env_addr =
-            std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "0.0.0.0:30730".to_string());
-        let addr = env_addr.parse()?;
+		let env_addr =
+			std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "0.0.0.0:30730".to_string());
+		let addr = env_addr.parse()?;
 
-        Server::builder()
-            .accept_http1(true)
-            .add_service(LightNodeServiceServer::new(self.clone()))
-            .add_service(reflection)
-            .serve(addr)
-            .await?;
+		Server::builder()
+			.accept_http1(true)
+			.add_service(LightNodeServiceServer::new(self.clone()))
+			.add_service(reflection)
+			.serve(addr)
+			.await?;
 
-        Ok(())
-    }
+		Ok(())
+	}
 
-    /// Runs the server and the background tasks.
-    async fn run(self) -> Result<(), anyhow::Error> {
-        let background_handle = self.run_background_tasks();
+	/// Runs the server and the background tasks.
+	async fn run(self) -> Result<(), anyhow::Error> {
+		let background_handle = self.run_background_tasks();
 
-        let background_tasks = async move {
-            background_handle.await?;
-            Ok::<_, anyhow::Error>(())
-        };
-        let server = self.run_server();
+		let background_tasks = async move {
+			background_handle.await?;
+			Ok::<_, anyhow::Error>(())
+		};
+		let server = self.run_server();
 
-        tokio::try_join!(server, background_tasks)?;
+		tokio::try_join!(server, background_tasks)?;
 
-        Ok(())
-    }
+		Ok(())
+	}
 }

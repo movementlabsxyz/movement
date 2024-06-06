@@ -9,182 +9,182 @@ use core::fmt;
 pub struct Id(pub [u8; 32]);
 
 impl Id {
-    pub fn test() -> Self {
-        Self([0; 32])
-    }
+	pub fn test() -> Self {
+		Self([0; 32])
+	}
 
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.into()
-    }
+	pub fn to_vec(&self) -> Vec<u8> {
+		self.0.into()
+	}
 
-    pub fn genesis_block() -> Self {
-        Self([0; 32])
-    }
+	pub fn genesis_block() -> Self {
+		Self([0; 32])
+	}
 }
 
 impl fmt::Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", &self.0)
-    }
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{:?}", &self.0)
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Transaction(pub Vec<u8>);
 
 impl From<Vec<u8>> for Transaction {
-    fn from(data: Vec<u8>) -> Self {
-        Self(data)
-    }
+	fn from(data: Vec<u8>) -> Self {
+		Self(data)
+	}
 }
 
 impl Transaction {
-    pub fn new(data: Vec<u8>) -> Self {
-        Self(data)
-    }
+	pub fn new(data: Vec<u8>) -> Self {
+		Self(data)
+	}
 
-    pub fn id(&self) -> Id {
-        let mut hasher = sha2::Sha256::new();
-        hasher.update(&self.0);
-        Id(hasher.finalize().into())
-    }
+	pub fn id(&self) -> Id {
+		let mut hasher = sha2::Sha256::new();
+		hasher.update(&self.0);
+		Id(hasher.finalize().into())
+	}
 
-    pub fn test() -> Self {
-        Self(vec![0])
-    }
+	pub fn test() -> Self {
+		Self(vec![0])
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TransactionEntry {
-    pub consumer_id: Id,
-    pub data: Transaction,
+	pub consumer_id: Id,
+	pub data: Transaction,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct AtomicTransactionBundle {
-    pub sequencer_id: Id,
-    pub transactions: Vec<TransactionEntry>,
+	pub sequencer_id: Id,
+	pub transactions: Vec<TransactionEntry>,
 }
 
 impl TryFrom<AtomicTransactionBundle> for Transaction {
-    type Error = anyhow::Error;
+	type Error = anyhow::Error;
 
-    fn try_from(value: AtomicTransactionBundle) -> Result<Self, Self::Error> {
-        if value.transactions.len() == 1 {
-            Ok(value.transactions[0].data.clone())
-        } else {
-            Err(anyhow::anyhow!("AtomicTransactionBundle must contain exactly one transaction"))
-        }
-    }
+	fn try_from(value: AtomicTransactionBundle) -> Result<Self, Self::Error> {
+		if value.transactions.len() == 1 {
+			Ok(value.transactions[0].data.clone())
+		} else {
+			Err(anyhow::anyhow!("AtomicTransactionBundle must contain exactly one transaction"))
+		}
+	}
 }
 
 impl From<Transaction> for AtomicTransactionBundle {
-    fn from(transaction: Transaction) -> Self {
-        Self {
-            sequencer_id: Id::default(),
-            transactions: vec![TransactionEntry { consumer_id: Id::default(), data: transaction }],
-        }
-    }
+	fn from(transaction: Transaction) -> Self {
+		Self {
+			sequencer_id: Id::default(),
+			transactions: vec![TransactionEntry { consumer_id: Id::default(), data: transaction }],
+		}
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BlockMetadata {
-    #[default]
-    BlockMetadata,
+	#[default]
+	BlockMetadata,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Block {
-    pub metadata: BlockMetadata,
-    pub parent: Vec<u8>,
-    pub transactions: Vec<Transaction>,
+	pub metadata: BlockMetadata,
+	pub parent: Vec<u8>,
+	pub transactions: Vec<Transaction>,
 }
 
 impl Block {
-    pub fn new(metadata: BlockMetadata, parent: Vec<u8>, transactions: Vec<Transaction>) -> Self {
-        Self { metadata, parent, transactions }
-    }
+	pub fn new(metadata: BlockMetadata, parent: Vec<u8>, transactions: Vec<Transaction>) -> Self {
+		Self { metadata, parent, transactions }
+	}
 
-    pub fn id(&self) -> Id {
-        let mut hasher = sha2::Sha256::new();
-        hasher.update(&self.parent);
-        for transaction in &self.transactions {
-            hasher.update(&transaction.0);
-        }
-        Id(hasher.finalize().into())
-    }
+	pub fn id(&self) -> Id {
+		let mut hasher = sha2::Sha256::new();
+		hasher.update(&self.parent);
+		for transaction in &self.transactions {
+			hasher.update(&transaction.0);
+		}
+		Id(hasher.finalize().into())
+	}
 
-    pub fn test() -> Self {
-        Self {
-            metadata: BlockMetadata::BlockMetadata,
-            parent: vec![0],
-            transactions: vec![Transaction::test()],
-        }
-    }
+	pub fn test() -> Self {
+		Self {
+			metadata: BlockMetadata::BlockMetadata,
+			parent: vec![0],
+			transactions: vec![Transaction::test()],
+		}
+	}
 
-    pub fn add_transaction(&mut self, transaction: Transaction) {
-        self.transactions.push(transaction);
-    }
+	pub fn add_transaction(&mut self, transaction: Transaction) {
+		self.transactions.push(transaction);
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Commitment(pub [u8; 32]);
 
 impl Commitment {
-    pub fn test() -> Self {
-        Self([0; 32])
-    }
+	pub fn test() -> Self {
+		Self([0; 32])
+	}
 
-    /// Creates a commitment by making a cryptographic digest of the state proof.
-    pub fn digest_state_proof(state_proof: &StateProof) -> Self {
-        let mut hasher = sha2::Sha256::new();
-        bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
-        Self(hasher.finalize().into())
-    }
+	/// Creates a commitment by making a cryptographic digest of the state proof.
+	pub fn digest_state_proof(state_proof: &StateProof) -> Self {
+		let mut hasher = sha2::Sha256::new();
+		bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
+		Self(hasher.finalize().into())
+	}
 }
 
 impl TryFrom<Vec<u8>> for Commitment {
-    type Error = std::array::TryFromSliceError;
+	type Error = std::array::TryFromSliceError;
 
-    fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
-        Ok(Self(data[..32].try_into()?))
-    }
+	fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
+		Ok(Self(data[..32].try_into()?))
+	}
 }
 
 impl From<[u8; 32]> for Commitment {
-    fn from(data: [u8; 32]) -> Self {
-        Self(data)
-    }
+	fn from(data: [u8; 32]) -> Self {
+		Self(data)
+	}
 }
 
 impl From<Commitment> for [u8; 32] {
-    fn from(commitment: Commitment) -> [u8; 32] {
-        commitment.0
-    }
+	fn from(commitment: Commitment) -> [u8; 32] {
+		commitment.0
+	}
 }
 
 impl From<Commitment> for Vec<u8> {
-    fn from(commitment: Commitment) -> Vec<u8> {
-        commitment.0.into()
-    }
+	fn from(commitment: Commitment) -> Vec<u8> {
+		commitment.0.into()
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BlockCommitment {
-    pub height: u64,
-    pub block_id: Id,
-    pub commitment: Commitment,
+	pub height: u64,
+	pub block_id: Id,
+	pub commitment: Commitment,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BlockCommitmentRejectionReason {
-    InvalidBlockId,
-    InvalidCommitment,
-    InvalidHeight,
-    ContractError,
+	InvalidBlockId,
+	InvalidCommitment,
+	InvalidHeight,
+	ContractError,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum BlockCommitmentEvent {
-    Accepted(BlockCommitment),
-    Rejected { height: u64, reason: BlockCommitmentRejectionReason },
+	Accepted(BlockCommitment),
+	Rejected { height: u64, reason: BlockCommitmentRejectionReason },
 }
