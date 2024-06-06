@@ -1,21 +1,22 @@
+use aptos_config::config::NodeConfig;
 use aptos_db::AptosDB;
+use aptos_executor::{
+	block_executor::BlockExecutor,
+	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
+};
 use aptos_executor_types::{state_checkpoint_output::StateCheckpointOutput, BlockExecutorTrait};
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	block_executor::config::BlockExecutorConfigFromOnchain,
-	transaction::{
-		Transaction, WriteSetPayload,
-	},
+	block_executor::partitioner::ExecutableBlock,
+	transaction::{Transaction, WriteSetPayload},
 	validator_signer::ValidatorSigner,
-	block_executor::partitioner::ExecutableBlock
 };
 use aptos_vm::AptosVM;
-use std::{path::PathBuf, sync::{Arc, RwLock}};
-use aptos_config::config::NodeConfig;
-use aptos_executor::{
-	block_executor::BlockExecutor,
-	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
+use std::{
+	path::PathBuf,
+	sync::{Arc, RwLock},
 };
 
 /// The state of `movement-network` execution can exist in three states,
@@ -64,17 +65,15 @@ pub struct Executor {
 }
 
 impl Executor {
-
 	const DB_PATH_ENV_VAR: &'static str = "DB_DIR";
 
 	/// Create a new `Executor` instance.
 	pub fn new(
-		db_dir : PathBuf,
+		db_dir: PathBuf,
 		block_executor: BlockExecutor<AptosVM>,
 		signer: ValidatorSigner,
-		mempool: CoreMempool
+		mempool: CoreMempool,
 	) -> Self {
-
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(&db_dir));
 		Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
@@ -85,7 +84,7 @@ impl Executor {
 		}
 	}
 
-	pub fn bootstrap_empty_db(db_dir : PathBuf) -> Result<DbReaderWriter, anyhow::Error> {
+	pub fn bootstrap_empty_db(db_dir: PathBuf) -> Result<DbReaderWriter, anyhow::Error> {
 		let genesis = aptos_vm_genesis::test_genesis_change_set_and_validators(Some(1));
 		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis.0));
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(&db_dir));
@@ -101,11 +100,10 @@ impl Executor {
 	}
 
 	pub fn bootstrap(
-		db_dir : PathBuf,
+		db_dir: PathBuf,
 		signer: ValidatorSigner,
-		mempool: CoreMempool
+		mempool: CoreMempool,
 	) -> Result<Self, anyhow::Error> {
-
 		let db = Self::bootstrap_empty_db(db_dir)?;
 
 		Ok(Self {
@@ -115,11 +113,9 @@ impl Executor {
 			signer,
 			mempool,
 		})
-
 	}
 
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
-
 		// read the db dir from env or use a tempfile
 		let db_dir = match std::env::var(Self::DB_PATH_ENV_VAR) {
 			Ok(dir) => PathBuf::from(dir),
@@ -133,14 +129,8 @@ impl Executor {
 		let signer = ValidatorSigner::random(None);
 		let mempool = CoreMempool::new(&NodeConfig::default());
 
-		Self::bootstrap(
-			db_dir,
-			signer,
-			mempool
-		)
-
+		Self::bootstrap(db_dir, signer, mempool)
 	}
-
 
 	pub fn set_commit_state(&mut self) {
 		self.status = ExecutorState::Commit;
@@ -157,17 +147,16 @@ impl Executor {
 		}
 
 		let parent_block_id = {
-			let block_executor = self.block_executor.read().map_err(
-				|e| anyhow::anyhow!("Failed to acquire block executor read lock: {:?}", e)
-			)?; // acquire read lock
+			let block_executor = self.block_executor.read().map_err(|e| {
+				anyhow::anyhow!("Failed to acquire block executor read lock: {:?}", e)
+			})?; // acquire read lock
 			block_executor.committed_block_id()
 		};
 
-	
 		let state_checkpoint = {
-			let block_executor = self.block_executor.write().map_err(
-				|e| anyhow::anyhow!("Failed to acquire block executor write lock: {:?}", e)
-			)?; // acquire write lock
+			let block_executor = self.block_executor.write().map_err(|e| {
+				anyhow::anyhow!("Failed to acquire block executor write lock: {:?}", e)
+			})?; // acquire write lock
 			block_executor.execute_and_state_checkpoint(
 				block,
 				parent_block_id,
@@ -195,8 +184,8 @@ mod tests {
 		chain_id::ChainId,
 		transaction::{
 			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
-			SignedTransaction, Transaction, TransactionPayload
-		}
+			SignedTransaction, Transaction, TransactionPayload,
+		},
 	};
 
 	fn create_signed_transaction(gas_unit_price: u64) -> SignedTransaction {
@@ -215,7 +204,6 @@ mod tests {
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
 	}
-
 
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {

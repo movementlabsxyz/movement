@@ -54,10 +54,7 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	}
 
 	/// Sets the transaction channel.
-	fn set_tx_channel(
-		&mut self,
-		tx_channel: Sender<SignedTransaction>,
-	) {
+	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
 		self.transaction_channel = tx_channel;
 	}
 
@@ -72,23 +69,17 @@ impl MonzaExecutor for MonzaExecutorV1 {
 	}
 
 	/// Build block metadata for a timestamp
-	async fn build_block_metadata(&self, block_id : HashValue,  timestamp: u64) -> Result<BlockMetadata, anyhow::Error> {
-		
+	async fn build_block_metadata(
+		&self,
+		block_id: HashValue,
+		timestamp: u64,
+	) -> Result<BlockMetadata, anyhow::Error> {
 		let (epoch, round) = self.executor.get_next_epoch_and_round().await?;
 		// Clone the signer from the executor for signing the metadata.
 		let signer = self.executor.signer.clone();
 
 		// Create a block metadata transaction.
-		Ok(BlockMetadata::new(
-			block_id,
-			epoch,
-			round,
-			signer.author(),
-			vec![],
-			vec![],
-			timestamp,
-		))
-
+		Ok(BlockMetadata::new(block_id, epoch, round, signer.author(), vec![], vec![], timestamp))
 	}
 }
 

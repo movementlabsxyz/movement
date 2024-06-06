@@ -158,11 +158,13 @@ mod tests {
 			block_id: Default::default(),
 			commitment: Commitment([1; 32]),
 		};
-		client.override_block_commitment(BlockCommitment {
-			height: 1,
-			block_id: Default::default(),
-			commitment: Commitment([3; 32]),
-		}).await;
+		client
+			.override_block_commitment(BlockCommitment {
+				height: 1,
+				block_id: Default::default(),
+				commitment: Commitment([3; 32]),
+			})
+			.await;
 		manager.post_block_commitment(commitment.clone()).await?;
 		let commitment2 = BlockCommitment {
 			height: 2,
@@ -173,10 +175,13 @@ mod tests {
 		let item = event_stream.next().await;
 		let res = item.unwrap();
 		let event = res.unwrap();
-		assert_eq!(event, BlockCommitmentEvent::Rejected {
-			height: 1,
-			reason: BlockCommitmentRejectionReason::InvalidCommitment,
-		});
+		assert_eq!(
+			event,
+			BlockCommitmentEvent::Rejected {
+				height: 1,
+				reason: BlockCommitmentRejectionReason::InvalidCommitment,
+			}
+		);
 		Ok(())
 	}
 
