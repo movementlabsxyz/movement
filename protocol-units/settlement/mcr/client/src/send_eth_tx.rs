@@ -103,7 +103,7 @@ pub async fn send_tx<
 				}
 
 				return Err(McrEthConnectorError::from(err).into());
-			},
+			}
 		};
 
 		match pending_tx.get_receipt().await {
@@ -123,7 +123,7 @@ pub async fn send_tx<
 					))
 					.into());
 				}
-			},
+			}
 			Ok(_) => return Ok(()),
 			Err(err) => return Err(McrEthConnectorError::RpcTxExecution(err.to_string()).into()),
 		};

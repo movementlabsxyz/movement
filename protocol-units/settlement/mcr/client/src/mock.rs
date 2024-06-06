@@ -78,10 +78,10 @@ impl McrSettlementClientOperations for MockMcrSettlementClient {
 		{
 			let paused_at_height = self.paused_at_height.read().await;
 			match *paused_at_height {
-				Some(ph) if ph < height => {},
+				Some(ph) if ph < height => {}
 				_ => {
 					self.stream_sender.send(Ok(settled)).await?;
-				},
+				}
 			}
 		}
 
