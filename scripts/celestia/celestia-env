@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
 export DA_BLOCK_HEIGHT=0
 export CELESTIA_NODE_AUTH_TOKEN=
 export CELESTIA_ADDRESS=
@@ -6,6 +7,9 @@ export CELESTIA_NAMESPACE_BYTES="$(openssl rand -hex 10)"
 export CELESTIA_CHAIN_ID="$(openssl rand -hex 10)"
 export APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
 export NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
+
+: ${CELESTIA_LOG_LEVEL:="INFO"}
+export CELESTIA_LOG_LEVEL
 
 contains() {
     local value="$1"

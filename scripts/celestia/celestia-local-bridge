@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/usr/bin/env bash
+set -e
 APP_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/.celestia-app"
 NODE_PATH="$MOVEMENT_BASE_STORAGE_PATH/celestia/${CELESTIA_CHAIN_ID}/bridge"
 
@@ -29,7 +30,8 @@ echo "$CELESTIA_CUSTOM"
 celestia bridge init --node.store $NODE_PATH
 celestia bridge start \
   --node.store $NODE_PATH --gateway \
-  --core.ip 127.0.0.1 \
+  --core.ip 0.0.0.0 \
   --keyring.accname validator \
   --gateway.addr 0.0.0.0 \
   --rpc.addr 0.0.0.0 \
+  --log.level $CELESTIA_LOG_LEVEL
