@@ -3,10 +3,15 @@ use crate::{
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
+use alloy_network::EthereumSigner;
+use alloy_provider::ProviderBuilder;
+use alloy_signer_wallet::LocalWallet;
 use anyhow::{Context, Result};
+use mcr_settlement_client::eth_client::{McrEthSettlementClient, McrEthSettlementConfig};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
-use suzuka_executor::SuzukaExecutorV1;
+use suzuka_executor::v1::SuzukaExecutorV1;
+use tokio::time::{sleep, Duration};
 use url::Url;
 
 static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
@@ -135,9 +140,47 @@ async fn test_example_interaction() -> Result<()> {
 			.context("Failed to get Bob's account balance the second time")?
 	);
 
-	let (tx, rx) = async_channel::unbounded();
-	let executor = SuzukaExecutorV1::try_from_env(tx).await?;
-	let apis = executor.get_apis().await?;
+	//Check the helath of the rest service
+	let base_url = "http://0.0.0.0:30832";
+	let health_url = format!("{}/health", base_url);
+	let response = reqwest::get(health_url).await?;
+	assert!(response.status().is_success());
+
+	sleep(Duration::from_secs(10)).await;
+
+	let cur_blockheight = rest_client.get_ledger_information().await?.state().block_height;
+	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", cur_blockheight);
+	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
+
+	let client = reqwest::Client::new();
+	let response = client.get(&state_root_hash_url).send().await?;
+	let state_key = response.text().await?;
+
+	let signer: LocalWallet = anvil_address[1].1.parse()?;
+
+	//Build client 1 and send first commitment.
+	let provider = ProviderBuilder::new()
+		.with_recommended_fillers()
+		.signer(EthereumSigner::from(signer1))
+		.on_http(rpc_url.parse().unwrap());
+
+	let config = McrEthSettlementConfig {
+		mrc_contract_address: mcr_address.to_string(),
+		gas_limit: DEFAULT_TX_GAS_LIMIT,
+		tx_send_nb_retry: MAX_TX_SEND_RETRY,
+	};
+
+	let eth_client =
+		McrEthSettlementClient::build_with_provider(provider, signer.address()).await?;
+
+	println!("|||||| ||||| ||||| State root hash: {}", state_key);
 
 	Ok(())
+}
+
+fn read_mcr_sc_adress() -> Result<Address, anyhow::Error> {
+	let file_path = std::env::var("MCR_SC_ADDRESS_FILE")?;
+	let addr_str = std::fs::read_to_string(file_path)?;
+	let addr: Address = addr_str.trim().parse()?;
+	Ok(addr)
 }

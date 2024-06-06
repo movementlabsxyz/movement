@@ -53,7 +53,6 @@ monza-executor = { path = "protocol-units/execution/monza/executor" }
 ## execution/suzuka
 suzuka-fin-executor = { path = "protocol-units/execution/suzuka/fin-executor" }
 suzuka-executor = { path = "protocol-units/execution/suzuka/executor" }
-
 maptos-rest = { path = "protocol-units/maptos-rest" }
 
 ## types
@@ -122,6 +121,7 @@ sha2 = "0.10.8"
 once_cell = "1.8.0"
 url = "2.2.2"
 dirs = "3.0.2"
+reqwest = "0.12.4"
 
 # storage
 rocksdb = { version = "0.21.0", features = [
@@ -171,7 +171,7 @@ syn = "2.0"
 # format
 toml = "0.8"
 
-# aptos dependencies
+# eth and alloy 
 ethereum-types = "0.14.1"
 ethers = "=2.0.10"
 ethers-core = { version = "=2.0.10", default-features = false }
@@ -179,6 +179,12 @@ ethers-contract = "=2.0.10"
 ethers-providers = { version = "=2.0.10", default-features = false }
 ethers-signers = { version = "=2.0.10", default-features = false }
 ethers-middleware = { version = "=2.0.10", default-features = false }
+alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = [
+    "ws",
+] }
+alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network" }
+alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet" }
+alloy-primitives = { version = "0.7.2", default-features = false }
 
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required

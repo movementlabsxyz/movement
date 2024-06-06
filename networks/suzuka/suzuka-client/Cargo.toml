@@ -19,8 +19,17 @@ once_cell = { workspace = true }
 tokio = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
+
+[dev-dependencies]
+reqwest = { workspace = true }
+alloy_provider = { workspace = true }
+alloy_network = { workspace = true }
+alloy_signer_wallet = { workspace = true }
+alloy_primitives = { workspace = true }
+
 maptos-execution-util = { workspace = true }
 suzuka-executor = { workspace = true }
+mcr-settlement-client = { workspace = true }
 
 [lints]
 workspace = true
