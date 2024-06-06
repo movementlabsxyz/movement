@@ -37,16 +37,26 @@ impl MaptosRest {
     pub fn create_routes(&self) -> impl EndpointExt {
         Route::new()
             .at("/health", get(health))
-            .at("/movement/v1/state-root-hash/:version", get(state_root_hash))
+            .at("/movement/v1/state-root-hash/:version/:ledger_info_version", get(state_root_hash))
             .data(self.context.clone())
             .with(Tracing)
     }
 }
 
 #[handler]
-async fn state_root_hash(Path(version): Path<u64>, context: Data<&Arc<Context>>) -> Response {
-    // use context here
-    format!("The state root hash for version: {}", version).into_response()
+async fn state_root_hash(
+    Path(version): Path<u64>,
+    Path(ledger_info_version): Path<u64>,
+    context: Data<&Arc<Context>>,
+) -> Result<Response, anyhow::Error> {
+    let txn_with_proof =
+        context.db.get_transaction_by_version(version, ledger_info_version, false)?;
+    let state_root_hash = txn_with_proof
+        .proof
+        .transaction_info
+        .state_checkpoint_hash()
+        .ok_or_else(|| anyhow::anyhow!("No state root hash found"))?;
+    Ok(state_root_hash.to_string().into_response())
 }
 
 #[handler]
