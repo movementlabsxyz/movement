@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import "./BaseToken.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import "forge-std/console.sol"; 
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "forge-std/console.sol";
 
 interface IMintableToken is IERC20 {
     function mint(address to, uint256 amount) external;
@@ -13,7 +13,6 @@ interface IMintableToken is IERC20 {
 }
 
 contract MintableToken is IMintableToken, BaseToken {
-
     using SafeERC20 for IERC20;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -21,16 +20,26 @@ contract MintableToken is IMintableToken, BaseToken {
 
     /**
      * @dev Initialize the contract
+     * @param name The name of the token
+     * @param symbol The symbol of the token
      */
-    function initialize(
-        string memory name,
-        string memory symbol
-    ) public override virtual {
-        super.initialize(name, symbol);
+    function initialize(string memory name, string memory symbol) public virtual initializer {
+        __MintableToken_init(name, symbol);
+    }
+
+    function __MintableToken_init(string memory name, string memory symbol) internal onlyInitializing {
+        __ERC20_init_unchained(name, symbol);
+        __AccessControl_init_unchained();
+        __UUPSUpgradeable_init_unchained();
+        __BaseToken_init_unchained();
+        __MintableToken_init_unchained();
+    }
+
+    function __MintableToken_init_unchained() internal onlyInitializing {
         _grantRole(MINTER_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
     }
-    
+
     /**
      * @dev Set minter role
      * @param account The address to set minter role
@@ -55,5 +64,4 @@ contract MintableToken is IMintableToken, BaseToken {
     function mint(address to, uint256 amount) public virtual onlyRole(MINTER_ROLE) {
         _mint(to, amount);
     }
-
 }
