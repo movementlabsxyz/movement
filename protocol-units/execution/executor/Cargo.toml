@@ -14,9 +14,10 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-async-trait = { workspace = true }
-tracing = { workspace = true }
 async-channel = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
 
 aptos-crypto = { workspace = true }
 aptos-api = { workspace = true }
@@ -33,4 +34,3 @@ aptos-db = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-proptest-helpers = { workspace = true }
 rand = { workspace = true }
-tokio = { workspace = true }

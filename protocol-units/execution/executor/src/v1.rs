@@ -46,7 +46,11 @@ impl ExecutorV1 {
 impl Executor for ExecutorV1 {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
-		self.executor.run_service().await
+		tokio::try_join!(
+			self.executor.run_service(),
+			self.finality_view.run_service(),
+		)?;
+		Ok(())
 	}
 
 	/// Runs the necessary background tasks.

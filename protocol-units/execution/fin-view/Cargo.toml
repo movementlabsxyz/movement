@@ -21,3 +21,5 @@ aptos-types = { workspace = true }
 maptos-execution-util = { workspace = true }
 
 anyhow = { workspace = true }
+poem = { workspace = true }
+tracing = { workspace = true }

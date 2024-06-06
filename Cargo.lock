@@ -6796,6 +6796,8 @@ dependencies = [
  "aptos-storage-interface",
  "aptos-types",
  "maptos-execution-util",
+ "poem",
+ "tracing",
 ]
 
 [[package]]
