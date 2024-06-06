@@ -80,7 +80,6 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-
         # aptos-faucet-service
         aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
           inherit pkgs; 
@@ -93,11 +92,8 @@
             };
             strictDeps = true;
             
-            buildInputs = with pkgs; [
-              libiconv 
-              rocksdb
-              rustfmt
-            ] ++ sysDependencies;
+            buildInputs = with pkgs; [] ++buildDependencies ++ sysDependencies;
+            nativeBuildInputs = with pkgs; [] ++buildDependencies ++sysDependencies;
           };
           inherit craneLib;
         };
@@ -110,20 +106,6 @@
           packages.celestia-node = celestia-node;
 
           packages.celestia-app = celestia-app;
-          
-          devShells.faucet-build = mkShell {
-            buildInputs = [ monza-aptos ] ++buildDependencies ++sysDependencies;
-            nativeBuildInputs = [ monza-aptos ] ++ buildDependencies ++ sysDependencies;
-            OPENSSL_DEV=pkgs.openssl.dev;
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
-            shellHook = ''
-              #!/usr/bin/env bash
-              export MONZA_APTOS_PATH=$(nix path-info .#monza-aptos | tail -n 1)
-              echo "Monza Aptos Path: $MONZA_APTOS_PATH"
-              echo "faucet-build shell "
-            '';
-          };
           
           # Used for workaround for failing vendor dep builds in nix
           devShells.docker-build = mkShell {
