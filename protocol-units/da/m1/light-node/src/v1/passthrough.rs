@@ -38,7 +38,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 			default_client: client.clone(),
 			verification_mode: Arc::new(RwLock::new(config.verification_mode)),
 			verifier: Arc::new(Box::new(V1Verifier {
-				client: client,
+				client,
 				namespace: config.celestia_namespace.clone(),
 			})),
 		})
