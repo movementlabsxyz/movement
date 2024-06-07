@@ -163,12 +163,14 @@
 
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            
+            MONZA_APTOS_PATH = monza-aptos;
+
             buildInputs = [] ++buildDependencies ++sysDependencies ++testDependencies;
             nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
 
             shellHook = ''
               #!/bin/bash -e
+              echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
