@@ -1,45 +1,62 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "../base/BaseToken.sol";
-import "../base/MintableToken.sol";
-import "../base/WrappedToken.sol";
-import "../custodian/CustodianToken.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import "./LockedTokenStorage.sol";
+import {WrappedToken} from "../base/WrappedToken.sol";
+import {IMintableToken} from "../base/MintableToken.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {LockedTokenStorage} from "./LockedTokenStorage.sol";
 
-contract LockedToken is LockedTokenStorage, CustodianToken {
-
-    bytes32 public constant MINT_LOCKER_ROLE = keccak256("MINT_LOCKER_ROLE");
-    bytes32 public constant MINT_LOCKER_ADMIN_ROLE = keccak256("MINT_LOCKER_ADMIN_ROLE");
-
+contract LockedToken is WrappedToken, LockedTokenStorage {
+    /**
+     * @dev Initialize the contract
+     * @param name The name of the token
+     * @param symbol The symbol of the token
+     * @param _underlyingToken The underlying token to wrap
+     */
     function initialize(
-        string memory name, 
+        string memory name,
         string memory symbol,
         IMintableToken _underlyingToken
-    ) public override virtual {
-        super.initialize(name, symbol, _underlyingToken);
+    ) public virtual override initializer {
+        __LockedToken_init(name, symbol, _underlyingToken);
+    }
+
+    function __LockedToken_init(
+        string memory name,
+        string memory symbol,
+        IMintableToken _underlyingToken
+    ) internal onlyInitializing {
+        __ERC20_init_unchained(name, symbol);
+        __BaseToken_init_unchained();
+        __MintableToken_init_unchained();
+        __WrappedToken_init_unchained(_underlyingToken);
+        __LockedToken_init_unchained();
+    }
+
+    function __LockedToken_init_unchained() internal onlyInitializing {
         _grantRole(MINT_LOCKER_ADMIN_ROLE, msg.sender);
         _grantRole(MINT_LOCKER_ROLE, msg.sender);
     }
 
     /**
-    * @dev Mint and lock tokens
-    * @param addresses The addresses to mint and lock tokens for
-    * @param mintAmounts The amounts to mint.
-    * @param lockAmounts The amount up to which the user is allowed to be unlock, respective of balance
-    * @param lockTimes The times to lock the tokens for
-    */
+     * @dev Mint and lock tokens
+     * @param addresses The addresses to mint and lock tokens for
+     * @param mintAmounts The amounts to mint.
+     * @param lockAmounts The amount up to which the user is allowed to be unlock, respective of balance
+     * @param lockTimes The times to lock the tokens for
+     */
     function mintAndLock(
-        address[] calldata addresses, 
+        address[] calldata addresses,
         uint256[] calldata mintAmounts,
         uint256[] calldata lockAmounts,
         uint256[] calldata lockTimes
     ) external onlyRole(MINT_LOCKER_ROLE) {
-        require(addresses.length == mintAmounts.length, "Addresses and amounts length mismatch");
-        require(addresses.length == lockAmounts.length, "Addresses and lock amounts length mismatch");
-        require(addresses.length == lockTimes.length, "Addresses and lock times length mismatch");
+        if (addresses.length != mintAmounts.length)
+            revert AddressesAndMintLengthMismatch();
+        if (addresses.length != lockAmounts.length)
+            revert AddressesAndLockLengthMismatch();
+        if (addresses.length != lockTimes.length)
+            revert AddressesAndTimeLengthMismatch();
 
         for (uint256 i = 0; i < addresses.length; i++) {
             underlyingToken.mint(address(this), mintAmounts[i]);
@@ -66,9 +83,11 @@ contract LockedToken is LockedTokenStorage, CustodianToken {
         Lock[] storage userLocks = locks[msg.sender];
         for (uint256 i = 0; i < userLocks.length; i++) {
             if (block.timestamp >= userLocks[i].releaseTime) {
-
                 // compute the max possible amount to withdraw
-                uint256 amount = Math.min(userLocks[i].amount, balanceOf(msg.sender));
+                uint256 amount = Math.min(
+                    userLocks[i].amount,
+                    balanceOf(msg.sender)
+                );
 
                 // burn the amount so that the user can't overdraw
                 _transfer(msg.sender, address(this), amount);
@@ -84,13 +103,11 @@ contract LockedToken is LockedTokenStorage, CustodianToken {
                     userLocks[i] = userLocks[userLocks.length - 1];
                     userLocks.pop();
                 }
-
             }
         }
 
         // transfer the underlying token
         underlyingToken.transfer(msg.sender, totalUnlocked);
-
     }
 
     /**
@@ -106,5 +123,4 @@ contract LockedToken is LockedTokenStorage, CustodianToken {
         }
         return totalLocked;
     }
-    
 }

@@ -2,45 +2,39 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "../../src/token/stlkMOVEToken.sol";
+import "../../src/token/stlMoveToken.sol";
 import "../../src/token/MOVEToken.sol";
 
-contract stlkMOVETokenTest is Test {
-
+contract stlMoveTokenTest is Test {
     function testInitialize() public {
-
         MOVEToken underlyingToken = new MOVEToken();
         underlyingToken.initialize();
 
-        stlkMOVEToken token = new stlkMOVEToken();
+        stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
 
         // Check the token details
         assertEq(token.name(), "Stakable Locked Move Token");
-        assertEq(token.symbol(), "stlkMOVE");
-
+        assertEq(token.symbol(), "stlMOVE");
     }
 
     function testCannotInitializeTwice() public {
-
         MOVEToken underlyingToken = new MOVEToken();
         underlyingToken.initialize();
 
-        stlkMOVEToken token = new stlkMOVEToken();
+        stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
 
         // Expect reversion
         vm.expectRevert(0xf92ee8a9);
         token.initialize(underlyingToken);
-
     }
 
     function testSimulateStaking() public {
-            
         MOVEToken underlyingToken = new MOVEToken();
         underlyingToken.initialize();
 
-        stlkMOVEToken token = new stlkMOVEToken();
+        stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
@@ -81,43 +75,38 @@ contract stlkMOVETokenTest is Test {
         locks[3] = block.timestamp + 100;
         locks[4] = block.timestamp + 200;
         locks[5] = block.timestamp + 200;
-        token.mintAndLock(
-            addresses,
-            mintAmounts,
-            lockAmounts,
-            locks
-        );
+        token.mintAndLock(addresses, mintAmounts, lockAmounts, locks);
         assertEq(token.balanceOf(alice), 100);
-        assertEq(token.balanceOf(bob) , 100);
-        assertEq(token.balanceOf(carol) , 100);
-        assertEq(token.balanceOf(dave) , 100);
-        assertEq(underlyingToken.balanceOf(address(token)) , 400);
-        assertEq(underlyingToken.balanceOf(alice) , 0);
-        assertEq(underlyingToken.balanceOf(bob) , 0);
-        assertEq(underlyingToken.balanceOf(carol) , 0);
-        assertEq(underlyingToken.balanceOf(dave) , 0);
+        assertEq(token.balanceOf(bob), 100);
+        assertEq(token.balanceOf(carol), 100);
+        assertEq(token.balanceOf(dave), 100);
+        assertEq(underlyingToken.balanceOf(address(token)), 400);
+        assertEq(underlyingToken.balanceOf(alice), 0);
+        assertEq(underlyingToken.balanceOf(bob), 0);
+        assertEq(underlyingToken.balanceOf(carol), 0);
+        assertEq(underlyingToken.balanceOf(dave), 0);
 
         // cannot release locked tokens
         vm.prank(alice);
         token.release();
-        assertEq(token.balanceOf(alice) , 100);
-        assertEq(underlyingToken.balanceOf(address(token)) , 400);
-        assertEq(underlyingToken.balanceOf(alice) , 0);
+        assertEq(token.balanceOf(alice), 100);
+        assertEq(underlyingToken.balanceOf(address(token)), 400);
+        assertEq(underlyingToken.balanceOf(alice), 0);
         vm.prank(bob);
         token.release();
-        assertEq(token.balanceOf(bob) , 100);
-        assertEq(underlyingToken.balanceOf(address(token)) , 400);
-        assertEq(underlyingToken.balanceOf(bob) , 0);
+        assertEq(token.balanceOf(bob), 100);
+        assertEq(underlyingToken.balanceOf(address(token)), 400);
+        assertEq(underlyingToken.balanceOf(bob), 0);
         vm.prank(carol);
         token.release();
-        assertEq(token.balanceOf(carol) , 100);
-        assertEq(underlyingToken.balanceOf(address(token)) , 400);
-        assertEq(underlyingToken.balanceOf(carol) , 0);
+        assertEq(token.balanceOf(carol), 100);
+        assertEq(underlyingToken.balanceOf(address(token)), 400);
+        assertEq(underlyingToken.balanceOf(carol), 0);
         vm.prank(dave);
         token.release();
-        assertEq(token.balanceOf(dave) , 100);
-        assertEq(underlyingToken.balanceOf(address(token)) , 400);
-        assertEq(underlyingToken.balanceOf(dave) , 0);
+        assertEq(token.balanceOf(dave), 100);
+        assertEq(underlyingToken.balanceOf(address(token)), 400);
+        assertEq(underlyingToken.balanceOf(dave), 0);
 
         // add a transfer sink to represent a staking pool
         address payable stakingPool = payable(vm.addr(5));
@@ -130,19 +119,19 @@ contract stlkMOVETokenTest is Test {
         // use to custodian to stake the locked tokens
         vm.prank(alice);
         token.transfer(stakingPool, 100);
-        assertEq(token.balanceOf(alice) , 0);
-        assertEq(underlyingToken.balanceOf(stakingPool) , 200);
-        assertEq(underlyingToken.balanceOf(address(token)) , 300);
+        assertEq(token.balanceOf(alice), 0);
+        assertEq(underlyingToken.balanceOf(stakingPool), 200);
+        assertEq(underlyingToken.balanceOf(address(token)), 300);
         vm.prank(bob);
         token.transfer(stakingPool, 100);
-        assertEq(token.balanceOf(bob) , 0);
-        assertEq(underlyingToken.balanceOf(stakingPool) , 300);
-        assertEq(underlyingToken.balanceOf(address(token)) , 200);
+        assertEq(token.balanceOf(bob), 0);
+        assertEq(underlyingToken.balanceOf(stakingPool), 300);
+        assertEq(underlyingToken.balanceOf(address(token)), 200);
         vm.prank(carol);
         token.transfer(stakingPool, 100);
-        assertEq(token.balanceOf(carol) , 0);
-        assertEq(underlyingToken.balanceOf(stakingPool) , 400);
-        assertEq(underlyingToken.balanceOf(address(token)) , 100);
+        assertEq(token.balanceOf(carol), 0);
+        assertEq(underlyingToken.balanceOf(stakingPool), 400);
+        assertEq(underlyingToken.balanceOf(address(token)), 100);
         // ! dave does not stake
 
         // alice gets reward and cashes out through the custodian, but cannot withdraw
@@ -175,7 +164,7 @@ contract stlkMOVETokenTest is Test {
 
         // time passes
         vm.warp(101);
-        
+
         // alice withdraws as much as she can
         vm.prank(alice);
         token.release();
@@ -243,9 +232,5 @@ contract stlkMOVETokenTest is Test {
         assertEq(token.balanceOf(carol), 10);
         assertEq(underlyingToken.balanceOf(carol), 100);
         assertEq(underlyingToken.balanceOf(address(token)), 10);
-
-        
-
     }
-
 }

@@ -5,9 +5,7 @@ import "forge-std/Test.sol";
 import "../../../src/token/base/BaseToken.sol";
 
 contract BaseTokenTest is Test {
-
     function testInitialize() public {
-
         BaseToken token = new BaseToken();
 
         // Call the initialize function
@@ -19,7 +17,6 @@ contract BaseTokenTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-
         BaseToken token = new BaseToken();
 
         // Initialize the contract
