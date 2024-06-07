@@ -1,4 +1,3 @@
-use crate::scenario::CreateScenarioFn;
 use itertools::Itertools;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -73,14 +72,14 @@ impl ExecutionConfig {
 					nb_scenarios >= self.nb_scenario_per_client,
 					"Number of running scenario less than the number if scenario per client."
 				);
-			},
+			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.nb_scenario_per_client,
 					"Number of min running scenario less than the number if scenario per client."
 				);
-			},
+			}
 		}
 	}
 }
@@ -138,7 +137,7 @@ impl TestKind {
 /// scenarios are executed by chunk. Chunk execution of scenario is done by a client.
 /// All clients are executed in a different thread in parallel.
 /// Clients execute scenario in a Tokio runtime concurrently.
-pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<CreateScenarioFn>) {
+pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::CreateScenarioFn>) {
 	tracing::info!("Start test scenario execution.");
 
 	let nb_scenarios = match config.kind {
@@ -198,7 +197,7 @@ impl TestClient {
 	fn run_scenarios(
 		self,
 		kind: TestKind,
-		create_scanario: Arc<CreateScenarioFn>,
+		create_scanario: Arc<scenario::CreateScenarioFn>,
 	) -> ClientExecResult {
 		// Start the Tokio runtime on the current thread
 		let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
@@ -224,7 +223,7 @@ impl TestClient {
 					let parttime_scenario_duration = duration / (nb_clycle * 2);
 					vec![]
 				}
-			},
+			}
 		};
 
 		let exec_results = ClientExecResult::new(scenario_results);
@@ -234,7 +233,10 @@ impl TestClient {
 		exec_results
 	}
 
-	async fn load_runner(self, create_scanario: Arc<CreateScenarioFn>) -> Vec<ScenarioExecMetric> {
+	async fn load_runner(
+		self,
+		create_scanario: Arc<scenario::CreateScenarioFn>,
+	) -> Vec<ScenarioExecMetric> {
 		//start all client's scenario
 		let mut set = tokio::task::JoinSet::new();
 		let start_time = std::time::Instant::now();
@@ -252,11 +254,11 @@ impl TestClient {
 					tracing::info!(target:EXEC_LOG_FILTER, log);
 					tracing::warn!(log);
 					ScenarioExecMetric::new_err(id, elapse)
-				},
+				}
 				Err(err) => {
 					tracing::warn!("Error during scenario spawning: {err}");
 					ScenarioExecMetric::new_err(0, elapse)
-				},
+				}
 			};
 			let metrics_scenario = serde_json::to_string(&metrics)
 				.unwrap_or("Metric serialization error.".to_string());
@@ -268,7 +270,7 @@ impl TestClient {
 
 	async fn soak_runner_in_a_loop(
 		self,
-		create_scanario: Arc<CreateScenarioFn>,
+		create_scanario: Arc<scenario::CreateScenarioFn>,
 		duration: std::time::Duration,
 	) -> Vec<ScenarioExecMetric> {
 		let initial_start_time = std::time::Instant::now();
@@ -293,12 +295,12 @@ impl TestClient {
 					tracing::warn!(log);
 					let elapse = initial_start_time.elapsed().as_millis();
 					ScenarioExecMetric::new_err(id, elapse)
-				},
+				}
 				Err(err) => {
 					tracing::warn!("Error during scenario spawning: {err}");
 					let elapse = initial_start_time.elapsed().as_millis();
 					ScenarioExecMetric::new_err(0, elapse)
-				},
+				}
 			};
 			let metrics_scenario = serde_json::to_string(&metrics)
 				.unwrap_or("Metric serialization error.".to_string());
@@ -311,7 +313,7 @@ impl TestClient {
 
 async fn run_scenarion_in_loop(
 	id: usize,
-	create_scanario: Arc<CreateScenarioFn>,
+	create_scanario: Arc<scenario::CreateScenarioFn>,
 	duration: Duration,
 ) -> anyhow::Result<u128> {
 	let start_time = std::time::Instant::now();
@@ -372,15 +374,15 @@ struct ClientExecResult {
 }
 
 impl ClientExecResult {
-	fn new(sceanarios: Vec<ScenarioExecMetric>) -> Self {
+	fn new(scenarios: Vec<ScenarioExecMetric>) -> Self {
 		ClientExecResult {
-			average_execution_time_milli: Self::calcualte_average_exec_time_milli(&sceanarios),
+			average_execution_time_milli: Self::calculate_average_exec_time_milli(&scenarios),
 		}
 	}
 
-	pub fn calcualte_average_exec_time_milli(sceanarios: &[ScenarioExecMetric]) -> u128 {
-		if !sceanarios.is_empty() {
-			let ok_scenario: Vec<_> = sceanarios
+	pub fn calculate_average_exec_time_milli(scenarios: &[ScenarioExecMetric]) -> u128 {
+		if !scenarios.is_empty() {
+			let ok_scenario: Vec<_> = scenarios
 				.into_iter()
 				.filter_map(|s| if s.is_ok() { Some(s.elapse_millli) } else { None })
 				.collect();
