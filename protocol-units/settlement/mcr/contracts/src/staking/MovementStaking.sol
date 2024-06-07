@@ -1,80 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "forge-std/console.sol";
-import "./base/BaseStaking.sol";
+import { BaseStaking } from "./base/BaseStaking.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { ICustodianToken } from "../token/custodian/CustodianToken.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
-import "./MovementStakingStorage.sol";
+import { MovementStakingStorage, EnumerableSet } from "./MovementStakingStorage.sol";
+import { IMovementStaking } from "./interfaces/IMovementStaking.sol";
 
-// canonical order: domain, epoch, custodian, attester, stake =? decas
-interface IMovementStaking {
-    function registerDomain(address domain, uint256 epochDuration, address[] calldata custodians) external;
-    function acceptGenesisCeremony() external;
-    function setGenesisCeremony(address, address[] calldata, address[] calldata, uint256[] calldata) external;
-    function getEpochByBlockTime(address) external view returns (uint256);
-    function getCurrentEpoch(address) external view returns (uint256);
-    function getNextEpoch(address) external view returns (uint256);
-    function getNextEpochByBlockTime(address) external view returns (uint256);
-    function getStakeAtEpoch(address domain, uint256 epoch, address custodian, address attester) external view returns (uint256);
-    function getCurrentEpochStake(address domain, address custodian, address attester) external view returns (uint256);
-    function getUnstakeAtEpoch(address domain, uint256 epoch, address custodian, address attester) external view returns (uint256);
-    function getCurrentEpochUnstake(address domain, address custodian, address attester) external view returns (uint256);
-    function getTotalStakeForEpoch(address domain, uint256 epoch, address custodian) external view returns (uint256);
-    function getTotalStakeForCurrentEpoch(address domain, address custodian) external view returns (uint256);
-    function stake(address domain, IERC20 custodian, uint256 amount) external;
-    function unstake(address domain, address custodian, uint256 amount) external;
-    function getCustodiansByDomain(address domain) external view returns (address[] memory);
-    function getAttestersByDomain(address domain) external view returns (address[] memory);
-    function rollOverEpoch() external;
-    function slash(address[] calldata custodians, address[] calldata attesters, uint256[] calldata amounts, uint256[] calldata refundAmounts) external;
-}
+
 
 contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStaking {
 
-    // Use an address set here
     using EnumerableSet for EnumerableSet.AddressSet;
-    
-    // todo: figure out how to move each of this into a separate contract
-    // the current epoch
-    mapping(address => EnumerableSet.AddressSet) internal attestersByDomain;
 
-    // the custodians allowed by each domain
-    mapping(address => EnumerableSet.AddressSet) internal custodiansByDomain;
-
-    event AttesterStaked(
-        address indexed domain, 
-        uint256 indexed epoch,
-        address indexed custodian,
-        address attester,
-        uint256 stake
-    );
-
-    event AttesterUnstaked(
-        address indexed domain,
-        uint256 indexed epoch,
-        address indexed custodian,
-        address attester,
-        uint256 stake
-    );
-
-    event AttesterEpochRolledOver(
-        address indexed attester,
-        uint256 indexed epoch, 
-        address indexed custodian,
-        uint256 stake, 
-        uint256 unstake
-    );
-
-    event EpochRolledOver(
-        address indexed domain,
-        uint256 epoch
-    );
-
-    function initialize(IERC20 _token) public  {
-        super.initialize();
+    function initialize(IERC20 _token) public initializer {
+        __BaseStaking_init_unchained();
         token = _token;
     }
 
@@ -89,7 +31,6 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
         for (uint256 i = 0; i < custodians.length; i++){
             custodiansByDomain[domain].add(custodians[i]);
         }
-
     }
 
     function getCustodiansByDomain(address domain) public view returns (address[] memory) {
@@ -169,7 +110,7 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
             );
 
             // require that the stake being set is leq the genesis stake
-            require(attesterStake <= stakes[i], "Stake exceeds genesis stake.");
+            if (attesterStake > stakes[i]) revert StakeExceedsGenesisStake();
 
             // add the attester to the set
             attestersByDomain[domain].add(attesters[i]);
@@ -356,7 +297,7 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
         custodian.transferFrom(msg.sender, address(this), amount);
 
         // require that the balance of the actual token has increased by the amount
-        require(token.balanceOf(address(this)) == balanceBefore + amount, "Token transfer failed. Custodian did not meet obligation.");
+        if (token.balanceOf(address(this)) != balanceBefore + amount) revert CustodianTransferAmountMismatch();
 
         // set the attester to stake for the next epoch
         _addStake(

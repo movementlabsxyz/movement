@@ -294,15 +294,15 @@ contract MovementStakingTest is Test {
 
             // slash
             vm.prank(domain);
-            address[] memory custodians = new address[](1);
-            custodians[0] = address(moveToken);
-            address[] memory attesters = new address[](1);
-            attesters[0] = staker;
-            uint256[] memory amounts = new uint256[](1);
-            amounts[0] = 1;
-            uint256[] memory refundAmounts = new uint256[](1);
-            refundAmounts[0] = 0;
-            staking.slash(custodians, attesters, amounts, refundAmounts);
+            address[] memory custodians1 = new address[](1);
+            custodians1[0] = address(moveToken);
+            address[] memory attesters1 = new address[](1);
+            attesters1[0] = staker;
+            uint256[] memory amounts1 = new uint256[](1);
+            amounts1[0] = 1;
+            uint256[] memory refundAmounts1 = new uint256[](1);
+            refundAmounts1[0] = 0;
+            staking.slash(custodians1, attesters1, amounts1, refundAmounts1);
 
             // slash immediately takes effect
             assertEq(
