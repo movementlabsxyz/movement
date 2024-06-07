@@ -32,7 +32,17 @@ interface IMovementStaking {
     function slash(address[] calldata custodians, address[] calldata attesters, uint256[] calldata amounts, uint256[] calldata refundAmounts) external;
 }
 
-contract MovementStaking is IMovementStaking, MovementStakingStorage, BaseStaking {
+contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStaking {
+
+    // Use an address set here
+    using EnumerableSet for EnumerableSet.AddressSet;
+    
+    // todo: figure out how to move each of this into a separate contract
+    // the current epoch
+    mapping(address => EnumerableSet.AddressSet) internal attestersByDomain;
+
+    // the custodians allowed by each domain
+    mapping(address => EnumerableSet.AddressSet) internal custodiansByDomain;
 
     event AttesterStaked(
         address indexed domain, 
@@ -57,7 +67,7 @@ contract MovementStaking is IMovementStaking, MovementStakingStorage, BaseStakin
         uint256 stake, 
         uint256 unstake
     );
-    
+
     event EpochRolledOver(
         address indexed domain,
         uint256 epoch
