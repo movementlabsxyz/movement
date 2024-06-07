@@ -131,7 +131,7 @@ secp256k1 = { version = "0.27", default-features = false, features = [
     "recovery",
 ] }
 
-## Celestia Sependencies
+## Celestia Dependencies
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
