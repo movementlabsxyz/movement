@@ -15,9 +15,12 @@ async fn main() -> Result<(), anyhow::Error> {
 	}
 
 	// Load variables defined in .env file.
-	dotenv::dotenv().ok();
-
-	println!("start suzuka node",);
+	let movement_storage_path =
+		std::env::var("MOVEMENT_BASE_STORAGE_PATH").unwrap_or("".to_string());
+	let mut env_file_path = std::env::current_dir()?;
+	env_file_path.push(movement_storage_path);
+	env_file_path.push(".env".to_string());
+	dotenv::from_filename(env_file_path)?;
 
 	let (executor, background_task) = SuzukaPartialNode::try_from_env()
 		.await

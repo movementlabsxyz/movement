@@ -257,8 +257,6 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 		let (tx, _) = async_channel::unbounded();
 		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 
-		println!("suzuka node light node created",);
-
 		let executor = SuzukaExecutorV1::try_from_env(tx)
 			.await
 			.context("Failed to get executor from environment")?;
@@ -293,9 +291,9 @@ async fn build_settlement_client() -> anyhow::Result<impl McrSettlementClientOpe
 		.parse()?;
 	let mrc_contract_address =
 		std::env::var(ETH_MCR_CONTRACT_ADDRESS_VAR).unwrap_or(MCR_CONTRACT_ADDRESS.to_string());
-	let private_address = std::env::var(ETH_VALIDATOR_PRIVATE_ADDRESS_VAR)?;
-
 	let config = McrEthSettlementConfig { mrc_contract_address, gas_limit, tx_send_nb_retry };
+
+	let private_address = std::env::var(ETH_VALIDATOR_PRIVATE_ADDRESS_VAR)?;
 	let client =
 		McrEthSettlementClient::build_with_urls(&rpc_url, ws_url, &private_address, config).await?;
 	Ok(client)
