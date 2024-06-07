@@ -86,4 +86,115 @@ impl FinalityView {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aptos_sdk::crypto::HashValue;
+	use aptos_sdk::move_types::move_resource::MoveStructType as _;
+	use aptos_sdk::transaction_builder::TransactionFactory;
+	use aptos_sdk::types::{
+		access_path::AccessPath, account_address::AccountAddress,
+		account_config::aptos_test_root_address, state_store::state_key::StateKey, AccountKey,
+		LocalAccount,
+	};
+	use aptos_types::account_config::AccountResource;
+	use aptos_types::block_executor::partitioner::{ExecutableBlock, ExecutableTransactions};
+	use aptos_types::block_metadata::BlockMetadata;
+	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
+	use aptos_types::transaction::Transaction;
+	use maptos_opt_executor::Executor;
+	use rand::prelude::*;
+
+	fn state_key_from_address(address: AccountAddress) -> StateKey {
+		StateKey::access_path(
+			AccessPath::resource_access_path(address.into(), AccountResource::struct_tag())
+				.unwrap(),
+		)
+	}
+
+	#[tokio::test]
+	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
+		// Create an Executor and a FinalityView instance from the environment configuration.
+		let config = AptosConfig::try_from_env()?;
+		let executor = Executor::try_from_config(&config)?;
+		let finality_view = FinalityView::try_from_config(
+			executor.db.reader.clone(),
+			executor.mempool_client_sender.clone(),
+			&config,
+		)?;
+
+		// Initialize a root account using a predefined keypair and the test root address.
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(config.private_key.clone()),
+			0,
+		);
+
+		// Seed for random number generator, used here to generate predictable results in a test environment.
+		let seed = [3u8; 32];
+		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
+
+		// Create a transaction factory with the chain ID of the executor.
+		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+
+		let mut account_addrs = Vec::new();
+
+		// Simulate the execution of multiple blocks.
+		for _ in 0..3 {
+			let (epoch, round) = executor.get_next_epoch_and_round().await?;
+
+			let block_id = HashValue::random(); // Generate a random block ID for each block.
+
+			// Clone the signer from the executor for signing the metadata.
+			let signer = executor.signer.clone();
+			// Get the current time in microseconds for the block timestamp.
+			let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+			// Create a block metadata transaction.
+			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+				block_id,
+				epoch,
+				round,
+				signer.author(),
+				vec![],
+				vec![],
+				current_time_micros,
+			));
+
+			// Generate new accounts and create transactions for each block.
+			let mut transactions = Vec::new();
+			transactions.push(block_metadata.clone());
+
+			// Each block will contain a transaction creating an account.
+			let new_account = LocalAccount::generate(&mut rng);
+			account_addrs.push(new_account.address());
+
+			let user_account_creation_tx = root_account.sign_with_transaction_builder(
+				tx_factory.create_user_account(new_account.public_key()),
+			);
+			transactions.push(Transaction::UserTransaction(user_account_creation_tx));
+
+			// Group all transactions into an unsharded block for execution.
+			let executable_transactions = ExecutableTransactions::Unsharded(
+				transactions.into_iter().map(SignatureVerifiedTransaction::Valid).collect(),
+			);
+			let block = ExecutableBlock::new(block_id.clone(), executable_transactions);
+			executor.execute_block(block).await?;
+		}
+
+		finality_view.set_finalized_block_height(2)?;
+
+		// Retrieve the executor's API interface and fetch the accounts
+		let apis = finality_view.get_apis();
+		let context = apis.accounts.context.clone();
+
+		let fin_ledger_info = context.get_latest_ledger_info_wrapped()?;
+		let fin_version = fin_ledger_info.version();
+
+		let state_key = state_key_from_address(account_addrs[1]);
+		let acc_data = context.get_state_value(&state_key, fin_version)?;
+		assert!(acc_data.is_some());
+		let state_key = state_key_from_address(account_addrs[2]);
+		let acc_data = context.get_state_value(&state_key, fin_version)?;
+		assert!(acc_data.is_none());
+
+		Ok(())
+	}
 }

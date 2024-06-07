@@ -23,3 +23,10 @@ maptos-execution-util = { workspace = true }
 anyhow = { workspace = true }
 poem = { workspace = true }
 tracing = { workspace = true }
+
+[dev-dependencies]
+aptos-sdk = { workspace = true }
+maptos-opt-executor = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
