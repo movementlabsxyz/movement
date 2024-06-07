@@ -157,10 +157,9 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 		.collect();
 	// Execute the client by id's chunk.
 	let exec_results: Vec<_> = chunks
-		.par_iter()
+		.into_par_iter()
 		.map(|(kind, chunk, create_scenario)| {
-			//let scenarios: Vec<_> = chunk.into_iter().map(|id| create_scanario(*id)).collect();
-			let client = TestClient::new(chunk.to_vec());
+			let client = TestClient::new(chunk);
 			client.run_scenarios(kind.clone(), create_scenario.clone())
 		})
 		.collect();
