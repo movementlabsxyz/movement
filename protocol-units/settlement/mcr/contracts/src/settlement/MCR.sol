@@ -162,6 +162,10 @@ contract MCR {
         return acceptedBlocks[blockHeight];
     }
 
+    function getAttesters() public view returns (address[] memory) {
+        return stakingContract.getAttestersByDomain(address(this));
+    }
+
     // commits a attester to a particular block
     function submitBlockCommitmentForAttester(
         address attester, 
@@ -216,11 +220,12 @@ contract MCR {
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
         uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch))/3;
+        address[] memory attesters = getAttesters();
 
         // iterate over the attester set
-        for (uint256 i = 0; i < attesters.length(); i++){
+        for (uint256 i = 0; i < attesters.length; i++){
 
-            address attester = attesters.at(i);
+            address attester = attesters[i];
 
             // get a commitment for the attester at the block height
             BlockCommitment memory blockCommitment = commitments[blockHeight][attester];

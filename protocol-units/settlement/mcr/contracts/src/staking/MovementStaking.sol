@@ -10,14 +10,6 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // canonical order: domain, epoch, custodian, attester, stake =? decas
 interface IMovementStaking {
-    function epochDurationByDomain(address) external view returns (uint256);
-    function currentEpochByDomain(address) external view returns (uint256);
-    function attestersByDomain(address) external view returns (EnumerableSet.AddressSet);
-    function custodiansByDomain(address) external view returns (EnumerableSet.AddressSet);
-    function epochStakesByDomain(address, uint256, address, address) external view returns (uint256);
-    function epochUnstakesByDomain(address, uint256, address, address) external view returns (uint256);
-    function epochTotalStakeByDomain(address, uint256) external view returns (uint256);
-    function initialize(IERC20) external;
     function registerDomain(address domain, uint256 epochDuration, address[] calldata custodians) external;
     function acceptGenesisCeremony() external;
     function setGenesisCeremony(address, address[] calldata, address[] calldata, uint256[] calldata) external;
@@ -34,6 +26,7 @@ interface IMovementStaking {
     function stake(address domain, IERC20 custodian, uint256 amount) external;
     function unstake(address domain, address custodian, uint256 amount) external;
     function getCustodiansByDomain(address domain) external view returns (address[] memory);
+    function getAttestersByDomain(address domain) external view returns (address[] memory);
     function rollOverEpoch() external;
     function slash(address[] calldata custodians, address[] calldata attesters, uint256[] calldata amounts, uint256[] calldata refundAmounts) external;
 }
@@ -127,6 +120,16 @@ contract MovementStaking is IMovementStaking, BaseStaking {
             custodians[i] = custodiansByDomain[domain].at(i);
         }
         return custodians;
+    }
+
+    function getAttestersByDomain(address domain) public view returns (address[] memory) {
+
+        address[] memory attesters = new address[](attestersByDomain[domain].length());
+        for (uint256 i = 0; i < attestersByDomain[domain].length(); i++){
+            attesters[i] = attestersByDomain[domain].at(i);
+        }
+        return attesters;
+
     }
 
     function acceptGenesisCeremony() public {
