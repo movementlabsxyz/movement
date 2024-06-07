@@ -6,10 +6,10 @@ use aptos_sdk::{
 };
 use std::str::FromStr;
 use std::sync::Arc;
-use suzuka_load_soak_testing::execute_test;
-use suzuka_load_soak_testing::init_test;
-use suzuka_load_soak_testing::ExecutionConfig;
-use suzuka_load_soak_testing::Scenario;
+use suzuka_client::load_soak_testing::execute_test;
+use suzuka_client::load_soak_testing::init_test;
+use suzuka_client::load_soak_testing::ExecutionConfig;
+use suzuka_client::load_soak_testing::Scenario;
 use url::Url;
 
 fn main() {
@@ -75,39 +75,37 @@ impl Scenario for BasicScenario {
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 
 		// Print account addresses.
-		// tracing::info!(
-		// 	"Scenario:{}\n=== Addresses ===\nAlice: {}\nBob: {}",
-		// 	self.id,
-		// 	alice.address().to_hex_literal(),
-		// 	bob.address().to_hex_literal()
-		// );
+		tracing::info!(
+			"Scenario:{}\n=== Addresses ===\nAlice: {}\nBob: {}",
+			self.id,
+			alice.address().to_hex_literal(),
+			bob.address().to_hex_literal()
+		);
 
-		//		tracing::info!("{} Before alice fund", self.id);
-		//self.log_exec_info(&format!("{} Before alice fund", self.id));
+		tracing::info!("{} Before alice fund", self.id);
+		self.log_exec_info(&format!("{} Before alice fund", self.id));
 		// Create the accounts on chain, but only fund Alice.
 		// :!:>section_3
 		faucet_client.fund(alice.address(), 100_000_000).await?;
-		//			.context("Failed to fund Alice's account")?;
-		//		tracing::info!("{} Before Bod create_account", self.id);
-		//		self.log_exec_info(&format!("{} Before Bod create_account", self.id));
+		tracing::info!("{} Before Bod create_account", self.id);
+		self.log_exec_info(&format!("{} Before Bod create_account", self.id));
 		faucet_client.create_account(bob.address()).await?;
-		//			.context("Failed to fund Bob's account")?; // <:!:section_3
-		//		tracing::info!("{} After Bod create_account", self.id);
-		//		self.log_exec_info(&format!("{} After Bod create_account", self.id));
+		tracing::info!("{} After Bod create_account", self.id);
+		self.log_exec_info(&format!("{} After Bod create_account", self.id));
 
 		// Print initial balances.
-		// tracing::info!(
-		// 	"Scenario:{}\n=== Initial Balances ===\nAlice: {:?}\nBob: {:?}",
-		// 	self.id,
-		// 	coin_client
-		// 		.get_account_balance(&alice.address())
-		// 		.await
-		// 		.context("Failed to get Alice's account balance")?,
-		// 	coin_client
-		// 		.get_account_balance(&bob.address())
-		// 		.await
-		// 		.context("Failed to get Bob's account balance")?
-		// );
+		tracing::info!(
+			"Scenario:{}\n=== Initial Balances ===\nAlice: {:?}\nBob: {:?}",
+			self.id,
+			coin_client
+				.get_account_balance(&alice.address())
+				.await
+				.context("Failed to get Alice's account balance")?,
+			coin_client
+				.get_account_balance(&bob.address())
+				.await
+				.context("Failed to get Bob's account balance")?
+		);
 
 		// Have Alice send Bob some coins.
 		let txn_hash = coin_client
@@ -120,18 +118,18 @@ impl Scenario for BasicScenario {
 			.context("Failed when waiting for the transfer transaction")?;
 
 		// Print intermediate balances.
-		// tracing::info!(
-		// 	"Scenario:{}\n=== Intermediate Balances ===\nAlice: {:?}\nBob: {:?}",
-		// 	self.id,
-		// 	coin_client
-		// 		.get_account_balance(&alice.address())
-		// 		.await
-		// 		.context("Failed to get Alice's account balance the second time")?,
-		// 	coin_client
-		// 		.get_account_balance(&bob.address())
-		// 		.await
-		// 		.context("Failed to get Bob's account balance the second time")?
-		// );
+		tracing::info!(
+			"Scenario:{}\n=== Intermediate Balances ===\nAlice: {:?}\nBob: {:?}",
+			self.id,
+			coin_client
+				.get_account_balance(&alice.address())
+				.await
+				.context("Failed to get Alice's account balance the second time")?,
+			coin_client
+				.get_account_balance(&bob.address())
+				.await
+				.context("Failed to get Bob's account balance the second time")?
+		);
 
 		self.log_exec_info(&format!("Scenario:{} ended", self.id));
 

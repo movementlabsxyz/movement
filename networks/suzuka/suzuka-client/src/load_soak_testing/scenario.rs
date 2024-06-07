@@ -1,4 +1,4 @@
-use crate::EXEC_LOG_FILTER;
+use super::EXEC_LOG_FILTER;
 use anyhow::Result;
 
 /// A scenario is any struct that implements the Scenario trait.
