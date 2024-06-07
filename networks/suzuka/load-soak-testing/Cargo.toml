@@ -9,10 +9,6 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
 ### define here all scenarios execution binaries 
 [[bin]]
 name = "demoscenario"
@@ -25,23 +21,10 @@ path = "bin/basicalicebob.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 anyhow = { workspace = true }
 aptos-sdk = { workspace = true }
->>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
 async-trait = { workspace = true }
-<<<<<<< HEAD
-=======
->>>>>>> ff595882 (first version of the scenario executor.)
-=======
-async-trait = { workspace = true }
->>>>>>> ee39c4f3 (first version of the Test runtime. Implements only Load test.)
-=======
 futures = { workspace = true }
->>>>>>> 341e49c5 (add process-compose execution and change some result management behaviours)
 itertools = { workspace = true, default-features = true }
 maptos-execution-util = { workspace = true }
 rand = { workspace = true }
@@ -52,21 +35,7 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-
->>>>>>> ff595882 (first version of the scenario executor.)
-=======
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
->>>>>>> c61b30ec (create initial project for testing)
-=======
 url = { workspace = true }
-
-
->>>>>>> c85c78db (simplify scenario exec error and start adding basic Alice&Bob test)
 
 [lints]
 workspace = true
