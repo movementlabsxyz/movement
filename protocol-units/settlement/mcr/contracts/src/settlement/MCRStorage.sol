@@ -28,16 +28,16 @@ contract MCRStorage {
     }
 
     // map each block height to an epoch
-    mapping(uint256 => uint256) public blockHeightEpochAssignments;
+    mapping(uint256 blockHeight => uint256 epoch) public blockHeightEpochAssignments;
 
     // track each commitment from each attester for each block height
-    mapping(uint256 => mapping(address => BlockCommitment)) public commitments;
+    mapping(uint256 blockHeight => mapping(address attester => BlockCommitment)) public commitments;
 
     // track the total stake accumulate for each commitment for each block height
-    mapping(uint256 => mapping(bytes32=> uint256)) public commitmentStakes;
+    mapping(uint256 blockHeight => mapping(bytes32 commitement => uint256 stake)) public commitmentStakes;
 
     // map block height to accepted block hash 
-    mapping(uint256 => BlockCommitment) public acceptedBlocks;
+    mapping(uint256 blockHeight => BlockCommitment) public acceptedBlocks;
 
     uint256[50] internal __gap;
 

@@ -5,8 +5,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "forge-std/console.sol";
 import "../staking/MovementStaking.sol";
 import "./MCRStorage.sol";
+import "./settlement/BaseSettlement.sol";
 
-contract MCR is Initializable, MCRStorage {
+contract MCR is BaseSettlement, Initializable, MCRStorage {
 
     event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 height);
     event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 attesterStake);
@@ -18,6 +19,7 @@ contract MCR is Initializable, MCRStorage {
         uint256 _epochDuration,
         address[] memory _custodians
     ) public initializer {
+        __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;

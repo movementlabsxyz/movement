@@ -9,8 +9,6 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { MovementStakingStorage, EnumerableSet } from "./MovementStakingStorage.sol";
 import { IMovementStaking } from "./interfaces/IMovementStaking.sol";
 
-
-
 contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStaking {
 
     using EnumerableSet for EnumerableSet.AddressSet;

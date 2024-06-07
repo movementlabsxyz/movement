@@ -20,19 +20,19 @@ contract MovementStakingStorage {
 
     // preserved records of stake by address per epoch
     mapping(address domain => 
-        mapping(uint256 => 
-            mapping(address => 
-                mapping(address => uint256)))) public epochStakesByDomain;
+        mapping(uint256 epoch => 
+            mapping(address custodian => 
+                mapping(address attester => uint256 stake)))) public epochStakesByDomain;
 
     // preserved records of unstake by address per epoch
     mapping(address domain => 
-        mapping(uint256 => 
-            mapping(address =>
-                mapping(address => uint256))))  public epochUnstakesByDomain;
+        mapping(uint256 epoch => 
+            mapping(address custodian =>
+                mapping(address attester => uint256 stake))))  public epochUnstakesByDomain;
 
     // track the total stake of the epoch (computed at rollover)
     mapping(address domain =>
-        mapping(uint256 =>
-            mapping(address=> uint256))) public epochTotalStakeByDomain;
+        mapping(uint256 epoch =>
+            mapping(address attester => uint256 stake))) public epochTotalStakeByDomain;
 
 }
