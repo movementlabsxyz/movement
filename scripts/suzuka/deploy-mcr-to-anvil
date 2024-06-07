@@ -37,11 +37,13 @@ output=$(forge script DeployMCR --broadcast --chain-id $MCR_CHAIN_ID --sender $M
 MCR_ADDRESS=$(echo "$output" | grep "Contract Address:" | awk '{print $3}')
 echo "MCR_ADDRESS: $MCR_ADDRESS"
 
-ENV_FILE=".env"
+ENV_FILE="$EXEC_PATH/$MOVEMENT_BASE_STORAGE_PATH/.env"
 
 #Write the SC address to a file to send it to Rust Test. 
-echo echo "MCR_ADDRESS=$MCR_ADDRESS" > "$ENV_FILE"
-echo echo "ETH_VALIDATOR_PRIVATE_ADDRESS_VAR=$MCR_PRIVATE_KEY" >> "$ENV_FILE"
-echo echo "ETH_RPC_URL_ENV_VAR=http://localhost:$MCR_ANVIL_PORT" >> "$ENV_FILE"
-echo echo "ETH_WS_URL_ENV_VAR=ws://localhost:$MCR_ANVIL_PORT" >> "$ENV_FILE"
+echo "ETH_MCR_CONTRACT_ADDRESS=$MCR_ADDRESS" > "$ENV_FILE"
+echo "ETH_VALIDATOR_PRIVATE_ADDRESS=$MCR_PRIVATE_KEY" >> "$ENV_FILE"
+echo "ETH_RPC_URL=http://localhost:$MCR_ANVIL_PORT" >> "$ENV_FILE"
+echo "ETH_WS_URL=ws://localhost:$MCR_ANVIL_PORT" >> "$ENV_FILE"
+
+echo "ENV_FILE=$ENV_FILE" 
 
