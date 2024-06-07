@@ -109,8 +109,8 @@
           
           # Used for workaround for failing vendor dep builds in nix
           devShells.docker-build = mkShell {
-            buildInputs = [] ++buildDependencies ++sysDependencies;
-            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
+            buildInputs = [just] ++buildDependencies ++sysDependencies;
+            nativeBuildInputs = [just] ++buildDependencies ++sysDependencies;
             OPENSSL_DEV=pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
