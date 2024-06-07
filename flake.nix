@@ -66,6 +66,12 @@
           bzip2
         ];
 
+        testDependencies = with pkgs; [
+          just
+          foundry-bin
+          process-compose
+        ];
+
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
@@ -130,8 +136,10 @@
 
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            buildInputs = [just forge] ++buildDependencies ++sysDependencies;
-            nativeBuildInputs = [just forge] ++buildDependencies ++sysDependencies;
+            
+            buildInputs = [] ++buildDependencies ++sysDependencies ++testDependencies;
+            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
+
             shellHook = ''
               #!/bin/bash -e
               cat <<'EOF'
