@@ -13,8 +13,8 @@ RUN nix \
 
 # Copy the Nix store closure into a directory. The Nix store closure is the
 # entire set of Nix store values that we need for our build.
-RUN mkdir /tmp/nix-store-closure
-RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure
+RUN mkdir /tmp/nix-store-closure \
+  && cp -R $(nix-store -qR result/) /tmp/nix-store-closure
 
 # Final image is based on scratch. We copy a bunch of Nix dependencies
 # but they're fully self-contained so we don't need Nix anymore.
