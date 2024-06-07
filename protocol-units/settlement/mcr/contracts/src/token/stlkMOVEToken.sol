@@ -24,14 +24,3 @@ contract stlkMOVEToken is LockedToken {
     }
 
 }
-
-// Flow for staking
-// StakingContract: signer call stake
-// StakingContract: signer approves StakingContract to spend their stlkMOVE tokens. 
-// StakingContract: calls transferFrom on stlkMOVE to move both stlkMOVE and MOVE tokens to the staking contract
-// StakingContract: staking contract confirms it received the tokens and records balance for the signer with the custodian
-
-// Flow for unstaking
-// StakingContract: signer calls unstake with the custodian
-// StakingContract: staking contract transfers stlkMOVE and MOVE tokens back to the custodian via calling transfer on the stlkMOVE contract
-// StakingContract: staking contract confirms it transferred the tokens back to the custodian and updates the signer's balance to 0
