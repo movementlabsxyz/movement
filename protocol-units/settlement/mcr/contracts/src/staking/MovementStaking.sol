@@ -71,8 +71,9 @@ contract MovementStaking is BaseStaking {
         uint256 epoch
     );
 
-    function initialize() public override {
+    function initialize(IERC20 _token) public  {
         super.initialize();
+        token = _token;
     }
 
     function registerDomain(
@@ -89,62 +90,47 @@ contract MovementStaking is BaseStaking {
 
     }
 
-    /**
-    * @dev End the genesis ceremony
-    * @param mode 0 for setting the genesis ceremony, 1 for accepting the genesis ceremony stakes
-    * @param attesters The attesters to set or accept
-    * @param stakes The stakes to set or accept
-     */
-    function endGenesisCeremony(
-        uint256 mode, 
-        address[] calldata custodians,
-        address[] calldata attesters,
-        uint256[] calldata stakes
-    ) external {
+    function acceptGenesisCeremony() public {
 
-        if (mode == 0) {
-            _setGenesisCeremony(
-                address(msg.sender),
-                custodians,
-                attesters, 
-                stakes
-            );
-        } else if (mode == 1) {
-            _acceptGenesisCeremony(address(msg.sender));
-        } else {
-            revert("Invalid genesis ceremony end.");
-        }
-
-    }
-
-    function _acceptGenesisCeremony(
-        address domain
-    ) internal {
+        address domain = address(msg.sender);
 
         // roll over from 0 (genesis) to current epoch by block time
         currentEpochByDomain[domain] = getEpochByBlockTime(domain);
 
         for (uint256 i = 0; i < attestersByDomain[domain].length(); i++){
             address attester = attestersByDomain[domain].at(i);
-            address custodian = attestersByDomain[domain].at(i); // todo: this needs to be a real custodian
-            uint256 attesterStake = getStakeAtEpoch(
-                domain, 
-                0,
-                custodian, 
-                attester
-            );
-            epochStakesByDomain[domain][getCurrentEpoch(domain)][custodian][attester] = attesterStake;
-            epochTotalStakeByDomain[domain][getCurrentEpoch(domain)] += attesterStake;
+
+            for (uint256 j = 0; j < custodiansByDomain[domain].length(); j++){
+                address custodian = custodiansByDomain[domain].at(j);
+
+                // get the genesis stake for the attester
+                uint256 attesterStake = getStakeAtEpoch(
+                    domain, 
+                    0,
+                    custodian, 
+                    attester
+                );
+
+                // roll over the genesis stake to the current epoch
+                _addStake(
+                    domain,
+                    getCurrentEpoch(domain),
+                    custodian,
+                    attester,
+                    attesterStake
+                );
+                
+            }
         }
 
     }
 
-    function _setGenesisCeremony(
+    function setGenesisCeremony(
         address domain,
         address[] calldata custodians,
         address[] calldata attesters,
         uint256[] calldata stakes
-    ) internal {
+    ) public {
 
         currentEpochByDomain[domain] = getEpochByBlockTime(domain);
 
@@ -180,6 +166,68 @@ contract MovementStaking is BaseStaking {
 
     }
 
+    function _addStake(
+        address domain,
+        uint256 epoch,
+        address custodian,
+        address attester,
+        uint256 amount
+    ) internal {
+
+        epochStakesByDomain[domain][epoch][custodian][attester] += amount;
+        epochTotalStakeByDomain[domain][epoch] += amount;
+
+    }
+
+    function _removeStake(
+        address domain,
+        uint256 epoch,
+        address custodian,
+        address attester,
+        uint256 amount
+    ) internal {
+
+        epochStakesByDomain[domain][epoch][custodian][attester] -= amount;
+        epochTotalStakeByDomain[domain][epoch] -= amount;
+
+    }
+
+    function _addUnstake(
+        address domain,
+        uint256 epoch,
+        address custodian,
+        address attester,
+        uint256 amount
+    ) internal {
+
+        epochUnstakesByDomain[domain][epoch][custodian][attester] += amount;
+
+    }
+
+    function _removeUnstake(
+        address domain,
+        uint256 epoch,
+        address custodian,
+        address attester,
+        uint256 amount
+    ) internal {
+
+        epochUnstakesByDomain[domain][epoch][custodian][attester] -= amount;
+
+    }
+
+    function _setUnstake(
+        address domain,
+        uint256 epoch,
+        address custodian,
+        address attester,
+        uint256 amount
+    ) internal {
+
+        epochUnstakesByDomain[domain][epoch][custodian][attester] = amount;
+
+    }
+
     // gets the would be epoch for the current block time
     function getEpochByBlockTime(address domain) public view returns (uint256) {
         return block.timestamp / epochDurationByDomain[domain];
@@ -195,6 +243,10 @@ contract MovementStaking is BaseStaking {
      
         return getCurrentEpoch(domain) == 0 ? 0 : getCurrentEpoch(domain) + 1;
 
+    }
+
+    function getNextEpochByBlockTime(address domain) public view returns (uint256) {
+        return getCurrentEpoch(domain) == 0 ? 0 : getEpochByBlockTime(domain) + 1;
     }
 
     // gets the stake for a given attester at a given epoch
@@ -268,6 +320,9 @@ contract MovementStaking is BaseStaking {
         // add the attester to the list of attesters
         attestersByDomain[domain].add(msg.sender);
 
+        // add the custodian to the list of custodians
+        custodiansByDomain[domain].add(address(custodian));
+
         // check the balance of the token before transfer
         uint256 balanceBefore = token.balanceOf(address(this));
 
@@ -281,7 +336,13 @@ contract MovementStaking is BaseStaking {
         require(token.balanceOf(address(this)) == balanceBefore + amount, "Token transfer failed. Custodian did not meet obligation.");
 
         // set the attester to stake for the next epoch
-        epochStakesByDomain[domain][getNextEpoch(domain)][address(custodian)][msg.sender] += amount;
+        _addStake(
+            domain,
+            getNextEpochByBlockTime(domain),
+            address(custodian),
+            msg.sender,
+            amount
+        );
 
         // Let the world know that the attester has staked
         emit AttesterStaked(
@@ -304,7 +365,13 @@ contract MovementStaking is BaseStaking {
         // indicate that we are going to unstake this amount in the next epoch
         // ! this doesn't actually happen until we roll over the epoch
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
-        epochUnstakesByDomain[domain][getNextEpoch(domain)][custodian][msg.sender] += amount;
+        _addUnstake(
+            domain,
+            getNextEpochByBlockTime(domain),
+            custodian,
+            msg.sender,
+            amount
+        );
 
         emit AttesterUnstaked(
             domain,
@@ -317,7 +384,7 @@ contract MovementStaking is BaseStaking {
     }
     
     // rolls over the stake and unstake for a given attester
-    function rollOverAttester(
+    function _rollOverAttester(
         address domain,
         uint256 epochNumber,
         address custodian,
@@ -325,20 +392,29 @@ contract MovementStaking is BaseStaking {
     ) internal {
 
         // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
-        epochStakesByDomain[domain][epochNumber + 1][custodian][attester] += epochStakesByDomain[domain][epochNumber][custodian][attester] - epochUnstakesByDomain[domain][epochNumber + 1][custodian][attester];
+        uint256 stakeAmount = getStakeAtEpoch(domain, epochNumber, custodian, attester);
+        uint256 unstakeAmount = getUnstakeAtEpoch(domain, epochNumber + 1, custodian, attester);
+        if (unstakeAmount > stakeAmount) {
+            unstakeAmount = stakeAmount;
+        }
+        uint256 remainder = stakeAmount - unstakeAmount;
 
-        // also precompute the total stake for the epoch
-        epochTotalStakeByDomain[domain][epochNumber + 1] += epochStakesByDomain[domain][epochNumber + 1][custodian][attester];
+        _addStake(
+            domain,
+            epochNumber + 1,
+            custodian,
+            attester,
+            remainder
+        );
 
         // the unstake is then paid out
         // note: this is the only place this takes place
         // there's not risk of double payout, so long as rollOverattester is only called once per epoch
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
-        uint256 amount = epochUnstakesByDomain[domain][epochNumber + 1][custodian][attester];
         _payAttester(
             attester,
             custodian,
-            amount
+            unstakeAmount
         );
         
 
@@ -346,8 +422,8 @@ contract MovementStaking is BaseStaking {
             attester, 
             epochNumber, 
             custodian,
-            epochStakesByDomain[domain][epochNumber][custodian][attester], 
-            epochUnstakesByDomain[domain][epochNumber + 1][custodian][attester]
+            stakeAmount, 
+            unstakeAmount
         );
 
     }
@@ -357,10 +433,12 @@ contract MovementStaking is BaseStaking {
         // iterate over the attester set
         // * complexity here can be reduced by actually mapping attesters to their token and custodian
         for (uint256 i = 0; i < attestersByDomain[domain].length(); i++){
+            address attester = attestersByDomain[domain].at(i);
+
             for (uint256 j = 0; j < custodiansByDomain[domain].length(); j++){
-                address attester = attestersByDomain[domain].at(i);
                 address custodian = custodiansByDomain[domain].at(j);
-                rollOverAttester(domain, epochNumber, custodian, attester);
+
+                _rollOverAttester(domain, epochNumber, custodian, attester);
             }
         }
 
@@ -371,9 +449,9 @@ contract MovementStaking is BaseStaking {
 
     }
 
-    function rollOverEpoch(address domain) external {
+    function rollOverEpoch() external {
 
-        _rollOverEpoch(domain, getCurrentEpoch(domain));
+        _rollOverEpoch(msg.sender, getCurrentEpoch(msg.sender));
 
     }
 
@@ -395,12 +473,25 @@ contract MovementStaking is BaseStaking {
 
         // stake slash will always target this epoch
         uint256 targetEpoch = epoch;
+        uint256 stakeForEpoch = getStakeAtEpoch(domain, targetEpoch, custodian, attester);
 
         // deduct the amount from the attester's stake, account for underflow
-        if (epochStakesByDomain[domain][targetEpoch][custodian][attester] < amount){
-            epochStakesByDomain[domain][targetEpoch][custodian][attester] = 0;
+        if (stakeForEpoch < amount){
+            _removeStake(
+                domain,
+                targetEpoch,
+                custodian,
+                attester,
+                stakeForEpoch
+            );
         } else {
-            epochStakesByDomain[domain][targetEpoch][custodian][attester] -= amount;
+            _removeStake(
+                domain,
+                targetEpoch,
+                custodian,
+                attester,
+                amount
+            );
         }
 
     }
@@ -422,24 +513,30 @@ contract MovementStaking is BaseStaking {
     ) internal {
 
         // unstake slash will always target the next epoch
+        uint256 stakeForEpoch = getStakeAtEpoch(domain, epoch, custodian, attester);
         uint256 targetEpoch = epoch + 1;
+        uint256 unstakeForEpoch = getUnstakeAtEpoch(domain, targetEpoch, custodian, attester);
 
-        // deduct the amount from the attester's unstake, account for underflow
-        if (epochUnstakesByDomain[domain][targetEpoch][custodian][attester] < amount){
-            epochUnstakesByDomain[domain][targetEpoch][custodian][attester] = 0;
-        } else {
-            epochUnstakesByDomain[domain][targetEpoch][custodian][attester] -= amount;
+        if(unstakeForEpoch > stakeForEpoch) { // if you are trying to unstake more than is staked
+
+            // set the unstake to the maximum possible amount
+            _setUnstake( 
+                domain,
+                targetEpoch,
+                custodian,
+                attester,
+                stakeForEpoch
+            );
         }
 
     }
 
     function slash(
+        address[] calldata custodians,
         address[] calldata attesters,
         uint256[] calldata amounts,
-        address[] calldata custodians,
         uint256[] calldata refundAmounts
     ) public {
-
 
         for (uint256 i = 0; i < attesters.length; i++){
 

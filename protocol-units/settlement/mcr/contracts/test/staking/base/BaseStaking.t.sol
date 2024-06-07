@@ -9,8 +9,6 @@ contract BaseStakingTest is Test {
     function testInitialize() public {
 
         BaseStaking staking = new BaseStaking();
-
-        // Call the initialize function
         staking.initialize();
 
     }
@@ -18,12 +16,11 @@ contract BaseStakingTest is Test {
     function testCannotInitializeTwice() public {
 
         BaseStaking staking = new BaseStaking();
-
-        // Initialize the contract
         staking.initialize();
 
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
         staking.initialize();
+        
     }
 }
