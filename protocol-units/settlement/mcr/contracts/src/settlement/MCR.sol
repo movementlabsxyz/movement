@@ -317,6 +317,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
     }
 
     function rollOverEpoch() internal {
+        console.log("Rolling over epoch %s", getCurrentEpoch());
         stakingContract.rollOverEpoch();
     }
 }
