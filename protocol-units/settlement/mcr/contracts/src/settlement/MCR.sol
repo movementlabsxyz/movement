@@ -7,10 +7,17 @@ import "../staking/MovementStaking.sol";
 import "./MCRStorage.sol";
 import "./settlement/BaseSettlement.sol";
 
-contract MCR is BaseSettlement, Initializable, MCRStorage {
-
-    event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 height);
-    event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 attesterStake);
+contract MCR is Initializable, BaseSettlement, MCRStorage {
+    event BlockAccepted(
+        bytes32 indexed blockHash,
+        bytes32 stateCommitment,
+        uint256 height
+    );
+    event BlockCommitmentSubmitted(
+        bytes32 indexed blockHash,
+        bytes32 stateCommitment,
+        uint256 attesterStake
+    );
 
     function initialize(
         IMovementStaking _stakingContract,
@@ -30,18 +37,13 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
         );
     }
 
-    // creates a commitment 
+    // creates a commitment
     function createBlockCommitment(
         uint256 height,
         bytes32 commitment,
         bytes32 blockId
     ) public pure returns (BlockCommitment memory) {
         return BlockCommitment(height, commitment, blockId);
-    }
-
-    // gets whether the genesis ceremony has ended
-    function hasGenesisCeremonyEnded() public view returns (bool) {
-        assert(false);
     }
 
     // gets the max tolerable block height
@@ -65,20 +67,30 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
     }
 
     // gets the stake for a given attester at a given epoch
-    function getStakeAtEpoch(uint256 epoch, address custodian, address attester) public view returns (uint256) {
-        return stakingContract.getStakeAtEpoch(
-            address(this), 
-            epoch, 
-            custodian, 
-            attester
-        );
+    function getStakeAtEpoch(
+        uint256 epoch,
+        address custodian,
+        address attester
+    ) public view returns (uint256) {
+        return
+            stakingContract.getStakeAtEpoch(
+                address(this),
+                epoch,
+                custodian,
+                attester
+            );
     }
 
     // todo: memoize this
-    function computeAllStakeAtEpoch(uint256 epoch, address attester) public view returns (uint256) {
-        address[] memory custodians = stakingContract.getCustodiansByDomain(address(this));
+    function computeAllStakeAtEpoch(
+        uint256 epoch,
+        address attester
+    ) public view returns (uint256) {
+        address[] memory custodians = stakingContract.getCustodiansByDomain(
+            address(this)
+        );
         uint256 totalStake = 0;
-        for (uint256 i = 0; i < custodians.length; i++){
+        for (uint256 i = 0; i < custodians.length; i++) {
             // for now, each custodian has weight of 1
             totalStake += getStakeAtEpoch(epoch, custodians[i], attester);
         }
@@ -86,27 +98,40 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
     }
 
     // gets the stake for a given attester at the current epoch
-    function getCurrentEpochStake(address custodian, address attester) public view returns (uint256) {
+    function getCurrentEpochStake(
+        address custodian,
+        address attester
+    ) public view returns (uint256) {
         return getStakeAtEpoch(getCurrentEpoch(), custodian, attester);
     }
 
-    function computeAllCurrentEpochStake(address attester) public view returns (uint256) {
+    function computeAllCurrentEpochStake(
+        address attester
+    ) public view returns (uint256) {
         return computeAllStakeAtEpoch(getCurrentEpoch(), attester);
     }
 
     // gets the total stake for a given epoch
-    function getTotalStakeForEpoch(uint256 epoch, address custodian) public view returns (uint256) {
-        return stakingContract.getTotalStakeForEpoch(
-            address(this), 
-            epoch,
-            custodian
-        );
+    function getTotalStakeForEpoch(
+        uint256 epoch,
+        address custodian
+    ) public view returns (uint256) {
+        return
+            stakingContract.getTotalStakeForEpoch(
+                address(this),
+                epoch,
+                custodian
+            );
     }
 
-    function computeAllTotalStakeForEpoch(uint256 epoch) public view returns (uint256) {
-        address[] memory custodians = stakingContract.getCustodiansByDomain(address(this));
+    function computeAllTotalStakeForEpoch(
+        uint256 epoch
+    ) public view returns (uint256) {
+        address[] memory custodians = stakingContract.getCustodiansByDomain(
+            address(this)
+        );
         uint256 totalStake = 0;
-        for (uint256 i = 0; i < custodians.length; i++){
+        for (uint256 i = 0; i < custodians.length; i++) {
             // for now, each custodian has weight of 1
             totalStake += getTotalStakeForEpoch(epoch, custodians[i]);
         }
@@ -114,21 +139,32 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForCurrentEpoch(address custodian) public view returns (uint256) {
+    function getTotalStakeForCurrentEpoch(
+        address custodian
+    ) public view returns (uint256) {
         return getTotalStakeForEpoch(getCurrentEpoch(), custodian);
     }
 
-    function computeAllTotalStakeForCurrentEpoch() public view returns (uint256) {
+    function computeAllTotalStakeForCurrentEpoch()
+        public
+        view
+        returns (uint256)
+    {
         return computeAllTotalStakeForEpoch(getCurrentEpoch());
     }
 
     // gets the commitment at a given block height
-    function getAttesterCommitmentAtBlockHeight(uint256 blockHeight, address attester) public view returns (BlockCommitment memory) {
+    function getAttesterCommitmentAtBlockHeight(
+        uint256 blockHeight,
+        address attester
+    ) public view returns (BlockCommitment memory) {
         return commitments[blockHeight][attester];
     }
 
     // gets the accepted commitment at a given block height
-    function getAcceptedCommitmentAtBlockHeight(uint256 blockHeight) public view returns (BlockCommitment memory) {
+    function getAcceptedCommitmentAtBlockHeight(
+        uint256 blockHeight
+    ) public view returns (BlockCommitment memory) {
         return acceptedBlocks[blockHeight];
     }
 
@@ -138,21 +174,29 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
 
     // commits a attester to a particular block
     function submitBlockCommitmentForAttester(
-        address attester, 
+        address attester,
         BlockCommitment memory blockCommitment
     ) internal {
-
-        require(commitments[blockCommitment.height][attester].height == 0, "Attester has already committed to a block at this height");
+        require(
+            commitments[blockCommitment.height][attester].height == 0,
+            "Attester has already committed to a block at this height"
+        );
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
         // require(blockCommitment.height > lastAcceptedBlockHeight, "Attester has committed to an already accepted block");
 
-        require(blockCommitment.height < lastAcceptedBlockHeight + leadingBlockTolerance, "Attester has committed to a block too far ahead of the last accepted block");
+        require(
+            blockCommitment.height <
+                lastAcceptedBlockHeight + leadingBlockTolerance,
+            "Attester has committed to a block too far ahead of the last accepted block"
+        );
 
         // assign the block height to the current epoch if it hasn't been assigned yet
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the tolerance
-            blockHeightEpochAssignments[blockCommitment.height] = getEpochByBlockTime();
+            blockHeightEpochAssignments[
+                blockCommitment.height
+            ] = getEpochByBlockTime();
         }
 
         // register the attester's commitment
@@ -160,9 +204,15 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
 
         // increment the commitment count by stake
         uint256 allCurrentEpochStake = computeAllCurrentEpochStake(attester);
-        commitmentStakes[blockCommitment.height][blockCommitment.commitment] += allCurrentEpochStake;
+        commitmentStakes[blockCommitment.height][
+            blockCommitment.commitment
+        ] += allCurrentEpochStake;
 
-        emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, allCurrentEpochStake);
+        emit BlockCommitmentSubmitted(
+            blockCommitment.blockId,
+            blockCommitment.commitment,
+            allCurrentEpochStake
+        );
 
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
@@ -171,11 +221,9 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
         // ! however, this does potentially become very costly for whomever submits this last block
         // ! rewards need to be managed accordingly
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
-      
     }
 
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
-
         // get the epoch assigned to the block height
         uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
 
@@ -183,65 +231,65 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
         while (getCurrentEpoch() < blockEpoch) {
-            rollOverEpoch(getCurrentEpoch());
+            rollOverEpoch();
         }
 
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
-
-        uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch))/3;
+        uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch)) /
+            3;
         address[] memory attesters = getAttesters();
 
         // iterate over the attester set
-        for (uint256 i = 0; i < attesters.length; i++){
-
+        for (uint256 i = 0; i < attesters.length; i++) {
             address attester = attesters[i];
 
             // get a commitment for the attester at the block height
-            BlockCommitment memory blockCommitment = commitments[blockHeight][attester];
+            BlockCommitment memory blockCommitment = commitments[blockHeight][
+                attester
+            ];
 
             // check the total stake on the commitment
-            uint256 totalStakeOnCommitment = commitmentStakes[blockCommitment.height][blockCommitment.commitment];
+            uint256 totalStakeOnCommitment = commitmentStakes[
+                blockCommitment.height
+            ][blockCommitment.commitment];
 
             if (totalStakeOnCommitment > supermajority) {
-
                 // accept the block commitment (this may trigger a roll over of the epoch)
-                acceptBlockCommitment(blockCommitment, blockEpoch);
+                _acceptBlockCommitment(blockCommitment);
 
                 // we found a commitment that was accepted
                 return true;
-
             }
-
         }
 
         return false;
-
     }
 
     function submitBlockCommitment(
         BlockCommitment memory blockCommitment
     ) public {
-
         submitBlockCommitmentForAttester(msg.sender, blockCommitment);
-
     }
 
     function submitBatchBlockCommitment(
         BlockCommitment[] memory blockCommitments
     ) public {
-
-        for (uint256 i = 0; i < blockCommitments.length; i++){
+        for (uint256 i = 0; i < blockCommitments.length; i++) {
             submitBlockCommitment(blockCommitments[i]);
         }
-
     }
 
-    function acceptBlockCommitment(
-        BlockCommitment memory blockCommitment,
-        uint256 epochNumber
+    function _acceptBlockCommitment(
+        BlockCommitment memory blockCommitment
     ) internal {
-      
+        // get the epoch for the block commitment
+        require(
+            blockHeightEpochAssignments[blockCommitment.height] ==
+                getCurrentEpoch(),
+            "Block commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol."
+        );
+
         // set accepted block commitment
         acceptedBlocks[blockCommitment.height] = blockCommitment;
 
@@ -249,31 +297,26 @@ contract MCR is BaseSettlement, Initializable, MCRStorage {
         lastAcceptedBlockHeight = blockCommitment.height;
 
         // slash minority attesters w.r.t. to the accepted block commitment
-        slashMinority(blockCommitment, epochNumber);
+        slashMinority(blockCommitment);
 
         // emit the block accepted event
-        emit BlockAccepted(blockCommitment.blockId, blockCommitment.commitment, blockCommitment.height);
+        emit BlockAccepted(
+            blockCommitment.blockId,
+            blockCommitment.commitment,
+            blockCommitment.height
+        );
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if (getEpochByBlockTime() > epochNumber) {
-            rollOverEpoch(epochNumber);
+        if (getEpochByBlockTime() > getCurrentEpoch()) {
+            rollOverEpoch();
         }
-       
     }
 
-    function slashMinority(
-        BlockCommitment memory blockCommitment,
-        uint256 totalStake
-    ) internal {
-
+    function slashMinority(BlockCommitment memory blockCommitment) internal {
         // stakingContract.slash(custodians, attesters, amounts, refundAmounts);
-
     }
 
-    function rollOverEpoch(uint256 epochNumber) internal {
-
+    function rollOverEpoch() internal {
         stakingContract.rollOverEpoch();
-
     }
-
 }
