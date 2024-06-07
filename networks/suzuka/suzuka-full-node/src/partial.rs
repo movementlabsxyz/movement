@@ -24,11 +24,36 @@ use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
+/// Suzuka partial node has the ability to
 pub struct SuzukaPartialNode<T> {
+	/// The executor responsible for executing transactions and blocks.
+	///
+	/// 'T' must implement the `SuzukaExecutor` trait, allowing different
+	/// types of executors to be used with the `SuzukaPartialNode`.
 	executor: T,
+
+	/// Asynchronous channel sender for signed transactions.
+	///
+	/// This sender is used to send transactions to the transaction receiver for
+	/// processing.
 	transaction_sender: Sender<SignedTransaction>,
+
+	/// Asynchronous channel receiver for receiving signed transactions.
+	///
+	/// This receiver is used to receive transactions sent by the `transaction_sender`
+	/// and process them accordingly.
 	pub transaction_receiver: Receiver<SignedTransaction>,
+
+	/// Client for interacting with the light node service.
+	///
+	/// This client is used to communicate with the light node service for reading
+	/// and writing transactions in a thread-safe manner.
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
+
+	/// Manager for handling settlement of transactions.
+	///
+	/// This manager handles commitment events and interacts with the settlement
+	/// client to ensure that transactions are properly settled in the network.
 	settlement_manager: McrSettlementManager,
 }
 
@@ -58,10 +83,12 @@ where
 		)
 	}
 
+	/// Binds the transaction channel to the executor.
 	fn bind_transaction_channel(&mut self) {
 		self.executor.set_tx_channel(self.transaction_sender.clone());
 	}
 
+	/// Creates a new Suzuka partial node with the given executor and light node client.
 	pub fn bound<C>(
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
@@ -75,6 +102,7 @@ where
 		Ok((node, background_task))
 	}
 
+	/// Sets the transaction channel for the partial node.
 	pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		// limit the total time batching transactions
 		let start_time = std::time::Instant::now();
@@ -240,6 +268,7 @@ where
 }
 
 impl SuzukaPartialNode<SuzukaExecutorV1> {
+	/// Creates a new Suzuka partial node with the given executor and light node client from the environment.
 	pub async fn try_from_env(
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
