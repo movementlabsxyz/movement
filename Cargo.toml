@@ -135,7 +135,6 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
-# Other Dependencies
 anyhow = "1.0"
 async-channel = "2.2.1"
 async-stream = "0.3.0"
