@@ -39,17 +39,21 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	// Inititalize Test variables
 	let rpc_port = env::var("MCR_ANVIL_PORT").unwrap();
 	let rpc_url = format!("http://localhost:{rpc_port}");
-	let ws_url = format!("ws://localhost:{rpc_port}");
+	//	let ws_url = format!("ws://localhost:{rpc_port}");
 
 	let anvil_address = read_anvil_json_file_address()?;
+
+	println!("test anvil_address");
 
 	//Do SC ceremony init stake calls.
 	do_genesis_ceremonial(&anvil_address, &rpc_url).await?;
 
+	println!("test do_genesis_ceremonial");
+
 	let mcr_address = read_mcr_sc_adress()?;
 	//Define Signers. Ceremony define 2 signers with half stake each.
 	let signer: LocalWallet = anvil_address[1].1.parse()?;
-	let signer_addr = signer.address();
+	//	let signer_addr = signer.address();
 	//Build client 1 and send first commitment.
 	let provider_client = ProviderBuilder::new()
 		.with_recommended_fillers()
@@ -57,6 +61,8 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		.on_http(rpc_url.parse().unwrap());
 
 	let contract = MCR::new(mcr_address, &provider_client);
+
+	println!("test contract");
 
 	//try to find the last accepted epoch.
 	let MCR::getCurrentEpochReturn { _0: current_epoch } =
@@ -196,7 +202,7 @@ async fn do_genesis_ceremonial(
 		&signer1_contract,
 		mcr_address,
 		signer1_addr,
-		55_000_000_000_000_000_000,
+		95_000_000_000_000_000_000,
 	)
 	.await?;
 
@@ -215,7 +221,7 @@ async fn do_genesis_ceremonial(
 		&signer2_contract,
 		mcr_address,
 		signer2_addr,
-		54_000_000_000_000_000_000,
+		6_000_000_000_000_000_000,
 	)
 	.await?;
 
