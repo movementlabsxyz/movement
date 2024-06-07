@@ -130,8 +130,8 @@
 
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            buildInputs = [just] ++buildDependencies ++sysDependencies;
-            nativeBuildInputs = [just] ++buildDependencies ++sysDependencies;
+            buildInputs = [just forge] ++buildDependencies ++sysDependencies;
+            nativeBuildInputs = [just forge] ++buildDependencies ++sysDependencies;
             shellHook = ''
               #!/bin/bash -e
               cat <<'EOF'
