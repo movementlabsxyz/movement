@@ -86,28 +86,16 @@ impl FinalityView {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aptos_api::accept_type::AcceptType;
 	use aptos_sdk::crypto::HashValue;
-	use aptos_sdk::move_types::move_resource::MoveStructType as _;
 	use aptos_sdk::transaction_builder::TransactionFactory;
-	use aptos_sdk::types::{
-		access_path::AccessPath, account_address::AccountAddress,
-		account_config::aptos_test_root_address, state_store::state_key::StateKey, AccountKey,
-		LocalAccount,
-	};
-	use aptos_types::account_config::AccountResource;
+	use aptos_sdk::types::{account_config::aptos_test_root_address, AccountKey, LocalAccount};
 	use aptos_types::block_executor::partitioner::{ExecutableBlock, ExecutableTransactions};
 	use aptos_types::block_metadata::BlockMetadata;
 	use aptos_types::transaction::signature_verified_transaction::SignatureVerifiedTransaction;
 	use aptos_types::transaction::Transaction;
 	use maptos_opt_executor::Executor;
 	use rand::prelude::*;
-
-	fn state_key_from_address(address: AccountAddress) -> StateKey {
-		StateKey::access_path(
-			AccessPath::resource_access_path(address.into(), AccountResource::struct_tag())
-				.unwrap(),
-		)
-	}
 
 	#[tokio::test]
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
@@ -183,17 +171,16 @@ mod tests {
 
 		// Retrieve the executor's API interface and fetch the accounts
 		let apis = finality_view.get_apis();
-		let context = apis.accounts.context.clone();
 
-		let fin_ledger_info = context.get_latest_ledger_info_wrapped()?;
-		let fin_version = fin_ledger_info.version();
-
-		let state_key = state_key_from_address(account_addrs[1]);
-		let acc_data = context.get_state_value(&state_key, fin_version)?;
-		assert!(acc_data.is_some());
-		let state_key = state_key_from_address(account_addrs[2]);
-		let acc_data = context.get_state_value(&state_key, fin_version)?;
-		assert!(acc_data.is_none());
+		apis.accounts
+			.get_account_inner(AcceptType::Bcs, account_addrs[1].into(), None)
+			.await
+			.expect("account created at block height 2 should be retrieved");
+		let res = apis
+			.accounts
+			.get_account_inner(AcceptType::Bcs, account_addrs[2].into(), None)
+			.await;
+		assert!(res.is_err(), "account created at block height 3 should not be retrieved");
 
 		Ok(())
 	}
