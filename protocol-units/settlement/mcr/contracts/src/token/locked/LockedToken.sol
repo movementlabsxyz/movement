@@ -6,7 +6,7 @@ import "../base/MintableToken.sol";
 import "../base/WrappedToken.sol";
 import "../custodian/CustodianToken.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract LockedToken is CustodianToken {
 

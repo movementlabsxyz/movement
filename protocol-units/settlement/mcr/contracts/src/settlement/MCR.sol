@@ -2,20 +2,14 @@
 pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "forge-std/console.sol";
+import "../staking/MovementStaking.sol";
 
 contract MCR {
 
-    // Use an address set here
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    uint256 public genesisStakeRequired;
-    uint256 public maxGenesisStakePerValidator;
-    uint256 public genesisStakeAccumulated;
-
-    uint256 public epochDuration;
+    IMovementStaking public stakingContract;
 
     // the number of blocks that can be submitted ahead of the lastAcceptedBlockHeight
-    // this allows for things like batching to take place without some validators locking down the validator set by pushing too far ahead
+    // this allows for things like batching to take place without some attesters locking down the attester set by pushing too far ahead
     // ? this could be replaced by a 2/3 stake vote on the block height to epoch assignment
     // ? however, this protocol becomes more complex as you to take steps to ensure that...
     // ? 1. Block heights have a non-decreasing mapping to epochs
@@ -26,9 +20,6 @@ contract MCR {
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
     uint256 public lastAcceptedBlockHeight;
 
-    // track the current epoch for staking and unstaking
-    uint256 public currentEpoch;
-
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
         uint256 height;
@@ -36,20 +27,10 @@ contract MCR {
         bytes32 blockId;
     }
 
-    // ! ledger for staking and unstaking
-    EnumerableSet.AddressSet internal validators;
-    // preserved records of stake by address per epoch
-    mapping(uint256 => mapping( address => uint256)) public epochStakes;
-    // preserved records of unstake by address per epoch
-    mapping(uint256 => mapping( address => uint256)) public epochUnstakes;
-
-    // track the total stake of the epoch (computed at rollover)
-    mapping(uint256 => uint256) public epochTotalStake;
-
     // map each block height to an epoch
     mapping(uint256 => uint256) public blockHeightEpochAssignments;
 
-    // track each commitment from each validator for each block height
+    // track each commitment from each attester for each block height
     mapping(uint256 => mapping(address => BlockCommitment)) public commitments;
 
     // track the total stake accumulate for each commitment for each block height
@@ -58,26 +39,25 @@ contract MCR {
     // map block height to accepted block hash 
     mapping(uint256 => BlockCommitment) public acceptedBlocks;
 
-    event ValidatorStaked(address indexed validator, uint256 stake, uint256 epoch);
-    event ValidatorUnstaked(address indexed validator, uint256 stake, uint256 epoch);
     event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 height);
-    event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 validatorStake);
-    event ValidatorEpochRolledOver(address indexed validator, uint256 epoch, uint256 stake, uint256 unstake);
-    event EpochRolledOver(uint256 epoch, uint256 totalStake);
+    event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 attesterStake);
 
+    // todo: initializer
     constructor(
-        uint256 epochDurationSecs,
+        IMovementStaking _stakingContract,
         uint256 _leadingBlockTolerance,
-        uint256 _genesisStakeRequired,
-        uint256 _maxGenesisStakePerValidator,
-        uint256 _lastAcceptedBlockHeight // in case of a restart
+        uint256 _lastAcceptedBlockHeight,
+        uint256 _epochDuration,
+        address[] memory _custodians
     ) {
-        epochDuration = epochDurationSecs;
+        stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
-        genesisStakeRequired = _genesisStakeRequired;
-        maxGenesisStakePerValidator = _maxGenesisStakePerValidator;
-        genesisStakeAccumulated = 0;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
+        stakingContract.registerDomain(
+            address(this),
+            _epochDuration,
+            _custodians
+        );
     }
 
     // creates a commitment 
@@ -91,7 +71,7 @@ contract MCR {
 
     // gets whether the genesis ceremony has ended
     function hasGenesisCeremonyEnded() public view returns (bool) {
-        return genesisStakeAccumulated >= genesisStakeRequired;
+        assert(false);
     }
 
     // gets the max tolerable block height
@@ -101,52 +81,80 @@ contract MCR {
 
     // gets the would be epoch for the current block time
     function getEpochByBlockTime() public view returns (uint256) {
-        return block.timestamp / epochDuration;
+        return stakingContract.getEpochByBlockTime(address(this));
     }
 
     // gets the current epoch up to which blocks have been accepted
     function getCurrentEpoch() public view returns (uint256) {
-        return currentEpoch;
+        return stakingContract.getCurrentEpoch(address(this));
     }
 
     // gets the next epoch
     function getNextEpoch() public view returns (uint256) {
-        return currentEpoch + 1;
+        return stakingContract.getNextEpoch(address(this));
     }
 
-    // gets the stake for a given validator at a given epoch
-    function getStakeAtEpoch(address validatorAddress, uint256 epoch) public view returns (uint256) {
-        return epochStakes[epoch][validatorAddress];
+    // gets the stake for a given attester at a given epoch
+    function getStakeAtEpoch(uint256 epoch, address custodian, address attester) public view returns (uint256) {
+        return stakingContract.getStakeAtEpoch(
+            address(this), 
+            epoch, 
+            custodian, 
+            attester
+        );
     }
 
-    // gets the stake for a given validator at the current epoch
-    function getCurrentEpochStake(address validatorAddress) public view returns (uint256) {
-        return getStakeAtEpoch(validatorAddress, getCurrentEpoch());
+    // todo: memoize this
+    function computeAllStakeAtEpoch(uint256 epoch, address attester) public view returns (uint256) {
+        address[] memory custodians = stakingContract.getCustodiansByDomain(address(this));
+        uint256 totalStake = 0;
+        for (uint256 i = 0; i < custodians.length; i++){
+            // for now, each custodian has weight of 1
+            totalStake += getStakeAtEpoch(epoch, custodians[i], attester);
+        }
+        return totalStake;
     }
 
-    // gets the unstake for a given validator at a given epoch
-    function getUnstakeAtEpoch(address validatorAddress, uint256 epoch) public view returns (uint256) {
-        return epochUnstakes[epoch][validatorAddress];
+    // gets the stake for a given attester at the current epoch
+    function getCurrentEpochStake(address custodian, address attester) public view returns (uint256) {
+        return getStakeAtEpoch(getCurrentEpoch(), custodian, attester);
     }
 
-    // gets the unstake for a given validator at the current epoch
-    function getCurrentEpochUnstake(address validatorAddress) public view returns (uint256) {
-        return getUnstakeAtEpoch(validatorAddress, getCurrentEpoch());
+    function computeAllCurrentEpochStake(address attester) public view returns (uint256) {
+        return computeAllStakeAtEpoch(getCurrentEpoch(), attester);
     }
 
     // gets the total stake for a given epoch
-    function getTotalStakeForEpoch(uint256 epoch) public view returns (uint256) {
-        return epochTotalStake[epoch];
+    function getTotalStakeForEpoch(uint256 epoch, address custodian) public view returns (uint256) {
+        return stakingContract.getTotalStakeForEpoch(
+            address(this), 
+            epoch,
+            custodian
+        );
+    }
+
+    function computeAllTotalStakeForEpoch(uint256 epoch) public view returns (uint256) {
+        address[] memory custodians = stakingContract.getCustodiansByDomain(address(this));
+        uint256 totalStake = 0;
+        for (uint256 i = 0; i < custodians.length; i++){
+            // for now, each custodian has weight of 1
+            totalStake += getTotalStakeForEpoch(epoch, custodians[i]);
+        }
+        return totalStake;
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForCurrentEpoch() public view returns (uint256) {
-        return getTotalStakeForEpoch(getCurrentEpoch());
+    function getTotalStakeForCurrentEpoch(address custodian) public view returns (uint256) {
+        return getTotalStakeForEpoch(getCurrentEpoch(), custodian);
+    }
+
+    function computeAllTotalStakeForCurrentEpoch() public view returns (uint256) {
+        return computeAllTotalStakeForEpoch(getCurrentEpoch());
     }
 
     // gets the commitment at a given block height
-    function getValidatorCommitmentAtBlockHeight(uint256 blockHeight, address validatorAddress) public view returns (BlockCommitment memory) {
-        return commitments[blockHeight][validatorAddress];
+    function getAttesterCommitmentAtBlockHeight(uint256 blockHeight, address attester) public view returns (BlockCommitment memory) {
+        return commitments[blockHeight][attester];
     }
 
     // gets the accepted commitment at a given block height
@@ -154,116 +162,18 @@ contract MCR {
         return acceptedBlocks[blockHeight];
     }
 
-    // stakes for the next epoch
-    function stake() external payable {
-
-        require(
-            genesisStakeAccumulated >= genesisStakeRequired,
-            "Genesis ceremony has not ended."
-        );
-
-        validators.add(msg.sender);
-        epochStakes[getNextEpoch()][msg.sender] += msg.value;
-        emit ValidatorStaked(msg.sender, msg.value, getNextEpoch());
-
-    }
-
-    // stakes for the genesis epoch
-    function stakeGenesis() external payable {
-            
-        require(
-            genesisStakeAccumulated < genesisStakeRequired,
-            "Genesis ceremony has ended."
-        );
-
-        require(
-            epochStakes[0][msg.sender] + msg.value <= maxGenesisStakePerValidator,
-            "Stake exceeds maximum genesis stake."
-        );
-
-        validators.add(msg.sender);
-        epochStakes[0][msg.sender] += msg.value;
-        genesisStakeAccumulated += msg.value;
-        emit ValidatorStaked(msg.sender, msg.value, 0);
-
-        if (genesisStakeAccumulated >= genesisStakeRequired) {
-
-            // first epoch is whatever the epoch number given is for the block time at which the genesis ceremony ends
-            currentEpoch = getEpochByBlockTime();
-            
-            // roll over the genesis epoch to a timestamp epoch
-            for (uint256 i = 0; i < validators.length(); i++){
-                address validatorAddress = validators.at(i);
-                uint256 validatorStake = epochStakes[0][validatorAddress];
-                epochStakes[getCurrentEpoch()][validatorAddress] = validatorStake;
-                epochTotalStake[getCurrentEpoch()] += validatorStake;
-            }
-
-
-        }
-
-    }
-
-    // unstakes an amount for the next epoch
-    function unstake(uint256 amount) external {
-
-        require(
-            genesisStakeAccumulated >= genesisStakeRequired,
-            "Genesis ceremony has not ended."
-        );
-
-        require(
-            epochStakes[getCurrentEpoch()][msg.sender] >= amount,
-            "Insufficient stake."
-        );
-
-        // indicate that we are going to unstake this amount in the next epoch
-        // ! this doesn't actually happen until we roll over the epoch
-        // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
-        epochUnstakes[getNextEpoch()][msg.sender] += amount;
-
-        emit ValidatorUnstaked(
-            msg.sender,
-            amount,
-            getNextEpoch()
-        );
-
-    }
-    
-    // rolls over the stake and unstake for a given validator
-    function rollOverValidator(
-        address validatorAddress,
-        uint256 epochNumber
-    ) internal {
-
-        // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
-        epochStakes[epochNumber + 1][validatorAddress] += epochStakes[epochNumber][validatorAddress] - epochUnstakes[epochNumber + 1][validatorAddress];
-
-        // also precompute the total stake for the epoch
-        epochTotalStake[epochNumber + 1] += epochStakes[epochNumber + 1][validatorAddress];
-
-        // the unstake is then paid out
-        // note: this is the only place this takes place
-        // there's not risk of double payout, so long as rollOverValidator is only called once per epoch
-        // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
-        payable(validatorAddress).transfer(epochUnstakes[epochNumber + 1][validatorAddress]);
-
-        emit ValidatorEpochRolledOver(validatorAddress, epochNumber, epochStakes[epochNumber][validatorAddress], epochUnstakes[epochNumber + 1][validatorAddress]);
-
-    }
-
-    // commits a validator to a particular block
-    function submitBlockCommitmentForValidator(
-        address validatorAddress, 
+    // commits a attester to a particular block
+    function submitBlockCommitmentForAttester(
+        address attester, 
         BlockCommitment memory blockCommitment
     ) internal {
 
-        require(commitments[blockCommitment.height][validatorAddress].height == 0, "Validator has already committed to a block at this height");
+        require(commitments[blockCommitment.height][attester].height == 0, "Attester has already committed to a block at this height");
 
-        // note: do no uncomment the below, we want to allow this in case we have lagging validators
-        // require(blockCommitment.height > lastAcceptedBlockHeight, "Validator has committed to an already accepted block");
+        // note: do no uncomment the below, we want to allow this in case we have lagging attesters
+        // require(blockCommitment.height > lastAcceptedBlockHeight, "Attester has committed to an already accepted block");
 
-        require(blockCommitment.height < lastAcceptedBlockHeight + leadingBlockTolerance, "Validator has committed to a block too far ahead of the last accepted block");
+        require(blockCommitment.height < lastAcceptedBlockHeight + leadingBlockTolerance, "Attester has committed to a block too far ahead of the last accepted block");
 
         // assign the block height to the current epoch if it hasn't been assigned yet
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
@@ -271,13 +181,14 @@ contract MCR {
             blockHeightEpochAssignments[blockCommitment.height] = getEpochByBlockTime();
         }
 
-        // register the validator's commitment
-        commitments[blockCommitment.height][validatorAddress] = blockCommitment;
+        // register the attester's commitment
+        commitments[blockCommitment.height][attester] = blockCommitment;
 
         // increment the commitment count by stake
-        commitmentStakes[blockCommitment.height][blockCommitment.commitment] += getCurrentEpochStake(validatorAddress);
+        uint256 allCurrentEpochStake = computeAllCurrentEpochStake(attester);
+        commitmentStakes[blockCommitment.height][blockCommitment.commitment] += allCurrentEpochStake;
 
-        emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, getCurrentEpochStake(validatorAddress));
+        emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, allCurrentEpochStake);
 
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
@@ -304,15 +215,15 @@ contract MCR {
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
 
-        uint256 supermajority = (2 * getTotalStakeForEpoch(blockEpoch))/3;
+        uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch))/3;
 
-        // iterate over the validator set
-        for (uint256 i = 0; i < validators.length(); i++){
+        // iterate over the attester set
+        for (uint256 i = 0; i < attesters.length(); i++){
 
-            address validatorAddress = validators.at(i);
+            address attester = attesters.at(i);
 
-            // get a commitment for the validator at the block height
-            BlockCommitment memory blockCommitment = commitments[blockHeight][validatorAddress];
+            // get a commitment for the attester at the block height
+            BlockCommitment memory blockCommitment = commitments[blockHeight][attester];
 
             // check the total stake on the commitment
             uint256 totalStakeOnCommitment = commitmentStakes[blockCommitment.height][blockCommitment.commitment];
@@ -337,7 +248,7 @@ contract MCR {
         BlockCommitment memory blockCommitment
     ) public {
 
-        submitBlockCommitmentForValidator(msg.sender, blockCommitment);
+        submitBlockCommitmentForAttester(msg.sender, blockCommitment);
 
     }
 
@@ -362,7 +273,7 @@ contract MCR {
         // set last accepted block height
         lastAcceptedBlockHeight = blockCommitment.height;
 
-        // slash minority validators w.r.t. to the accepted block commitment
+        // slash minority attesters w.r.t. to the accepted block commitment
         slashMinority(blockCommitment, epochNumber);
 
         // emit the block accepted event
@@ -380,21 +291,13 @@ contract MCR {
         uint256 totalStake
     ) internal {
 
+        // stakingContract.slash(custodians, attesters, amounts, refundAmounts);
 
     }
 
     function rollOverEpoch(uint256 epochNumber) internal {
 
-        // iterate over the validator set
-        for (uint256 i = 0; i < validators.length(); i++){
-            address validatorAddress = validators.at(i);
-            rollOverValidator(validatorAddress, epochNumber);
-        }
-
-        // increment the current epoch
-        currentEpoch += 1;
-        
-        emit EpochRolledOver(epochNumber, getTotalStakeForEpoch(epochNumber));
+        stakingContract.rollOverEpoch();
 
     }
 

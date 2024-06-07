@@ -9,8 +9,36 @@ import { ICustodianToken } from "../token/custodian/CustodianToken.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // canonical order: domain, epoch, custodian, attester, stake =? decas
+interface IMovementStaking {
+    function epochDurationByDomain(address) external view returns (uint256);
+    function currentEpochByDomain(address) external view returns (uint256);
+    function attestersByDomain(address) external view returns (EnumerableSet.AddressSet);
+    function custodiansByDomain(address) external view returns (EnumerableSet.AddressSet);
+    function epochStakesByDomain(address, uint256, address, address) external view returns (uint256);
+    function epochUnstakesByDomain(address, uint256, address, address) external view returns (uint256);
+    function epochTotalStakeByDomain(address, uint256) external view returns (uint256);
+    function initialize(IERC20) external;
+    function registerDomain(address domain, uint256 epochDuration, address[] calldata custodians) external;
+    function acceptGenesisCeremony() external;
+    function setGenesisCeremony(address, address[] calldata, address[] calldata, uint256[] calldata) external;
+    function getEpochByBlockTime(address) external view returns (uint256);
+    function getCurrentEpoch(address) external view returns (uint256);
+    function getNextEpoch(address) external view returns (uint256);
+    function getNextEpochByBlockTime(address) external view returns (uint256);
+    function getStakeAtEpoch(address domain, uint256 epoch, address custodian, address attester) external view returns (uint256);
+    function getCurrentEpochStake(address domain, address custodian, address attester) external view returns (uint256);
+    function getUnstakeAtEpoch(address domain, uint256 epoch, address custodian, address attester) external view returns (uint256);
+    function getCurrentEpochUnstake(address domain, address custodian, address attester) external view returns (uint256);
+    function getTotalStakeForEpoch(address domain, uint256 epoch, address custodian) external view returns (uint256);
+    function getTotalStakeForCurrentEpoch(address domain, address custodian) external view returns (uint256);
+    function stake(address domain, IERC20 custodian, uint256 amount) external;
+    function unstake(address domain, address custodian, uint256 amount) external;
+    function getCustodiansByDomain(address domain) external view returns (address[] memory);
+    function rollOverEpoch() external;
+    function slash(address[] calldata custodians, address[] calldata attesters, uint256[] calldata amounts, uint256[] calldata refundAmounts) external;
+}
 
-contract MovementStaking is BaseStaking {
+contract MovementStaking is IMovementStaking, BaseStaking {
 
     using SafeERC20 for IERC20;
 
@@ -43,7 +71,8 @@ contract MovementStaking is BaseStaking {
 
     // track the total stake of the epoch (computed at rollover)
     mapping(address =>
-        mapping(uint256 => uint256)) public epochTotalStakeByDomain;
+        mapping(uint256 =>
+            mapping(address=> uint256))) public epochTotalStakeByDomain;
 
     event AttesterStaked(
         address indexed domain, 
@@ -88,6 +117,16 @@ contract MovementStaking is BaseStaking {
             custodiansByDomain[domain].add(custodians[i]);
         }
 
+    }
+
+    function getCustodiansByDomain(address domain) public view returns (address[] memory) {
+
+        // todo: we probably want to figure out a better API which still allows domains to interpret custodians as they see fit
+        address[] memory custodians = new address[](custodiansByDomain[domain].length());
+        for (uint256 i = 0; i < custodiansByDomain[domain].length(); i++){
+            custodians[i] = custodiansByDomain[domain].at(i);
+        }
+        return custodians;
     }
 
     function acceptGenesisCeremony() public {
@@ -152,7 +191,7 @@ contract MovementStaking is BaseStaking {
             // add the attester to the set
             attestersByDomain[domain].add(attesters[i]);
             epochStakesByDomain[domain][getCurrentEpoch(domain)][custodian][attesters[i]] = stakes[i];
-            epochTotalStakeByDomain[domain][0] += stakes[i];
+            epochTotalStakeByDomain[domain][0][custodian] += stakes[i];
 
             // transfer the outstanding stake back to the attester
             uint256 refundAmount = stakes[i] - attesterStake;
@@ -175,7 +214,7 @@ contract MovementStaking is BaseStaking {
     ) internal {
 
         epochStakesByDomain[domain][epoch][custodian][attester] += amount;
-        epochTotalStakeByDomain[domain][epoch] += amount;
+        epochTotalStakeByDomain[domain][epoch][custodian] += amount;
 
     }
 
@@ -188,7 +227,7 @@ contract MovementStaking is BaseStaking {
     ) internal {
 
         epochStakesByDomain[domain][epoch][custodian][attester] -= amount;
-        epochTotalStakeByDomain[domain][epoch] -= amount;
+        epochTotalStakeByDomain[domain][epoch][custodian] -= amount;
 
     }
 
@@ -300,14 +339,15 @@ contract MovementStaking is BaseStaking {
     // gets the total stake for a given epoch
     function getTotalStakeForEpoch(
         address domain,
-        uint256 epoch
+        uint256 epoch,
+        address custodian
     ) public view returns (uint256) {
-        return epochTotalStakeByDomain[domain][epoch];
+        return epochTotalStakeByDomain[domain][epoch][custodian];
     }
 
     // gets the total stake for the current epoch
-    function getTotalStakeForCurrentEpoch(address domain) public view returns (uint256) {
-        return getTotalStakeForEpoch(domain, getCurrentEpoch(domain));
+    function getTotalStakeForCurrentEpoch(address domain, address custodian) public view returns (uint256) {
+        return getTotalStakeForEpoch(domain, getCurrentEpoch(domain), custodian);
     }
 
     // stakes for the next epoch
@@ -321,7 +361,7 @@ contract MovementStaking is BaseStaking {
         attestersByDomain[domain].add(msg.sender);
 
         // add the custodian to the list of custodians
-        custodiansByDomain[domain].add(address(custodian));
+        // custodiansByDomain[domain].add(address(custodian)); // Note: we don't want this to take place by default as it opens up an opportunity for a gas attack by generating a large number of custodians for the domain contract to track
 
         // check the balance of the token before transfer
         uint256 balanceBefore = token.balanceOf(address(this));
