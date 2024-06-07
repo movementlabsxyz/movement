@@ -11029,6 +11029,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "suzuka-load-soak-testing"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-sdk",
+ "async-trait",
+ "futures",
+ "itertools 0.12.1",
+ "maptos-execution-util",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
+]
+
+[[package]]
 name = "syn"
 version = "0.15.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"
