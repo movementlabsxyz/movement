@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "forge-std/console.sol";
 import "../staking/MovementStaking.sol";
 import "./MCRStorage.sol";
 
-contract MCR is MCRStorage {
+contract MCR is Initializable, MCRStorage {
 
     event BlockAccepted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 height);
     event BlockCommitmentSubmitted(bytes32 indexed blockHash, bytes32 stateCommitment, uint256 attesterStake);
 
-    // todo: initializer
-    constructor(
+    function initialize(
         IMovementStaking _stakingContract,
-        uint256 _leadingBlockTolerance,
         uint256 _lastAcceptedBlockHeight,
+        uint256 _leadingBlockTolerance,
         uint256 _epochDuration,
         address[] memory _custodians
-    ) {
+    ) public initializer {
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
