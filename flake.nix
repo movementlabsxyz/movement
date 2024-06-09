@@ -6,7 +6,6 @@
     foundry.url = "github:shazow/foundry.nix/monthly"; 
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
-    typescript.url = "github:microsoft/TypeScript";
   };
 
   outputs = {
@@ -68,7 +67,6 @@
         ];
 
         testDependencies = with pkgs; [
-          typescript
           just
           foundry-bin
           process-compose
@@ -115,7 +113,28 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-        movementswap-core = import ./nix/movementswap-core.nix { inherit pkgs; };
+        movementswap-core = pkgs.stdenv.mkDerivation {
+          pname = "movementswap-core";
+          version = "branch-main";
+
+          src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "movementswap-core";
+              rev = "d5b1075999fad5a0e78c68f9d0848d37680d9f30";
+              sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+          };
+
+          installPhase = ''
+              cp -r . $out
+          '';
+
+          meta = with pkgs.lib; {
+              description = "Movementswap core repository";
+              homepage = "https://github.com/movementlabsxyz/movementswap-core";
+              license = licenses.asl20;
+          };
+        };
+
         # aptos-faucet-service
         aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
           inherit pkgs; 
@@ -166,7 +185,7 @@
             # for linux set SNAPPY variable
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
-            MOVEMENT_SWAP_PATH = mmovementswap-core;
+            MOVEMENT_SWAP_PATH = movementswap-core;
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             MONZA_APTOS_PATH = monza-aptos;
