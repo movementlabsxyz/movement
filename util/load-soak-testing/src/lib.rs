@@ -54,7 +54,7 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 /// Define how the test will be run:
 /// * kind: Type of test to run
 /// * logfile_path: the file where log WARN and ERROR are written
-/// * execfile_path: File where execution data are written to be processed later.
+/// * execfile_path: File where execution data is written for later processing.
 /// * define the number of started scenario per client. nb_scenarios / nb_scenario_per_client define the number of client.
 pub struct ExecutionConfig {
 	kind: TestKind,
