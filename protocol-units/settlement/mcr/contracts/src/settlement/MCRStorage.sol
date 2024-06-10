@@ -23,7 +23,6 @@ contract MCRStorage {
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
 
-        //todo: could we use bytes16?
         uint256 height;
         bytes32 commitment;
         bytes32 blockId;

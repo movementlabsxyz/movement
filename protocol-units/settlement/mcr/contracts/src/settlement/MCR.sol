@@ -21,7 +21,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
-        // todo: registering the domain should be gated to MCR
         stakingContract.registerDomain(
             _epochDuration,
             _custodians
@@ -142,23 +141,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         returns (uint256)
     {
         return computeAllTotalStakeForEpoch(getCurrentEpoch());
-    }
-
-    // gets the commitment at a given block height
-    // todo: Can we get rid of this? Do we need this function as a getter?
-    function getAttesterCommitmentAtBlockHeight(
-        uint256 blockHeight,
-        address attester
-    ) public view returns (BlockCommitment memory) {
-        return commitments[blockHeight][attester];
-    }
-
-    // Can we get rid of this? Do we need this function as a getter?
-    // todo: gets the accepted commitment at a given block height
-    function getAcceptedCommitmentAtBlockHeight(
-        uint256 blockHeight
-    ) public view returns (BlockCommitment memory) {
-        return acceptedBlocks[blockHeight];
     }
 
     function getAttesters() public view returns (address[] memory) {
