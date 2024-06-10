@@ -61,12 +61,14 @@ pub async fn state_root_hash(
 	context: Data<&Arc<Context>>,
 ) -> Result<Response, anyhow::Error> {
 	let latest_ledger_info = context.db.get_latest_ledger_info()?;
-	let (_, end_version, _) = context.db.get_block_info_by_height(blockheight)?;
+	let (start_version, end_version, _) = context.db.get_block_info_by_height(blockheight)?;
+	tracing::info!("end_version: {}", end_version);
 	let txn_with_proof = context.db.get_transaction_by_version(
-		end_version,
+		start_version,
 		latest_ledger_info.ledger_info().version(),
 		false,
 	)?;
+	tracing::info!("txn_with_proof: {:?}", txn_with_proof);
 	let state_root_hash = txn_with_proof
 		.proof
 		.transaction_info
@@ -83,7 +85,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_health_endpoint() {
 		let rest_service = MaptosRest::try_from_env(None).expect("Failed to create MaptosRest");
-		assert_eq!(rest_service.url, "http://localhost:30832");
+		assert_eq!(rest_service.url, "http://0.0.0.0:30832");
 		// Create a test client
 		let client = TestClient::new(rest_service.create_routes());
 

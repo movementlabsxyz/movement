@@ -19,3 +19,4 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 
 aptos-api = { workspace = true }
+tracing-subscriber = { workspace = true }

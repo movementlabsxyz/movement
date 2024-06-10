@@ -39,7 +39,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
-use maptos_rest::health;
+use maptos_rest::{health, state_root_hash};
 use movement_types::{BlockCommitment, Commitment, Id};
 
 use anyhow::Context as _;
@@ -347,6 +347,7 @@ impl Executor {
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
 			.nest("/movement/v1/health", health)
+			.nest("/movement/v1/state-root-hash/:blockheight", state_root_hash)
 			.with(cors);
 
 		Server::new(TcpListener::bind(self.aptos_config.aptos_rest_listen_url.clone()))

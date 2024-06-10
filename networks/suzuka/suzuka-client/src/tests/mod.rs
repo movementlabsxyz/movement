@@ -157,6 +157,7 @@ async fn test_example_interaction() -> Result<()> {
 	let base_url = "http://localhost:30731";
 	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", cur_blockheight);
 	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
+	println!("State root hash url: {}", state_root_hash_url);
 
 	let client = reqwest::Client::new();
 
