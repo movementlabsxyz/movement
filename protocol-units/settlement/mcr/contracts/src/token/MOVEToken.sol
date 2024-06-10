@@ -9,7 +9,7 @@ contract MOVEToken is MintableToken {
      * @dev Initialize the contract
      */
     function initialize() public {
-        __MintableToken_init("Move Token", "MOVE");
+        super.initialize("Move Token", "MOVE");
     }
 
 }
