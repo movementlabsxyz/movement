@@ -1,6 +1,6 @@
 services:
   setup:
-    image: mvlbs/movement:2f75b348936c0538a8d0aa766ea475235a32a931
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
     container_name: suzuka-full-node-setup
     environment:
       - CARGO_PROFILE=release
@@ -10,7 +10,7 @@ services:
       - data-volume:/data
 
   celestia-light-node:
-    image: mvlbs/movement:2f75b348936c0538a8d0aa766ea475235a32a931
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
     container_name: suzuka-full-node-celestia-light-node
     environment:
       - CARGO_PROFILE=release
@@ -20,7 +20,7 @@ services:
       - data-volume:/data
 
   celestia-light-node-synced:
-    image: mvlbs/movement:2f75b348936c0538a8d0aa766ea475235a32a931
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
     container_name: suzuka-full-node-celestia-light-node-synced
     environment:
       - CARGO_PROFILE=release
@@ -30,7 +30,7 @@ services:
       - data-volume:/data
   
   m1-da-light-node:
-    image: mvlbs/movement:2f75b348936c0538a8d0aa766ea475235a32a931
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
     container_name: suzuka-full-node-m1-da-light-node
     environment:
       - CARGO_PROFILE=release
