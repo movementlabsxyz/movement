@@ -188,7 +188,6 @@ async fn test_example_interaction() -> Result<()> {
 		tx_send_nb_retry: MAX_TX_SEND_RETRY,
 	};
 
-
 	let eth_client = McrEthSettlementClient::build_with_provider(
 		provider,
 		signer.address(),
