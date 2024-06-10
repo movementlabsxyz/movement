@@ -29,7 +29,14 @@ anyhow = { workspace = true }
 hex = { workspace = true }
 async-stream = { workspace = true }
 serde_json = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
 jsonrpsee = { workspace = true }
+dot-movement = { workspace = true }
+toml = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

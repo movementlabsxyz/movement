@@ -1,90 +1,138 @@
+use std::path::PathBuf;
+
 use anyhow::Context;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
-use m1_da_light_node_grpc::*;
+use dot_movement::DotMovementPath;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
-	pub celestia_url: String,
-	pub celestia_token: String,
-	pub celestia_namespace: Namespace,
-	pub verification_mode: VerificationMode,
+
+	#[serde(default = "Config::default_celestia_node_url")]
+	pub celestia_node_url: Option<String>,
+
+	pub celestia_auth_token: Option<String>,
+
+	#[serde(default = "Config::default_namespace")]
+	pub celestia_namespace: Option<Namespace>,
+
+	#[serde(default = "Config::default_verification_mode")]
+	pub verification_mode: Option<String>,
 }
 
 impl Config {
+
+	/// The default Celestia node URL.
 	const DEFAULT_CELESTIA_NODE_URL: &'static str = "ws://localhost:26658";
+	pub fn default_celestia_node_url() -> Option<String> {
+		Some(Self::DEFAULT_CELESTIA_NODE_URL.to_string())
+	}
+
+	/// The default namespace bytes.
 	const DEFAULT_NAMESPACE_BYTES: &'static str = "a673006fb64aa2e5360d";
-
-    pub fn try_from_env() -> Result<Self, anyhow::Error> {
-        let token = std::env::var("CELESTIA_NODE_AUTH_TOKEN").map_err(
-            |_| anyhow::anyhow!("Celestia node auth token not provided")
-        )?; // expect("Token not provided"
-        let url = std::env::var("CELESTIA_NODE_URL").unwrap_or_else(|_| Self::DEFAULT_CELESTIA_NODE_URL.to_string());
-        
-        
-        let namespace_hex = std::env::var("CELESTIA_NAMESPACE_BYTES")
-        .unwrap_or_else(|_| Self::DEFAULT_NAMESPACE_BYTES.to_string());
-
-		// Decode the hex string to bytes
-		let namespace_bytes = hex::decode(namespace_hex)
-			.map_err(|e| anyhow::anyhow!("Failed to decode namespace bytes: {}", e))?;
-
-		// Create a namespace from the bytes
-		let namespace =
-			Namespace::new_v0(&namespace_bytes).context("Failed to create namespace from bytes")?;
-
-		// try to read the verification mode from the environment
-		let verification_mode = match std::env::var("VERIFICATION_MODE") {
-			Ok(mode) => VerificationMode::from_str_name(mode.as_str())
-				.ok_or(anyhow::anyhow!("Invalid verification mode"))?,
-			Err(_) => VerificationMode::MOfN,
-		};
-
-		Ok(Self {
-			celestia_url: url,
-			celestia_token: token,
-			celestia_namespace: namespace,
-			verification_mode,
-		})
+	/// Trys to create a default namespace from the default namespace bytes.
+	pub fn try_default_namespace() -> Result<Namespace, anyhow::Error> {
+		let namespace_bytes = hex::decode(Self::DEFAULT_NAMESPACE_BYTES)
+			.map_err(|e| anyhow::anyhow!("Failed to decode default namespace bytes: {}", e))?;
+		Namespace::new_v0(&namespace_bytes).context("Failed to create default namespace")
+	}
+	/// The default namespace bytes.
+	pub fn default_namespace() -> Option<Namespace> {
+		Self::try_default_namespace().ok()
 	}
 
-	fn last_ten_bytes_str(namespace: &Namespace) -> String {
-		let bytes = namespace.as_bytes();
-		let len = bytes.len();
-		let start = if len > 10 { len - 10 } else { 0 };
-		hex::encode(&bytes[start..])
+	/// The default verification mode.
+	const DEFAULT_VERIFICATION_MODE: &'static str = "MofN";
+	pub fn default_verification_mode() -> Option<String> {
+		Some(Self::DEFAULT_VERIFICATION_MODE.to_string())
 	}
 
-	pub fn write_to_env(&self) -> Result<(), anyhow::Error> {
-		std::env::set_var("CELESTIA_NODE_URL", self.celestia_url.clone());
-		std::env::set_var("CELESTIA_NODE_AUTH_TOKEN", self.celestia_token.clone());
-		std::env::set_var(
-			"CELESTIA_NAMESPACE_BYTES",
-			Self::last_ten_bytes_str(&self.celestia_namespace),
-		);
-		std::env::set_var("VERIFICATION_MODE", self.verification_mode.as_str_name());
+	/// Try to read the location of the config file from the environment and then read the config from the file
+	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
+		
+		let path = DotMovementPath::try_from_env()?;
+		let config = Self::try_from_toml_file(&path.into())?;
+		Ok(config)
+
+	}
+
+	/// Try to read the config from a TOML file
+	pub fn try_from_toml_file(path: &PathBuf) -> Result<Self, anyhow::Error> {
+		
+		let config: Config = toml::from_str(
+			&std::fs::read_to_string(path).map_err(|e| anyhow::anyhow!("Failed to read config file: {}", e))?,
+		)
+		.map_err(|e| anyhow::anyhow!("Failed to parse config file: {}", e))?;
+		Ok(config)
+
+	}
+
+	/// Try to write the config file to the location specified in the environment
+	pub fn try_write_to_env_toml_file(&self) -> Result<(), anyhow::Error> {
+		let path = DotMovementPath::try_from_env()?;
+		self.try_write_to_toml_file(&path.into())
+	}
+
+	/// Try to write the config to a TOML file
+	pub fn try_write_to_toml_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
+		let toml = toml::to_string(self).map_err(|e| anyhow::anyhow!("Failed to serialize config to toml: {}", e))?;
+		std::fs::write(path, toml).map_err(|e| anyhow::anyhow!("Failed to write config to file: {}", e))?;
 		Ok(())
 	}
 
-	pub fn write_bash_export_string(&self) -> Result<String, anyhow::Error> {
-		Ok(format!(
-            "export CELESTIA_NODE_URL={}\nexport CELESTIA_NODE_AUTH_TOKEN={}\nexport CELESTIA_NAMESPACE_BYTES={}\nexport VERIFICATION_MODE={}",
-            self.celestia_url,
-            self.celestia_token,
-            Self::last_ten_bytes_str(&self.celestia_namespace),
-            self.verification_mode.as_str_name()
-        ))
-	}
-
+	/// Connects to a Celestia node using the config
 	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
+
+		let celestia_node_url = self.celestia_node_url.clone().ok_or(
+			anyhow::anyhow!("No Celestia node URL provided"),
+		)?;
+		let celestia_auth_token = self.celestia_auth_token.clone().ok_or(
+			anyhow::anyhow!("No Celestia auth token provided"),
+		)?;
+
 		let client =
-			Client::new(&self.celestia_url, Some(&self.celestia_token)).await.map_err(|e| {
+			Client::new(
+				&celestia_node_url, 
+				Some(&celestia_auth_token)
+			).await.map_err(|e| {
 				anyhow::anyhow!(
-					"Failed to connect to Celestia client at {}: {}",
-					self.celestia_url,
+					"Failed to connect to Celestia client at {:?}: {}",
+					self.celestia_node_url,
 					e
 				)
 			})?;
+		
 		Ok(client)
 	}
+}
+
+
+#[cfg(test)]
+pub mod test {
+	use super::*;
+
+	#[test]
+	fn test_to_and_from_toml_file() -> Result<(), anyhow::Error> {
+		
+		let config = Config {
+			celestia_auth_token: Some("test".to_string()),
+			celestia_node_url: Some("test".to_string()),
+			celestia_namespace: Some(Namespace::new_v0(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])?),
+			verification_mode: Some("MofN".to_string()),
+		};
+
+		let temp_directory = tempfile::tempdir()?;
+		let path = temp_directory.path().join("config.toml");
+		config.try_write_to_toml_file(&path)?;
+
+		let read_config = Config::try_from_toml_file(&path)?;
+
+		assert_eq!(config, read_config);
+
+		Ok(())
+
+
+	}
+
 }

@@ -65,11 +65,14 @@ mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }
 mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 ## types
 movement-types = { path = "util/movement-types" }
+## dot movement
+dot-movement = { path = "util/dot-movement" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
 serde = "1.0"
 serde_json = "1.0"
+serde_derive = "1.0"
 
 
 # External Dependencies

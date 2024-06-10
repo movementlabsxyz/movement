@@ -3,29 +3,8 @@ use m1_da_light_node_util::Config;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let config = Config::try_from_env()?;
+	let config = Config::try_from_env_toml_file()?;
 	let client = config.connect_celestia().await?;
-
-	/* ! header sync wait deserialization is broken
-	loop {
-		match client.header_sync_wait().await {
-			Ok(_) => break,
-			Err(e) => {
-				match e {
-					jsonrpsee::core::Error::RequestTimeout => {
-						println!("Request timeout");
-						tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-					},
-					jsonrpsee::core::Error::RestartNeeded(e) => {
-						println!("Restarting: {:?}", e);
-						tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-					},
-					_ => return Err(anyhow::anyhow!("Error: {:?}", e))
-				}
-
-			}
-		}
-	}*/
 
 	loop {
 		let head = client.header_network_head().await?;
