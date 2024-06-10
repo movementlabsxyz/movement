@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "forge-std/console.sol";
-import "../staking/MovementStaking.sol";
-import "./MCRStorage.sol";
-import "./settlement/BaseSettlement.sol";
-import "./interfaces/IMCR.sol";
+import {MovementStaking, IMovementStaking} from "../staking/MovementStaking.sol";
+import {MCRStorage} from "./MCRStorage.sol";
+import {BaseSettlement} from "./settlement/BaseSettlement.sol";
+import {IMCR} from "./interfaces/IMCR.sol";
 
 contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 

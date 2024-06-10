@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "forge-std/console.sol";
-import "../staking/MovementStaking.sol";
+import {MovementStaking, IMovementStaking} from "../staking/MovementStaking.sol";
 
 contract MCRStorage {
 
