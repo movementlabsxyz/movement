@@ -1,4 +1,7 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Configuration for the Suzuka network executor.
+///
+/// Sets execution config for the Suzuka executor.
 pub struct Config {
 	pub execution_config: maptos_execution_util::config::Config,
 }
