@@ -1,28 +1,26 @@
-# Nix builder
 FROM nixos/nix:latest AS builder
 
-# Copy our source and setup our working dir.
+RUN nix-env -iA nixpkgs.rsync nixpkgs.glibc nixpkgs.gawk
+
+# Copy the source code into the container
 COPY . /tmp/build
 WORKDIR /tmp/build
 
-# Build our Nix environment
-RUN nix \
-    --extra-experimental-features "nix-command flakes" \
-    --option filter-syscalls false \
-    build -A suzuka-full-node
-    
-# Copy the Nix store closure into a directory. The Nix store closure is the
-# entire set of Nix store values that we need for our build.
-RUN mkdir /tmp/nix-store-closure
-RUN cp -R $(nix-store -qR result/) /tmp/nix-store-closure
+# Build the Rust application
+RUN nix --extra-experimental-features "nix-command flakes" \
+        develop .#docker-build --command bash -c "cargo build --release -p suzuka-full-node"
 
-# Final image is based on scratch. We copy a bunch of Nix dependencies
-# but they're fully self-contained so we don't need Nix anymore.
+RUN rust_binary="./target/release/suzuka-full-node"; dest_dir="/tmp/runtime"; \
+    mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
+    grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
+    bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
+
 FROM scratch
 
-WORKDIR /app
+# Copy the build artifact from the builder stage
+COPY --from=builder /tmp/build/target/release/suzuka-full-node /app/suzuka-full-node
+COPY --from=builder /tmp/runtime/nix/store /nix/store
 
-# Copy /nix/store
-COPY --from=builder /tmp/nix-store-closure /nix/store
-COPY --from=builder /tmp/build/result /app
-CMD ["/app/bin/app"]
+# Set the binary as the entrypoint
+ENTRYPOINT ["/app/suzuka-full-node"]
+
