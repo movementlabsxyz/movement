@@ -2,18 +2,34 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import "../src/MCR.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol";
+import {TimeLock} from "@openzeppelin/contracts/access/TimeLock.sol";
 
 contract DeployMCR is Script {
+
+    TransparentUpgradeableProxy public mcrProxy;
+    ProxyAdmin public admin;
+    TimeLock public timeLock;
+    string public signature = "initialize(uint256,uint256,uint256,uint256,uint256)";
+
     function run() external {
         vm.startBroadcast();
+        
+        MCR mcrImplementation = new MCR();
 
-        MCR mcr = new MCR(
+        admin = new ProxyAdmin();
+        mcrProxy = new TransparentUpgradeableProxy(address(mcrImplementation), address(admin), abi.encodeWithSignature(signature,
             5, 
             128,
             100 ether, // should accumulate 100 ether
             100 ether, // each genesis validator can stake up to 100 ether
             0
-        );
+        ));
+
+        timeLock = new TimeLock();
+        admin.transferOwnership(address(timeLock));
+
         vm.stopBroadcast();
 
         // Comment because the Genesis ceremony works (Assert ok)
