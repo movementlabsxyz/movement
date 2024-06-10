@@ -179,12 +179,6 @@ ethers-contract = "=2.0.10"
 ethers-providers = { version = "=2.0.10", default-features = false }
 ethers-signers = { version = "=2.0.10", default-features = false }
 ethers-middleware = { version = "=2.0.10", default-features = false }
-alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = [
-    "ws",
-] }
-alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network" }
-alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet" }
-alloy-primitives = { version = "0.7.2", default-features = false }
 
 # Aptos dependencies
 # We use a forked version so that we can override dependency versions. This is required
@@ -256,7 +250,6 @@ alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "all
 alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet"}
 alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types"}
 alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws"}
-
 
 # other
 futures = "0.3.17"

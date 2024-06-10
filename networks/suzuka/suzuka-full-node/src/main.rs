@@ -28,7 +28,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	tokio::spawn(background_task);
 
-	suzuka.run().await.context("Failed to run suzuka")?;
+	executor.run().await.context("Failed to run suzuka")?;
 
 	Ok(())
 }

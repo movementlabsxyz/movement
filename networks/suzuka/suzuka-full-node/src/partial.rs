@@ -4,7 +4,7 @@ use m1_da_light_node_client::{
 	StreamReadFromHeightRequest,
 };
 use maptos_rest::MaptosRest;
-use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
+use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };

@@ -31,10 +31,6 @@ rand = { workspace = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }
-alloy_provider = { workspace = true }
-alloy_network = { workspace = true }
-alloy_signer_wallet = { workspace = true }
-alloy-primitives = { workspace = true }
 serde_json = { workspace = true }
 
 maptos-execution-util = { workspace = true }
@@ -42,9 +38,6 @@ suzuka-executor = { workspace = true }
 mcr-settlement-client = { workspace = true }
 
 dotenv = "0.15.0"
-
-[dev-dependencies]
-serde_json = { workspace = true }
 
 [lints]
 workspace = true
