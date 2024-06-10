@@ -6,8 +6,9 @@ import "../../src/staking/MovementStaking.sol";
 import "../../src/token/MOVEToken.sol";
 import "../../src/settlement/MCR.sol";
 import "../../src/settlement/MCRStorage.sol";
+import "../../src/settlement/interfaces/IMCR.sol";
 
-contract MCRTest is Test {
+contract MCRTest is Test, IMCR {
     function testInitialize() public {
         MOVEToken moveToken = new MOVEToken();
         moveToken.initialize();
@@ -157,7 +158,7 @@ contract MCRTest is Test {
         // carol will try to sign again
         vm.prank(carol);
         vm.expectRevert(
-            "Attester has already committed to a block at this height"
+            AttesterAlreadyCommitted.selector
         );
         mcr.submitBlockCommitment(dishonestCommitment);
 
@@ -244,7 +245,7 @@ contract MCRTest is Test {
         // carol will try to sign again
         vm.prank(carol);
         vm.expectRevert(
-            "Attester has already committed to a block at this height"
+            AttesterAlreadyCommitted.selector
         );
         mcr.submitBlockCommitment(dishonestCommitment);
 

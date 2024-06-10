@@ -6,18 +6,9 @@ import "forge-std/console.sol";
 import "../staking/MovementStaking.sol";
 import "./MCRStorage.sol";
 import "./settlement/BaseSettlement.sol";
+import "./interfaces/IMCR.sol";
 
-contract MCR is Initializable, BaseSettlement, MCRStorage {
-    event BlockAccepted(
-        bytes32 indexed blockHash,
-        bytes32 stateCommitment,
-        uint256 height
-    );
-    event BlockCommitmentSubmitted(
-        bytes32 indexed blockHash,
-        bytes32 stateCommitment,
-        uint256 attesterStake
-    );
+contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
     function initialize(
         IMovementStaking _stakingContract,
@@ -30,6 +21,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
+        // todo: registering the domain should be gated to MCR
         stakingContract.registerDomain(
             address(this),
             _epochDuration,
@@ -154,6 +146,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
     }
 
     // gets the commitment at a given block height
+    // todo: Can we get rid of this? Do we need this function as a getter?
     function getAttesterCommitmentAtBlockHeight(
         uint256 blockHeight,
         address attester
@@ -161,7 +154,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
         return commitments[blockHeight][attester];
     }
 
-    // gets the accepted commitment at a given block height
+    // Can we get rid of this? Do we need this function as a getter?
+    // todo: gets the accepted commitment at a given block height
     function getAcceptedCommitmentAtBlockHeight(
         uint256 blockHeight
     ) public view returns (BlockCommitment memory) {
@@ -177,19 +171,21 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
         address attester,
         BlockCommitment memory blockCommitment
     ) internal {
-        require(
-            commitments[blockCommitment.height][attester].height == 0,
-            "Attester has already committed to a block at this height"
-        );
+        // Attester has already committed to a block at this height
+        if (
+            commitments[blockCommitment.height][attester].height != 0
+            
+        ) revert AttesterAlreadyCommitted();
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
-        // require(blockCommitment.height > lastAcceptedBlockHeight, "Attester has committed to an already accepted block");
-
-        require(
-            blockCommitment.height <
-                lastAcceptedBlockHeight + leadingBlockTolerance,
-            "Attester has committed to a block too far ahead of the last accepted block"
-        );
+        // Attester has committed to an already accepted block
+        // if ( lastAcceptedBlockHeight > blockCommitment.height) revert AlreadyAcceptedBlock();
+        // Attester has committed to a block too far ahead of the last accepted block
+        if (
+                lastAcceptedBlockHeight + leadingBlockTolerance <
+            blockCommitment.height 
+            
+        ) revert AttesterAlreadyCommitted();
 
         // assign the block height to the current epoch if it hasn't been assigned yet
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
@@ -283,12 +279,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
     function _acceptBlockCommitment(
         BlockCommitment memory blockCommitment
     ) internal {
+        uint256 currentEpoch = getCurrentEpoch();
         // get the epoch for the block commitment
-        require(
-            blockHeightEpochAssignments[blockCommitment.height] ==
-                getCurrentEpoch(),
-            "Block commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol."
-        );
+        //  Block commitment is not in the current epoch, it cannot be accepted. This indicates a bug in the protocol.
+        if (
+            blockHeightEpochAssignments[blockCommitment.height] !=
+                currentEpoch
+           
+        ) revert UnacceptableBlockCommitment();
 
         // set accepted block commitment
         acceptedBlocks[blockCommitment.height] = blockCommitment;
@@ -307,7 +305,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage {
         );
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if (getEpochByBlockTime() > getCurrentEpoch()) {
+        if (getEpochByBlockTime() > currentEpoch) {
             rollOverEpoch();
         }
     }
