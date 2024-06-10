@@ -218,7 +218,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-config-build
+    needs: wait-for-celestia-light-node-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
