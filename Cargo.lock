@@ -6871,6 +6871,7 @@ dependencies = [
  "lazy_static",
  "log",
  "maptos-execution-util",
+ "maptos-rest",
  "movement-types",
  "poem",
  "poem-openapi",

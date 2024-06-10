@@ -39,6 +39,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
+use maptos_rest::health;
 use movement_types::{BlockCommitment, Commitment, Id};
 
 use anyhow::Context as _;
@@ -342,7 +343,11 @@ impl Executor {
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
+		let app = Route::new()
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.nest("/movement/v1/health", health)
+			.with(cors);
 
 		Server::new(TcpListener::bind(self.aptos_config.aptos_rest_listen_url.clone()))
 			.run(app)

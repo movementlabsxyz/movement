@@ -11,19 +11,20 @@ use std::env;
 use std::sync::Arc;
 use tracing::info;
 
+#[derive(Debug)]
 pub struct MaptosRest {
 	/// The URL to bind the REST service to.
 	pub url: String,
-	pub context: Arc<Context>,
+	pub context: Option<Arc<Context>>,
 	// More fields to be added here, log verboisty, etc.
 }
 
 impl MaptosRest {
 	pub const MAPTOS_REST_ENV_VAR: &'static str = "MAPTOS_REST_URL";
 
-	pub fn try_from_env(context: Arc<Context>) -> Result<Self, Error> {
+	pub fn try_from_env(context: Option<Arc<Context>>) -> Result<Self, Error> {
 		let url = env::var(Self::MAPTOS_REST_ENV_VAR)
-			.unwrap_or_else(|_| "http://localhost:30832".to_string());
+			.unwrap_or_else(|_| "http://0.0.0.0:30832".to_string());
 		Ok(Self { url, context })
 	}
 
@@ -38,18 +39,24 @@ impl MaptosRest {
 		Route::new()
 			.at("/health", get(health))
 			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
+			.at("movement/v1/richard", get(richard))
 			.data(self.context.clone())
 			.with(Tracing)
 	}
 }
 
 #[handler]
-async fn health() -> Response {
+pub async fn health() -> Response {
 	"OK".into_response()
 }
 
 #[handler]
-async fn state_root_hash(
+pub async fn richard() -> Response {
+	"Well Done".into_response()
+}
+
+#[handler]
+pub async fn state_root_hash(
 	Path(blockheight): Path<u64>,
 	context: Data<&Arc<Context>>,
 ) -> Result<Response, anyhow::Error> {
@@ -68,45 +75,20 @@ async fn state_root_hash(
 	Ok(state_root_hash.to_string().into_response())
 }
 
-//These feel more like integration tests, can be moved to a different
-//file if we like.
-// #[cfg(test)]
-// mod tests {
-// 	use super::*;
-// 	use anyhow::Error;
-// 	use aptos_api::Context;
-// 	use poem::test::TestClient;
-// 	use std::sync::Arc;
-//
-// 	#[tokio::test]
-// 	async fn test_health_endpoint() -> Result<(), Error> {
-// 		let node = SuzukaPartialNode::try_from_env().await?;
-//
-// 		let response = client.get("/health").send().await;
-//
-// 		assert_eq!(response.status().as_u16(), 200);
-// 		assert_eq!(response.text().await.unwrap(), "OK");
-//
-// 		Ok(())
-// 	}
-//
-// 	#[tokio::test]
-// 	async fn test_state_root_hash_endpoint() -> Result<(), Error> {
-// 		let context = Arc::new(Context {
-//             // Initialize your context fields
-//         });
-// 		let service = MaptosRest::try_from_env(context.clone()).unwrap();
-// 		let app = service.create_routes();
-// 		let client = TestClient::new(app);
-//
-// 		let blockheight: u64 = 1; // Replace with an appropriate blockheight for testing
-// 		let response =
-// 			client.get(format!("/movement/v1/state-root-hash/{}", blockheight)).send().await;
-//
-// 		assert_eq!(response.status().as_u16(), 200);
-// 		let state_root_hash = response.text().await.unwrap();
-// 		println!("State root hash: {}", state_root_hash);
-//
-// 		Ok(())
-// 	}
-// }
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use poem::test::TestClient;
+
+	#[tokio::test]
+	async fn test_health_endpoint() {
+		let rest_service = MaptosRest::try_from_env(None).expect("Failed to create MaptosRest");
+		assert_eq!(rest_service.url, "http://localhost:30832");
+		// Create a test client
+		let client = TestClient::new(rest_service.create_routes());
+
+		// Test the /health endpoint
+		let response = client.get("/health").send().await;
+		assert!(response.0.status().is_success());
+	}
+}

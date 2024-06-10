@@ -224,7 +224,6 @@ where
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
 		self.executor.run_service().await?;
-		self.run_maptos_rest().await?;
 
 		Ok(())
 	}
@@ -262,7 +261,7 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();
-		let maptos_rest = MaptosRest::try_from_env(executor.executor.context.clone())?;
+		let maptos_rest = MaptosRest::try_from_env(Some(executor.executor.context.clone()))?;
 		Self::bound(executor, light_node_client, settlement_client, maptos_rest)
 	}
 }

@@ -44,7 +44,6 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 async fn test_example_interaction() -> Result<()> {
 	const MAX_TX_SEND_RETRY: usize = 10;
 	const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
-	let suzuka = SuzukaPartianNode::try_from_env().await?;
 
 	// :!:>section_1a
 	let rest_client = Client::new(NODE_URL.clone());
@@ -148,35 +147,40 @@ async fn test_example_interaction() -> Result<()> {
 			.context("Failed to get Bob's account balance the second time")?
 	);
 
-	//Check the health of the rest service
-	let base_url = "http://0.0.0.0:30832";
-	let health_url = format!("{}/health", base_url);
-	let response = reqwest::get(health_url).await?;
-	assert!(response.status().is_success());
-
 	sleep(Duration::from_secs(10)).await;
 
+	let anvil_rpc_port = "8545";
+	let anvil_rpc_url = format!("http://localhost:{anvil_rpc_port}");
+	let anvil_ws_url = format!("ws://localhost:{anvil_rpc_port}");
+
 	let cur_blockheight = rest_client.get_ledger_information().await?.state().block_height;
+	let base_url = "http://localhost:30731";
 	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", cur_blockheight);
 	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
 
-	let rpc_port = std::env::var("MCR_ANVIL_PORT").unwrap();
-	let rpc_url = format!("http://localhost:{rpc_port}");
-	let ws_url = format!("ws://localhost:{rpc_port}");
-
 	let client = reqwest::Client::new();
+
+	let health_url = format!("{}/movement/v1/health", base_url);
+	let response = client.get(&health_url).send().await?;
+	assert!(response.status().is_success());
+
+	println!("Health check passed");
+
 	let response = client.get(&state_root_hash_url).send().await?;
 	let state_key = response.text().await?;
+	println!("State key: {}", state_key);
 
 	let mcr_address = read_mcr_sc_adress()?;
 	let anvil_address = read_anvil_json_file_address()?;
 	let signer: LocalWallet = anvil_address[1].1.parse()?;
 
+	println!("MCR address: {}", mcr_address);
+
 	//Build client 1 and send first commitment.
 	let provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.signer(EthereumSigner::from(signer.clone()))
-		.on_http(rpc_url.parse().unwrap());
+		.on_http(anvil_rpc_url.parse().unwrap());
 
 	let config = McrEthSettlementConfig {
 		mrc_contract_address: mcr_address.to_string(),
@@ -184,10 +188,11 @@ async fn test_example_interaction() -> Result<()> {
 		tx_send_nb_retry: MAX_TX_SEND_RETRY,
 	};
 
+
 	let eth_client = McrEthSettlementClient::build_with_provider(
 		provider,
 		signer.address(),
-		ws_url,
+		anvil_ws_url,
 		config.clone(),
 	)
 	.await?;
