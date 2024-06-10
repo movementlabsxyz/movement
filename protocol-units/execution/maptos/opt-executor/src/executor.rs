@@ -44,7 +44,7 @@ use movement_types::{BlockCommitment, Commitment, Id};
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use poem::{listener::TcpListener, middleware::Cors, EndpointExt, Route, Server, http::Method};
+use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -276,7 +276,7 @@ impl Executor {
 		let block_metadata = match transactions.remove(0) {
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata)) => {
 				block_metadata
-			},
+			}
 			_ => anyhow::bail!("Block metadata not found"),
 		};
 
@@ -338,18 +338,13 @@ impl Executor {
 			.server(format!("http://{:?}", self.aptos_config.aptos_rest_listen_url));
 
 		let ui = api_service.swagger_ui();
-	
-		let cors = Cors::new() 
+
+		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new()
-			.nest("/v1", api_service)
-			.nest("/spec", ui)
-			.with(cors);
+		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
 
-		Server::new(TcpListener::bind(
-			self.aptos_config.aptos_rest_listen_url.clone()
-		))
+		Server::new(TcpListener::bind(self.aptos_config.aptos_rest_listen_url.clone()))
 			.run(app)
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
