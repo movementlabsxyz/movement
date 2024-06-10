@@ -1,75 +1,93 @@
 { pkgs, frameworks, RUSTFLAGS, craneLib }:
 
 let
+    # src = craneLib.cleanCargoSource (craneLib.path ./..);
+    src = craneLib.path ./..;
 
-    # Common arguments can be set here to avoid repeating them later
-    commonArgs = {
+    crateName = craneLib.crateNameFromCargoToml { inherit src; };
+
+    # needed to build cargoVendorDir
+    baseArgs = {
         inherit src;
+    };
+
+    aptosCoreRepoUrl = "https://github.com/movementlabsxyz/aptos-core";
+    isAptosCoreRepo = pkgs.lib.any (p: pkgs.lib.hasPrefix ("git+" + aptosCoreRepoUrl)  p.source);
+
+    # derivation override function for applying patches to the `aptos-core` repo
+    aptosCoreSrcsOverride = drv: drv.overrideAttrs (_old: {
+        # apply a patch to change relative paths in `include_bytes!()` macros
+        patches = [
+            ./m1-da-light-node-relative-paths.patch
+        ];
+
+        # move files to the new relative paths
+        postPatch = ''
+            cp aptos-move/framework/src/aptos-natives.bpl third_party/move/move-prover/src/
+            cp api/doc/{.version,spec.html} crates/aptos-faucet/core/src/endpoints/
+            cp aptos-move/move-examples/scripts/minter/build/Minter/bytecode_scripts/main.mv \
+                crates/aptos-faucet/core/src/funder/
+        '';
+    });
+
+    # manually vendor deps with overrides applied
+    cargoVendorDir = craneLib.vendorCargoDeps ( baseArgs // {
+        overrideVendorGitCheckout = ps: drv: if isAptosCoreRepo ps then aptosCoreSrcsOverride drv else drv;
+    });
+
+    commonArgs = baseArgs // {
         strictDeps = true;
+        doCheck = false;
+
+        pname = "m1-da-light-node";
+        inherit (crateName) version;
+
+        inherit cargoVendorDir;
+
+        nativeBuildInputs = [
+            # required for system package discovery
+            pkgs.pkg-config
+            # required for alternate linkers
+            pkgs.clang
+            # provides lld linker
+            pkgs.llvmPackages.bintools
+            # required for protobuf builds
+            pkgs.protobuf_26
+            # needed by aptos-cached-packages
+            pkgs.rustfmt
+        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            # converts between character encodings on MacOS
+            pkgs.libiconv
+        ];
 
         buildInputs = [
-        # Add any necessary build inputs here
-        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-        pkgs.libiconv
+            pkgs.openssl
+            # provides libudev; required for crate `hidapi` and maybe others
+            pkgs.systemd
         ];
-      
+
+        # we have to move the sources recursively to a mutable vendor directory
+        # because aptos-cached-packages modifies files outside of `OUT_DIR`.
+        # this incurs a performance cost but can only otherwise be fixed
+        # upstream.
+        # source: https://crane.dev/faq/sandbox-unfriendly-build-scripts.html
+        postPatch = ''
+            mkdir -p "$TMPDIR/nix-vendor"
+            cp -Lr "$cargoVendorDir" -T "$TMPDIR/nix-vendor"
+            sed -i "s|$cargoVendorDir|$TMPDIR/nix-vendor/|g" "$TMPDIR/nix-vendor/config.toml"
+            chmod -R +w "$TMPDIR/nix-vendor"
+            cargoVendorDir="$TMPDIR/nix-vendor"
+        '';
+
+        # some crates need direct access to libclang
+        LIBCLANG_PATH = "${pkgs.llvmPackages_18.libclang.lib}/lib";
     };
 
     cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-
-    individualCrateArgs = commonArgs // {
+    m1-da-light-node = craneLib.buildPackage (commonArgs // {
         inherit cargoArtifacts;
-        inherit (craneLib.crateNameFromCargoToml { inherit src; }) version;
-        doCheck = false;
-    };
-
-    # Helper function to create file sets for crates
-    fileSetForCrate = crate: pkgs.lib.fileset.toSource {
-        root = ../.;
-        fileset = pkgs.lib.fileset.unions [
-            ../Cargo.toml
-            ../Cargo.lock
-            crate
-            # I think something should go here, to include the `vendor-cargo-deps`, but I'm not sure what.
-        ];
-    };
-    
-    # bplFilter = path: _type: builtins.match ".*bpl$" path != null;
-    bplFilter = path: _type: builtins.match ".*" path != null;
-    bplOrCargo = path: type:
-        (bplFilter path type) || (craneLib.filterCargoSources path type);
-
-
-    # src = pkgs.lib.cleanSourceWith {
-    #     src = craneLib.path ./..; # The original, unfiltered source
-    #     filter = bplOrCargo;
-    # };
-
-    # src = craneLib.path ./..; # The original, unfiltered source
-    src = craneLib.cleanCargoSource (craneLib.path ./..);
-
-    in
-    # craneLib.buildPackage {
-    pkgs.stdenv.mkDerivation {
-    pname = "m1-da-light-node";
-    version = "0.1.0";
-
-    # inherit src;
-
-
-    m1-da-light-node = craneLib.buildPackage (individualCrateArgs // {
-        # inherit src ;
-        pname = "m1-da-light-node";
-        cargoExtraArgs = "-p m1-da-light-node";
-        # src = src ;
-        # src = fileSetForCrate ../protocol-units/da/m1/light-node;
-
+        cargoExtraArgs = "--package m1-da-light-node";
+        doNotRemoveReferencesToVendorDir = true;
     });
-
-    meta = with pkgs.lib; {
-        description = "M1 DA Light Node";
-        homepage = "https://github.com/movementlabsxyz/movement";
-        license = licenses.mit;
-        maintainers = [ maintainers.your_name ];
-    };
-}
+in
+    m1-da-light-node

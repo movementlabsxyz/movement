@@ -1,0 +1,52 @@
+diff --git a/crates/aptos-faucet/core/src/endpoints/api.rs b/crates/aptos-faucet/core/src/endpoints/api.rs
+index 91da487651..a786b2cb9e 100644
+--- a/crates/aptos-faucet/core/src/endpoints/api.rs
++++ b/crates/aptos-faucet/core/src/endpoints/api.rs
+@@ -4,7 +4,7 @@
+ use super::{basic::BasicApi, fund::FundApi, CaptchaApi};
+ use poem_openapi::{ContactObject, LicenseObject, OpenApiService};
+ 
+-const VERSION: &str = include_str!("../../../doc/.version");
++const VERSION: &str = include_str!(".version");
+ 
+ pub fn build_openapi_service(
+     basic_api: BasicApi,
+diff --git a/crates/aptos-faucet/core/src/endpoints/basic.rs b/crates/aptos-faucet/core/src/endpoints/basic.rs
+index 962fbcdd2a..9dcd93ba7d 100644
+--- a/crates/aptos-faucet/core/src/endpoints/basic.rs
++++ b/crates/aptos-faucet/core/src/endpoints/basic.rs
+@@ -11,7 +11,7 @@ use poem_openapi::{
+ use std::sync::Arc;
+ use tokio::sync::Semaphore;
+ 
+-const OPEN_API_HTML: &str = include_str!("../../../doc/spec.html");
++const OPEN_API_HTML: &str = include_str!("spec.html");
+ 
+ pub struct BasicApi {
+     pub concurrent_requests_semaphore: Option<Arc<Semaphore>>,
+diff --git a/crates/aptos-faucet/core/src/funder/mint.rs b/crates/aptos-faucet/core/src/funder/mint.rs
+index d6974a45b1..0155f62442 100644
+--- a/crates/aptos-faucet/core/src/funder/mint.rs
++++ b/crates/aptos-faucet/core/src/funder/mint.rs
+@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
+ use tokio::sync::RwLock;
+ 
+ static MINTER_SCRIPT: &[u8] = include_bytes!(
+-    "../../../../../aptos-move/move-examples/scripts/minter/build/Minter/bytecode_scripts/main.mv"
++    "main.mv"
+ );
+ 
+ use super::common::{
+diff --git a/third_party/move/move-prover/src/cli.rs b/third_party/move/move-prover/src/cli.rs
+index 5b829fc0f2..e3210238c8 100644
+--- a/third_party/move/move-prover/src/cli.rs
++++ b/third_party/move/move-prover/src/cli.rs
+@@ -772,7 +772,7 @@ impl Options {
+         if matches.get_flag("aptos") {
+             options.backend.custom_natives = Some(CustomNativeOptions {
+                 template_bytes: include_bytes!(
+-                    "../../../../aptos-move/framework/src/aptos-natives.bpl"
++                    "aptos-natives.bpl"
+                 )
+                 .to_vec(),
+                 module_instance_names: vec![(
