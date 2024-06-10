@@ -23,7 +23,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         // todo: registering the domain should be gated to MCR
         stakingContract.registerDomain(
-            address(this),
             _epochDuration,
             _custodians
         );

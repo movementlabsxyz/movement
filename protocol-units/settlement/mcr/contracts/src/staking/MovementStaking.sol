@@ -22,10 +22,10 @@ contract MovementStaking is
     }
 
     function registerDomain(
-        address domain,
         uint256 epochDuration,
         address[] calldata custodians
     ) external {
+        address domain = msg.sender;
         epochDurationByDomain[domain] = epochDuration;
 
         for (uint256 i = 0; i < custodians.length; i++) {
