@@ -10835,6 +10835,7 @@ dependencies = [
  "alloy-transport",
  "anyhow",
  "aptos-sdk",
+ "dotenv",
  "maptos-execution-util",
  "once_cell",
  "rand 0.7.3",

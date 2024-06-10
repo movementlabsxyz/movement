@@ -30,6 +30,8 @@ url = { workspace = true }
 rand = { workspace = true }
 maptos-execution-util = { workspace = true }
 
+dotenv = "0.15.0"
+
 [dev-dependencies]
 serde_json = { workspace = true }
 

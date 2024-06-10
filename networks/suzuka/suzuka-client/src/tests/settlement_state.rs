@@ -25,6 +25,8 @@ sol!(
 
 #[tokio::test]
 async fn test_node_settlement_state() -> anyhow::Result<()> {
+	load_local_env()?;
+
 	//1) start Alice an Bod transfer transactions.
 	// loop on Alice abd Bod transfer to produce Tx and block
 	let loop_jh = tokio::spawn(async move {
@@ -50,7 +52,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 
 	println!("test do_genesis_ceremonial");
 
-	let mcr_address = read_mcr_sc_adress()?;
+	let mcr_address = get_mcr_sc_adress()?;
 	//Define Signers. Ceremony define 2 signers with half stake each.
 	let signer: LocalWallet = anvil_address[1].1.parse()?;
 	//	let signer_addr = signer.address();
@@ -84,6 +86,8 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		}
 		nb_try += 1;
 	}
+
+	println!("find accepted block");
 
 	match accepted_block_commitment {
 		Some(block_commitment) => {
@@ -143,6 +147,19 @@ async fn run_alice_bob_tx() -> anyhow::Result<()> {
 	Ok(())
 }
 
+fn load_local_env() -> Result<(), anyhow::Error> {
+	// Load variables defined in .env file.
+	let movement_storage_path =
+		std::env::var("MOVEMENT_BASE_STORAGE_PATH").unwrap_or("".to_string());
+	let movement_exec_path = std::env::var("EXEC_PATH").unwrap_or("../../..".to_string());
+	let mut env_file_path = std::path::PathBuf::from(movement_exec_path);
+	env_file_path.push(movement_storage_path);
+	env_file_path.push(".env".to_string());
+	println!("env_file_path:{env_file_path:?}",);
+	dotenv::from_filename(env_file_path)?;
+	Ok(())
+}
+
 use serde_json::{from_str, Value};
 use std::fs;
 fn read_anvil_json_file_address() -> Result<Vec<(String, String)>, anyhow::Error> {
@@ -172,11 +189,12 @@ fn read_anvil_json_file_address() -> Result<Vec<(String, String)>, anyhow::Error
 	Ok(res)
 }
 
-fn read_mcr_sc_adress() -> Result<Address, anyhow::Error> {
-	let file_path = env::var("MCR_SC_ADDRESS_FILE")?;
-	let addr_str = fs::read_to_string(file_path)?;
-	let addr: Address = addr_str.trim().parse()?;
-	Ok(addr)
+fn get_mcr_sc_adress() -> Result<Address, anyhow::Error> {
+	let mcr_address = std::env::var("ETH_MCR_CONTRACT_ADDRESS")?;
+	println!("mcr_address:{mcr_address:?}",);
+	let mcr_address: Address = mcr_address.trim().parse()?;
+
+	Ok(mcr_address)
 }
 
 // Do the Genesis ceremony in Rust because if node by forge script,
@@ -187,7 +205,7 @@ async fn do_genesis_ceremonial(
 	anvil_address: &[(String, String)],
 	rpc_url: &str,
 ) -> Result<(), anyhow::Error> {
-	let mcr_address = read_mcr_sc_adress()?;
+	let mcr_address = get_mcr_sc_adress()?;
 	//Define Signer. Signer1 is the MCRSettelement client
 	let signer1: LocalWallet = anvil_address[1].1.parse()?;
 	let signer1_addr: Address = anvil_address[1].0.parse()?;

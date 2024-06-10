@@ -187,9 +187,10 @@ where
 			let block_id = executable_block.block_id;
 			let commitment = self.executor.execute_block_opt(executable_block).await?;
 
-			debug!("Executed block: {:?}", block_id);
+			debug!("read_blocks_from_da Executed block: {:?}", block_id);
 
 			self.settlement_manager.post_block_commitment(commitment).await?;
+			debug!("read_blocks_from_da After post_block_commitment: {:?}", block_id);
 		}
 
 		Ok(())
@@ -232,6 +233,7 @@ where
 	// ! Currently this only implements opt.
 	/// Runs the executor until crash or shutdown.
 	async fn run_executor(&self) -> Result<(), anyhow::Error> {
+		debug!("SuzukaPartialNode run_executor");
 		// wait for both tasks to finish
 		tokio::try_join!(self.write_transactions_to_da(), self.read_blocks_from_da())?;
 
