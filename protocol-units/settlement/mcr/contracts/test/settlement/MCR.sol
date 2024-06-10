@@ -93,14 +93,15 @@ contract MCRTest is Test, IMCR {
         mcr.submitBlockCommitment(bc1);
 
         // now we move to block 2 and make some commitment just to trigger the epochRollover
-        assert(
-            mcr.getAcceptedCommitmentAtBlockHeight(1).commitment ==
+        (uint256 height, bytes32 commitment, bytes32 blockId) = mcr
+            .acceptedBlocks(1);
+        assert( commitment ==
                 bc1.commitment
         );
         assert(
-            mcr.getAcceptedCommitmentAtBlockHeight(1).blockId == bc1.blockId
+            blockId == bc1.blockId
         );
-        assert(mcr.getAcceptedCommitmentAtBlockHeight(1).height == 1);
+        assert(height == 1);
     }
 
     function testDishonestValidator() public {
@@ -177,15 +178,17 @@ contract MCRTest is Test, IMCR {
         vm.prank(bob);
         mcr.submitBlockCommitment(bc1);
 
+        (uint256 height, bytes32 commitment, bytes32 blockId) = mcr
+            .acceptedBlocks(1);
         // now we move to block 2 and make some commitment just to trigger the epochRollover
         assert(
-            mcr.getAcceptedCommitmentAtBlockHeight(1).commitment ==
+            commitment ==
                 bc1.commitment
         );
         assert(
-            mcr.getAcceptedCommitmentAtBlockHeight(1).blockId == bc1.blockId
+            blockId == bc1.blockId
         );
-        assert(mcr.getAcceptedCommitmentAtBlockHeight(1).height == 1);
+        assert(height == 1);
     }
 
     function testRollsOverHandlingDishonesty() public {
@@ -285,15 +288,16 @@ contract MCRTest is Test, IMCR {
         assertEq(mcr.getCurrentEpochStake(address(moveToken), alice), 34);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), bob), 33);
         assertEq(mcr.getCurrentEpochStake(address(moveToken), carol), 33);
-
+        (uint256 height, bytes32 commitment, bytes32 blockId) = mcr
+            .acceptedBlocks(1);
         assert(
-            mcr.getAcceptedCommitmentAtBlockHeight(1).commitment ==
+            commitment ==
                 bc1.commitment
         );
         assert(
-            mcr.getAcceptedCommitmentAtBlockHeight(1).blockId == bc1.blockId
+            blockId == bc1.blockId
         );
-        assert(mcr.getAcceptedCommitmentAtBlockHeight(1).height == 1);
+        assert(height == 1);
     }
 
     address[] honestSigners = new address[](0);
@@ -395,13 +399,13 @@ contract MCRTest is Test, IMCR {
                     mcr.submitBlockCommitment(dishonestCommitment);
                 }
 
-                MCR.BlockCommitment memory acceptedCommitment = mcr
-                    .getAcceptedCommitmentAtBlockHeight(blockHeight);
+                (uint256 height, bytes32 commitment, bytes32 blockId) = mcr
+                    .acceptedBlocks(blockHeight);
                 assert(
-                    acceptedCommitment.commitment == honestCommitment.commitment
+                    commitment == honestCommitment.commitment
                 );
-                assert(acceptedCommitment.blockId == honestCommitment.blockId);
-                assert(acceptedCommitment.height == blockHeight);
+                assert(blockId == honestCommitment.blockId);
+                assert(height == blockHeight);
             }
 
             // add a new signer

@@ -42,7 +42,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         assertEq(staking.getCurrentEpoch(domain), 0);
 
@@ -60,7 +61,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         // stake at the domain
         address payable staker = payable(vm.addr(2));
@@ -86,7 +88,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -114,7 +117,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -151,7 +155,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -196,7 +201,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -255,7 +261,8 @@ contract MovementStakingTest is Test {
         address payable domain = payable(vm.addr(1));
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
-        staking.registerDomain(domain, 1 seconds, custodians);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));

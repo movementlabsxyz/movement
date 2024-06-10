@@ -5,7 +5,6 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 // canonical order: domain, epoch, custodian, attester, stake =? decas
 interface IMovementStaking {
     function registerDomain(
-        address domain,
         uint256 epochDuration,
         address[] calldata custodians
     ) external;
