@@ -60,5 +60,7 @@ contract DeployMCR is Script {
         vm.stopBroadcast();
 
         // multisig would be able to execute the upgrade after the delay
+        // time.lock.execute(to, value, payload, predecessor, salt);
+        // gnosis safe has a UI for this
     }
 }
