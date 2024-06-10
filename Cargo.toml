@@ -20,6 +20,9 @@ members = [
     "util/buildtime/buildtime-macros",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
+    "protocol-units/bridge/shared", 
+    "protocol-units/bridge/cli", 
+    "protocol-units/bridge/service",
 ]
 
 [workspace.package]
