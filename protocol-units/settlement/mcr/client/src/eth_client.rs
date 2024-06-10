@@ -198,7 +198,10 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		println!("One commitment posted");
+		tracing::debug!(
+			"post_block_commitment CONTRACT block height: {:?}",
+			block_commitment.height
+		);
 
 		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
 

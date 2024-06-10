@@ -41,6 +41,8 @@ maptos-execution-util = { workspace = true }
 suzuka-executor = { workspace = true }
 mcr-settlement-client = { workspace = true }
 
+dotenv = "0.15.0"
+
 [dev-dependencies]
 serde_json = { workspace = true }
 

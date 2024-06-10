@@ -10934,7 +10934,11 @@ dependencies = [
 >>>>>>> 94137ec0 (first version before running)
  "anyhow",
  "aptos-sdk",
+<<<<<<< HEAD
  "async-channel",
+=======
+ "dotenv",
+>>>>>>> 3f840b12 (add some logs)
  "maptos-execution-util",
  "mcr-settlement-client",
  "once_cell",
