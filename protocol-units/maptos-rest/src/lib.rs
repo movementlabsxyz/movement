@@ -61,10 +61,10 @@ pub async fn state_root_hash(
 	context: Data<&Arc<Context>>,
 ) -> Result<Response, anyhow::Error> {
 	let latest_ledger_info = context.db.get_latest_ledger_info()?;
-	let (start_version, end_version, _) = context.db.get_block_info_by_height(blockheight)?;
+	let (_, end_version, _) = context.db.get_block_info_by_height(blockheight)?;
 	tracing::info!("end_version: {}", end_version);
 	let txn_with_proof = context.db.get_transaction_by_version(
-		start_version,
+		end_version,
 		latest_ledger_info.ledger_info().version(),
 		false,
 	)?;
