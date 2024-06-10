@@ -22,6 +22,9 @@ members = [
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/anvil",
+    "protocol-units/bridge/shared", 
+    "protocol-units/bridge/cli", 
+    "protocol-units/bridge/service",
 ]
 
 [workspace.package]
