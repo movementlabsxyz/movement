@@ -5,6 +5,9 @@ on:
 
 jobs:
   m1-da-light-node-builds:
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         architecture: [x86_64, arm64]
@@ -27,6 +30,9 @@ jobs:
         ./scripts/movement/build-push-image m1-da-light-node
 
   m1-da-light-node-manifest:
+    permissions:
+      contents: read
+      packages: write
     needs: m1-da-light-node-builds
     runs-on: ubuntu-latest
     steps:
