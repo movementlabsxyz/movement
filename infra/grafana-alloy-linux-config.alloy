@@ -1,0 +1,169 @@
+// This is an example on how you would configure grafana alloy to ship logs, metrics
+// and traces to grafana cloud
+
+prometheus.exporter.self "integrations_alloy" { }
+
+discovery.relabel "integrations_alloy" {
+targets = prometheus.exporter.self.integrations_alloy.targets
+
+rule {
+    target_label = "instance"
+    replacement  = constants.hostname
+}
+
+rule {
+    target_label = "alloy_hostname"
+    replacement  = constants.hostname
+}
+
+rule {
+    target_label = "job"
+    replacement  = "integrations/alloy-check"
+    }
+}
+
+prometheus.scrape "integrations_alloy" {
+    targets    = discovery.relabel.integrations_alloy.output
+    forward_to = [prometheus.relabel.integrations_alloy.receiver]
+    scrape_interval = "60s"
+}
+
+prometheus.relabel "integrations_alloy" {
+    forward_to = [prometheus.remote_write.metrics_service.receiver]
+    rule {
+        source_labels = ["name"]
+        regex         = "(prometheus_target_sync_length_seconds_sum|prometheus_target_scrapes_.|prometheus_target_interval.|prometheus_sd_discovered_targets|alloy_build.*|prometheus_remote_write_wal_samples_appended_total|process_start_time_seconds)"
+        action        = "keep"
+    }
+}
+
+prometheus.remote_write "metrics_service" {
+    endpoint {
+        // configured for grafana cloud promethues url 
+        url = "https://prometheus-prod-XX-prod-us-REGION-0.grafana.net/api/prom/push"
+    
+        basic_auth {
+            username = "PROMETHEUS_USER"
+            password = "PROMETHEUS_PASS"
+        }
+    }
+}
+
+loki.write "grafana_cloud_loki" {
+    endpoint {
+        // configured for grafana cloud loki url 
+        url = "https://logs-prod-XXX.grafana.net/loki/api/v1/push"
+        basic_auth {
+            username = "LOKI_USER"
+            password = "LOKI_PASS"
+        }
+    }
+}
+
+otelcol.receiver.otlp "default" {
+    // configures the default grpc endpoint "0.0.0.0:4317"
+    grpc {   endpoint = "127.0.0.1:4317"  }
+    // configures the default http/protobuf endpoint "0.0.0.0:4318"
+    http { endpoint = "127.0.0.1:4318"}
+
+    output {
+        metrics = [otelcol.processor.resourcedetection.default.input]
+        logs    = [otelcol.processor.resourcedetection.default.input]
+        traces  = [otelcol.processor.resourcedetection.default.input]
+    }
+}
+
+otelcol.processor.resourcedetection "default" {
+// https://grafana.com/docs/alloy/latest/reference/components/otelcol.processor.resourcedetection/
+    detectors = ["env", "system", "ec2"] // add "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "aks", "consul", "heroku"  if you want to use cloud resource detection
+    system {
+        hostname_sources = ["os"]
+    }
+    output {
+        metrics = [otelcol.processor.transform.add_resource_attributes_as_metric_attributes.input]
+        logs    = [otelcol.processor.batch.default.input]
+        traces  = [
+            otelcol.processor.batch.default.input,
+            otelcol.connector.host_info.default.input,
+        ]
+    }
+}
+
+otelcol.connector.host_info "default" {
+    host_identifiers = ["host.name"]
+    output {
+        metrics = [otelcol.processor.batch.default.input]
+    }
+}
+
+otelcol.processor.transform "add_resource_attributes_as_metric_attributes" {
+    error_mode = "ignore"
+    metric_statements {
+        context    = "datapoint"
+        statements = [
+            "set(attributes[\"deployment.environment\"], resource.attributes[\"deployment.environment\"])",
+            "set(attributes[\"service.version\"], resource.attributes[\"service.version\"])",
+        ]
+    }
+    output {
+        metrics = [otelcol.processor.batch.default.input]
+    }
+
+
+otelcol.processor.batch "default" {
+    output {
+        metrics = [otelcol.exporter.prometheus.metrics_service.input]
+        logs    = [otelcol.exporter.loki.grafana_cloud_loki.input]
+        traces  = [otelcol.exporter.otlp.grafana_cloud_tempo.input]
+    }
+}
+
+otelcol.exporter.loki "grafana_cloud_loki" {
+    forward_to = [loki.write.grafana_cloud_loki.receiver]
+}
+
+otelcol.exporter.prometheus "metrics_service" {
+    add_metric_suffixes = false
+    forward_to          = [prometheus.remote_write.metrics_service.receiver]
+}
+
+otelcol.exporter.otlp "grafana_cloud_tempo" {
+    client {
+        endpoint = "tempo-prod-XX-prod-XX-XXXX-0.grafana.net:443"
+        auth     = otelcol.auth.basic.grafana_cloud_tempo.handler
+    }
+}
+
+otelcol.auth.basic "grafana_cloud_tempo" {
+    username = "TEMPO_USER"
+    password = "TEMPO_PASS"
+}
+
+// Discover docker containers to collect logs from
+discovery.docker "docker_containers" {
+    // Note that if you are using Docker Desktop Engine this may need to be changed to
+    // something like "unix:///${HOME}/.docker/desktop/docker.sock"
+    host = "unix:///var/run/docker.sock"
+}
+
+// Extract container name from __meta_docker_container_name label and add as label
+discovery.relabel "docker_containers" {
+    targets = discovery.docker.docker_containers.targets
+    rule {
+        source_labels = ["__meta_docker_container_name"]
+        target_label  = "container"
+    }
+}
+
+// Scrape logs from docker containers and send to be processed
+loki.source.docker "docker_logs" {
+    host    = "unix:///var/run/docker.sock"
+    targets = discovery.relabel.docker_containers.output
+    forward_to = [loki.process.process_logs.receiver]
+}
+
+// Process logs and send to Loki
+    loki.process "process_logs" {
+    stage.docker { }
+    forward_to = [loki.write.grafana_cloud_loki.receiver]
+}
