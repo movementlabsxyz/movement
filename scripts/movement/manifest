@@ -1,0 +1,4 @@
+#!/bin/bash
+IMAGE_NAME=$1
+FILE_PATH=./docker/build/"${IMAGE_NAME}"/Dockerfile
+./scripts/docker/manifest "${FILE_PATH}" ghcr.io/movementlabsxyz "${IMAGE_NAME}"
