@@ -1,7 +1,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {MCR} from "../src/MCR.sol";
+import {MCR} from "../src/settlement/MCR.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";

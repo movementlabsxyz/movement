@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Check if the correct number of arguments are passed
 if [ "$#" -ne 3 ]; then

@@ -16,3 +16,4 @@ docs/
 .env
 
 lib/
+.vscode/
