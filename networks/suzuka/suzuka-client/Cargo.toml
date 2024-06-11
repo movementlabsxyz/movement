@@ -11,11 +11,11 @@ rust-version = { workspace = true }
 
 ### define here all scenarios execution binaries 
 [[bin]]
-name = "demoscenario"
-path = "bin/demoscenario.rs"
+name = "demo_scenario"
+path = "bin/demo_scenario.rs"
 [[bin]]
 name = "basicalicebob"
-path = "bin/basicalicebob.rs"
+path = "bin/basic_alice_bob.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

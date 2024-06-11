@@ -10,8 +10,8 @@ pub use scenario::Scenario;
 
 const EXEC_LOG_FILTER: &str = "exec";
 
-/// Initialize all test's components with the configuration.
-/// Must be call before the test start: execute_test
+/// Initialize all test components with the configuration.
+/// Must be called before the tests start: execute_test
 pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 	//do some verification on the config
 	config.verify_config();
@@ -61,6 +61,17 @@ pub struct ExecutionConfig {
 	pub kind: TestKind,
 	pub logfile: String,
 	pub execfile: String,
+	pub nb_scenario_per_client: usize,
+/// Defines how the test will be run:
+#[derive(Clone, Debug)]
+pub struct ExecutionConfig {
+        /// Type of test to run
+	pub kind: TestKind,
+	/// The path to the file where log WARN and ERROR are written
+	pub logfile: String,
+	/// The path to the file where execution data are written to be processed later.
+	pub execfile: String,
+	/// The number of started scenarios per client. nb_scenarios / nb_scenario_per_client defines the number of clients.
 	pub nb_scenario_per_client: usize,
 }
 
@@ -133,10 +144,10 @@ impl TestKind {
 	}
 }
 
-/// Execute the test scenarios define in the specified configuration.
-/// scenarios are executed by chunk. Chunk execution of scenario is done by a client.
+/// Execute the test scenarios defined in the specified configuration.
+/// scenarios are executed by chunk. Each chunk of execution is done by a client.
 /// All clients are executed in a different thread in parallel.
-/// Clients execute scenario in a Tokio runtime concurrently.
+/// Clients execute scenarios in a Tokio runtime concurrently.
 pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::CreateScenarioFn>) {
 	tracing::info!("Start test scenario execution.");
 
@@ -182,7 +193,7 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 	tracing::info!("End test scenario execution.");
 }
 
-/// Run the specified scenarios concurrently using Tokio.
+/// Runs the specified scenarios concurrently using Tokio.
 #[derive(Default)]
 struct TestClient {
 	scenario_chunk: Vec<usize>,
@@ -218,7 +229,7 @@ impl TestClient {
 					// max_scenarios - min_scenarios scenarios run part-time depending on the number of cycle.
 					// Part-time scenario duration max: Duration / (nbcycle * 2)
 					// scenario start delta: (Part-time scenario duration max * scenario index / nb scenario) + (Duration * current cycle / nb cycle)
-					let nb_parttime_scenario: u32 = (max_scenarios - min_scenarios) as u32;
+					let nb_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
 					let parttime_scenario_duration = duration / (nb_clycle * 2);
 					vec![]
 				}
