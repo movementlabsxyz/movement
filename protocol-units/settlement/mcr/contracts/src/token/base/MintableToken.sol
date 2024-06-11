@@ -23,11 +23,17 @@ contract MintableToken is IMintableToken, BaseToken {
      * @param name The name of the token
      * @param symbol The symbol of the token
      */
-    function initialize(string memory name, string memory symbol) public virtual override initializer {
+    function initialize(
+        string memory name,
+        string memory symbol
+    ) public virtual override initializer {
         __MintableToken_init(name, symbol);
     }
 
-    function __MintableToken_init(string memory name, string memory symbol) internal onlyInitializing {
+    function __MintableToken_init(
+        string memory name,
+        string memory symbol
+    ) internal onlyInitializing {
         __ERC20_init_unchained(name, symbol);
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
@@ -42,7 +48,9 @@ contract MintableToken is IMintableToken, BaseToken {
      * @dev Set minter role
      * @param account The address to set minter role
      */
-    function grantMinterRole(address account) public onlyRole(MINTER_ADMIN_ROLE) {
+    function grantMinterRole(
+        address account
+    ) public onlyRole(MINTER_ADMIN_ROLE) {
         _grantRole(MINTER_ROLE, account);
     }
 
@@ -50,7 +58,9 @@ contract MintableToken is IMintableToken, BaseToken {
      * @dev Revoke minter role
      * @param account The address to revoke minter role from
      */
-    function revokeMinterRole(address account) public onlyRole(MINTER_ADMIN_ROLE) {
+    function revokeMinterRole(
+        address account
+    ) public onlyRole(MINTER_ADMIN_ROLE) {
         _revokeRole(MINTER_ROLE, account);
     }
 
@@ -59,7 +69,10 @@ contract MintableToken is IMintableToken, BaseToken {
      * @param to The address to mint tokens to
      * @param amount The amount of tokens to mint
      */
-    function mint(address to, uint256 amount) public virtual onlyRole(MINTER_ROLE) {
+    function mint(
+        address to,
+        uint256 amount
+    ) public virtual onlyRole(MINTER_ROLE) {
         _mint(to, amount);
     }
 }

@@ -10,4 +10,4 @@ mkdir -p $MCR_ANVIL_APP_PATH
 
 # Define the path to the anvil.json file
 export ANVIL_JSON_PATH="$MCR_ANVIL_APP_PATH/anvil.json"
-export MCR_SC_ADDRESS_FILE="$MCR_ANVIL_APP_PATH/mcr_adress.txt"
+export MCR_SMART_CONTRACT_ADDRESS_FILE="$MCR_ANVIL_APP_PATH/mcr_adress.txt"
