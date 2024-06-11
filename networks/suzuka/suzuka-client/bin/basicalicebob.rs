@@ -48,8 +48,9 @@ impl Scenario for BasicScenario {
 		// let _ =
 		// 	tokio::time::sleep(tokio::time::Duration::from_millis(1000 * (self.id as u64))).await;
 
-		let suzuka_config = maptos_execution_util::config::Config::try_from_env()
-			.context("Failed to create the suzuka_config")?;
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
+
 		let node_url = Url::from_str(
 			format!("http://{}", suzuka_config.aptos_config.aptos_rest_listen_url.as_str())
 				.as_str(),
