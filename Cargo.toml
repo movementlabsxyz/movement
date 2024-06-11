@@ -12,6 +12,7 @@ members = [
     "protocol-units/mempool/*",
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/manager",
+    "protocol-units/maptos-rest",
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -65,6 +66,7 @@ mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }
 mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 ## types
 movement-types = { path = "util/movement-types" }
+maptos-rest = { path = "protocol-units/maptos-rest" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -73,6 +75,7 @@ serde_json = "1.0"
 
 
 # External Dependencies
+
 ## Aptos dependencies
 ### We use a forked version so that we can override dependency versions. This is required
 ### to be avoid dependency conflicts with other Sovereign Labs crates.
@@ -135,6 +138,24 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = [
+    "pubsub",
+    "signers",
+    "signer-wallet",
+    "signer-yubihsm",
+] }
+alloy-primitives = { version = "0.7.2", default-features = false }
+alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = [
+    "ws",
+] }
+alloy-sol-types = { version = "0.7.2", features = ["json"] }
+alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network" }
+alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport" }
+alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http" }
+alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract" }
+alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet" }
+alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types" }
+alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws" }
 anyhow = "1.0"
 async-channel = "2.2.1"
 async-stream = "0.3.0"
@@ -175,6 +196,7 @@ proptest-derive = "0.4"
 quote = "1.0"
 rand = "0.7.3"
 rand_core = "0.5.1"
+reqwest = "0.12.4"
 risc0-build = "0.20"
 risc0-zkvm = { version = "0.21", features = ["std", "getrandom"] }
 rocksdb = { version = "0.21.0", features = [
