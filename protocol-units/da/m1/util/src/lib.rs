@@ -6,19 +6,33 @@ use celestia_types::nmt::Namespace;
 use dot_movement::DotMovementPath;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+/// The configuration for the m1-da-light-node
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
 
+	/// The URL of the Celestia node
 	#[serde(default = "Config::default_celestia_node_url")]
 	pub celestia_node_url: Option<String>,
 
+	/// The auth token for the Celestia node
 	pub celestia_auth_token: Option<String>,
 
+	/// The namespace for the Celestia node
 	#[serde(default = "Config::default_namespace")]
 	pub celestia_namespace: Option<Namespace>,
 
+	/// The verification mode used against data availability
 	#[serde(default = "Config::default_verification_mode")]
 	pub verification_mode: Option<String>,
+
+	/// The chain id of the sequencer
+	#[serde(default = "Config::default_sequencer_chain_id")]
+	pub sequencer_chain_id : Option<String>,
+
+	/// The path to the sequencer database
+	#[serde(default = "Config::default_sequencer_database_path")]
+	pub sequencer_database_path : Option<String>,
+
 }
 
 impl Config {
@@ -46,6 +60,18 @@ impl Config {
 	const DEFAULT_VERIFICATION_MODE: &'static str = "MofN";
 	pub fn default_verification_mode() -> Option<String> {
 		Some(Self::DEFAULT_VERIFICATION_MODE.to_string())
+	}
+
+	/// The default sequencer chain id.
+	const DEFAULT_SEQUENCER_CHAIN_ID: &'static str = "test";
+	pub fn default_sequencer_chain_id() -> Option<String> {
+		Some(Self::DEFAULT_SEQUENCER_CHAIN_ID.to_string())
+	}
+
+	/// The default sequencer database path.
+	const DEFAULT_SEQUENCER_DATABASE_PATH: &'static str = "/tmp/sequencer";
+	pub fn default_sequencer_database_path() -> Option<String> {
+		Some(Self::DEFAULT_SEQUENCER_DATABASE_PATH.to_string())
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file
@@ -120,6 +146,8 @@ pub mod test {
 			celestia_node_url: Some("test".to_string()),
 			celestia_namespace: Some(Namespace::new_v0(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])?),
 			verification_mode: Some("MofN".to_string()),
+			sequencer_chain_id: Some("test".to_string()),
+			sequencer_database_path: Some("/tmp/sequencer".to_string()),
 		};
 
 		let temp_directory = tempfile::tempdir()?;
