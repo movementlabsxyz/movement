@@ -19,6 +19,7 @@ use crate::v1::LightNodeV1Operations;
 #[derive(Clone)]
 pub struct LightNodeV1 {
 	pub config: Config,
+	pub celestia_namespace: Namespace,
 	pub default_client: Arc<Client>,
 	pub verification_mode: Arc<RwLock<VerificationMode>>,
 	pub verifier: Arc<Box<dyn Verifier + Send + Sync>>,
@@ -27,9 +28,9 @@ pub struct LightNodeV1 {
 impl Debug for LightNodeV1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("LightNodeV1")
-            .field("celestia_url", &self.celestia_url)
-            .field("celestia_token", &self.celestia_token)
-            .field("celestia_namespace", &self.celestia_namespace)
+            .field("celestia_node_url", &self.config.celestia_node_url)
+            .field("celestia_auth_token", &self.config.celestia_auth_token)
+            .field("celestia_namespace", &self.config.celestia_namespace)
             .finish()
     }
 }
@@ -41,7 +42,8 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let client = Arc::new(config.connect_celestia().await?);
 
 		Ok(Self {
-			config,
+			config : config.clone(),
+			celestia_namespace : config.try_celestia_namespace()?.clone(),
 			default_client: client.clone(),
 			verification_mode: Arc::new(RwLock::new(
 				config.try_verification_mode()?.try_into().map_err(|e| anyhow::anyhow!("{}", e))?,
@@ -60,12 +62,6 @@ impl LightNodeV1Operations for LightNodeV1 {
 }
 
 impl LightNodeV1 {
-	/// Gets a new Celestia client instance with the matching params.
-	pub async fn get_new_celestia_client(&self) -> Result<Client, anyhow::Error> {
-		Client::new(&self.celestia_url, Some(&self.celestia_token))
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed to create Celestia client: {}", e))
-	}
 
 	/// Creates a new blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {

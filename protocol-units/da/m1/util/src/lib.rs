@@ -26,8 +26,8 @@ pub struct Config {
 	pub verification_mode: Option<String>,
 
 	/// The memseq config
-	#[serde(default)]
-	pub memseq_config: Option<memseq::config::Config>,
+	#[serde(default = "Config::default_memseq_config")]
+	pub memseq_config: Option<memseq_util::Config>,
 
 }
 
@@ -84,6 +84,19 @@ impl Config {
 	/// Gets a result for the auth token member.
 	pub fn try_celestia_auth_token(&self) -> Result<&str, anyhow::Error> {
 		self.celestia_auth_token.as_deref().ok_or(anyhow::anyhow!("No Celestia auth token provided"))
+	}
+
+	/// Produces the default memseq config.
+	pub fn default_memseq_config() -> Option<memseq_util::Config> {
+		Some(memseq_util::Config {
+			sequencer_chain_id: memseq_util::Config::default_sequencer_chain_id(),
+			sequencer_database_path: memseq_util::Config::default_sequencer_database_path(),
+		})
+	}
+
+	/// Gets a result for the memseq config member.
+	pub fn try_memseq_config(&self) -> Result<&memseq_util::Config, anyhow::Error> {
+		self.memseq_config.as_ref().ok_or(anyhow::anyhow!("No memseq config provided"))
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file
@@ -150,11 +163,11 @@ pub mod test {
 	fn test_to_and_from_toml_file() -> Result<(), anyhow::Error> {
 		
 		let config = Config {
-			celestia_auth_token: Some("test".to_string()),
-			celestia_node_url: Some("test".to_string()),
-			celestia_namespace: Some(Namespace::new_v0(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])?),
-			verification_mode: Some("MofN".to_string()),
-			memseq_config : Some(memseq::config::Config::default()),
+			celestia_auth_token: None,
+			celestia_node_url: Config::default_celestia_node_url(),
+			celestia_namespace: Config::default_namespace(),
+			verification_mode: Config::default_verification_mode(),
+			memseq_config : Config::default_memseq_config(),
 		};
 
 		let temp_directory = tempfile::tempdir()?;

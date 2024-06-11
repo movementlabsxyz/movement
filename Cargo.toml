@@ -8,7 +8,7 @@ members = [
     "protocol-units/execution/monza/*",
     "protocol-units/execution/suzuka/*",
     "protocol-units/da/m1/*",
-    "protocol-units/sequencing/*",
+    "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/manager",
@@ -58,7 +58,8 @@ suzuka-fin-executor = { path = "protocol-units/execution/suzuka/fin-executor" }
 mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }
 ## sequencing
-memseq = { path = "protocol-units/sequencing/memseq" }
+memseq = { path = "protocol-units/sequencing/memseq/sequencer" }
+memseq-util = { path = "protocol-units/sequencing/memseq/util" }
 sequencing-util = { path = "protocol-units/sequencing/util" }
 ## settlement
 mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }

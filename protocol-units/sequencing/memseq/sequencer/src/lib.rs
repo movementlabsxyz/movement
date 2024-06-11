@@ -1,5 +1,3 @@
-pub mod config;
-
 use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{Block, Id, Transaction};

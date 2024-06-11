@@ -1,7 +1,7 @@
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
-use std::fmt::Debug;
+use std::{fmt::Debug, path::PathBuf};
 
 use celestia_rpc::HeaderClient;
 
@@ -33,7 +33,11 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let pass_through = LightNodeV1PassThrough::try_from_env_toml_file().await?;
 		info!("Initialized pass through for LightNodeV1 in sequencer mode.");
 
-		let memseq = memseq::Memseq::try_move_rocks_from_env()?;
+		let memseq_path = pass_through.config.try_memseq_config()?.try_sequencer_database_path()?;
+
+		let memseq = memseq::Memseq::try_move_rocks(
+			PathBuf::from(memseq_path),
+		)?;
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
 		Ok(Self { pass_through, memseq })

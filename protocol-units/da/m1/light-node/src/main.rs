@@ -15,7 +15,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // log out the node's configuration with tracing
     tracing::info!("{:?}", light_node);
-    println!("{:?}", light_node);
 
     light_node.run().await?;
 

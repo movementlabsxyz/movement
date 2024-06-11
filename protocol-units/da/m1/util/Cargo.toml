@@ -34,7 +34,7 @@ serde_derive = { workspace = true }
 jsonrpsee = { workspace = true }
 dot-movement = { workspace = true }
 toml = { workspace = true }
-memseq = { workspace = true }
+memseq-util = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

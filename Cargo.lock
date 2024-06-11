@@ -6742,7 +6742,7 @@ dependencies = [
  "hex",
  "jsonrpsee",
  "m1-da-light-node-grpc",
- "memseq",
+ "memseq-util",
  "prost",
  "serde",
  "serde_derive",
@@ -6942,6 +6942,7 @@ dependencies = [
  "dot-movement",
  "futures",
  "mempool-util",
+ "memseq-util",
  "move-rocks",
  "movement-types",
  "sequencing-util",
@@ -6949,6 +6950,19 @@ dependencies = [
  "serde_derive",
  "tempfile",
  "tokio",
+ "toml 0.8.2",
+]
+
+[[package]]
+name = "memseq-util"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "dot-movement",
+ "futures",
+ "serde",
+ "serde_derive",
+ "tempfile",
  "toml 0.8.2",
 ]
 
