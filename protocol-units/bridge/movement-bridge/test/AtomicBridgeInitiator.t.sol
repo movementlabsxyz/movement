@@ -49,6 +49,7 @@ contract AtomicBridgeInitiatorTest is Test {
 
     function testCompleteBridgeTransfer() public {
         bytes32 secret = "secret";
+        bytes32 hashLock = keccak256(abi.encodePacked(secret));
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
           amount, 
           originator, 
