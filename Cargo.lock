@@ -3357,6 +3357,13 @@ version = "0.3.0"
 [[package]]
 name = "bridge-shared"
 version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "derive_more",
+ "futures",
+ "thiserror",
+ "tracing",
+]
 
 [[package]]
 name = "bs58"
