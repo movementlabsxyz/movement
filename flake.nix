@@ -121,7 +121,7 @@
               owner = "movementlabsxyz";
               repo = "movementswap-core";
               rev = "d5b1075999fad5a0e78c68f9d0848d37680d9f30";
-              sha256 = "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=";
+              sha256 = "sha256-l7oLh7Rq0qUfa8nI+e2nPWYe1kOARKrfFBJubZkziZw=";
           };
 
           installPhase = ''
