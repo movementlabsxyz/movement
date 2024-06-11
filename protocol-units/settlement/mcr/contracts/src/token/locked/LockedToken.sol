@@ -79,8 +79,7 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
         uint256 totalUnlocked = 0;
         Lock[] storage userLocks = locks[msg.sender];
         for (uint256 i = 0; i < userLocks.length; i++) {
-            // todo: might want to remove >= and just use > for the sake of gas
-            if (block.timestamp >= userLocks[i].releaseTime) {
+            if (block.timestamp > userLocks[i].releaseTime) {
                 // compute the max possible amount to withdraw
                 uint256 amount = Math.min(userLocks[i].amount, balanceOf(msg.sender));
 
