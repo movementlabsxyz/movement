@@ -52,8 +52,8 @@ contract DeployMCR is Script {
         address to = address(mcrProxy);
         uint256 value = 0; // not sure
         bytes payload = abi.encodeWithSignature("upgradeTo(address)", address(mcrImplementation2));
-        bytes32 predecessor = ""; // not sure
-        bytes32 salt = ""; // not sure
+        bytes32 predecessor = bytes32(0); // not sure
+        bytes32 salt = bytes32(0); // not sure
         uint256 delay = 1 days + 1;
 
         timelock.schedule(to, value, payload, predecessor, salt, delay);
