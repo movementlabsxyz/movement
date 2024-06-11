@@ -34,7 +34,7 @@ pub struct SuzukaPartialNode<T> {
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: DynOptFinExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
@@ -46,6 +46,7 @@ where
 	{
 		let (settlement_manager, commitment_events) = McrSettlementManager::new(settlement_client);
 		let (transaction_sender, transaction_receiver) = async_channel::unbounded();
+		let bg_executor = executor.clone();
 		(
 			Self {
 				executor,
@@ -54,7 +55,7 @@ where
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
 			},
-			read_commitment_events(commitment_events),
+			read_commitment_events(commitment_events, bg_executor),
 		)
 	}
 
@@ -196,15 +197,23 @@ where
 	}
 }
 
-async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Result<()> {
+async fn read_commitment_events<T>(
+	mut stream: CommitmentEventStream,
+	executor: T,
+) -> anyhow::Result<()>
+where
+	T: DynOptFinExecutor + Send + Sync,
+{
 	while let Some(res) = stream.next().await {
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
+				executor.set_finalized_block_height(commitment.height)?;
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
+				// TODO: block reversion
 			}
 		}
 	}
@@ -213,7 +222,7 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
 where
-	T: DynOptFinExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
