@@ -23,21 +23,21 @@ pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone 
 	/// Runs the background tasks.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
 
+	/// Tries to get the service address
+	fn try_service_address(&self) -> Result<String, anyhow::Error>;
+
 	/// Runs the server
 	async fn run_server(&self) -> Result<(), anyhow::Error> {
 		let reflection = tonic_reflection::server::Builder::configure()
 			.register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
 			.build()?;
 
-		let env_addr =
-			std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "0.0.0.0:30730".to_string());
-		let addr = env_addr.parse()?;
-
+		let address = self.try_service_address()?;
 		Server::builder()
 			.accept_http1(true)
 			.add_service(LightNodeServiceServer::new(self.clone()))
 			.add_service(reflection)
-			.serve(addr)
+			.serve(address.parse()?)
 			.await?;
 
 		Ok(())

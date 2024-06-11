@@ -29,6 +29,10 @@ pub struct Config {
 	#[serde(default = "Config::default_memseq_config")]
 	pub memseq_config: Option<memseq_util::Config>,
 
+	/// The service address string
+	#[serde(default = "Config::default_service_address")]
+	pub service_address: Option<String>,
+
 }
 
 impl Config {
@@ -97,6 +101,17 @@ impl Config {
 	/// Gets a result for the memseq config member.
 	pub fn try_memseq_config(&self) -> Result<&memseq_util::Config, anyhow::Error> {
 		self.memseq_config.as_ref().ok_or(anyhow::anyhow!("No memseq config provided"))
+	}
+
+	/// The default service address.
+	const DEFAULT_SERVICE_ADDRESS: &'static str = "0.0.0.0:30730";
+	pub fn default_service_address() -> Option<String> {
+		Some(Self::DEFAULT_SERVICE_ADDRESS.to_string())
+	}
+
+	/// Gets a result for the service address member.
+	pub fn try_service_address(&self) -> Result<&str, anyhow::Error> {
+		self.service_address.as_deref().ok_or(anyhow::anyhow!("No service address provided"))
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file
@@ -168,6 +183,7 @@ pub mod test {
 			celestia_namespace: Config::default_namespace(),
 			verification_mode: Config::default_verification_mode(),
 			memseq_config : Config::default_memseq_config(),
+			service_address: Config::default_service_address(),
 		};
 
 		let temp_directory = tempfile::tempdir()?;

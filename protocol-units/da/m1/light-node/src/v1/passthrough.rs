@@ -55,6 +55,10 @@ impl LightNodeV1Operations for LightNodeV1 {
 		})
 	}
 
+	fn try_service_address(&self) -> Result<String, anyhow::Error> {
+		Ok(self.config.try_service_address()?.to_string())
+	}
+
 	/// Runs background tasks for the LightNodeV1 instance.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
 		Ok(())

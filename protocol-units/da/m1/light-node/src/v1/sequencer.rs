@@ -43,6 +43,10 @@ impl LightNodeV1Operations for LightNodeV1 {
 		Ok(Self { pass_through, memseq })
 	}
 
+	fn try_service_address(&self) -> Result<String, anyhow::Error> {
+		self.pass_through.try_service_address()
+	}
+
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
 		self.run_block_proposer().await?;
 
