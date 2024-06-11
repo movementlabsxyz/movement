@@ -1,3 +1,4 @@
+use m1_da_light_node_util::Config;
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
@@ -27,10 +28,10 @@ impl Debug for LightNodeV1 {
 }
 
 impl LightNodeV1Operations for LightNodeV1 {
-	async fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
+	async fn try_from_config(config : Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
 
-		let pass_through = LightNodeV1PassThrough::try_from_env_toml_file().await?;
+		let pass_through = LightNodeV1PassThrough::try_from_config(config.clone()).await?;
 		info!("Initialized pass through for LightNodeV1 in sequencer mode.");
 
 		let memseq_path = pass_through.config.try_memseq_config()?.try_sequencer_database_path()?;

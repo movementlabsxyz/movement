@@ -37,8 +37,7 @@ impl Debug for LightNodeV1 {
 
 impl LightNodeV1Operations for LightNodeV1 {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
-	async fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
-		let config = Config::try_from_env_toml_file()?;
+	async fn try_from_config(config : Config) -> Result<Self, anyhow::Error> {
 		let client = Arc::new(config.connect_celestia().await?);
 
 		Ok(Self {

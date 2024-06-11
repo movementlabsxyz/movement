@@ -3,7 +3,7 @@ use dot_movement::DotMovement;
 use serde::{Deserialize, Serialize};
 
 /// The configuration for the MemSeq sequencer
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
 
 	/// The chain id of the sequencer
@@ -14,6 +14,15 @@ pub struct Config {
 	#[serde(default = "Config::default_sequencer_database_path")]
 	pub sequencer_database_path : Option<String>,
 
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Config {
+			sequencer_chain_id: Config::default_sequencer_chain_id(),
+			sequencer_database_path: Config::default_sequencer_database_path(),
+		}
+	}
 }
 
 impl Config {

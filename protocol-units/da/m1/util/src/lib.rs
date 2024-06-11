@@ -7,7 +7,7 @@ use m1_da_light_node_grpc::*;
 use anyhow::Context;
 
 /// The configuration for the m1-da-light-node
-#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
 
 	/// The URL of the Celestia node
@@ -49,6 +49,23 @@ pub struct Config {
 	/// This does not have a default because if it is needed, a default is generally not appropriate.
 	pub celestia_validator_address: Option<String>,
 
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Config {
+			celestia_node_url: Config::default_celestia_node_url(),
+			celestia_auth_token: None,
+			celestia_namespace: Config::default_namespace(),
+			verification_mode: Config::default_verification_mode(),
+			memseq_config: Config::default_memseq_config(),
+			service_address: Config::default_service_address(),
+			celestia_app_path: None,
+			celestia_chain_id: None,
+			celestia_node_path: None,
+			celestia_validator_address: None,
+		}
+	}
 }
 
 impl Config {
