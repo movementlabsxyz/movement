@@ -62,16 +62,18 @@ impl Runner for Local {
 
         let genesis = self.get_genesis_block().await?;
 
+        let node_store = config.try_celestia_node_path()?;
+        info!("Initializing Celestia Bridge with node store at {}", node_store);
         // celestia bridge init --node.store $CELESTIA_NODE_PATH
         commander::run_command(
             "celestia-bridge",
             &[
                 "init",
-                "--node.store",
-                &config.try_celestia_node_path()?,
+                "--node.store", &node_store,
             ],
         ).await?;
 
+        info!("Starting celestia-bridge.");
         // celestia bridge start \
         // --node.store $CELESTIA_NODE_PATH --gateway \
         // --core.ip 0.0.0.0 \
@@ -83,8 +85,7 @@ impl Runner for Local {
             "celestia-bridge",
             &[
                 "start",
-                "--node.store",
-                &config.try_celestia_node_path()?,
+                "--node.store", &config.try_celestia_node_path()?,
                 "--gateway",
                 "--core.ip", "0.0.0.0",
                 "--keyring.accname", "validator",

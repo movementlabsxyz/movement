@@ -55,7 +55,7 @@ impl Local {
 
         // update the node path with the chain id
         config.celestia_node_path.replace(
-            dot_movement_path.join("celestia").join(celestia_chain_id.clone()).join(".celestia-node").to_str().ok_or(
+            dot_movement_path.join("celestia").join(celestia_chain_id.clone()).join("bridge").to_str().ok_or(
                 anyhow::anyhow!("Failed to convert path to string.")
             )?.to_string()
         );
@@ -89,15 +89,45 @@ impl Local {
 
     }
 
+    async fn make_parent_dirs(&self, path: &str) -> Result<(), anyhow::Error> {
+        let parent = std::path::Path::new(path).parent().ok_or(
+            anyhow::anyhow!("Failed to get parent directory.")
+        )?;
+        fs::create_dir_all(parent).await?;
+        Ok(())
+    }
+
+    async fn make_dirs(&self, 
+        dot_movement: DotMovement,
+        config : m1_da_light_node_util::Config,
+    ) -> Result<m1_da_light_node_util::Config, anyhow::Error> {
+        
+        // make the celestia app directory
+        let app_path = config.try_celestia_app_path()?;
+        self.make_parent_dirs(app_path.as_str()).await?;
+
+        // make the celestia node directory
+        let node_path = config.try_celestia_node_path()?;
+        self.make_parent_dirs(node_path.as_str()).await?;
+
+        // make the memseq database directory
+        let memseq_config = config.try_memseq_config()?;
+        let database_path = memseq_config.try_sequencer_database_path()?;
+        self.make_parent_dirs(database_path.as_str()).await?;
+
+        Ok(config)
+        
+    }
+
     async fn setup_celestia(
         &self, 
         dot_movement: DotMovement,
         config : m1_da_light_node_util::Config,
     ) -> Result<m1_da_light_node_util::Config, anyhow::Error> {
 
-        let mut config = self
-            .initialize_celestia_config(dot_movement, config).await?
-            .initialize_memseq_config(dot_movement, config).await?;
+        let mut config = self.initialize_celestia_config(dot_movement.clone(), config).await?;
+        let mut config = self.initialize_memseq_config(dot_movement.clone(), config).await?;
+        let mut config = self.make_dirs(dot_movement.clone(), config).await?;
 
         // unpack some of the config values
         let celestia_chain_id = config.try_celestia_chain_id()?.to_string().clone();
@@ -133,12 +163,23 @@ impl Local {
         info!("Collecting the genesis transactions.");
         run_command("celestia-appd", &["collect-gentxs", "--home", &celestia_app_path]).await?;
 
-        // updating the celestia node config
+        // update the celestia node config
         info!("Updating the Celestia Node config.");
         self.update_celestia_node_config(&celestia_app_path).await?;
 
+        // copy the keys over
         info!("Copying keys from Celestia App to Celestia Node.");
         self.copy_keys(&celestia_app_path, &celestia_node_path).await?;
+
+        // get the auth token
+        // celestia bridge auth admin --node.store ${CELESTIA_NODE_PATH}
+        info!("Getting the auth token.");
+        let auth_token = run_command(
+            "celestia-bridge",
+            &["auth", "admin", "--node.store", &celestia_node_path],
+        ).await?.trim().to_string();
+        config.celestia_auth_token.replace(auth_token.clone());
+
 
         Ok(config)
     }

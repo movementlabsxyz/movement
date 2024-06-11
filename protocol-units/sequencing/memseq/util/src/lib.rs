@@ -45,8 +45,8 @@ impl Config {
 	}
 
 	/// Gets a result for the sequencer database path member.
-	pub fn try_sequencer_database_path(&self) -> Result<&str, anyhow::Error> {
-		self.sequencer_database_path.as_deref().ok_or(anyhow::anyhow!("No sequencer database path provided"))
+	pub fn try_sequencer_database_path(&self) -> Result<String, anyhow::Error> {
+		self.sequencer_database_path.clone().ok_or(anyhow::anyhow!("No sequencer database path provided"))
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file

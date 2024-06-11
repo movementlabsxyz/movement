@@ -1,6 +1,6 @@
 pub mod path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DotMovement(std::path::PathBuf);
 
 impl DotMovement {
