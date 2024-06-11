@@ -35,6 +35,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         });
 
         emit BridgeTransferInitiated(_bridgeTransferId, _originator, _recipient, _hashLock, _timeLock);
+        return _bridgeTransferId;
     }
 
     function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 _secret) external override {

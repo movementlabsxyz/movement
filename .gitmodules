@@ -17,6 +17,6 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/openzeppelin-contracts"]
 	path = protocol-units/settlement/mcr/contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "protocol-units/bridge/movement_bridge/lib/forge-std"]
-	path = protocol-units/bridge/movement_bridge/lib/forge-std
+[submodule "protocol-units/bridge/movement-bridge/lib/forge-std"]
+	path = protocol-units/bridge/movement-bridge/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std

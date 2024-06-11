@@ -37,7 +37,7 @@ interface IAtomicBridgeInitiator {
     /**
      * @dev Refunds the funds back to the initiator if the timelock has expired
      * @param _BridgeTransferId Unique identifier for the BridgeTransfer
-      */
+    */
     function refundBridgeTransfer(bytes32 _bridgeTransferId) external;
 
     /**
@@ -48,7 +48,7 @@ interface IAtomicBridgeInitiator {
      * @return amount The amount of assets to be allocated and sent
      * @return hashLock The hash of the secret that will unlock the funds
      * @return timeLock The timestamp until which this BridgeTransfer is valid
-*/
+    */
     function getBridgeTransferDetail(bytes32 _bridgeTransferId) external view returns (
       bool exists, 
       uint amount, 
