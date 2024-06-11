@@ -89,14 +89,22 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 
 	println!("find accepted block");
 
-	match accepted_block_commitment {
+	let height = match accepted_block_commitment {
 		Some(block_commitment) => {
-			println!("Get an accepted block at heigh: {:?}", block_commitment.height)
+			println!("Get an accepted block at heigh: {:?}", block_commitment.height);
+			block_commitment.height
 		}
-		None => println!("Can't find an accepted block commitment."),
-	}
+		None => panic!("Can't find an accepted block commitment."),
+	};
 
 	//3) Get Suzuka block at settlement height
+	let client = reqwest::Client::new();
+	let base_url = "http://0.0.0.0:30832";
+	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", height);
+	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
+	let response = client.get(&state_root_hash_url).send().await?;
+	let state_key = response.text().await?;
+	println!("state_key;{state_key:?}",);
 
 	// verify that the block state match the settlement one. Block is FIN.
 
