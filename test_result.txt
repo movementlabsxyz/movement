@@ -1,0 +1,2 @@
+{"timestamp":"2024-06-11T11:21:43.116847Z","level":"INFO","fields":{"log":"Scenario:1 execution failed because: Failed to create the suzuka_config"},"target":"exec"}
+{"timestamp":"2024-06-11T11:21:43.117157Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":1,\"result\":\"Fail\"}"},"target":"exec"}

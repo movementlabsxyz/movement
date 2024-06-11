@@ -1,0 +1,1 @@
+[2m2024-06-11T11:21:43.116961Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:1 execution failed because: Failed to create the suzuka_config"
