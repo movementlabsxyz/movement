@@ -7,7 +7,8 @@ use maptos_dof_execution::{
 	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
+use mcr_settlement_client::eth_client::{McrEthSettlementClient, McrEthSettlementConfig};
+use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
@@ -20,9 +21,21 @@ use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::debug;
 
+use std::env;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
+
+/// Names of some environment variables used to configure the node.
+// TODO: rework into a consistent, modular configuration system.
+mod env_vars {
+	/// URL of the RPC endpoint of the Ethereum node to use for MCR settlement.
+	pub const MCR_NODE_RPC: &str = "MCR_NODE_RPC";
+	/// URL of the WebSocket endpoint of the Ethereum node to use for MCR settlement.
+	pub const MCR_NODE_WS: &str = "MCR_NODE_WS";
+	/// Private key of the MCR contract signer
+	pub const MCR_PRIVATE_KEY: &str = "MCR_PRIVATE_KEY";
+}
 
 pub struct SuzukaPartialNode<T> {
 	executor: T,
@@ -255,8 +268,23 @@ impl SuzukaPartialNode<Executor> {
 		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 		let executor =
 			Executor::try_from_env(tx).context("Failed to get executor from environment")?;
-		// TODO: switch to real settlement client
-		let settlement_client = MockMcrSettlementClient::new();
+		// TODO: rework config to not use (only) env variables
+		let mcr_rpc_url = read_from_env("RPC URL", env_vars::MCR_NODE_RPC)?;
+		let mcr_ws_url = read_from_env("WebSocket URL", env_vars::MCR_NODE_WS)?;
+		let mcr_private_key = read_from_env("MCR signer's private key", env_vars::MCR_PRIVATE_KEY)?;
+		let mcr_client_config = McrEthSettlementConfig::try_from_env()?;
+		let settlement_client = McrEthSettlementClient::build_with_urls(
+			&mcr_rpc_url,
+			&mcr_ws_url,
+			&mcr_private_key,
+			mcr_client_config,
+		)
+		.await?;
 		Self::bound(executor, light_node_client, settlement_client)
 	}
+}
+
+fn read_from_env(what: &str, var_name: &str) -> anyhow::Result<String> {
+	env::var(var_name)
+		.context(format!("failed to read {what} from environment variable {var_name}"))
 }

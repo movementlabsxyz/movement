@@ -35,8 +35,8 @@ use alloy_transport_ws::WsConnect;
 use movement_types::BlockCommitment;
 use std::env;
 
-const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TX_SEND_RETRY: usize = 10;
+const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
+const MAX_TX_SEND_RETRIES: usize = 10;
 const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 
 #[derive(Clone, Debug)]
@@ -46,31 +46,44 @@ pub struct McrEthSettlementConfig {
 	pub tx_send_nb_retry: usize,
 }
 
-impl McrEthSettlementConfig {
-	fn get_from_env<T: FromStr>(env_var: &str) -> Result<T, McrEthConnectorError>
-	where
-		<T as FromStr>::Err: std::fmt::Display,
-	{
-		env::var(env_var)
-			.map_err(|err| {
-				McrEthConnectorError::BadlyDefineEnvVariable(format!(
-					"{env_var} env var is not defined :{err}"
-				))
-			})
-			.and_then(|v| {
-				T::from_str(&v).map_err(|err| {
-					McrEthConnectorError::BadlyDefineEnvVariable(format!(
-						"Parse error for {env_var} env var:{err}"
-					))
-				})
-			})
+/// Errors that may occur when processing Eth settlement client configuration.
+#[derive(Debug, thiserror::Error)]
+pub enum ConfigError {
+	/// Environment variable error.
+	#[error("failed to obtain configuration value from the environment variable {name}: {cause}")]
+	EnvVar {
+		/// Name of the environment value.
+		name: String,
+		/// The error that occurred when accessing the environment variable.
+		cause: env::VarError,
+	},
+	/// Failure to parse the configuration value.
+	#[error("failed to parse configuration value from the environment variable {name}: {message}")]
+	Format { name: String, message: String },
+}
+
+fn parse_from_env_or<T: FromStr>(env_var: &str, default: T) -> Result<T, ConfigError>
+where
+	<T as FromStr>::Err: std::fmt::Display,
+{
+	match env::var(env_var) {
+		Ok(v) => T::from_str(&v)
+			.map_err(|err| ConfigError::Format { name: env_var.into(), message: err.to_string() }),
+		Err(env::VarError::NotPresent) => Ok(default),
+		Err(cause) => Err(ConfigError::EnvVar { name: env_var.into(), cause }),
 	}
-	pub fn try_from_env() -> Result<Self, McrEthConnectorError> {
+}
+
+impl McrEthSettlementConfig {
+	pub fn try_from_env() -> Result<Self, ConfigError> {
 		Ok(McrEthSettlementConfig {
 			mrc_contract_address: env::var("MCR_CONTRACT_ADDRESS")
-				.unwrap_or(MRC_CONTRACT_ADDRESS.to_string()),
-			gas_limit: Self::get_from_env::<u128>("MCR_TXSEND_GASLIMIT")?,
-			tx_send_nb_retry: Self::get_from_env::<usize>("MCR_TXSEND_NBRETRY")?,
+				.unwrap_or(MCR_CONTRACT_ADDRESS.into()),
+			gas_limit: parse_from_env_or::<u128>("MCR_TXSEND_GASLIMIT", DEFAULT_TX_GAS_LIMIT)?,
+			tx_send_nb_retry: parse_from_env_or::<usize>(
+				"MCR_TXSEND_NUM_RETRIES",
+				MAX_TX_SEND_RETRIES,
+			)?,
 		})
 	}
 }
@@ -78,9 +91,9 @@ impl McrEthSettlementConfig {
 impl Default for McrEthSettlementConfig {
 	fn default() -> Self {
 		McrEthSettlementConfig {
-			mrc_contract_address: MRC_CONTRACT_ADDRESS.to_string(),
+			mrc_contract_address: MCR_CONTRACT_ADDRESS.into(),
 			gas_limit: DEFAULT_TX_GAS_LIMIT,
-			tx_send_nb_retry: MAX_TX_SEND_RETRY,
+			tx_send_nb_retry: MAX_TX_SEND_RETRIES,
 		}
 	}
 }
@@ -101,8 +114,6 @@ pub enum McrEthConnectorError {
 	EventNotificationError(#[from] alloy_sol_types::Error),
 	#[error("MCR Settlement BlockAccepted event notification stream close")]
 	EventNotificationStreamClosed,
-	#[error("MCR Settlement Error environment variable:{0}")]
-	BadlyDefineEnvVariable(String),
 }
 
 // Codegen from artifact.
@@ -346,7 +357,7 @@ pub mod test {
 		let config = McrEthSettlementConfig {
 			mrc_contract_address: mcr_address.to_string(),
 			gas_limit: DEFAULT_TX_GAS_LIMIT,
-			tx_send_nb_retry: MAX_TX_SEND_RETRY,
+			tx_send_nb_retry: MAX_TX_SEND_RETRIES,
 		};
 
 		let client1 = McrEthSettlementClient::build_with_provider(
