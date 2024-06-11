@@ -13,6 +13,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
+    mapping(bytes32 => BridgeTransfer) public completedBridgeTransfers;
 
     function initiateBridgeTransfer(
         uint amount, 
@@ -44,6 +45,10 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         require(bridgeTransfer.exists, "Bridge transfer does not exist");
         require(keccak256(abi.encodePacked(_secret)) == bridgeTransfer.hashLock, "Invalid secret");
 
+        // Move the bridge transfer to completed
+        completedBridgeTransfers[_bridgeTransferId] = bridgeTransfer;
+
+        // Delete from active bridgeTransfers
         delete bridgeTransfers[_bridgeTransferId];
 
         payable(bridgeTransfer.recipient).transfer(bridgeTransfer.amount);
@@ -63,9 +68,42 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         emit BridgeTransferRefunded(_bridgeTransferId);
     }
 
-    function getBridgeTransferDetail(bytes32 _bridgeTransferId) external view override returns (bool exists, uint amount, address originator, address recipient, bytes32 hashLock, uint timeLock) {
+    function getBridgeTransferDetail(bytes32 _bridgeTransferId) external view override returns (
+        bool exists, 
+        uint amount, 
+        address originator, 
+        address recipient, 
+        bytes32 hashLock, 
+        uint timeLock
+    ) {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[_bridgeTransferId];
-        return (bridgeTransfer.exists, bridgeTransfer.amount, bridgeTransfer.originator, bridgeTransfer.recipient, bridgeTransfer.hashLock, bridgeTransfer.timeLock);
+        return (
+            bridgeTransfer.exists, 
+            bridgeTransfer.amount,
+            bridgeTransfer.originator,
+            bridgeTransfer.recipient,
+            bridgeTransfer.hashLock,
+            bridgeTransfer.timeLock
+        );
+    }
+
+    function getCompletedBridgeTransferDetail(bytes32 _bridgeTransferId) external view returns (
+        bool exists, 
+        uint amount, 
+        address originator, 
+        address recipient, 
+        bytes32 hashLock, 
+        uint timeLock
+    ) {
+        BridgeTransfer storage bridgeTransfer = completedBridgeTransfers[_bridgeTransferId];
+        return (
+            bridgeTransfer.exists, 
+            bridgeTransfer.amount, 
+            bridgeTransfer.originator, 
+            bridgeTransfer.recipient, 
+            bridgeTransfer.hashLock, 
+            bridgeTransfer.timeLock
+        );
     }
 }
 
