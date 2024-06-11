@@ -1,7 +1,7 @@
 version: "3"
 
 environment:
-  - DOT_MOVEMENT=./.movement
+  - DOT_MOVEMENT_PATH="$(pwd)/.movement"
   - CARGO_PROFILE=debug
   - MOVEMENT_PREBUILT=false
   - PATH=$PATH:./target/$CARGO_PROFILE

@@ -64,13 +64,40 @@ impl Local {
 
     }
 
+    async fn initialize_memseq_config(
+        &self, 
+        dot_movement: DotMovement,
+        config : m1_da_light_node_util::Config,
+    ) -> Result<m1_da_light_node_util::Config, anyhow::Error>  {
+
+        // use the dot movement path to set up the memseq database path
+        let dot_movement_path = dot_movement.get_path();
+
+        // if the memseq chain id is not set, use the celestia chain id
+        let mut memseq_config = config.try_memseq_config()?.clone();
+        let chain_id = config.try_celestia_chain_id()?;
+        memseq_config.sequencer_chain_id.get_or_insert(chain_id.clone());
+
+        // set the memseq database path accordingly
+        memseq_config.sequencer_database_path.replace(
+            dot_movement_path.join("memseq").join(chain_id).join(".memseq").to_str().ok_or(
+                anyhow::anyhow!("Failed to convert path to string.")
+            )?.to_string()
+        );
+
+        Ok(config)
+
+    }
+
     async fn setup_celestia(
         &self, 
         dot_movement: DotMovement,
         config : m1_da_light_node_util::Config,
     ) -> Result<m1_da_light_node_util::Config, anyhow::Error> {
 
-        let mut config = self.initialize_celestia_config(dot_movement, config).await?;
+        let mut config = self
+            .initialize_celestia_config(dot_movement, config).await?
+            .initialize_memseq_config(dot_movement, config).await?;
 
         // unpack some of the config values
         let celestia_chain_id = config.try_celestia_chain_id()?.to_string().clone();

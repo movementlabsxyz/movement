@@ -10,11 +10,11 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [[bin]]
-name = "celestia-appd"
+name = "m1-da-light-node-celestia-appd"
 path = "src/bin/celestia-appd.rs"
 
 [[bin]]
-name = "celestia-bridge"
+name = "m1-da-light-node-celestia-bridge"
 path = "src/bin/celestia-bridge.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
