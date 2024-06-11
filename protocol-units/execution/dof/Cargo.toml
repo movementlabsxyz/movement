@@ -1,0 +1,36 @@
+[package]
+name = "maptos-dof-execution"
+description = "Block execution state management for dyn, opt, and fin states"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+async-channel = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+aptos-crypto = { workspace = true }
+aptos-api = { workspace = true }
+aptos-types = { workspace = true }
+
+maptos-opt-executor = { workspace = true }
+maptos-fin-view = { workspace = true }
+maptos-execution-util = { workspace = true }
+movement-types = { workspace = true }
+
+[dev-dependencies]
+chrono = { workspace = true }
+aptos-db = { workspace = true }
+aptos-sdk = { workspace = true }
+aptos-proptest-helpers = { workspace = true }
+rand = { workspace = true }

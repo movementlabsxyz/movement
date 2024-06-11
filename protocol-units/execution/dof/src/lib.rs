@@ -1,6 +1,6 @@
 pub mod v1;
 
-pub use aptos_api::runtime::Apis;
+use aptos_api::runtime::Apis;
 pub use aptos_crypto::hash::HashValue;
 pub use aptos_types::{
 	block_executor::partitioner::ExecutableBlock,
@@ -10,12 +10,13 @@ pub use aptos_types::{
 	transaction::{SignedTransaction, Transaction},
 };
 
-pub use movement_types::BlockCommitment;
+use movement_types::BlockCommitment;
 
 use async_channel::Sender;
+use async_trait::async_trait;
 
-#[tonic::async_trait]
-pub trait MonzaExecutor {
+#[async_trait]
+pub trait DynOptFinExecutor {
 	/// Runs the service
 	async fn run_service(&self) -> Result<(), anyhow::Error>;
 
@@ -28,11 +29,17 @@ pub trait MonzaExecutor {
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error>;
 
+	/// Update the height of the latest finalized block
+	fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;
+
 	/// Sets the transaction channel.
 	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>);
 
-	/// Gets the dyn API.
-	fn get_apis(&self) -> Apis;
+	/// Gets the API for the opt (optimistic) state.
+	fn get_opt_apis(&self) -> Apis;
+
+	/// Gets the API for the fin (finalized) state.
+	fn get_fin_apis(&self) -> Apis;
 
 	/// Get block head height.
 	async fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;
