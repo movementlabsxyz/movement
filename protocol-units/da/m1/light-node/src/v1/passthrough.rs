@@ -18,9 +18,7 @@ use crate::v1::LightNodeV1Operations;
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
-	pub celestia_url: String,
-	pub celestia_token: String,
-	pub celestia_namespace: Namespace,
+	pub config: Config,
 	pub default_client: Arc<Client>,
 	pub verification_mode: Arc<RwLock<VerificationMode>>,
 	pub verifier: Arc<Box<dyn Verifier + Send + Sync>>,
@@ -43,9 +41,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let client = Arc::new(config.connect_celestia().await?);
 
 		Ok(Self {
-			celestia_url: config.try_celestia_node_url()?.to_string(),
-			celestia_token: config.try_celestia_auth_token()?.to_string(),
-			celestia_namespace: config.try_celestia_namespace()?.clone(),
+			config,
 			default_client: client.clone(),
 			verification_mode: Arc::new(RwLock::new(
 				config.try_verification_mode()?.try_into().map_err(|e| anyhow::anyhow!("{}", e))?,

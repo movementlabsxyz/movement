@@ -25,13 +25,9 @@ pub struct Config {
 	#[serde(default = "Config::default_verification_mode")]
 	pub verification_mode: Option<String>,
 
-	/// The chain id of the sequencer
-	#[serde(default = "Config::default_sequencer_chain_id")]
-	pub sequencer_chain_id : Option<String>,
-
-	/// The path to the sequencer database
-	#[serde(default = "Config::default_sequencer_database_path")]
-	pub sequencer_database_path : Option<String>,
+	/// The memseq config
+	#[serde(default)]
+	pub memseq_config: Option<memseq::config::Config>,
 
 }
 
@@ -88,28 +84,6 @@ impl Config {
 	/// Gets a result for the auth token member.
 	pub fn try_celestia_auth_token(&self) -> Result<&str, anyhow::Error> {
 		self.celestia_auth_token.as_deref().ok_or(anyhow::anyhow!("No Celestia auth token provided"))
-	}
-
-	/// The default sequencer chain id.
-	const DEFAULT_SEQUENCER_CHAIN_ID: &'static str = "test";
-	pub fn default_sequencer_chain_id() -> Option<String> {
-		Some(Self::DEFAULT_SEQUENCER_CHAIN_ID.to_string())
-	}
-
-	/// Gets a result for the sequencer chain id member.
-	pub fn try_sequencer_chain_id(&self) -> Result<&str, anyhow::Error> {
-		self.sequencer_chain_id.as_deref().ok_or(anyhow::anyhow!("No sequencer chain id provided"))
-	}
-
-	/// The default sequencer database path.
-	const DEFAULT_SEQUENCER_DATABASE_PATH: &'static str = "/tmp/sequencer";
-	pub fn default_sequencer_database_path() -> Option<String> {
-		Some(Self::DEFAULT_SEQUENCER_DATABASE_PATH.to_string())
-	}
-
-	/// Gets a result for the sequencer database path member.
-	pub fn try_sequencer_database_path(&self) -> Result<&str, anyhow::Error> {
-		self.sequencer_database_path.as_deref().ok_or(anyhow::anyhow!("No sequencer database path provided"))
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file
@@ -180,8 +154,7 @@ pub mod test {
 			celestia_node_url: Some("test".to_string()),
 			celestia_namespace: Some(Namespace::new_v0(&[0, 1, 2, 3, 4, 5, 6, 7, 8, 9])?),
 			verification_mode: Some("MofN".to_string()),
-			sequencer_chain_id: Some("test".to_string()),
-			sequencer_database_path: Some("/tmp/sequencer".to_string()),
+			memseq_config : Some(memseq::config::Config::default()),
 		};
 
 		let temp_directory = tempfile::tempdir()?;

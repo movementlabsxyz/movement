@@ -1,3 +1,5 @@
+pub mod config;
+
 use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{Block, Id, Transaction};
@@ -46,10 +48,8 @@ impl Memseq<RocksdbMempool> {
 		Ok(Self::new(mempool, 10, parent_block, 1000))
 	}
 
-	pub fn try_move_rocks_from_env() -> Result<Self, anyhow::Error> {
-		let path = std::env::var("MOVE_ROCKS_PATH")
-			.or(Err(anyhow::anyhow!("MOVE_ROCKS_PATH not found")))?;
-		Self::try_move_rocks(PathBuf::from(path))
+	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
+		unimplemented!("try_from_env_toml_file")
 	}
 }
 
@@ -214,24 +214,6 @@ pub mod test {
 		// Test invalid path
 		let invalid_path = PathBuf::from("");
 		let result = Memseq::try_move_rocks(invalid_path);
-		assert!(result.is_err());
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_try_move_rocks_from_env() -> Result<(), anyhow::Error> {
-		let dir = tempdir()?;
-		let path = dir.path().to_path_buf();
-		std::env::set_var("MOVE_ROCKS_PATH", path.to_str().unwrap());
-
-		let memseq = Memseq::try_move_rocks_from_env()?;
-		assert_eq!(memseq.block_size, 10);
-		assert_eq!(memseq.building_time_ms, 1000);
-
-		// Test environment variable not set
-		std::env::remove_var("MOVE_ROCKS_PATH");
-		let result = Memseq::try_move_rocks_from_env();
 		assert!(result.is_err());
 
 		Ok(())

@@ -20,6 +20,10 @@ anyhow = { workspace = true }
 move-rocks = { workspace = true }
 tempfile = { workspace = true }
 futures = { workspace = true }
+dot-movement = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+toml = { workspace = true }
 
 [lints]
 workspace = true
