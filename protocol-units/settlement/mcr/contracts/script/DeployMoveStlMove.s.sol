@@ -15,64 +15,58 @@ function string2Address(bytes memory str) returns (address addr) {
     }
 }
 
-contract DeployMintableToken is Script {
+contract DeployMoveStlMove is Script {
     TransparentUpgradeableProxy public moveProxy;
+    TransparentUpgradeableProxy public stlMoveProxy;
     ProxyAdmin public admin;
     TimelockController public timelock;
     string public moveSignature = "initialize(string,string)";
-    string public stlSignature = "initialize(IMintableToken)";
+    string public stlSignature = "initialize(string,string,address)";
 
     function run() external {
-        /*uint256 minDelay = 1 days;
+        uint256 minDelay = 1 days;
         address[] memory proposers = new address[](5);
         address[] memory executors = new address[](1);
 
-        proposers[0] = address(string2Address("Andy"));
-        proposers[1] = address(string2Address("Bob"));
-        proposers[2] = address(string2Address("Charlie"));
-        proposers[3] = address(string2Address("David"));
-        proposers[4] = address(string2Address("Eve"));
+        proposers[0] = string2Address("Andy");
+        proposers[1] = string2Address("Bob");
+        proposers[2] = string2Address("Charlie");
+        proposers[3] = string2Address("David");
+        proposers[4] = string2Address("Eve");
 
-        executors[0] = address(string2Address("MultisigAddress"));
+        executors[0] = string2Address("MultisigAddress");
 
         address adminAddress = address(0);
 
-        vm.startBroadcast();
+        vm.startBroadcast(vm.addr(1));
 
         MintableToken moveImplementation = new MintableToken();
         stlMoveToken stlMoveImplementation = new stlMoveToken();
 
-        admin = new ProxyAdmin(address(this));
+        admin = new ProxyAdmin(vm.addr(1));
         moveProxy = new TransparentUpgradeableProxy(
-            address(moveImplementation),
-            address(admin),
-            abi.encodeWithSignature(signature, "Move Token", "MOVE")
+            address(moveImplementation), address(admin), abi.encodeWithSignature(moveSignature, "Move Token", "MOVE")
         );
         stlMoveProxy = new TransparentUpgradeableProxy(
             address(stlMoveImplementation),
             address(admin),
-            abi.encodeWithSignature(signature, IMintableToken(moveProxy))
+            abi.encodeWithSignature(
+                stlSignature, "Stakable Locked Move Token", "stlMOVE", IMintableToken(address(moveProxy))
+            )
         );
 
-        timelock = new TimelockController(
-            minDelay,
-            proposers,
-            executors,
-            adminAddress
-        );
+        timelock = new TimelockController(minDelay, proposers, executors, adminAddress);
         // since admin proxy owns both move and stlmove, we only need to transfer ownership of admin to timelock
         admin.transferOwnership(address(timelock));
 
         MintableToken moveImplementation2 = new MintableToken();
         vm.stopBroadcast();
         // deploy a new implementation of MintableToken and schedule an upgrade
-        vm.startBroadcast(vm.envUint("ANDY_PRIVATE_KEY"));
+        // vm.startBroadcast(vm.envUint("ANDY_PRIVATE_KEY"));
+        vm.startBroadcast(string2Address("Andy"));
         address to = address(moveProxy);
         uint256 value = 0; // not sure
-        bytes memory payload = abi.encodeWithSignature(
-            "upgradeTo(address)",
-            address(moveImplementation2)
-        );
+        bytes memory payload = abi.encodeWithSignature("upgradeTo(address)", address(moveImplementation2));
         bytes32 predecessor = bytes32(0); // not sure
         bytes32 salt = bytes32(0); // not sure
         uint256 delay = 1 days + 1;
@@ -82,6 +76,6 @@ contract DeployMintableToken is Script {
 
         // multisig would be able to execute the upgrade after the delay
         // time.lock.execute(to, value, payload, predecessor, salt);
-        // gnosis safe has a UI for this */
+        // gnosis safe has a UI for this
     }
 }

@@ -5,7 +5,7 @@ import "../src/token/MOVEToken.sol";
 import "../src/staking/MovementStaking.sol";
 import "../src/settlement/MCR.sol";
 
-contract DeployMCR is Script {
+contract DeployMCRDev is Script {
     function run() external {
         vm.startBroadcast();
 
