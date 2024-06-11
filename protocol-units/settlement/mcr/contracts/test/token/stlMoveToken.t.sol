@@ -86,6 +86,7 @@ contract stlMoveTokenTest is Test {
         assertEq(underlyingToken.balanceOf(carol), 0);
         assertEq(underlyingToken.balanceOf(dave), 0);
 
+        vm.warp(block.timestamp + 1);
         // cannot release locked tokens
         vm.prank(alice);
         token.release();
@@ -163,7 +164,7 @@ contract stlMoveTokenTest is Test {
         assertEq(underlyingToken.balanceOf(address(token)), 310);
 
         // time passes
-        vm.warp(101);
+        vm.warp(block.timestamp + 101);
 
         // alice withdraws as much as she can
         vm.prank(alice);
@@ -210,7 +211,7 @@ contract stlMoveTokenTest is Test {
         assertEq(underlyingToken.balanceOf(address(token)), 20);
 
         // time passes
-        vm.warp(201);
+        vm.warp(block.timestamp + 101);
 
         // alice withdraws as much as she can; she can withdraw her rewards
         vm.prank(alice);
