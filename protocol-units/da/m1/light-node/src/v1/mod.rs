@@ -1,5 +1,3 @@
-#[cfg(all(feature = "sequencer", feature = "dynamic"))]
-pub mod dynamic;
 pub mod passthrough;
 #[cfg(feature = "sequencer")]
 pub mod sequencer;
@@ -7,11 +5,8 @@ pub mod sequencer;
 #[cfg(not(feature = "sequencer"))]
 pub use passthrough::*;
 
-#[cfg(all(feature = "sequencer", not(feature = "dynamic")))]
+#[cfg(feature = "sequencer")]
 pub use sequencer::*;
-
-#[cfg(all(feature = "dynamic", feature = "sequencer"))]
-pub use dynamic::*;
 
 use m1_da_light_node_grpc::light_node_service_server::{LightNodeService, LightNodeServiceServer};
 use tonic::transport::Server;
