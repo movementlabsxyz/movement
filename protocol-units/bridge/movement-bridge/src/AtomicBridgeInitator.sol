@@ -1,5 +1,6 @@
+import "./IAtomicBridgeInitiator.sol";
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.13;
 
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
     struct BridgeTransfer {
