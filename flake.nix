@@ -4,7 +4,8 @@
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/monthly"; 
-    naersk.url = "github:nix-community/naersk";
+    crane.url = "github:ipetkov/crane";
+    crane.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = {
@@ -13,21 +14,12 @@
     rust-overlay,
     flake-utils,
     foundry,
-    naersk,
+    crane,
     ...
     }:
     flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
 
       system: let
-
-        # nix does not handle .cargo/config.toml
-        RUSTFLAGS = if pkgs.stdenv.hostPlatform.isLinux then
-          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=-fuse-ld=lld -C target-feature=+sse4.2"
-        else if pkgs.stdenv.hostPlatform.isWindows then
-          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes -C link-arg=/STACK:8000000"
-        else
-          "--cfg tokio_unstable -C force-frame-pointers=yes -C force-unwind-tables=yes";
-
         overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
 
         overlays = [
@@ -39,20 +31,16 @@
           inherit system overlays;
         };
 
+        craneLib = crane.mkLib pkgs;
+
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-         dependencies = with pkgs; [
-          rocksdb
-          foundry-bin
-          # solc
+        buildDependencies = with pkgs; [
           llvmPackages.bintools
           openssl
           openssl.dev
           libiconv 
           pkg-config
-          process-compose
-          just
-          jq
           libclang.lib
           libz
           clang
@@ -63,10 +51,10 @@
           coreutils
           gcc
           rust
-          celestia-node
-          celestia-app
-          monza-aptos
-        ] ++ lib.optionals stdenv.isDarwin [
+        ];
+        
+        sysDependencies = with pkgs; [] 
+        ++ lib.optionals stdenv.isDarwin [
           frameworks.Security
           frameworks.CoreServices
           frameworks.SystemConfiguration
@@ -78,6 +66,15 @@
           bzip2
         ];
 
+        testDependencies = with pkgs; [
+          just
+          foundry-bin
+          process-compose
+          celestia-node
+          celestia-app
+          monza-aptos
+        ];
+
         # Specific version of toolchain
         rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
 
@@ -86,32 +83,75 @@
           rustc = rust;
         };
 
-        naersk' = pkgs.callPackage naersk {
-          cargo = rust;
-          rustc = rust;
-        };
+        # Needs to be removed soon and replaced with aptos-faucet-service
+        monza-aptos = pkgs.stdenv.mkDerivation {
+            pname = "monza-aptos";
+            version = "branch-monza";
 
+            src = pkgs.fetchFromGitHub {
+                owner = "movementlabsxyz";
+                repo = "aptos-core";
+                rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
+                sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
+            };
+
+            installPhase = ''
+                cp -r . $out
+            '';
+
+            meta = with pkgs.lib; {
+                description = "Aptos core repository on the monza branch";
+                homepage = "https://github.com/movementlabsxyz/aptos-core";
+                license = licenses.asl20;
+            };
+        };
+        # Remember, remove this thing above
+        
         # celestia-node
         celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
 
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
-        # monza-aptos
-        # FIXME: rename, should not be specific to Monza
-        monza-aptos = import ./nix/monza-aptos.nix { inherit pkgs; };
-
-        # m1-da-light-node
-        m1-da-light-node = import ./nix/m1-da-light-node.nix { inherit pkgs frameworks RUSTFLAGS; };
+        # aptos-faucet-service
+        aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
+          inherit pkgs; 
+          commonArgs = {
+            src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "aptos-core";
+              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
+              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
+            };
+            strictDeps = true;
+            
+            buildInputs = with pkgs; [] ++buildDependencies ++ sysDependencies;
+            nativeBuildInputs = with pkgs; [] ++buildDependencies ++sysDependencies;
+          };
+          inherit craneLib;
+        };
     
       in
         with pkgs; {
 
-          # Monza Aptos
-          packages.monza-aptos = monza-aptos;
+          packages.aptos-faucet-service = aptos-faucet-service;
 
-          # M1 DA Light Node
-          packages.m1-da-light-node = m1-da-light-node;
+          packages.celestia-node = celestia-node;
+
+          packages.celestia-app = celestia-app;
+          
+          # Used for workaround for failing vendor dep builds in nix
+          devShells.docker-build = mkShell {
+            buildInputs = [] ++buildDependencies ++sysDependencies;
+            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
+            OPENSSL_DEV=pkgs.openssl.dev;
+            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
+            shellHook = ''
+              #!/usr/bin/env bash
+              echo "rust-build shell"
+            '';
+          };
 
           # Development Shell
           devShells.default = mkShell {
@@ -121,11 +161,12 @@
             # for linux set SNAPPY variable
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
-            MONZA_APTOS_PATH = monza-aptos;
-            OPENSSL_DEV=pkgs.openssl.dev;
+            OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            buildInputs = dependencies;
-            nativeBuildInputs = dependencies;
+            MONZA_APTOS_PATH = monza-aptos;
+
+            buildInputs = [] ++buildDependencies ++sysDependencies ++testDependencies;
+            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
 
             shellHook = ''
               #!/bin/bash -e
@@ -140,7 +181,6 @@
               echo "Develop with Move Anywhere"
             '';
           };
-
         }
     );
 }

@@ -9,7 +9,7 @@ WORKDIR /tmp/build
 RUN nix \
     --extra-experimental-features "nix-command flakes" \
     --option filter-syscalls false \
-    build -A celestia-node
+    build .#celestia-node
 
 # Copy the Nix store closure into a directory. The Nix store closure is the
 # entire set of Nix store values that we need for our build.
@@ -24,5 +24,5 @@ WORKDIR /app
 
 # Copy /nix/store
 COPY --from=builder /tmp/nix-store-closure /nix/store
-COPY --from=builder /tmp/build/result /app
-CMD ["/app/bin/app"]
+COPY --from=builder /tmp/build/result/bin/celestia /app
+CMD ["/app/celestia"]

@@ -1,0 +1,16 @@
+[2m2024-06-11T12:44:12.190727Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:1
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2024-06-11T12:44:13.716726Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:1
+=== Intermediate Balances ===
+Alice: 99998400
+Bob: 1000
+[2m2024-06-11T12:44:15.749313Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:1
+=== Intermediate Balances ===
+ Alice: 99996800
+ Bob: 2000
+[2m2024-06-11T12:44:17.782334Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:1
+=== Final Balances ===
+ Alice: 99995200
+ Bob: 3000

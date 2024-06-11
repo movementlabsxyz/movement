@@ -1,0 +1,11 @@
+{"timestamp":"2024-06-11T12:44:07.084573Z","level":"INFO","fields":{"msg":"1 Before alice fund"},"target":"exec"}
+{"timestamp":"2024-06-11T12:44:10.156737Z","level":"INFO","fields":{"msg":"1 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2024-06-11T12:44:12.183670Z","level":"INFO","fields":{"msg":"1 After Bod create_account"},"target":"exec"}
+{"timestamp":"2024-06-11T12:44:12.190756Z","level":"INFO","fields":{"message":"Scenario:1\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"basicalicebob"}
+{"timestamp":"2024-06-11T12:44:13.716742Z","level":"INFO","fields":{"message":"Scenario:1\n=== Intermediate Balances ===\nAlice: 99998400\nBob: 1000"},"target":"basicalicebob"}
+{"timestamp":"2024-06-11T12:44:13.716762Z","level":"INFO","fields":{"msg":"Scenario:1 ended"},"target":"exec"}
+{"timestamp":"2024-06-11T12:44:15.749340Z","level":"INFO","fields":{"message":"Scenario:1\n=== Intermediate Balances ===\n Alice: 99996800\n Bob: 2000"},"target":"basicalicebob"}
+{"timestamp":"2024-06-11T12:44:17.782356Z","level":"INFO","fields":{"message":"Scenario:1\n=== Final Balances ===\n Alice: 99995200\n Bob: 3000"},"target":"basicalicebob"}
+{"timestamp":"2024-06-11T12:44:17.782596Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":10702,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2024-06-11T12:44:17.782623Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":10702}"},"target":"exec"}
+{"timestamp":"2024-06-11T12:44:17.782658Z","level":"INFO","fields":{"metrics_average_exec_time":"10702"},"target":"exec"}

@@ -1,3 +1,6 @@
 #!/bin/bash
+set -e
+
 FILE_PATH=./docker/build/$1/Dockerfile
+
 ./scripts/docker/build-push-image $FILE_PATH mvlbs $1
