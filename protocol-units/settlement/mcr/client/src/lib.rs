@@ -4,12 +4,12 @@ use tokio_stream::Stream;
 #[cfg(feature = "mock")]
 pub mod mock;
 
-#[cfg(feature = "eth")]
-pub mod eth;
+// #[cfg(feature = "eth")]
+// pub mod eth;
 #[cfg(feature = "eth")]
 pub mod eth_client;
 #[cfg(feature = "eth")]
-mod send_eth_transaction;
+mod send_eth_tx;
 
 type CommitmentStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitment, anyhow::Error>> + Send>>;

@@ -1,7 +1,7 @@
-use crate::send_eth_transaction::InsufficentFunds;
-use crate::send_eth_transaction::SendTransactionErrorRule;
-use crate::send_eth_transaction::UnderPriced;
-use crate::send_eth_transaction::VerifyRule;
+use crate::_send_eth_transaction::InsufficentFunds;
+use crate::_send_eth_transaction::SendTransactionErrorRule;
+use crate::_send_eth_transaction::UnderPriced;
+use crate::_send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use alloy_network::Ethereum;
 use alloy_primitives::Address;
@@ -220,7 +220,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
 
-		crate::send_eth_transaction::send_transaction(
+		crate::_send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
 			self.config.transaction_send_number_retry,
@@ -249,7 +249,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 
 		let call_builder = contract.submitBatchBlockCommitment(eth_block_commitment);
 
-		crate::send_eth_transaction::send_transaction(
+		crate::_send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
 			self.config.transaction_send_number_retry,
