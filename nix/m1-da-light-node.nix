@@ -55,16 +55,20 @@ let
             pkgs.protobuf_26
             # needed by aptos-cached-packages
             pkgs.rustfmt
-        ] ++ pkgs.lib.optionals pkgs.stdenv.isDarwin [
-            # converts between character encodings on MacOS
-            pkgs.libiconv
-        ];
+        ] ++ (pkgs.lib.optionals pkgs.stdenv.isLinux [
+            # provides libudev; required for crate `hidapi` and maybe others
+            pkgs.systemd
+        ]);
 
         buildInputs = [
             pkgs.openssl
-            # provides libudev; required for crate `hidapi` and maybe others
-            pkgs.systemd
-        ];
+        ] ++ (pkgs.lib.optionals pkgs.stdenv.isDarwin [
+            # converts between character encodings on MacOS
+            pkgs.libiconv
+            # MacOS platform APIs
+            pkgs.darwin.IOKit
+            pkgs.darwin.apple_sdk.frameworks.SystemConfiguration
+        ]);
 
         # we have to move the sources recursively to a mutable vendor directory
         # because aptos-cached-packages modifies files outside of `OUT_DIR`.
