@@ -2,7 +2,7 @@ use crate::Runner;
 use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;
-use std::time::Duration;
+use std::{env, time::Duration};
 use tokio::time::sleep;
 use tracing::info;
 
@@ -81,6 +81,12 @@ impl Runner for Local {
         // --gateway.addr 0.0.0.0 \
         // --rpc.addr 0.0.0.0 \
         // --log.level $CELESTIA_LOG_LEVEL
+        let CELESTIA_CUSTOM = format!(
+            "{}:{}", 
+            &config.try_celestia_chain_id()?,
+            &genesis
+        );
+        env::set_var("CELESTIA_CUSTOM", CELESTIA_CUSTOM);
         commander::run_command(
             "celestia",
             &[

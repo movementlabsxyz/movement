@@ -1,9 +1,6 @@
 version: "3"
 
 environment:
-  - CARGO_PROFILE=debug
-  - MOVEMENT_PREBUILT=false
-  - PATH=$PATH:./target/$CARGO_PROFILE
 
 processes:
 
@@ -30,14 +27,14 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      ./scripts/services/wait-for-celestia-light-node/run
+      wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy
 
   m1-da-light-node:
     command: |
-      ./scripts/services/m1-da-light-node/run
+      m1-da-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy

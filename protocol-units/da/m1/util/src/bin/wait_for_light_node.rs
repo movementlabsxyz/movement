@@ -1,9 +1,12 @@
 use celestia_rpc::HeaderClient;
 use m1_da_light_node_util::Config;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let config = Config::try_from_env_toml_file()?;
+	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+	let path = dot_movement.get_path().join("config.toml");
+	let config = Config::try_from_toml_file(&path).unwrap_or_default();
 	let client = config.connect_celestia().await?;
 
 	loop {

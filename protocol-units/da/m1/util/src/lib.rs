@@ -100,7 +100,7 @@ impl Config {
 	}
 
 	/// The default verification mode.
-	const DEFAULT_VERIFICATION_MODE: &'static str = "MofN";
+	const DEFAULT_VERIFICATION_MODE: &'static str = "M_OF_N";
 	pub fn default_verification_mode() -> Option<String> {
 		Some(Self::DEFAULT_VERIFICATION_MODE.to_string())
 	}

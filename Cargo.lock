@@ -6844,6 +6844,7 @@ dependencies = [
  "tonic",
  "tonic-reflection",
  "tonic-web",
+ "tracing",
 ]
 
 [[package]]
