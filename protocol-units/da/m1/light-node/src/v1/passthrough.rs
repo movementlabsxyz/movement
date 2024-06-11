@@ -37,20 +37,22 @@ impl Debug for LightNodeV1 {
 }
 
 impl LightNodeV1Operations for LightNodeV1 {
-	/// Tries to create a new LightNodeV1 instance from the environment variables.
-	async fn try_from_env() -> Result<Self, anyhow::Error> {
-		let config = Config::try_from_env()?;
+	/// Tries to create a new LightNodeV1 instance from the toml config file.
+	async fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
+		let config = Config::try_from_env_toml_file()?;
 		let client = Arc::new(config.connect_celestia().await?);
 
 		Ok(Self {
-			celestia_url: config.celestia_url,
-			celestia_token: config.celestia_token,
-			celestia_namespace: config.celestia_namespace,
+			celestia_url: config.try_celestia_node_url()?.to_string(),
+			celestia_token: config.try_celestia_auth_token()?.to_string(),
+			celestia_namespace: config.try_celestia_namespace()?.clone(),
 			default_client: client.clone(),
-			verification_mode: Arc::new(RwLock::new(config.verification_mode)),
+			verification_mode: Arc::new(RwLock::new(
+				config.try_verification_mode()?.try_into().map_err(|e| anyhow::anyhow!("{}", e))?,
+			)),
 			verifier: Arc::new(Box::new(V1Verifier {
 				client,
-				namespace: config.celestia_namespace.clone(),
+				namespace: config.try_celestia_namespace()?.clone(),
 			})),
 		})
 	}

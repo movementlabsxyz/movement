@@ -11,7 +11,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .unwrap_or_else(|_| EnvFilter::new("info")))
         .init();
 
-    let light_node = LightNodeV1::try_from_env().await?;
+    let light_node = LightNodeV1::try_from_env_toml_file().await?;
 
     // log out the node's configuration with tracing
     tracing::info!("{:?}", light_node);

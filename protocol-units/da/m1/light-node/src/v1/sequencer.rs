@@ -27,10 +27,10 @@ impl Debug for LightNodeV1 {
 }
 
 impl LightNodeV1Operations for LightNodeV1 {
-	async fn try_from_env() -> Result<Self, anyhow::Error> {
+	async fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
 
-		let pass_through = LightNodeV1PassThrough::try_from_env().await?;
+		let pass_through = LightNodeV1PassThrough::try_from_env_toml_file().await?;
 		info!("Initialized pass through for LightNodeV1 in sequencer mode.");
 
 		let memseq = memseq::Memseq::try_move_rocks_from_env()?;

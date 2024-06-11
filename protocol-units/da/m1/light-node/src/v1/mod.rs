@@ -18,7 +18,7 @@ use tonic::transport::Server;
 
 pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone {
 	/// Initializes from environment variables.
-	async fn try_from_env() -> Result<Self, anyhow::Error>;
+	async fn try_from_env_toml_file() -> Result<Self, anyhow::Error>;
 
 	/// Runs the background tasks.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;

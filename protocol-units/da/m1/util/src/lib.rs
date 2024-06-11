@@ -1,10 +1,10 @@
 use std::path::PathBuf;
-
-use anyhow::Context;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use dot_movement::DotMovementPath;
 use serde::{Deserialize, Serialize};
+use m1_da_light_node_grpc::*;
+use anyhow::Context;
 
 /// The configuration for the m1-da-light-node
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -43,6 +43,11 @@ impl Config {
 		Some(Self::DEFAULT_CELESTIA_NODE_URL.to_string())
 	}
 
+	/// Gets a result for the Celestia node URL member.
+	pub fn try_celestia_node_url(&self) -> Result<&str, anyhow::Error> {
+		self.celestia_node_url.as_deref().ok_or(anyhow::anyhow!("No Celestia node URL provided"))
+	}
+
 	/// The default namespace bytes.
 	const DEFAULT_NAMESPACE_BYTES: &'static str = "a673006fb64aa2e5360d";
 	/// Trys to create a default namespace from the default namespace bytes.
@@ -51,9 +56,14 @@ impl Config {
 			.map_err(|e| anyhow::anyhow!("Failed to decode default namespace bytes: {}", e))?;
 		Namespace::new_v0(&namespace_bytes).context("Failed to create default namespace")
 	}
-	/// The default namespace bytes.
+	/// Gets default namespace option.
 	pub fn default_namespace() -> Option<Namespace> {
 		Self::try_default_namespace().ok()
+	}
+
+	/// Gets a result for the namespace member.
+	pub fn try_celestia_namespace(&self) -> Result<&Namespace, anyhow::Error> {
+		self.celestia_namespace.as_ref().ok_or(anyhow::anyhow!("No namespace provided"))
 	}
 
 	/// The default verification mode.
@@ -62,16 +72,44 @@ impl Config {
 		Some(Self::DEFAULT_VERIFICATION_MODE.to_string())
 	}
 
+	/// Gets verification mode str as a result.
+	pub fn try_verification_mode_str(&self) -> Result<&str, anyhow::Error> {
+		self.verification_mode.as_deref().ok_or(anyhow::anyhow!("No verification mode provided"))
+	}
+
+	/// Gets a result for the verification mode member.
+	pub fn try_verification_mode(&self) -> Result<VerificationMode, anyhow::Error> {
+		let verification_mode_str = self.try_verification_mode_str()?;
+		Ok(VerificationMode::from_str_name(verification_mode_str).ok_or(
+			anyhow::anyhow!("Invalid verification mode: {}", verification_mode_str),
+		)?)
+	}
+
+	/// Gets a result for the auth token member.
+	pub fn try_celestia_auth_token(&self) -> Result<&str, anyhow::Error> {
+		self.celestia_auth_token.as_deref().ok_or(anyhow::anyhow!("No Celestia auth token provided"))
+	}
+
 	/// The default sequencer chain id.
 	const DEFAULT_SEQUENCER_CHAIN_ID: &'static str = "test";
 	pub fn default_sequencer_chain_id() -> Option<String> {
 		Some(Self::DEFAULT_SEQUENCER_CHAIN_ID.to_string())
 	}
 
+	/// Gets a result for the sequencer chain id member.
+	pub fn try_sequencer_chain_id(&self) -> Result<&str, anyhow::Error> {
+		self.sequencer_chain_id.as_deref().ok_or(anyhow::anyhow!("No sequencer chain id provided"))
+	}
+
 	/// The default sequencer database path.
 	const DEFAULT_SEQUENCER_DATABASE_PATH: &'static str = "/tmp/sequencer";
 	pub fn default_sequencer_database_path() -> Option<String> {
 		Some(Self::DEFAULT_SEQUENCER_DATABASE_PATH.to_string())
+	}
+
+	/// Gets a result for the sequencer database path member.
+	pub fn try_sequencer_database_path(&self) -> Result<&str, anyhow::Error> {
+		self.sequencer_database_path.as_deref().ok_or(anyhow::anyhow!("No sequencer database path provided"))
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file
@@ -110,12 +148,8 @@ impl Config {
 	/// Connects to a Celestia node using the config
 	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
 
-		let celestia_node_url = self.celestia_node_url.clone().ok_or(
-			anyhow::anyhow!("No Celestia node URL provided"),
-		)?;
-		let celestia_auth_token = self.celestia_auth_token.clone().ok_or(
-			anyhow::anyhow!("No Celestia auth token provided"),
-		)?;
+		let celestia_node_url = self.try_celestia_node_url()?.to_string();
+		let celestia_auth_token = self.try_celestia_auth_token()?.to_string();
 
 		let client =
 			Client::new(
