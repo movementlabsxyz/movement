@@ -36,6 +36,10 @@ async fn pipe_error_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
 
 /// Runs a command, piping its output to stdout and stderr, and returns the stdout output if successful.
 pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
+
+    // print command out with args joined by space
+    println!("Running command: {} {}", command, args.join(" "));
+
     let mut child = Command::new(command)
         .args(args)
         .stdout(Stdio::piped())

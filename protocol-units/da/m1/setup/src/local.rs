@@ -55,7 +55,7 @@ impl Local {
 
         // update the node path with the chain id
         config.celestia_node_path.replace(
-            dot_movement_path.join("celestia").join(celestia_chain_id.clone()).join("bridge").to_str().ok_or(
+            dot_movement_path.join("celestia").join(celestia_chain_id.clone()).join(".celestia-node").to_str().ok_or(
                 anyhow::anyhow!("Failed to convert path to string.")
             )?.to_string()
         );
@@ -131,8 +131,11 @@ impl Local {
 
         // unpack some of the config values
         let celestia_chain_id = config.try_celestia_chain_id()?.to_string().clone();
+        info!("Setting up Celestia for chain id: {}", celestia_chain_id);
         let celestia_app_path = config.try_celestia_app_path()?.to_string().clone();
+        info!("Celestia App Path: {}", celestia_app_path);
         let celestia_node_path = config.try_celestia_node_path()?.to_string().clone();
+        info!("Celestia Node Path: {}", celestia_node_path);
 
         // initialize the celestia app
         info!("Initializing the Celestia App.");
@@ -175,8 +178,8 @@ impl Local {
         // celestia bridge auth admin --node.store ${CELESTIA_NODE_PATH}
         info!("Getting the auth token.");
         let auth_token = run_command(
-            "celestia-bridge",
-            &["auth", "admin", "--node.store", &celestia_node_path],
+            "celestia",
+            &["bridge", "auth", "admin", "--node.store", &celestia_node_path],
         ).await?.trim().to_string();
         config.celestia_auth_token.replace(auth_token.clone());
 

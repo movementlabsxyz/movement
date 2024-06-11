@@ -66,14 +66,14 @@ impl Runner for Local {
         info!("Initializing Celestia Bridge with node store at {}", node_store);
         // celestia bridge init --node.store $CELESTIA_NODE_PATH
         commander::run_command(
-            "celestia-bridge",
+            "celestia",
             &[
-                "init",
+                "bridge", "init",
                 "--node.store", &node_store,
             ],
         ).await?;
 
-        info!("Starting celestia-bridge.");
+        info!("Starting celestia bridge.");
         // celestia bridge start \
         // --node.store $CELESTIA_NODE_PATH --gateway \
         // --core.ip 0.0.0.0 \
@@ -82,9 +82,9 @@ impl Runner for Local {
         // --rpc.addr 0.0.0.0 \
         // --log.level $CELESTIA_LOG_LEVEL
         commander::run_command(
-            "celestia-bridge",
+            "celestia",
             &[
-                "start",
+                "bridge", "start",
                 "--node.store", &config.try_celestia_node_path()?,
                 "--gateway",
                 "--core.ip", "0.0.0.0",
