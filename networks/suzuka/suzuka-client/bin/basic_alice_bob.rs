@@ -6,10 +6,7 @@ use aptos_sdk::{
 };
 use std::str::FromStr;
 use std::sync::Arc;
-use suzuka_client::load_soak_testing::execute_test;
-use suzuka_client::load_soak_testing::init_test;
-use suzuka_client::load_soak_testing::ExecutionConfig;
-use suzuka_client::load_soak_testing::Scenario;
+use suzuka_client::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
 use url::Url;
 
 fn main() {
@@ -41,13 +38,9 @@ impl BasicScenario {
 	}
 }
 
-// Scenario trait implementation.
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
 	async fn run(self: Box<Self>) -> Result<()> {
-		// let _ =
-		// 	tokio::time::sleep(tokio::time::Duration::from_millis(1000 * (self.id as u64))).await;
-
 		let suzuka_config = maptos_execution_util::config::Config::try_from_env()
 			.context("Failed to create the suzuka_config")?;
 		let node_url = Url::from_str(
@@ -62,15 +55,12 @@ impl Scenario for BasicScenario {
 		)
 		.unwrap();
 
-		// :!:>section_1a
 		let rest_client = Client::new(node_url.clone());
 		let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone()); // <:!:section_1a
 
-		// :!:>section_1b
 		let coin_client = CoinClient::new(&rest_client); // <:!:section_1b
 
 		// Create two accounts locally, Alice and Bob.
-		// :!:>section_2
 		let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
 
@@ -85,7 +75,6 @@ impl Scenario for BasicScenario {
 		tracing::info!("{} Before alice fund", self.id);
 		self.log_exec_info(&format!("{} Before alice fund", self.id));
 		// Create the accounts on chain, but only fund Alice.
-		// :!:>section_3
 		faucet_client.fund(alice.address(), 100_000_000).await?;
 		tracing::info!("{} Before Bod create_account", self.id);
 		self.log_exec_info(&format!("{} Before Bod create_account", self.id));
@@ -158,7 +147,6 @@ impl Scenario for BasicScenario {
 		);
 
 		// Have Alice send Bob some more coins.
-		// :!:>section_5
 		let txn_hash = coin_client
 			.transfer(&mut alice, bob.address(), 1_000, None)
 			.await

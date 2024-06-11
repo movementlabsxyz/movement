@@ -51,21 +51,10 @@ pub fn init_test(config: &ExecutionConfig) -> Result<(), std::io::Error> {
 	Ok(())
 }
 
-/// Define how the test will be run:
-/// * kind: Type of test to run
-/// * logfile_path: the file where log WARN and ERROR are written
-/// * execfile_path: File where execution data are written to be processed later.
-/// * define the number of started scenario per client. nb_scenarios / nb_scenario_per_client define the number of client.
-#[derive(Clone, Debug)]
-pub struct ExecutionConfig {
-	pub kind: TestKind,
-	pub logfile: String,
-	pub execfile: String,
-	pub nb_scenario_per_client: usize,
 /// Defines how the test will be run:
 #[derive(Clone, Debug)]
 pub struct ExecutionConfig {
-        /// Type of test to run
+	/// Type of test to run
 	pub kind: TestKind,
 	/// The path to the file where log WARN and ERROR are written
 	pub logfile: String,
@@ -98,8 +87,8 @@ impl ExecutionConfig {
 impl Default for ExecutionConfig {
 	fn default() -> Self {
 		let nb_scenarios: usize = std::env::var("LOADTEST_NB_SCENARIO")
-			.unwrap_or("10".to_string())
-			.parse()
+			.map_err(|err| err.to_string())
+			.and_then(|val| val.parse().map_err(|err: std::num::ParseIntError| err.to_string()))
 			.unwrap_or(10);
 		let nb_scenario_per_client: usize = std::env::var("LOADTEST_NB_SCENARIO_PER_CLIENT")
 			.unwrap_or("2".to_string())
@@ -115,13 +104,11 @@ impl Default for ExecutionConfig {
 }
 
 /// Define the type of test to run:
-/// * Load: try to run all scenario (nb_scenarios) concurrently
-/// * Soak: start min_scenarios at first then increase the number to max_scenarios then decrease and do nb_clycle during duration
 #[derive(Clone, Debug)]
 pub enum TestKind {
-	Load {
-		nb_scenarios: usize,
-	},
+	/// Load: try to run all scenario (nb_scenarios) concurrently
+	Load { nb_scenarios: usize },
+	/// Soak: start min_scenarios at first then increase the number to max_scenarios then decrease and do nb_clycle during duration
 	Soak {
 		min_scenarios: usize,
 		max_scenarios: usize,
@@ -210,7 +197,10 @@ impl TestClient {
 		create_scanario: Arc<scenario::CreateScenarioFn>,
 	) -> ClientExecResult {
 		// Start the Tokio runtime on the current thread
-		let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
+		let rt = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+			Ok(rt) => rt,
+			Err(err) => panic!("Tokio RT runtime fail to start because of this error:{err}"),
+		};
 		let scenario_results = match kind {
 			TestKind::Load { .. } => rt.block_on(self.load_runner(create_scanario.clone())),
 			TestKind::Soak { min_scenarios, max_scenarios, duration, nb_clycle } => {
