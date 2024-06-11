@@ -7928,20 +7928,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "load-soak-hey-partners"
-version = "0.3.0"
-dependencies = [
- "itertools 0.12.1",
- "rayon",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
 name = "multer"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
