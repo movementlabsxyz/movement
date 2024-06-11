@@ -48,6 +48,7 @@ impl Scenario for BasicScenario {
 		// let _ =
 		// 	tokio::time::sleep(tokio::time::Duration::from_millis(1000 * (self.id as u64))).await;
 
+<<<<<<< HEAD
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
 		let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
@@ -79,6 +80,21 @@ impl Scenario for BasicScenario {
 			.as_str(),
 		)
 		.expect("Faucet url in Config is badly formated");
+=======
+		let suzuka_config = maptos_execution_util::config::Config::try_from_env()
+			.context("Failed to create the suzuka_config")?;
+		let node_url = Url::from_str(
+			format!("http://{}", suzuka_config.aptos_config.aptos_rest_listen_url.as_str())
+				.as_str(),
+		)
+		.unwrap();
+
+		let faucet_url = Url::from_str(
+			format!("http://{}", suzuka_config.aptos_config.aptos_faucet_listen_url.as_str())
+				.as_str(),
+		)
+		.unwrap();
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
 
 		// :!:>section_1a
 		let rest_client = Client::new(node_url.clone());

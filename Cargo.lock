@@ -12584,6 +12584,7 @@ dependencies = [
  "anyhow",
  "aptos-sdk",
 <<<<<<< HEAD
+<<<<<<< HEAD
  "aptos-types",
  "async-trait",
 <<<<<<< HEAD
@@ -12602,6 +12603,9 @@ dependencies = [
  "commander",
  "dot-movement",
 >>>>>>> 342de5ee (test impl before integration in process-compose)
+=======
+ "async-trait",
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
  "futures",
  "itertools 0.12.1",
  "maptos-execution-util",
@@ -12609,6 +12613,7 @@ dependencies = [
  "once_cell",
  "rand 0.7.3",
  "rayon",
+<<<<<<< HEAD
 <<<<<<< HEAD
  "reqwest 0.12.5",
  "serde",
@@ -12620,6 +12625,10 @@ dependencies = [
  "serde_json",
 >>>>>>> 342de5ee (test impl before integration in process-compose)
  "suzuka-config",
+=======
+ "serde",
+ "serde_json",
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
  "thiserror",
  "tokio",
  "tracing",

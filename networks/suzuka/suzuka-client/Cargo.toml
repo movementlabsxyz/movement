@@ -16,6 +16,7 @@ path = "bin/demoscenario.rs"
 [[bin]]
 name = "basicalicebob"
 path = "bin/basicalicebob.rs"
+
 [[bin]]
 name = "malicious_test"
 path = "bin/malicious/malicious_test.rs"
@@ -27,9 +28,9 @@ name = "suzuka-client-e2e-simple-interaction"
 path = "src/bin/e2e/simple_interaction.rs"
 
 [dependencies]
+anyhow = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
-anyhow = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true, default-features = true }
@@ -50,26 +51,6 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
 url = { workspace = true }
 reqwest = { workspace = true }
-mcr-settlement-client = { workspace = true }
-suzuka-config = { workspace = true }
-dot-movement = { workspace = true }
-
-rayon = { workspace = true }
-serde  = { workspace = true, features = ["derive"] }
-serde_json  = { workspace = true }
-thiserror = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
-tracing = { workspace = true }
-url = { workspace = true }
-bcs = "0.1.6"
-
-commander = { workspace = true }
-buildtime-helpers = { workspace = true }
-
-[dev-dependencies]
-reqwest = { workspace = true }
-
-maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
