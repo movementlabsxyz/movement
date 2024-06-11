@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 name = "demo_scenario"
 path = "bin/demo_scenario.rs"
 [[bin]]
-name = "basicalicebob"
+name = "basic_alice_bob"
 path = "bin/basic_alice_bob.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
