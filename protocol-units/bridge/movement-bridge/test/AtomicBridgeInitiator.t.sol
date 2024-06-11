@@ -49,7 +49,13 @@ contract AtomicBridgeInitiatorTest is Test {
 
     function testCompleteBridgeTransfer() public {
         bytes32 secret = "secret";
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(amount, originator, recipient, hashLock, timeLock);
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
+          amount, 
+          originator, 
+          recipient, 
+          hashLock, 
+          timeLock
+        );
 
         vm.startPrank(recipient);
         atomicBridgeInitiator.completeBridgeTransfer(bridgeTransferId, secret);
@@ -57,7 +63,14 @@ contract AtomicBridgeInitiatorTest is Test {
         (bool exists,,,,,) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
         assertFalse(exists);
 
-        (bool completedExists, uint completedAmount, address completedOriginator, address completedRecipient, bytes32 completedHashLock, uint completedTimeLock) = atomicBridgeInitiator.getCompletedBridgeTransferDetail(bridgeTransferId);
+        (
+          bool completedExists, 
+          uint completedAmount, 
+          address completedOriginator, 
+          address completedRecipient, 
+          bytes32 completedHashLock, 
+          uint completedTimeLock 
+        ) = atomicBridgeInitiator.getCompletedBridgeTransferDetail(bridgeTransferId);
         assertTrue(completedExists);
         assertEq(completedAmount, amount);
         assertEq(completedOriginator, originator);
@@ -69,7 +82,13 @@ contract AtomicBridgeInitiatorTest is Test {
     }
 
     function testRefundBridgeTransfer() public {
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(amount, originator, recipient, hashLock, timeLock);
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
+          amount, 
+          originator, 
+          recipient, 
+          hashLock, 
+          timeLock
+        );
 
         vm.warp(block.timestamp + timeLock + 1);
         vm.startPrank(originator);
