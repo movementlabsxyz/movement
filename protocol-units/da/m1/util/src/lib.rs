@@ -60,8 +60,8 @@ impl Config {
 	}
 
 	/// Gets a result for the Celestia node URL member.
-	pub fn try_celestia_node_url(&self) -> Result<&str, anyhow::Error> {
-		self.celestia_node_url.as_deref().ok_or(anyhow::anyhow!("No Celestia node URL provided"))
+	pub fn try_celestia_node_url(&self) -> Result<String, anyhow::Error> {
+		self.celestia_node_url.as_ref().ok_or(anyhow::anyhow!("No Celestia node URL provided")).map(|s| s.to_string())
 	}
 
 	/// The default namespace bytes.
@@ -78,8 +78,8 @@ impl Config {
 	}
 
 	/// Gets a result for the namespace member.
-	pub fn try_celestia_namespace(&self) -> Result<&Namespace, anyhow::Error> {
-		self.celestia_namespace.as_ref().ok_or(anyhow::anyhow!("No namespace provided"))
+	pub fn try_celestia_namespace(&self) -> Result<Namespace, anyhow::Error> {
+		self.celestia_namespace.as_ref().ok_or(anyhow::anyhow!("No Celestia namespace provided")).map(|n| n.clone())
 	}
 
 	/// The default verification mode.
@@ -89,14 +89,14 @@ impl Config {
 	}
 
 	/// Gets verification mode str as a result.
-	pub fn try_verification_mode_str(&self) -> Result<&str, anyhow::Error> {
-		self.verification_mode.as_deref().ok_or(anyhow::anyhow!("No verification mode provided"))
+	pub fn try_verification_mode_str(&self) -> Result<String, anyhow::Error> {
+		self.verification_mode.as_ref().ok_or(anyhow::anyhow!("No verification mode provided")).map(|s| s.to_string())
 	}
 
 	/// Gets a result for the verification mode member.
 	pub fn try_verification_mode(&self) -> Result<VerificationMode, anyhow::Error> {
 		let verification_mode_str = self.try_verification_mode_str()?;
-		Ok(VerificationMode::from_str_name(verification_mode_str).ok_or(
+		Ok(VerificationMode::from_str_name(verification_mode_str.as_str()).ok_or(
 			anyhow::anyhow!("Invalid verification mode: {}", verification_mode_str),
 		)?)
 	}
@@ -115,8 +115,8 @@ impl Config {
 	}
 
 	/// Gets a result for the memseq config member.
-	pub fn try_memseq_config(&self) -> Result<&memseq_util::Config, anyhow::Error> {
-		self.memseq_config.as_ref().ok_or(anyhow::anyhow!("No memseq config provided"))
+	pub fn try_memseq_config(&self) -> Result<memseq_util::Config, anyhow::Error> {
+		self.memseq_config.as_ref().ok_or(anyhow::anyhow!("No memseq config provided")).map(|c| c.clone())
 	}
 
 	/// The default service address.
@@ -126,23 +126,23 @@ impl Config {
 	}
 
 	/// Gets a result for the service address member.
-	pub fn try_service_address(&self) -> Result<&str, anyhow::Error> {
-		self.service_address.as_deref().ok_or(anyhow::anyhow!("No service address provided"))
+	pub fn try_service_address(&self) -> Result<String, anyhow::Error> {
+		self.service_address.as_ref().ok_or(anyhow::anyhow!("No service address provided")).map(|s| s.to_string())
 	}
 
 	/// Gets a result for the celestia app path member.
-	pub fn try_celestia_app_path(&self) -> Result<&str, anyhow::Error> {
-		self.celestia_app_path.as_deref().ok_or(anyhow::anyhow!("No Celestia app path provided"))
+	pub fn try_celestia_app_path(&self) -> Result<String, anyhow::Error> {
+		self.celestia_app_path.as_ref().ok_or(anyhow::anyhow!("No Celestia app path provided")).map(|s| s.to_string())
 	}
 
 	/// Gets a result for the celestia chain id member.
-	pub fn try_celestia_chain_id(&self) -> Result<&str, anyhow::Error> {
-		self.celestia_chain_id.as_deref().ok_or(anyhow::anyhow!("No Celestia chain id provided"))
+	pub fn try_celestia_chain_id(&self) -> Result<String, anyhow::Error> {
+		self.celestia_chain_id.as_ref().ok_or(anyhow::anyhow!("No Celestia chain id provided")).map(|s| s.to_string())
 	}
 
 	/// Gets a result for the celestia node path member.
-	pub fn try_celestia_node_path(&self) -> Result<&str, anyhow::Error> {
-		self.celestia_node_path.as_deref().ok_or(anyhow::anyhow!("No Celestia node path provided"))
+	pub fn try_celestia_node_path(&self) -> Result<String, anyhow::Error> {
+		self.celestia_node_path.as_ref().ok_or(anyhow::anyhow!("No Celestia node path provided")).map(|s| s.to_string())
 	}
 
 	/// Try to read the location of the config file from the environment and then read the config from the file

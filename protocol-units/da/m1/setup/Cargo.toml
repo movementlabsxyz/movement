@@ -10,8 +10,8 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [[bin]]
-name = "setup-celestia"
-path = "src/bin/setup-celestia.rs"
+name = "m1-da-light-node-setup"
+path = "src/bin/setup.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -27,6 +27,9 @@ m1-da-light-node-util = { workspace = true }
 dot-movement = { workspace = true }
 rand = { workspace = true }
 hex = { workspace = true }
+celestia-rpc = { workspace = true }
+celestia-types = { workspace = true }
+async-recursion = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

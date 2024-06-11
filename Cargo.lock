@@ -2858,6 +2858,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-recursion"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b43422f69d8ff38f95f1b2bb76517c91589a924d1559a0e935d7c8ce0274c11"
+dependencies = [
+ "proc-macro2 1.0.82",
+ "quote 1.0.36",
+ "syn 2.0.63",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6762,6 +6773,9 @@ name = "m1-da-light-node-setup"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
  "commander",
  "dot-movement",
  "hex",
