@@ -346,8 +346,8 @@ impl Executor {
 		let app = Route::new()
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
-			.nest("/movement/v1/health", health)
-			.nest("/movement/v1/state-root-hash/:blockheight", state_root_hash)
+			.set("/movement/v1/health", health)
+			.set("/movement/v1/state-root-hash/:blockheight", state_root_hash)
 			.with(cors);
 
 		Server::new(TcpListener::bind(self.aptos_config.aptos_rest_listen_url.clone()))
