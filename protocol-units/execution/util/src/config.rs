@@ -107,6 +107,7 @@ pub mod aptos {
 				(env_vars::PRIVATE_KEY, &self.private_key.to_encoded_string()?),
 				(env_vars::PUBLIC_KEY, &self.public_key.to_encoded_string()?),
 			] {
+				out.push_str("export ");
 				out.push_str(name);
 				out.push('=');
 				out.push_str(val);
@@ -144,5 +145,19 @@ impl Config {
 			self.aptos.write_bash_export_string()?,
 			self.light_node.write_bash_export_string()?
 		))
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_aptos_write_bash_export_string() -> anyhow::Result<()> {
+		let config = aptos::Config::try_from_env()?;
+		let bash_str = config.write_bash_export_string()?;
+		// println!("{}", bash_str);
+		assert!(bash_str.lines().any(|line| line.starts_with("export MAPTOS_PRIVATE_KEY=")));
+		Ok(())
 	}
 }
