@@ -211,6 +211,7 @@ x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
 
 async-recursion = "1.1.1"
+reqwest = "0.12.4"
 
 
 [workspace.lints.rust]

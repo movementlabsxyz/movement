@@ -54,7 +54,7 @@ impl Local {
 }
 
 impl Runner for Local {
-    fn run(
+    async fn run(
         &self,
         dot_movement: dot_movement::DotMovement,
         config: m1_da_light_node_util::Config,
@@ -89,8 +89,7 @@ impl Runner for Local {
                 "--core.ip", "0.0.0.0",
                 "--keyring.accname", "validator",
                 "--gateway.addr", "0.0.0.0",
-                "--rpc.addr", "0.0.0.0",
-                "--log.level", &config.try_celestia_log_level()?,
+                "--rpc.addr", "0.0.0.0"
             ],
         ).await?;
         

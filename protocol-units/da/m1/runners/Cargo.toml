@@ -10,8 +10,12 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [[bin]]
-name = "wait-for-celestia-light-node"
-path = "src/bin/wait_for_light_node.rs"
+name = "celestia-appd"
+path = "src/bin/celestia-appd.rs"
+
+[[bin]]
+name = "celestia-bridge"
+path = "src/bin/celestia-bridge.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -27,7 +31,7 @@ m1-da-light-node-util = { workspace = true }
 dot-movement = { workspace = true }
 rand = { workspace = true }
 hex = { workspace = true }
-reqwest = { workspace = true, features = ["json", "tokio"] }
+reqwest = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
