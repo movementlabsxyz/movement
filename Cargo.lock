@@ -11150,15 +11150,30 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
+<<<<<<< HEAD
  "dot-movement",
+=======
+ "async-trait",
+ "futures",
+ "itertools 0.12.1",
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
  "maptos-execution-util",
  "mcr-settlement-client",
  "once_cell",
  "rand 0.7.3",
+<<<<<<< HEAD
  "reqwest 0.12.4",
  "serde_json",
  "suzuka-config",
+=======
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
  "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
