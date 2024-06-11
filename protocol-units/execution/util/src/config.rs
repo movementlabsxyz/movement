@@ -63,10 +63,10 @@ pub mod aptos {
 				std::env::var(env_vars::OPT_LISTEN_ADDR).unwrap_or("0.0.0.0:30731".to_string());
 
 			let fin_listen_url =
-				std::env::var(env_vars::FIN_LISTEN_ADDR).unwrap_or("0.0.0.0:30731".to_string());
+				std::env::var(env_vars::FIN_LISTEN_ADDR).unwrap_or("0.0.0.0:30732".to_string());
 
 			let faucet_listen_url =
-				std::env::var(env_vars::FAUCET_LISTEN_ADDR).unwrap_or("0.0.0.0:30732".to_string());
+				std::env::var(env_vars::FAUCET_LISTEN_ADDR).unwrap_or("0.0.0.0:30733".to_string());
 
 			let private_key = match std::env::var(env_vars::PRIVATE_KEY) {
 				Ok(private_key) => Ed25519PrivateKey::from_encoded_string(private_key.as_str())
