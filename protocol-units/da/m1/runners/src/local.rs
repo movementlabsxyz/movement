@@ -89,9 +89,9 @@ impl Local {
         run_command("celestia-appd", &["collect-gentxs", "--home", &celestia_app_path]).await?;
 
         info!("Setting up sed");
-        self.setup_sed(&celestia_app_path).await?;
+        self.setup_sed(&celestia_node_path).await?;
 
-        info!("Copying keys from Celestia App to Celestia Node.");
+        info!("Copyin keys from Celestia App to Celestia Node.");
         self.copy_keys(&celestia_app_path, &celestia_node_path).await?;
 
         Ok(())

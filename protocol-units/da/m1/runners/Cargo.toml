@@ -1,5 +1,5 @@
 [package]
-name = "m1-da-light-node-setup"
+name = "m1-da-light-node-runners"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }
@@ -10,8 +10,8 @@ publish = { workspace = true }
 rust-version = { workspace = true }
 
 [[bin]]
-name = "setup-celestia"
-path = "src/bin/setup-celestia.rs"
+name = "wait-for-celestia-light-node"
+path = "src/bin/wait_for_light_node.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

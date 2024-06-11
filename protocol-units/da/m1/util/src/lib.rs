@@ -45,6 +45,10 @@ pub struct Config {
 	/// This does not have a default because if it is needed, a default is generally not appropriate.
 	pub celestia_node_path: Option<String>,
 
+	/// The celestia validator address for when that is being orchestrated locally
+	/// This does not have a default because if it is needed, a default is generally not appropriate.
+	pub celestia_validator_address: Option<String>,
+
 }
 
 impl Config {
@@ -214,6 +218,7 @@ pub mod test {
 			celestia_app_path: None,
 			celestia_chain_id: None,
 			celestia_node_path: None,
+			celestia_validator_address: None,
 		};
 
 		let temp_directory = tempfile::tempdir()?;

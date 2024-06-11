@@ -3956,6 +3956,7 @@ name = "commander"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "futures",
  "tokio",
 ]
 
@@ -6736,6 +6737,24 @@ dependencies = [
  "tonic-build",
  "tonic-reflection",
  "tonic-web",
+]
+
+[[package]]
+name = "m1-da-light-node-runners"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "commander",
+ "dot-movement",
+ "hex",
+ "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
