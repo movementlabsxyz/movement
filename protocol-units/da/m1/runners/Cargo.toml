@@ -27,6 +27,7 @@ m1-da-light-node-util = { workspace = true }
 dot-movement = { workspace = true }
 rand = { workspace = true }
 hex = { workspace = true }
+reqwest = { workspace = true, features = ["json", "tokio"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }
