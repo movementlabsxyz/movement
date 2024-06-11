@@ -10,7 +10,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		let head = client.header_network_head().await?;
 		let height: u64 = head.height().into();
 		let sync_state = client.header_sync_state().await?;
-		println!("Current height: {}, Synced height: {}", height, sync_state.height);
+		info!("Current height: {}, Synced height: {}", height, sync_state.height);
 		if height <= sync_state.height {
 			break;
 		}
