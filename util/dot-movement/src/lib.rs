@@ -1,9 +1,9 @@
 pub mod path;
 
 #[derive(Debug)]
-pub struct DotMovementPath(std::path::PathBuf);
+pub struct DotMovement(std::path::PathBuf);
 
-impl DotMovementPath {
+impl DotMovement {
 
     const DEFAULT_DOT_MOVEMENT_PATH_VAR_NAME: &'static str = "DOT_MOVEMENT_PATH";
 
@@ -23,7 +23,7 @@ impl DotMovementPath {
 
 }
 
-impl Into<std::path::PathBuf> for DotMovementPath {
+impl Into<std::path::PathBuf> for DotMovement {
     fn into(self) -> std::path::PathBuf {
         self.0
     }
@@ -35,14 +35,14 @@ pub mod test {
 
     #[test]
     fn test_dot_movement_path() {
-        let path = DotMovementPath::new("/tmp");
+        let path = DotMovement::new("/tmp");
         assert_eq!(path.get_path(), std::path::Path::new("/tmp"));
     }
 
     #[test]
     fn test_try_from_env() -> Result<(), anyhow::Error> {
         std::env::set_var("DOT_MOVEMENT_PATH", "/tmp");
-        let path = DotMovementPath::try_from_env()?;
+        let path = DotMovement::try_from_env()?;
         assert_eq!(path.get_path(), std::path::Path::new("/tmp"));
         Ok(())
     }

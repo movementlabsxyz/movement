@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
-use dot_movement::DotMovementPath;
+use dot_movement::DotMovement;
 use serde::{Deserialize, Serialize};
 use m1_da_light_node_grpc::*;
 use anyhow::Context;
@@ -32,6 +32,18 @@ pub struct Config {
 	/// The service address string
 	#[serde(default = "Config::default_service_address")]
 	pub service_address: Option<String>,
+
+	/// The celestia app path for when that is being orchestrated locally
+	/// This does not have a default because if it is needed, a default is generally not appropriate.
+	pub celestia_app_path: Option<String>,
+
+	/// The celestia chain id for when that is being orchestrated locally
+	/// This does not have a default because if it is needed, a default is generally not appropriate.
+	pub celestia_chain_id: Option<String>,
+
+	/// The celestia node path for when that is being orchestrated locally
+	/// This does not have a default because if it is needed, a default is generally not appropriate.
+	pub celestia_node_path: Option<String>,
 
 }
 
@@ -114,10 +126,25 @@ impl Config {
 		self.service_address.as_deref().ok_or(anyhow::anyhow!("No service address provided"))
 	}
 
+	/// Gets a result for the celestia app path member.
+	pub fn try_celestia_app_path(&self) -> Result<&str, anyhow::Error> {
+		self.celestia_app_path.as_deref().ok_or(anyhow::anyhow!("No Celestia app path provided"))
+	}
+
+	/// Gets a result for the celestia chain id member.
+	pub fn try_celestia_chain_id(&self) -> Result<&str, anyhow::Error> {
+		self.celestia_chain_id.as_deref().ok_or(anyhow::anyhow!("No Celestia chain id provided"))
+	}
+
+	/// Gets a result for the celestia node path member.
+	pub fn try_celestia_node_path(&self) -> Result<&str, anyhow::Error> {
+		self.celestia_node_path.as_deref().ok_or(anyhow::anyhow!("No Celestia node path provided"))
+	}
+
 	/// Try to read the location of the config file from the environment and then read the config from the file
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
 		
-		let path = DotMovementPath::try_from_env()?;
+		let path = DotMovement::try_from_env()?;
 		let config = Self::try_from_toml_file(&path.into())?;
 		Ok(config)
 
@@ -136,7 +163,7 @@ impl Config {
 
 	/// Try to write the config file to the location specified in the environment
 	pub fn try_write_to_env_toml_file(&self) -> Result<(), anyhow::Error> {
-		let path = DotMovementPath::try_from_env()?;
+		let path = DotMovement::try_from_env()?;
 		self.try_write_to_toml_file(&path.into())
 	}
 
@@ -184,6 +211,9 @@ pub mod test {
 			verification_mode: Config::default_verification_mode(),
 			memseq_config : Config::default_memseq_config(),
 			service_address: Config::default_service_address(),
+			celestia_app_path: None,
+			celestia_chain_id: None,
+			celestia_node_path: None,
 		};
 
 		let temp_directory = tempfile::tempdir()?;

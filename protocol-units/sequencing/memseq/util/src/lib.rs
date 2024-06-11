@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use dot_movement::DotMovementPath;
+use dot_movement::DotMovement;
 use serde::{Deserialize, Serialize};
 
 /// The configuration for the MemSeq sequencer
@@ -43,7 +43,7 @@ impl Config {
 	/// Try to read the location of the config file from the environment and then read the config from the file
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
 		
-		let path = DotMovementPath::try_from_env()?;
+		let path = DotMovement::try_from_env()?;
 		let config = Self::try_from_toml_file(&path.into())?;
 		Ok(config)
 
@@ -62,7 +62,7 @@ impl Config {
 
 	/// Try to write the config file to the location specified in the environment
 	pub fn try_write_to_env_toml_file(&self) -> Result<(), anyhow::Error> {
-		let path = DotMovementPath::try_from_env()?;
+		let path = DotMovement::try_from_env()?;
 		self.try_write_to_toml_file(&path.into())
 	}
 

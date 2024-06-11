@@ -68,6 +68,7 @@ mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 movement-types = { path = "util/movement-types" }
 ## dot movement
 dot-movement = { path = "util/dot-movement" }
+commander = { path = "util/commander" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump

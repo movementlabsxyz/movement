@@ -3952,6 +3952,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "commander"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "tokio",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6728,6 +6736,24 @@ dependencies = [
  "tonic-build",
  "tonic-reflection",
  "tonic-web",
+]
+
+[[package]]
+name = "m1-da-light-node-setup"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "commander",
+ "dot-movement",
+ "hex",
+ "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
