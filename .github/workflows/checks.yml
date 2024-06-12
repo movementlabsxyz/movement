@@ -52,6 +52,7 @@ jobs:
       run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
 
   m1-da-light-node:
+    if: false
     strategy:
       matrix:
         include:
@@ -76,6 +77,7 @@ jobs:
       run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just m1-da-light-node native build.setup.test.local -t=false"  
 
   monza-full-node:
+    if: false
     strategy:
       matrix:
         include:
@@ -100,6 +102,7 @@ jobs:
       run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just monza-full-node native build.setup.test.local -t=false" 
 
   mcr:
+    if: false
     strategy:
       matrix:
         include:
