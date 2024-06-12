@@ -7132,7 +7132,9 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
+ "dot-movement",
  "maptos-execution-util",
+ "monza-config",
  "once_cell",
  "rand 0.7.3",
  "tokio",
@@ -7211,6 +7213,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "monza-faucet-service"
+version = "2.0.1"
+dependencies = [
+ "anyhow",
+ "aptos-config",
+ "aptos-faucet-core",
+ "aptos-logger",
+ "aptos-sdk",
+ "clap 4.5.4",
+ "dot-movement",
+ "suzuka-config",
+ "tokio",
+]
+
+[[package]]
 name = "monza-fina-executor"
 version = "0.3.0"
 dependencies = [
@@ -7276,6 +7293,30 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "monza-full-node-setup"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
+ "commander",
+ "dot-movement",
+ "hex",
+ "m1-da-light-node-setup",
+ "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "suzuka-config",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]

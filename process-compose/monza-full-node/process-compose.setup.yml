@@ -4,36 +4,7 @@ environment:
 
 processes:
 
-  m1-da-light-node-setup:
-    command: |
-      ./scripts/services/m1-da-light-node/setup
-    depends_on:
-      build:
-        condition: process_completed_successfully
-
-  monza-setup:
-    command: |
-      ./scripts/services/monza-full-node/setup
-    depends_on:
-      build:
-        condition: process_completed_successfully
-      m1-da-light-node-setup:
-        condition: process_completed_successfully
-
-  celestia-setup:
-    command: |
-      ./scripts/services/celestia/setup
-    depends_on:
-      build:
-        condition: process_completed_successfully
-
   setup:
     command: |
-      exit 0
-    depends_on:
-      monza-setup:
-        condition: process_completed_successfully
-      celestia-setup:
-        condition: process_completed_successfully
-
+      cargo run --bin monza-full-node-setup
     

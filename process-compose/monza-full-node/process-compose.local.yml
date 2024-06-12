@@ -6,7 +6,7 @@ processes:
 
   celestia-node-appd:
     command: |
-      ./scripts/services/celestia/celestia-local-appd
+      cargo run --bin m1-da-light-node-celestia-appd
     readiness_probe:
       exec:
         command: echo "true"
@@ -16,7 +16,7 @@ processes:
 
   celestia-bridge:
     command: |
-      ./scripts/services/celestia/celestia-local-bridge
+      cargo run --bin m1-da-light-node-celestia-bridge
     readiness_probe:
       exec:
         command: echo "true"

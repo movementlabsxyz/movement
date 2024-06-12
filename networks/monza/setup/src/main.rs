@@ -1,4 +1,4 @@
-use suzuka_full_node_setup::{
+use monza_full_node_setup::{
     MonzaFullNodeSetupOperations,
     local::Local,
 };

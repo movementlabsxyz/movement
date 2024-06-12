@@ -1,10 +1,6 @@
 version: "3"
 
 environment:
-  - DOT_MOVEMENT=./.movement
-  - CARGO_PROFILE=debug
-  - MOVEMENT_PREBUILT=false
-  - PATH=$PATH:./target/$CARGO_PROFILE
 
 processes:
 
@@ -28,14 +24,14 @@ processes:
 
   celestia-light-node-synced:
     command: |
-      ./scripts/services/wait-for-celestia-light-node/run
+      wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy
 
   m1-da-light-node:
     command: |
-      ./scripts/services/m1-da-light-node/run
+      m1-da-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy
@@ -45,7 +41,7 @@ processes:
 
   monza-full-node:
     command: |
-      ./scripts/services/monza-full-node/run
+      monza-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy
@@ -56,7 +52,7 @@ processes:
 
   monza-faucet:
     command : |
-      ./scripts/services/monza-faucet/run
+      monza-faucet-service run-simple
     depends_on:
       monza-full-node:
         condition: process_healthy

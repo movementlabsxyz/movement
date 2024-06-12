@@ -9,10 +9,6 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
-[[bin]]
-name = "suzuka-full-node-setup"
-path = "src/bin/setup.rs"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

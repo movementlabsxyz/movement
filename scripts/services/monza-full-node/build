@@ -2,9 +2,13 @@
 set -e
 
 echo "Building monza-config..."
-cargo build $CARGO_PROFILE_FLAGS --bin monza-config
+cargo build $CARGO_PROFILE_FLAGS --bin monza-full-node-setup
 echo "Built monza-config!"
 
 echo "Building monza-full-node..."
 cargo build $CARGO_PROFILE_FLAGS -p monza-full-node
 echo "Built monza-full-node!"
+
+echo "Building monza-faucet-service..."
+cargo build $CARGO_PROFILE_FLAGS -p monza-faucet-service
+echo "Built monza-faucet-service!"

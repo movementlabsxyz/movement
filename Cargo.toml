@@ -15,9 +15,7 @@ members = [
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
-    "networks/monza/monza-client",
-    "networks/monza/monza-config",
-    "networks/monza/monza-full-node",
+    "networks/monza/*",
     "networks/suzuka/*",
 ]
 
