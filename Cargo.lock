@@ -10949,9 +10949,10 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
- "maptos-execution-util",
+ "dot-movement",
  "once_cell",
  "rand 0.7.3",
+ "suzuka-config",
  "tokio",
  "url",
 ]
