@@ -11088,6 +11088,7 @@ dependencies = [
  "movement-types",
  "serde_json",
  "sha2 0.10.8",
+ "suzuka-config",
  "suzuka-executor",
  "tokio",
  "tokio-stream",

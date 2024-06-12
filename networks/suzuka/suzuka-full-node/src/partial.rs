@@ -251,4 +251,19 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 		let settlement_client = MockMcrSettlementClient::new();
 		Self::bound(executor, light_node_client, settlement_client)
 	}
+
+	pub async fn try_from_config(
+		config: suzuka_config::Config,
+	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
+		let (tx, _) = async_channel::unbounded();
+		let light_node_client = LightNodeServiceClient::connect(
+			config.execution_config.light_node_config.try_service_address()?
+		).await?;
+		let executor = SuzukaExecutorV1::try_from_env(tx)
+			.await
+			.context("Failed to get executor from environment")?;
+		// TODO: switch to real settlement client
+		let settlement_client = MockMcrSettlementClient::new();
+		Self::bound(executor, light_node_client, settlement_client)
+	}
 }

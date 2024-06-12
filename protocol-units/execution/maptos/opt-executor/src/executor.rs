@@ -48,7 +48,7 @@ use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, R
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use std::{path::PathBuf, sync::Arc};
+use std::{fmt::Result, path::PathBuf, sync::Arc};
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -182,9 +182,9 @@ impl Executor {
 		aptos_config: maptos_execution_util::config::just_aptos::Config,
 	) -> Result<Self, anyhow::Error> {
 		let (db, signer) = Self::bootstrap_empty_db(
-			&aptos_config.aptos_db_path,
-			aptos_config.chain_id.clone(),
-			&aptos_config.aptos_public_key,
+			&aptos_config.try_aptos_db_path()?,
+			aptos_config.try_chain_id()?,
+			&aptos_config.try_aptos_public_key()?,
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
@@ -198,7 +198,7 @@ impl Executor {
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
 			context: Arc::new(Context::new(
-				aptos_config.chain_id.clone(),
+				aptos_config.try_chain_id()?,
 				reader,
 				mempool_client_sender,
 				node_config,
@@ -208,15 +208,18 @@ impl Executor {
 		})
 	}
 
-	pub fn try_from_env() -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(config : maptos_execution_util::config::Config) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		let aptos_config = maptos_execution_util::config::just_aptos::Config::try_from_env()
-			.context("Failed to create Aptos config")?;
 
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
+		Self::bootstrap(
+			mempool_client_sender, 
+			mempool_client_receiver, 
+			node_config, 
+			config.try_aptos_config()?
+		)
 	}
 
 	async fn execute_block_inner(&self, block: ExecutableBlock) -> Result<u64, anyhow::Error> {
@@ -331,11 +334,11 @@ impl Executor {
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 		info!(
 			"Starting maptos-opt-executor services at: {:?}",
-			self.aptos_config.aptos_rest_listen_url
+			self.aptos_config.try_aptos_rest_listen_url()?
 		);
 
 		let api_service = get_api_service(self.context())
-			.server(format!("http://{:?}", self.aptos_config.aptos_rest_listen_url));
+			.server(format!("http://{:?}", self.aptos_config.try_aptos_rest_listen_url()?));
 
 		let ui = api_service.swagger_ui();
 
@@ -344,7 +347,7 @@ impl Executor {
 			.allow_credentials(true);
 		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
 
-		Server::new(TcpListener::bind(self.aptos_config.aptos_rest_listen_url.clone()))
+		Server::new(TcpListener::bind(self.aptos_config.try_aptos_rest_listen_url()?))
 			.run(app)
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
@@ -545,7 +548,7 @@ mod tests {
 			chrono::Utc::now().timestamp_micros() as u64,
 		));
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0, executor.aptos_config.chain_id.clone()),
+			create_signed_transaction(0, executor.aptos_config.try_chain_id()?),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![
 			SignatureVerifiedTransaction::Valid(block_metadata),
@@ -565,7 +568,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.try_aptos_private_key()?),
 			0,
 		);
 
@@ -574,7 +577,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
-		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(executor.aptos_config.try_chain_id()?);
 
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
@@ -661,7 +664,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.aptos_config.aptos_private_key.clone()),
+			AccountKey::from_private_key(executor.aptos_config.try_aptos_private_key()?),
 			0,
 		);
 
@@ -670,7 +673,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(executor.aptos_config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(executor.aptos_config.try_chain_id()?);
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -734,7 +737,7 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
 		let mut executor = Executor::try_from_env()?;
-		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.aptos_config.try_chain_id()?);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -767,7 +770,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.aptos_config.try_chain_id()?);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -807,7 +810,7 @@ mod tests {
 		});
 
 		let api = executor.get_apis();
-		let user_transaction = create_signed_transaction(0, executor.aptos_config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.aptos_config.try_chain_id()?);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
@@ -839,7 +842,7 @@ mod tests {
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
 			let user_transaction =
-				create_signed_transaction(0, executor.aptos_config.chain_id.clone());
+				create_signed_transaction(0, executor.aptos_config.try_chain_id()?);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 

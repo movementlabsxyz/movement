@@ -25,6 +25,15 @@ impl SuzukaExecutorV1 {
 		let executor = Executor::try_from_env()?;
 		Ok(Self::new(executor, transaction_channel))
 	}
+
+	pub async fn try_from_config(
+		transaction_channel: Sender<SignedTransaction>,
+		config: maptos_execution_util::config::Config,
+	) -> Result<Self, anyhow::Error> {
+		let executor = Executor::try_from_config(config).await?;
+		Ok(Self::new(executor, transaction_channel))
+	}
+
 }
 
 #[tonic::async_trait]
