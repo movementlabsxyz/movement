@@ -48,7 +48,7 @@ use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, R
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
-use std::{fmt::Result, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -76,19 +76,19 @@ pub struct Executor {
 
 impl Executor {
 	/// Create a new `Executor` instance.
-	pub fn new(
+	pub fn try_new(
 		block_executor: BlockExecutor<AptosVM>,
 		signer: ValidatorSigner,
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
 		aptos_config: maptos_execution_util::config::just_aptos::Config,
-	) -> Self {
+	) -> Result<Self, anyhow::Error> {
 		let (_aptos_db, reader_writer) =
-			DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.aptos_db_path));
+			DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.try_aptos_db_path()?));
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
-		Self {
+		Ok(Self {
 			block_executor: Arc::new(RwLock::new(block_executor)),
 			db: reader_writer,
 			signer,
@@ -97,14 +97,19 @@ impl Executor {
 			node_config: node_config.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			context: Arc::new(Context::new(
-				aptos_config.chain_id.clone(),
+				aptos_config.try_chain_id()?,
 				reader,
 				mempool_client_sender,
 				node_config,
 				None,
 			)),
 			aptos_config,
-		}
+		})
+	}
+
+	pub fn try_default() -> Result<Self, anyhow::Error> {
+		let config = maptos_execution_util::config::Config::default();
+		Self::try_from_config(config)
 	}
 
 	pub fn genesis_change_set_and_validators(
@@ -536,7 +541,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
-		let executor = Executor::try_from_env()?;
+		let executor = Executor::try_default()?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -563,7 +568,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
-		let executor = Executor::try_from_env()?;
+		let executor = Executor::try_default()?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -659,7 +664,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
-		let executor = Executor::try_from_env()?;
+		let executor = Executor::try_default()?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -736,7 +741,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
-		let mut executor = Executor::try_from_env()?;
+		let mut executor = Executor::try_default()?;
 		let user_transaction = create_signed_transaction(0, executor.aptos_config.try_chain_id()?);
 
 		// send transaction to mempool
@@ -762,7 +767,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
-		let mut executor = Executor::try_from_env()?;
+		let mut executor = Executor::try_default()?;
 		let server_executor = executor.clone();
 
 		let handle = tokio::spawn(async move {
@@ -797,7 +802,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let executor = Executor::try_from_env()?;
+		let executor = Executor::try_default()?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -825,7 +830,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let executor = Executor::try_from_env()?;
+		let executor = Executor::try_default()?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
