@@ -19,10 +19,11 @@ impl MonzaExecutorV1 {
 		Self { executor, transaction_channel }
 	}
 
-	pub async fn try_from_env(
+	pub async fn try_from_config(
 		transaction_channel: Sender<SignedTransaction>,
+		config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = Executor::try_from_env()?;
+		let executor = Executor::try_from_config(config)?;
 		Ok(Self::new(executor, transaction_channel))
 	}
 }

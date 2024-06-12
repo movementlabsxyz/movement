@@ -1,6 +1,6 @@
 [package]
-name = "suzuka-faucet-service"
-description = "Suzuka Faucet Service"
+name = "monza-faucet-service"
+description = "Monza Faucet Service"
 version = "2.0.1"
 
 # Workspace inherited keys

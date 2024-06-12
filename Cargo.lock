@@ -7145,7 +7145,11 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "maptos-execution-util",
+ "serde",
+ "serde_derive",
  "tokio",
+ "toml 0.8.2",
+ "tracing",
 ]
 
 [[package]]
@@ -7262,7 +7266,9 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "dot-movement",
  "m1-da-light-node-client",
+ "monza-config",
  "monza-executor",
  "movement-types",
  "serde_json",
