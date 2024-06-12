@@ -16,15 +16,6 @@ use bridge_shared::{
 	types::Amount,
 };
 
-struct MockInitiatorMonitoring {
-	events: Vec<
-		BridgeContractInitiatorEvent<
-			<Self as BridgeContractInitiatorMonitoring>::Address,
-			<Self as BridgeContractInitiatorMonitoring>::Hash,
-		>,
-	>,
-}
-
 struct MockBlockchainService {
 	initiator_contract: MockInitiatorContract,
 	initiator_monitoring: MockInitiatorMonitoring,
@@ -68,6 +59,20 @@ impl Stream for MockBlockchainService {
 	}
 }
 
+struct MockInitiatorMonitoring {
+	events: Vec<
+		BridgeContractInitiatorEvent<
+			<Self as BridgeContractInitiatorMonitoring>::Address,
+			<Self as BridgeContractInitiatorMonitoring>::Hash,
+		>,
+	>,
+}
+
+impl BridgeContractInitiatorMonitoring for MockInitiatorMonitoring {
+	type Address = &'static str;
+	type Hash = &'static str;
+}
+
 impl Stream for MockInitiatorMonitoring {
 	type Item = BridgeContractInitiatorEvent<
 		<Self as BridgeContractInitiatorMonitoring>::Address,
@@ -84,11 +89,6 @@ impl Stream for MockInitiatorMonitoring {
 	}
 }
 
-impl BridgeContractInitiatorMonitoring for MockInitiatorMonitoring {
-	type Address = &'static str;
-	type Hash = &'static str;
-}
-
 struct MockCounterpartyMonitoring {
 	events: Vec<
 		BridgeContractCounterpartyEvent<
@@ -96,6 +96,11 @@ struct MockCounterpartyMonitoring {
 			<Self as BridgeContractCounterpartyMonitoring>::Hash,
 		>,
 	>,
+}
+
+impl BridgeContractCounterpartyMonitoring for MockCounterpartyMonitoring {
+	type Address = &'static str;
+	type Hash = &'static str;
 }
 
 impl Stream for MockCounterpartyMonitoring {
@@ -112,11 +117,6 @@ impl Stream for MockCounterpartyMonitoring {
 			Poll::Pending
 		}
 	}
-}
-
-impl BridgeContractCounterpartyMonitoring for MockCounterpartyMonitoring {
-	type Address = &'static str;
-	type Hash = &'static str;
 }
 
 struct MockInitiatorContract;
