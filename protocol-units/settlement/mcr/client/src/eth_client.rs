@@ -88,7 +88,7 @@ impl Default for McrEthSettlementConfig {
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Tx fail because gaz estimation is to high. Estimated gaz:{0} gaz limit:{1}"
+		"MCR Settlement Tx fail because gaz estimation is too high. Estimated gaz:{0} gaz limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
 	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]
