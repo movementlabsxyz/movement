@@ -7,7 +7,7 @@
 //! and [`LeafNode`] as building blocks of a 256-bit
 //! [`JellyfishMerkleTree`](crate::JellyfishMerkleTree). [`InternalNode`] represents a 4-level
 //! binary tree to optimize for IOPS: it compresses a tree with 31 nodes into one node with 16
-//! chidren at the lowest level. [`LeafNode`] stores the full key and the value associated.
+//! children at the lowest level. [`LeafNode`] stores the full key and the value associated.
 use crate::storage::TreeReader;
 
 use crate::SimpleHasher;
