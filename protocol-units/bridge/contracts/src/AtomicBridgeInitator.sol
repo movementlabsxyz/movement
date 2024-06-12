@@ -28,6 +28,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
     ) external payable override returns (bytes32 _bridgeTransferId) {
         require(msg.value > 0, "ETH amount must be greater than 0");
         uint256 wethAmount = msg.value;
+
         // Wrap ETH into WETH and store the WETH in this contract
         weth.deposit{value: msg.value}();
         require(weth.transfer(address(this), msg.value), "WETH transfer failed");
@@ -62,6 +63,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         uint _timeLock
     ) external override returns (bytes32 _bridgeTransferId) {
         require(_wethAmount > 0, "WETH amount must be greater than 0");
+
+        //Transfer WETH from the sender to this contract
         require(weth.transfer(address(this), _wethAmount), "WETH transfer failed");
 
         _bridgeTransferId = keccak256(
