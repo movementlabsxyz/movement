@@ -24,7 +24,7 @@ RUN rust_binary="./target/release/suzuka-full-node-setup"; dest_dir="/tmp/runtim
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
 
 # use ghrc.io to avoid dockerhub rate limits
-FROM ghcr.io/rocker-org/alpine:latest
+FROM alpine:latest
 
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/suzuka-full-node-setup /app/suzuka-full-node-setup

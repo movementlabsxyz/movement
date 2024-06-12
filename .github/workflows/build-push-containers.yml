@@ -52,6 +52,7 @@ jobs:
           ./scripts/movement/manifest m1-da-light-node
 
   celestia-app-build:
+    needs: m1-da-light-node-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -144,6 +145,7 @@ jobs:
           ./scripts/movement/manifest celestia-node
 
   suzuka-full-node-setup-build:
+    needs: celestia-node-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -190,6 +192,7 @@ jobs:
           ./scripts/movement/manifest suzuka-full-node-setup
 
   wait-for-celestia-light-node-build:
+    needs: suzuka-full-node-setup-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -236,6 +239,7 @@ jobs:
           ./scripts/movement/manifest wait-for-celestia-light-node
 
   suzuka-full-node-build:
+    needs: wait-for-celestia-light-node-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
