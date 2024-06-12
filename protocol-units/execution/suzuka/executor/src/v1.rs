@@ -23,7 +23,7 @@ impl SuzukaExecutorV1 {
 		transaction_channel: Sender<SignedTransaction>,
 		config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = Executor::try_from_config(config).await?;
+		let executor = Executor::try_from_config(config)?;
 		Ok(Self::new(executor, transaction_channel))
 	}
 
