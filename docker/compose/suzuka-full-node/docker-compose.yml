@@ -1,40 +1,60 @@
 services:
   setup:
-    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
-    container_name: suzuka-full-node-setup
-    environment:
-      - CARGO_PROFILE=release
-      - MOVEMENT_PREBUILT=true
-    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "suzuka-full-node", "local", "-t=false"]
+    image: busybox
+    container_name: setup
+    command: sh -c 'echo "No setup type specified."'
     volumes:
-      - data-volume:/data
+      - dot-movement:/.movement
 
   celestia-light-node:
-    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
-    container_name: suzuka-full-node-celestia-light-node
-    environment:
-      - CARGO_PROFILE=release
-      - MOVEMENT_PREBUILT=true
-    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "celestia-light-node", "local", "-t=false"]
+    image: busybox
+    container_name: celestia-light-node
+    command: sh -c 'echo "No setup type specified."'
     volumes:
-      - data-volume:/data
+      - dot-movement:/.movement
+    depends_on:
+      - setup
 
   celestia-light-node-synced:
-    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
-    container_name: suzuka-full-node-celestia-light-node-synced
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-client:${REV}
+    container_name: celestia-light-node-synced
     environment:
-      - CARGO_PROFILE=release
-      - MOVEMENT_PREBUILT=true
+      - DOT_MOVEMENT_PATH=/.movement
     command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "celestia-light-node-synced", "local", "-t=false"]
     volumes:
-      - data-volume:/data
+      - dot-movement:/.movement
+    depends_on:
+      - serviceName: celestia-light-node
+        condition: service_healthy
   
   m1-da-light-node:
-    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
-    container_name: suzuka-full-node-m1-da-light-node
+    image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
+    container_name: m1-da-light-node
     environment:
-      - CARGO_PROFILE=release
-      - MOVEMENT_PREBUILT=true
-    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "m1-da-light-node", "local", "-t=false"]
+      - DOT_MOVEMENT_PATH=/.movement
     volumes:
-      - data-volume:/data
+      - dot-movement:/.movement
+    depends_on:
+      - celestia-light-node-synced
+
+  suzuka-full-node:
+    image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
+    container_name: suzuka-full-node
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - dot-movement:/.movement
+    depends_on:
+      - serviceName: m1-da-light-node
+        condition: service_healthy
+
+  suzuka-faucet-service:
+    image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${REV}
+    container_name: suzuka-faucet-service
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - dot-movement:/.movement
+    depends_on:
+      - serviceName: suzuka-full-node
+        condition: service_healthy

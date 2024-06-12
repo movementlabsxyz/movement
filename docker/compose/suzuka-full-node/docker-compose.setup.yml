@@ -1,0 +1,7 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${REV}
+    container_name: setup
+    command: sh -c 'echo "No setup type specified."'
+    volumes:
+      - dot-movement:/.movement
