@@ -13,7 +13,12 @@ use bridge_shared::bridge_monitoring::{
 use bridge_shared::types::{BridgeTransferDetails, BridgeTransferId};
 
 struct MockInitiatorMonitoring {
-	events: Vec<BridgeContractInitiatorEvent<&'static str, &'static str>>,
+	events: Vec<
+		BridgeContractInitiatorEvent<
+			<Self as BridgeContractInitiatorMonitoring>::Address,
+			<Self as BridgeContractInitiatorMonitoring>::Hash,
+		>,
+	>,
 }
 
 struct MockBlockchainService {
@@ -51,7 +56,8 @@ impl BlockchainService for MockBlockchainService {
 }
 
 impl Stream for MockBlockchainService {
-	type Item = BlockchainEvent<&'static str, &'static str>;
+	type Item =
+		BlockchainEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -75,7 +81,10 @@ impl Stream for MockBlockchainService {
 }
 
 impl Stream for MockInitiatorMonitoring {
-	type Item = BridgeContractInitiatorEvent<&'static str, &'static str>;
+	type Item = BridgeContractInitiatorEvent<
+		<Self as BridgeContractInitiatorMonitoring>::Address,
+		<Self as BridgeContractInitiatorMonitoring>::Hash,
+	>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -95,7 +104,10 @@ impl BridgeContractInitiatorMonitoring for MockInitiatorMonitoring {
 struct MockCounterpartyMonitoring;
 
 impl Stream for MockCounterpartyMonitoring {
-	type Item = BridgeContractCounterpartyEvent<&'static str, &'static str>;
+	type Item = BridgeContractCounterpartyEvent<
+		<Self as BridgeContractCounterpartyMonitoring>::Address,
+		<Self as BridgeContractCounterpartyMonitoring>::Hash,
+	>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		Poll::Pending
@@ -116,9 +128,9 @@ impl BridgeContractInitiator for MockInitiatorContract {
 
 	async fn initiate_bridge_transfer(
 		&self,
-		_initiator_address: &'static str,
-		_recipient_address: &'static str,
-		_hash_lock: &'static str,
+		_initiator_address: Self::Address,
+		_recipient_address: Self::Address,
+		_hash_lock: Self::Hash,
 		_time_lock: u64,
 		_amount: u64,
 	) -> BridgeContractResult<()> {
@@ -127,7 +139,7 @@ impl BridgeContractInitiator for MockInitiatorContract {
 
 	async fn complete_bridge_transfer<S: Send>(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<&'static str>,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_secret: S,
 	) -> BridgeContractResult<()> {
 		Ok(())
@@ -135,15 +147,15 @@ impl BridgeContractInitiator for MockInitiatorContract {
 
 	async fn refund_bridge_transfer(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<&'static str>,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<&'static str>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<&'static str, &'static str>>> {
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		Ok(None)
 	}
 }
@@ -157,10 +169,10 @@ impl BridgeContractCounterparty for MockCounterpartyContract {
 
 	async fn lock_bridge_transfer_assets(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<&'static str>,
-		_hash_lock: &'static str,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_hash_lock: Self::Hash,
 		_time_lock: u64,
-		_recipient: &'static str,
+		_recipient: Self::Address,
 		_amount: u64,
 	) -> bool {
 		true
@@ -168,7 +180,7 @@ impl BridgeContractCounterparty for MockCounterpartyContract {
 
 	async fn complete_bridge_transfer<S: Send>(
 		&self,
-		_bridge_transfer_id: &'static str,
+		_bridge_transfer_id: Self::Hash,
 		_secret: S,
 	) -> BridgeContractResult<()> {
 		Ok(())
@@ -176,15 +188,15 @@ impl BridgeContractCounterparty for MockCounterpartyContract {
 
 	async fn abort_bridge_transfer(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<&'static str>,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&self,
-		_bridge_transfer_id: &'static str,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<&'static str, &'static str>>> {
+		_bridge_transfer_id: Self::Hash,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		Ok(None)
 	}
 }
