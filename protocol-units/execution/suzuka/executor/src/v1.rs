@@ -19,13 +19,6 @@ impl SuzukaExecutorV1 {
 		Self { executor, transaction_channel }
 	}
 
-	pub async fn try_from_env(
-		transaction_channel: Sender<SignedTransaction>,
-	) -> Result<Self, anyhow::Error> {
-		let executor = Executor::try_from_env()?;
-		Ok(Self::new(executor, transaction_channel))
-	}
-
 	pub async fn try_from_config(
 		transaction_channel: Sender<SignedTransaction>,
 		config: maptos_execution_util::config::Config,

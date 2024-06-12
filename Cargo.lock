@@ -11082,6 +11082,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel",
+ "dot-movement",
  "m1-da-light-node-client",
  "mcr-settlement-client",
  "mcr-settlement-manager",
