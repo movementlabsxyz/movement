@@ -17,57 +17,63 @@ pub enum BridgeContractError {
 pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
 
 #[async_trait::async_trait]
-pub trait BridgeContractInitiator<A, H> {
+pub trait BridgeContractInitiator {
+	type Address;
+	type Hash;
+
 	async fn initiate_bridge_transfer(
 		&self,
-		initiator_address: A,
-		recipient_address: A,
-		hash_lock: H,
+		initiator_address: Self::Address,
+		recipient_address: Self::Address,
+		hash_lock: Self::Hash,
 		time_lock: u64,
 		amount: u64,
 	) -> BridgeContractResult<()>;
 
 	async fn complete_bridge_transfer<S: Send>(
 		&self,
-		bridge_transfer_id: BridgeTransferId<H>,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: S,
 	) -> BridgeContractResult<()>;
 
 	async fn refund_bridge_transfer(
 		&self,
-		bridge_transfer_id: BridgeTransferId<H>,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()>;
 
 	async fn get_bridge_transfer_details(
 		&self,
-		bridge_transfer_id: BridgeTransferId<H>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<H, A>>>;
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }
 
 #[async_trait::async_trait]
-pub trait BridgeContractCounterparty<A, H> {
+pub trait BridgeContractCounterparty {
+	type Address;
+	type Hash;
+
 	async fn lock_bridge_transfer_assets(
 		&self,
-		bridge_transfer_id: BridgeTransferId<H>,
-		hash_lock: H,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		hash_lock: Self::Hash,
 		time_lock: u64,
-		recipient: A,
+		recipient: Self::Address,
 		amount: u64,
 	) -> bool;
 
 	async fn complete_bridge_transfer<S: Send>(
 		&self,
-		bridge_transfer_id: H,
+		bridge_transfer_id: Self::Hash,
 		secret: S,
 	) -> BridgeContractResult<()>;
 
 	async fn abort_bridge_transfer(
 		&self,
-		bridge_transfer_id: BridgeTransferId<H>,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()>;
 
 	async fn get_bridge_transfer_details(
 		&self,
-		bridge_transfer_id: H,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<H, A>>>;
+		bridge_transfer_id: Self::Hash,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }

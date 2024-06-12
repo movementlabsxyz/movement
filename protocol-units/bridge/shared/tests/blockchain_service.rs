@@ -87,7 +87,10 @@ impl Stream for MockInitiatorMonitoring {
 	}
 }
 
-impl BridgeContractInitiatorMonitoring<&'static str, &'static str> for MockInitiatorMonitoring {}
+impl BridgeContractInitiatorMonitoring for MockInitiatorMonitoring {
+	type Address = &'static str;
+	type Hash = &'static str;
+}
 
 struct MockCounterpartyMonitoring;
 
@@ -99,15 +102,18 @@ impl Stream for MockCounterpartyMonitoring {
 	}
 }
 
-impl BridgeContractCounterpartyMonitoring<&'static str, &'static str>
-	for MockCounterpartyMonitoring
-{
+impl BridgeContractCounterpartyMonitoring for MockCounterpartyMonitoring {
+	type Address = &'static str;
+	type Hash = &'static str;
 }
 
 struct MockInitiatorContract;
 
 #[async_trait::async_trait]
-impl BridgeContractInitiator<&'static str, &'static str> for MockInitiatorContract {
+impl BridgeContractInitiator for MockInitiatorContract {
+	type Address = &'static str;
+	type Hash = &'static str;
+
 	async fn initiate_bridge_transfer(
 		&self,
 		_initiator_address: &'static str,
@@ -145,7 +151,10 @@ impl BridgeContractInitiator<&'static str, &'static str> for MockInitiatorContra
 struct MockCounterpartyContract;
 
 #[async_trait::async_trait]
-impl BridgeContractCounterparty<&'static str, &'static str> for MockCounterpartyContract {
+impl BridgeContractCounterparty for MockCounterpartyContract {
+	type Address = &'static str;
+	type Hash = &'static str;
+
 	async fn lock_bridge_transfer_assets(
 		&self,
 		_bridge_transfer_id: BridgeTransferId<&'static str>,
