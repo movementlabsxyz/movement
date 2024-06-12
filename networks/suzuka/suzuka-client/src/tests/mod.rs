@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
+use commander::run_command;
 
 static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
 	maptos_execution_util::config::Config::try_from_env()
@@ -73,7 +74,7 @@ async fn test_example_interaction() -> Result<()> {
 			.context("Failed to get Bob's account balance")?
 	);
 
-	// Have Alice send Bob some coins.
+	// Have Alice send Bob some coins. 
 	let txn_hash = coin_client
 		.transfer(&mut alice, bob.address(), 1_000, None)
 		.await
@@ -131,4 +132,19 @@ async fn test_example_interaction() -> Result<()> {
 	);
 
 	Ok(())
+}
+
+
+#[tokio::test]
+async fn complex_alice() {
+	const resource_roulette : &str = "default";
+    let init = format!("aptos init --rpc-url {} --faucet-url {} --assume-yes", NODE_URL.clone(), FAUCET_URL.clone());
+    let enter = "\ne";
+    let test = format!("aptos move test -named-addresses resource_roulette={}", resource_roulette);
+    let command = format!("aptos move publish --named-addresses resource_roulette={}", resource_roulette);
+
+    const init_output : String = run_command(&init, &[]).await;
+    const enter_output : String = run_command(&enter, &[]).await;
+    const test_output : String = run_command(&test, &[]).await;
+    const command_output : String = run_command(&command, &[]).await;
 }
