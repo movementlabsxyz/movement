@@ -15,6 +15,9 @@ pub struct HashLock<H>(pub H);
 #[derive(Deref, Debug, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
+#[derive(Deref, Debug, PartialEq, Eq)]
+pub struct Amount(pub u64);
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
@@ -22,5 +25,5 @@ pub struct BridgeTransferDetails<A, H> {
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: u64,
+	pub amount: Amount,
 }
