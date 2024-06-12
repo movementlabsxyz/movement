@@ -3,16 +3,7 @@ use crate::{
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
-use alloy_network::EthereumSigner;
-use alloy_primitives::Address;
-use alloy_provider::ProviderBuilder;
-use alloy_signer_wallet::LocalWallet;
-use anyhow::anyhow;
 use anyhow::{Context, Result};
-use mcr_settlement_client::{
-	eth_client::{McrEthSettlementClient, McrEthSettlementConfig},
-	McrSettlementClientOperations,
-};
 use once_cell::sync::Lazy;
 use std::str::FromStr;
 use tokio::time::{sleep, Duration};
@@ -38,9 +29,6 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 
 #[tokio::test]
 async fn test_example_interaction() -> Result<()> {
-	const MAX_TX_SEND_RETRY: usize = 10;
-	const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
-
 	// :!:>section_1a
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone()); // <:!:section_1a
@@ -166,4 +154,6 @@ async fn test_example_interaction() -> Result<()> {
 	let response = client.get(&state_root_hash_url).send().await?;
 	let state_key = response.text().await?;
 	println!("State key: {}", state_key);
+
+	Ok(())
 }
