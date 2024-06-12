@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
     let path = dot_movement.get_path().join("config.toml");
     let config = suzuka_config::Config::try_from_toml_file(&path)?;
 
-    let listener_url = config.execution_config.try_aptos_config()?.try_aptos_rest_listen_url()?;
+    let listener_url = config.execution_config.try_aptos_config()?.try_aptos_faucet_listen_url()?;
     let listener_split = listener_url.split(":").collect::<Vec<&str>>();
     let listener_host = listener_split[0];
     let listener_port = listener_split[1].parse::<u16>()?;
