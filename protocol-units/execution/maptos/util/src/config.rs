@@ -95,7 +95,7 @@ pub mod just_aptos {
 		}
 
 		/// Creates a new config from the given toml file
-		pub fn try_from_toml_file(path : PathBuf) -> Result<Self, anyhow::Error> {
+		pub fn try_from_toml_file(path : &PathBuf) -> Result<Self, anyhow::Error> {
 			let toml_str = std::fs::read_to_string(path)?;
 			let config: Config = toml::from_str(toml_str.as_str())?;
 			Ok(config)
@@ -152,7 +152,7 @@ impl Config {
 	}
 
 	/// Gets the Config from a toml file
-	pub fn try_from_toml_file(path : PathBuf) -> Result<Self, anyhow::Error> {
+	pub fn try_from_toml_file(path : &PathBuf) -> Result<Self, anyhow::Error> {
 		let toml_str = std::fs::read_to_string(path)?;
 		let config: Config = toml::from_str(toml_str.as_str())?;
 		Ok(config)

@@ -11097,6 +11097,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "suzuka-full-node-setup"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "async-recursion",
+ "celestia-rpc",
+ "celestia-types",
+ "commander",
+ "dot-movement",
+ "hex",
+ "m1-da-light-node-setup",
+ "m1-da-light-node-util",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "suzuka-config",
+ "tempfile",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "syn"
 version = "0.15.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"

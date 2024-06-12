@@ -17,10 +17,25 @@ impl Config {
 	}
 	
 	/// Gets the Config from a toml file
-	pub fn try_from_toml_file(path : PathBuf) -> Result<Self, anyhow::Error> {
+	pub fn try_from_toml_file(path : &PathBuf) -> Result<Self, anyhow::Error> {
 		let toml_str = std::fs::read_to_string(path)?;
 		let config: Config = toml::from_str(toml_str.as_str())?;
 		Ok(config)
 	}
 
+	/// Tries to write the Config to a toml file
+	pub fn try_write_to_toml_file(&self, path : &PathBuf) -> Result<(), anyhow::Error> {
+		let toml = toml::to_string(self)?;
+		std::fs::write(path, toml)?;
+		Ok(())
+	}
+
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Self {
+			execution_config: Config::default_execution_config(),
+		}
+	}
 }
