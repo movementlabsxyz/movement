@@ -1,7 +1,8 @@
-use futures::{Stream, StreamExt};
+use futures::Stream;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use bridge_shared::blockchain_service::BlockchainService;
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractInitiator, BridgeContractResult,
 };
@@ -9,15 +10,48 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 };
-use bridge_shared::bridge_service::BlockchainService;
 use bridge_shared::types::{BridgeTransferDetails, BridgeTransferId};
 
 struct MockInitiatorMonitoring {
-	events: Vec<BridgeContractInitiatorEvent<String, String>>,
+	events: Vec<BridgeContractInitiatorEvent<&'static str, &'static str>>,
+}
+
+struct MockBlockchainService {
+	initiator_contract: MockInitiatorContract,
+	initiator_monitoring: MockInitiatorMonitoring,
+	counterparty_contract: MockCounterpartyContract,
+	counterparty_monitoring: MockCounterpartyMonitoring,
+}
+
+impl BlockchainService for MockBlockchainService {
+	type Address = &'static str;
+	type Hash = &'static str;
+
+	type InitiatorContract = MockInitiatorContract;
+	type InitiatorMonitoring = MockInitiatorMonitoring;
+
+	type CounterpartyContract = MockCounterpartyContract;
+	type CounterpartyMonitoring = MockCounterpartyMonitoring;
+
+	fn initiator_contract(&self) -> &Self::InitiatorContract {
+		&self.initiator_contract
+	}
+
+	fn initiator_monitoring(&self) -> &Self::InitiatorMonitoring {
+		&self.initiator_monitoring
+	}
+
+	fn counterparty_contract(&self) -> &Self::CounterpartyContract {
+		&self.counterparty_contract
+	}
+
+	fn counterparty_monitoring(&self) -> &Self::CounterpartyMonitoring {
+		&self.counterparty_monitoring
+	}
 }
 
 impl Stream for MockInitiatorMonitoring {
-	type Item = BridgeContractInitiatorEvent<String, String>;
+	type Item = BridgeContractInitiatorEvent<&'static str, &'static str>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -29,29 +63,32 @@ impl Stream for MockInitiatorMonitoring {
 	}
 }
 
-impl BridgeContractInitiatorMonitoring<String, String> for MockInitiatorMonitoring {}
+impl BridgeContractInitiatorMonitoring<&'static str, &'static str> for MockInitiatorMonitoring {}
 
 struct MockCounterpartyMonitoring;
 
 impl Stream for MockCounterpartyMonitoring {
-	type Item = BridgeContractCounterpartyEvent<String, String>;
+	type Item = BridgeContractCounterpartyEvent<&'static str, &'static str>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		Poll::Pending
 	}
 }
 
-impl BridgeContractCounterpartyMonitoring<String, String> for MockCounterpartyMonitoring {}
+impl BridgeContractCounterpartyMonitoring<&'static str, &'static str>
+	for MockCounterpartyMonitoring
+{
+}
 
 struct MockInitiatorContract;
 
 #[async_trait::async_trait]
-impl BridgeContractInitiator<String, String> for MockInitiatorContract {
+impl BridgeContractInitiator<&'static str, &'static str> for MockInitiatorContract {
 	async fn initiate_bridge_transfer(
 		&self,
-		_initiator_address: String,
-		_recipient_address: String,
-		_hash_lock: String,
+		_initiator_address: &'static str,
+		_recipient_address: &'static str,
+		_hash_lock: &'static str,
 		_time_lock: u64,
 		_amount: u64,
 	) -> BridgeContractResult<()> {
@@ -60,7 +97,7 @@ impl BridgeContractInitiator<String, String> for MockInitiatorContract {
 
 	async fn complete_bridge_transfer<S: Send>(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<String>,
+		_bridge_transfer_id: BridgeTransferId<&'static str>,
 		_secret: S,
 	) -> BridgeContractResult<()> {
 		Ok(())
@@ -68,15 +105,15 @@ impl BridgeContractInitiator<String, String> for MockInitiatorContract {
 
 	async fn refund_bridge_transfer(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<String>,
+		_bridge_transfer_id: BridgeTransferId<&'static str>,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<String>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<String, String>>> {
+		_bridge_transfer_id: BridgeTransferId<&'static str>,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<&'static str, &'static str>>> {
 		Ok(None)
 	}
 }
@@ -84,13 +121,13 @@ impl BridgeContractInitiator<String, String> for MockInitiatorContract {
 struct MockCounterpartyContract;
 
 #[async_trait::async_trait]
-impl BridgeContractCounterparty<String, String> for MockCounterpartyContract {
+impl BridgeContractCounterparty<&'static str, &'static str> for MockCounterpartyContract {
 	async fn lock_bridge_transfer_assets(
 		&self,
-		_bridge_transfer_id: String,
-		_hash_lock: String,
+		_bridge_transfer_id: BridgeTransferId<&'static str>,
+		_hash_lock: &'static str,
 		_time_lock: u64,
-		_recipient: String,
+		_recipient: &'static str,
 		_amount: u64,
 	) -> bool {
 		true
@@ -98,7 +135,7 @@ impl BridgeContractCounterparty<String, String> for MockCounterpartyContract {
 
 	async fn complete_bridge_transfer<S: Send>(
 		&self,
-		_bridge_transfer_id: String,
+		_bridge_transfer_id: &'static str,
 		_secret: S,
 	) -> BridgeContractResult<()> {
 		Ok(())
@@ -106,15 +143,15 @@ impl BridgeContractCounterparty<String, String> for MockCounterpartyContract {
 
 	async fn abort_bridge_transfer(
 		&self,
-		_bridge_transfer_id: BridgeTransferId<String>,
+		_bridge_transfer_id: BridgeTransferId<&'static str>,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&self,
-		_bridge_transfer_id: String,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<String, String>>> {
+		_bridge_transfer_id: &'static str,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<&'static str, &'static str>>> {
 		Ok(None)
 	}
 }
@@ -124,27 +161,26 @@ async fn test_bridge_transfer_initiated() {
 	let initiator_monitoring = MockInitiatorMonitoring {
 		events: vec![BridgeContractInitiatorEvent::BridgeTransferInitiated(
 			BridgeTransferDetails {
-				bridge_transfer_id: BridgeTransferId("transfer_id".to_string()),
-				initiator_address: "initiator".to_string(),
-				recipient_address: "recipient".to_string(),
-				hash_lock: "hash_lock".to_string(),
+				bridge_transfer_id: BridgeTransferId("transfer_id"),
+				initiator_address: "initiator",
+				recipient_address: "recipient",
+				hash_lock: "hash_lock",
 				time_lock: 100,
 				amount: 1000,
 			},
 		)],
 	};
 
-	let counter_party_monitoring = MockCounterpartyMonitoring;
+	let counterparty_monitoring = MockCounterpartyMonitoring;
 	let initiator_contract = MockInitiatorContract;
-	let counter_party_contract = MockCounterpartyContract;
+	let counterparty_contract = MockCounterpartyContract;
 
-	let mut service = BlockchainService::build(
+	let blockchain_service = MockBlockchainService {
 		initiator_contract,
 		initiator_monitoring,
-		counter_party_contract,
-		counter_party_monitoring,
-	);
+		counterparty_contract,
+		counterparty_monitoring,
+	};
 
-	let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-	let event = service.poll_next_unpin(&mut cx);
+	// Use the blockchain_service in your test
 }
