@@ -1,0 +1,58 @@
+[90m24-06-12 18:48:17.996[0m [32mINF[0m [1mProcess Compose v1.5.0[0m
+[90m24-06-12 18:48:17.997[0m [32mINF[0m [1mLoaded project from process-compose/suzuka-full-node/process-compose.yml[0m
+[90m24-06-12 18:48:17.997[0m [32mINF[0m [1mLoaded project from process-compose/suzuka-full-node/process-compose.test.yml[0m
+[90m24-06-12 18:48:17.997[0m [32mINF[0m [1mLoaded project from process-compose/suzuka-full-node/process-compose.local.yml[0m
+[90m24-06-12 18:48:17.997[0m [32mINF[0m [1mGlobal shell command: bash -c[0m
+[90m24-06-12 18:48:17.998[0m [32mINF[0m [1mstart http server listening :8080[0m
+[90m24-06-12 18:48:17.999[0m DBG Spinning up 8 processes. Order: ["celestia-node-appd" "celestia-bridge" "celestia-light-node" "celestia-light-node-synced" "m1-da-light-node" "suzuka-full-node" "suzuka-faucet" "suzuka-client-tests"]
+[90m24-06-12 18:48:17.999[0m DBG Loaded settings from /Users/movses/settings.yaml
+[90m24-06-12 18:48:17.999[0m [32mINF[0m [1msuzuka-client-tests is waiting for suzuka-full-node to be healthy[0m
+[90m24-06-12 18:48:17.999[0m [32mINF[0m [1mcelestia-light-node-synced is waiting for celestia-light-node to be healthy[0m
+[90m24-06-12 18:48:17.999[0m [32mINF[0m [1msuzuka-faucet is waiting for suzuka-full-node to be healthy[0m
+[90m24-06-12 18:48:17.999[0m [32mINF[0m [1mcelestia-light-node is waiting for celestia-node-appd to be healthy[0m
+[90m24-06-12 18:48:17.999[0m [32mINF[0m [1msuzuka-full-node is waiting for m1-da-light-node to be healthy[0m
+[90m24-06-12 18:48:17.999[0m [32mINF[0m [1mm1-da-light-node is waiting for celestia-light-node-synced to complete successfully[0m
+[90m24-06-12 18:48:18.000[0m [32mINF[0m [1mcelestia-bridge is waiting for celestia-node-appd to be healthy[0m
+[90m24-06-12 18:48:18.001[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/celestia/celestia-local-appd\n"] [36mprocess=[0mcelestia-node-appd
+[90m24-06-12 18:48:28.003[0m DBG celestia-node-appd_ready_probe started monitoring
+[90m24-06-12 18:48:28.003[0m DBG celestia-node-appd_live_probe started monitoring
+[90m24-06-12 18:48:28.007[0m [32mINF[0m [1mcelestia-light-node is waiting for celestia-bridge to be healthy[0m
+[90m24-06-12 18:48:28.008[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/celestia/celestia-local-bridge\n"] [36mprocess=[0mcelestia-bridge
+[90m24-06-12 18:48:38.008[0m DBG celestia-bridge_live_probe started monitoring
+[90m24-06-12 18:48:38.008[0m DBG celestia-bridge_ready_probe started monitoring
+[90m24-06-12 18:48:38.012[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","sleep 999999999d\necho \"started\"\n"] [36mprocess=[0mcelestia-light-node
+[90m24-06-12 18:48:48.013[0m DBG celestia-light-node_live_probe started monitoring
+[90m24-06-12 18:48:48.013[0m DBG celestia-light-node_ready_probe started monitoring
+[90m24-06-12 18:48:48.017[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","cargo run --bin wait-for-celestia-light-node\n"] [36mprocess=[0mcelestia-light-node-synced
+[90m24-06-12 18:48:48.859[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m0 [36mprocess=[0mcelestia-light-node-synced
+[90m24-06-12 18:48:48.860[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./target/debug/m1-da-light-node\n"] [36mprocess=[0mm1-da-light-node
+[90m24-06-12 18:48:58.860[0m DBG m1-da-light-node_ready_probe started monitoring
+[90m24-06-12 18:48:58.860[0m DBG m1-da-light-node_live_probe started monitoring
+[90m24-06-12 18:48:58.865[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./target/debug/suzuka-full-node\n"] [36mprocess=[0msuzuka-full-node
+[90m24-06-12 18:49:08.865[0m DBG suzuka-full-node_ready_probe started monitoring
+[90m24-06-12 18:49:08.868[0m [32mINF[0m [1msuzuka-client-tests is waiting for suzuka-faucet to be healthy[0m
+[90m24-06-12 18:49:08.869[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","./scripts/suzuka/faucet\n"] [36mprocess=[0msuzuka-faucet
+[90m24-06-12 18:49:18.869[0m DBG suzuka-faucet_ready_probe started monitoring
+[90m24-06-12 18:49:18.873[0m [32mINF[0m [1mStarted[0m [36mcommand=[0m["bash","-c","cargo test -p suzuka-client -- --test-threads=1 --nocapture \n"] [36mprocess=[0msuzuka-client-tests
+[90m24-06-12 18:51:46.069[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m101 [36mprocess=[0msuzuka-client-tests
+[90m24-06-12 18:51:46.070[0m DBG Shutting down 7 processes. Order: ["celestia-bridge" "celestia-light-node" "m1-da-light-node" "suzuka-full-node" "suzuka-faucet" "suzuka-client-tests" "celestia-node-appd"]
+[90m24-06-12 18:51:46.070[0m DBG Stop Unix process. [36mparentOnly=[0mfalse [36mpid=[0m966 [36msignal=[0m15
+[90m24-06-12 18:51:46.070[0m DBG Stop Unix process. [36mparentOnly=[0mfalse [36mpid=[0m998 [36msignal=[0m15
+[90m24-06-12 18:51:46.070[0m DBG Stop Unix process. [36mparentOnly=[0mfalse [36mpid=[0m1011 [36msignal=[0m15
+[90m24-06-12 18:51:46.070[0m DBG Stop Unix process. [36mparentOnly=[0mfalse [36mpid=[0m1034 [36msignal=[0m15
+[90m24-06-12 18:51:46.070[0m DBG Stop Unix process. [36mparentOnly=[0mfalse [36mpid=[0m1047 [36msignal=[0m15
+[90m24-06-12 18:51:46.070[0m DBG process suzuka-client-tests is in state Completed not shutting down
+[90m24-06-12 18:51:46.070[0m DBG Stop Unix process. [36mparentOnly=[0mfalse [36mpid=[0m958 [36msignal=[0m15
+[90m24-06-12 18:51:46.071[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m-1 [36mprocess=[0mcelestia-light-node
+[90m24-06-12 18:51:46.071[0m [31mERR[0m [1merror reading from stdout[0m [36merror=[0m[31m[1m"read |0: file already closed"[0m[0m [36mprocess=[0msuzuka-faucet
+[90m24-06-12 18:51:46.071[0m [31mERR[0m [1merror reading from stdout[0m [36merror=[0m[31m[1m"read |0: file already closed"[0m[0m [36mprocess=[0mcelestia-bridge
+[90m24-06-12 18:51:46.071[0m [31mERR[0m [1merror reading from stdout[0m [36merror=[0m[31m[1m"read |0: file already closed"[0m[0m [36mprocess=[0msuzuka-faucet
+[90m24-06-12 18:51:46.071[0m [31mERR[0m [1merror reading from stdout[0m [36merror=[0m[31m[1m"read |0: file already closed"[0m[0m [36mprocess=[0mcelestia-bridge
+[90m24-06-12 18:51:46.071[0m [31mERR[0m [1merror reading from stdout[0m [36merror=[0m[31m[1m"read |0: file already closed"[0m[0m [36mprocess=[0mcelestia-node-appd
+[90m24-06-12 18:51:46.071[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m-1 [36mprocess=[0msuzuka-faucet
+[90m24-06-12 18:51:46.071[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m-1 [36mprocess=[0mcelestia-bridge
+[90m24-06-12 18:51:46.071[0m [31mERR[0m [1merror reading from stdout[0m [36merror=[0m[31m[1m"read |0: file already closed"[0m[0m [36mprocess=[0mcelestia-node-appd
+[90m24-06-12 18:51:46.071[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m-1 [36mprocess=[0mcelestia-node-appd
+[90m24-06-12 18:51:46.071[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m-1 [36mprocess=[0mm1-da-light-node
+[90m24-06-12 18:51:46.073[0m [32mINF[0m [1mExited[0m [36mexit_code=[0m-1 [36mprocess=[0msuzuka-full-node
+[90m24-06-12 18:51:46.073[0m [32mINF[0m [1mProject completed[0m

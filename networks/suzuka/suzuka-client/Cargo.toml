@@ -29,7 +29,6 @@ alloy-primitives = { workspace = true }
 serde_json = { workspace = true }
 
 maptos-execution-util = { workspace = true }
-suzuka-executor = { workspace = true }
 mcr-settlement-client = { workspace = true }
 
 [lints]
