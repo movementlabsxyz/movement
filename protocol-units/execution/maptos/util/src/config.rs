@@ -159,3 +159,12 @@ impl Config {
 	}
 
 }
+
+impl Default for Config {
+	fn default() -> Self {
+		Self {
+			aptos_config: Config::default_aptos_config(),
+			light_node_config: Config::default_light_node_config(),
+		}
+	}
+}

@@ -10962,7 +10962,11 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "maptos-execution-util",
+ "serde",
+ "serde_derive",
  "tokio",
+ "toml 0.8.2",
+ "tracing",
 ]
 
 [[package]]
