@@ -48,10 +48,10 @@ pub trait BridgeContractInitiator<A, H> {
 pub trait BridgeContractCounterparty<A, H> {
 	async fn lock_bridge_transfer_assets(
 		&self,
-		bridge_transfer_id: String,
-		hash_lock: String,
+		bridge_transfer_id: BridgeTransferId<H>,
+		hash_lock: H,
 		time_lock: u64,
-		recipient: String,
+		recipient: A,
 		amount: u64,
 	) -> bool;
 
