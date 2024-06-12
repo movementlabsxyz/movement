@@ -1,4 +1,5 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/env bash
+set -e
 export CARGO_PROFILE="debug"
 export PATH="$PATH:$(pwd)/target/$CARGO_PROFILE"
 export DOT_MOVEMENT_PATH="$(pwd)/.movement"
