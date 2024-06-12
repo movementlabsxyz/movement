@@ -3442,6 +3442,7 @@ dependencies = [
  "derive_more",
  "futures",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 
