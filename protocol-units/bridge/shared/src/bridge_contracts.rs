@@ -27,7 +27,7 @@ pub trait BridgeContractInitiator<A, H> {
 		amount: u64,
 	) -> BridgeContractResult<()>;
 
-	async fn complete_bridge_transfer<S>(
+	async fn complete_bridge_transfer<S: Send>(
 		&self,
 		bridge_transfer_id: BridgeTransferId<H>,
 		secret: S,
@@ -55,7 +55,7 @@ pub trait BridgeContractCounterparty<A, H> {
 		amount: u64,
 	) -> bool;
 
-	async fn complete_bridge_transfer<S>(
+	async fn complete_bridge_transfer<S: Send>(
 		&self,
 		bridge_transfer_id: H,
 		secret: S,

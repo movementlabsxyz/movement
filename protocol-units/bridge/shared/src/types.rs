@@ -1,7 +1,7 @@
 use derive_more::Deref;
 
 #[derive(Deref, Debug)]
-pub struct BridgeTransferId<H>(H);
+pub struct BridgeTransferId<H>(pub H);
 
 #[derive(Debug)]
 pub struct BridgeTransferDetails<A, H> {
