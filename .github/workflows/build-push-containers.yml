@@ -143,7 +143,7 @@ jobs:
         run: |
           ./scripts/movement/manifest celestia-node
 
-  suzuka-config-build:
+  suzuka-full-node-setup-build:
     permissions:
       contents: read
       packages: write
@@ -166,13 +166,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image celestia-node
+        ./scripts/movement/build-push-image suzuka-full-node-setup
 
-  suzuka-config-manifest:
+  suzuka-full-node-setup-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-config-build
+    needs: suzuka-full-node-setup-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -187,7 +187,7 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest celestia-node
+          ./scripts/movement/manifest suzuka-full-node-setup
 
   wait-for-celestia-light-node-build:
     permissions:
@@ -281,7 +281,7 @@ jobs:
         run: |
           ./scripts/movement/manifest suzuka-full-node
 
-  faucet-build:
+  suzuka-faucet-service-build:
     permissions:
       contents: read
       packages: write
@@ -304,13 +304,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image faucet
+        ./scripts/movement/build-push-image suzuka-faucet-service
 
-  faucet-manifest:
+  suzuka-faucet-service-manifest:
     permissions:
       contents: read
       packages: write
-    needs: faucet-build
+    needs: suzuka-faucet-service-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -325,7 +325,7 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest faucet
+          ./scripts/movement/manifest suzuka-faucet-service
 
   
     
