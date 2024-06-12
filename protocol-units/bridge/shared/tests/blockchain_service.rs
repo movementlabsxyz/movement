@@ -46,16 +46,16 @@ impl BlockchainService for MockBlockchainService {
 		&self.initiator_contract
 	}
 
-	fn initiator_monitoring(&self) -> &Self::InitiatorMonitoring {
-		&self.initiator_monitoring
+	fn initiator_monitoring(&mut self) -> &mut Self::InitiatorMonitoring {
+		&mut self.initiator_monitoring
 	}
 
 	fn counterparty_contract(&self) -> &Self::CounterpartyContract {
 		&self.counterparty_contract
 	}
 
-	fn counterparty_monitoring(&self) -> &Self::CounterpartyMonitoring {
-		&self.counterparty_monitoring
+	fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring {
+		&mut self.counterparty_monitoring
 	}
 }
 
@@ -64,23 +64,7 @@ impl Stream for MockBlockchainService {
 		BlockchainEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-
-		// let initiator_monitoring = Pin::new(&mut this.initiator_monitoring);
-		// let counterparty_monitoring = Pin::new(&mut this.counterparty_monitoring);
-
-		match (
-			this.initiator_monitoring.poll_next_unpin(cx),
-			this.counterparty_monitoring.poll_next_unpin(cx),
-		) {
-			(Poll::Ready(Some(event)), _) => {
-				Poll::Ready(Some(BlockchainEvent::InitiatorEvent(event)))
-			}
-			(_, Poll::Ready(Some(event))) => {
-				Poll::Ready(Some(BlockchainEvent::CounterpartyEvent(event)))
-			}
-			_ => Poll::Pending,
-		}
+		self.poll_next_event(cx)
 	}
 }
 
@@ -105,7 +89,14 @@ impl BridgeContractInitiatorMonitoring for MockInitiatorMonitoring {
 	type Hash = &'static str;
 }
 
-struct MockCounterpartyMonitoring;
+struct MockCounterpartyMonitoring {
+	events: Vec<
+		BridgeContractCounterpartyEvent<
+			<Self as BridgeContractCounterpartyMonitoring>::Address,
+			<Self as BridgeContractCounterpartyMonitoring>::Hash,
+		>,
+	>,
+}
 
 impl Stream for MockCounterpartyMonitoring {
 	type Item = BridgeContractCounterpartyEvent<
@@ -114,7 +105,12 @@ impl Stream for MockCounterpartyMonitoring {
 	>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		Poll::Pending
+		let this = self.get_mut();
+		if let Some(event) = this.events.pop() {
+			Poll::Ready(Some(event))
+		} else {
+			Poll::Pending
+		}
 	}
 }
 
@@ -220,7 +216,8 @@ async fn test_bridge_transfer_initiated() {
 		)],
 	};
 
-	let counterparty_monitoring = MockCounterpartyMonitoring;
+	let counterparty_monitoring = MockCounterpartyMonitoring { events: vec![] };
+
 	let initiator_contract = MockInitiatorContract;
 	let counterparty_contract = MockCounterpartyContract;
 
