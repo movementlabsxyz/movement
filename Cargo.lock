@@ -6883,8 +6883,11 @@ dependencies = [
  "aptos-types",
  "m1-da-light-node-util",
  "rand 0.7.3",
+ "serde",
+ "serde_derive",
  "serde_json",
  "tempfile",
+ "toml 0.8.2",
 ]
 
 [[package]]
