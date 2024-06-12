@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -e
-
-mkdir -p "$DOT_MOVEMENT/env/move"
-
-export MOVE_ROCKS_CHAIN_ID="$(openssl rand -hex 10)"
-export MOVE_ROCKS_PATH="$DOT_MOVEMENT/move-rocks/${MOVE_ROCKS_CHAIN_ID}/.move-rocks"
-
-env | grep MOVE_ > "$DOT_MOVEMENT/env/move/.env"

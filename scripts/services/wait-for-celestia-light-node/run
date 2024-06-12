@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -e
-
-set -a  # Automatically export all variables
-source $DOT_MOVEMENT/env/celestia/.env
-set +a  # Disable automatic export
-
-./target/$CARGO_PROFILE/wait-for-celestia-light-node

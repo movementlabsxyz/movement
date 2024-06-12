@@ -16,10 +16,6 @@ processes:
     command: |
       ./scripts/services/suzuka-full-node/build
 
-  build-suzuka-faucet:
-    command: |
-      ./scripts/services/suzuka-faucet/build
-
   build:
     command: |
       exit 0
@@ -29,6 +25,4 @@ processes:
       build-wait-for-celestia-light-node:
         condition: process_completed_successfully
       build-suzuka-full-node:
-        condition: process_completed_successfully
-      build-suzuka-faucet:
         condition: process_completed_successfully

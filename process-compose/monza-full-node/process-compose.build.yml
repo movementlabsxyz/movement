@@ -16,10 +16,6 @@ processes:
     command: |
       ./scripts/services/monza-full-node/build
 
-  build-monza-faucet:
-    command: |
-      ./scripts/services/monza-faucet/build
-
   build:
     command: |
       exit 0
@@ -29,6 +25,4 @@ processes:
       build-wait-for-celestia-light-node:
         condition: process_completed_successfully
       build-monza-full-node:
-        condition: process_completed_successfully
-      build-monza-faucet:
         condition: process_completed_successfully

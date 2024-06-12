@@ -6845,6 +6845,7 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

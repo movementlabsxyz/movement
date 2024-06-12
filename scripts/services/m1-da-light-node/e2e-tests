@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-set -e
-
-set -a  # Automatically export all variables
-source $DOT_MOVEMENT/env/celestia/.env
-set +a  # Disable automatic export
-
-cargo test -p m1-da-light-node-verifier -- --test-threads=1
-cargo test -p m1-da-light-node-client --features "sequencer" -- --test-threads=1

@@ -7,4 +7,7 @@ processes:
   setup:
     command: |
       cargo run --bin monza-full-node-setup
+    depends_on:
+      build:
+        condition: process_completed_successfully
     
