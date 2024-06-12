@@ -19,6 +19,6 @@
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 
 [submodule "protocol-units/bridge/contracts/lib/forge-std"]
-    path = protocol-units/bridge/contracts/lib/forge-std
-    url = https://github.com/foundry-rs/forge-std
+	path = protocol-units/bridge/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
 
