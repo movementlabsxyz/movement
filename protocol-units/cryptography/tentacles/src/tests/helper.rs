@@ -411,7 +411,7 @@ pub fn test_clairvoyant_construction_matches_interleaved_construction<H: SimpleH
     operations_by_version: Vec<Vec<(KeyHash, Option<OwnedValue>)>>,
 ) {
     // Create the expected list of key-value pairs as a hashmap by following the list of operations
-    // in order, keeping track of only the latest value
+    // in order, to keep track of only the latest value
     let mut expected_final = HashMap::new();
     for (version, operations) in operations_by_version.iter().enumerate() {
         for (key, value) in operations {
