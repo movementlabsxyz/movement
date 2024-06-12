@@ -20,11 +20,17 @@ pub trait BlockchainService:
 	type Address;
 	type Hash;
 
-	type InitiatorContract: BridgeContractInitiator<Self::Address, Self::Hash>;
-	type InitiatorMonitoring: BridgeContractInitiatorMonitoring<Self::Address, Self::Hash>;
+	type InitiatorContract: BridgeContractInitiator;
+	type InitiatorMonitoring: BridgeContractInitiatorMonitoring<
+		Address = Self::Address,
+		Hash = Self::Hash,
+	>;
 
-	type CounterpartyContract: BridgeContractCounterparty<Self::Address, Self::Hash>;
-	type CounterpartyMonitoring: BridgeContractCounterpartyMonitoring<Self::Address, Self::Hash>;
+	type CounterpartyContract: BridgeContractCounterparty;
+	type CounterpartyMonitoring: BridgeContractCounterpartyMonitoring<
+		Address = Self::Address,
+		Hash = Self::Hash,
+	>;
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract;
 	fn initiator_monitoring(&self) -> &Self::InitiatorMonitoring;

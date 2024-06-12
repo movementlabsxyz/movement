@@ -14,12 +14,16 @@ pub enum BridgeContractCounterpartyEvent<A, H> {
 	BridgeTransferLocked(BridgeTransferDetails<A, H>),
 }
 
-pub trait BridgeContractInitiatorMonitoring<A, H>:
-	Stream<Item = BridgeContractInitiatorEvent<A, H>>
+pub trait BridgeContractInitiatorMonitoring:
+	Stream<Item = BridgeContractInitiatorEvent<Self::Address, Self::Hash>>
 {
+	type Address;
+	type Hash;
 }
 
-pub trait BridgeContractCounterpartyMonitoring<A, H>:
-	Stream<Item = BridgeContractCounterpartyEvent<A, H>>
+pub trait BridgeContractCounterpartyMonitoring:
+	Stream<Item = BridgeContractCounterpartyEvent<Self::Address, Self::Hash>>
 {
+	type Address;
+	type Hash;
 }
