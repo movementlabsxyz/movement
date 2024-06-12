@@ -1,9 +1,9 @@
 use derive_more::Deref;
 
-#[derive(Deref, Debug)]
+#[derive(Deref, Debug, PartialEq, Eq)]
 pub struct BridgeTransferId<H>(pub H);
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: A,

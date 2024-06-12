@@ -1,9 +1,22 @@
+use futures::Stream;
+
 use crate::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
-	bridge_monitoring::{BridgeContractCounterpartyMonitoring, BridgeContractInitiatorMonitoring},
+	bridge_monitoring::{
+		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
+		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
+	},
 };
 
-pub trait BlockchainService {
+#[derive(Debug, PartialEq, Eq)]
+pub enum BlockchainEvent<A, H> {
+	InitiatorEvent(BridgeContractInitiatorEvent<A, H>),
+	CounterpartyEvent(BridgeContractCounterpartyEvent<A, H>),
+}
+
+pub trait BlockchainService:
+	Stream<Item = BlockchainEvent<Self::Address, Self::Hash>> + Unpin
+{
 	type Address;
 	type Hash;
 

@@ -1,8 +1,8 @@
-use futures::Stream;
+use futures::{Stream, StreamExt};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use bridge_shared::blockchain_service::BlockchainService;
+use bridge_shared::blockchain_service::{BlockchainEvent, BlockchainService};
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractInitiator, BridgeContractResult,
 };
@@ -50,10 +50,34 @@ impl BlockchainService for MockBlockchainService {
 	}
 }
 
+impl Stream for MockBlockchainService {
+	type Item = BlockchainEvent<&'static str, &'static str>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+
+		// let initiator_monitoring = Pin::new(&mut this.initiator_monitoring);
+		// let counterparty_monitoring = Pin::new(&mut this.counterparty_monitoring);
+
+		match (
+			this.initiator_monitoring.poll_next_unpin(cx),
+			this.counterparty_monitoring.poll_next_unpin(cx),
+		) {
+			(Poll::Ready(Some(event)), _) => {
+				Poll::Ready(Some(BlockchainEvent::InitiatorEvent(event)))
+			}
+			(_, Poll::Ready(Some(event))) => {
+				Poll::Ready(Some(BlockchainEvent::CounterpartyEvent(event)))
+			}
+			_ => Poll::Pending,
+		}
+	}
+}
+
 impl Stream for MockInitiatorMonitoring {
 	type Item = BridgeContractInitiatorEvent<&'static str, &'static str>;
 
-	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 		if let Some(event) = this.events.pop() {
 			Poll::Ready(Some(event))
@@ -70,7 +94,7 @@ struct MockCounterpartyMonitoring;
 impl Stream for MockCounterpartyMonitoring {
 	type Item = BridgeContractCounterpartyEvent<&'static str, &'static str>;
 
-	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		Poll::Pending
 	}
 }
@@ -175,12 +199,27 @@ async fn test_bridge_transfer_initiated() {
 	let initiator_contract = MockInitiatorContract;
 	let counterparty_contract = MockCounterpartyContract;
 
-	let blockchain_service = MockBlockchainService {
+	let mut blockchain_service = MockBlockchainService {
 		initiator_contract,
 		initiator_monitoring,
 		counterparty_contract,
 		counterparty_monitoring,
 	};
 
-	// Use the blockchain_service in your test
+	let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+	let event = blockchain_service.poll_next_unpin(&mut cx);
+
+	assert_eq!(
+		event,
+		Poll::Ready(Some(BlockchainEvent::InitiatorEvent(
+			BridgeContractInitiatorEvent::BridgeTransferInitiated(BridgeTransferDetails {
+				bridge_transfer_id: BridgeTransferId("transfer_id"),
+				initiator_address: "initiator",
+				recipient_address: "recipient",
+				hash_lock: "hash_lock",
+				time_lock: 100,
+				amount: 1000,
+			})
+		)))
+	);
 }
