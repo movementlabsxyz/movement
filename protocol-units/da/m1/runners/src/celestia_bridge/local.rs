@@ -96,7 +96,8 @@ impl Runner for Local {
                 "--core.ip", "0.0.0.0",
                 "--keyring.accname", "validator",
                 "--gateway.addr", "0.0.0.0",
-                "--rpc.addr", "0.0.0.0"
+                "--rpc.addr", "0.0.0.0",
+                "--log.level", "FATAL",
             ],
         ).await?;
         
