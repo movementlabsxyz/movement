@@ -469,6 +469,49 @@ impl Executor {
 
 		Ok(())
 	}
+
+	pub async fn serve_full_node_data_service(&self) -> Result<(), anyhow::Error> {
+		let indexer_context = Arc::new(context.clone());
+        let indexer_config = node_config.indexer.clone();
+        let server = FullnodeDataService {
+            context: indexer_context.clone(),
+            processor_task_count: 4,
+            processor_batch_size: 4,
+            output_batch_size: 4,
+        };
+
+        tokio::spawn(async move {
+            println!("Does this show?")
+        });
+    
+        println!("Starting server");
+        tokio::spawn(async move {
+
+            println!("Starting indexer gRPC service.");
+            match Server::builder()
+                .add_service(FullnodeDataServer::new(server))
+                .serve(String::from("0.0.0.0:8090").to_socket_addrs().unwrap().next().unwrap())
+                .await
+            {
+                Ok(_) => {
+                    println!("Indexer ");
+                },
+                Err(e) => {
+                    eprintln!("Failed to start server");
+                    // io::stdout().flush().unwrap(); // Ensuring the output is flushed
+                }
+            }
+
+        });
+	}
+
+	pub async fn serve_indexer_api(&self) -> Result<(), anyhow::Error> {
+		tokio::spawn(async move {
+            println!("Starting indexer server.");
+            run_forever(indexer_config, indexer_context.clone()).await;
+        });
+	}
+
 }
 
 fn ledger_info_with_sigs(
