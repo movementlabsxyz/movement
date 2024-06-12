@@ -29,7 +29,7 @@ pub trait BridgeContractInitiator {
 		recipient_address: RecipientAddress<Self::Address>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		amount: u64,
+		amount: crate::types::Amount,
 	) -> BridgeContractResult<()>;
 
 	async fn complete_bridge_transfer<S: Send>(
@@ -60,7 +60,7 @@ pub trait BridgeContractCounterparty {
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		recipient: RecipientAddress<Self::Address>,
-		amount: u64,
+		amount: crate::types::Amount,
 	) -> bool;
 
 	async fn complete_bridge_transfer<S: Send>(
