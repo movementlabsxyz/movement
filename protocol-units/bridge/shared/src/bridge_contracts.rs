@@ -1,6 +1,8 @@
 use thiserror::Error;
 
-use crate::types::{BridgeTransferDetails, BridgeTransferId};
+use crate::types::{
+	BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress, TimeLock,
+};
 
 #[derive(Error, Debug)]
 pub enum BridgeContractError {
@@ -23,10 +25,10 @@ pub trait BridgeContractInitiator {
 
 	async fn initiate_bridge_transfer(
 		&self,
-		initiator_address: Self::Address,
-		recipient_address: Self::Address,
-		hash_lock: Self::Hash,
-		time_lock: u64,
+		initiator_address: InitiatorAddress<Self::Address>,
+		recipient_address: RecipientAddress<Self::Address>,
+		hash_lock: HashLock<Self::Hash>,
+		time_lock: TimeLock,
 		amount: u64,
 	) -> BridgeContractResult<()>;
 
@@ -55,9 +57,9 @@ pub trait BridgeContractCounterparty {
 	async fn lock_bridge_transfer_assets(
 		&self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		hash_lock: Self::Hash,
-		time_lock: u64,
-		recipient: Self::Address,
+		hash_lock: HashLock<Self::Hash>,
+		time_lock: TimeLock,
+		recipient: RecipientAddress<Self::Address>,
 		amount: u64,
 	) -> bool;
 

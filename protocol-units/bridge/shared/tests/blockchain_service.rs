@@ -2,7 +2,6 @@ use futures::{Stream, StreamExt};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use bridge_shared::blockchain_service::{BlockchainEvent, BlockchainService};
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractInitiator, BridgeContractResult,
 };
@@ -11,6 +10,10 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 };
 use bridge_shared::types::{BridgeTransferDetails, BridgeTransferId};
+use bridge_shared::{
+	blockchain_service::{BlockchainEvent, BlockchainService},
+	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
+};
 
 struct MockInitiatorMonitoring {
 	events: Vec<
@@ -128,10 +131,10 @@ impl BridgeContractInitiator for MockInitiatorContract {
 
 	async fn initiate_bridge_transfer(
 		&self,
-		_initiator_address: Self::Address,
-		_recipient_address: Self::Address,
-		_hash_lock: Self::Hash,
-		_time_lock: u64,
+		_initiator_address: InitiatorAddress<Self::Address>,
+		_recipient_address: RecipientAddress<Self::Address>,
+		_hash_lock: HashLock<Self::Hash>,
+		_time_lock: TimeLock,
 		_amount: u64,
 	) -> BridgeContractResult<()> {
 		Ok(())
@@ -170,9 +173,9 @@ impl BridgeContractCounterparty for MockCounterpartyContract {
 	async fn lock_bridge_transfer_assets(
 		&self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_hash_lock: Self::Hash,
-		_time_lock: u64,
-		_recipient: Self::Address,
+		_hash_lock: HashLock<Self::Hash>,
+		_time_lock: TimeLock,
+		_recipient: RecipientAddress<Self::Address>,
 		_amount: u64,
 	) -> bool {
 		true
@@ -207,10 +210,10 @@ async fn test_bridge_transfer_initiated() {
 		events: vec![BridgeContractInitiatorEvent::BridgeTransferInitiated(
 			BridgeTransferDetails {
 				bridge_transfer_id: BridgeTransferId("transfer_id"),
-				initiator_address: "initiator",
-				recipient_address: "recipient",
-				hash_lock: "hash_lock",
-				time_lock: 100,
+				initiator_address: InitiatorAddress("initiator"),
+				recipient_address: RecipientAddress("recipient"),
+				hash_lock: HashLock("hash_lock"),
+				time_lock: TimeLock(100),
 				amount: 1000,
 			},
 		)],
@@ -235,10 +238,10 @@ async fn test_bridge_transfer_initiated() {
 		Poll::Ready(Some(BlockchainEvent::InitiatorEvent(
 			BridgeContractInitiatorEvent::BridgeTransferInitiated(BridgeTransferDetails {
 				bridge_transfer_id: BridgeTransferId("transfer_id"),
-				initiator_address: "initiator",
-				recipient_address: "recipient",
-				hash_lock: "hash_lock",
-				time_lock: 100,
+				initiator_address: InitiatorAddress("initiator"),
+				recipient_address: RecipientAddress("recipient"),
+				hash_lock: HashLock("hash_lock"),
+				time_lock: TimeLock(100),
 				amount: 1000,
 			})
 		)))
