@@ -339,11 +339,14 @@ impl Executor {
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
+
+		// If you add the `at` method after the nest we get a runtime error
 		let app = Route::new()
 			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
 			.nest("/movement/v1/health", health)
+			.data(self.context())
 			.with(cors);
 
 		Server::new(TcpListener::bind(self.listen_url.clone()))
