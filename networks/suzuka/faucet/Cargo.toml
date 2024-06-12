@@ -20,3 +20,5 @@ clap = { workspace = true }
 tokio = { workspace = true }
 dot-movement = { workspace = true }
 suzuka-config = { workspace = true }
+aptos-config = { workspace = true }
+aptos-sdk = { workspace = true }

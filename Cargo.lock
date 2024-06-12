@@ -11031,8 +11031,10 @@ name = "suzuka-faucet-service"
 version = "2.0.1"
 dependencies = [
  "anyhow",
+ "aptos-config",
  "aptos-faucet-core",
  "aptos-logger",
+ "aptos-sdk",
  "clap 4.5.4",
  "dot-movement",
  "suzuka-config",
