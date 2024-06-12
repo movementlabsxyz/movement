@@ -49,6 +49,10 @@ pub struct Config {
 	/// This does not have a default because if it is needed, a default is generally not appropriate.
 	pub celestia_validator_address: Option<String>,
 
+	/// Whether to force a new network or not
+	#[serde(default = "Config::default_force_new_network")]
+	pub force_new_network: Option<bool>,
+
 }
 
 impl Default for Config {
@@ -64,6 +68,7 @@ impl Default for Config {
 			celestia_chain_id: None,
 			celestia_node_path: None,
 			celestia_validator_address: None,
+			force_new_network: Config::default_force_new_network(),
 		}
 	}
 }
@@ -162,6 +167,17 @@ impl Config {
 		self.celestia_node_path.as_ref().ok_or(anyhow::anyhow!("No Celestia node path provided")).map(|s| s.to_string())
 	}
 
+	/// The default force new network.
+	const DEFAULT_FORCE_NEW_NETWORK: bool = true;
+	pub fn default_force_new_network() -> Option<bool> {
+		Some(Self::DEFAULT_FORCE_NEW_NETWORK)
+	}
+
+	/// Gets a result for the force new network member.
+	pub fn try_force_new_network(&self) -> Result<bool, anyhow::Error> {
+		self.force_new_network.ok_or(anyhow::anyhow!("No force new network provided"))
+	}
+
 	/// Try to read the location of the config file from the environment and then read the config from the file
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
 		
@@ -225,18 +241,7 @@ pub mod test {
 	#[test]
 	fn test_to_and_from_toml_file() -> Result<(), anyhow::Error> {
 		
-		let config = Config {
-			celestia_auth_token: None,
-			celestia_node_url: Config::default_celestia_node_url(),
-			celestia_namespace: Config::default_namespace(),
-			verification_mode: Config::default_verification_mode(),
-			memseq_config : Config::default_memseq_config(),
-			service_address: Config::default_service_address(),
-			celestia_app_path: None,
-			celestia_chain_id: None,
-			celestia_node_path: None,
-			celestia_validator_address: None,
-		};
+		let config = Config::default();
 
 		let temp_directory = tempfile::tempdir()?;
 		let path = temp_directory.path().join("config.toml");

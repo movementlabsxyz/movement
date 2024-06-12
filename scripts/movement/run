@@ -2,5 +2,4 @@
 export CARGO_PROFILE="debug"
 export PATH="$PATH:$(pwd)/target/$CARGO_PROFILE"
 export DOT_MOVEMENT_PATH="$(pwd)/.movement"
-rm -rf "$DOT_MOVEMENT_PATH"
 ./scripts/movement/$2 "$@"

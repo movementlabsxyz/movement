@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+mkdir -p $DOT_MOVEMENT_PATH
+echo $MONZA_APTOS_PATH
 WORKING_DIR=$(pwd)
-temp_dir=$DOT_MOVEMENT/monza-aptos
+temp_dir=$DOT_MOVEMENT_PATH/monza-aptos
 cp -R "$MONZA_APTOS_PATH" "$temp_dir"
 chmod -R 755 $temp_dir
-cd $DOT_MOVEMENT/monza-aptos
+cd $DOT_MOVEMENT_PATH/monza-aptos
 echo "Building aptos-faucet-service..."
 cargo build $CARGO_PROFILE_FLAGS -p aptos-faucet-service
 echo "Built aptos-faucet-service!"

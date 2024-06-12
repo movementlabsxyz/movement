@@ -39,12 +39,23 @@ impl Local {
         // use the dot movement path to set up the celestia app and node paths
         let dot_movement_path = dot_movement.get_path();
 
-        // if the celestia chain id is not set, generate a random operations
-        config.celestia_chain_id.get_or_insert(Self::random_chain_id());
-        let celestia_chain_id = config.try_celestia_chain_id()?;
+        let celestia_chain_id = if config.try_force_new_network()? {
+            // if forced just replace the chain id with a random one
+            config.celestia_chain_id.replace(Self::random_chain_id());
+            let celestia_chain_id = config.try_celestia_chain_id()?;
 
-        // if the celestia namespace is not set, generate a random namespace
-        config.celestia_namespace.get_or_insert(Self::random_namespace());
+            // if the celestia namespace is not set, generate a random namespace
+            config.celestia_namespace.replace(Self::random_namespace());
+            celestia_chain_id
+        } else {
+            // if the celestia chain id is not set, generate a random operations
+            config.celestia_chain_id.get_or_insert(Self::random_chain_id());
+            let celestia_chain_id = config.try_celestia_chain_id()?;
+
+            // if the celestia namespace is not set, generate a random namespace
+            config.celestia_namespace.get_or_insert(Self::random_namespace());
+            celestia_chain_id
+        };
 
         // update the app path with the chain id
         config.celestia_app_path.replace(
@@ -76,7 +87,8 @@ impl Local {
         // if the memseq chain id is not set, use the celestia chain id
         let mut memseq_config = config.try_memseq_config()?.clone();
         let chain_id = config.try_celestia_chain_id()?;
-        memseq_config.sequencer_chain_id.get_or_insert(chain_id.clone());
+        // should always match celestia chain id (maybe should be removed in the future)
+        memseq_config.sequencer_chain_id.replace(chain_id.clone());
 
         // set the memseq database path accordingly
         memseq_config.sequencer_database_path.replace(

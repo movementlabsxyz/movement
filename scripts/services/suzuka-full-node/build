@@ -2,7 +2,7 @@
 set -e
 
 echo "Building suzuka-config..."
-cargo build $CARGO_PROFILE_FLAGS --bin suzuka-config
+cargo build $CARGO_PROFILE_FLAGS --bin suzuka-full-node-setup
 echo "Built suzuka-config!"
 
 echo "Building suzuka-full-node..."
