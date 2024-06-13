@@ -24,7 +24,7 @@ processes:
         command: echo "true"
     depends_on:
        celestia-node-appd:
-        condition: process_started
+        condition: process_healthy
 
   celestia-light-node:
     command: |
