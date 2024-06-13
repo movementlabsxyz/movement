@@ -19,6 +19,7 @@ thiserror.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
+test-log = { version = "0.2.16", features = ["trace"] }
 tokio.workspace = true
 
 [lints]
