@@ -1,0 +1,9 @@
+[package]
+name = "malicious"
+version = "0.0.1"
+
+[addresses]
+malicious_test = "_"
+
+[dependencies]
+AptosFramework = { local = "../../../../../../.movement/monza-aptos/aptos-move/framework/aptos-framework" }

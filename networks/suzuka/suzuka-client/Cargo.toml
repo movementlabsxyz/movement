@@ -16,6 +16,9 @@ path = "bin/demoscenario.rs"
 [[bin]]
 name = "basicalicebob"
 path = "bin/basicalicebob.rs"
+[[bin]]
+name = "malicious_test"
+path = "bin/malicious/malicious_test.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -45,6 +48,7 @@ thiserror = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
 url = { workspace = true }
+bcs = "0.1.6"
 
 [lints]
 workspace = true

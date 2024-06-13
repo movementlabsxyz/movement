@@ -1,0 +1,14 @@
+---
+profiles:
+  default:
+    private_key: "0xcb1fe7df72aff4a114d2bff60ecce2172f342b66cd5dafb2b8844b25e29b8d58"
+    public_key: "0x8d13cf728437f4be529ad4c52543b5271dc1183e462c0f3b6803c9e371a6ae33"
+    account: d82405d9faa256840ff6a8fe78d28d3f43581b1d34aa7f78476f4ce7e47a9e92
+    rest_url: "http://127.0.0.1:8080/"
+    faucet_url: "http://127.0.0.1:30732/"
+  suzuka:
+    private_key: "0xe22796a22de62e28fb91f188dd060f7831dab2d83f798b6325df4796f577f50f"
+    public_key: "0x3a33cbb8c3c05ce3a4515e1d8e1f3ba1b4e636ea62c08907968bcd2f1c438e37"
+    account: 99ed7d8aef0a1fa2280af603e449ce5e8d8a8bbf32392e31f6fff47e3682dfb4
+    rest_url: "http://127.0.0.1:30731/"
+    faucet_url: "http://127.0.0.1:30732/"

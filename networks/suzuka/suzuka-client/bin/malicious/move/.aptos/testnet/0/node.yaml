@@ -1,0 +1,143 @@
+---
+api:
+  address: "0.0.0.0:8080"
+base:
+  data_dir: /home/pdelrieu/dev/blockchain/movement/github/movement/networks/suzuka/suzuka-client/bin/malicious/move/.aptos/testnet/0
+  waypoint:
+    from_config: "0:4c628bc4690d548f81efdad601b8643fa3757a3caa2e8e5e23e2d968a48d7431"
+consensus:
+  safety_rules:
+    backend:
+      type: on_disk_storage
+      path: secure_storage.json
+      namespace: ~
+    service:
+      type: thread
+    initial_safety_rules_config:
+      from_file:
+        identity_blob_path: /home/pdelrieu/dev/blockchain/movement/github/movement/networks/suzuka/suzuka-client/bin/malicious/move/.aptos/testnet/0/validator-identity.yaml
+        waypoint:
+          from_config: "0:4c628bc4690d548f81efdad601b8643fa3757a3caa2e8e5e23e2d968a48d7431"
+  quorum_store_poll_time_ms: 1000
+  quorum_store:
+    num_workers_for_remote_batches: 1
+execution:
+  genesis_file_location: /home/pdelrieu/dev/blockchain/movement/github/movement/networks/suzuka/suzuka-client/bin/malicious/move/.aptos/testnet/0/genesis.blob
+  concurrency_level: 1
+  num_proof_reading_threads: 1
+  paranoid_type_verification: false
+  paranoid_hot_potato_verification: false
+full_node_networks:
+  - max_connection_delay_ms: 60000
+    connection_backoff_base: 2
+    connectivity_check_interval_ms: 5000
+    network_channel_size: 1024
+    max_concurrent_network_reqs: 100
+    discovery_method: onchain
+    discovery_methods: []
+    identity:
+      type: from_file
+      path: /home/pdelrieu/dev/blockchain/movement/github/movement/networks/suzuka/suzuka-client/bin/malicious/move/.aptos/testnet/0/vfn-identity.yaml
+    listen_address: /ip4/0.0.0.0/tcp/6181
+    mutual_authentication: false
+    network_id: public
+    runtime_threads: ~
+    inbound_rx_buffer_size_bytes: ~
+    inbound_tx_buffer_size_bytes: ~
+    outbound_rx_buffer_size_bytes: ~
+    outbound_tx_buffer_size_bytes: ~
+    seed_addrs: {}
+    seeds: {}
+    max_frame_size: 4194304
+    enable_proxy_protocol: false
+    ping_interval_ms: 10000
+    ping_timeout_ms: 20000
+    ping_failures_tolerated: 3
+    max_outbound_connections: 0
+    max_inbound_connections: 100
+    inbound_rate_limit_config: ~
+    outbound_rate_limit_config: ~
+    max_message_size: 67108864
+    max_parallel_deserialization_tasks: 16
+    enable_latency_aware_dialing: true
+  - max_connection_delay_ms: 60000
+    connection_backoff_base: 2
+    connectivity_check_interval_ms: 5000
+    network_channel_size: 1024
+    max_concurrent_network_reqs: 100
+    discovery_method: none
+    discovery_methods: []
+    identity:
+      type: from_file
+      path: /home/pdelrieu/dev/blockchain/movement/github/movement/networks/suzuka/suzuka-client/bin/malicious/move/.aptos/testnet/0/vfn-identity.yaml
+    listen_address: /ip4/0.0.0.0/tcp/45799
+    mutual_authentication: false
+    network_id:
+      private: vfn
+    runtime_threads: ~
+    inbound_rx_buffer_size_bytes: ~
+    inbound_tx_buffer_size_bytes: ~
+    outbound_rx_buffer_size_bytes: ~
+    outbound_tx_buffer_size_bytes: ~
+    seed_addrs: {}
+    seeds: {}
+    max_frame_size: 4194304
+    enable_proxy_protocol: false
+    ping_interval_ms: 10000
+    ping_timeout_ms: 20000
+    ping_failures_tolerated: 3
+    max_outbound_connections: 0
+    max_inbound_connections: 100
+    inbound_rate_limit_config: ~
+    outbound_rate_limit_config: ~
+    max_message_size: 67108864
+    max_parallel_deserialization_tasks: 16
+    enable_latency_aware_dialing: true
+logger:
+  level: DEBUG
+mempool:
+  max_broadcasts_per_peer: 1
+  shared_mempool_max_concurrent_inbound_syncs: 1
+peer_monitoring_service:
+  enable_peer_monitoring_client: false
+  max_concurrent_requests: 1
+state_sync:
+  data_streaming_service:
+    progress_check_interval_ms: 10000
+  state_sync_driver:
+    enable_auto_bootstrapping: true
+    progress_check_interval_ms: 10000
+    max_connection_deadline_secs: 1
+validator_network:
+  max_connection_delay_ms: 10000
+  connection_backoff_base: 2
+  connectivity_check_interval_ms: 10000
+  network_channel_size: 1024
+  max_concurrent_network_reqs: 1
+  discovery_method: onchain
+  discovery_methods: []
+  identity:
+    type: from_file
+    path: /home/pdelrieu/dev/blockchain/movement/github/movement/networks/suzuka/suzuka-client/bin/malicious/move/.aptos/testnet/0/validator-identity.yaml
+  listen_address: /ip4/0.0.0.0/tcp/6180
+  mutual_authentication: true
+  network_id: validator
+  runtime_threads: 1
+  inbound_rx_buffer_size_bytes: ~
+  inbound_tx_buffer_size_bytes: ~
+  outbound_rx_buffer_size_bytes: ~
+  outbound_tx_buffer_size_bytes: ~
+  seed_addrs: {}
+  seeds: {}
+  max_frame_size: 4194304
+  enable_proxy_protocol: false
+  ping_interval_ms: 10000
+  ping_timeout_ms: 20000
+  ping_failures_tolerated: 3
+  max_outbound_connections: 6
+  max_inbound_connections: 100
+  inbound_rate_limit_config: ~
+  outbound_rate_limit_config: ~
+  max_message_size: 67108864
+  max_parallel_deserialization_tasks: 16
+  enable_latency_aware_dialing: true

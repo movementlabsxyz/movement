@@ -11,7 +11,10 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "abstract-domain-derive"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -690,7 +693,10 @@ checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 [[package]]
 name = "aptos-abstract-gas-usage"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-gas-algebra",
@@ -703,7 +709,10 @@ dependencies = [
 [[package]]
 name = "aptos-accumulator"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -713,7 +722,10 @@ dependencies = [
 [[package]]
 name = "aptos-aggregator"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -728,7 +740,10 @@ dependencies = [
 [[package]]
 name = "aptos-api"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -774,7 +789,10 @@ dependencies = [
 [[package]]
 name = "aptos-api-types"
 version = "0.0.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -804,7 +822,10 @@ dependencies = [
 [[package]]
 name = "aptos-bcs-utils"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "hex",
@@ -813,7 +834,10 @@ dependencies = [
 [[package]]
 name = "aptos-bitvec"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "serde",
  "serde_bytes",
@@ -822,7 +846,10 @@ dependencies = [
 [[package]]
 name = "aptos-block-executor"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -858,7 +885,10 @@ dependencies = [
 [[package]]
 name = "aptos-block-partitioner"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -880,7 +910,10 @@ dependencies = [
 [[package]]
 name = "aptos-bounded-executor"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "futures",
  "rustversion",
@@ -890,7 +923,10 @@ dependencies = [
 [[package]]
 name = "aptos-build-info"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "shadow-rs",
 ]
@@ -898,7 +934,10 @@ dependencies = [
 [[package]]
 name = "aptos-cached-packages"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -913,7 +952,10 @@ dependencies = [
 [[package]]
 name = "aptos-channels"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -925,7 +967,10 @@ dependencies = [
 [[package]]
 name = "aptos-compression"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -937,7 +982,10 @@ dependencies = [
 [[package]]
 name = "aptos-config"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -971,7 +1019,10 @@ dependencies = [
 [[package]]
 name = "aptos-consensus-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -994,7 +1045,10 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto-derive",
@@ -1040,7 +1094,10 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -1050,7 +1107,10 @@ dependencies = [
 [[package]]
 name = "aptos-data-client"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-config",
  "aptos-crypto",
@@ -1081,7 +1141,10 @@ dependencies = [
 [[package]]
 name = "aptos-db"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-accumulator",
@@ -1129,7 +1192,10 @@ dependencies = [
 [[package]]
 name = "aptos-db-indexer"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1156,7 +1222,10 @@ dependencies = [
 [[package]]
 name = "aptos-dkg"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1188,7 +1257,10 @@ dependencies = [
 [[package]]
 name = "aptos-drop-helper"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-experimental-runtimes",
  "aptos-infallible",
@@ -1200,7 +1272,10 @@ dependencies = [
 [[package]]
 name = "aptos-event-notifications"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-channels",
@@ -1217,7 +1292,10 @@ dependencies = [
 [[package]]
 name = "aptos-executor"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1251,7 +1329,10 @@ dependencies = [
 [[package]]
 name = "aptos-executor-service"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1288,7 +1369,10 @@ dependencies = [
 [[package]]
 name = "aptos-executor-test-helpers"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1311,7 +1395,10 @@ dependencies = [
 [[package]]
 name = "aptos-executor-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1333,7 +1420,10 @@ dependencies = [
 [[package]]
 name = "aptos-experimental-runtimes"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-runtimes",
  "core_affinity",
@@ -1346,7 +1436,10 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-core"
 version = "2.0.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1380,7 +1473,10 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-metrics-server"
 version = "2.0.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -1395,7 +1491,10 @@ dependencies = [
 [[package]]
 name = "aptos-framework"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1470,7 +1569,10 @@ dependencies = [
 [[package]]
 name = "aptos-gas-algebra"
 version = "0.0.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "either",
  "move-core-types",
@@ -1479,7 +1581,10 @@ dependencies = [
 [[package]]
 name = "aptos-gas-meter"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -1495,7 +1600,10 @@ dependencies = [
 [[package]]
 name = "aptos-gas-profiling"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1518,7 +1626,10 @@ dependencies = [
 [[package]]
 name = "aptos-gas-schedule"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-global-constants",
@@ -1533,7 +1644,10 @@ dependencies = [
 [[package]]
 name = "aptos-genesis"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1558,22 +1672,34 @@ dependencies = [
 [[package]]
 name = "aptos-global-constants"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 
 [[package]]
 name = "aptos-id-generator"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 
 [[package]]
 name = "aptos-infallible"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 
 [[package]]
 name = "aptos-jellyfish-merkle"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1601,7 +1727,10 @@ dependencies = [
 [[package]]
 name = "aptos-keygen"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -1611,7 +1740,10 @@ dependencies = [
 [[package]]
 name = "aptos-language-e2e-tests"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
@@ -1658,7 +1790,10 @@ dependencies = [
 [[package]]
 name = "aptos-ledger"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -1672,7 +1807,10 @@ dependencies = [
 [[package]]
 name = "aptos-log-derive"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -1682,7 +1820,10 @@ dependencies = [
 [[package]]
 name = "aptos-logger"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-infallible",
  "aptos-log-derive",
@@ -1703,7 +1844,10 @@ dependencies = [
 [[package]]
 name = "aptos-memory-usage-tracker"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-meter",
@@ -1717,7 +1861,10 @@ dependencies = [
 [[package]]
 name = "aptos-mempool"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-bounded-executor",
@@ -1757,7 +1904,10 @@ dependencies = [
 [[package]]
 name = "aptos-mempool-notifications"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-runtimes",
  "aptos-types",
@@ -1771,7 +1921,10 @@ dependencies = [
 [[package]]
 name = "aptos-memsocket"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-infallible",
  "bytes",
@@ -1782,7 +1935,10 @@ dependencies = [
 [[package]]
 name = "aptos-metrics-core"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "prometheus",
@@ -1791,7 +1947,10 @@ dependencies = [
 [[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-gas-schedule",
@@ -1817,7 +1976,10 @@ dependencies = [
 [[package]]
 name = "aptos-mvhashmap"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1840,7 +2002,10 @@ dependencies = [
 [[package]]
 name = "aptos-native-interface"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -1857,7 +2022,10 @@ dependencies = [
 [[package]]
 name = "aptos-netcore"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
@@ -1874,7 +2042,10 @@ dependencies = [
 [[package]]
 name = "aptos-network"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -1922,7 +2093,10 @@ dependencies = [
 [[package]]
 name = "aptos-node-resource-metrics"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-build-info",
  "aptos-infallible",
@@ -1938,7 +2112,10 @@ dependencies = [
 [[package]]
 name = "aptos-num-variants"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -1948,7 +2125,10 @@ dependencies = [
 [[package]]
 name = "aptos-openapi"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -1961,7 +2141,10 @@ dependencies = [
 [[package]]
 name = "aptos-package-builder"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1974,7 +2157,10 @@ dependencies = [
 [[package]]
 name = "aptos-peer-monitoring-service-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-config",
  "aptos-types",
@@ -1987,7 +2173,10 @@ dependencies = [
 [[package]]
 name = "aptos-proptest-helpers"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "crossbeam",
  "proptest",
@@ -1997,7 +2186,10 @@ dependencies = [
 [[package]]
 name = "aptos-protos"
 version = "1.3.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "futures-core",
  "pbjson",
@@ -2010,7 +2202,10 @@ dependencies = [
 [[package]]
 name = "aptos-proxy"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "ipnet",
 ]
@@ -2018,7 +2213,10 @@ dependencies = [
 [[package]]
 name = "aptos-push-metrics"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -2029,7 +2227,10 @@ dependencies = [
 [[package]]
 name = "aptos-rate-limiter"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-infallible",
  "aptos-logger",
@@ -2043,7 +2244,10 @@ dependencies = [
 [[package]]
 name = "aptos-rest-client"
 version = "0.0.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2069,7 +2273,10 @@ dependencies = [
 [[package]]
 name = "aptos-retrier"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-logger",
  "tokio",
@@ -2078,7 +2285,10 @@ dependencies = [
 [[package]]
 name = "aptos-rocksdb-options"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-config",
  "rocksdb",
@@ -2087,7 +2297,10 @@ dependencies = [
 [[package]]
 name = "aptos-runtimes"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "rayon",
  "tokio",
@@ -2096,7 +2309,10 @@ dependencies = [
 [[package]]
 name = "aptos-schemadb"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -2113,7 +2329,10 @@ dependencies = [
 [[package]]
 name = "aptos-scratchpad"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-crypto",
  "aptos-drop-helper",
@@ -2133,7 +2352,10 @@ dependencies = [
 [[package]]
 name = "aptos-sdk"
 version = "0.0.3"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2154,7 +2376,10 @@ dependencies = [
 [[package]]
 name = "aptos-sdk-builder"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -2173,7 +2398,10 @@ dependencies = [
 [[package]]
 name = "aptos-secure-net"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -2192,7 +2420,10 @@ dependencies = [
 [[package]]
 name = "aptos-secure-storage"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2214,7 +2445,10 @@ dependencies = [
 [[package]]
 name = "aptos-short-hex-str"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -2225,7 +2459,10 @@ dependencies = [
 [[package]]
 name = "aptos-speculative-state-helper"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -2237,7 +2474,10 @@ dependencies = [
 [[package]]
 name = "aptos-storage-interface"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2269,7 +2509,10 @@ dependencies = [
 [[package]]
 name = "aptos-storage-service-client"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-channels",
  "aptos-config",
@@ -2283,7 +2526,10 @@ dependencies = [
 [[package]]
 name = "aptos-storage-service-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-compression",
  "aptos-config",
@@ -2299,7 +2545,10 @@ dependencies = [
 [[package]]
 name = "aptos-table-natives"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-gas-schedule",
@@ -2320,7 +2569,10 @@ dependencies = [
 [[package]]
 name = "aptos-temppath"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -2329,7 +2581,10 @@ dependencies = [
 [[package]]
 name = "aptos-time-service"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-infallible",
  "enum_dispatch",
@@ -2342,7 +2597,10 @@ dependencies = [
 [[package]]
 name = "aptos-types"
 version = "0.0.3"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -2393,12 +2651,18 @@ dependencies = [
 [[package]]
 name = "aptos-utils"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 
 [[package]]
 name = "aptos-vault-client"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-crypto",
  "base64 0.13.1",
@@ -2414,7 +2678,10 @@ dependencies = [
 [[package]]
 name = "aptos-vm"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2470,7 +2737,10 @@ dependencies = [
 [[package]]
 name = "aptos-vm-genesis"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -2492,7 +2762,10 @@ dependencies = [
 [[package]]
 name = "aptos-vm-logging"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "aptos-crypto",
  "aptos-logger",
@@ -2507,7 +2780,10 @@ dependencies = [
 [[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2528,7 +2804,10 @@ dependencies = [
 [[package]]
 name = "aptos-vm-validator"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "aptos-event-notifications",
@@ -7453,7 +7732,10 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7470,7 +7752,10 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "backtrace",
@@ -7485,12 +7770,18 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7505,7 +7796,10 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -7517,7 +7811,10 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "fail 0.4.0",
@@ -7532,7 +7829,10 @@ dependencies = [
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "clap 4.5.7",
@@ -7549,7 +7849,10 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7595,7 +7898,10 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "difference",
@@ -7612,7 +7918,10 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7641,7 +7950,10 @@ dependencies = [
 [[package]]
 name = "move-compiler-v2"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -7674,7 +7986,10 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -7699,7 +8014,10 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7719,7 +8037,10 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "clap 4.5.7",
@@ -7737,7 +8058,10 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "codespan",
@@ -7756,7 +8080,10 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7770,7 +8097,10 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7789,7 +8119,10 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -7808,7 +8141,10 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "hex",
@@ -7821,7 +8157,10 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "hex",
@@ -7835,7 +8174,10 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "codespan",
@@ -7863,7 +8205,10 @@ dependencies = [
 [[package]]
 name = "move-package"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7900,7 +8245,10 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7939,7 +8287,10 @@ dependencies = [
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7969,7 +8320,10 @@ dependencies = [
 [[package]]
 name = "move-prover-bytecode-pipeline"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -8000,7 +8354,10 @@ dependencies = [
 [[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8028,7 +8385,10 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "abstract-domain-derive",
  "codespan",
@@ -8055,7 +8415,10 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.1"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "hex",
@@ -8078,7 +8441,10 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "once_cell",
  "serde",
@@ -8087,7 +8453,10 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8105,7 +8474,10 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "better_any",
@@ -8136,7 +8508,10 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "better_any",
  "bytes",
@@ -8161,7 +8536,10 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "anyhow",
  "bytes",
@@ -8176,7 +8554,10 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+=======
+>>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
 dependencies = [
  "bcs 0.1.4",
  "derivative",
@@ -11154,6 +11535,7 @@ dependencies = [
  "dot-movement",
 =======
  "async-trait",
+ "bcs 0.1.6",
  "futures",
  "itertools 0.12.1",
 >>>>>>> 186a4994 (recreate the PR to remove unknown modifications)

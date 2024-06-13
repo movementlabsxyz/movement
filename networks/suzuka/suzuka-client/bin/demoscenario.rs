@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::sync::Arc;
 /// A simple demo scenario that sleep a few milli second and log some messages.
-/// To run it use: cargo run --release --bin demoscenario
+/// To run it use: cargo run --release --bin demo_scenario
 use suzuka_client::load_soak_testing::execute_test;
 use suzuka_client::load_soak_testing::init_test;
 use suzuka_client::load_soak_testing::ExecutionConfig;
