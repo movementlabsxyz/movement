@@ -26,6 +26,12 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
         ./scripts/movement/build-push-image m1-da-light-node
@@ -46,12 +52,19 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest m1-da-light-node
 
   celestia-app-build:
+    needs: m1-da-light-node-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -71,6 +84,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
@@ -92,6 +111,12 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push Docker image movement
         run: |
@@ -118,6 +143,12 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
         ./scripts/movement/build-push-image celestia-node
@@ -139,11 +170,18 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest celestia-node
 
-  suzuka-config-build:
+  suzuka-full-node-setup-build:
+    needs: celestia-node-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -164,15 +202,21 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image celestia-node
+        ./scripts/movement/build-push-image suzuka-full-node-setup
 
-  suzuka-config-manifest:
+  suzuka-full-node-setup-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-config-build
+    needs: suzuka-full-node-setup-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -185,11 +229,18 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest celestia-node
+          ./scripts/movement/manifest suzuka-full-node-setup
 
   wait-for-celestia-light-node-build:
+    needs: suzuka-full-node-setup-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -209,6 +260,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
@@ -231,11 +288,18 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest wait-for-celestia-light-node
 
   suzuka-full-node-build:
+    needs: wait-for-celestia-light-node-build # to help avoid rate limiting
     permissions:
       contents: read
       packages: write
@@ -255,6 +319,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
@@ -277,11 +347,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest suzuka-full-node
 
-  faucet-build:
+  suzuka-faucet-service-build:
     permissions:
       contents: read
       packages: write
@@ -302,15 +378,21 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image faucet
+        ./scripts/movement/build-push-image suzuka-faucet-service
 
-  faucet-manifest:
+  suzuka-faucet-service-manifest:
     permissions:
       contents: read
       packages: write
-    needs: faucet-build
+    needs: suzuka-faucet-service-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -323,9 +405,15 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest faucet
+          ./scripts/movement/manifest suzuka-faucet-service
 
   
     
