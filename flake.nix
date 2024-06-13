@@ -73,6 +73,7 @@
           celestia-node
           celestia-app
           monza-aptos
+          jq
         ];
 
         # Specific version of toolchain

@@ -1,13 +1,13 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "../src/settlement/MCR.sol";
+import "../src/MCRLegacy.sol";
 
-contract DeployMCR is Script {
+contract DeployMCRLegacy is Script {
     function run() external {
         vm.startBroadcast();
 
-        MCR mcr = new MCR(
+        MCRLegacy mcr = new MCRLegacy(
             5,
             128,
             100 ether, // should accumulate 100 ether
