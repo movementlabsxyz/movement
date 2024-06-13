@@ -35,6 +35,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         // If msg.value is greater than 0, convert ETH to WETH and add to total amount
         if (msg.value > 0) {
             weth.deposit{value: msg.value}();
+            //Transfer WETH to this contract, revert if transfer fails
             require(weth.transfer(address(this), msg.value), "WETH transfer failed");
             totalAmount += msg.value;
         }
