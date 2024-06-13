@@ -240,12 +240,18 @@ where
 }
 
 impl SuzukaPartialNode<Executor> {
-	pub async fn try_from_env(
+	pub async fn try_from_config(
+		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-		let executor =
-			Executor::try_from_env(tx).context("Failed to get executor from environment")?;
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}",
+			config.execution_config.light_node_config.try_service_address()?
+		))
+		.await?;
+		let executor = Executor::try_from_config(tx, config.execution_config)
+			.await
+			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();
 		Self::bound(executor, light_node_client, settlement_client)

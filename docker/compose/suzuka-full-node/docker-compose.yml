@@ -1,0 +1,40 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
+    container_name: suzuka-full-node-setup
+    environment:
+      - CARGO_PROFILE=release
+      - MOVEMENT_PREBUILT=true
+    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "suzuka-full-node", "local", "-t=false"]
+    volumes:
+      - data-volume:/data
+
+  celestia-light-node:
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
+    container_name: suzuka-full-node-celestia-light-node
+    environment:
+      - CARGO_PROFILE=release
+      - MOVEMENT_PREBUILT=true
+    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "celestia-light-node", "local", "-t=false"]
+    volumes:
+      - data-volume:/data
+
+  celestia-light-node-synced:
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
+    container_name: suzuka-full-node-celestia-light-node-synced
+    environment:
+      - CARGO_PROFILE=release
+      - MOVEMENT_PREBUILT=true
+    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "celestia-light-node-synced", "local", "-t=false"]
+    volumes:
+      - data-volume:/data
+  
+  m1-da-light-node:
+    image: ghcr.io/movementlabsxyz/config:${GALI_SHA}
+    container_name: suzuka-full-node-m1-da-light-node
+    environment:
+      - CARGO_PROFILE=release
+      - MOVEMENT_PREBUILT=true
+    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "m1-da-light-node", "local", "-t=false"]
+    volumes:
+      - data-volume:/data
