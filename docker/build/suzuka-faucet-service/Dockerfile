@@ -1,4 +1,4 @@
-FROM ghcr.io/nixos/nix:latest AS builder
+FROM nixos/nix:latest AS builder
 
 RUN nix-env -iA nixpkgs.rsync nixpkgs.glibc nixpkgs.gawk
 
