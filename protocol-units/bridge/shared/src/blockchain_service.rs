@@ -1,7 +1,4 @@
-use std::{
-	pin::Pin,
-	task::{Context, Poll},
-};
+use std::task::{Context, Poll};
 
 use futures::{Stream, StreamExt};
 
@@ -38,12 +35,10 @@ pub trait BlockchainService:
 	fn counterparty_contract(&self) -> &Self::CounterpartyContract;
 	fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring;
 
-	fn poll_next_event(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-
+	fn poll_next_event(&mut self, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		match (
-			this.initiator_monitoring().poll_next_unpin(cx),
-			this.counterparty_monitoring().poll_next_unpin(cx),
+			self.initiator_monitoring().poll_next_unpin(cx),
+			self.counterparty_monitoring().poll_next_unpin(cx),
 		) {
 			(Poll::Ready(Some(event)), _) => {
 				Poll::Ready(Some(BlockchainEvent::InitiatorEvent(event)))
