@@ -38,22 +38,33 @@ impl Executor {
 		)?;
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
+
+	/// Runs the necessary background tasks.
+	async fn run_transaction_pipe(&self) -> Result<(), anyhow::Error> {
+		loop {
+			// readers should be able to run concurrently
+			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
+		}
+		Ok(())
+	}
 }
 
 #[async_trait]
 impl DynOptFinExecutor for Executor {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(self.executor.run_service(), self.finality_view.run_service(),)?;
+		tokio::try_join!(
+			self.executor.run_service(),
+			self.executor.run_indexer_grpc_service(),
+			self.finality_view.run_service(),
+		)?;
 		Ok(())
 	}
 
 	/// Runs the necessary background tasks.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
-		loop {
-			// readers should be able to run concurrently
-			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
-		}
+		tokio::try_join!(self.run_transaction_pipe(), self.executor.run_indexer_background_task(),)?;
+		Ok(())
 	}
 
 	async fn execute_block_opt(

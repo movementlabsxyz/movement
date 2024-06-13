@@ -474,7 +474,7 @@ impl Executor {
 		Ok(())
 	}
 
-	pub async fn serve_full_node_data_service(&self) -> Result<(), anyhow::Error> {
+	pub async fn run_indexer_grpc_service(&self) -> Result<(), anyhow::Error> {
 		let indexer_context = self.context.clone();
 		let indexer_config = self.node_config.indexer.clone();
 		let server = FullnodeDataService {
@@ -493,7 +493,7 @@ impl Executor {
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))
 	}
 
-	pub async fn serve_indexer_api(&self) -> Result<(), anyhow::Error> {
+	pub async fn run_indexer_background_task(&self) -> Result<(), anyhow::Error> {
 		let indexer_context = self.context.clone();
 		let indexer_config = self.node_config.indexer.clone();
 		run_forever(indexer_config, indexer_context.clone()).await;
