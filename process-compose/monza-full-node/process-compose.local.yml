@@ -11,31 +11,27 @@ processes:
       setup:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: echo "true"
-    availability:
-      restart: exit_on_failure
 
   celestia-bridge:
     command: |
       m1-da-light-node-celestia-bridge
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: echo "true"
     depends_on:
        celestia-node-appd:
         condition: process_started
-    availability:
-      restart: exit_on_failure
 
   celestia-light-node:
     command: |
       sleep 999999999d
       echo "started"
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: |
           echo "true"

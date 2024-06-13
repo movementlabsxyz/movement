@@ -35,6 +35,8 @@ processes:
     depends_on:
       celestia-light-node:
         condition: process_healthy
+      celestia-light-node-synced:
+        condition: process_completed_successfully
     readiness_probe:
       exec:
         command: echo "true"
@@ -46,7 +48,7 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: echo "true"
 
