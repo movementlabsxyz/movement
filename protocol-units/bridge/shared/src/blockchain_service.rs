@@ -22,8 +22,8 @@ pub enum BlockchainEvent<A, H> {
 pub trait BlockchainService:
 	Stream<Item = BlockchainEvent<Self::Address, Self::Hash>> + Unpin
 {
-	type Address;
-	type Hash;
+	type Address: std::fmt::Debug;
+	type Hash: std::fmt::Debug;
 
 	type InitiatorContract: BridgeContractInitiator;
 	type InitiatorMonitoring: BridgeContractInitiatorMonitoring<Address = Self::Address, Hash = Self::Hash>
@@ -40,9 +40,6 @@ pub trait BlockchainService:
 
 	fn poll_next_event(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
-
-		// let initiator_monitoring = Pin::new(&mut this.initiator_monitoring);
-		// let counterparty_monitoring = Pin::new(&mut this.counterparty_monitoring);
 
 		match (
 			this.initiator_monitoring().poll_next_unpin(cx),
