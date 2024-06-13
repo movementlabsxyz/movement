@@ -30,9 +30,9 @@ use std::time::Duration;
 // TODO: rework into a consistent, modular configuration system.
 mod env_vars {
 	/// URL of the RPC endpoint of the Ethereum node to use for MCR settlement.
-	pub const MCR_NODE_RPC: &str = "MCR_NODE_RPC";
+	pub const MCR_NODE_RPC: &str = "ETH_RPC";
 	/// URL of the WebSocket endpoint of the Ethereum node to use for MCR settlement.
-	pub const MCR_NODE_WS: &str = "MCR_NODE_WS";
+	pub const MCR_NODE_WS: &str = "ETH_WS";
 	/// Private key of the MCR contract signer
 	pub const MCR_PRIVATE_KEY: &str = "MCR_PRIVATE_KEY";
 }
@@ -262,12 +262,18 @@ where
 }
 
 impl SuzukaPartialNode<Executor> {
-	pub async fn try_from_env(
+	pub async fn try_from_config(
+		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-		let executor =
-			Executor::try_from_env(tx).context("Failed to get executor from environment")?;
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}",
+			config.execution_config.light_node_config.try_service_address()?
+		))
+		.await?;
+		let executor = Executor::try_from_config(tx, config.execution_config)
+			.await
+			.context("Failed to get executor from environment")?;
 		// TODO: rework config to not use (only) env variables
 		let mcr_rpc_url = read_from_env("RPC URL", env_vars::MCR_NODE_RPC)?;
 		let mcr_ws_url = read_from_env("WebSocket URL", env_vars::MCR_NODE_WS)?;

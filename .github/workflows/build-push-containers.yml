@@ -1,0 +1,331 @@
+name: Build Push Containers
+
+on:
+  push:
+
+jobs:
+
+  m1-da-light-node-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image m1-da-light-node
+
+  m1-da-light-node-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: m1-da-light-node-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest m1-da-light-node
+
+  celestia-app-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image celestia-app
+
+  celestia-app-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: celestia-app-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest celestia-app
+
+  celestia-node-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image celestia-node
+
+  celestia-node-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: celestia-node-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest celestia-node
+
+  suzuka-config-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image celestia-node
+
+  suzuka-config-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: suzuka-config-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest celestia-node
+
+  wait-for-celestia-light-node-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image wait-for-celestia-light-node
+
+  wait-for-celestia-light-node-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: wait-for-celestia-light-node-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest wait-for-celestia-light-node
+
+  suzuka-full-node-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image suzuka-full-node
+
+  suzuka-full-node-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: suzuka-full-node-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest suzuka-full-node
+
+  faucet-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image faucet
+
+  faucet-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: faucet-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest faucet
+
+  
+    

@@ -4,7 +4,7 @@ on:
   push:
 
 jobs:
-  build:
+  cargo-check:
     strategy:
       matrix:
         include:
@@ -24,25 +24,101 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run MCR tests in nix environment
-      run: nix develop --command bash  -c "just mcr-contract-tests"
-
-    - name: Run MCR client tests in nix environment
-      run: CELESTIA_LOG_LEVEL=FATAL MOVEMENT_PREBUILT=false nix develop --command bash  -c "just mcr test.local -t=false"
-
     - name: Run Cargo Check in nix environment
       run: nix develop --command bash  -c "cargo check"  
 
-    # - name: Prebuild binaries in nix environment
-    #   run: nix develop --command bash  -c "./scripts/build/prebuild"  
+  suzuka-full-node:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
     - name: Run M1 DA Light Node tests in nix environment
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL MOVEMENT_PREBUILT=false nix develop --command bash  -c "just m1-da-light-node test.local -t=false"  
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
 
-    - name: Print available filesystem space
-      run: df -h
+  m1-da-light-node:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
 
-    - name: Run suzuka tests in nix environment
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run M1 DA Light Node tests in nix environment
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL MOVEMENT_PREBUILT=false nix develop --command bash  -c "just suzuka-full-node test.local -t=false"  
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just m1-da-light-node native build.setup.test.local -t=false"  
+
+  monza-full-node:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run M1 DA Light Node tests in nix environment
+      # adjust the log level while debugging
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just monza-full-node native build.setup.test.local -t=false" 
+
+  mcr:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: movement-runner
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run M1 DA Light Node tests in nix environment
+      # adjust the log level while debugging
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just mcr native test.local -t=false"  
