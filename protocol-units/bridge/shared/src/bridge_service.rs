@@ -10,8 +10,8 @@ where
 	B1: BlockchainService,
 	B2: BlockchainService,
 {
-	blockchain_1: B1,
-	blockchain_2: B2,
+	pub blockchain_1: B1,
+	pub blockchain_2: B2,
 }
 
 impl<B1, B2> BridgeService<B1, B2>
