@@ -114,6 +114,28 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
+        movementswap-core = pkgs.stdenv.mkDerivation {
+          pname = "movementswap-core";
+          version = "branch-main";
+
+          src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "movementswap-core";
+              rev = "d5b1075999fad5a0e78c68f9d0848d37680d9f30";
+              sha256 = "sha256-l7oLh7Rq0qUfa8nI+e2nPWYe1kOARKrfFBJubZkziZw=";
+          };
+
+          installPhase = ''
+              cp -r . $out
+          '';
+
+          meta = with pkgs.lib; {
+              description = "Movementswap core repository";
+              homepage = "https://github.com/movementlabsxyz/movementswap-core";
+              license = licenses.asl20;
+          };
+        };
+
         # aptos-faucet-service
         aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
           inherit pkgs; 
@@ -136,6 +158,8 @@
         with pkgs; {
 
           packages.aptos-faucet-service = aptos-faucet-service;
+
+          packages.movementswap-core = movementswap-core;
 
           packages.celestia-node = celestia-node;
 
@@ -162,6 +186,7 @@
             # for linux set SNAPPY variable
             SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
 
+            MOVEMENT_SWAP_PATH = movementswap-core;
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             MONZA_APTOS_PATH = monza-aptos;
@@ -172,6 +197,7 @@
             shellHook = ''
               #!/bin/bash -e
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
+              echo "Movementswap path: $MOVEMENT_SWAP_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
