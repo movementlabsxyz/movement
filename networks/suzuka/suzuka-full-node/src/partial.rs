@@ -272,7 +272,6 @@ impl SuzukaPartialNode<Executor> {
 		))
 		.await?;
 		let executor = Executor::try_from_config(tx, config.execution_config)
-			.await
 			.context("Failed to get executor from environment")?;
 		// TODO: rework config to not use (only) env variables
 		let mcr_rpc_url = read_from_env("RPC URL", env_vars::MCR_NODE_RPC)?;
