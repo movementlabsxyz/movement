@@ -34,9 +34,6 @@ jobs:
           - os: ubuntu-22.04
             arch: x86_64
             runs-on: movement-runner
-          - os: macos-13-latest
-            arch: arm64
-            runs-on: macos-13-xlarge
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -58,9 +55,6 @@ jobs:
           - os: ubuntu-22.04
             arch: x86_64
             runs-on: movement-runner
-          - os: macos-13-latest
-            arch: arm64
-            runs-on: macos-13-xlarge
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -82,9 +76,6 @@ jobs:
           - os: ubuntu-22.04
             arch: x86_64
             runs-on: movement-runner
-          - os: macos-13-latest
-            arch: arm64
-            runs-on: macos-13-xlarge
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -106,9 +97,6 @@ jobs:
           - os: ubuntu-22.04
             arch: x86_64
             runs-on: movement-runner
-          - os: macos-13-latest
-            arch: arm64
-            runs-on: macos-13-xlarge
 
     runs-on: ${{ matrix.runs-on }}
 
