@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Turn on bash safety options: fail on error, variable unset and error in piped process
 set -eou pipefail

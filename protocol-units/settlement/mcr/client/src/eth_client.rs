@@ -110,7 +110,7 @@ sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	MCR,
-	"abi/MCR.json"
+	"abis/MCRLegacy.json"
 );
 
 pub struct McrEthSettlementClient<P, T> {
@@ -304,6 +304,7 @@ pub mod test {
 	use super::*;
 	use alloy_provider::ProviderBuilder;
 	use alloy_signer_wallet::LocalWallet;
+	use anyhow::Context;
 	use movement_types::Commitment;
 
 	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
@@ -448,7 +449,9 @@ pub mod test {
 	use serde_json::{from_str, Value};
 	use std::fs;
 	fn read_anvil_json_file_address() -> Result<Vec<(String, String)>, anyhow::Error> {
-		let anvil_conf_file = env::var("ANVIL_JSON_PATH")?;
+		let anvil_conf_file = env::var("ANVIL_JSON_PATH").context(
+			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil json file",
+		)?;
 		let file_content = fs::read_to_string(anvil_conf_file)?;
 
 		let json_value: Value = from_str(&file_content)?;
