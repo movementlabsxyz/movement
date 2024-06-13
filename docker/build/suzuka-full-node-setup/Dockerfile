@@ -6,17 +6,20 @@ RUN nix-env -iA nixpkgs.rsync nixpkgs.glibc nixpkgs.gawk
 COPY . /tmp/build
 WORKDIR /tmp/build
 
-# Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop .#docker-build --command bash -c "cargo build --release -p suzuka-full-node-setup"
+        develop --command bash -c "mkdir -p  /tmp/executables"
 
 # Copy celestia-appd to /tmp/executables
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop --command bash -c "cp $(which celestia-appd) /tmp/executables/celestia-appd"
+        develop --command bash -c "cp \$(which celestia-appd) /tmp/executables/celestia-appd"
 
 # Copy celestia to /tmp/executables
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop --command bash -c "cp $(which celestia) /tmp/executables/celestia"
+        develop --command bash -c "cp \$(which celestia) /tmp/executables/celestia"
+
+# Build the Rust application
+RUN nix --extra-experimental-features "nix-command flakes" \
+        develop .#docker-build --command bash -c "cargo build --release -p suzuka-full-node-setup"
 
 RUN rust_binary="./target/release/suzuka-full-node-setup"; dest_dir="/tmp/runtime"; \
     mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
