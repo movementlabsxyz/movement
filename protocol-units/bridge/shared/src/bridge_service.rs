@@ -3,6 +3,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::blockchain_service::{BlockchainEvent, BlockchainService};
+use tracing::debug;
 
 pub struct BridgeService<B1, B2>
 where
@@ -35,41 +36,41 @@ where
 
 		match this.blockchain_1.poll_next_unpin(cx) {
 			Poll::Ready(Some(event)) => {
-				println!("BridgeService: Received event from blockchain service 1: {:?}", event);
+				debug!("BridgeService: Received event from blockchain service 1: {:?}", event);
 				match event {
 					BlockchainEvent::InitiatorEvent(_) => {
-						println!("BridgeService: Initiator event from blockchain service 1");
+						debug!("BridgeService: Initiator event from blockchain service 1");
 					}
 					BlockchainEvent::CounterpartyEvent(_) => {
-						println!("BridgeService: Counterparty event from blockchain service 1");
+						debug!("BridgeService: Counterparty event from blockchain service 1");
 					}
 				}
 			}
 			Poll::Ready(None) => {
-				println!("BridgeService: Blockchain service 1 has no more events");
+				debug!("BridgeService: Blockchain service 1 has no more events");
 			}
 			Poll::Pending => {
-				println!("BridgeService: Blockchain service 1 has no events at this time");
+				debug!("BridgeService: Blockchain service 1 has no events at this time");
 			}
 		}
 
 		match this.blockchain_2.poll_next_unpin(cx) {
 			Poll::Ready(Some(event)) => {
-				println!("BridgeService: Received event from blockchain service 2: {:?}", event);
+				debug!("BridgeService: Received event from blockchain service 2: {:?}", event);
 				match event {
 					BlockchainEvent::InitiatorEvent(_) => {
-						println!("BridgeService: Initiator event from blockchain service 2");
+						debug!("BridgeService: Initiator event from blockchain service 2");
 					}
 					BlockchainEvent::CounterpartyEvent(_) => {
-						println!("BridgeService: Counterparty event from blockchain service 2");
+						debug!("BridgeService: Counterparty event from blockchain service 2");
 					}
 				}
 			}
 			Poll::Ready(None) => {
-				println!("BridgeService: Blockchain service 2 has no more events");
+				debug!("BridgeService: Blockchain service 2 has no more events");
 			}
 			Poll::Pending => {
-				println!("BridgeService: Blockchain service 2 has no events at this time");
+				debug!("BridgeService: Blockchain service 2 has no events at this time");
 			}
 		}
 
