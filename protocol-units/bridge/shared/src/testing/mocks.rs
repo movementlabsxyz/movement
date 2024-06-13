@@ -164,7 +164,23 @@ where
 #[derive(Debug)]
 pub struct MockInitiatorContract<A, H> {
 	events: Vec<BridgeContractInitiatorEvent<A, H>>,
+	mock_next_bridge_transfer_id: Option<BridgeTransferId<H>>,
 	_phantom: std::marker::PhantomData<(A, H)>,
+}
+
+impl<A, H> MockInitiatorContract<A, H> {
+	pub fn build() -> Self {
+		Self {
+			events: Default::default(),
+			mock_next_bridge_transfer_id: None,
+			_phantom: std::marker::PhantomData,
+		}
+	}
+
+	pub fn with_next_bridge_transfer_id(&mut self, id: H) -> &mut Self {
+		self.mock_next_bridge_transfer_id = Some(BridgeTransferId(id));
+		self
+	}
 }
 
 impl<A, H> Stream for MockInitiatorContract<A, H>
@@ -181,12 +197,6 @@ where
 		} else {
 			Poll::Pending
 		}
-	}
-}
-
-impl<A, H> MockInitiatorContract<A, H> {
-	pub fn build() -> Self {
-		Self { events: Default::default(), _phantom: std::marker::PhantomData }
 	}
 }
 
@@ -209,7 +219,7 @@ where
 	) -> BridgeContractResult<()> {
 		self.events.push(BridgeContractInitiatorEvent::BridgeTransferInitiated(
 			BridgeTransferDetails {
-				bridge_transfer_id: BridgeTransferId(Clone::clone(&*hash_lock)),
+				bridge_transfer_id: self.mock_next_bridge_transfer_id.take().expect("no mock id"),
 				initiator_address,
 				recipient_address,
 				hash_lock,

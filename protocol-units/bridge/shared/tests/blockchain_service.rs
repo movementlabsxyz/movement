@@ -16,6 +16,7 @@ async fn test_bridge_transfer_initiated() {
 
 	blockchain_service
 		.initiator_contract
+		.with_next_bridge_transfer_id("transfer_id")
 		.initiate_bridge_transfer(
 			InitiatorAddress("initiator"),
 			RecipientAddress("recipient"),
