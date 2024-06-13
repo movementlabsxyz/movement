@@ -150,10 +150,19 @@ mod tests {
 		let (tx, _rx) = async_channel::unbounded();
 		let executor = Executor::try_from_config(tx, config)?;
 		let block_id = HashValue::random();
-		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0),
-		));
-		let txs = ExecutableTransactions::Unsharded(vec![tx]);
+		let block_metadata = executor
+			.build_block_metadata(block_id.clone(), chrono::Utc::now().timestamp_micros() as u64)
+			.await
+			.unwrap();
+		let txs = ExecutableTransactions::Unsharded(
+			[
+				Transaction::BlockMetadata(block_metadata),
+				Transaction::UserTransaction(create_signed_transaction(0)),
+			]
+			.into_iter()
+			.map(SignatureVerifiedTransaction::Valid)
+			.collect(),
+		);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		executor.execute_block_opt(block).await?;
 		Ok(())
