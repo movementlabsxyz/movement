@@ -19,7 +19,7 @@ pub struct MovementRest {
 	// More fields to be added here, log verboisty, etc.
 }
 
-impl MaptosRest {
+impl MovementRest {
 	pub const MOVEMENT_REST_ENV_VAR: &'static str = "MOVEMENT_REST_URL";
 
 	pub fn try_from_env(context: Option<Arc<Context>>) -> Result<Self, Error> {
