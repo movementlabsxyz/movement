@@ -16,17 +16,13 @@ static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(||
 
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	Url::from_str(
-		format!("http://{}", SUZUKA_CONFIG.aptos_config.aptos_rest_listen_url.as_str()).as_str(),
-	)
-	.unwrap()
+	Url::from_str(format!("http://{}", SUZUKA_CONFIG.aptos.opt_listen_url.as_str()).as_str())
+		.unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	Url::from_str(
-		format!("http://{}", SUZUKA_CONFIG.aptos_config.aptos_faucet_listen_url.as_str()).as_str(),
-	)
-	.unwrap()
+	Url::from_str(format!("http://{}", SUZUKA_CONFIG.aptos.faucet_listen_url.as_str()).as_str())
+		.unwrap()
 });
 // <:!:section_1c
 

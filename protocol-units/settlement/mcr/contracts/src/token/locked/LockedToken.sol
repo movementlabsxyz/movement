@@ -13,19 +13,19 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
      * @param symbol The symbol of the token
      * @param _underlyingToken The underlying token to wrap
      */
-    function initialize(string memory name, string memory symbol, IMintableToken _underlyingToken)
-        public
-        virtual
-        override
-        initializer
-    {
+    function initialize(
+        string memory name,
+        string memory symbol,
+        IMintableToken _underlyingToken
+    ) public virtual override initializer {
         __LockedToken_init(name, symbol, _underlyingToken);
     }
 
-    function __LockedToken_init(string memory name, string memory symbol, IMintableToken _underlyingToken)
-        internal
-        onlyInitializing
-    {
+    function __LockedToken_init(
+        string memory name,
+        string memory symbol,
+        IMintableToken _underlyingToken
+    ) internal onlyInitializing {
         __ERC20_init_unchained(name, symbol);
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
@@ -51,9 +51,12 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
         uint256[] calldata lockAmounts,
         uint256[] calldata lockTimes
     ) external onlyRole(MINT_LOCKER_ROLE) {
-        if (addresses.length != mintAmounts.length) revert AddressesAndMintLengthMismatch();
-        if (addresses.length != lockAmounts.length) revert AddressesAndLockLengthMismatch();
-        if (addresses.length != lockTimes.length) revert AddressesAndTimeLengthMismatch();
+        if (addresses.length != mintAmounts.length)
+            revert AddressesAndMintLengthMismatch();
+        if (addresses.length != lockAmounts.length)
+            revert AddressesAndLockLengthMismatch();
+        if (addresses.length != lockTimes.length)
+            revert AddressesAndTimeLengthMismatch();
 
         for (uint256 i = 0; i < addresses.length; i++) {
             underlyingToken.mint(address(this), mintAmounts[i]);
@@ -79,10 +82,12 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
         uint256 totalUnlocked = 0;
         Lock[] storage userLocks = locks[msg.sender];
         for (uint256 i = 0; i < userLocks.length; i++) {
-            // todo: might want to remove >= and just use > for the sake of gas
-            if (block.timestamp >= userLocks[i].releaseTime) {
+            if (block.timestamp > userLocks[i].releaseTime) {
                 // compute the max possible amount to withdraw
-                uint256 amount = Math.min(userLocks[i].amount, balanceOf(msg.sender));
+                uint256 amount = Math.min(
+                    userLocks[i].amount,
+                    balanceOf(msg.sender)
+                );
 
                 // burn the amount so that the user can't overdraw
                 _transfer(msg.sender, address(this), amount);
