@@ -7043,7 +7043,7 @@ dependencies = [
  "lazy_static",
  "log",
  "maptos-execution-util",
- "maptos-rest",
+ "movement-rest",
  "movement-types",
  "poem",
  "poem-openapi",
@@ -7054,18 +7054,6 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "maptos-rest"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-api",
- "poem",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
@@ -8014,6 +8002,18 @@ dependencies = [
  "smallbitvec",
  "smallvec",
  "triomphe",
+]
+
+[[package]]
+name = "movement-rest"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "poem",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -11025,9 +11025,9 @@ dependencies = [
  "async-channel",
  "m1-da-light-node-client",
  "maptos-dof-execution",
- "maptos-rest",
  "mcr-settlement-client",
  "mcr-settlement-manager",
+ "movement-rest",
  "movement-types",
  "serde_json",
  "sha2 0.10.8",

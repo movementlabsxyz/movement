@@ -12,7 +12,7 @@ use std::sync::Arc;
 use tracing::info;
 
 #[derive(Debug)]
-pub struct MaptosRest {
+pub struct MovementRest {
 	/// The URL to bind the REST service to.
 	pub url: String,
 	pub context: Option<Arc<Context>>,
@@ -20,18 +20,18 @@ pub struct MaptosRest {
 }
 
 impl MaptosRest {
-	pub const MAPTOS_REST_ENV_VAR: &'static str = "MAPTOS_REST_URL";
+	pub const MOVEMENT_REST_ENV_VAR: &'static str = "MOVEMENT_REST_URL";
 
 	pub fn try_from_env(context: Option<Arc<Context>>) -> Result<Self, Error> {
-		let url = env::var(Self::MAPTOS_REST_ENV_VAR)
+		let url = env::var(Self::MOVEMENT_REST_ENV_VAR)
 			.unwrap_or_else(|_| "http://0.0.0.0:30832".to_string());
 		Ok(Self { url, context })
 	}
 
 	pub async fn run_service(&self) -> Result<(), Error> {
-		info!("Starting maptos rest service at {}", self.url);
-		let maptos_rest = self.create_routes();
-		Server::new(TcpListener::bind(&self.url)).run(maptos_rest).await?;
+		info!("Starting movement rest service at {}", self.url);
+		let movement_rest = self.create_routes();
+		Server::new(TcpListener::bind(&self.url)).run(movement_rest).await?;
 		Ok(())
 	}
 
@@ -84,7 +84,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_health_endpoint() {
-		let rest_service = MaptosRest::try_from_env(None).expect("Failed to create MaptosRest");
+		let rest_service = MovementRest::try_from_env(None).expect("Failed to create MovementRest");
 		assert_eq!(rest_service.url, "http://0.0.0.0:30832");
 		// Create a test client
 		let client = TestClient::new(rest_service.create_routes());

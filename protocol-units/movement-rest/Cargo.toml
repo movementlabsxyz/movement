@@ -1,5 +1,5 @@
 [package]
-name = "maptos-rest"
+name = "movement-rest"
 description = "additional movement rest api endpoints"
 authors = { workspace = true }
 edition = { workspace = true }

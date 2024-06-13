@@ -40,7 +40,7 @@ use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
 use maptos_execution_util::config::aptos::Config as AptosConfig;
-use maptos_rest::{health, state_root_hash};
+use movement_rest::{health, state_root_hash};
 use movement_types::{BlockCommitment, Commitment, Id};
 
 use futures::channel::mpsc as futures_mpsc;

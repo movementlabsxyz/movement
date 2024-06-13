@@ -7,11 +7,11 @@ use maptos_dof_execution::{
 	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use maptos_rest::MaptosRest;
 use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
+use movement_rest::MovementRest;
 use movement_types::{Block, BlockCommitmentEvent};
 
 use anyhow::Context;
@@ -31,7 +31,7 @@ pub struct SuzukaPartialNode<T> {
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
-	maptos_rest: MaptosRest,
+	movement_rest: MovementRest,
 }
 
 impl<T> SuzukaPartialNode<T>
@@ -42,7 +42,7 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
-		maptos_rest: MaptosRest,
+		movement_rest: MovementRest,
 	) -> (Self, impl Future<Output = Result<(), anyhow::Error>> + Send)
 	where
 		C: McrSettlementClientOperations + Send + 'static,
@@ -56,7 +56,7 @@ where
 				transaction_receiver,
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
-				maptos_rest,
+				movement_rest,
 			},
 			read_commitment_events(commitment_events),
 		)
@@ -70,13 +70,13 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
-		maptos_rest: MaptosRest,
+		movement_rest: MovementRest,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
 		let (mut node, background_task) =
-			Self::new(executor, light_node_client, settlement_client, maptos_rest);
+			Self::new(executor, light_node_client, settlement_client, movement_rest);
 		node.bind_transaction_channel();
 		Ok((node, background_task))
 	}
@@ -245,8 +245,8 @@ where
 	}
 
 	/// Runs the maptos rest api service until crash or shutdown.
-	async fn run_maptos_rest(&self) -> Result<(), anyhow::Error> {
-		self.maptos_rest.run_service().await?;
+	async fn run_movement_rest(&self) -> Result<(), anyhow::Error> {
+		self.movement_rest.run_service().await?;
 		Ok(())
 	}
 }
@@ -260,7 +260,7 @@ impl SuzukaPartialNode<Executor> {
 			Executor::try_from_env(tx).context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();
-		let maptos_rest = MaptosRest::try_from_env(Some(executor.executor.context.clone()))?;
-		Self::bound(executor, light_node_client, settlement_client, maptos_rest)
+		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
+		Self::bound(executor, light_node_client, settlement_client, movement_rest)
 	}
 }
