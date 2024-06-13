@@ -1,4 +1,5 @@
 use std::task::Context;
+use test_log::test;
 
 use bridge_shared::bridge_contracts::BridgeContractInitiator;
 use bridge_shared::bridge_service::BridgeService;
@@ -18,7 +19,7 @@ struct BC1Address(pub &'static str);
 #[derive(Debug, Clone)]
 struct BC2Address(pub &'static str);
 
-#[tokio::test]
+#[test(tokio::test)]
 async fn test_bridge_service_integration() {
 	let blockchain_service_1 = MockBlockchainService::<BC1Address, BC1Hash>::build();
 	let blockchain_service_2 = MockBlockchainService::<BC2Address, BC2Hash>::build();
