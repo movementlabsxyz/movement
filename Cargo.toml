@@ -50,6 +50,8 @@ maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
 maptos-fin-view = { path = "protocol-units/execution/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/util" }
+# infra 
+movement-rest = { path = "protocol-units/movement-rest" }
 ## mempool
 mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }
@@ -61,7 +63,6 @@ mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }
 mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 ## types
 movement-types = { path = "util/movement-types" }
-movement-rest = { path = "protocol-units/movement-rest" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump

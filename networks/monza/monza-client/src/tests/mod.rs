@@ -4,10 +4,8 @@ use crate::{
 	types::LocalAccount,
 };
 use anyhow::{Context, Result};
-use async_channel::Sender;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
-use suzuka_executor::v1::SuzukaExecutorV1;
 use url::Url;
 
 static MONZA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {

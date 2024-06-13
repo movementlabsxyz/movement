@@ -10997,7 +10997,6 @@ dependencies = [
  "alloy-signer-wallet",
  "anyhow",
  "aptos-sdk",
- "async-channel",
  "maptos-execution-util",
  "mcr-settlement-client",
  "once_cell",
