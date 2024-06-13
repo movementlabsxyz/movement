@@ -23,6 +23,17 @@ pub struct MockBlockchainService<A, H> {
 	pub counterparty_monitoring: MockCounterpartyMonitoring<A, H>,
 }
 
+impl<A, H> MockBlockchainService<A, H> {
+	pub fn build() -> Self {
+		Self {
+			initiator_contract: MockInitiatorContract::build(),
+			initiator_monitoring: MockInitiatorMonitoring::build(),
+			counterparty_contract: MockCounterpartyContract::build(),
+			counterparty_monitoring: MockCounterpartyMonitoring::build(),
+		}
+	}
+}
+
 impl<A, H> BlockchainService for MockBlockchainService<A, H>
 where
 	A: std::fmt::Debug + Unpin + Send + Sync,
@@ -71,6 +82,12 @@ pub struct MockInitiatorMonitoring<A, H> {
 	pub events: Vec<BridgeContractInitiatorEvent<A, H>>,
 }
 
+impl<A, H> MockInitiatorMonitoring<A, H> {
+	pub fn build() -> Self {
+		Self { events: Default::default() }
+	}
+}
+
 impl<A, H> BridgeContractInitiatorMonitoring for MockInitiatorMonitoring<A, H>
 where
 	A: std::fmt::Debug + Unpin,
@@ -101,6 +118,12 @@ pub struct MockCounterpartyMonitoring<A, H> {
 	pub events: Vec<BridgeContractCounterpartyEvent<A, H>>,
 }
 
+impl<A, H> MockCounterpartyMonitoring<A, H> {
+	pub fn build() -> Self {
+		Self { events: Default::default() }
+	}
+}
+
 impl<A, H> BridgeContractCounterpartyMonitoring for MockCounterpartyMonitoring<A, H>
 where
 	A: std::fmt::Debug + Unpin,
@@ -127,13 +150,32 @@ where
 	}
 }
 
+#[derive(Debug)]
 pub struct MockInitiatorContract<A, H> {
+	events: Vec<BridgeContractInitiatorEvent<A, H>>,
 	_phantom: std::marker::PhantomData<(A, H)>,
+}
+
+impl<A, H> Stream for MockInitiatorContract<A, H>
+where
+	A: Unpin,
+	H: Unpin,
+{
+	type Item = BridgeContractInitiatorEvent<A, H>;
+
+	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		if let Some(event) = this.events.pop() {
+			Poll::Ready(Some(event))
+		} else {
+			Poll::Pending
+		}
+	}
 }
 
 impl<A, H> MockInitiatorContract<A, H> {
 	pub fn build() -> Self {
-		Self { _phantom: std::marker::PhantomData }
+		Self { events: Default::default(), _phantom: std::marker::PhantomData }
 	}
 }
 
