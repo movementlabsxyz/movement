@@ -196,7 +196,7 @@ impl<T: DynOptFinExecutor + Send + Sync + Clone> MonzaFullNode for MonzaPartialN
 	}
 }
 
-impl MonzaPartialNode<MonzaExecutorV1> {
+impl MonzaPartialNode<Executor> {
 	pub async fn try_from_config(config: monza_config::Config) -> Result<Self, anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
 		let light_node_client = LightNodeServiceClient::connect(format!(
@@ -204,7 +204,7 @@ impl MonzaPartialNode<MonzaExecutorV1> {
 			config.execution_config.light_node_config.try_service_address()?
 		))
 		.await?;
-		let executor = MonzaExecutorV1::try_from_config(tx, config.execution_config)
+		let executor = Executor::try_from_config(tx, config.execution_config)
 			.await
 			.context("Failed to get executor from environment")?;
 		Self::bound(executor, light_node_client)

@@ -1,5 +1,6 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
+use aptos_sdk::move_types::effects::Op;
 use maptos_execution_util::config::aptos::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
@@ -29,8 +30,13 @@ impl Executor {
 		transaction_channel: Sender<SignedTransaction>,
 		config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = Executor::try_from_config(config)?;
-		Ok(Self::new(executor, transaction_channel))
+		let executor = OptExecutor::try_from_config(config.clone())?;
+		let finality_view = FinalityView::try_from_config(
+			executor.db.reader.clone(),
+			executor.mempool_client_sender.clone(),
+			&config.try_aptos_config()?,
+		)?;
+		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
 }
 

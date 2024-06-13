@@ -23,20 +23,10 @@ pub struct FinalityView {
 impl FinalityView {
 	/// Create a new `FinalityView` instance.
 	pub fn new(
-		db_reader: Arc<dyn DbReader>,
-		mempool_client_sender: MempoolClientSender,
-		node_config: NodeConfig,
-		aptos_config: &AptosConfig,
+		inner: Arc<AptosFinalityView<Arc<dyn DbReader>>>,
+		context: Arc<Context>,
+		listen_url: String,
 	) -> Self {
-		let inner = Arc::new(AptosFinalityView::new(db_reader));
-		let context = Arc::new(Context::new(
-			aptos_config.chain_id.clone(),
-			inner.clone(),
-			mempool_client_sender,
-			node_config,
-			None,
-		));
-		let listen_url = aptos_config.fin_listen_url.clone();
 		Self { inner, context, listen_url }
 	}
 
@@ -46,7 +36,16 @@ impl FinalityView {
 		aptos_config: &AptosConfig,
 	) -> Result<Self, anyhow::Error> {
 		let node_config = NodeConfig::default();
-		Ok(Self::new(db_reader, mempool_client_sender, node_config, aptos_config))
+		let inner = Arc::new(AptosFinalityView::new(db_reader));
+		let context = Arc::new(Context::new(
+			aptos_config.try_chain_id()?,
+			inner.clone(),
+			mempool_client_sender,
+			node_config,
+			None,
+		));
+		let listen_url = aptos_config.try_aptos_finality_view_listen_url()?;
+		Ok(Self::new(inner, context, listen_url))
 	}
 
 	/// Update the finalized view with the latest block height.
@@ -100,7 +99,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
 		// Create an Executor and a FinalityView instance from the environment configuration.
-		let config = AptosConfig::try_from_env()?;
+		let config = AptosConfig::default();
 		let executor = Executor::try_from_config(&config)?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),

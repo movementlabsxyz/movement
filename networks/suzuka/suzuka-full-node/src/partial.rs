@@ -239,7 +239,7 @@ where
 	}
 }
 
-impl SuzukaPartialNode<SuzukaExecutorV1> {
+impl SuzukaPartialNode<Executor> {
 	pub async fn try_from_config(
 		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
@@ -249,7 +249,7 @@ impl SuzukaPartialNode<SuzukaExecutorV1> {
 			config.execution_config.light_node_config.try_service_address()?
 		))
 		.await?;
-		let executor = SuzukaExecutorV1::try_from_config(tx, config.execution_config)
+		let executor = Executor::try_from_config(tx, config.execution_config)
 			.await
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client

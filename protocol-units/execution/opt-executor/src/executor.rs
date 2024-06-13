@@ -70,8 +70,8 @@ pub struct Executor {
 	pub node_config: NodeConfig,
 	/// Context
 	pub context: Arc<Context>,
-	/// URL for the API endpoint
-	listen_url: String,
+	/// The Aptos VM configuration.
+	pub aptos_config: maptos_execution_util::config::aptos::Config,
 }
 
 impl Executor {
@@ -82,7 +82,7 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config: maptos_execution_util::config::just_aptos::Config,
+		aptos_config: maptos_execution_util::config::aptos::Config,
 	) -> Result<Self, anyhow::Error> {
 		let (_aptos_db, reader_writer) =
 			DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.try_aptos_db_path()?));
@@ -184,18 +184,12 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config: &AptosConfig,
+		aptos_config: AptosConfig,
 	) -> Result<Self, anyhow::Error> {
 		let (db, signer) = Self::bootstrap_empty_db(
-<<<<<<< HEAD:protocol-units/execution/maptos/opt-executor/src/executor.rs
 			&aptos_config.try_aptos_db_path()?,
 			aptos_config.try_chain_id()?,
 			&aptos_config.try_aptos_public_key()?,
-=======
-			&aptos_config.db_path,
-			aptos_config.chain_id.clone(),
-			&aptos_config.public_key,
->>>>>>> main:protocol-units/execution/opt-executor/src/executor.rs
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
@@ -215,21 +209,23 @@ impl Executor {
 				node_config,
 				None,
 			)),
-			listen_url: aptos_config.opt_listen_url.clone(),
+			aptos_config,
 		})
 	}
 
-	pub fn try_from_config(config : maptos_execution_util::config::Config) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(
+		config: maptos_execution_util::config::Config,
+	) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
 
 		Self::bootstrap(
-			mempool_client_sender, 
-			mempool_client_receiver, 
-			node_config, 
-			config.try_aptos_config()?
+			mempool_client_sender,
+			mempool_client_receiver,
+			node_config,
+			config.try_aptos_config()?,
 		)
 	}
 
