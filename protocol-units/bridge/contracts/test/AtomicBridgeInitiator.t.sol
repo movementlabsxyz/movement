@@ -23,7 +23,7 @@ contract AtomicBridgeInitiatorTest is Test {
         atomicBridgeInitiator = new AtomicBridgeInitiator(address(weth));
     }
 
-    function testInitiateBridgeTransfer() public {
+    function testInitiateBridgeTransferWithEth() public {
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
 
@@ -62,7 +62,7 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.startPrank(originator);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
-            0, // _wethAmount
+            0, // _wethAmount is 0 
             originator, 
             recipient, 
             testHashLock, 
@@ -95,12 +95,86 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.stopPrank();
     }
 
+    function testInitiateBridgeTransferWithWeth() public {
+        uint256 wethAmount = 1 ether;
+
+        // Deal WETH to the originator
+        vm.deal(originator, 1 ether);
+        vm.startPrank(originator);
+        weth.deposit{value: wethAmount}();
+        weth.transfer(originator, wethAmount);
+
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(
+            wethAmount,
+            originator,
+            recipient,
+            hashLock,
+            timeLock
+        );
+
+        (
+            bool exists, 
+            uint transferAmount,  
+            address transferOriginator, 
+            address transferRecipient,
+            bytes32 transferHashLock,
+            uint transferTimeLock 
+        ) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
+
+        assertTrue(exists);
+        assertEq(transferAmount, wethAmount);
+        assertEq(transferOriginator, originator);
+        assertEq(transferRecipient, recipient);
+        assertEq(transferHashLock, hashLock);
+        assertGt(transferTimeLock, block.timestamp);
+
+        vm.stopPrank();
+    }
+
+    function testInitiateBridgeTransferWithEthAndWeth() public {
+        uint256 wethAmount = 1 ether;
+        uint256 ethAmount = 1 ether;
+        uint256 totalAmount = wethAmount + ethAmount;
+
+        // Deal WETH to the originator
+        vm.deal(originator, ethAmount);
+        vm.startPrank(originator);
+        weth.deposit{value: wethAmount}();
+        weth.transfer(originator, wethAmount);
+
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(
+            wethAmount,
+            originator,
+            recipient,
+            hashLock,
+            timeLock
+        );
+
+        (
+            bool exists, 
+            uint transferAmount,  
+            address transferOriginator, 
+            address transferRecipient,
+            bytes32 transferHashLock,
+            uint transferTimeLock 
+        ) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
+
+        assertTrue(exists);
+        assertEq(transferAmount, totalAmount);
+        assertEq(transferOriginator, originator);
+        assertEq(transferRecipient, recipient);
+        assertEq(transferHashLock, hashLock);
+        assertGt(transferTimeLock, block.timestamp);
+
+        vm.stopPrank();
+    }
+
     function testRefundBridgeTransfer() public {
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
-            0, // _wethAmount
+            0, // _wethAmount is 0
             originator, 
             recipient, 
             hashLock, 
