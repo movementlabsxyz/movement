@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.7.6;
+pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitator.sol"; 
@@ -21,8 +22,7 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
 
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
-          amount,
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransferWithEth{value: amount}(
           originator,
           recipient,
           hashLock,
@@ -49,12 +49,11 @@ contract AtomicBridgeInitiatorTest is Test {
 
     function testCompleteBridgeTransfer() public {
         bytes32 secret = "secret";
-        bytes32 hashLock = keccak256(abi.encodePacked(secret));
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
-          amount, 
+        bytes32 testHashLock = keccak256(abi.encodePacked(secret));
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransferWithEth{value: amount}(
           originator, 
           recipient, 
-          hashLock, 
+          testHashLock, 
           timeLock
         );
 
@@ -76,15 +75,14 @@ contract AtomicBridgeInitiatorTest is Test {
         assertEq(completedAmount, amount);
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
-        assertEq(completedHashLock, hashLock);
+        assertEq(completedHashLock, testHashLock);
         assertGt(completedTimeLock, block.timestamp);
 
         vm.stopPrank();
     }
 
     function testRefundBridgeTransfer() public {
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
-          amount, 
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransferWithEth{value: amount}(
           originator, 
           recipient, 
           hashLock, 

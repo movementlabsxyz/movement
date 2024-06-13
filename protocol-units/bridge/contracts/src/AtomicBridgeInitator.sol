@@ -10,6 +10,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         address recipient;
         bytes32 hashLock;
         uint timeLock;
+        bool exists;
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
@@ -41,6 +42,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
                 _timeLock, 
                 block.timestamp
         ));
+
         require(!bridgeTransfers[_bridgeTransferId].exists, "Bridge transfer already exists");
 
         bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
@@ -48,14 +50,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
             originator: _originator,
             recipient: _recipient,
             hashLock: _hashLock,
-            timeLock: block.timestamp + _timeLock
+            timeLock: block.timestamp + _timeLock,
+            exists: true
         });
 
         emit BridgeTransferInitiated(_bridgeTransferId, _originator, _recipient, _hashLock, _timeLock);
         return _bridgeTransferId;
     }
 
-    function initatieBridgeTransferWithWeth(
+    function initiateBridgeTransferWithWeth(
         uint256 _wethAmount, 
         address _originator, 
         address _recipient, 
@@ -75,14 +78,17 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
                 _timeLock, 
                 block.timestamp
         ));
-        require(!bridgeTransfers[_bridgeTransferId].exists, "Bridge transfer already exists");
+
+        // Solidity uses default values on initialization so we can check this field to check for existence
+        require(bridgeTransfers[_bridgeTransferId].amount == 0, "Bridge transfer already exists");
 
         bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
             amount: _wethAmount,
             originator: _originator,
             recipient: _recipient,
             hashLock: _hashLock,
-            timeLock: block.timestamp + _timeLock
+            timeLock: block.timestamp + _timeLock,
+            exists: true
         });
 
         emit BridgeTransferInitiated(_bridgeTransferId, _originator, _recipient, _hashLock, _timeLock);
