@@ -14,16 +14,21 @@ processes:
     depends_on:
       setup:
         condition: process_completed_successfully
+    availability:
+      restart: exit_on_failure
 
   celestia-bridge:
     command: |
       m1-da-light-node-celestia-bridge
     readiness_probe:
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
     depends_on:
        celestia-node-appd:
         condition: process_healthy
+    availability:
+      restart: exit_on_failure
 
   celestia-light-node:
     command: |
