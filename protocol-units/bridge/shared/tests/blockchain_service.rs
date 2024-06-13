@@ -28,8 +28,8 @@ async fn test_bridge_transfer_initiated() {
 
 	let counterparty_monitoring = MockCounterpartyMonitoring { events: vec![] };
 
-	let initiator_contract = MockInitiatorContract;
-	let counterparty_contract = MockCounterpartyContract;
+	let initiator_contract = MockInitiatorContract::build();
+	let counterparty_contract = MockCounterpartyContract::build();
 
 	let mut blockchain_service = MockBlockchainService {
 		initiator_contract,
