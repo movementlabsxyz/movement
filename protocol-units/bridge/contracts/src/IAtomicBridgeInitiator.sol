@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.7.6;
 
 interface IAtomicBridgeInitiator {
     // Event emitted when a new atomic bridge transfer is created
