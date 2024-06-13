@@ -6856,6 +6856,7 @@ dependencies = [
  "async-stream",
  "celestia-rpc",
  "celestia-types",
+ "dot-movement",
  "hex",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
