@@ -11,6 +11,11 @@ use aptos_executor::{
 	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
 };
 use aptos_executor_types::BlockExecutorTrait;
+use aptos_indexer::runtime::run_forever;
+use aptos_indexer_grpc_fullnode::{
+	fullnode_data_service::{FullnodeDataService, Seriv},
+	ServiceContext,
+};
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{
 	core_mempool::{CoreMempool, TimelineState},
@@ -39,16 +44,14 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
-use maptos_execution_util::config::aptos::Config as AptosConfig;
-use movement_types::{BlockCommitment, Commitment, Id};
-
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
+use maptos_execution_util::config::aptos::Config as AptosConfig;
+use movement_types::{BlockCommitment, Commitment, Id};
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
-
-use std::{path::PathBuf, sync::Arc};
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -473,47 +476,31 @@ impl Executor {
 	}
 
 	pub async fn serve_full_node_data_service(&self) -> Result<(), anyhow::Error> {
-		let indexer_context = Arc::new(context.clone());
-        let indexer_config = node_config.indexer.clone();
-        let server = FullnodeDataService {
-            context: indexer_context.clone(),
-            processor_task_count: 4,
-            processor_batch_size: 4,
-            output_batch_size: 4,
-        };
+		let indexer_context = self.context.clone();
+		let indexer_config = self.node_config.indexer.clone();
+		let server = FullnodeDataService {
+			service_context: ServiceContext {
+				context: indexer_context.clone(),
+				processor_task_count: 4,
+				processor_batch_size: 4,
+				output_batch_size: 4,
+			},
+		};
 
-        tokio::spawn(async move {
-            println!("Does this show?")
-        });
-    
-        println!("Starting server");
-        tokio::spawn(async move {
-
-            println!("Starting indexer gRPC service.");
-            match Server::builder()
-                .add_service(FullnodeDataServer::new(server))
-                .serve(String::from("0.0.0.0:8090").to_socket_addrs().unwrap().next().unwrap())
-                .await
-            {
-                Ok(_) => {
-                    println!("Indexer ");
-                },
-                Err(e) => {
-                    eprintln!("Failed to start server");
-                    // io::stdout().flush().unwrap(); // Ensuring the output is flushed
-                }
-            }
-
-        });
+		Server::builder()
+			.add_service(FullnodeDataServer::new(server))
+			.serve(String::from("0.0.0.0:8090").to_socket_addrs().unwrap().next().unwrap())
+			.await
+			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?
 	}
 
 	pub async fn serve_indexer_api(&self) -> Result<(), anyhow::Error> {
-		tokio::spawn(async move {
-            println!("Starting indexer server.");
-            run_forever(indexer_config, indexer_context.clone()).await;
-        });
+		let indexer_context = self.context.clone();
+		let indexer_config = self.node_config.indexer.clone();
+		run_forever(indexer_config, indexer_context.clone())
+			.await
+			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?
 	}
-
 }
 
 fn ledger_info_with_sigs(
