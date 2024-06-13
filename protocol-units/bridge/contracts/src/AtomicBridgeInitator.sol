@@ -1,3 +1,4 @@
+import {console} from "forge-std/Test.sol";
 import "./IAtomicBridgeInitiator.sol";
 import "./WETH/interfaces/IWETH10.sol";
 // SPDX-License-Identifier: MIT
@@ -28,6 +29,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         bytes32 _hashLock, 
         uint _timeLock
     ) external payable override returns (bytes32 _bridgeTransferId) {
+        console.log("initiateBridgeTransfer");
         uint256 totalAmount = _wethAmount;
 
         // If msg.value is greater than 0, convert ETH to WETH and add to total amount

@@ -96,9 +96,8 @@ contract AtomicBridgeInitiatorTest is Test {
     }
 
     function testInitiateBridgeTransferWithWeth() public {
-        uint256 wethAmount = 1 ether;
+        uint256 wethAmount = 1 ether; // use ethers unit
 
-        // Deal WETH to the originator
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
         weth.deposit{value: wethAmount}();
@@ -133,15 +132,22 @@ contract AtomicBridgeInitiatorTest is Test {
 
     function testInitiateBridgeTransferWithEthAndWeth() public {
         uint256 wethAmount = 1 ether;
-        uint256 ethAmount = 1 ether;
+        uint256 ethAmount = 2 ether;
         uint256 totalAmount = wethAmount + ethAmount;
 
-        // Deal WETH to the originator
-        vm.deal(originator, ethAmount);
+        // Ensure the originator has sufficient ETH
+        vm.deal(originator, 100 ether);
+        
         vm.startPrank(originator);
+        // Ensure WETH contract is correctly funded and transfer WETH to originator
         weth.deposit{value: wethAmount}();
         weth.transfer(originator, wethAmount);
 
+        assertEq(weth.balanceOf(originator), wethAmount, "WETH balance mismatch");
+
+        vm.startPrank(originator);
+
+        // Try to initiate bridge transfer
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(
             wethAmount,
             originator,
@@ -150,6 +156,7 @@ contract AtomicBridgeInitiatorTest is Test {
             timeLock
         );
 
+        // Fetch the details of the initiated bridge transfer
         (
             bool exists, 
             uint transferAmount,  
@@ -159,15 +166,17 @@ contract AtomicBridgeInitiatorTest is Test {
             uint transferTimeLock 
         ) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
 
-        assertTrue(exists);
-        assertEq(transferAmount, totalAmount);
-        assertEq(transferOriginator, originator);
-        assertEq(transferRecipient, recipient);
-        assertEq(transferHashLock, hashLock);
-        assertGt(transferTimeLock, block.timestamp);
+        // Assertions
+        assertTrue(exists, "Bridge transfer does not exist");
+        assertEq(transferAmount, totalAmount, "Transfer amount mismatch");
+        assertEq(transferOriginator, originator, "Originator address mismatch");
+        assertEq(transferRecipient, recipient, "Recipient address mismatch");
+        assertEq(transferHashLock, hashLock, "HashLock mismatch");
+        assertGt(transferTimeLock, block.timestamp, "TimeLock is not greater than current block timestamp");
 
         vm.stopPrank();
     }
+
 
     function testRefundBridgeTransfer() public {
         vm.deal(originator, 1 ether);
