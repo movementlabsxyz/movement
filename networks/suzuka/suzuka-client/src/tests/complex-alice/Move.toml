@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-resource_roulette = '0xd1939537bbfd08a0fdee25d8216f5696e90c090a7641046d6c606b0aeec77b4a'
+resource_roulette = '_'
 
 [dev-addresses]
 

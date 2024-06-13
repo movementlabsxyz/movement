@@ -1,5 +1,5 @@
 [package]
-name = "suzuka-client"
+name = "commander"
 version = { workspace = true }
 edition  = { workspace = true }
 license  = { workspace = true }
@@ -12,18 +12,10 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
-once_cell = { workspace = true }
 tokio = { workspace = true }
-url = { workspace = true }
-rand = { workspace = true }
-maptos-execution-util = { workspace = true }
-commander = { workspace = true }
-buildtime = { workspace = true }
-buildtime-helpers = { workspace = true }
-serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
+futures = { workspace = true }
+tracing = { workspace = true }
 
 [lints]
 workspace = true
