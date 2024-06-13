@@ -7387,6 +7387,7 @@ dependencies = [
  "aptos-indexer-grpc-fullnode",
  "aptos-language-e2e-tests",
  "aptos-mempool",
+ "aptos-protos",
  "aptos-sdk",
  "aptos-storage-interface",
  "aptos-temppath",
@@ -7421,6 +7422,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "tokio",
+ "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]

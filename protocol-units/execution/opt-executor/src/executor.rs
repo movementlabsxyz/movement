@@ -12,15 +12,13 @@ use aptos_executor::{
 };
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_indexer::runtime::run_forever;
-use aptos_indexer_grpc_fullnode::{
-	fullnode_data_service::{FullnodeDataService, Seriv},
-	ServiceContext,
-};
+use aptos_indexer_grpc_fullnode::{fullnode_data_service::FullnodeDataService, ServiceContext};
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{
 	core_mempool::{CoreMempool, TimelineState},
 	MempoolClientRequest, MempoolClientSender,
 };
+use aptos_protos::internal::fullnode::v1::fullnode_data_server::FullnodeDataServer;
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
 use aptos_storage_interface::DbReaderWriter;
@@ -49,6 +47,7 @@ use futures::StreamExt;
 use maptos_execution_util::config::aptos::Config as AptosConfig;
 use movement_types::{BlockCommitment, Commitment, Id};
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use std::net::ToSocketAddrs;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
@@ -487,19 +486,18 @@ impl Executor {
 			},
 		};
 
-		Server::builder()
+		tonic::transport::Server::builder()
 			.add_service(FullnodeDataServer::new(server))
 			.serve(String::from("0.0.0.0:8090").to_socket_addrs().unwrap().next().unwrap())
 			.await
-			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?
+			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))
 	}
 
 	pub async fn serve_indexer_api(&self) -> Result<(), anyhow::Error> {
 		let indexer_context = self.context.clone();
 		let indexer_config = self.node_config.indexer.clone();
-		run_forever(indexer_config, indexer_context.clone())
-			.await
-			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?
+		run_forever(indexer_config, indexer_context.clone()).await;
+		Ok(())
 	}
 }
 
