@@ -16,22 +16,26 @@ use crate::{
 	types::Amount,
 };
 
-pub struct MockBlockchainService {
-	pub initiator_contract: MockInitiatorContract,
-	pub initiator_monitoring: MockInitiatorMonitoring,
-	pub counterparty_contract: MockCounterpartyContract,
-	pub counterparty_monitoring: MockCounterpartyMonitoring,
+pub struct MockBlockchainService<A, H> {
+	pub initiator_contract: MockInitiatorContract<A, H>,
+	pub initiator_monitoring: MockInitiatorMonitoring<A, H>,
+	pub counterparty_contract: MockCounterpartyContract<A, H>,
+	pub counterparty_monitoring: MockCounterpartyMonitoring<A, H>,
 }
 
-impl BlockchainService for MockBlockchainService {
-	type Address = &'static str;
-	type Hash = &'static str;
+impl<A, H> BlockchainService for MockBlockchainService<A, H>
+where
+	A: std::fmt::Debug + Unpin + Send + Sync,
+	H: std::fmt::Debug + Unpin + Send + Sync,
+{
+	type Address = A;
+	type Hash = H;
 
-	type InitiatorContract = MockInitiatorContract;
-	type InitiatorMonitoring = MockInitiatorMonitoring;
+	type InitiatorContract = MockInitiatorContract<A, H>;
+	type InitiatorMonitoring = MockInitiatorMonitoring<A, H>;
 
-	type CounterpartyContract = MockCounterpartyContract;
-	type CounterpartyMonitoring = MockCounterpartyMonitoring;
+	type CounterpartyContract = MockCounterpartyContract<A, H>;
+	type CounterpartyMonitoring = MockCounterpartyMonitoring<A, H>;
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract {
 		&self.initiator_contract
@@ -50,7 +54,11 @@ impl BlockchainService for MockBlockchainService {
 	}
 }
 
-impl Stream for MockBlockchainService {
+impl<A, H> Stream for MockBlockchainService<A, H>
+where
+	A: std::fmt::Debug + Unpin + Send + Sync,
+	H: std::fmt::Debug + Unpin + Send + Sync,
+{
 	type Item =
 		BlockchainEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
 
@@ -59,25 +67,25 @@ impl Stream for MockBlockchainService {
 	}
 }
 
-pub struct MockInitiatorMonitoring {
-	pub events: Vec<
-		BridgeContractInitiatorEvent<
-			<Self as BridgeContractInitiatorMonitoring>::Address,
-			<Self as BridgeContractInitiatorMonitoring>::Hash,
-		>,
-	>,
+pub struct MockInitiatorMonitoring<A, H> {
+	pub events: Vec<BridgeContractInitiatorEvent<A, H>>,
 }
 
-impl BridgeContractInitiatorMonitoring for MockInitiatorMonitoring {
-	type Address = &'static str;
-	type Hash = &'static str;
+impl<A, H> BridgeContractInitiatorMonitoring for MockInitiatorMonitoring<A, H>
+where
+	A: std::fmt::Debug + Unpin,
+	H: std::fmt::Debug + Unpin,
+{
+	type Address = A;
+	type Hash = H;
 }
 
-impl Stream for MockInitiatorMonitoring {
-	type Item = BridgeContractInitiatorEvent<
-		<Self as BridgeContractInitiatorMonitoring>::Address,
-		<Self as BridgeContractInitiatorMonitoring>::Hash,
-	>;
+impl<A, H> Stream for MockInitiatorMonitoring<A, H>
+where
+	A: std::fmt::Debug + Unpin,
+	H: std::fmt::Debug + Unpin,
+{
+	type Item = BridgeContractInitiatorEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -89,25 +97,25 @@ impl Stream for MockInitiatorMonitoring {
 	}
 }
 
-pub struct MockCounterpartyMonitoring {
-	pub events: Vec<
-		BridgeContractCounterpartyEvent<
-			<Self as BridgeContractCounterpartyMonitoring>::Address,
-			<Self as BridgeContractCounterpartyMonitoring>::Hash,
-		>,
-	>,
+pub struct MockCounterpartyMonitoring<A, H> {
+	pub events: Vec<BridgeContractCounterpartyEvent<A, H>>,
 }
 
-impl BridgeContractCounterpartyMonitoring for MockCounterpartyMonitoring {
-	type Address = &'static str;
-	type Hash = &'static str;
+impl<A, H> BridgeContractCounterpartyMonitoring for MockCounterpartyMonitoring<A, H>
+where
+	A: std::fmt::Debug + Unpin,
+	H: std::fmt::Debug + Unpin,
+{
+	type Address = A;
+	type Hash = H;
 }
 
-impl Stream for MockCounterpartyMonitoring {
-	type Item = BridgeContractCounterpartyEvent<
-		<Self as BridgeContractCounterpartyMonitoring>::Address,
-		<Self as BridgeContractCounterpartyMonitoring>::Hash,
-	>;
+impl<A, H> Stream for MockCounterpartyMonitoring<A, H>
+where
+	A: std::fmt::Debug + Unpin,
+	H: std::fmt::Debug + Unpin,
+{
+	type Item = BridgeContractCounterpartyEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -119,12 +127,24 @@ impl Stream for MockCounterpartyMonitoring {
 	}
 }
 
-pub struct MockInitiatorContract;
+pub struct MockInitiatorContract<A, H> {
+	_phantom: std::marker::PhantomData<(A, H)>,
+}
+
+impl<A, H> MockInitiatorContract<A, H> {
+	pub fn build() -> Self {
+		Self { _phantom: std::marker::PhantomData }
+	}
+}
 
 #[async_trait::async_trait]
-impl BridgeContractInitiator for MockInitiatorContract {
-	type Address = &'static str;
-	type Hash = &'static str;
+impl<A, H> BridgeContractInitiator for MockInitiatorContract<A, H>
+where
+	A: std::fmt::Debug + Send + Sync,
+	H: std::fmt::Debug + Send + Sync,
+{
+	type Address = A;
+	type Hash = H;
 
 	async fn initiate_bridge_transfer(
 		&self,
@@ -155,17 +175,29 @@ impl BridgeContractInitiator for MockInitiatorContract {
 	async fn get_bridge_transfer_details(
 		&self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
 	}
 }
 
-pub struct MockCounterpartyContract;
+pub struct MockCounterpartyContract<A, H> {
+	_phantom: std::marker::PhantomData<(A, H)>,
+}
+
+impl<A, H> MockCounterpartyContract<A, H> {
+	pub fn build() -> Self {
+		Self { _phantom: std::marker::PhantomData }
+	}
+}
 
 #[async_trait::async_trait]
-impl BridgeContractCounterparty for MockCounterpartyContract {
-	type Address = &'static str;
-	type Hash = &'static str;
+impl<A, H> BridgeContractCounterparty for MockCounterpartyContract<A, H>
+where
+	A: std::fmt::Debug + Send + Sync,
+	H: std::fmt::Debug + Send + Sync,
+{
+	type Address = A;
+	type Hash = H;
 
 	async fn lock_bridge_transfer_assets(
 		&self,
@@ -196,7 +228,7 @@ impl BridgeContractCounterparty for MockCounterpartyContract {
 	async fn get_bridge_transfer_details(
 		&self,
 		_bridge_transfer_id: Self::Hash,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
 	}
 }
