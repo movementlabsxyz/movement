@@ -31,6 +31,8 @@ processes:
     depends_on:
       celestia-light-node:
         condition: process_healthy
+    availability:
+      restart: exit_on_failure
 
   m1-da-light-node:
     command: |
@@ -38,6 +40,8 @@ processes:
     depends_on:
       celestia-light-node:
         condition: process_healthy
+      celestia-light-node-synced:
+        condition: process_completed_successfully
     readiness_probe:
       exec:
         command: echo "true"
