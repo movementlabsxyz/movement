@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -e
+
+# Copy the directory from the Nix store to a temporary location
+temp_dir=$MOVEMENT_BASE_STORAGE_PATH/monza-aptos
+
+# Change to the temporary directory
+cd "$temp_dir"
+
+# Split the listen addresses into an array
+IFS=':' read -r -a listener_array <<< "$MAPTOS_FAUCET_LISTEN_ADDR"
+
+# Extract the listen address and port
+LISTEN_ADDR="${listener_array[0]}"
+LISTEN_PORT="${listener_array[1]}"
+
+echo "Starting faucet service with the following configuration:"
+echo "  - Chain ID: $MAPTOS_CHAIN_ID"
+echo "  - Node URL: $MAPTOS_OPT_LISTEN_ADDR"
+echo "  - Faucet URL: $MAPTOS_FAUCET_LISTEN_ADDR"
+
+# Run the faucet service using cargo
+echo "Starting faucet service..."
+./target/$CARGO_PROFILE/aptos-faucet-service run-simple --key "$MAPTOS_PRIVATE_KEY" \
+    --node-url "http://$MAPTOS_OPT_LISTEN_ADDR" --chain-id "$MAPTOS_CHAIN_ID" \
+    --listen-address "$LISTEN_ADDR" --listen-port "$LISTEN_PORT"
+
+# The script automatically calls cleanup when it exits due to the trap

@@ -7,8 +7,8 @@ use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::debug;
 
-use monza_executor::{
-	v1::MonzaExecutorV1, ExecutableBlock, ExecutableTransactions, HashValue, MonzaExecutor,
+use maptos_dof_execution::{
+	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use movement_types::Block;
@@ -17,14 +17,14 @@ use crate::*;
 use m1_da_light_node_client::*;
 
 #[derive(Clone)]
-pub struct MonzaPartialNode<T: MonzaExecutor + Send + Sync + Clone> {
+pub struct MonzaPartialNode<T: DynOptFinExecutor + Send + Sync + Clone> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 }
 
-impl<T: MonzaExecutor + Send + Sync + Clone> MonzaPartialNode<T> {
+impl<T: DynOptFinExecutor + Send + Sync + Clone> MonzaPartialNode<T> {
 	pub fn new(
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
@@ -171,7 +171,7 @@ impl<T: MonzaExecutor + Send + Sync + Clone> MonzaPartialNode<T> {
 	}
 }
 
-impl<T: MonzaExecutor + Send + Sync + Clone> MonzaFullNode for MonzaPartialNode<T> {
+impl<T: DynOptFinExecutor + Send + Sync + Clone> MonzaFullNode for MonzaPartialNode<T> {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
 		self.executor.run_service().await?;
@@ -196,19 +196,17 @@ impl<T: MonzaExecutor + Send + Sync + Clone> MonzaFullNode for MonzaPartialNode<
 	}
 }
 
-impl MonzaPartialNode<MonzaExecutorV1> {
-
-	pub async fn try_from_config(
-		config: monza_config::Config
-	) -> Result<Self, anyhow::Error> {
+impl MonzaPartialNode<Executor> {
+	pub async fn try_from_config(config: monza_config::Config) -> Result<Self, anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect(
-			format!("http://{}", config.execution_config.light_node_config.try_service_address()?)
-		).await?;
-		let executor = MonzaExecutorV1::try_from_config(tx, config.execution_config)
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}",
+			config.execution_config.light_node_config.try_service_address()?
+		))
+		.await?;
+		let executor = Executor::try_from_config(tx, config.execution_config)
 			.await
 			.context("Failed to get executor from environment")?;
 		Self::bound(executor, light_node_client)
 	}
-	
 }

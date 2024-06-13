@@ -1,0 +1,32 @@
+[package]
+name = "maptos-fin-view"
+description = "Finality view for Aptos ledger states"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aptos-api = { workspace = true }
+aptos-config = { workspace = true }
+aptos-mempool = { workspace = true }
+aptos-storage-interface = { workspace = true }
+aptos-types = { workspace = true }
+maptos-execution-util = { workspace = true }
+
+anyhow = { workspace = true }
+poem = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+aptos-sdk = { workspace = true }
+maptos-opt-executor = { workspace = true }
+chrono = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }

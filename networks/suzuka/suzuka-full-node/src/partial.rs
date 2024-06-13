@@ -3,15 +3,15 @@ use m1_da_light_node_client::{
 	blob_response, BatchWriteRequest, BlobWrite, LightNodeServiceClient,
 	StreamReadFromHeightRequest,
 };
+use maptos_dof_execution::{
+	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
+	SignatureVerifiedTransaction, SignedTransaction, Transaction,
+};
 use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
 use movement_types::{Block, BlockCommitmentEvent};
-use suzuka_executor::{
-	v1::SuzukaExecutorV1, ExecutableBlock, ExecutableTransactions, HashValue,
-	SignatureVerifiedTransaction, SignedTransaction, SuzukaExecutor, Transaction,
-};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
@@ -34,7 +34,7 @@ pub struct SuzukaPartialNode<T> {
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: SuzukaExecutor + Send + Sync,
+	T: DynOptFinExecutor + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
@@ -213,7 +213,7 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
 where
-	T: SuzukaExecutor + Send + Sync,
+	T: DynOptFinExecutor + Send + Sync,
 {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -239,16 +239,17 @@ where
 	}
 }
 
-impl SuzukaPartialNode<SuzukaExecutorV1> {
-
+impl SuzukaPartialNode<Executor> {
 	pub async fn try_from_config(
 		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect(
-			format!("http://{}", config.execution_config.light_node_config.try_service_address()?)
-		).await?;
-		let executor = SuzukaExecutorV1::try_from_config(tx, config.execution_config)
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}",
+			config.execution_config.light_node_config.try_service_address()?
+		))
+		.await?;
+		let executor = Executor::try_from_config(tx, config.execution_config)
 			.await
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client

@@ -43,5 +43,6 @@ processes:
       celestia-light-node-synced:
         condition: process_completed_successfully
     readiness_probe:
+      initial_delay_seconds: 5
       exec:
         command: echo "true"

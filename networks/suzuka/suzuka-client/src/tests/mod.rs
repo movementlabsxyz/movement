@@ -17,14 +17,34 @@ static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(
-		format!("http://{}", SUZUKA_CONFIG.execution_config.try_aptos_config().unwrap().try_aptos_rest_listen_url().unwrap().as_str()).as_str(),
+		format!(
+			"http://{}",
+			SUZUKA_CONFIG
+				.execution_config
+				.try_aptos_config()
+				.unwrap()
+				.try_aptos_rest_listen_url()
+				.unwrap()
+				.as_str()
+		)
+		.as_str(),
 	)
 	.unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 	Url::from_str(
-		format!("http://{}", SUZUKA_CONFIG.execution_config.try_aptos_config().unwrap().try_aptos_faucet_listen_url().unwrap().as_str()).as_str(),
+		format!(
+			"http://{}",
+			SUZUKA_CONFIG
+				.execution_config
+				.try_aptos_config()
+				.unwrap()
+				.try_aptos_faucet_listen_url()
+				.unwrap()
+				.as_str()
+		)
+		.as_str(),
 	)
 	.unwrap()
 });

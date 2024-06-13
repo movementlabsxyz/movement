@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 export MCR_CONTRACT_DIR="$(pwd)/protocol-units/settlement/mcr/contracts"
 export MCR_ANVIL_PORT=8545
 export MCR_CHAIN_ID="$(shuf -i 1-32768 -n 1)"
