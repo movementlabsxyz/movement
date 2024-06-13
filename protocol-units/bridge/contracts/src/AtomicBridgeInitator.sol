@@ -21,54 +21,24 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         weth = IWETH10(_weth);
     }
 
-    function initiateBridgeTransferWithEth(
+    function initiateBridgeTransfer(
+        uint256 _wethAmount,
         address _originator, 
         address _recipient, 
         bytes32 _hashLock, 
         uint _timeLock
     ) external payable override returns (bytes32 _bridgeTransferId) {
-        require(msg.value > 0, "ETH amount must be greater than 0");
-        uint256 wethAmount = msg.value;
+        uint256 totalAmount = _wethAmount;
 
-        // Wrap ETH into WETH and store the WETH in this contract
-        weth.deposit{value: msg.value}();
-        require(weth.transfer(address(this), msg.value), "WETH transfer failed");
-        
-        _bridgeTransferId = keccak256(
-            abi.encodePacked(
-                _originator, 
-                _recipient, 
-                _hashLock, 
-                _timeLock, 
-                block.timestamp
-        ));
+        // If msg.value is greater than 0, convert ETH to WETH and add to total amount
+        if (msg.value > 0) {
+            weth.deposit{value: msg.value}();
+            require(weth.transfer(address(this), msg.value), "WETH transfer failed");
+            totalAmount += msg.value;
+        }
 
-        require(!bridgeTransfers[_bridgeTransferId].exists, "Bridge transfer already exists");
-
-        bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
-            amount: wethAmount,
-            originator: _originator,
-            recipient: _recipient,
-            hashLock: _hashLock,
-            timeLock: block.timestamp + _timeLock,
-            exists: true
-        });
-
-        emit BridgeTransferInitiated(_bridgeTransferId, _originator, _recipient, _hashLock, _timeLock);
-        return _bridgeTransferId;
-    }
-
-    function initiateBridgeTransferWithWeth(
-        uint256 _wethAmount, 
-        address _originator, 
-        address _recipient, 
-        bytes32 _hashLock, 
-        uint _timeLock
-    ) external override returns (bytes32 _bridgeTransferId) {
-        require(_wethAmount > 0, "WETH amount must be greater than 0");
-
-        //Transfer WETH from the sender to this contract
-        require(weth.transfer(address(this), _wethAmount), "WETH transfer failed");
+        // Ensure there is a valid total amount
+        require(totalAmount > 0, "Total amount must be greater than 0");
 
         _bridgeTransferId = keccak256(
             abi.encodePacked(
@@ -79,11 +49,11 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
                 block.timestamp
         ));
 
-        // Solidity uses default values on initialization so we can check this field to check for existence
+        // Check if the bridge transfer already exists
         require(bridgeTransfers[_bridgeTransferId].amount == 0, "Bridge transfer already exists");
 
         bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
-            amount: _wethAmount,
+            amount: totalAmount,
             originator: _originator,
             recipient: _recipient,
             hashLock: _hashLock,

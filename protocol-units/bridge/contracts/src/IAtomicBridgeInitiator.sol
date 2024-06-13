@@ -19,28 +19,12 @@ interface IAtomicBridgeInitiator {
      * @return _bridgeTransferId A unique id representing this BridgeTransfer
      **/
     function initiateBridgeTransfer(
-      address _originator, 
-      address _recipient, 
-      bytes32 _hashLock, 
-      uint _timeLock
-    ) external payable returns (bytes32 _bridgeTransferId);
-
-    /**
-     * @dev Creates a new atomic bridge transfer using WETH 
-     * @param _wethAmount The amount of WETH to send
-     * @param _originator The address allowed to withdraw (claim) the funds once the correct secret is provided on timeout. Used to transfer the funds.
-     * @param _recipient The address on the other chain to which to transfer the funds
-     * @param _hashLock The hash of the secret (HASH) that will unlock the funds
-     * @param _timeLock The number of blocks until which this BridgeTransfer is valid and can be executed
-     * @return _bridgeTransferId A unique id representing this BridgeTransfer
-     **/
-    function initiateBridgeTransferWithWeth(
       uint256 _wethAmount,
       address _originator, 
       address _recipient, 
       bytes32 _hashLock, 
       uint _timeLock
-    ) external returns (bytes32 _bridgeTransferId);
+    ) external payable returns (bytes32 _bridgeTransferId);
 
     /**
      * @dev Completes the bridging Counterparty
