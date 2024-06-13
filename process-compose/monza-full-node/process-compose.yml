@@ -35,6 +35,8 @@ processes:
     depends_on:
       celestia-light-node:
         condition: process_healthy
+      celestia-light-node-synced:
+        condition: process_completed_successfully
     readiness_probe:
       exec:
         command: echo "true"
