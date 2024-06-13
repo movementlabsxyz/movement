@@ -8,21 +8,45 @@ use once_cell::sync::Lazy;
 use std::str::FromStr;
 use url::Url;
 
-static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
-	maptos_execution_util::config::Config::try_from_env()
-		.context("Failed to create the config")
-		.unwrap()
+static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
+	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
+	let path = dot_movement.get_path().join("config.toml");
+	suzuka_config::Config::try_from_toml_file(&path).unwrap()
 });
 
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	Url::from_str(format!("http://{}", SUZUKA_CONFIG.aptos.opt_listen_url.as_str()).as_str())
-		.unwrap()
+	Url::from_str(
+		format!(
+			"http://{}",
+			SUZUKA_CONFIG
+				.execution_config
+				.try_aptos_config()
+				.unwrap()
+				.try_aptos_rest_listen_url()
+				.unwrap()
+				.as_str()
+		)
+		.as_str(),
+	)
+	.unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	Url::from_str(format!("http://{}", SUZUKA_CONFIG.aptos.faucet_listen_url.as_str()).as_str())
-		.unwrap()
+	Url::from_str(
+		format!(
+			"http://{}",
+			SUZUKA_CONFIG
+				.execution_config
+				.try_aptos_config()
+				.unwrap()
+				.try_aptos_faucet_listen_url()
+				.unwrap()
+				.as_str()
+		)
+		.as_str(),
+	)
+	.unwrap()
 });
 // <:!:section_1c
 

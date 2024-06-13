@@ -18,7 +18,8 @@ once_cell = { workspace = true }
 tokio = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
-maptos-execution-util = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
 
 [lints]
 workspace = true

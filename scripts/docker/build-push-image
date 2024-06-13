@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+# Turn on bash safety options: fail on error, variable unset and error in piped process
+set -eou pipefail
+
+# ARGS
+DOKERFILE=$1
+REPOSITORY=$2
+IMAGE_NAME=$3
+GIT_ROOT=$(git rev-parse --show-toplevel)
+
 # Check if the correct number of arguments are passed
 if [ "$#" -ne 3 ]; then
     echo "Usage: $0 <Dockerfile> <repository> <image-name>"
@@ -14,10 +23,30 @@ COMMIT_HASH=$(git rev-parse HEAD)
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 SANITIZED_BRANCH_NAME=${BRANCH_NAME//\//.}
 
+# Get the machine hardware name
+ARCH=$(uname -m)
+
+# Determine the platform name suffix based on the architecture
+case "$ARCH" in
+    x86_64)
+        PLATFORM_SUFFIX="-amd64"
+        ;;
+    aarch64)
+        PLATFORM_SUFFIX="-arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: $ARCH"
+        exit 1
+        ;;
+esac
+
 # Tag and build the Docker image
-echo "Building docker image with tags $2/$3:$COMMIT_HASH and $2/$3:$SANITIZED_BRANCH_NAME"
-docker build -f $1 -t $2/$3:$COMMIT_HASH -t $2/$3:$SANITIZED_BRANCH_NAME .
+IMG_NAME_TAG_COMMIT="${REPOSITORY}/${IMAGE_NAME}:${COMMIT_HASH}${PLATFORM_SUFFIX}"
+echo "Building docker image with tags ${IMG_NAME_TAG_COMMIT}"
+
+docker build $GIT_ROOT \
+        -f "${DOKERFILE}" \
+        -t "${IMG_NAME_TAG_COMMIT}"
 
 # Push the Docker images
-docker push $2/$3:$COMMIT_HASH
-docker push $2/$3:$SANITIZED_BRANCH_NAME
+docker push "${IMG_NAME_TAG_COMMIT}"

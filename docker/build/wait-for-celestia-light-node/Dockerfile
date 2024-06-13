@@ -8,7 +8,7 @@ WORKDIR /tmp/build
 
 # Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop .#docker-build --command bash -c "cargo build --release -p wait-for-celestia-light-node"
+        develop .#docker-build --command bash -c "cargo build --release --bin wait-for-celestia-light-node"
 
 RUN rust_binary="./target/release/wait-for-celestia-light-node"; dest_dir="/tmp/runtime"; \
     mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
