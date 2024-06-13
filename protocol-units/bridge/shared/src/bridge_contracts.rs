@@ -24,7 +24,7 @@ pub trait BridgeContractInitiator {
 	type Hash;
 
 	async fn initiate_bridge_transfer(
-		&self,
+		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Self::Address>,
 		hash_lock: HashLock<Self::Hash>,
@@ -33,18 +33,18 @@ pub trait BridgeContractInitiator {
 	) -> BridgeContractResult<()>;
 
 	async fn complete_bridge_transfer<S: Send>(
-		&self,
+		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: S,
 	) -> BridgeContractResult<()>;
 
 	async fn refund_bridge_transfer(
-		&self,
+		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()>;
 
 	async fn get_bridge_transfer_details(
-		&self,
+		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }

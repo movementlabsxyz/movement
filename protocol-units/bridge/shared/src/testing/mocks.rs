@@ -1,4 +1,4 @@
-use futures::Stream;
+use futures::{Stream, StreamExt};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -37,7 +37,7 @@ impl<A, H> MockBlockchainService<A, H> {
 impl<A, H> BlockchainService for MockBlockchainService<A, H>
 where
 	A: std::fmt::Debug + Unpin + Send + Sync,
-	H: std::fmt::Debug + Unpin + Send + Sync,
+	H: std::fmt::Debug + Unpin + Send + Sync + Clone,
 {
 	type Address = A;
 	type Hash = H;
@@ -68,13 +68,24 @@ where
 impl<A, H> Stream for MockBlockchainService<A, H>
 where
 	A: std::fmt::Debug + Unpin + Send + Sync,
-	H: std::fmt::Debug + Unpin + Send + Sync,
+	H: std::fmt::Debug + Unpin + Send + Sync + Clone,
 {
 	type Item =
 		BlockchainEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		self.poll_next_event(cx)
+		let this = self.get_mut();
+
+		if let Poll::Ready(Some(event)) = this.poll_next_event(cx) {
+			return Poll::Ready(Some(event));
+		}
+
+		// poll the events from the contracts and forward them
+		if let Poll::Ready(Some(event)) = this.initiator_contract.poll_next_unpin(cx) {
+			return Poll::Ready(Some(BlockchainEvent::InitiatorEvent(event)));
+		}
+
+		Poll::Pending
 	}
 }
 
@@ -183,24 +194,34 @@ impl<A, H> MockInitiatorContract<A, H> {
 impl<A, H> BridgeContractInitiator for MockInitiatorContract<A, H>
 where
 	A: std::fmt::Debug + Send + Sync,
-	H: std::fmt::Debug + Send + Sync,
+	H: std::fmt::Debug + Send + Sync + Clone,
 {
 	type Address = A;
 	type Hash = H;
 
 	async fn initiate_bridge_transfer(
-		&self,
-		_initiator_address: InitiatorAddress<Self::Address>,
-		_recipient_address: RecipientAddress<Self::Address>,
-		_hash_lock: HashLock<Self::Hash>,
-		_time_lock: TimeLock,
-		_amount: Amount,
+		&mut self,
+		initiator_address: InitiatorAddress<Self::Address>,
+		recipient_address: RecipientAddress<Self::Address>,
+		hash_lock: HashLock<Self::Hash>,
+		time_lock: TimeLock,
+		amount: Amount,
 	) -> BridgeContractResult<()> {
+		self.events.push(BridgeContractInitiatorEvent::BridgeTransferInitiated(
+			BridgeTransferDetails {
+				bridge_transfer_id: BridgeTransferId(Clone::clone(&*hash_lock)),
+				initiator_address,
+				recipient_address,
+				hash_lock,
+				time_lock,
+				amount,
+			},
+		));
 		Ok(())
 	}
 
 	async fn complete_bridge_transfer<S: Send>(
-		&self,
+		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_secret: S,
 	) -> BridgeContractResult<()> {
@@ -208,14 +229,14 @@ where
 	}
 
 	async fn refund_bridge_transfer(
-		&self,
+		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
-		&self,
+		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
