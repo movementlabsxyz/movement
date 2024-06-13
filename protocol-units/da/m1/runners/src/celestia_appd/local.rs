@@ -22,8 +22,8 @@ impl Runner for Local {
             &[
                 "start",
                 "--grpc.enable",
-                "--home",
-                &config.try_celestia_app_path()?,
+                "--home", &config.try_celestia_app_path()?,
+                "--log_level", "FATAL",
             ],
         ).await?;
 
