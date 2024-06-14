@@ -1,6 +1,5 @@
 use std::{sync::Arc, time::Duration};
 
-use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
@@ -204,9 +203,7 @@ impl MonzaPartialNode<Executor> {
 			config.execution_config.light_node_config.try_service_address()?
 		))
 		.await?;
-		let executor = Executor::try_from_config(tx, config.execution_config)
-			.await
-			.context("Failed to get executor from environment")?;
+		let executor = Executor::try_from_config(tx, config.execution_config)?;
 		Self::bound(executor, light_node_client)
 	}
 }

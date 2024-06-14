@@ -5,7 +5,7 @@ use aptos_api::{
 use aptos_config::config::NodeConfig;
 use aptos_mempool::MempoolClientSender;
 use aptos_storage_interface::{finality_view::FinalityView as AptosFinalityView, DbReader};
-use maptos_execution_util::config::aptos::Config as AptosConfig;
+use maptos_execution_util::config::Config;
 
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tracing::info;
@@ -33,8 +33,9 @@ impl FinalityView {
 	pub fn try_from_config(
 		db_reader: Arc<dyn DbReader>,
 		mempool_client_sender: MempoolClientSender,
-		aptos_config: &AptosConfig,
+		config: Config,
 	) -> Result<Self, anyhow::Error> {
+		let aptos_config = config.try_aptos_config()?;
 		let node_config = NodeConfig::default();
 		let inner = Arc::new(AptosFinalityView::new(db_reader));
 		let context = Arc::new(Context::new(
@@ -99,18 +100,19 @@ mod tests {
 	#[tokio::test]
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
 		// Create an Executor and a FinalityView instance from the environment configuration.
-		let config = AptosConfig::default();
-		let executor = Executor::try_from_config(&config)?;
+		let config = Config::default();
+		let aptos_config = config.try_aptos_config()?;
+		let executor = Executor::try_from_config(config.clone())?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),
-			&config,
+			config,
 		)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.private_key.clone()),
+			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
 			0,
 		);
 
@@ -119,7 +121,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
 
 		let mut account_addrs = Vec::new();
 
