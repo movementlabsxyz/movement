@@ -25,6 +25,7 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 
 use anyhow::Context;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio_stream::StreamExt;
 
@@ -38,7 +39,7 @@ const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 ///
 /// This structure is meant to be used in serialization.
 /// Validation is done by the builder interface of the [`Client`].
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
