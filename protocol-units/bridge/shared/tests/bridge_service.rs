@@ -7,16 +7,16 @@ use bridge_shared::testing::mocks::MockBlockchainService;
 use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
 use futures::StreamExt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct BC1Hash(pub &'static str);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct BC2Hash(pub &'static str);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct BC1Address(pub &'static str);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 struct BC2Address(pub &'static str);
 
 #[test(tokio::test)]
