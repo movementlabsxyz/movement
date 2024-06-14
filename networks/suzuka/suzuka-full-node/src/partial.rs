@@ -7,7 +7,9 @@ use maptos_dof_execution::{
 	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use mcr_settlement_client::eth_client::{McrEthSettlementClient, McrEthSettlementConfig};
+use mcr_settlement_client::eth_client::{
+	Client as McrEthSettlementClient, Config as McrEthSettlementConfig,
+};
 use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
@@ -277,14 +279,9 @@ impl SuzukaPartialNode<Executor> {
 		let mcr_rpc_url = read_from_env("RPC URL", env_vars::MCR_NODE_RPC)?;
 		let mcr_ws_url = read_from_env("WebSocket URL", env_vars::MCR_NODE_WS)?;
 		let mcr_private_key = read_from_env("MCR signer's private key", env_vars::MCR_PRIVATE_KEY)?;
-		let mcr_client_config = McrEthSettlementConfig::try_from_env()?;
-		let settlement_client = McrEthSettlementClient::build_with_urls(
-			&mcr_rpc_url,
-			&mcr_ws_url,
-			&mcr_private_key,
-			mcr_client_config,
-		)
-		.await?;
+		let mcr_client_config = McrEthSettlementConfig::default();
+		let settlement_client =
+			McrEthSettlementClient::build_with_config(mcr_client_config).await?;
 		Self::bound(executor, light_node_client, settlement_client)
 	}
 }
