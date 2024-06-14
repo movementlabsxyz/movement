@@ -1,7 +1,5 @@
 version: "3"
 
-environment:
-
 processes:
 
   build:
@@ -44,14 +42,13 @@ processes:
 
   postgres:
     command: |
-      export PGUSER=postgres
-      export PGPASSWORD=password
-      postgres -D "$DOT_MOVEMENT/postgres" -c listen_addresses='*' -c port=5432
+      ./scripts/postgres/start-dev
+
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
-
+    
   suzuka-full-node:
     command: |
       suzuka-full-node
@@ -61,7 +58,7 @@ processes:
       postgres:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 

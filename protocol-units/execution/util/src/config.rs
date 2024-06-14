@@ -159,6 +159,7 @@ pub mod aptos {
 					Config::default_aptos_indexer_transaction_stream_listen_url(),
 				aptos_private_key: Config::default_aptos_private_key(),
 				aptos_db_path: Config::default_aptos_db_path(),
+				postgres_connection_string: Config::default_postgres_connection_string(),
 			}
 		}
 	}

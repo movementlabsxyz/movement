@@ -43,6 +43,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
+use chrono::Timelike;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use maptos_execution_util::config::aptos::Config as AptosConfig;
@@ -235,6 +236,9 @@ impl Executor {
 		node_config.indexer.gap_lookback_versions = Some(4);
 
 		node_config.indexer_grpc.enabled = true;
+
+		node_config.indexer.postgres_uri =
+			Some(config.try_aptos_config()?.try_postgres_connection_string()?);
 
 		// indexer_grpc config
 		node_config.indexer_grpc.processor_batch_size = 4;
