@@ -219,7 +219,7 @@ fn test_prove_insertion_separate() {
     insert_and_perform_checks(batches2);
 }
 #[test]
-// Same as last test, except we update some nodes
+// Same as the last test, except we update some nodes
 fn test_prove_update() {
     // ```text
     //                             internal(root)

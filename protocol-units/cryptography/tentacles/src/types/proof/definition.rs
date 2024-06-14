@@ -1,7 +1,7 @@
 // Copyright (c) The Diem Core Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-//! This module has definition of various proofs.
+//! This module has a definition of various proofs.
 use core::marker::PhantomData;
 
 use super::{SparseMerkleInternalNode, SparseMerkleLeafNode, SparseMerkleNode};
@@ -308,7 +308,7 @@ impl<H: SimpleHasher> SparseMerkleProof<H> {
         new_element_value: Option<V>,
     ) -> Result<RootHash> {
         if let Some(new_element_value) = new_element_value {
-            // A value have been supplied, we need to prove that we inserted a given value at the new key
+            // A value has been supplied, we need to prove that we inserted a given value at the new key
 
             match self.leaf {
                 // In the case there is a leaf in the Merkle path, we check that this leaf exists in the tree
@@ -529,7 +529,7 @@ impl<H: SimpleHasher> UpdateMerkleProof<H> {
     ///    3. Compare the new Merkle path against the new_root_hash
     /// If these steps are verified then the [`JellyfishMerkleTree`] has been soundly updated
     ///
-    /// This function consumes the Merkle proof to avoid uneccessary copying.
+    /// This function consumes the Merkle proof to avoid unnecessary copying.
     pub fn verify_update<V: AsRef<[u8]>>(
         self,
         old_root_hash: RootHash,
