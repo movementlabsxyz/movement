@@ -19,7 +19,7 @@ pub enum BridgeContractError {
 pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
 
 #[async_trait::async_trait]
-pub trait BridgeContractInitiator {
+pub trait BridgeContractInitiator: Clone + Unpin {
 	type Address;
 	type Hash;
 
@@ -50,7 +50,7 @@ pub trait BridgeContractInitiator {
 }
 
 #[async_trait::async_trait]
-pub trait BridgeContractCounterparty {
+pub trait BridgeContractCounterparty: Clone + Unpin {
 	type Address;
 	type Hash;
 

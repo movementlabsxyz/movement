@@ -3439,6 +3439,7 @@ name = "bridge-shared"
 version = "0.3.0"
 dependencies = [
  "async-trait",
+ "delegate",
  "derive_more",
  "futures",
  "test-log",
@@ -4653,6 +4654,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "092966b41edc516079bdf31ec78a2e0588d1d0c08f78b91d8307215928642b2b"
 dependencies = [
  "tokio",
+]
+
+[[package]]
+name = "delegate"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e018fccbeeb50ff26562ece792ed06659b9c2dae79ece77c4456bb10d9bf79b"
+dependencies = [
+ "proc-macro2 1.0.82",
+ "quote 1.0.36",
+ "syn 2.0.63",
 ]
 
 [[package]]

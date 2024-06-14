@@ -1,12 +1,16 @@
+use delegate::delegate;
 use futures::{Stream, StreamExt};
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use std::{pin::Pin, sync::Arc};
+use std::{
+	sync::Mutex,
+	task::{Context, Poll},
+};
 
 use crate::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 };
-use crate::types::{BridgeTransferDetails, BridgeTransferId};
+use crate::types::{BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId};
 use crate::{
 	blockchain_service::{BlockchainEvent, BlockchainService},
 	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
@@ -36,8 +40,8 @@ impl<A, H> MockBlockchainService<A, H> {
 
 impl<A, H> BlockchainService for MockBlockchainService<A, H>
 where
-	A: std::fmt::Debug + Unpin + Send + Sync,
-	H: std::fmt::Debug + Unpin + Send + Sync + Clone,
+	A: BridgeAddressType,
+	H: BridgeHashType,
 {
 	type Address = A;
 	type Hash = H;
@@ -67,8 +71,8 @@ where
 
 impl<A, H> Stream for MockBlockchainService<A, H>
 where
-	A: std::fmt::Debug + Unpin + Send + Sync,
-	H: std::fmt::Debug + Unpin + Send + Sync + Clone,
+	A: BridgeAddressType,
+	H: BridgeHashType,
 {
 	type Item =
 		BlockchainEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
@@ -162,24 +166,49 @@ where
 }
 
 #[derive(Debug)]
-pub struct MockInitiatorContract<A, H> {
+pub struct MockInitiatorContractState<A, H> {
 	events: Vec<BridgeContractInitiatorEvent<A, H>>,
 	mock_next_bridge_transfer_id: Option<BridgeTransferId<H>>,
 	_phantom: std::marker::PhantomData<(A, H)>,
 }
 
-impl<A, H> MockInitiatorContract<A, H> {
-	pub fn build() -> Self {
+impl<A, H> Default for MockInitiatorContractState<A, H> {
+	fn default() -> Self {
 		Self {
 			events: Default::default(),
-			mock_next_bridge_transfer_id: None,
-			_phantom: std::marker::PhantomData,
+			mock_next_bridge_transfer_id: Default::default(),
+			_phantom: Default::default(),
 		}
 	}
+}
 
+impl<A, H> MockInitiatorContractState<A, H> {
 	pub fn with_next_bridge_transfer_id(&mut self, id: H) -> &mut Self {
 		self.mock_next_bridge_transfer_id = Some(BridgeTransferId(id));
 		self
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct MockInitiatorContract<A, H> {
+	state: Arc<Mutex<MockInitiatorContractState<A, H>>>,
+}
+
+impl<A, H> MockInitiatorContract<A, H> {
+	pub fn build() -> Self {
+		Self { state: Arc::new(Mutex::new(MockInitiatorContractState::default())) }
+	}
+
+	pub fn with_next_bridge_transfer_id(&mut self, id: H) -> &mut Self {
+		self.state.lock().expect("lock poisoned").with_next_bridge_transfer_id(id);
+		self
+	}
+
+	delegate! {
+			to self.state.lock().expect("lock poisoned") {
+					// to be delegated
+			}
+
 	}
 }
 
@@ -192,7 +221,8 @@ where
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
-		if let Some(event) = this.events.pop() {
+		let mut state = this.state.lock().expect("lock poisoned");
+		if let Some(event) = state.events.pop() {
 			Poll::Ready(Some(event))
 		} else {
 			Poll::Pending
@@ -203,8 +233,8 @@ where
 #[async_trait::async_trait]
 impl<A, H> BridgeContractInitiator for MockInitiatorContract<A, H>
 where
-	A: std::fmt::Debug + Send + Sync,
-	H: std::fmt::Debug + Send + Sync + Clone,
+	A: BridgeAddressType,
+	H: BridgeHashType,
 {
 	type Address = A;
 	type Hash = H;
@@ -217,9 +247,12 @@ where
 		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		self.events.push(BridgeContractInitiatorEvent::BridgeTransferInitiated(
+		let mut state = self.state.lock().expect("lock poisoned");
+		let next_bridge_transfer_id =
+			state.mock_next_bridge_transfer_id.take().expect("no next bridge transfer id");
+		state.events.push(BridgeContractInitiatorEvent::BridgeTransferInitiated(
 			BridgeTransferDetails {
-				bridge_transfer_id: self.mock_next_bridge_transfer_id.take().expect("no mock id"),
+				bridge_transfer_id: next_bridge_transfer_id,
 				initiator_address,
 				recipient_address,
 				hash_lock,
@@ -253,6 +286,7 @@ where
 	}
 }
 
+#[derive(Debug, Clone)]
 pub struct MockCounterpartyContract<A, H> {
 	_phantom: std::marker::PhantomData<(A, H)>,
 }
@@ -266,8 +300,8 @@ impl<A, H> MockCounterpartyContract<A, H> {
 #[async_trait::async_trait]
 impl<A, H> BridgeContractCounterparty for MockCounterpartyContract<A, H>
 where
-	A: std::fmt::Debug + Send + Sync,
-	H: std::fmt::Debug + Send + Sync,
+	A: BridgeAddressType,
+	H: BridgeHashType,
 {
 	type Address = A;
 	type Hash = H;
