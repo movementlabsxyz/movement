@@ -1,8 +1,8 @@
 [package]
 name = "suzuka-client"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -14,7 +14,6 @@ rust-version = { workspace = true }
 [dependencies]
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
-aptos-crypto = { workspace = true }
 anyhow = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
@@ -22,11 +21,11 @@ url = { workspace = true }
 rand = { workspace = true }
 maptos-execution-util = { workspace = true }
 commander = { workspace = true }
-buildtime = { workspace = true }
 buildtime-helpers = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
-chrono = {workspace = true}
+chrono = { workspace = true }
+bcs = { workspace = true }
 
 [lints]
 workspace = true

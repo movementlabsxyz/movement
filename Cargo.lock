@@ -6956,7 +6956,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-crypto",
- "aptos-sdk",
  "aptos-types",
  "m1-da-light-node-util",
  "rand 0.7.3",
@@ -10963,8 +10962,10 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
- "buildtime",
+ "aptos-types",
+ "bcs 0.1.4",
  "buildtime-helpers",
+ "chrono",
  "commander",
  "maptos-execution-util",
  "once_cell",

@@ -26,7 +26,7 @@ processes:
       sleep 999999999d
       echo "started"
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 3
       exec:
         command: |
           echo "true"

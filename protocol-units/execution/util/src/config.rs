@@ -7,7 +7,7 @@ pub mod aptos {
 		ed25519::{Ed25519PrivateKey, Ed25519PublicKey},
 		PrivateKey, Uniform, ValidCryptoMaterialStringExt,
 	};
-	use aptos_sdk::types::chain_id::ChainId;
+	use aptos_types::chain_id::ChainId;
 
 	pub mod env_vars {
 		pub const CHAIN_ID: &'static str = "MAPTOS_CHAIN_ID";

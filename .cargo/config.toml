@@ -10,24 +10,47 @@ xclippy = [
   "-Aclippy::enum-variant-names",
   "-Aclippy::result-large-err",
   "-Aclippy::mutable-key-type",
-  "-Aclippy::map_identity",  # We temporarily ignore this due to: https://github.com/rust-lang/rust-clippy/issues/11764
+  "-Aclippy::map_identity",        # We temporarily ignore this due to: https://github.com/rust-lang/rust-clippy/issues/11764
 ]
 x = "run --package aptos-cargo-cli --bin aptos-cargo-cli --"
 
 [build]
-rustflags = ["--cfg", "tokio_unstable", "-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes"]
+rustflags = [
+  "--cfg",
+  "tokio_unstable",
+  "-C",
+  "force-frame-pointers=yes",
+  "-C",
+  "force-unwind-tables=yes",
+]
 
 # TODO(grao): Figure out whether we should enable other cpu features, and whether we should use a different way to configure them rather than list every single one here.
 [target.x86_64-unknown-linux-gnu]
-rustflags = ["--cfg", "tokio_unstable", "-C", "link-arg=-fuse-ld=lld", "-C", "force-frame-pointers=yes", "-C", "force-unwind-tables=yes", "-C", "target-feature=+sse4.2"]
+rustflags = [
+  "--cfg",
+  "tokio_unstable",
+  "-C",
+  "link-arg=-fuse-ld=lld",
+  "-C",
+  "force-frame-pointers=yes",
+  "-C",
+  "force-unwind-tables=yes",
+  "-C",
+  "target-feature=+sse4.2",
+]
 
 [target.aarch64-unknown-linux-gnu]
 rustflags = [
-  "--cfg", "tokio_unstable",
-  "-C", "link-arg=-fuse-ld=lld",
-  "-C", "force-frame-pointers=yes",
-  "-C", "force-unwind-tables=yes",
-  "-C", "target-feature=+neon" 
+  "--cfg",
+  "tokio_unstable",
+  "-C",
+  "link-arg=-fuse-ld=lld",
+  "-C",
+  "force-frame-pointers=yes",
+  "-C",
+  "force-unwind-tables=yes",
+  "-C",
+  "target-feature=+neon",
 ]
 
 # 64 bit MSVC
@@ -40,5 +63,34 @@ rustflags = [
   "-C",
   "force-unwind-tables=yes",
   "-C",
-  "link-arg=/STACK:8000000" # Set stack to 8 MB
+  "link-arg=/STACK:8000000",  # Set stack to 8 MB
+]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+  "--cfg",
+  "tokio_unstable",
+  "-C",
+  "link-arg=-fuse-ld=lld",
+  "-C",
+  "force-frame-pointers=yes",
+  "-C",
+  "force-unwind-tables=yes",
+  "-C",
+  "target-feature=+sse4.2",
+]
+
+# macOS aarch64
+[target.aarch64-apple-darwin]
+rustflags = [
+  "--cfg",
+  "tokio_unstable",
+  "-C",
+  "link-arg=-fuse-ld=lld",
+  "-C",
+  "force-frame-pointers=yes",
+  "-C",
+  "force-unwind-tables=yes",
+  "-C",
+  "target-feature=+neon",
 ]

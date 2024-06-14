@@ -1,6 +1,10 @@
 use crate::{
 	coin_client::CoinClient,
-	rest_client::{aptos_api_types::TransactionOnChainData, Client, FaucetClient},
+	rest_client::{
+		// aptos_api_types::TransactionOnChainData,
+		Client,
+		FaucetClient,
+	},
 	types::{chain_id::ChainId, LocalAccount},
 };
 use anyhow::Context;
@@ -23,7 +27,7 @@ use url::Url;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
 // use aptos_sdk::move_types::language_storage::StructTag;
-use aptos_sdk::move_types::language_storage::TypeTag;
+// use aptos_sdk::move_types::language_storage::TypeTag;
 use aptos_sdk::transaction_builder::TransactionBuilder;
 use aptos_sdk::types::account_address::AccountAddress;
 // use aptos_sdk::types::move_utils::MemberId;
@@ -31,7 +35,7 @@ use aptos_sdk::types::transaction::authenticator::AuthenticationKey;
 use aptos_sdk::types::transaction::EntryFunction;
 use aptos_sdk::types::transaction::TransactionPayload;
 // use aptos_sdk::transaction_builder::TransactionFactory;
-use std::time::SystemTime;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
 	maptos_execution_util::config::Config::try_from_env()
@@ -174,7 +178,7 @@ struct DefaultProfile {
 	private_key: String,
 }
 
-async fn send_tx(
+/*async fn send_tx(
 	client: Client,
 	chain_id: u8,
 	account: LocalAccount,
@@ -209,10 +213,11 @@ async fn send_tx(
 	println!("tx_receipt_data: {tx_receipt_data:?}",);
 
 	Ok::<TransactionOnChainData, anyhow::Error>(tx_receipt_data)
-}
+}*/
 
 #[tokio::test]
 pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
+	println!("Running test_complex_alice");
 	std::env::set_var("NODE_URL", NODE_URL.clone().as_str());
 	std::env::set_var("FAUCET_URL", FAUCET_URL.clone().as_str());
 
@@ -230,7 +235,7 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 		run_command("/bin/bash", &[format!("{}{}", test, "deploy.sh").as_str()]).await?;
 	println!("{}", init_output);
 
-	let one_sec = time::Duration::from_millis(1000);
+	let one_sec = time::Duration::from_millis(5000);
 
 	thread::sleep(one_sec);
 
@@ -239,14 +244,12 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 	let config: Config = serde_yaml::from_str(&yaml_content)?;
 
 	// Access the `account` field
-	let module_address = format!("0x{}", config.profiles.default.account);
+	let module_address = AccountAddress::from_hex_literal(
+		format!("0x{}", config.profiles.default.account).as_str(),
+	)?;
 	let private_key_import = &config.profiles.default.private_key;
 	let private_key = Ed25519PrivateKey::from_encoded_string(private_key_import)?;
-	let module_name: Box<str> = Box::from("resource_roulette".to_string());
-	let module: ModuleId = ModuleId::new(
-		AccountAddress::from_hex_literal(&module_address)?,
-		Identifier::new(module_name)?,
-	);
+
 	let public_key = Ed25519PublicKey::from(&private_key);
 	let account_address = AuthenticationKey::ed25519(&public_key).account_address();
 	println!("{}", account_address);
@@ -277,7 +280,27 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to fund Bob's account")?; // <:!:section_3
 
-	let tx1 = send_tx(rest_client, chain_id, alice, module, "bid", vec![], vec![vec![10]]).await?;
+	//
+	println!("Calling with Alice to {:#?}", module_address);
+	let transaction_builder = TransactionBuilder::new(
+		TransactionPayload::EntryFunction(EntryFunction::new(
+			ModuleId::new(module_address, Identifier::new("resource_roulette").unwrap()),
+			Identifier::new("bid").unwrap(),
+			vec![],
+			vec![bcs::to_bytes(&10).unwrap()],
+		)),
+		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 30,
+		ChainId::new(chain_id),
+	)
+	.sender(alice.address())
+	.sequence_number(alice.sequence_number())
+	.max_gas_amount(5_000)
+	.gas_unit_price(100);
+
+	let signed_transaction = alice.sign_with_transaction_builder(transaction_builder);
+	let tx_receipt_data =
+		rest_client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
+	println!("tx_receipt_data: {:?}", tx_receipt_data);
 
 	Ok(())
 }

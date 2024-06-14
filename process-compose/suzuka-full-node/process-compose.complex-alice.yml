@@ -6,7 +6,7 @@ processes:
 
   complex-alice-tests:
     command: |
-      cargo test -p suzuka-client test_complex_alice
+      cargo test -p suzuka-client test_complex_alice -- --nocapture
     depends_on:
       suzuka-full-node:
         condition: process_healthy
