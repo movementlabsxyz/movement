@@ -275,7 +275,7 @@ impl SuzukaPartialNode<Executor> {
 		let executor = Executor::try_from_config(tx, config.execution_config)
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
-		let settlement_client = MockMcrSettlementClient::new();
+		let settlement_client = McrEthSettlementClient::build_with_config(config.mcr).await?;
 		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
 		Self::bound(executor, light_node_client, settlement_client, movement_rest)
 	}
