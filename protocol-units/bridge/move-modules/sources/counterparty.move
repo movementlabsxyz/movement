@@ -1,10 +1,11 @@
-module MovementLabs::AtomicBridgeCounterParty {
+module 0x1::AtomicBridgeCounterParty {
     use std::signer;
     use std::event;
     use std::address;
     use std::vector;
     use std::option::{self, Option};
     use std::timestamp;
+    use MOVETH::moveth;
 
     struct BridgeTransferDetails has key, store {
         exists: bool,
@@ -32,13 +33,15 @@ module MovementLabs::AtomicBridgeCounterParty {
         bridge_transfer_id: vector<u8>,
     }
 
+    // A mapping of bridge transfer IDs to their details
     struct BridgeTransferStore has store {
-        bridge_transfers: vector<BridgeTransferDetails>,
+        bridge_transfers: table::Table<vector<u8>, BridgeTransferDetails>,
     }
+
 
     public fun initialize(owner: &signer) {
         let bridge_transfer_store = BridgeTransferStore {
-            bridge_transfers: vector::empty<BridgeTransferDetails>(),
+            bridge_transfers: table::Table::new(),
         };
         move_to(owner, bridge_transfer_store);
     }

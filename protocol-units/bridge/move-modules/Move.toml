@@ -4,12 +4,21 @@ version = "1.0.0"
 authors = []
 
 [addresses]
+moveth = "_"
+master_minter = "_"
+minter = "_" 
+pauser = "_"
+denylister = "_"
 
 [dev-addresses]
-
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "mainnet"
+rev = "testnet"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
+moveth = "0x1"
+master_minter = "0x1"
+minter = "0x1"
+pauser = "0x1"
+denylister = "0x1"
