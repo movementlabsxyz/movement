@@ -181,6 +181,7 @@ anyhow = "1.0"
 async-channel = "2.2.1"
 async-stream = "0.3.0"
 async-trait = "0.1.71"
+async-recursion = "1.1.1"
 auto_impl = "1.2.0"
 blake3 = { version = "1.4.0", features = ["traits-preview"] }
 bytes = { version = "1.2.1", default-features = false }
@@ -247,9 +248,6 @@ trie-db = "0.28.0"
 url = "2.2.2"
 x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
-
-async-recursion = "1.1.1"
-reqwest = "0.12.4"
 
 
 [workspace.lints.rust]
