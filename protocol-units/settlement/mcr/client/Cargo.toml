@@ -12,8 +12,7 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#move to workspace when impl is done.
-alloy = { workspace = true }
+alloy = { workspace = true }                #move to workspace when impl is done.
 alloy-primitives = { workspace = true }
 alloy_provider = { workspace = true }
 alloy-sol-types = { workspace = true }
@@ -33,6 +32,7 @@ async-trait = { workspace = true }
 movement-types = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

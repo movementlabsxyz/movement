@@ -7,7 +7,9 @@ use maptos_dof_execution::{
 	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
+use mcr_settlement_client::{
+	eth_client::Client as McrEthSettlementClient, McrSettlementClientOperations,
+};
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
@@ -36,7 +38,7 @@ pub struct SuzukaPartialNode<T> {
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: DynOptFinExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
@@ -49,6 +51,7 @@ where
 	{
 		let (settlement_manager, commitment_events) = McrSettlementManager::new(settlement_client);
 		let (transaction_sender, transaction_receiver) = async_channel::unbounded();
+		let bg_executor = executor.clone();
 		(
 			Self {
 				executor,
@@ -58,7 +61,7 @@ where
 				settlement_manager,
 				movement_rest,
 			},
-			read_commitment_events(commitment_events),
+			read_commitment_events(commitment_events, bg_executor),
 		)
 	}
 
@@ -202,15 +205,23 @@ where
 	}
 }
 
-async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Result<()> {
+async fn read_commitment_events<T>(
+	mut stream: CommitmentEventStream,
+	executor: T,
+) -> anyhow::Result<()>
+where
+	T: DynOptFinExecutor + Send + Sync,
+{
 	while let Some(res) = stream.next().await {
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
+				executor.set_finalized_block_height(commitment.height)?;
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
+				// TODO: block reversion
 			}
 		}
 	}
@@ -219,7 +230,7 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
 where
-	T: DynOptFinExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -262,7 +273,6 @@ impl SuzukaPartialNode<Executor> {
 		))
 		.await?;
 		let executor = Executor::try_from_config(tx, config.execution_config)
-			.await
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		let settlement_client = MockMcrSettlementClient::new();
