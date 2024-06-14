@@ -40,11 +40,14 @@ use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
 use maptos_execution_util::config::aptos::Config as AptosConfig;
+use movement_rest::{health, state_root_hash};
 use movement_types::{BlockCommitment, Commitment, Id};
 
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use poem::{
+	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
 
@@ -352,7 +355,15 @@ impl Executor {
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
+
+		// If you add the `at` method after the nest we get a runtime error
+		let app = Route::new()
+			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.nest("/movement/v1/health", health)
+			.data(self.context())
+			.with(cors);
 
 		Server::new(TcpListener::bind(self.aptos_config.try_aptos_rest_listen_url()?))
 			.run(app)

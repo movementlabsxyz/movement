@@ -13,6 +13,7 @@ use mcr_settlement_client::{
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
+use movement_rest::MovementRest;
 use movement_types::{Block, BlockCommitmentEvent};
 
 use anyhow::Context;
@@ -32,6 +33,7 @@ pub struct SuzukaPartialNode<T> {
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
+	movement_rest: MovementRest,
 }
 
 impl<T> SuzukaPartialNode<T>
@@ -42,6 +44,7 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
+		movement_rest: MovementRest,
 	) -> (Self, impl Future<Output = Result<(), anyhow::Error>> + Send)
 	where
 		C: McrSettlementClientOperations + Send + 'static,
@@ -56,6 +59,7 @@ where
 				transaction_receiver,
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
+				movement_rest,
 			},
 			read_commitment_events(commitment_events, bg_executor),
 		)
@@ -69,11 +73,13 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
+		movement_rest: MovementRest,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
-		let (mut node, background_task) = Self::new(executor, light_node_client, settlement_client);
+		let (mut node, background_task) =
+			Self::new(executor, light_node_client, settlement_client, movement_rest);
 		node.bind_transaction_channel();
 		Ok((node, background_task))
 	}
@@ -248,6 +254,12 @@ where
 
 		Ok(())
 	}
+
+	/// Runs the maptos rest api service until crash or shutdown.
+	async fn run_movement_rest(&self) -> Result<(), anyhow::Error> {
+		self.movement_rest.run_service().await?;
+		Ok(())
+	}
 }
 
 impl SuzukaPartialNode<Executor> {
@@ -262,7 +274,9 @@ impl SuzukaPartialNode<Executor> {
 		.await?;
 		let executor = Executor::try_from_config(tx, config.execution_config)
 			.context("Failed to get executor from environment")?;
+		// TODO: switch to real settlement client
 		let settlement_client = McrEthSettlementClient::build_with_config(config.mcr).await?;
-		Self::bound(executor, light_node_client, settlement_client)
+		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
+		Self::bound(executor, light_node_client, settlement_client, movement_rest)
 	}
 }
