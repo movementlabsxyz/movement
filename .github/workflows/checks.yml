@@ -10,7 +10,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-            runs-on: movement-runner
+            runs-on: ubuntu-latest
           - os: macos-13-latest
             arch: arm64
             runs-on: macos-13-xlarge
