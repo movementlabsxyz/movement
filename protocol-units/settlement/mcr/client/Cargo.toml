@@ -51,10 +51,10 @@ futures = { workspace = true }
 alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings" }
 
 [features]
-mock = []
 default = ["eth"]
-stub = []
+integration-tests = ["eth"]
 eth = []
+mock = []
 
 [lints]
 workspace = true

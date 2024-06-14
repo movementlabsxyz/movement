@@ -304,7 +304,7 @@ mod tests {
 	// After genesis ceremony, 2 validator send the commitment for height 1.
 	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
 	// Wait the commitment accepted event.
-	//#[cfg(feature = "integration-tests")]
+	#[cfg(feature = "integration-tests")]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		//Activate to debug the test.
