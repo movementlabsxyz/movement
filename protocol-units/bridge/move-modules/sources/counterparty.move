@@ -1,47 +1,47 @@
-module 0x1::AtomicBridgeCounterParty {
+module MoveBridge::AtomicBridgeCounterParty {
     use std::signer;
     use std::event;
-    use std::address;
     use std::vector;
-    use std::option::{self, Option};
+    use std::option::Option;
     use std::timestamp;
+    use aptos_framework::table::Table;
     use MOVETH::moveth;
 
     struct BridgeTransferDetails has key, store {
         exists: bool,
-        recipient: address::Address,
+        recipient: address,
         amount: u64,
         hash_lock: vector<u8>,
         time_lock: u64,
     }
 
-    struct BridgeTransferAssetsLockedEvent has store {
+    struct BridgeTransferAssetsLockedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
-        initiator: address::Address,
-        recipient: address::Address,
+        initiator: address,
+        recipient: address,
         amount: u64,
         hash_lock: vector<u8>,
         time_lock: u64,
     }
 
-    struct BridgeTransferCompletedEvent has store {
+    struct BridgeTransferCompletedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
         secret: vector<u8>,
     }
 
-    struct BridgeTransferCancelledEvent has store {
+    struct BridgeTransferCancelledEvent has store, drop {
         bridge_transfer_id: vector<u8>,
     }
 
     // A mapping of bridge transfer IDs to their details
-    struct BridgeTransferStore has store {
-        bridge_transfers: table::Table<vector<u8>, BridgeTransferDetails>,
+    struct BridgeTransferStore has key, store {
+        bridge_transfers: Table<vector<u8>, BridgeTransferDetails>,
     }
 
 
     public fun initialize(owner: &signer) {
         let bridge_transfer_store = BridgeTransferStore {
-            bridge_transfers: table::Table::new(),
+            bridge_transfers: Table::new(),
         };
         move_to(owner, bridge_transfer_store);
     }
@@ -51,7 +51,7 @@ module 0x1::AtomicBridgeCounterParty {
         bridge_transfer_id: vector<u8>,
         hash_lock: vector<u8>,
         time_lock: u64,
-        recipient: address::Address,
+        recipient: address,
         amount: u64
     ): bool {
         let bridge_transfer_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(initiator));
@@ -63,7 +63,7 @@ module 0x1::AtomicBridgeCounterParty {
             time_lock: timestamp::now_seconds() + time_lock,
         };
 
-        vector::push_back(&mut bridge_transfer_store.bridge_transfers, details);
+        vector::push_back(&bridge_transfer_store.bridge_transfers, details);
 
         let event_handle = event::new_event_handle<BridgeTransferAssetsLockedEvent>(initiator);
         event::emit_event(
@@ -111,8 +111,9 @@ module 0x1::AtomicBridgeCounterParty {
 
     public fun get_bridge_transfer_details(
         _bridge_transfer_id: vector<u8>
-    ): (bool, address::Address, u64, vector<u8>, u64) {
+    ): (bool, address, u64, vector<u8>, u64) {
         // TODO: Implement the logic for retrieving bridge transfer details
+        (false, @0x0, 0, vector::empty<u8>(), 0)
     }
 }
 

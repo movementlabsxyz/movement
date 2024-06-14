@@ -1,11 +1,11 @@
 /// moveth based on the moveth FA module 
 /// https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/move-examples/fungible_asset/stablecoin/sources/usdk.move 
-module 0x1::moveth {
+module MOVETH::moveth {
     use aptos_framework::account;
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::event;
     use aptos_framework::function_info;
-    use aptos_framework::table;
+    // use aptos_framework::table;
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset, FungibleStore};
     use aptos_framework::object::{Self, Object, ExtendRef};
     use aptos_framework::primary_fungible_store;
