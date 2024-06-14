@@ -1,5 +1,0 @@
-{
-    "solidity.packageDefaultDependenciesContractsDirectory": "src",
-    "solidity.packageDefaultDependenciesDirectory": "lib"
-  }
-  

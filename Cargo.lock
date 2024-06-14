@@ -7046,6 +7046,7 @@ dependencies = [
  "async-trait",
  "futures",
  "movement-types",
+ "serde",
  "serde_json",
  "thiserror",
  "tokio",
@@ -11008,6 +11009,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "maptos-execution-util",
+ "mcr-settlement-client",
  "serde",
  "serde_derive",
  "tokio",
