@@ -1,25 +1,24 @@
 use crate::{
 	coin_client::CoinClient,
-	rest_client::{Client, FaucetClient, aptos_api_types::TransactionOnChainData},
-	types::{LocalAccount,
-		chain_id::ChainId
-	}
+	rest_client::{aptos_api_types::TransactionOnChainData, Client, FaucetClient},
+	types::{chain_id::ChainId, LocalAccount},
 };
 use anyhow::Context;
-use once_cell::sync::Lazy;
-use std::{str::FromStr};
-use std::{thread, time};
-use url::Url;
-use commander::run_command;
-use buildtime_helpers::cargo::cargo_workspace;
-use std::path::PathBuf;
-use serde::Deserialize;
-use std::fs;
-use aptos_sdk::{crypto::ed25519::Ed25519PrivateKey, 
-// 	rest_client::Account
-};
 use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
+use aptos_sdk::{
+	crypto::ed25519::Ed25519PrivateKey,
+	// 	rest_client::Account
+};
+use buildtime_helpers::cargo::cargo_workspace;
+use commander::run_command;
+use once_cell::sync::Lazy;
+use serde::Deserialize;
+use std::fs;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::{thread, time};
+use url::Url;
 // use aptos_sdk::move_types::ident_str;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
@@ -33,7 +32,6 @@ use aptos_sdk::types::transaction::EntryFunction;
 use aptos_sdk::types::transaction::TransactionPayload;
 // use aptos_sdk::transaction_builder::TransactionFactory;
 use std::time::SystemTime;
-
 
 static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
 	maptos_execution_util::config::Config::try_from_env()
@@ -100,7 +98,7 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 			.context("Failed to get Bob's account balance")?
 	);
 
-	// Have Alice send Bob some coins. 
+	// Have Alice send Bob some coins.
 	let txn_hash = coin_client
 		.transfer(&mut alice, bob.address(), 1_000, None)
 		.await
@@ -162,20 +160,19 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 
 #[derive(Debug, Deserialize)]
 struct Config {
-    profiles: Profiles,
+	profiles: Profiles,
 }
 
 #[derive(Debug, Deserialize)]
 struct Profiles {
-    default: DefaultProfile,
+	default: DefaultProfile,
 }
 
 #[derive(Debug, Deserialize)]
 struct DefaultProfile {
-    account: String,
+	account: String,
 	private_key: String,
 }
-
 
 async fn send_tx(
 	client: Client,
@@ -186,7 +183,6 @@ async fn send_tx(
 	type_args: Vec<TypeTag>,
 	args: Vec<Vec<u8>>,
 ) -> Result<TransactionOnChainData, anyhow::Error> {
-
 	// print the module id
 	println!("module: {:?}", module);
 	// print the function name
@@ -194,52 +190,45 @@ async fn send_tx(
 
 	//get account sequence number
 	let account_address = account.address();
-    let sequence_number = account.sequence_number();
+	let sequence_number = account.sequence_number();
 	let identifier = Identifier::new(function_name)?;
-    let payload = TransactionPayload::EntryFunction(EntryFunction::new(
-		module,
-		identifier,
-		type_args,
-		args,
-	));
+	let payload =
+		TransactionPayload::EntryFunction(EntryFunction::new(module, identifier, type_args, args));
 
 	let timeout = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs() + 30;
-	let txn_builder = TransactionBuilder::new(
-			payload, 
-			timeout,
-			ChainId::new(chain_id)
-		).sender(account_address)
-        .sequence_number(sequence_number+1)
+	let txn_builder = TransactionBuilder::new(payload, timeout, ChainId::new(chain_id))
+		.sender(account_address)
+		.sequence_number(sequence_number + 1)
 		.max_gas_amount(5000)
-        .gas_unit_price(100);
-    // let raw_tx = txn_builder.build();
+		.gas_unit_price(100);
+	// let raw_tx = txn_builder.build();
 
-   let signed_transaction = account.sign_with_transaction_builder(txn_builder);
+	let signed_transaction = account.sign_with_transaction_builder(txn_builder);
 
-   let tx_receipt_data = client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
-   println!("tx_receipt_data: {tx_receipt_data:?}", );
+	let tx_receipt_data = client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
+	println!("tx_receipt_data: {tx_receipt_data:?}",);
 
-   Ok::<TransactionOnChainData, anyhow::Error>(tx_receipt_data)
+	Ok::<TransactionOnChainData, anyhow::Error>(tx_receipt_data)
 }
 
 #[tokio::test]
 pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
-
 	std::env::set_var("NODE_URL", NODE_URL.clone().as_str());
 	std::env::set_var("FAUCET_URL", FAUCET_URL.clone().as_str());
 
 	// Get the root path of the cargo workspace
 	let root: PathBuf = cargo_workspace()?;
-    let additional_path = "networks/suzuka/suzuka-client/src/tests/complex-alice/";
-    let combined_path = root.join(additional_path);
-    
-    // Convert the combined path to a string
-    let test = combined_path.to_string_lossy();
-    println!("{}", test);
+	let additional_path = "networks/suzuka/suzuka-client/src/tests/complex-alice/";
+	let combined_path = root.join(additional_path);
+
+	// Convert the combined path to a string
+	let test = combined_path.to_string_lossy();
+	println!("{}", test);
 
 	// let args = format!("echo -ne '\\n' | aptos init --network custom --rest-url {} --faucet-url {} --assume-yes", node_url, faucet_url);
-    let init_output = run_command("/bin/bash", &[format!("{}{}", test, "deploy.sh").as_str()]).await?;
-	println!("{}",init_output);
+	let init_output =
+		run_command("/bin/bash", &[format!("{}{}", test, "deploy.sh").as_str()]).await?;
+	println!("{}", init_output);
 
 	let one_sec = time::Duration::from_millis(1000);
 
@@ -247,18 +236,19 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 
 	let yaml_content = fs::read_to_string(".aptos/config.yaml")?;
 
-    let config: Config = serde_yaml::from_str(&yaml_content)?;
+	let config: Config = serde_yaml::from_str(&yaml_content)?;
 
-    // Access the `account` field
-    let module_address = format!("0x{}", config.profiles.default.account);
-    let private_key_import = &config.profiles.default.private_key;
-	let private_key = Ed25519PrivateKey::from_encoded_string(
-		private_key_import
-	)?;
-	let func_name: Box<str> = Box::from("resource_roulette".to_string());
-	let module: ModuleId = ModuleId::new(AccountAddress::from_hex_literal(&module_address)?, Identifier::new(func_name)?);
+	// Access the `account` field
+	let module_address = format!("0x{}", config.profiles.default.account);
+	let private_key_import = &config.profiles.default.private_key;
+	let private_key = Ed25519PrivateKey::from_encoded_string(private_key_import)?;
+	let module_name: Box<str> = Box::from("resource_roulette".to_string());
+	let module: ModuleId = ModuleId::new(
+		AccountAddress::from_hex_literal(&module_address)?,
+		Identifier::new(module_name)?,
+	);
 	let public_key = Ed25519PublicKey::from(&private_key);
-    let account_address = AuthenticationKey::ed25519(&public_key).account_address();
+	let account_address = AuthenticationKey::ed25519(&public_key).account_address();
 	println!("{}", account_address);
 	println!("{}", module_address);
 
@@ -287,7 +277,7 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 		.await
 		.context("Failed to fund Bob's account")?; // <:!:section_3
 
-	let tx1 =  send_tx(rest_client, chain_id, alice, module, "bid", vec![], vec![vec![10]]).await?;
+	let tx1 = send_tx(rest_client, chain_id, alice, module, "bid", vec![], vec![vec![10]]).await?;
 
 	Ok(())
 }

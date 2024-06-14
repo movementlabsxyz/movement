@@ -1,0 +1,1 @@
+/nix/store/nggwxmrkgdw736yikn9l5811rnw7s6jz-postgresql-15.6/bin/postgres "-D" "./.data"

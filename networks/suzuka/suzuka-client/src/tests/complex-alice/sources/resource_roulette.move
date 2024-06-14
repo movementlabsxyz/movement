@@ -45,7 +45,7 @@ module resource_roulette::resource_roulette {
   }
 
   // Bid function to allow signers to bid on a specific slot
-  public fun bid(account : &signer, slot: u8) acquires ResourceRoulette {
+  public entry fun bid(account : &signer, slot: u8) acquires ResourceRoulette {
 
     if (!exists<RouletteWinnings>(signer::address_of(account))) {
       init_module_winnings(account);
