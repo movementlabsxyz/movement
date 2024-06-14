@@ -1,8 +1,8 @@
 [package]
 name = "suzuka-client"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -20,6 +20,7 @@ url = { workspace = true }
 rand = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+aptos-protos = { workspace = true }
 
 [lints]
 workspace = true

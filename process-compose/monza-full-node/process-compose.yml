@@ -38,7 +38,7 @@ processes:
       celestia-light-node-synced:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 3
       exec:
         command: echo "true"
 
@@ -49,7 +49,7 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 3
       exec:
         command: echo "true"
 
@@ -60,7 +60,7 @@ processes:
       monza-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 3
       exec:
         command: echo "true"
 

@@ -1,3 +1,4 @@
+use anyhow::Context as AnyhowContext;
 use aptos_api::{
 	get_api_service,
 	runtime::{get_apis, Apis},
@@ -221,8 +222,33 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
-		let node_config = NodeConfig::default();
+		let mut node_config = NodeConfig::default();
+		node_config.indexer.enabled = true;
+		// indexer config
+		node_config.indexer.processor = Some("default_processor".to_string());
+		node_config.indexer.check_chain_id = Some(false);
+		node_config.indexer.skip_migrations = Some(false);
+		node_config.indexer.fetch_tasks = Some(4);
+		node_config.indexer.processor_tasks = Some(4);
+		node_config.indexer.emit_every = Some(4);
+		node_config.indexer.batch_size = Some(8);
+		node_config.indexer.gap_lookback_versions = Some(4);
 
+		node_config.indexer_grpc.enabled = true;
+
+		// indexer_grpc config
+		node_config.indexer_grpc.processor_batch_size = 4;
+		node_config.indexer_grpc.processor_task_count = 4;
+		node_config.indexer_grpc.output_batch_size = 4;
+		node_config.indexer_grpc.address = config
+			.try_aptos_config()?
+			.try_aptos_transaction_stream_listen_url()?
+			.parse()
+			.context(
+				"Failed to parse the indexer gRPC address. Please check the configuration file.",
+			)?;
+
+		info!("Bootstrapping with config: {:?}", config);
 		Self::bootstrap(
 			mempool_client_sender,
 			mempool_client_receiver,

@@ -51,6 +51,7 @@
           coreutils
           gcc
           rust
+          postgresql
         ];
         
         sysDependencies = with pkgs; [] 
@@ -74,6 +75,7 @@
           celestia-app
           monza-aptos
           jq
+          postgresql
         ];
 
         # Specific version of toolchain

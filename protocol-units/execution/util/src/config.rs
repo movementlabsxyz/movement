@@ -32,6 +32,10 @@ pub mod aptos {
 		#[serde(default = "Config::default_aptos_indexer_transaction_stream_listen_url")]
 		pub aptos_indexer_transaction_stream_listen_url: Option<String>,
 
+		/// The postgres connection string
+		#[serde(default = "Config::default_postgres_connection_string")]
+		pub postgres_connection_string: Option<String>,
+
 		/// The private key for the Aptos node
 		#[serde(default = "Config::default_aptos_private_key")]
 		pub aptos_private_key: Option<Ed25519PrivateKey>,
@@ -86,7 +90,7 @@ pub mod aptos {
 
 		/// The default URL of the gRPC transaction stream
 		pub fn default_aptos_indexer_transaction_stream_listen_url() -> Option<String> {
-			Some("0.0.0.0.30741".to_string())
+			Some("0.0.0.0:30741".to_string())
 		}
 
 		/// Gets the URL of the gRPC transaction stream as a result
@@ -94,6 +98,18 @@ pub mod aptos {
 			self.aptos_indexer_transaction_stream_listen_url
 				.clone()
 				.context("Aptos transaction stream listen URL not set.")
+		}
+
+		/// The default postgres connection string
+		pub fn default_postgres_connection_string() -> Option<String> {
+			Some("postgresql://postgres:password@localhost:5432".to_string())
+		}
+
+		/// Gets the postgres connection string as a result
+		pub fn try_postgres_connection_string(&self) -> Result<String, anyhow::Error> {
+			self.postgres_connection_string
+				.clone()
+				.context("Postgres connection string not set.")
 		}
 
 		/// The default private key for the Aptos node
