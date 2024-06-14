@@ -14,7 +14,10 @@ async fn main() -> Result<(), anyhow::Error> {
 			.init();
 	}
 
-	let executor = MonzaPartialNode::try_from_env()
+	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+	let path = dot_movement.get_path().join("config.toml");
+	let config = monza_config::Config::try_from_toml_file(&path).unwrap_or_default();
+	let executor = MonzaPartialNode::try_from_config(config)
 		.await
 		.context("Failed to create the executor")?;
 

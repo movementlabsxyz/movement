@@ -19,6 +19,8 @@ tokio = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
 maptos-execution-util = { workspace = true }
+dot-movement = { workspace = true }
+monza-config = { workspace = true }
 
 [lints]
 workspace = true

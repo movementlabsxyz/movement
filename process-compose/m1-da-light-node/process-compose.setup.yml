@@ -1,0 +1,12 @@
+version: "3"
+
+environment:
+
+processes:
+
+  setup:
+    command: |
+      cargo run --bin m1-da-light-node-setup
+    depends_on: 
+      build:
+        condition: process_completed_successfully

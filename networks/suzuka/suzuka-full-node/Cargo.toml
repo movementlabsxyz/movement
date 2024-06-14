@@ -26,6 +26,8 @@ tonic = { workspace = true }
 tracing = { workspace = true }
 movement-types = { workspace = true }
 movement-rest = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
 
 tracing-subscriber = { workspace = true, optional = true }
 

@@ -14,13 +14,16 @@ async fn main() -> Result<(), anyhow::Error> {
 			.init();
 	}
 
-	let (suzuka, background_task) = SuzukaPartialNode::try_from_env()
+	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+	let path = dot_movement.get_path().join("config.toml");
+	let config = suzuka_config::Config::try_from_toml_file(&path).unwrap_or_default();
+	let (executor, background_task) = SuzukaPartialNode::try_from_config(config)
 		.await
 		.context("Failed to create the executor")?;
 
 	tokio::spawn(background_task);
 
-	suzuka.run().await.context("Failed to run suzuka")?;
+	executor.run().await.context("Failed to run suzuka")?;
 
 	Ok(())
 }
