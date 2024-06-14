@@ -10962,9 +10962,12 @@ name = "suzuka-client"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-crypto",
  "aptos-sdk",
+ "aptos-types",
  "buildtime",
  "buildtime-helpers",
+ "chrono",
  "commander",
  "maptos-execution-util",
  "once_cell",

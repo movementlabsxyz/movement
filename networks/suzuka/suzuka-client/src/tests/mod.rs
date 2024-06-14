@@ -209,7 +209,7 @@ async fn send_tx(
 			timeout,
 			ChainId::new(chain_id)
 		).sender(account_address)
-        .sequence_number(sequence_number+1)
+        .sequence_number(sequence_number)
 		.max_gas_amount(5000)
         .gas_unit_price(100);
     // let raw_tx = txn_builder.build();

@@ -45,7 +45,7 @@ module resource_roulette::resource_roulette {
   }
 
   // Bid function to allow signers to bid on a specific slot
-  public fun bid(account : &signer, slot: u8) acquires ResourceRoulette {
+  public entry fun bid(account : &signer, slot: u8) acquires ResourceRoulette {
 
     if (!exists<RouletteWinnings>(signer::address_of(account))) {
       init_module_winnings(account);
@@ -85,12 +85,13 @@ module resource_roulette::resource_roulette {
 
   }
 
+  #[view]
   public fun get_noise() : u64 {
     1
   }
 
-  fun empty_bids(self : &mut ResourceRoulette){
 
+  fun empty_bids(self : &mut ResourceRoulette){
     // empty the slots
     let bids = vector::empty<vector<address>>();
     let i = 0;
@@ -103,7 +104,7 @@ module resource_roulette::resource_roulette {
   }
 
   // Roll function to select a pseudorandom slot and pay out all signers who selected that slot
-  public fun spin() acquires ResourceRoulette, RouletteWinnings {
+  public entry fun spin() acquires ResourceRoulette, RouletteWinnings {
 
     let self = borrow_global_mut<ResourceRoulette>(@resource_roulette);
 
