@@ -486,9 +486,11 @@ impl Executor {
 			},
 		};
 
+		let transaction_stream_listen_url =
+			self.aptos_config.try_aptos_transaction_stream_listen_url()?;
 		tonic::transport::Server::builder()
 			.add_service(FullnodeDataServer::new(server))
-			.serve(String::from("0.0.0.0:8090").to_socket_addrs().unwrap().next().unwrap())
+			.serve(transaction_stream_listen_url.to_socket_addrs().unwrap().next().unwrap())
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))
 	}

@@ -28,6 +28,10 @@ pub mod aptos {
 		#[serde(default = "Config::default_aptos_finality_view_listen_url")]
 		pub aptos_finality_view_listen_url: Option<String>,
 
+		/// The listener address of the gRPC transaction stream
+		#[serde(default = "Config::default_aptos_indexer_transaction_stream_listen_url")]
+		pub aptos_indexer_transaction_stream_listen_url: Option<String>,
+
 		/// The private key for the Aptos node
 		#[serde(default = "Config::default_aptos_private_key")]
 		pub aptos_private_key: Option<Ed25519PrivateKey>,
@@ -70,7 +74,7 @@ pub mod aptos {
 
 		/// The default URL of the Aptos finality view server
 		pub fn default_aptos_finality_view_listen_url() -> Option<String> {
-			Some("0.0.0.0:30800".to_string())
+			Some("0.0.0.0:30740".to_string())
 		}
 
 		/// Gets the URL of the Aptos finality view server as a result
@@ -78,6 +82,18 @@ pub mod aptos {
 			self.aptos_finality_view_listen_url
 				.clone()
 				.context("Aptos finality view listen URL not set.")
+		}
+
+		/// The default URL of the gRPC transaction stream
+		pub fn default_aptos_indexer_transaction_stream_listen_url() -> Option<String> {
+			Some("0.0.0.0.30741".to_string())
+		}
+
+		/// Gets the URL of the gRPC transaction stream as a result
+		pub fn try_aptos_transaction_stream_listen_url(&self) -> Result<String, anyhow::Error> {
+			self.aptos_indexer_transaction_stream_listen_url
+				.clone()
+				.context("Aptos transaction stream listen URL not set.")
 		}
 
 		/// The default private key for the Aptos node
@@ -123,6 +139,8 @@ pub mod aptos {
 				aptos_rest_listen_url: Config::default_aptos_rest_listen_url(),
 				aptos_faucet_listen_url: Config::default_aptos_faucet_listen_url(),
 				aptos_finality_view_listen_url: Config::default_aptos_finality_view_listen_url(),
+				aptos_indexer_transaction_stream_listen_url:
+					Config::default_aptos_indexer_transaction_stream_listen_url(),
 				aptos_private_key: Config::default_aptos_private_key(),
 				aptos_db_path: Config::default_aptos_db_path(),
 			}
