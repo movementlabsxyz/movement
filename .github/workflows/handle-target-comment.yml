@@ -10,7 +10,7 @@ on:
       issue_number:
         description: 'Issue number from issue_comment event'
         required: true
-        type:movement-runner
+        type:buildjet-8vcpu-ubuntu-2204
       html_url:
         description: 'HTML URl from issue_comment event'
         required: true
