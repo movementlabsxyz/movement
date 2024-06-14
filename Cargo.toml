@@ -11,6 +11,7 @@ members = [
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
     "protocol-units/settlement/mcr/client",
+    "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
     "util/*",
     "util/buildtime/buildtime-helpers",
@@ -55,6 +56,7 @@ memseq-util = { path = "protocol-units/sequencing/memseq/util" }
 sequencing-util = { path = "protocol-units/sequencing/util" }
 ## settlement
 mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }
+mcr-settlement-config = { path = "protocol-units/settlement/mcr/config" }
 mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 ## types
 movement-types = { path = "util/movement-types" }
@@ -135,6 +137,9 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ## Celestia Dependencies
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
+
+## Alloy dependencies
+alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy.git" }
 
 anyhow = "1.0"
 async-channel = "2.2.1"

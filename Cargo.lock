@@ -7045,14 +7045,23 @@ dependencies = [
  "async-stream",
  "async-trait",
  "futures",
+ "mcr-settlement-config",
  "movement-types",
- "serde",
  "serde_json",
  "thiserror",
  "tokio",
  "tokio-stream",
  "tracing",
  "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "mcr-settlement-config"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "toml 0.8.2",
 ]
 
 [[package]]
@@ -11009,7 +11018,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "maptos-execution-util",
- "mcr-settlement-client",
+ "mcr-settlement-config",
  "serde",
  "serde_derive",
  "tokio",

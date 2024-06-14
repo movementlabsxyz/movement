@@ -12,6 +12,8 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+mcr-settlement-config = { workspace = true }
+
 #move to workspace when impl is done.
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = [
     "pubsub",
@@ -28,26 +30,23 @@ alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "allo
 alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport" }
 alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http" }
 alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract" }
-alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet" }
+alloy-signer-wallet = { workspace = true }
 alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types" }
 alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws" }
-
-thiserror = "1.0.60"
-
 
 anyhow = { workspace = true }
 async-stream = { workspace = true }
 async-trait = { workspace = true }
 movement-types = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 futures = { workspace = true }
+serde_json = { workspace = true }
 alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings" }
 
 [features]
