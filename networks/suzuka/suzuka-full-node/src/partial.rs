@@ -154,7 +154,7 @@ where
 			let block: Block = serde_json::from_slice(&block_bytes)?;
 
 			debug!("Got block: {:?}", block);
-			info!("Block timestamp: {:?}", block_timestamp);
+			info!("Block micros timestamp: {:?}", block_timestamp);
 
 			// get the transactions
 			let mut block_transactions = Vec::new();
@@ -233,6 +233,8 @@ where
 	// ! Currently this only implements opt.
 	/// Runs the executor until crash or shutdown.
 	async fn run_executor(&self) -> Result<(), anyhow::Error> {
+		// ! todo: this is a temporary solution to rollover the genesis block, really this (a) needs to be read from the DA and (b) requires modifications to Aptos Core.
+		self.executor.rollover_genesis_block().await?;
 		// wait for both tasks to finish
 		tokio::try_join!(self.write_transactions_to_da(), self.read_blocks_from_da())?;
 

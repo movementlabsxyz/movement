@@ -116,6 +116,7 @@ impl Executor {
 		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 		let validators = &validators_;
 
+		let epoch_duration_secs = 3600;
 		let genesis = encode_genesis_change_set(
 			&public_key,
 			validators,
@@ -124,16 +125,16 @@ impl Executor {
 			// todo: get this config from somewhere
 			&GenesisConfiguration {
 				allow_new_validators: true,
-				epoch_duration_secs: 3600,
+				epoch_duration_secs: epoch_duration_secs,
 				is_test: true,
 				min_stake: 0,
 				min_voting_threshold: 0,
 				// 1M APTOS coins (with 8 decimals).
 				max_stake: 100_000_000_000_000,
-				recurring_lockup_duration_secs: 7200,
+				recurring_lockup_duration_secs: epoch_duration_secs * 2,
 				required_proposer_stake: 0,
 				rewards_apy_percentage: 10,
-				voting_duration_secs: 3600,
+				voting_duration_secs: epoch_duration_secs,
 				voting_power_increase_limit: 50,
 				employee_vesting_start: 1663456089,
 				employee_vesting_period_duration: 5 * 60, // 5 minutes
@@ -215,7 +216,7 @@ impl Executor {
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
 	}
 
-	async fn execute_block(
+	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
@@ -224,6 +225,20 @@ impl Executor {
 			let block_executor = self.block_executor.read().await;
 			block_executor.committed_block_id()
 		};
+
+		let check_transactions = block.transactions.clone().into_txns();
+		let transaction_0 = check_transactions
+			.get(0)
+			.ok_or(anyhow::anyhow!("Block must have at least one transaction"))?;
+
+		match transaction_0.clone().into_inner() {
+			Transaction::BlockMetadata(block_metadata) => {
+				info!("Executing block: {:?}", block_metadata);
+			}
+			_ => {
+				anyhow::bail!("First transaction in block must be a block metadata transaction")
+			}
+		}
 
 		let state_compute = {
 			let block_executor = self.block_executor.write().await;
@@ -302,15 +317,6 @@ impl Executor {
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
 
 		Ok(())
-	}
-
-	pub async fn get_transaction_sequence_number(
-		&self,
-		_transaction: &SignedTransaction,
-	) -> Result<u64, anyhow::Error> {
-		// just use the ms since epoch for now
-		let ms = chrono::Utc::now().timestamp_millis();
-		Ok(ms as u64)
 	}
 
 	/// Ticks the transaction reader.
@@ -403,28 +409,22 @@ impl Executor {
 	}
 
 	/// Gets the timestamp of the last state.
-	pub async fn get_last_state_timestamp(&self) -> Result<u64, anyhow::Error> {
+	pub async fn get_last_state_timestamp_micros(&self) -> Result<u64, anyhow::Error> {
 		let ledger_info = self.db.reader.get_latest_ledger_info()?;
 		Ok(ledger_info.ledger_info().timestamp_usecs())
 	}
 
-	/// Rollover the genesis block.
-	/// This should only be used for testing. The data availability layer should provide an initial transaction that rolls over the genesis block.
-	pub async fn rollover_genesis(&self) -> Result<(), anyhow::Error> {
+	pub async fn rollover_genesis(&self, timestamp: u64) -> Result<(), anyhow::Error> {
 		let (epoch, round) = self.get_next_epoch_and_round().await?;
 		let block_id = HashValue::random();
 
 		// genesis timestamp should always be 0
-		let genesis_timestamp = self.get_last_state_timestamp().await?;
+		let genesis_timestamp = self.get_last_state_timestamp_micros().await?;
 		info!(
 			"Rollover genesis: epoch: {}, round: {}, block_id: {}, genesis timestamp {}",
 			epoch, round, block_id, genesis_timestamp
 		);
 
-		// ? Originally, I had though this could be anything between the genesis timestamp and the timestamp of the first block to be submitted. But, the chain governance seems to prevent that.
-		// ? Then, I believed it must be in the current chain epoch. But, that also seems to be incorrect.
-		// ? It seems instead that some other state is being stored for an initial timestamp which this must be greater than.
-		let rollover_timestamp = chrono::Utc::now().timestamp_micros() as u64;
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
 			epoch,
@@ -432,12 +432,25 @@ impl Executor {
 			self.signer.author(),
 			vec![],
 			vec![],
-			rollover_timestamp,
+			timestamp,
 		));
 		let txs =
 			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		self.execute_block(block).await?;
+		Ok(())
+	}
+
+	/// Rollover the genesis block.
+	/// This should only be used for testing. The data availability layer should provide an initial transaction that rolls over the genesis block.
+	pub async fn rollover_genesis_now(&self) -> Result<(), anyhow::Error> {
+		// rollover timestamp needs to be within the epoch, by  default above this is one hour, so below is 59 minutes
+		let rollover_timestamp = chrono::Utc::now().timestamp_micros() as u64;
+		self.rollover_genesis(
+			rollover_timestamp,
+			// rollover_timestamp - (59 * 60 * 1000 * 1000), // 60 minutes
+		)
+		.await?;
 		Ok(())
 	}
 
@@ -556,7 +569,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
 		let executor = Executor::try_from_config(&config)?;
-		executor.rollover_genesis().await?;
+		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -574,6 +587,7 @@ mod tests {
 
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
+			// sleep for half an epoch
 			let (epoch, round) = executor.get_next_epoch_and_round().await?;
 
 			// Generate a random block ID.
@@ -581,7 +595,7 @@ mod tests {
 			// Clone the signer from the executor for signing the metadata.
 			let signer = executor.signer.clone();
 			// Get the current time in microseconds for the block timestamp.
-			let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+			let current_time_microseconds = chrono::Utc::now().timestamp_micros() as u64;
 
 			// Create a block metadata transaction.
 			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
@@ -591,7 +605,9 @@ mod tests {
 				signer.author(),
 				vec![],
 				vec![],
-				current_time_micros,
+				current_time_microseconds,
+				// ! below doesn't work, i.e., we can't roll over epochs
+				// current_time_microseconds + (i * 1000 * 1000 * 60 * 30), // 30 minutes later, thus every other will be across an epoch
 			));
 
 			// Create a state checkpoint transaction using the block ID.
@@ -617,6 +633,7 @@ mod tests {
 					block_metadata,
 					Transaction::UserTransaction(user_account_creation_tx),
 					Transaction::UserTransaction(mint_tx),
+					// state_checkpoint_tx,
 				]));
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
 			let block_commitment = executor.execute_block(block).await?;
@@ -654,7 +671,7 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
 		let executor = Executor::try_from_config(&config)?;
-		executor.rollover_genesis().await?;
+		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -680,7 +697,7 @@ mod tests {
 			// Clone the signer from the executor for signing the metadata.
 			let signer = executor.signer.clone();
 			// Get the current time in microseconds for the block timestamp.
-			let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+			let current_time_microseconds = chrono::Utc::now().timestamp_micros() as u64;
 
 			// Create a block metadata transaction.
 			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
@@ -690,7 +707,7 @@ mod tests {
 				signer.author(),
 				vec![],
 				vec![],
-				current_time_micros,
+				current_time_microseconds,
 			));
 
 			// Generate new accounts and create transactions for each block.

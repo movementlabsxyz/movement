@@ -104,6 +104,11 @@ impl DynOptFinExecutor for Executor {
 		// Create a block metadata transaction.
 		Ok(BlockMetadata::new(block_id, epoch, round, signer.author(), vec![], vec![], timestamp))
 	}
+
+	/// Rollover the genesis block
+	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
+		self.executor.rollover_genesis_now().await
+	}
 }
 
 #[cfg(test)]
