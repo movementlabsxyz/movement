@@ -223,6 +223,22 @@ impl Executor {
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
+		let block_metadata = {
+			let metadata_access_block = block.transactions.clone();
+			let mut metadata_access_transactions = metadata_access_block.into_txns();
+			println!("metadata_access_transactions: {:?}", metadata_access_transactions);
+			let first_signed = metadata_access_transactions
+				.first()
+				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
+			// cloning is cheaper than moving the array
+			match first_signed.clone().into_inner() {
+				Transaction::BlockMetadata(metadata) => metadata.clone(),
+				_ => {
+					anyhow::bail!("First transaction in block must be a block metadata transaction")
+				}
+			}
+		};
+
 		let block_id = block.block_id.clone();
 		let parent_block_id = {
 			let block_executor = self.block_executor.read().await;
@@ -233,11 +249,6 @@ impl Executor {
 
 		let state_compute = {
 			let block_executor = self.block_executor.write().await;
-			/*block_executor.execute_and_state_checkpoint(
-				block,
-				parent_block_id,
-				BlockExecutorConfigFromOnchain::new_no_block_limit(),
-			)?*/
 			block_executor.execute_block(
 				block,
 				parent_block_id,
@@ -245,14 +256,6 @@ impl Executor {
 			)?
 		};
 
-		/*debug!(
-			"Input transactions length {:?}, output transactions length {:}",
-			state_compute.input_txns_len(),
-			state_compute.txns_to_commit_len()
-		);*/
-
-		/*let transactions_by_status = state_compute.into_inner().0;
-		transactions_by_status.*/
 		debug!("State compute: {:?}", state_compute);
 
 		let version = state_compute.version();
@@ -260,10 +263,11 @@ impl Executor {
 		let (epoch, round) = self.get_next_epoch_and_round().await?;
 
 		{
-			let ledger_info_with_sigs = ledger_info_with_sigs(
+			let ledger_info_with_sigs = Self::ledger_info_with_sigs(
 				epoch,
 				round,
 				block_id.clone(),
+				block_metadata.timestamp_usecs(),
 				state_compute.root_hash(),
 				version,
 			);
@@ -292,6 +296,10 @@ impl Executor {
 			reader.get_state_proof(version)?
 		};
 
+		println!(
+			"change_info timestamp!!!!!!!!{}",
+			proof.clone().into_inner().0.commit_info().timestamp_usecs()
+		);
 		// Context has a reach-around to the db so the block height should
 		// have been updated to the most recently committed block.
 		// Race conditions, anyone?
@@ -486,24 +494,33 @@ impl Executor {
 
 		Ok(())
 	}
-}
 
-fn ledger_info_with_sigs(
-	epoch: u64,
-	round: u64,
-	block_id: HashValue,
-	root_hash: HashValue,
-	version: Version,
-) -> LedgerInfoWithSignatures {
-	let block_info = BlockInfo::new(
-		epoch, round, block_id, root_hash, version, 0, /* timestamp_usecs, doesn't matter */
-		None,
-	);
-	let ledger_info = LedgerInfo::new(
-		block_info,
-		HashValue::zero(), /* consensus_data_hash, doesn't matter */
-	);
-	LedgerInfoWithSignatures::new(ledger_info, AggregateSignature::empty() /* signatures */)
+	pub fn ledger_info_with_sigs(
+		epoch: u64,
+		round: u64,
+		block_id: HashValue,
+		timestamp_microseconds: u64,
+		root_hash: HashValue,
+		version: Version,
+	) -> LedgerInfoWithSignatures {
+		let block_info = BlockInfo::new(
+			epoch,
+			round,
+			block_id,
+			root_hash,
+			version,
+			timestamp_microseconds,
+			None,
+		);
+		let ledger_info = LedgerInfo::new(
+			block_info,
+			HashValue::zero(), /* consensus_data_hash, doesn't matter */
+		);
+		LedgerInfoWithSignatures::new(
+			ledger_info,
+			AggregateSignature::empty(), /* signatures */
+		)
+	}
 }
 
 #[cfg(test)]
@@ -612,6 +629,7 @@ mod tests {
 		for i in 0..10 {
 			// sleep for half an epoch
 			let (epoch, round) = executor.get_next_epoch_and_round().await?;
+			println!("epoch: {}, round: {}", epoch, round);
 
 			// Generate a random block ID.
 			let block_id = HashValue::random();
