@@ -5,6 +5,7 @@ use tracing::{trace, warn};
 
 use crate::{
 	blockchain_service::{BlockchainEvent, BlockchainService},
+	bridge_contracts::BridgeContractCounterparty,
 	bridge_monitoring::BridgeContractInitiatorEvent,
 };
 
@@ -20,16 +21,14 @@ where
 	pub blockchain_1: B1,
 	pub blockchain_2: B2,
 
-	pub active_swaps_b1_to_b2:
-		ActiveSwapMap<B1::Address, B1::Hash, B1::InitiatorContract, B2::CounterpartyContract>,
-	pub active_swaps_b2_to_b1:
-		ActiveSwapMap<B2::Address, B2::Hash, B2::InitiatorContract, B1::CounterpartyContract>,
+	pub active_swaps_b1_to_b2: ActiveSwapMap<B1, B2>,
+	pub active_swaps_b2_to_b1: ActiveSwapMap<B2, B1>,
 }
 
 impl<B1, B2> BridgeService<B1, B2>
 where
-	B1: BlockchainService,
-	B2: BlockchainService,
+	B1: BlockchainService + 'static,
+	B2: BlockchainService + 'static,
 {
 	pub fn new(blockchain_1: B1, blockchain_2: B2) -> Self {
 		Self {
@@ -49,8 +48,13 @@ where
 
 impl<B1, B2> Stream for BridgeService<B1, B2>
 where
-	B1: BlockchainService + Unpin,
-	B2: BlockchainService + Unpin,
+	B1: BlockchainService + Unpin + 'static,
+	B2: BlockchainService + Unpin + 'static,
+	B2::Hash: From<B1::Hash>,
+	// B2::Hash: From<B1::Hash>,
+	// B2::Address: From<B1::Address>,
+	<B2::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B1::Hash>,
+	<B2::CounterpartyContract as BridgeContractCounterparty>::Address: From<B1::Address>,
 {
 	type Item = ();
 
@@ -71,7 +75,7 @@ where
 									.active_swaps_b1_to_b2
 									.already_executing(&details.bridge_transfer_id)
 								{
-									warn!("BridgeService: Bridge transfer {:?} already initiated, monitoring should only return once", details.bridge_transfer_id);
+									warn!("BridgeService: Bridge transfer {:?} already present, monitoring should only return event once", details.bridge_transfer_id);
 									return Poll::Pending;
 								}
 
