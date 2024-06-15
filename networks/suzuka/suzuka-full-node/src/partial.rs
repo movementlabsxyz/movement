@@ -18,7 +18,7 @@ use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
-use tracing::debug;
+use tracing::{debug, info};
 
 use std::future::Future;
 use std::sync::Arc;
@@ -154,6 +154,7 @@ where
 			let block: Block = serde_json::from_slice(&block_bytes)?;
 
 			debug!("Got block: {:?}", block);
+			info!("Block timestamp: {:?}", block_timestamp);
 
 			// get the transactions
 			let mut block_transactions = Vec::new();

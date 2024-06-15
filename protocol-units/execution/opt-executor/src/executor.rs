@@ -216,7 +216,10 @@ impl Executor {
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
 	}
 
-	async fn execute_block_inner(&self, block: ExecutableBlock) -> Result<u64, anyhow::Error> {
+	async fn execute_block(
+		&self,
+		block: ExecutableBlock,
+	) -> Result<BlockCommitment, anyhow::Error> {
 		let block_id = block.block_id.clone();
 		let parent_block_id = {
 			let block_executor = self.block_executor.read().await;
@@ -239,20 +242,41 @@ impl Executor {
 		let (epoch, round) = self.get_next_epoch_and_round().await?;
 
 		{
-			let ledger_info_with_sigs =
-				ledger_info_with_sigs(epoch, round, block_id, state_compute.root_hash(), version);
+			let ledger_info_with_sigs = ledger_info_with_sigs(
+				epoch,
+				round,
+				block_id.clone(),
+				state_compute.root_hash(),
+				version,
+			);
 			let block_executor = self.block_executor.write().await;
 			block_executor.commit_blocks(vec![block_id], ledger_info_with_sigs)?;
 		}
-		Ok(version)
+
+		let proof = {
+			let reader = self.db.reader.clone();
+			reader.get_state_proof(version)?
+		};
+
+		// Context has a reach-around to the db so the block height should
+		// have been updated to the most recently committed block.
+		// Race conditions, anyone?
+		let block_height = self.get_block_head_height()?;
+
+		let commitment = Commitment::digest_state_proof(&proof);
+		Ok(BlockCommitment {
+			block_id: Id(*block_id.clone()),
+			commitment,
+			height: block_height.into(),
+		})
 	}
 
 	/// Execute a block which gets committed to the state.
-	pub async fn execute_block(
+	pub async fn execute_block_dead(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		// todo: this should be deterministic, so let's rehash the block id
+		/*// todo: this should be deterministic, so let's rehash the block id
 		let hash_str = format!("{:?}", block.block_id);
 		let mut hash_bytes = hash_str.as_bytes().to_vec();
 		hash_bytes.reverse();
@@ -309,7 +333,8 @@ impl Executor {
 			block_id: Id(*block.block_id),
 			commitment,
 			height: block_height.into(),
-		})
+		})*/
+		unimplemented!()
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
@@ -552,6 +577,7 @@ mod tests {
 	}
 
 	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/execution/executor-test-helpers/src/integration_test_impl.rs#L535
+	#[tracing_test::traced_test]
 	#[tokio::test]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
@@ -571,6 +597,32 @@ mod tests {
 
 		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
 		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+
+		let (epoch, round) = executor.get_next_epoch_and_round().await?;
+
+		// Generate a random block ID.
+		let block_id = HashValue::random();
+		// Clone the signer from the executor for signing the metadata.
+		let signer = executor.signer.clone();
+		// Get the current time in microseconds for the block timestamp.
+		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+		// Create a block metadata transaction.
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			current_time_micros,
+		));
+
+		let transactions =
+			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
+
+		let block = ExecutableBlock::new(block_id.clone(), transactions);
+		let block_commitment = executor.execute_block(block).await?;
 
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
@@ -642,7 +694,7 @@ mod tests {
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
 			let expected_commitment = Commitment::digest_state_proof(&state_proof);
-			assert_eq!(block_commitment.height, i + 1);
+			assert_eq!(block_commitment.height, i + 2);
 			assert_eq!(block_commitment.commitment, expected_commitment);
 		}
 
@@ -668,6 +720,32 @@ mod tests {
 
 		// Create a transaction factory with the chain ID of the executor.
 		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+
+		let (epoch, round) = executor.get_next_epoch_and_round().await?;
+
+		// Generate a random block ID.
+		let block_id = HashValue::random();
+		// Clone the signer from the executor for signing the metadata.
+		let signer = executor.signer.clone();
+		// Get the current time in microseconds for the block timestamp.
+		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
+
+		// Create a block metadata transaction.
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			current_time_micros,
+		));
+
+		let transactions =
+			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
+
+		let block = ExecutableBlock::new(block_id.clone(), transactions);
+		let block_commitment = executor.execute_block(block).await?;
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {

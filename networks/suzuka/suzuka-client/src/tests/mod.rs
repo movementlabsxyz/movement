@@ -282,12 +282,13 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 
 	//
 	println!("Calling with Alice to {:#?}", module_address);
+	let bid: u8 = 10;
 	let transaction_builder = TransactionBuilder::new(
 		TransactionPayload::EntryFunction(EntryFunction::new(
 			ModuleId::new(module_address, Identifier::new("resource_roulette").unwrap()),
 			Identifier::new("bid").unwrap(),
 			vec![],
-			vec![bcs::to_bytes(&10).unwrap()],
+			vec![bcs::to_bytes(&bid).unwrap()],
 		)),
 		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 30,
 		ChainId::new(chain_id),
