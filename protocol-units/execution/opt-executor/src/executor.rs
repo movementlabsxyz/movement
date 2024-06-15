@@ -175,7 +175,7 @@ impl Executor {
 		Ok((db_rw, validator_signer))
 	}
 
-	pub fn bootstrap(
+	pub async fn bootstrap(
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
@@ -189,7 +189,7 @@ impl Executor {
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
-		Ok(Self {
+		let executor = Self {
 			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db.clone()))),
 			db,
 			signer,
@@ -205,15 +205,45 @@ impl Executor {
 				None,
 			)),
 			listen_url: aptos_config.opt_listen_url.clone(),
-		})
+		};
+
+		// send in the first block
+		let (epoch, round) = executor.get_next_epoch_and_round().await?;
+
+		// Generate a random block ID.
+		let block_id = HashValue::random();
+		// Clone the signer from the executor for signing the metadata.
+		let signer = executor.signer.clone();
+		// Get the current time in microseconds for the block timestamp.
+		let current_time_micros = executor.get_last_state_timestamp().await?;
+
+		// Create a block metadata transaction.
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			signer.author(),
+			vec![],
+			vec![],
+			current_time_micros,
+		));
+
+		let transactions =
+			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
+
+		let block = ExecutableBlock::new(block_id.clone(), transactions);
+		let block_commitment = executor.execute_block(block).await?;
+
+		Ok(executor)
 	}
 
-	pub fn try_from_config(aptos_config: &AptosConfig) -> Result<Self, anyhow::Error> {
+	pub async fn try_from_config(aptos_config: &AptosConfig) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
+			.await
 	}
 
 	async fn execute_block(
@@ -269,72 +299,6 @@ impl Executor {
 			commitment,
 			height: block_height.into(),
 		})
-	}
-
-	/// Execute a block which gets committed to the state.
-	pub async fn execute_block_dead(
-		&self,
-		block: ExecutableBlock,
-	) -> Result<BlockCommitment, anyhow::Error> {
-		/*// todo: this should be deterministic, so let's rehash the block id
-		let hash_str = format!("{:?}", block.block_id);
-		let mut hash_bytes = hash_str.as_bytes().to_vec();
-		hash_bytes.reverse();
-		let metadata_block_id = HashValue::sha3_256_of(&hash_bytes);
-
-		// To correctly update block height, we employ a workaround to execute
-		// the block metadata transaction in its own block first.
-
-		// pop 0th transaction
-		let transactions = block.transactions;
-		let mut transactions = match transactions {
-			ExecutableTransactions::Unsharded(transactions) => transactions,
-			_ => anyhow::bail!("Only unsharded transactions are supported"),
-		};
-		if transactions.len() == 0 {
-			anyhow::bail!("Block must have at least the metadata transaction");
-		}
-		let block_metadata = match transactions.remove(0) {
-			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata)) => {
-				block_metadata
-			}
-			_ => anyhow::bail!("Block metadata not found"),
-		};
-
-		// execute the block metadata block
-		self.execute_block_inner(ExecutableBlock::new(
-			metadata_block_id.clone(),
-			ExecutableTransactions::Unsharded(vec![SignatureVerifiedTransaction::Valid(
-				Transaction::BlockMetadata(block_metadata),
-			)]),
-		))
-		.await?;
-
-		// execute the rest of the block
-		let version = self
-			.execute_block_inner(ExecutableBlock::new(
-				block.block_id.clone(),
-				ExecutableTransactions::Unsharded(transactions),
-			))
-			.await?;
-
-		let proof = {
-			let reader = self.db.reader.clone();
-			reader.get_state_proof(version)?
-		};
-
-		// Context has a reach-around to the db so the block height should
-		// have been updated to the most recently committed block.
-		// Race conditions, anyone?
-		let block_height = self.get_block_head_height()?;
-
-		let commitment = Commitment::digest_state_proof(&proof);
-		Ok(BlockCommitment {
-			block_id: Id(*block.block_id),
-			commitment,
-			height: block_height.into(),
-		})*/
-		unimplemented!()
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
@@ -462,10 +426,17 @@ impl Executor {
 		Ok(())
 	}
 
+	/// Gets the next epoch and round.
 	pub async fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
 		let epoch = self.db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
 		let round = self.db.reader.get_latest_ledger_info()?.ledger_info().round();
 		Ok((epoch, round))
+	}
+
+	/// Gets the timestamp of the last state.
+	pub async fn get_last_state_timestamp(&self) -> Result<u64, anyhow::Error> {
+		let ledger_info = self.db.reader.get_latest_ledger_info()?;
+		Ok(ledger_info.ledger_info().timestamp_usecs())
 	}
 
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
@@ -553,7 +524,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(&config).await?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -582,7 +553,7 @@ mod tests {
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(&config).await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -705,7 +676,7 @@ mod tests {
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(&config).await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -809,7 +780,7 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
 		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config)?;
+		let mut executor = Executor::try_from_config(&config).await?;
 		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
 
 		// send transaction to mempool
@@ -836,7 +807,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config)?;
+		let mut executor = Executor::try_from_config(&config).await?;
 		let server_executor = executor.clone();
 
 		let handle = tokio::spawn(async move {
@@ -872,7 +843,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(&config).await?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -901,7 +872,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(&config).await?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
