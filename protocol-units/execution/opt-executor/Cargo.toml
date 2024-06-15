@@ -63,6 +63,7 @@ aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
+aptos-logger = { workspace = true }
 
 dirs = { workspace = true }
 tempfile = { workspace = true }

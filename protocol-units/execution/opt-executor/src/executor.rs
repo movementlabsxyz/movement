@@ -11,6 +11,7 @@ use aptos_executor::{
 	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
 };
 use aptos_executor_types::BlockExecutorTrait;
+use aptos_framework::natives::debug;
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{
 	core_mempool::{CoreMempool, TimelineState},
@@ -20,6 +21,7 @@ use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
+	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
 	block_executor::partitioner::ExecutableTransactions,
 	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
@@ -45,6 +47,7 @@ use aptos_types::transaction::signature_verified_transaction::into_signature_ver
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use serde_json::de;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
@@ -116,7 +119,7 @@ impl Executor {
 		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 		let validators = &validators_;
 
-		let epoch_duration_secs = 3600;
+		let epoch_duration_secs = 3600; // 1 hour
 		let genesis = encode_genesis_change_set(
 			&public_key,
 			validators,
@@ -226,22 +229,15 @@ impl Executor {
 			block_executor.committed_block_id()
 		};
 
-		let check_transactions = block.transactions.clone().into_txns();
-		let transaction_0 = check_transactions
-			.get(0)
-			.ok_or(anyhow::anyhow!("Block must have at least one transaction"))?;
-
-		match transaction_0.clone().into_inner() {
-			Transaction::BlockMetadata(block_metadata) => {
-				info!("Executing block: {:?}", block_metadata);
-			}
-			_ => {
-				anyhow::bail!("First transaction in block must be a block metadata transaction")
-			}
-		}
+		let mempool_transactions = block.transactions.clone().into_txns();
 
 		let state_compute = {
 			let block_executor = self.block_executor.write().await;
+			/*block_executor.execute_and_state_checkpoint(
+				block,
+				parent_block_id,
+				BlockExecutorConfigFromOnchain::new_no_block_limit(),
+			)?*/
 			block_executor.execute_block(
 				block,
 				parent_block_id,
@@ -249,6 +245,14 @@ impl Executor {
 			)?
 		};
 
+		/*debug!(
+			"Input transactions length {:?}, output transactions length {:}",
+			state_compute.input_txns_len(),
+			state_compute.txns_to_commit_len()
+		);*/
+
+		/*let transactions_by_status = state_compute.into_inner().0;
+		transactions_by_status.*/
 		debug!("State compute: {:?}", state_compute);
 
 		let version = state_compute.version();
@@ -265,6 +269,22 @@ impl Executor {
 			);
 			let block_executor = self.block_executor.write().await;
 			block_executor.commit_blocks(vec![block_id], ledger_info_with_sigs)?;
+		}
+
+		// commit mempool transactions
+		{
+			let mut core_pool = self.core_mempool.write().await;
+			for transaction in mempool_transactions.iter() {
+				match transaction.clone().into_inner() {
+					Transaction::UserTransaction(transaction) => {
+						let sender = transaction.sender();
+						let sequence_number = transaction.sequence_number();
+						core_pool
+							.commit_transaction(&AccountAddress::from(sender), sequence_number);
+					}
+					_ => {}
+				}
+			}
 		}
 
 		let proof = {
@@ -566,6 +586,9 @@ mod tests {
 	#[tracing_test::traced_test]
 	#[tokio::test]
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
+		// use aptos_logger::{Level, Logger};
+		// Logger::builder().level(Level::Info).build();
+
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
 		let executor = Executor::try_from_config(&config)?;
@@ -611,7 +634,7 @@ mod tests {
 			));
 
 			// Create a state checkpoint transaction using the block ID.
-			let state_checkpoint_tx = Transaction::StateCheckpoint(block_id.clone());
+			let state_checkpoint_tx = Transaction::StateCheckpoint(HashValue::random());
 			// Generate a new account for transaction tests.
 			let new_account = LocalAccount::generate(&mut rng);
 			let new_account_address = new_account.address();
@@ -635,6 +658,7 @@ mod tests {
 					Transaction::UserTransaction(mint_tx),
 					// state_checkpoint_tx,
 				]));
+			debug!("Number of transactions: {}", transactions.num_transactions());
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
 			let block_commitment = executor.execute_block(block).await?;
 
