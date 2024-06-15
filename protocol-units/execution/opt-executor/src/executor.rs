@@ -22,13 +22,12 @@ use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	aggregate_signature::AggregateSignature,
 	block_executor::partitioner::ExecutableTransactions,
+	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
 	block_info::BlockInfo,
+	block_metadata::BlockMetadata,
+	chain_id::ChainId,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
 	transaction::Version,
-};
-use aptos_types::{
-	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
-	chain_id::ChainId,
 	transaction::{
 		signature_verified_transaction::SignatureVerifiedTransaction, ChangeSet, SignedTransaction,
 		Transaction, WriteSetPayload,
@@ -42,13 +41,13 @@ use aptos_vm_genesis::{
 use maptos_execution_util::config::aptos::Config as AptosConfig;
 use movement_types::{BlockCommitment, Commitment, Id};
 
+use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 use tracing::{debug, info};
-
-use std::{path::PathBuf, sync::Arc};
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
@@ -175,7 +174,7 @@ impl Executor {
 		Ok((db_rw, validator_signer))
 	}
 
-	pub async fn bootstrap(
+	pub fn bootstrap(
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
@@ -189,7 +188,7 @@ impl Executor {
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
-		let executor = Self {
+		Ok(Self {
 			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db.clone()))),
 			db,
 			signer,
@@ -205,45 +204,15 @@ impl Executor {
 				None,
 			)),
 			listen_url: aptos_config.opt_listen_url.clone(),
-		};
-
-		// send in the first block
-		let (epoch, round) = executor.get_next_epoch_and_round().await?;
-
-		// Generate a random block ID.
-		let block_id = HashValue::random();
-		// Clone the signer from the executor for signing the metadata.
-		let signer = executor.signer.clone();
-		// Get the current time in microseconds for the block timestamp.
-		let current_time_micros = executor.get_last_state_timestamp().await?;
-
-		// Create a block metadata transaction.
-		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
-			block_id,
-			epoch,
-			round,
-			signer.author(),
-			vec![],
-			vec![],
-			current_time_micros,
-		));
-
-		let transactions =
-			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
-
-		let block = ExecutableBlock::new(block_id.clone(), transactions);
-		let block_commitment = executor.execute_block(block).await?;
-
-		Ok(executor)
+		})
 	}
 
-	pub async fn try_from_config(aptos_config: &AptosConfig) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(aptos_config: &AptosConfig) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
-			.await
 	}
 
 	async fn execute_block(
@@ -439,6 +408,39 @@ impl Executor {
 		Ok(ledger_info.ledger_info().timestamp_usecs())
 	}
 
+	/// Rollover the genesis block.
+	/// This should only be used for testing. The data availability layer should provide an initial transaction that rolls over the genesis block.
+	pub async fn rollover_genesis(&self) -> Result<(), anyhow::Error> {
+		let (epoch, round) = self.get_next_epoch_and_round().await?;
+		let block_id = HashValue::random();
+
+		// genesis timestamp should always be 0
+		let genesis_timestamp = self.get_last_state_timestamp().await?;
+		info!(
+			"Rollover genesis: epoch: {}, round: {}, block_id: {}, genesis timestamp {}",
+			epoch, round, block_id, genesis_timestamp
+		);
+
+		// ? Originally, I had though this could be anything between the genesis timestamp and the timestamp of the first block to be submitted. But, the chain governance seems to prevent that.
+		// ? Then, I believed it must be in the current chain epoch. But, that also seems to be incorrect.
+		// ? It seems instead that some other state is being stored for an initial timestamp which this must be greater than.
+		let rollover_timestamp = chrono::Utc::now().timestamp_micros() as u64;
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			epoch,
+			round,
+			self.signer.author(),
+			vec![],
+			vec![],
+			rollover_timestamp,
+		));
+		let txs =
+			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
+		let block = ExecutableBlock::new(block_id.clone(), txs);
+		self.execute_block(block).await?;
+		Ok(())
+	}
+
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub async fn tick_transaction_pipe(
@@ -524,7 +526,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config).await?;
+		let executor = Executor::try_from_config(&config)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -553,7 +555,8 @@ mod tests {
 	async fn test_execute_block_state_db() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config).await?;
+		let executor = Executor::try_from_config(&config)?;
+		executor.rollover_genesis().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -568,32 +571,6 @@ mod tests {
 
 		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
 		let tx_factory = TransactionFactory::new(config.chain_id.clone());
-
-		let (epoch, round) = executor.get_next_epoch_and_round().await?;
-
-		// Generate a random block ID.
-		let block_id = HashValue::random();
-		// Clone the signer from the executor for signing the metadata.
-		let signer = executor.signer.clone();
-		// Get the current time in microseconds for the block timestamp.
-		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
-
-		// Create a block metadata transaction.
-		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
-			block_id,
-			epoch,
-			round,
-			signer.author(),
-			vec![],
-			vec![],
-			current_time_micros,
-		));
-
-		let transactions =
-			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
-
-		let block = ExecutableBlock::new(block_id.clone(), transactions);
-		let block_commitment = executor.execute_block(block).await?;
 
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
@@ -676,7 +653,8 @@ mod tests {
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config).await?;
+		let executor = Executor::try_from_config(&config)?;
+		executor.rollover_genesis().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
@@ -691,32 +669,6 @@ mod tests {
 
 		// Create a transaction factory with the chain ID of the executor.
 		let tx_factory = TransactionFactory::new(config.chain_id.clone());
-
-		let (epoch, round) = executor.get_next_epoch_and_round().await?;
-
-		// Generate a random block ID.
-		let block_id = HashValue::random();
-		// Clone the signer from the executor for signing the metadata.
-		let signer = executor.signer.clone();
-		// Get the current time in microseconds for the block timestamp.
-		let current_time_micros = chrono::Utc::now().timestamp_micros() as u64;
-
-		// Create a block metadata transaction.
-		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
-			block_id,
-			epoch,
-			round,
-			signer.author(),
-			vec![],
-			vec![],
-			current_time_micros,
-		));
-
-		let transactions =
-			ExecutableTransactions::Unsharded(into_signature_verified_block(vec![block_metadata]));
-
-		let block = ExecutableBlock::new(block_id.clone(), transactions);
-		let block_commitment = executor.execute_block(block).await?;
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -780,7 +732,7 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
 		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config).await?;
+		let mut executor = Executor::try_from_config(&config)?;
 		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
 
 		// send transaction to mempool
@@ -807,7 +759,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config).await?;
+		let mut executor = Executor::try_from_config(&config)?;
 		let server_executor = executor.clone();
 
 		let handle = tokio::spawn(async move {
@@ -843,7 +795,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config).await?;
+		let executor = Executor::try_from_config(&config)?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -872,7 +824,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config).await?;
+		let executor = Executor::try_from_config(&config)?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
