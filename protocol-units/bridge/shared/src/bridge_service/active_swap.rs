@@ -1,6 +1,12 @@
-use std::{collections::HashMap, convert::From, pin::Pin};
+use std::{
+	collections::HashMap,
+	convert::From,
+	pin::Pin,
+	task::{Context, Poll},
+};
 
-use futures::{Future, FutureExt};
+use futures::{Future, FutureExt, Stream};
+use thiserror::Error;
 use tracing::{trace_span, Instrument};
 
 use crate::{
@@ -9,22 +15,19 @@ use crate::{
 };
 use crate::{bridge_contracts::BridgeContractCounterparty, types::RecipientAddress};
 
-pub type BoxedBridgeServiceFuture = Pin<Box<dyn Future<Output = ()> + Send>>;
+pub type BoxedFuture<R, E> = Pin<Box<dyn Future<Output = Result<R, E>> + Send>>;
 
-/// Bridge state in the sense of tracking the active swaps from the bridge
 pub enum ActiveSwap<BFrom, BTo>
 where
 	BFrom: BlockchainService,
 	BTo: BlockchainService,
 {
-	/// Bridge is locking lockens on the counterpart chain
-	LockingTokens(BridgeTransferDetails<BFrom::Address, BFrom::Hash>, BoxedBridgeServiceFuture),
-	/// Bridge is waiting for the initiator to complete her transfer
-	/// revealing her secret.
+	LockingTokens(
+		BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
+		BoxedFuture<(), LockBridgeTransferAssetsError>,
+	),
 	WaitingForCompletedEvent(BridgeTransferId<BTo::Hash>),
-	/// We are in possession of the secret and are now completing the bridge tranfer on our side
-	CompletingBridging(BoxedBridgeServiceFuture),
-	/// We have completed the atomic bdridge transfer
+	CompletingBridging(BoxedFuture<(), ()>),
 	Completed,
 }
 
@@ -84,7 +87,61 @@ where
 	}
 }
 
-/// Making sure we call the method using the correct details on the counterparty contract
+#[derive(Debug)]
+pub enum ActiveSwapEvent<H> {
+	BridgeAssetsLocked(BridgeTransferId<H>),
+	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
+}
+
+impl<BFrom, BTo> Stream for ActiveSwapMap<BFrom, BTo>
+where
+	BFrom: BlockchainService + Unpin + 'static,
+	BTo: BlockchainService + Unpin + 'static,
+{
+	type Item = ActiveSwapEvent<BFrom::Hash>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+
+		for swap in this.swaps.values_mut() {
+			match swap {
+				ActiveSwap::LockingTokens(details, future) => {
+					match future.poll_unpin(cx) {
+						Poll::Ready(Ok(())) => {
+							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLocked(
+								details.bridge_transfer_id.clone(),
+							)));
+						}
+						Poll::Ready(Err(error)) => {
+							// Locking tokens failed
+							// Transition to the next state
+							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLockingError(
+								error,
+							)));
+						}
+						Poll::Pending => {}
+					}
+				}
+				ActiveSwap::WaitingForCompletedEvent(_) => todo!(),
+				ActiveSwap::CompletingBridging(_) => todo!(),
+				ActiveSwap::Completed => todo!(),
+			}
+		}
+
+		Poll::Pending
+	}
+}
+
+// Lock assets
+
+#[derive(Debug, Error)]
+pub enum LockBridgeTransferAssetsError {
+	#[error("Failed to lock assets")]
+	LockingError,
+	#[error("Failed to call lock_bridge_transfer_assets")]
+	LockBridgeTransferContractCallError(String), // TODO; addd contact call errors
+}
+
 async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: BlockchainService>(
 	counterparty_contract: BTo::CounterpartyContract,
 	BridgeTransferDetails {
@@ -95,7 +152,8 @@ async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: Blockch
 		amount,
 		..
 	}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
-) where
+) -> Result<(), LockBridgeTransferAssetsError>
+where
 	<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
 	<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
 {
@@ -117,4 +175,6 @@ async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: Blockch
 			amount,
 		)
 		.await;
+
+	Ok(())
 }

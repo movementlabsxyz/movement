@@ -61,6 +61,52 @@ where
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 
+		match this.active_swaps_b1_to_b2.poll_next_unpin(cx) {
+			Poll::Ready(Some(event)) => {
+				trace!("BridgeService: Received event from active swaps B1 -> B2: {:?}", event);
+				match event {
+					active_swap::ActiveSwapEvent::BridgeAssetsLocked(bridge_transfer_id) => {
+						trace!(
+							"BridgeService: Bridge assets locked for transfer {:?}",
+							bridge_transfer_id
+						);
+					}
+					active_swap::ActiveSwapEvent::BridgeAssetsLockingError(error) => {
+						warn!("BridgeService: Error locking bridge assets: {:?}", error);
+					}
+				}
+			}
+			Poll::Ready(None) => {
+				trace!("BridgeService: Active swaps B1 -> B2 has no more events");
+			}
+			Poll::Pending => {
+				trace!("BridgeService: Active swaps B1 -> B2 has no events at this time");
+			}
+		}
+
+		match this.active_swaps_b2_to_b1.poll_next_unpin(cx) {
+			Poll::Ready(Some(event)) => {
+				trace!("BridgeService: Received event from active swaps B2 -> B1: {:?}", event);
+				match event {
+					active_swap::ActiveSwapEvent::BridgeAssetsLocked(bridge_transfer_id) => {
+						trace!(
+							"BridgeService: Bridge assets locked for transfer {:?}",
+							bridge_transfer_id
+						);
+					}
+					active_swap::ActiveSwapEvent::BridgeAssetsLockingError(error) => {
+						warn!("BridgeService: Error locking bridge assets: {:?}", error);
+					}
+				}
+			}
+			Poll::Ready(None) => {
+				trace!("BridgeService: Active swaps B2 -> B1 has no more events");
+			}
+			Poll::Pending => {
+				trace!("BridgeService: Active swaps B2 -> B1 has no events at this time");
+			}
+		}
+
 		match this.blockchain_1.poll_next_unpin(cx) {
 			Poll::Ready(Some(event)) => {
 				trace!("BridgeService: Received event from blockchain service 1: {:?}", event);
@@ -69,8 +115,8 @@ where
 						trace!("BridgeService: Initiator event from blockchain service 1");
 						match event {
 							BridgeContractInitiatorEvent::BridgeTransferInitiated(details) => {
-								// bridge transfer initiated, now as the counterparty we should lock
-								// the appropriate tokens using the same secret
+								// Bridge transfer initiated. Now, as the counterparty, we should lock
+								// the appropriate tokens using the same secret.
 								if this
 									.active_swaps_b1_to_b2
 									.already_executing(&details.bridge_transfer_id)
@@ -79,7 +125,6 @@ where
 									return Poll::Pending;
 								}
 
-								// start the active swap
 								this.active_swaps_b1_to_b2.start(details);
 							}
 							BridgeContractInitiatorEvent::BridgeTransferCompleted(_) => todo!(),

@@ -66,5 +66,6 @@ async fn test_bridge_service_integration() {
 		.expect("initiate_bridge_transfer failed");
 
 	let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-	let event = bridge_service.poll_next_unpin(&mut cx);
+	let _ = bridge_service.poll_next_unpin(&mut cx);
+	let _ = bridge_service.poll_next_unpin(&mut cx);
 }
