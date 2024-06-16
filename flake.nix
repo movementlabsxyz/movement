@@ -51,6 +51,7 @@
           coreutils
           gcc
           rust
+          mold
         ];
         
         sysDependencies = with pkgs; [] 
