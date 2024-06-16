@@ -1,13 +1,8 @@
-use aptos_api::{
-	get_api_service,
-	runtime::{get_apis, Apis},
-	Context,
-};
+use super::Executor;
+use aptos_api::Context;
 use aptos_crypto::HashValue;
 use aptos_executor_types::BlockExecutorTrait;
-use aptos_mempool::SubmissionStatus;
-use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
+use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
 	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
@@ -19,15 +14,10 @@ use aptos_types::{
 	block_metadata::BlockMetadata,
 	epoch_state::EpochState,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-	transaction::{SignedTransaction, Transaction, Version},
+	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::{BlockCommitment, Commitment, Id};
-
-use super::Executor;
-use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
-use futures::StreamExt;
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use std::sync::Arc;
 use tracing::{debug, info};
 
@@ -125,106 +115,8 @@ impl Executor {
 		Ok(ledger_info.block_height.into())
 	}
 
-	fn context(&self) -> Arc<Context> {
+	pub fn context(&self) -> Arc<Context> {
 		self.context.clone()
-	}
-
-	pub fn get_apis(&self) -> Apis {
-		get_apis(self.context())
-	}
-
-	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
-		info!("Starting maptos-opt-executor services at: {:?}", self.listen_url);
-
-		let api_service =
-			get_api_service(self.context()).server(format!("http://{:?}", self.listen_url));
-
-		let ui = api_service.swagger_ui();
-
-		let cors = Cors::new()
-			.allow_methods(vec![Method::GET, Method::POST])
-			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
-
-		Server::new(TcpListener::bind(self.listen_url.clone()))
-			.run(app)
-			.await
-			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
-
-		Ok(())
-	}
-
-	/// Ticks the transaction reader.
-	pub async fn tick_transaction_reader(
-		&self,
-		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), anyhow::Error> {
-		let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
-		for _ in 0..256 {
-			// use select to safely timeout a request for a transaction without risking dropping the transaction
-			// !warn: this may still be unsafe
-			tokio::select! {
-				_ = tokio::time::sleep(tokio::time::Duration::from_millis(5)) => { () },
-				request = mempool_client_receiver.next() => {
-					match request {
-						Some(request) => {
-							match request {
-								MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-									// add to the mempool
-									{
-
-										let mut core_mempool = self.core_mempool.write().await;
-
-										let status = core_mempool.add_txn(
-											transaction.clone(),
-											0,
-											transaction.sequence_number(),
-											TimelineState::NonQualified,
-											true
-										);
-
-										match status.code {
-											MempoolStatusCode::Accepted => {
-
-											},
-											_ => {
-												anyhow::bail!("Transaction not accepted: {:?}", status);
-											}
-										}
-
-										// send along to the receiver
-										transaction_channel.send(transaction).await.map_err(
-											|e| anyhow::anyhow!("Error sending transaction: {:?}", e)
-										)?;
-
-									};
-
-									// report status
-									let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-									let status: SubmissionStatus = (ms, None);
-									callback.send(Ok(status)).map_err(
-										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-									)?;
-
-								},
-								MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-									let mempool = self.core_mempool.read().await;
-									let mempool_result = mempool.get_by_hash(hash);
-									sender.send(mempool_result).map_err(
-										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-									)?;
-								},
-							}
-						},
-						None => {
-							break;
-						}
-					}
-				}
-			}
-		}
-
-		Ok(())
 	}
 
 	/// Gets the next epoch and round.
@@ -280,17 +172,6 @@ impl Executor {
 		Ok(())
 	}
 
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub async fn tick_transaction_pipe(
-		&self,
-		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), anyhow::Error> {
-		self.tick_transaction_reader(transaction_channel.clone()).await?;
-
-		Ok(())
-	}
-
 	pub fn ledger_info_with_sigs(
 		&self,
 		epoch: u64,
@@ -330,10 +211,8 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 
-	use std::collections::BTreeSet;
-
 	use super::*;
-	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
+	use aptos_api::accept_type::AcceptType;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
@@ -357,8 +236,6 @@ mod tests {
 			SignedTransaction, Transaction, TransactionPayload,
 		},
 	};
-	use futures::channel::oneshot;
-	use futures::SinkExt;
 	use maptos_execution_util::config::aptos::Config as AptosConfig;
 	use rand::SeedableRng;
 
@@ -447,7 +324,7 @@ mod tests {
 			// Create a block metadata transaction.
 			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 				block_id,
-				2 + i,
+				epoch,
 				round,
 				signer.author(),
 				vec![],
@@ -586,139 +463,6 @@ mod tests {
 					.await?;
 			}
 		}
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
-		// header
-		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config)?;
-		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
-
-		// send transaction to mempool
-		let (req_sender, callback) = oneshot::channel();
-		executor
-			.mempool_client_sender
-			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
-			.await?;
-
-		// tick the transaction pipe
-		let (tx, rx) = async_channel::unbounded();
-		executor.tick_transaction_pipe(tx).await?;
-
-		// receive the callback
-		callback.await??;
-
-		// receive the transaction
-		let received_transaction = rx.recv().await?;
-		assert_eq!(received_transaction, user_transaction);
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
-		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config)?;
-		let server_executor = executor.clone();
-
-		let handle = tokio::spawn(async move {
-			server_executor.run_service().await?;
-			Ok(()) as Result<(), anyhow::Error>
-		});
-
-		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
-
-		// send transaction to mempool
-		let (req_sender, callback) = oneshot::channel();
-		executor
-			.mempool_client_sender
-			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
-			.await?;
-
-		// tick the transaction pipe
-		let (tx, rx) = async_channel::unbounded();
-		executor.tick_transaction_pipe(tx).await?;
-
-		// receive the callback
-		callback.await??;
-
-		// receive the transaction
-		let received_transaction = rx.recv().await?;
-		assert_eq!(received_transaction, user_transaction);
-
-		handle.abort();
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
-		let mempool_executor = executor.clone();
-
-		let (tx, rx) = async_channel::unbounded();
-		let mempool_handle = tokio::spawn(async move {
-			loop {
-				mempool_executor.tick_transaction_pipe(tx.clone()).await?;
-				tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-			}
-			Ok(()) as Result<(), anyhow::Error>
-		});
-
-		let api = executor.get_apis();
-		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
-		let comparison_user_transaction = user_transaction.clone();
-		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
-		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-		let received_transaction = rx.recv().await?;
-		assert_eq!(received_transaction, comparison_user_transaction);
-
-		mempool_handle.abort();
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
-		let mempool_executor = executor.clone();
-
-		let (tx, rx) = async_channel::unbounded();
-		let mempool_handle = tokio::spawn(async move {
-			loop {
-				mempool_executor.tick_transaction_pipe(tx.clone()).await?;
-				tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-			}
-			Ok(()) as Result<(), anyhow::Error>
-		});
-
-		let api = executor.get_apis();
-		let mut user_transactions = BTreeSet::new();
-		let mut comparison_user_transactions = BTreeSet::new();
-		for _ in 0..25 {
-			let user_transaction = create_signed_transaction(0, config.chain_id.clone());
-			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
-			user_transactions.insert(bcs_user_transaction.clone());
-
-			let request =
-				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
-			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
-
-			let received_transaction = rx.recv().await?;
-			let bcs_received_transaction = bcs::to_bytes(&received_transaction)?;
-			comparison_user_transactions.insert(bcs_received_transaction.clone());
-		}
-
-		assert_eq!(user_transactions.len(), comparison_user_transactions.len());
-		assert_eq!(user_transactions, comparison_user_transactions);
-
-		mempool_handle.abort();
 
 		Ok(())
 	}
