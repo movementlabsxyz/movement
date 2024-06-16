@@ -168,6 +168,15 @@ impl From<Commitment> for Vec<u8> {
 	}
 }
 
+impl fmt::Display for Commitment {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		for byte in &self.0 {
+			write!(f, "{:02x}", byte)?;
+		}
+		Ok(())
+	}
+}
+
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BlockCommitment {
 	pub height: u64,

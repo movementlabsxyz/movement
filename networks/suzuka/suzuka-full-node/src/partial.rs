@@ -3,15 +3,18 @@ use m1_da_light_node_client::{
 	blob_response, BatchWriteRequest, BlobWrite, LightNodeServiceClient,
 	StreamReadFromHeightRequest,
 };
-use mcr_settlement_client::{mock::MockMcrSettlementClient, McrSettlementClientOperations};
+use maptos_dof_execution::{
+	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
+	SignatureVerifiedTransaction, SignedTransaction, Transaction,
+};
+use mcr_settlement_client::{
+	eth_client::Client as McrEthSettlementClient, McrSettlementClientOperations,
+};
 use mcr_settlement_manager::{
 	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
 };
+use movement_rest::MovementRest;
 use movement_types::{Block, BlockCommitmentEvent};
-use suzuka_executor::{
-	v1::SuzukaExecutorV1, ExecutableBlock, ExecutableTransactions, HashValue,
-	SignatureVerifiedTransaction, SignedTransaction, SuzukaExecutor, Transaction,
-};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
@@ -30,22 +33,25 @@ pub struct SuzukaPartialNode<T> {
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
+	movement_rest: MovementRest,
 }
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: SuzukaExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
+		movement_rest: MovementRest,
 	) -> (Self, impl Future<Output = Result<(), anyhow::Error>> + Send)
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
 		let (settlement_manager, commitment_events) = McrSettlementManager::new(settlement_client);
 		let (transaction_sender, transaction_receiver) = async_channel::unbounded();
+		let bg_executor = executor.clone();
 		(
 			Self {
 				executor,
@@ -53,8 +59,9 @@ where
 				transaction_receiver,
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
+				movement_rest,
 			},
-			read_commitment_events(commitment_events),
+			read_commitment_events(commitment_events, bg_executor),
 		)
 	}
 
@@ -66,11 +73,13 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
+		movement_rest: MovementRest,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
-		let (mut node, background_task) = Self::new(executor, light_node_client, settlement_client);
+		let (mut node, background_task) =
+			Self::new(executor, light_node_client, settlement_client, movement_rest);
 		node.bind_transaction_channel();
 		Ok((node, background_task))
 	}
@@ -196,15 +205,23 @@ where
 	}
 }
 
-async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Result<()> {
+async fn read_commitment_events<T>(
+	mut stream: CommitmentEventStream,
+	executor: T,
+) -> anyhow::Result<()>
+where
+	T: DynOptFinExecutor + Send + Sync,
+{
 	while let Some(res) = stream.next().await {
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
+				executor.set_finalized_block_height(commitment.height)?;
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
+				// TODO: block reversion
 			}
 		}
 	}
@@ -213,7 +230,7 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
 where
-	T: SuzukaExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -237,22 +254,29 @@ where
 
 		Ok(())
 	}
+
+	/// Runs the maptos rest api service until crash or shutdown.
+	async fn run_movement_rest(&self) -> Result<(), anyhow::Error> {
+		self.movement_rest.run_service().await?;
+		Ok(())
+	}
 }
 
-impl SuzukaPartialNode<SuzukaExecutorV1> {
-
+impl SuzukaPartialNode<Executor> {
 	pub async fn try_from_config(
 		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect(
-			format!("http://{}", config.execution_config.light_node_config.try_service_address()?)
-		).await?;
-		let executor = SuzukaExecutorV1::try_from_config(tx, config.execution_config)
-			.await
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}",
+			config.execution_config.light_node_config.try_service_address()?
+		))
+		.await?;
+		let executor = Executor::try_from_config(tx, config.execution_config)
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
-		let settlement_client = MockMcrSettlementClient::new();
-		Self::bound(executor, light_node_client, settlement_client)
+		let settlement_client = McrEthSettlementClient::build_with_config(config.mcr).await?;
+		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
+		Self::bound(executor, light_node_client, settlement_client, movement_rest)
 	}
 }
