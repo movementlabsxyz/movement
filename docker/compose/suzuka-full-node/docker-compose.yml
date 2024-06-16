@@ -13,29 +13,18 @@ services:
     volumes:
       - dot-movement:/.movement
     depends_on:
-      - setup
+      setup:
+        condition: service_completed_successfully
 
   celestia-light-node-synced:
     image: ghcr.io/movementlabsxyz/wait-for-celestia-light-client:${REV}
     container_name: celestia-light-node-synced
     environment:
       - DOT_MOVEMENT_PATH=/.movement
-    command:
-      [
-        "nix",
-        "--extra-experimental-features",
-        "nix-command flakes",
-        "develop",
-        "--command",
-        "just",
-        "celestia-light-node-synced",
-        "local",
-        "-t=false"
-      ]
     volumes:
       - dot-movement:/.movement
     depends_on:
-      - serviceName: celestia-light-node
+      celestia-light-node:
         condition: service_healthy
 
   m1-da-light-node:
@@ -46,7 +35,8 @@ services:
     volumes:
       - dot-movement:/.movement
     depends_on:
-      - celestia-light-node-synced
+      celestia-light-node-synced:
+        condition: service_completed_successfully
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
@@ -56,7 +46,7 @@ services:
     volumes:
       - dot-movement:/.movement
     depends_on:
-      - serviceName: m1-da-light-node
+      m1-da-light-node:
         condition: service_healthy
 
   suzuka-faucet-service:
@@ -67,7 +57,7 @@ services:
     volumes:
       - dot-movement:/.movement
     depends_on:
-      - serviceName: suzuka-full-node
+      suzuka-full-node:
         condition: service_healthy
 
 volumes:

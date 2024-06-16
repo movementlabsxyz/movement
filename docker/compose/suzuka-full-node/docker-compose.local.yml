@@ -16,7 +16,7 @@ services:
     volumes:
       - dot-movement:/.movement
     depends_on:
-      - serviceName: m1-da-light-node-celestia-appd
+      m1-da-light-node-celestia-appd:
         condition: service_healthy
 
   celestia-light-node:
