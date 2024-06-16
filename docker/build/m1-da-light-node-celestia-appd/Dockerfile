@@ -30,7 +30,7 @@ RUN rust_binary="./target/release/m1-da-light-node-celestia-appd"; dest_dir="/tm
 FROM alpine:latest
 
 # Copy the build artifact from the builder stage
-COPY --from=builder /tmp/build/target/release/suzuka-full-node-setup /app/m1-da-light-node-celestia-appd
+COPY --from=builder /tmp/build/target/release/m1-da-light-node-celestia-appd /app/m1-da-light-node-celestia-appd
 COPY --from=builder /tmp/runtime/nix/store /nix/store
 
 # Copy celestia-appd and celestia to a location on the alpine path
