@@ -10,11 +10,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-<<<<<<< HEAD
             runs-on: buildjet-8vcpu-ubuntu-2204
-=======
-            runs-on: ubuntu-latest
->>>>>>> main
           - os: macos-13-latest
             arch: arm64
             runs-on: macos-13-xlarge
@@ -37,11 +33,7 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-<<<<<<< HEAD
             runs-on: buildjet-8vcpu-ubuntu-2204
-=======
-            runs-on: ubuntu-latest
->>>>>>> main
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -63,14 +55,10 @@ jobs:
         include:
           - os: ubuntu-22.04
             arch: x86_64
-<<<<<<< HEAD
             runs-on: buildjet-8vcpu-ubuntu-2204
           - os: macos-13-latest
             arch: arm64
             runs-on: macos-13-xlarge
-=======
-            runs-on: ubuntu-latest
->>>>>>> main
 
     runs-on: ${{ matrix.runs-on }}
 
