@@ -19,7 +19,7 @@ RUN nix --extra-experimental-features "nix-command flakes" \
 
 # Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop .#docker-build --command bash -c "cargo build --release -p m1-da-light-node-celestia-appd"
+        develop .#docker-build --command bash -c "cargo build --release --bin m1-da-light-node-celestia-appd"
 
 RUN rust_binary="./target/release/m1-da-light-node-celestia-appd"; dest_dir="/tmp/runtime"; \
         mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
