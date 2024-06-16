@@ -13,7 +13,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -72,7 +72,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -130,7 +130,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -189,7 +189,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -248,7 +248,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -307,7 +307,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -365,7 +365,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
