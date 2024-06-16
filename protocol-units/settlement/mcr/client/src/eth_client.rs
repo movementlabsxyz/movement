@@ -33,7 +33,7 @@ use std::array::TryFromSliceError;
 
 const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const MAX_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
+const DEFAULT_TX_GAS_LIMIT: u64 = 10_000_000_000;
 
 /// Configuration of the MCR settlement client.
 ///
@@ -45,16 +45,16 @@ pub struct Config {
 	pub ws_url: Option<String>,
 	pub signer_private_key: Option<String>,
 	pub mcr_contract_address: String,
-	pub gas_limit: u128,
+	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,
 }
 
 impl Default for Config {
 	fn default() -> Self {
 		Config {
-			rpc_url: None,
-			ws_url: None,
-			signer_private_key: None,
+			rpc_url: Some("http://localhost:8545".into()),
+			ws_url: Some("ws://localhost:8546".into()),
+			signer_private_key: Some(LocalWallet::random().to_bytes().to_string()),
 			mcr_contract_address: MCR_CONTRACT_ADDRESS.into(),
 			gas_limit: DEFAULT_TX_GAS_LIMIT,
 			num_tx_send_retries: MAX_TX_SEND_RETRIES,
@@ -65,7 +65,7 @@ impl Default for Config {
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Tx fail because gaz estimation is to high. Estimated gaz:{0} gaz limit:{1}"
+		"MCR Settlement Tx fail because gas estimation is to high. Estimated gas:{0} gas limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
 	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]
@@ -94,7 +94,7 @@ pub struct Client<P> {
 	signer_address: Address,
 	contract_address: Address,
 	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
-	gas_limit: u128,
+	gas_limit: u64,
 	num_tx_send_retries: u32,
 }
 
@@ -146,7 +146,7 @@ impl<P> Client<P> {
 		ws_url: S,
 		signer_address: Address,
 		contract_address: Address,
-		gas_limit: u128,
+		gas_limit: u64,
 		num_tx_send_retries: u32,
 	) -> Result<Self, anyhow::Error>
 	where
@@ -197,7 +197,7 @@ where
 			call_builder,
 			&self.send_tx_error_rules,
 			self.num_tx_send_retries,
-			self.gas_limit,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -226,7 +226,7 @@ where
 			call_builder,
 			&self.send_tx_error_rules,
 			self.num_tx_send_retries,
-			self.gas_limit,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -533,7 +533,7 @@ mod tests {
 		contract: &MCR::MCRInstance<T, &P, Ethereum>,
 		contract_address: Address,
 		signer: Address,
-		amount: u128,
+		amount: u64,
 	) -> Result<(), anyhow::Error> {
 		let stake_genesis_call = contract.stakeGenesis();
 		let calldata = stake_genesis_call.calldata().to_owned();
@@ -545,7 +545,7 @@ mod tests {
 		call_data: Bytes,
 		contract_address: Address,
 		signer: Address,
-		amount: u128,
+		amount: u64,
 	) -> Result<(), anyhow::Error> {
 		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
 		let tx = TransactionRequest::default()

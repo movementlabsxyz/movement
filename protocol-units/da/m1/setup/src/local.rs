@@ -254,6 +254,8 @@ impl Local {
 		.to_string();
 		config.celestia_auth_token.replace(auth_token.clone());
 
+		info!("Celestia setup complete.");
+
 		Ok(config)
 	}
 
@@ -310,6 +312,8 @@ impl M1DaLightNodeSetupOperations for Local {
 	) -> Result<m1_da_light_node_util::Config, anyhow::Error> {
 		info!("Setting up Celestia for M1 DA Light Node.");
 		let config = self.setup_celestia(dot_movement, config).await?;
+
+		info!("M1 DA Light Node setup complete.");
 
 		// Placeholder for returning the actual configuration.
 		Ok(config)

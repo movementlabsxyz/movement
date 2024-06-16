@@ -83,7 +83,7 @@ pub async fn send_tx<
 		let gas_price = call_builder.provider.get_gas_price().await?;
 		let tx_fee_wei = estimate_gas * gas_price;
 		if tx_fee_wei > gas_limit {
-			return Err(McrEthConnectorError::GasLimitExceed(tx_fee_wei, gas_limit).into());
+			return Err(McrEthConnectorError::GasLimitExceed(tx_fee_wei, gas_limit as u128).into());
 		}
 
 		//send the Tx and detect send error.
