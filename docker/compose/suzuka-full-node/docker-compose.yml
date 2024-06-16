@@ -20,13 +20,24 @@ services:
     container_name: celestia-light-node-synced
     environment:
       - DOT_MOVEMENT_PATH=/.movement
-    command: ["nix", "--extra-experimental-features", "nix-command flakes", "develop", "--command", "just", "celestia-light-node-synced", "local", "-t=false"]
+    command:
+      [
+        "nix",
+        "--extra-experimental-features",
+        "nix-command flakes",
+        "develop",
+        "--command",
+        "just",
+        "celestia-light-node-synced",
+        "local",
+        "-t=false"
+      ]
     volumes:
       - dot-movement:/.movement
     depends_on:
       - serviceName: celestia-light-node
         condition: service_healthy
-  
+
   m1-da-light-node:
     image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
     container_name: m1-da-light-node
@@ -58,3 +69,6 @@ services:
     depends_on:
       - serviceName: suzuka-full-node
         condition: service_healthy
+
+volumes:
+  dot-movement:
