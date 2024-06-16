@@ -3,23 +3,11 @@ use aptos_api::{
 	runtime::{get_apis, Apis},
 	Context,
 };
-use aptos_config::config::NodeConfig;
-use aptos_crypto::{ed25519::Ed25519PublicKey, HashValue};
-use aptos_db::AptosDB;
-use aptos_executor::{
-	block_executor::BlockExecutor,
-	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
-};
+use aptos_crypto::HashValue;
 use aptos_executor_types::BlockExecutorTrait;
-use aptos_framework::natives::debug;
 use aptos_mempool::SubmissionStatus;
-use aptos_mempool::{
-	core_mempool::{CoreMempool, TimelineState},
-	MempoolClientRequest, MempoolClientSender,
-};
+use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
-use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
-use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
@@ -29,206 +17,28 @@ use aptos_types::{
 	},
 	block_info::BlockInfo,
 	block_metadata::BlockMetadata,
-	chain_id::ChainId,
 	epoch_state::EpochState,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-	transaction::{
-		signature_verified_transaction::SignatureVerifiedTransaction, ChangeSet, SignedTransaction,
-		Transaction, Version, WriteSetPayload,
-	},
-	validator_signer::ValidatorSigner,
+	transaction::{SignedTransaction, Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
-use aptos_vm::AptosVM;
-use aptos_vm_genesis::{
-	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
-};
-use maptos_execution_util::config::aptos::Config as AptosConfig;
 use movement_types::{BlockCommitment, Commitment, Id};
 
+use super::Executor;
 use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
-use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
-use serde_json::de;
-use std::{path::PathBuf, sync::Arc};
-use tokio::sync::RwLock;
+use std::sync::Arc;
 use tracing::{debug, info};
 
-/// The `Executor` is responsible for executing blocks and managing the state of the execution
-/// against the `AptosVM`.
-#[derive(Clone)]
-pub struct Executor {
-	/// The executing type.
-	pub block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
-	/// The access to db.
-	pub db: DbReaderWriter,
-	/// The signer of the executor's transactions.
-	pub signer: ValidatorSigner,
-	/// The core mempool (used for the api to query the mempool).
-	pub core_mempool: Arc<RwLock<CoreMempool>>,
-	/// The sender for the mempool client.
-	pub mempool_client_sender: MempoolClientSender,
-	/// The receiver for the mempool client.
-	pub mempool_client_receiver: Arc<RwLock<futures_mpsc::Receiver<MempoolClientRequest>>>,
-	/// The configuration of the node.
-	pub node_config: NodeConfig,
-	/// Context
-	pub context: Arc<Context>,
-	/// URL for the API endpoint
-	listen_url: String,
-}
-
 impl Executor {
-	/// Create a new `Executor` instance.
-	pub fn new(
-		block_executor: BlockExecutor<AptosVM>,
-		signer: ValidatorSigner,
-		mempool_client_sender: MempoolClientSender,
-		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		node_config: NodeConfig,
-		aptos_config: maptos_execution_util::config::aptos::Config,
-	) -> Self {
-		let (_aptos_db, reader_writer) =
-			DbReaderWriter::wrap(AptosDB::new_for_test(&aptos_config.db_path));
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
-		let reader = reader_writer.reader.clone();
-		Self {
-			block_executor: Arc::new(RwLock::new(block_executor)),
-			db: reader_writer,
-			signer,
-			core_mempool,
-			mempool_client_sender: mempool_client_sender.clone(),
-			node_config: node_config.clone(),
-			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
-			context: Arc::new(Context::new(
-				aptos_config.chain_id.clone(),
-				reader,
-				mempool_client_sender,
-				node_config,
-				None,
-			)),
-			listen_url: aptos_config.opt_listen_url.clone(),
-		}
-	}
-
-	pub fn genesis_change_set_and_validators(
-		chain_id: ChainId,
-		count: Option<usize>,
-		public_key: &Ed25519PublicKey,
-	) -> (ChangeSet, Vec<TestValidator>) {
-		let framework = aptos_cached_packages::head_release_bundle();
-		let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
-		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
-		let validators = &validators_;
-
-		let epoch_duration_secs = 60 * 60 * 24 * 1024 * 8; // several years
-		let genesis = encode_genesis_change_set(
-			&public_key,
-			validators,
-			framework,
-			chain_id,
-			// todo: get this config from somewhere
-			&GenesisConfiguration {
-				allow_new_validators: true,
-				epoch_duration_secs: epoch_duration_secs,
-				is_test: true,
-				min_stake: 0,
-				min_voting_threshold: 0,
-				// 1M APTOS coins (with 8 decimals).
-				max_stake: 100_000_000_000_000,
-				recurring_lockup_duration_secs: epoch_duration_secs * 2,
-				required_proposer_stake: 0,
-				rewards_apy_percentage: 10,
-				voting_duration_secs: epoch_duration_secs,
-				voting_power_increase_limit: 50,
-				employee_vesting_start: 1663456089,
-				employee_vesting_period_duration: 5 * 60, // 5 minutes
-				initial_features_override: None,
-				randomness_config_override: None,
-				jwk_consensus_config_override: None,
-			},
-			&OnChainConsensusConfig::default_for_genesis(),
-			&OnChainExecutionConfig::default_for_genesis(),
-			&default_gas_schedule(),
-		);
-		(genesis, test_validators)
-	}
-
-	pub fn bootstrap_empty_db(
-		db_dir: &PathBuf,
-		chain_id: ChainId,
-		public_key: &Ed25519PublicKey,
-	) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
-		let (genesis, validators) =
-			Self::genesis_change_set_and_validators(chain_id, Some(1), public_key);
-		let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
-		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
-
-		assert!(db_rw.reader.get_latest_ledger_info_option()?.is_none());
-
-		// Bootstrap empty DB.
-		let waypoint = generate_waypoint::<AptosVM>(&db_rw, &genesis_txn)?;
-		maybe_bootstrap::<AptosVM>(&db_rw, &genesis_txn, waypoint)?
-			.ok_or(anyhow::anyhow!("Failed to bootstrap DB"))?;
-		assert!(db_rw.reader.get_latest_ledger_info_option()?.is_some());
-
-		let validator_signer = ValidatorSigner::new(
-			validators[0].data.owner_address,
-			validators[0].consensus_key.clone(),
-		);
-
-		Ok((db_rw, validator_signer))
-	}
-
-	pub fn bootstrap(
-		mempool_client_sender: MempoolClientSender,
-		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-		node_config: NodeConfig,
-		aptos_config: &AptosConfig,
-	) -> Result<Self, anyhow::Error> {
-		let (db, signer) = Self::bootstrap_empty_db(
-			&aptos_config.db_path,
-			aptos_config.chain_id.clone(),
-			&aptos_config.public_key,
-		)?;
-		let reader = db.reader.clone();
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
-
-		Ok(Self {
-			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db.clone()))),
-			db,
-			signer,
-			core_mempool,
-			mempool_client_sender: mempool_client_sender.clone(),
-			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
-			node_config: node_config.clone(),
-			context: Arc::new(Context::new(
-				aptos_config.chain_id.clone(),
-				reader,
-				mempool_client_sender,
-				node_config,
-				None,
-			)),
-			listen_url: aptos_config.opt_listen_url.clone(),
-		})
-	}
-
-	pub fn try_from_config(aptos_config: &AptosConfig) -> Result<Self, anyhow::Error> {
-		// use the default signer, block executor, and mempool
-		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(10);
-		let node_config = NodeConfig::default();
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
-	}
-
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
 		let block_metadata = {
 			let metadata_access_block = block.transactions.clone();
-			let mut metadata_access_transactions = metadata_access_block.into_txns();
+			let metadata_access_transactions = metadata_access_block.into_txns();
 			let first_signed = metadata_access_transactions
 				.first()
 				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
@@ -417,15 +227,6 @@ impl Executor {
 		Ok(())
 	}
 
-	pub async fn tick_mempool_pipe(
-		&self,
-		_transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), anyhow::Error> {
-		// todo: remove this old implementation
-
-		Ok(())
-	}
-
 	/// Gets the next epoch and round.
 	pub async fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
 		let epoch = self.db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
@@ -486,8 +287,6 @@ impl Executor {
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), anyhow::Error> {
 		self.tick_transaction_reader(transaction_channel.clone()).await?;
-
-		self.tick_mempool_pipe(transaction_channel).await?;
 
 		Ok(())
 	}
@@ -560,6 +359,7 @@ mod tests {
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
+	use maptos_execution_util::config::aptos::Config as AptosConfig;
 	use rand::SeedableRng;
 
 	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
