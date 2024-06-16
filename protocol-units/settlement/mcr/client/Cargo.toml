@@ -1,8 +1,8 @@
 [package]
 name = "mcr-settlement-client"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -12,21 +12,19 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#move to workspace when impl is done.
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub", "signers", "signer-wallet", "signer-yubihsm"]}
-alloy-primitives = { version = "0.7.2", default-features = false }
-alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = ["ws"]}
-alloy-sol-types = { version = "0.7.2", features = ["json"] }
-alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network"}
-alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport"}
-alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http"}
-alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract"}
-alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet"}
-alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types"}
-alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws"}
+alloy = { workspace = true }                #move to workspace when impl is done.
+alloy-primitives = { workspace = true }
+alloy_provider = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy_network = { workspace = true }
+alloy_transport = { workspace = true }
+alloy_transport_http = { workspace = true }
+alloy_contract = { workspace = true }
+alloy_signer_wallet = { workspace = true }
+alloy_rpc_types = { workspace = true }
+alloy_transport_ws = { workspace = true }
 
 thiserror = "1.0.60"
-
 
 anyhow = { workspace = true }
 async-stream = { workspace = true }
@@ -34,13 +32,14 @@ async-trait = { workspace = true }
 movement-types = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 futures = { workspace = true }
-alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings"}
+alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings" }
 
 [features]
 mock = []
@@ -50,4 +49,3 @@ eth = []
 
 [lints]
 workspace = true
-
