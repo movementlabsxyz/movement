@@ -23,18 +23,21 @@ use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
-	block_executor::partitioner::ExecutableTransactions,
-	block_executor::{config::BlockExecutorConfigFromOnchain, partitioner::ExecutableBlock},
+	block_executor::{
+		config::BlockExecutorConfigFromOnchain,
+		partitioner::{ExecutableBlock, ExecutableTransactions},
+	},
 	block_info::BlockInfo,
 	block_metadata::BlockMetadata,
 	chain_id::ChainId,
+	epoch_state::EpochState,
 	ledger_info::{LedgerInfo, LedgerInfoWithSignatures},
-	transaction::Version,
 	transaction::{
 		signature_verified_transaction::SignatureVerifiedTransaction, ChangeSet, SignedTransaction,
-		Transaction, WriteSetPayload,
+		Transaction, Version, WriteSetPayload,
 	},
 	validator_signer::ValidatorSigner,
+	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
@@ -119,7 +122,7 @@ impl Executor {
 		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 		let validators = &validators_;
 
-		let epoch_duration_secs = 3600; // 1 hour
+		let epoch_duration_secs = 60 * 60 * 24 * 1024 * 8; // several years
 		let genesis = encode_genesis_change_set(
 			&public_key,
 			validators,
@@ -226,7 +229,6 @@ impl Executor {
 		let block_metadata = {
 			let metadata_access_block = block.transactions.clone();
 			let mut metadata_access_transactions = metadata_access_block.into_txns();
-			println!("metadata_access_transactions: {:?}", metadata_access_transactions);
 			let first_signed = metadata_access_transactions
 				.first()
 				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
@@ -255,15 +257,14 @@ impl Executor {
 				BlockExecutorConfigFromOnchain::new_no_block_limit(),
 			)?
 		};
-
-		debug!("State compute: {:?}", state_compute);
+		debug!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
-
-		let (epoch, round) = self.get_next_epoch_and_round().await?;
+		debug!("Block execution computed the following version: {:?}", version);
+		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
 
 		{
-			let ledger_info_with_sigs = Self::ledger_info_with_sigs(
+			let ledger_info_with_sigs = self.ledger_info_with_sigs(
 				epoch,
 				round,
 				block_id.clone(),
@@ -296,10 +297,6 @@ impl Executor {
 			reader.get_state_proof(version)?
 		};
 
-		println!(
-			"change_info timestamp!!!!!!!!{}",
-			proof.clone().into_inner().0.commit_info().timestamp_usecs()
-		);
 		// Context has a reach-around to the db so the block height should
 		// have been updated to the most recently committed block.
 		// Race conditions, anyone?
@@ -496,6 +493,7 @@ impl Executor {
 	}
 
 	pub fn ledger_info_with_sigs(
+		&self,
 		epoch: u64,
 		round: u64,
 		block_id: HashValue,
@@ -510,7 +508,14 @@ impl Executor {
 			root_hash,
 			version,
 			timestamp_microseconds,
-			None,
+			Some(EpochState {
+				epoch,
+				verifier: ValidatorVerifier::new(vec![ValidatorConsensusInfo::new(
+					self.signer.author(),
+					self.signer.public_key(),
+					100_000_000,
+				)]),
+			}),
 		);
 		let ledger_info = LedgerInfo::new(
 			block_info,
@@ -622,14 +627,9 @@ mod tests {
 		let seed = [3u8; 32];
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
-		// Create a transaction factory with the chain ID of the executor, used for creating transactions.
-		let tx_factory = TransactionFactory::new(config.chain_id.clone());
-
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
-			// sleep for half an epoch
 			let (epoch, round) = executor.get_next_epoch_and_round().await?;
-			println!("epoch: {}, round: {}", epoch, round);
 
 			// Generate a random block ID.
 			let block_id = HashValue::random();
@@ -638,10 +638,16 @@ mod tests {
 			// Get the current time in microseconds for the block timestamp.
 			let current_time_microseconds = chrono::Utc::now().timestamp_micros() as u64;
 
+			// Create a transaction factory with the chain ID of the executor, used for creating transactions.
+			let tx_factory = TransactionFactory::new(config.chain_id.clone())
+				.with_transaction_expiration_time(
+					current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
+				);
+
 			// Create a block metadata transaction.
 			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 				block_id,
-				epoch,
+				2 + i,
 				round,
 				signer.author(),
 				vec![],
@@ -651,8 +657,6 @@ mod tests {
 				// current_time_microseconds + (i * 1000 * 1000 * 60 * 30), // 30 minutes later, thus every other will be across an epoch
 			));
 
-			// Create a state checkpoint transaction using the block ID.
-			let state_checkpoint_tx = Transaction::StateCheckpoint(HashValue::random());
 			// Generate a new account for transaction tests.
 			let new_account = LocalAccount::generate(&mut rng);
 			let new_account_address = new_account.address();
@@ -674,7 +678,6 @@ mod tests {
 					block_metadata,
 					Transaction::UserTransaction(user_account_creation_tx),
 					Transaction::UserTransaction(mint_tx),
-					// state_checkpoint_tx,
 				]));
 			debug!("Number of transactions: {}", transactions.num_transactions());
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
