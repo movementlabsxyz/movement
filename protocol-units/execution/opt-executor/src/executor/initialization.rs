@@ -36,7 +36,7 @@ impl Executor {
 		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 		let validators = &validators_;
 
-		let epoch_duration_secs = 60 * 60 * 24 * 1024 * 8; // several years
+		let epoch_duration_secs = 60 * 60 * 24 * 1024 * 256; // several centuries
 		let genesis = encode_genesis_change_set(
 			&public_key,
 			validators,
