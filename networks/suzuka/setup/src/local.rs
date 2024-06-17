@@ -40,19 +40,14 @@ impl Local {
 		dot_movement: DotMovement,
 		mut config: suzuka_config::Config,
 	) -> Result<suzuka_config::Config, anyhow::Error> {
-		let mut maptos_execution_config = config.execution_config.try_aptos_config()?;
-
 		// update the db path
-		let chain_id = maptos_execution_config.try_chain_id()?;
+		let chain_id = config.execution_config.maptos_config.chain.maptos_chain_id;
 		let db_path = dot_movement
 			.get_path()
 			.join("maptos")
 			.join(chain_id.to_string())
 			.join(".maptos");
-		maptos_execution_config.aptos_db_path.replace(db_path);
-
-		// update the maptos execution config
-		config.execution_config.aptos_config = Some(maptos_execution_config);
+		config.execution_config.maptos_config.chain.maptos_db_path.replace(db_path);
 
 		Ok(config)
 	}
