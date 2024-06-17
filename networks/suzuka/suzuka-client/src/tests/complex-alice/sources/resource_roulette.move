@@ -105,7 +105,7 @@ module resource_roulette::resource_roulette {
 
   // Roll function to select a pseudorandom slot and pay out all signers who selected that slot
   public entry fun spin() acquires ResourceRoulette, RouletteWinnings {
-
+    // assert!(signer::address_of(account) == @resource_roulette, ENO_UNAUTHORIZED_ADDRESS);
     let self = borrow_global_mut<ResourceRoulette>(@resource_roulette);
 
     // get the winning slot

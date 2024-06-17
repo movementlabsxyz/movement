@@ -1,19 +1,20 @@
 use crate::{
 	coin_client::CoinClient,
 	rest_client::{
-		// aptos_api_types::TransactionOnChainData,
+		aptos_api_types::TransactionOnChainData,
 		Client,
 		FaucetClient,
 	},
 	types::{chain_id::ChainId, LocalAccount},
 };
 use anyhow::Context;
-use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
+use aptos_sdk::{crypto::ed25519::Ed25519PublicKey, move_types::language_storage::TypeTag};
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 use aptos_sdk::{
 	crypto::ed25519::Ed25519PrivateKey,
 	// 	rest_client::Account
 };
+// use aptos_types::account_config::account;
 use buildtime_helpers::cargo::cargo_workspace;
 use commander::run_command;
 use once_cell::sync::Lazy;
@@ -178,42 +179,37 @@ struct DefaultProfile {
 	private_key: String,
 }
 
-/*async fn send_tx(
+async fn send_tx(
 	client: Client,
 	chain_id: u8,
-	account: LocalAccount,
-	module: ModuleId,
+	account: &LocalAccount,
+	module_address: AccountAddress,
+	module_name: &str,
 	function_name: &str,
 	type_args: Vec<TypeTag>,
 	args: Vec<Vec<u8>>,
 ) -> Result<TransactionOnChainData, anyhow::Error> {
-	// print the module id
-	println!("module: {:?}", module);
-	// print the function name
-	println!("function_name: {:?}", function_name);
 
-	//get account sequence number
-	let account_address = account.address();
-	let sequence_number = account.sequence_number();
-	let identifier = Identifier::new(function_name)?;
-	let payload =
-		TransactionPayload::EntryFunction(EntryFunction::new(module, identifier, type_args, args));
+	let transaction_builder = TransactionBuilder::new(
+		TransactionPayload::EntryFunction(EntryFunction::new(
+			ModuleId::new(module_address, Identifier::new(module_name).unwrap()),
+			Identifier::new(function_name).unwrap(),
+			type_args,
+			args,
+		)),
+		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 30,
+		ChainId::new(chain_id),
+	)
+	.sender(account.address())
+	.sequence_number(account.sequence_number())
+	.max_gas_amount(5_000)
+	.gas_unit_price(100);
 
-	let timeout = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs() + 30;
-	let txn_builder = TransactionBuilder::new(payload, timeout, ChainId::new(chain_id))
-		.sender(account_address)
-		.sequence_number(sequence_number + 1)
-		.max_gas_amount(5000)
-		.gas_unit_price(100);
-	// let raw_tx = txn_builder.build();
-
-	let signed_transaction = account.sign_with_transaction_builder(txn_builder);
-
-	let tx_receipt_data = client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
-	println!("tx_receipt_data: {tx_receipt_data:?}",);
-
-	Ok::<TransactionOnChainData, anyhow::Error>(tx_receipt_data)
-}*/
+	let signed_transaction = account.sign_with_transaction_builder(transaction_builder);
+	let tx_receipt_data =
+		client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
+	return Ok(tx_receipt_data);
+}
 
 #[tokio::test]
 pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
@@ -235,9 +231,9 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 		run_command("/bin/bash", &[format!("{}{}", test, "deploy.sh").as_str()]).await?;
 	println!("{}", init_output);
 
-	let one_sec = time::Duration::from_millis(5000);
+	let five_sec = time::Duration::from_millis(5000);
 
-	thread::sleep(one_sec);
+	thread::sleep(five_sec);
 
 	let yaml_content = fs::read_to_string(".aptos/config.yaml")?;
 
@@ -252,10 +248,14 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 
 	let public_key = Ed25519PublicKey::from(&private_key);
 	let account_address = AuthenticationKey::ed25519(&public_key).account_address();
+
+	let rest_client = Client::new(NODE_URL.clone());
+
+	let account_client = rest_client.get_account(account_address).await?;
+	let sequence_number = account_client.inner().sequence_number;
 	println!("{}", account_address);
 	println!("{}", module_address);
 
-	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone()); // <:!:section_1a
 	let chain_id = rest_client.get_index().await?.inner().chain_id;
 
@@ -263,6 +263,7 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 	// :!:>section_2
 	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
+	let deployer = LocalAccount::new(account_address, private_key, sequence_number);
 
 	// Print account addresses.
 	println!("\n=== Addresses ===");
@@ -279,28 +280,69 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 		.create_account(bob.address())
 		.await
 		.context("Failed to fund Bob's account")?; // <:!:section_3
+	
+	let empty_type_tag: Vec<TypeTag> = Vec::new();
+	
+	let tx1: TransactionOnChainData = send_tx(
+		rest_client.clone(),
+		chain_id,
+		&alice,
+		module_address,
+		"resource_roulette",
+		"bid",
+		empty_type_tag.clone(),
+		vec![bcs::to_bytes(&10).unwrap()],
+	).await?;
+	println!("Bid with Alice: {:?}", tx1);
 
-	//
-	println!("Calling with Alice to {:#?}", module_address);
-	let transaction_builder = TransactionBuilder::new(
-		TransactionPayload::EntryFunction(EntryFunction::new(
-			ModuleId::new(module_address, Identifier::new("resource_roulette").unwrap()),
-			Identifier::new("bid").unwrap(),
-			vec![],
-			vec![bcs::to_bytes(&10).unwrap()],
-		)),
-		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 30,
-		ChainId::new(chain_id),
-	)
-	.sender(alice.address())
-	.sequence_number(alice.sequence_number())
-	.max_gas_amount(5_000)
-	.gas_unit_price(100);
+	let tx2 = send_tx(
+		rest_client.clone(),
+		chain_id,
+		&bob,
+		module_address,
+		"resource_roulette",
+		"bid",
+		empty_type_tag.clone(),
+		vec![bcs::to_bytes(&20).unwrap()],
+	).await?;
+	println!("Bid with Bob: {:?}", tx2);
 
-	let signed_transaction = alice.sign_with_transaction_builder(transaction_builder);
-	let tx_receipt_data =
-		rest_client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
-	println!("tx_receipt_data: {:?}", tx_receipt_data);
+	let tx3 = send_tx(
+		rest_client.clone(),
+		chain_id,
+		&deployer,
+		module_address,
+		"resource_roulette",
+		"bid",
+		empty_type_tag.clone(),
+		vec![bcs::to_bytes(&30).unwrap()],
+	).await?;
+	println!("Bid with deployer: {:?}", tx3);
+
+	// let tx4 =  send_tx(
+	// 	rest_client.clone(),
+	// 	chain_id,
+	// 	&bob,
+	// 	module_address,
+	// 	"resource_roulette",
+	// 	"spin",
+	// 	empty_type_tag.clone(),
+	// 	vec![vec![]],).await?;
+
+	// println!("Spin with malicious Bob: {:?}", tx4);
+
+	let tx5 = send_tx(
+		rest_client.clone(),
+		chain_id,
+		&deployer,
+		module_address,
+		"resource_roulette",
+		"spin",
+		empty_type_tag.clone(),
+		vec![],).await?;
+	
+		println!("Spin with authorized Deployer: {:?}", tx5);
+
 
 	Ok(())
 }
