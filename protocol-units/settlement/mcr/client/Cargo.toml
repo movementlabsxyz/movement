@@ -14,25 +14,17 @@ rust-version = { workspace = true }
 [dependencies]
 mcr-settlement-config = { workspace = true }
 
-#move to workspace when impl is done.
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = [
-    "pubsub",
-    "signers",
-    "signer-wallet",
-    "signer-yubihsm",
-] }
-alloy-primitives = { version = "0.7.2", default-features = false }
-alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = [
-    "ws",
-] }
-alloy-sol-types = { version = "0.7.2", features = ["json"] }
-alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network" }
-alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport" }
-alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http" }
-alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract" }
+alloy = { workspace = true }
+alloy-primitives = { workspace = true }
+alloy-provider = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy-network = { workspace = true }
+alloy-transport = { workspace = true }
+alloy-transport-http = { workspace = true }
+alloy-contract = { workspace = true }
 alloy-signer-wallet = { workspace = true }
-alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types" }
-alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws" }
+alloy-rpc-types = { workspace = true }
+alloy-transport-ws = { workspace = true }
 
 anyhow = { workspace = true }
 async-stream = { workspace = true }
@@ -47,7 +39,6 @@ tracing-subscriber = { workspace = true }
 [dev-dependencies]
 futures = { workspace = true }
 serde_json = { workspace = true }
-alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings" }
 
 [features]
 default = ["eth"]

@@ -13,6 +13,7 @@ members = [
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
+    "protocol-units/movement-rest",
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -47,6 +48,8 @@ maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
 maptos-fin-view = { path = "protocol-units/execution/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/util" }
+## infra
+movement-rest = { path = "protocol-units/movement-rest" }
 ## mempool
 mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }
@@ -75,6 +78,7 @@ serde_derive = "1.0"
 
 
 # External Dependencies
+
 ## Aptos dependencies
 ### We use a forked version so that we can override dependency versions. This is required
 ### to be avoid dependency conflicts with other Sovereign Labs crates.
@@ -138,13 +142,32 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
-## Alloy dependencies
-alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy.git" }
+## Alloy Dependencies
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
+    "pubsub",
+    "signers",
+    "signer-wallet",
+    "signer-yubihsm",
+] }
+alloy-primitives = { version = "0.7.2", default-features = false }
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
+    "ws",
+] }
+alloy-sol-types = { version = "0.7.2", features = ["json"] }
+alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-node-bindings = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-transport-http = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 
 anyhow = "1.0"
 async-channel = "2.2.1"
 async-stream = "0.3.0"
 async-trait = "0.1.71"
+async-recursion = "1.1.1"
 auto_impl = "1.2.0"
 blake3 = { version = "1.4.0", features = ["traits-preview"] }
 bytes = { version = "1.2.1", default-features = false }
@@ -181,6 +204,7 @@ proptest-derive = "0.4"
 quote = "1.0"
 rand = "0.7.3"
 rand_core = "0.5.1"
+reqwest = "0.12.4"
 risc0-build = "0.20"
 risc0-zkvm = { version = "0.21", features = ["std", "getrandom"] }
 rocksdb = { version = "0.21.0", features = [
@@ -210,9 +234,6 @@ trie-db = "0.28.0"
 url = "2.2.2"
 x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
-
-async-recursion = "1.1.1"
-reqwest = "0.12.4"
 
 
 [workspace.lints.rust]
