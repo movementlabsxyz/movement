@@ -40,9 +40,6 @@ jobs:
       # adjust the log level while debugging
       run: CELESTIA_LOG_LEVEL=FATAL MOVEMENT_PREBUILT=false nix develop --command bash  -c "just m1-da-light-node test.local -t=false"  
 
-    - name: Print available filesystem space
-      run: df -h
-
     - name: Run suzuka tests in nix environment
       # adjust the log level while debugging
       run: CELESTIA_LOG_LEVEL=FATAL MOVEMENT_PREBUILT=false nix develop --command bash  -c "just suzuka-full-node test.local -t=false"  
