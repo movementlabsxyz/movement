@@ -1,3 +1,5 @@
+pub mod config;
+
 use anyhow::Context;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
