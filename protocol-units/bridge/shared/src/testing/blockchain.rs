@@ -8,8 +8,52 @@ use std::{
 use super::rng::RngSeededClone;
 use crate::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, HashLock, InitiatorAddress, RecipientAddress, TimeLock,
+	GenUniqueHash, HashLock, InitiatorAddress, LockedAssetsDetails, RecipientAddress, TimeLock,
 };
+
+#[derive(Debug)]
+pub struct SmartContractCounterparty<A, H> {
+	pub locked_transfers: HashMap<BridgeTransferId<H>, LockedAssetsDetails<A, H>>,
+}
+
+impl<A, H> Default for SmartContractCounterparty<A, H>
+where
+	H: BridgeHashType + GenUniqueHash,
+{
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
+impl<A, H> SmartContractCounterparty<A, H>
+where
+	H: BridgeHashType + GenUniqueHash,
+{
+	pub fn new() -> Self {
+		Self { locked_transfers: HashMap::new() }
+	}
+
+	pub fn lock_bridge_transfer(
+		&mut self,
+
+		bridge_transfer_id: BridgeTransferId<H>,
+		hash_lock: HashLock<H>,
+		time_lock: TimeLock,
+		recipient_address: RecipientAddress<A>,
+		amount: Amount,
+	) {
+		self.locked_transfers.insert(
+			bridge_transfer_id.clone(),
+			LockedAssetsDetails {
+				bridge_transfer_id,
+				recipient_address,
+				hash_lock,
+				time_lock,
+				amount,
+			},
+		);
+	}
+}
 
 #[derive(Debug)]
 pub struct SmartContractInitiator<A, H> {
@@ -71,6 +115,7 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub rng: R,
 
 	pub initiater_contract: SmartContractInitiator<A, H>,
+	pub counterparty_contract: SmartContractCounterparty<A, H>,
 
 	pub _phantom: std::marker::PhantomData<H>,
 }
@@ -92,6 +137,7 @@ where
 			events,
 			rng,
 			initiater_contract: SmartContractInitiator::new(),
+			counterparty_contract: SmartContractCounterparty::new(),
 			_phantom: std::marker::PhantomData,
 		}
 	}
