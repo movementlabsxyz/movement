@@ -5,6 +5,10 @@ use crate::types::{
 	InitiatorAddress, RecipientAddress, TimeLock,
 };
 
+pub enum InitiatorCall<A, H> {
+	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress<A>, Amount, TimeLock, HashLock<H>),
+}
+
 #[derive(Debug)]
 pub struct SmartContractInitiator<A, H> {
 	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
