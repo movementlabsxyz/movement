@@ -5,6 +5,7 @@ use dot_movement::DotMovement;
 use m1_da_light_node_grpc::*;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
+use tracing::{debug, info};
 
 /// The configuration for the m1-da-light-node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -81,8 +82,9 @@ impl Config {
 	const DEFAULT_CELESTIA_RPC_ADDRESS: &'static str = "0.0.0.0:26657";
 	const CELESTIA_RPC_ADDRESS_ENV_VAR: &'static str = "CELESTIA_RPC_ADDRESS";
 	pub fn default_celestia_rpc_address() -> Option<String> {
-		let maybe_env = std::env::var(Self::CELESTIA_RPC_ADDRESS_ENV_VAR)
-			.unwrap_or(Self::DEFAULT_CELESTIA_RPC_ADDRESS.to_string());
+		let env = std::env::var(Self::CELESTIA_RPC_ADDRESS_ENV_VAR);
+		info!("CELESTIA_RPC_ADDRESS: {:?}", env);
+		let maybe_env = env.unwrap_or(Self::DEFAULT_CELESTIA_RPC_ADDRESS.to_string());
 		Some(maybe_env)
 	}
 
@@ -98,8 +100,9 @@ impl Config {
 	const DEFAULT_CELESTIA_NODE_URL: &'static str = "ws://0.0.0.0:26658";
 	const CELESTIA_NODE_URL_ENV_VAR: &'static str = "CELESTIA_NODE_URL";
 	pub fn default_celestia_node_url() -> Option<String> {
-		let maybe_env = std::env::var(Self::CELESTIA_NODE_URL_ENV_VAR)
-			.unwrap_or(Self::DEFAULT_CELESTIA_NODE_URL.to_string());
+		let env = std::env::var(Self::CELESTIA_NODE_URL_ENV_VAR);
+		info!("CELESTIA_NODE_URL: {:?}", env);
+		let maybe_env = env.unwrap_or(Self::DEFAULT_CELESTIA_NODE_URL.to_string());
 		Some(maybe_env)
 	}
 
@@ -116,8 +119,9 @@ impl Config {
 	const NAMESPACE_BYTES_ENV_VAR: &'static str = "CELESTIA_NAMESPACE_BYTES";
 	/// Trys to create a default namespace from the default namespace bytes.
 	pub fn try_default_namespace() -> Result<Namespace, anyhow::Error> {
-		let maybe_env = std::env::var(Self::NAMESPACE_BYTES_ENV_VAR)
-			.unwrap_or(Self::DEFAULT_NAMESPACE_BYTES.to_string());
+		let env = std::env::var(Self::NAMESPACE_BYTES_ENV_VAR);
+		info!("CELESTIA_NAMESPACE_BYTES: {:?}", env);
+		let maybe_env = env.unwrap_or(Self::DEFAULT_NAMESPACE_BYTES.to_string());
 		let namespace_bytes = hex::decode(maybe_env.as_str())
 			.map_err(|e| anyhow::anyhow!("Failed to decode default namespace bytes: {}", e))?;
 		Namespace::new_v0(&namespace_bytes).context("Failed to create default namespace")
@@ -139,8 +143,9 @@ impl Config {
 	const DEFAULT_VERIFICATION_MODE: &'static str = "M_OF_N";
 	const VERIFICATION_MODE_ENV_VAR: &'static str = "CELESTIA_VERIFICATION_MODE";
 	pub fn default_verification_mode() -> Option<String> {
-		let maybe_env = std::env::var(Self::VERIFICATION_MODE_ENV_VAR)
-			.unwrap_or(Self::DEFAULT_VERIFICATION_MODE.to_string());
+		let env = std::env::var(Self::VERIFICATION_MODE_ENV_VAR);
+		info!("CELESTIA_VERIFICATION_MODE: {:?}", env);
+		let maybe_env = env.unwrap_or(Self::DEFAULT_VERIFICATION_MODE.to_string());
 		Some(maybe_env)
 	}
 

@@ -15,6 +15,7 @@ services:
     command: sh -c 'echo "No setup type specified."'
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
     volumes:
       - dot-movement:/.movement
     depends_on:

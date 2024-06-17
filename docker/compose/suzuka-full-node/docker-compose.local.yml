@@ -4,8 +4,8 @@ services:
     image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:${REV}
     container_name: m1-da-light-node-celestia-appd
     environment:
-      - DOT_MOVEMENT_PATH=/.movement
-      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_ADDRESS: celestia-light-node:26657
     volumes:
       - dot-movement:/.movement
     depends_on:
@@ -23,8 +23,8 @@ services:
     image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${REV}
     container_name: m1-da-light-node-celestia-bridge
     environment:
-      - DOT_MOVEMENT_PATH=/.movement
-      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_ADDRESS: celestia-light-node:26657
     volumes:
       - dot-movement:/.movement
     depends_on:
