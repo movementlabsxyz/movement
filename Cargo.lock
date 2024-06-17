@@ -7195,7 +7195,6 @@ dependencies = [
  "alloy-signer-wallet",
  "alloy-sol-types",
  "alloy-transport",
- "alloy-transport-http",
  "alloy-transport-ws",
  "anyhow",
  "async-stream",
