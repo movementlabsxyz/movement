@@ -1,4 +1,4 @@
-use crate::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario};
+use crate::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario, TestKind};
 use crate::{
 	coin_client::CoinClient,
 	rest_client::{
@@ -227,8 +227,25 @@ async fn view<T: DeserializeOwned>(
 }
 
 #[test]
-fn complex_alice_scenario() {
+fn complex_alice_load() {
 	let config = ExecutionConfig::default();
+	if let Err(err) = init_test(&config) {
+		println!("Complex Alice Test init fail {err}",);
+	}
+
+	let result = execute_test(config, Arc::new(create_complex_alice_scenario));
+	tracing::info!("Complex Alice Test result: {:?}", result);
+}
+
+#[test]
+fn complex_alice_soak() {
+	let mut config = ExecutionConfig::default();
+	config.kind = TestKind::Soak {
+		min_scenarios: 1,
+		max_scenarios: 1,
+		duration: std::time::Duration::from_secs(60),
+		number_cycle: 1,
+	};
 	if let Err(err) = init_test(&config) {
 		println!("Complex Alice Test init fail {err}",);
 	}
@@ -240,7 +257,6 @@ fn complex_alice_scenario() {
 fn create_complex_alice_scenario(_id: usize) -> Box<dyn Scenario> {
 	Box::new(ComplexAliceScenario)
 }
-
 struct ComplexAliceScenario;
 
 #[async_trait::async_trait]

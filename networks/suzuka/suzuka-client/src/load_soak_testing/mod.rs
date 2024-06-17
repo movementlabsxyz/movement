@@ -109,12 +109,12 @@ impl Default for ExecutionConfig {
 pub enum TestKind {
 	/// Load: try to run all scenario (number_scenarios) concurrently
 	Load { number_scenarios: usize },
-	/// Soak: start min_scenarios at first then increase the number to max_scenarios then decrease and do number_clycle during duration
+	/// Soak: start min_scenarios at first then increase the number to max_scenarios then decrease and do number_cycle during duration
 	Soak {
 		min_scenarios: usize,
 		max_scenarios: usize,
 		duration: std::time::Duration,
-		number_clycle: u32,
+		number_cycle: u32,
 	},
 }
 
@@ -126,9 +126,9 @@ impl TestKind {
 		min_scenarios: usize,
 		max_scenarios: usize,
 		duration: std::time::Duration,
-		number_clycle: u32,
+		number_cycle: u32,
 	) -> Self {
-		TestKind::Soak { min_scenarios, max_scenarios, duration, number_clycle }
+		TestKind::Soak { min_scenarios, max_scenarios, duration, number_cycle }
 	}
 }
 
@@ -204,7 +204,7 @@ impl TestClient {
 		};
 		let scenario_results = match kind {
 			TestKind::Load { .. } => rt.block_on(self.load_runner(create_scanario.clone())),
-			TestKind::Soak { min_scenarios, max_scenarios, duration, number_clycle } => {
+			TestKind::Soak { min_scenarios, max_scenarios, duration, number_cycle } => {
 				// The scenario that run all the time and part time are divided using the client.
 				// min_scenarios first ids are run permanently, the others client run part time.
 				//ids start at 1.
@@ -221,7 +221,7 @@ impl TestClient {
 					// Part-time scenario duration max: Duration / (number_cycle * 2)
 					// scenario start delta: (Part-time scenario duration max * scenario index / nb scenario) + (Duration * current cycle / nb cycle)
 					let number_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
-					let parttime_scenario_duration = duration / (number_clycle * 2);
+					let parttime_scenario_duration = duration / (number_cycle * 2);
 					vec![]
 				}
 			}
