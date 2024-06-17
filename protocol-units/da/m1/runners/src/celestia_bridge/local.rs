@@ -1,5 +1,5 @@
 use crate::Runner;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use reqwest::Client;
 use serde_json::Value;
 use std::{env, time::Duration};
@@ -24,8 +24,13 @@ impl Local {
 		let first_block_request_url = format!("http://{}/block?height=1", celestia_rpc_address);
 		while genesis.len() <= 4 && cnt < max_attempts {
 			info!("Waiting for genesis block.");
-			let response =
-				client.get(first_block_request_url.as_str()).send().await?.text().await?;
+			let response = client
+				.get(first_block_request_url.as_str())
+				.send()
+				.await?
+				.text()
+				.await
+				.context("Failed to get genesis block from m1-da-light-node bridge runner.")?;
 			let json: Value = serde_json::from_str(&response)?;
 			genesis = json["result"]["block_id"]["hash"].as_str().unwrap_or("").to_string();
 			info!("Genesis: {}", genesis);
