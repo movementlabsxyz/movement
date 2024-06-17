@@ -14,7 +14,7 @@ path = "src/lib.rs"
 
 [dependencies]
 maptos-execution-util = { workspace = true }
-mcr-settlement-client = { workspace = true }
+mcr-settlement-config = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }

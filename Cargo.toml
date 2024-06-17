@@ -11,6 +11,7 @@ members = [
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
     "protocol-units/settlement/mcr/client",
+    "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
     "protocol-units/movement-rest",
     "util/*",
@@ -58,6 +59,7 @@ memseq-util = { path = "protocol-units/sequencing/memseq/util" }
 sequencing-util = { path = "protocol-units/sequencing/util" }
 ## settlement
 mcr-settlement-client = { path = "protocol-units/settlement/mcr/client" }
+mcr-settlement-config = { path = "protocol-units/settlement/mcr/config" }
 mcr-settlement-manager = { path = "protocol-units/settlement/mcr/manager" }
 ## types
 movement-types = { path = "util/movement-types" }
@@ -147,18 +149,17 @@ alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev 
     "signer-wallet",
     "signer-yubihsm",
 ] }
+alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 alloy-primitives = { version = "0.7.2", default-features = false }
-alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
     "ws",
 ] }
+alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
-alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 
 anyhow = "1.0"
 async-channel = "2.2.1"

@@ -12,40 +12,38 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-alloy = { workspace = true }                #move to workspace when impl is done.
-alloy-primitives = { workspace = true }
-alloy_provider = { workspace = true }
-alloy-sol-types = { workspace = true }
-alloy_network = { workspace = true }
-alloy_transport = { workspace = true }
-alloy_transport_http = { workspace = true }
-alloy_contract = { workspace = true }
-alloy_signer_wallet = { workspace = true }
-alloy_rpc_types = { workspace = true }
-alloy_transport_ws = { workspace = true }
+mcr-settlement-config = { workspace = true }
 
-thiserror = "1.0.60"
+alloy = { workspace = true }
+alloy-contract = { workspace = true }
+alloy-network = { workspace = true }
+alloy-primitives = { workspace = true }
+alloy-provider = { workspace = true }
+alloy-signer-wallet = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy-transport = { workspace = true }
+alloy-transport-ws = { workspace = true }
 
 anyhow = { workspace = true }
 async-stream = { workspace = true }
 async-trait = { workspace = true }
 movement-types = { workspace = true }
+thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
+alloy-rpc-types = { workspace = true }
 futures = { workspace = true }
-alloy_node_bindings = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-node-bindings" }
+serde_json = { workspace = true }
 
 [features]
-mock = []
 default = ["eth"]
-stub = []
+integration-tests = ["eth"]
 eth = []
+mock = []
 
 [lints]
 workspace = true
