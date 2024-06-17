@@ -126,7 +126,7 @@ impl TestKind {
 		min_scenarios: usize,
 		max_scenarios: usize,
 		duration: std::time::Duration,
-		number_clycle: u32,
+		number_cycle: u32,
 	) -> Self {
 		TestKind::Soak { min_scenarios, max_scenarios, duration, number_clycle }
 	}
