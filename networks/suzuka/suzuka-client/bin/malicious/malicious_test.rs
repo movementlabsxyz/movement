@@ -38,9 +38,21 @@ const FAUCET_URL: &str = "http://127.0.0.1:30732";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Prior to the follow code we assume you've already acquired the necessary
-    // information such as chain_id, the private key of the account submitting
-    // the transaction, arguments for the Move script, etc.
+
+    //Init Alice and Bob accounts
+    let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+    let alice_address = alice.address();
+    faucet_client.fund(alice.address(), 100_000_000).await?;
+    let mut alice_caller =  FunctionCaller::build(alice, client.clone(), chain_id).await?;
+
+    //Register MonCoin for Alice
+    let tx_result = alice_caller.run_script(
+        SCRIPT.to_vec(),
+        vec![],
+        vec![],
+    )
+    .await?;
+    println!("RESULTTTTTTT initialize: {tx_result:?}",);
 
     // Build a transaction factory.
     let transaction_factory = TransactionFactory::new(ChainId::new(CHAIN_ID));
@@ -205,4 +217,115 @@ let entry_function = EntryFunction::new(
 
 
     Ok(())
+}
+
+
+
+struct FunctionCaller {
+    pub account: LocalAccount,
+    client: Client,
+    sequence_number: u64,
+    chainid: ChainId,
+}
+
+impl FunctionCaller {
+    async fn build(account: LocalAccount, client: Client, chainid: ChainId) -> Result<Self> {
+        let account_rpc = client.get_account(account.address()).await?;
+        let sequence_number = account_rpc.inner().sequence_number;
+        Ok(FunctionCaller {
+            account,
+            client,
+            sequence_number,
+            chainid,
+        })
+    }
+
+    async fn run_script(code: Vec<u8>,
+    ty_args: Vec<TypeTag>,
+    args: Vec<TransactionArgument>) -> Result<TransactionInfoV0> {
+            //Call malicious script register for malicious_test::moon_coin::MoonCoin.
+        let raw_tx = transaction_factory.script(Script::new(
+            code,
+            // type args
+            ty_args, vec![],
+            // args
+            args, vec![],
+        )).sender(account.address())
+                .sequence_number(self.sequence_number).build();
+        let signed_transaction = account.sign_transaction(raw_tx);
+
+//    println!("signed_transaction:{signed_transaction:?}", );
+        let res = self._submit_signed_tx(&signed_transaction)?;
+        self.sequence_number +=1;
+        Ok(res)
+    }
+
+    async fn run_function(
+        &mut self,
+        function_id: &str,
+        ty_args: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+    ) -> Result<TransactionInfoV0> {
+
+        let res = self._exec_tx(&self.account, &self.account, function_id, ty_args, args).await?;
+        self.sequence_number +=1;
+        Ok(res)
+
+    }
+
+    async fn run_function_with_signer(
+        &mut self,
+        signer: &LocalAccount,
+        function_id: &str,
+        ty_args: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
+    ) -> Result<TransactionInfoV0> {
+        let res = self._exec_tx(&self.account, signer, function_id, ty_args, args).await?;
+        self.sequence_number +=1;
+        Ok(res)
+    }
+
+    async fn _exec_tx(&self,
+        account: &LocalAccount,
+        signer: &LocalAccount,
+        function_id: &str,
+        ty_args: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,) -> Result<TransactionInfoV0> {
+
+        let MemberId {
+            module_id,
+            member_id,
+        } = str::parse(function_id)?;
+
+        let entry_function = EntryFunction::new(module_id, member_id, ty_args, args);
+        let raw_tx = TransactionFactory::new(self.chainid)
+            .entry_function(entry_function)
+            .sender(account.address())
+            .sequence_number(self.sequence_number)
+            .build();
+        //    println!("raw_tx:{raw_tx:?}",);
+
+        let signed_transaction = signer.sign_transaction(raw_tx);
+        
+        let res = self._submit_signed_tx(&signed_transaction)?;
+        self.sequence_number +=1;
+        Ok(res)
+
+    }
+
+    async fn _submit_signed_tx(&self, signed_transaction: &SignedTransaction)-> Result<TransactionInfoV0> {
+        let pending_txn = self.client.submit(signed_transaction).await?.into_inner();
+        let tx_receipt_data = self.client.wait_for_transaction_bcs(&pending_txn).await?;
+        //    println!("RESULTTTTTTT run_function: {tx_receipt_data:?}",);
+
+        let TransactionInfo::V0(tx_info) = tx_receipt_data.into_inner().info;
+
+        if let ExecutionStatus::Success = tx_info.status() {
+            Ok(tx_info)
+        } else {
+            println!("Tx fail with result {tx_info:?}",);
+            Err(anyhow::anyhow!(format!("Tx send fail:{tx_info:?}")).into())
+        }
+    }
+
 }
