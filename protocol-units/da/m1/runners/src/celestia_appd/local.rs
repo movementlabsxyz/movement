@@ -23,7 +23,7 @@ impl Runner for Local {
 				"--grpc.enable",
 				"--home",
 				&config.try_celestia_app_path()?,
-				"rpc.laddr",
+				"--rpc.laddr",
 				format!("tcp://{}", config.try_celestia_rpc_address()?).as_str(),
 			],
 		)
