@@ -6,7 +6,56 @@ use std::{
 };
 
 use super::rng::RngSeededClone;
-use crate::types::{Amount, BridgeAddressType, BridgeHashType};
+use crate::types::{
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+	GenUniqueHash, HashLock, InitiatorAddress, RecipientAddress, TimeLock,
+};
+
+#[derive(Debug)]
+pub struct SmartContractInitiator<A, H> {
+	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
+}
+
+impl<A, H> Default for SmartContractInitiator<A, H>
+where
+	H: BridgeHashType + GenUniqueHash,
+{
+	fn default() -> Self {
+		Self::new()
+	}
+}
+
+impl<A, H> SmartContractInitiator<A, H>
+where
+	H: BridgeHashType + GenUniqueHash,
+{
+	pub fn new() -> Self {
+		Self { initiated_transfers: HashMap::new() }
+	}
+
+	pub fn initiate_bridge_transfer(
+		&mut self,
+		initiator: InitiatorAddress<A>,
+		recipient: RecipientAddress<A>,
+		amount: Amount,
+		time_lock: TimeLock,
+		hash_lock: HashLock<H>,
+	) {
+		let bridge_tranfer_id = BridgeTransferId::<H>::gen_unique_hash();
+		// initiate bridge transfer
+		self.initiated_transfers.insert(
+			bridge_tranfer_id.clone(),
+			BridgeTransferDetails {
+				bridge_transfer_id: bridge_tranfer_id,
+				initiator_address: initiator,
+				recipient_address: recipient,
+				hash_lock,
+				time_lock,
+				amount,
+			},
+		);
+	}
+}
 
 #[derive(Debug, Clone)]
 pub enum AbstractBlockchainEvent {
@@ -20,13 +69,16 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub accounts: HashMap<A, Amount>,
 	pub events: Vec<AbstractBlockchainEvent>,
 	pub rng: R,
+
+	pub initiater_contract: SmartContractInitiator<A, H>,
+
 	pub _phantom: std::marker::PhantomData<H>,
 }
 
 impl<A, H, R> AbstractBlockchain<A, H, R>
 where
 	A: BridgeAddressType,
-	H: BridgeHashType,
+	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
 {
 	pub fn new(rng: R, name: impl Into<String>) -> Self {
@@ -39,6 +91,7 @@ where
 			accounts,
 			events,
 			rng,
+			initiater_contract: SmartContractInitiator::new(),
 			_phantom: std::marker::PhantomData,
 		}
 	}
