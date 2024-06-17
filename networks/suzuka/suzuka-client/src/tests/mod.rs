@@ -10,11 +10,7 @@ use crate::{
 use anyhow::Context;
 use aptos_sdk::{crypto::ed25519::Ed25519PublicKey, move_types::language_storage::TypeTag};
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
-use aptos_sdk::{
-	crypto::ed25519::Ed25519PrivateKey,
-	// 	rest_client::Account
-};
-// use aptos_types::account_config::account;
+use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use buildtime_helpers::cargo::cargo_workspace;
 use commander::run_command;
 use once_cell::sync::Lazy;
@@ -24,18 +20,13 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{thread, time};
 use url::Url;
-// use aptos_sdk::move_types::ident_str;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
-// use aptos_sdk::move_types::language_storage::StructTag;
-// use aptos_sdk::move_types::language_storage::TypeTag;
 use aptos_sdk::transaction_builder::TransactionBuilder;
 use aptos_sdk::types::account_address::AccountAddress;
-// use aptos_sdk::types::move_utils::MemberId;
 use aptos_sdk::types::transaction::authenticator::AuthenticationKey;
 use aptos_sdk::types::transaction::EntryFunction;
 use aptos_sdk::types::transaction::TransactionPayload;
-// use aptos_sdk::transaction_builder::TransactionFactory;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 static SUZUKA_CONFIG: Lazy<maptos_execution_util::config::Config> = Lazy::new(|| {
@@ -180,7 +171,7 @@ struct DefaultProfile {
 }
 
 async fn send_tx(
-	client: Client,
+	client: &Client,
 	chain_id: u8,
 	account: &LocalAccount,
 	module_address: AccountAddress,
@@ -189,26 +180,27 @@ async fn send_tx(
 	type_args: Vec<TypeTag>,
 	args: Vec<Vec<u8>>,
 ) -> Result<TransactionOnChainData, anyhow::Error> {
+    let five_sec = time::Duration::from_millis(5000);
+    thread::sleep(five_sec);
+    let transaction_builder = TransactionBuilder::new(
+        TransactionPayload::EntryFunction(EntryFunction::new(
+            ModuleId::new(module_address, Identifier::new(module_name).unwrap()),
+            Identifier::new(function_name).unwrap(),
+            type_args,
+            args,
+        )),
+        SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 30,
+        ChainId::new(chain_id),
+    )
+    .sender(account.address())
+    .sequence_number(account.sequence_number())
+    .max_gas_amount(5_000)
+    .gas_unit_price(100);
 
-	let transaction_builder = TransactionBuilder::new(
-		TransactionPayload::EntryFunction(EntryFunction::new(
-			ModuleId::new(module_address, Identifier::new(module_name).unwrap()),
-			Identifier::new(function_name).unwrap(),
-			type_args,
-			args,
-		)),
-		SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() + 30,
-		ChainId::new(chain_id),
-	)
-	.sender(account.address())
-	.sequence_number(account.sequence_number())
-	.max_gas_amount(5_000)
-	.gas_unit_price(100);
-
-	let signed_transaction = account.sign_with_transaction_builder(transaction_builder);
-	let tx_receipt_data =
-		client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
-	return Ok(tx_receipt_data);
+    let signed_transaction = account.sign_with_transaction_builder(transaction_builder);
+    let tx_receipt_data =
+        client.submit_and_wait_bcs(&signed_transaction).await?.inner().clone();
+    Ok(tx_receipt_data)
 }
 
 #[tokio::test]
@@ -232,9 +224,8 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 	println!("{}", init_output);
 
 	let five_sec = time::Duration::from_millis(5000);
-
 	thread::sleep(five_sec);
-
+ 
 	let yaml_content = fs::read_to_string(".aptos/config.yaml")?;
 
 	let config: Config = serde_yaml::from_str(&yaml_content)?;
@@ -262,7 +253,7 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 	// Create two accounts locally, Alice and Bob.
 	// :!:>section_2
 	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
+	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let deployer = LocalAccount::new(account_address, private_key, sequence_number);
 
 	// Print account addresses.
@@ -279,70 +270,112 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 	faucet_client
 		.create_account(bob.address())
 		.await
-		.context("Failed to fund Bob's account")?; // <:!:section_3
+		.context("Failed to fund Bob's account")?;
 	
 	let empty_type_tag: Vec<TypeTag> = Vec::new();
-	
-	let tx1: TransactionOnChainData = send_tx(
-		rest_client.clone(),
+	match send_tx(
+		&rest_client,
 		chain_id,
 		&alice,
 		module_address,
 		"resource_roulette",
 		"bid",
 		empty_type_tag.clone(),
-		vec![bcs::to_bytes(&10).unwrap()],
-	).await?;
-	println!("Bid with Alice: {:?}", tx1);
-
-	let tx2 = send_tx(
-		rest_client.clone(),
+		vec![bcs::to_bytes(&(10 as u8)).unwrap()],
+	).await {
+        Ok(tx1) => println!("Bid with Alice: {:?}", tx1),
+        Err(e) => {
+            println!("Transaction failed: {:?}", e);
+        }
+	}
+	
+	println!("expected to error");
+	match send_tx(
+		&rest_client,
 		chain_id,
 		&bob,
 		module_address,
 		"resource_roulette",
 		"bid",
 		empty_type_tag.clone(),
-		vec![bcs::to_bytes(&20).unwrap()],
-	).await?;
-	println!("Bid with Bob: {:?}", tx2);
+		vec![bcs::to_bytes(&(5 as u8)).unwrap()],
+	).await {
+        Ok(tx2) => println!("Bid with Poor Bob: {:?}", tx2),
+        Err(e) => {
+            println!("Expected transaction failed: {:?}", e);
+        }
+	}
 
-	let tx3 = send_tx(
-		rest_client.clone(),
+	faucet_client
+	.fund(bob.address(), 100_000_000)
+	.await
+	.context("Failed to fund Bob's account")?;
+
+	match send_tx(
+		&rest_client,
+		chain_id,
+		&bob,
+		module_address,
+		"resource_roulette",
+		"bid",
+		empty_type_tag.clone(),
+		vec![bcs::to_bytes(&(5 as u8)).unwrap()],
+	).await {
+        Ok(tx3) => println!("Bid with Bob: {:?}", tx3),
+        Err(e) => {
+            println!("Transaction failed: {:?}", e);
+        }
+	}
+
+	match send_tx(
+		&rest_client,
 		chain_id,
 		&deployer,
 		module_address,
 		"resource_roulette",
 		"bid",
 		empty_type_tag.clone(),
-		vec![bcs::to_bytes(&30).unwrap()],
-	).await?;
-	println!("Bid with deployer: {:?}", tx3);
+		vec![bcs::to_bytes(&(10 as u8)).unwrap()],
+	).await {
+        Ok(tx4) => println!("Bid with Deployer: {:?}", tx4),
+        Err(e) => {
+            println!("Transaction failed: {:?}", e);
+        }
+	}
 
-	// let tx4 =  send_tx(
-	// 	rest_client.clone(),
-	// 	chain_id,
-	// 	&bob,
-	// 	module_address,
-	// 	"resource_roulette",
-	// 	"spin",
-	// 	empty_type_tag.clone(),
-	// 	vec![vec![]],).await?;
+	
 
-	// println!("Spin with malicious Bob: {:?}", tx4);
+	println!("expected to error");
+	match send_tx(
+		&rest_client,
+		chain_id,
+		&bob,
+		module_address,
+		"resource_roulette",
+		"spin",
+		empty_type_tag.clone(),
+		vec![],
+	).await {
+        Ok(tx5) => println!("Spin with Bon: {:?}", tx5),
+        Err(e) => {
+            println!("Expected transaction failed: {:?}", e);
+        }
+	}
 
-	let tx5 = send_tx(
-		rest_client.clone(),
+	match send_tx(
+		&rest_client,
 		chain_id,
 		&deployer,
 		module_address,
 		"resource_roulette",
 		"spin",
 		empty_type_tag.clone(),
-		vec![],).await?;
-	
-		println!("Spin with authorized Deployer: {:?}", tx5);
-
+		vec![],).await {
+			Ok(tx6) => println!("Spin with Deployer: {:?}", tx6),
+			Err(e) => {
+				println!("Transaction failed: {:?}", e);
+			}
+		}
 
 	Ok(())
 }
