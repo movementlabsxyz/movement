@@ -5,7 +5,7 @@ use dot_movement::DotMovement;
 use m1_da_light_node_grpc::*;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tracing::{debug, info};
+use tracing::info;
 
 /// The configuration for the m1-da-light-node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
