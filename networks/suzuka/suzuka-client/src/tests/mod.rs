@@ -1,9 +1,10 @@
 use crate::{
 	coin_client::CoinClient,
 	rest_client::{
-		aptos_api_types::TransactionOnChainData,
+		aptos_api_types::{TransactionOnChainData, ViewFunction},
 		Client,
 		FaucetClient,
+		
 	},
 	types::{chain_id::ChainId, LocalAccount},
 };
@@ -14,7 +15,7 @@ use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use buildtime_helpers::cargo::cargo_workspace;
 use commander::run_command;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{de::DeserializeOwned, Deserialize};
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -203,6 +204,24 @@ async fn send_tx(
     Ok(tx_receipt_data)
 }
 
+async fn view<T: DeserializeOwned>(client: &Client, module_address: AccountAddress, module_name: &str, function_name: &str, type_args: Vec<TypeTag>, args: Vec<Vec<u8>>) -> Vec<T> {	
+		println!("view call to {}::{}::{}", module_address, module_name, function_name);
+	
+		// BCS
+		let bcs_view_request = ViewFunction {
+			module: ModuleId::new(module_address, Identifier::new(module_name).unwrap()),
+			function: Identifier::new(function_name).unwrap(),
+			ty_args: type_args,
+			args: args,
+		};
+	
+		// Balance should be 0 and there should only be one return value
+		let bcs_ret_values: Vec<T> = client
+			.view_bcs(&bcs_view_request, None).await.unwrap().into_inner();
+		return bcs_ret_values
+	}
+
+
 #[tokio::test]
 pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
 	println!("Running test_complex_alice");
@@ -327,6 +346,11 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
         }
 	}
 
+	let get_noise = view::<u64>(&rest_client, module_address, "resource_roulette", "get_noise", empty_type_tag.clone(), vec![]).await;
+	println!("Noise: {:?}", get_noise);
+	let total_bids = view::<u64>(&rest_client, module_address, "resource_roulette", "total_bids", empty_type_tag.clone(), vec![]).await;
+	println!("Total Bids: {:?}", total_bids);
+
 	match send_tx(
 		&rest_client,
 		chain_id,
@@ -342,8 +366,6 @@ pub async fn test_complex_alice() -> Result<(), anyhow::Error> {
             println!("Transaction failed: {:?}", e);
         }
 	}
-
-	
 
 	println!("expected to error");
 	match send_tx(
