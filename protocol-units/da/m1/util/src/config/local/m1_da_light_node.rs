@@ -1,6 +1,7 @@
 use crate::config::common::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_websocket_connection_hostname, default_celestia_websocket_connection_port,
+	default_m1_da_light_node_connection_hostname, default_m1_da_light_node_connection_port,
 	default_m1_da_light_node_listen_hostname, default_m1_da_light_node_listen_port,
 };
 use serde::{Deserialize, Serialize};
@@ -31,6 +32,14 @@ pub struct Config {
 	/// The port to listen on for the m1-da-light-node service
 	#[serde(default = "default_m1_da_light_node_listen_port")]
 	pub m1_da_light_node_listen_port: u16,
+
+	/// The hostname for m1-da-light-node connection
+	#[serde(default = "default_m1_da_light_node_connection_hostname")]
+	pub m1_da_light_node_connection_hostname: String,
+
+	/// The port for m1-da-light-node connection
+	#[serde(default = "default_m1_da_light_node_connection_port")]
+	pub m1_da_light_node_connection_port: u16,
 }
 
 impl Default for Config {
@@ -43,6 +52,8 @@ impl Default for Config {
 			celestia_websocket_connection_port: default_celestia_websocket_connection_port(),
 			m1_da_light_node_listen_hostname: default_m1_da_light_node_listen_hostname(),
 			m1_da_light_node_listen_port: default_m1_da_light_node_listen_port(),
+			m1_da_light_node_connection_hostname: default_m1_da_light_node_connection_hostname(),
+			m1_da_light_node_connection_port: default_m1_da_light_node_connection_port(),
 		}
 	}
 }

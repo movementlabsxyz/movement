@@ -1,4 +1,4 @@
-use m1_da_light_node_util::Config;
+use m1_da_light_node_util::config::Config;
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
@@ -32,7 +32,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let pass_through = LightNodeV1PassThrough::try_from_config(config.clone()).await?;
 		info!("Initialized pass through for LightNodeV1 in sequencer mode.");
 
-		let memseq_path = pass_through.config.try_memseq_config()?.try_sequencer_database_path()?;
+		let memseq_path = pass_through.config.try_memseq_path()?;
 		info!("Memseq path: {:?}", memseq_path);
 
 		let memseq = memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?;

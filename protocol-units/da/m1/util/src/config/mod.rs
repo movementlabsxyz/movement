@@ -1,5 +1,6 @@
 use anyhow::Context;
 use celestia_rpc::Client;
+use celestia_types::nmt::Namespace;
 use serde::{Deserialize, Serialize};
 
 pub mod common;
@@ -44,6 +45,59 @@ impl Config {
 			}
 		}
 	}
+
+	/// Gets the Celestia namespace
+	pub fn celestia_namespace(&self) -> Namespace {
+		match self {
+			Config::Local(local) => local.appd.celestia_namespace.clone(),
+		}
+	}
+
+	/// Gets M1 DA Light Node listen hostname
+	pub fn m1_da_light_node_listen_hostname(&self) -> String {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
+		}
+	}
+
+	/// Gets M1 DA Light Node listen port
+	pub fn m1_da_light_node_listen_port(&self) -> u16 {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
+		}
+	}
+
+	/// Gets M1 DA Light Node service
+	pub fn m1_da_light_node_service(&self) -> String {
+		let hostname = self.m1_da_light_node_listen_hostname();
+		let port = self.m1_da_light_node_listen_port();
+		format!("{}:{}", hostname, port)
+	}
+
+	/// Gets M1 DA Light Node connection hostname
+	pub fn m1_da_light_node_connection_hostname(&self) -> String {
+		match self {
+			Config::Local(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
+			}
+		}
+	}
+
+	/// Gets M1 DA Light Node connection port
+	pub fn m1_da_light_node_connection_port(&self) -> u16 {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_connection_port,
+		}
+	}
+
+	/// Gets the memseq path
+	pub fn try_memseq_path(&self) -> Result<String, anyhow::Error> {
+		match self {
+			Config::Local(local) => local.memseq.sequencer_database_path.clone().context(
+                "Failed to get memseq path from config. This is required for initializing the memseq database.",
+            ),
+		}
+	}
 }
 
 /// The M1 DA Light Node configuration as should be read from file.
@@ -63,5 +117,10 @@ impl M1DaLightNodeConfig {
 	/// Connects to a Celestia node using the config
 	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
 		self.m1_da_light_node_config.connect_celestia().await
+	}
+
+	/// Gets the Celestia namespace
+	pub fn celestia_namespace(&self) -> Namespace {
+		self.m1_da_light_node_config.celestia_namespace()
 	}
 }
