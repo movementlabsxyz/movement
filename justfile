@@ -10,3 +10,5 @@ build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}
 mcr FEATURES *ARGS:
     ./scripts/movement/run mcr {{ FEATURES }} {{ ARGS }}
+choose WORKSPACE:
+    ./scripts/cargo/choose {{ WORKSPACE }}
