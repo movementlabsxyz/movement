@@ -6916,6 +6916,7 @@ dependencies = [
  "aptos-crypto",
  "aptos-sdk",
  "aptos-types",
+ "godfig",
  "m1-da-light-node-util",
  "rand 0.7.3",
  "serde",
