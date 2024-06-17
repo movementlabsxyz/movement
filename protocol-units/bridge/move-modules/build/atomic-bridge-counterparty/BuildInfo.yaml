@@ -1,0 +1,58 @@
+---
+compiled_package_info:
+  package_name: atomic-bridge-counterparty
+  address_alias_instantiation:
+    Extensions: "0000000000000000000000000000000000000000000000000000000000000001"
+    MOVETH: "0000000000000000000000000000000000000000000000000000000000000001"
+    MoveBridge: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_framework: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_fungible_asset: 000000000000000000000000000000000000000000000000000000000000000a
+    aptos_std: "0000000000000000000000000000000000000000000000000000000000000001"
+    aptos_token: "0000000000000000000000000000000000000000000000000000000000000003"
+    core_resources: 000000000000000000000000000000000000000000000000000000000a550c18
+    denylister: "0000000000000000000000000000000000000000000000000000000000000001"
+    master_minter: "0000000000000000000000000000000000000000000000000000000000000001"
+    minter: "0000000000000000000000000000000000000000000000000000000000000001"
+    moveth: "0000000000000000000000000000000000000000000000000000000000000001"
+    pauser: "0000000000000000000000000000000000000000000000000000000000000001"
+    stablecoin: "0000000000000000000000000000000000000000000000000000000000000001"
+    std: "0000000000000000000000000000000000000000000000000000000000000001"
+    vm: "0000000000000000000000000000000000000000000000000000000000000000"
+    vm_reserved: "0000000000000000000000000000000000000000000000000000000000000000"
+  source_digest: C40DE3F7DC1A29A097DDDD968DF6E27AF529C7DD0A789DB22F201E1FB2C77BA8
+  build_flags:
+    dev_mode: false
+    test_mode: false
+    generate_docs: false
+    generate_abis: false
+    generate_move_model: true
+    full_model_generation: false
+    install_dir: ~
+    force_recompilation: false
+    additional_named_addresses: {}
+    architecture: ~
+    fetch_deps_only: false
+    skip_fetch_latest_git_deps: false
+    compiler_config:
+      bytecode_version: ~
+      known_attributes:
+        - bytecode_instruction
+        - deprecated
+        - event
+        - expected_failure
+        - legacy_entry_fun
+        - native_interface
+        - randomness
+        - resource_group
+        - resource_group_member
+        - test
+        - test_only
+        - verify_only
+        - view
+      skip_attribute_checks: false
+      compiler_version: ~
+      language_version: ~
+dependencies:
+  - AptosFramework
+  - AptosStdlib
+  - MoveStdlib

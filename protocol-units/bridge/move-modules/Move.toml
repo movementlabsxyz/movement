@@ -4,14 +4,14 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-MoveBridge = "_"
-MOVETH = "_"
-master_minter = "_"
-minter = "_"
-pauser = "_"
-denylister = "_"
-stablecoin = "_"
-moveth = "_"
+MoveBridge = "0x1"
+MOVETH = "0x1"
+master_minter = "0x1"
+minter = "0x1"
+pauser = "0x1"
+denylister = "0x1"
+stablecoin = "0x1"
+moveth = "0x1"
 
 [dev-addresses]
 stablecoin = "0xcafe"
@@ -22,7 +22,7 @@ denylister = "0xcade"
 moveth = "0xdead"
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "1.13.0"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "monza-testing"
 subdir = "aptos-move/framework/aptos-framework"
 
