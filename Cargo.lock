@@ -3442,6 +3442,7 @@ dependencies = [
  "delegate",
  "derive_more",
  "futures",
+ "futures-timer",
  "test-log",
  "thiserror",
  "tokio",
