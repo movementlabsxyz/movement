@@ -4728,6 +4728,8 @@ name = "dot-movement"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -6836,6 +6838,7 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "dot-movement",
+ "godfig",
  "hex",
  "jsonrpsee",
  "m1-da-light-node-grpc",
@@ -7179,93 +7182,6 @@ name = "mirai-annotations"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9be0862c1b3f26a88803c4a49de6889c10e608b3ee9344e6ef5b45fb37ad3d1"
-
-[[package]]
-name = "monza-client"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-sdk",
- "dot-movement",
- "maptos-execution-util",
- "monza-config",
- "once_cell",
- "rand 0.7.3",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "monza-config"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "maptos-execution-util",
- "serde",
- "serde_derive",
- "tokio",
- "toml 0.8.2",
- "tracing",
-]
-
-[[package]]
-name = "monza-faucet-service"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "aptos-config",
- "aptos-faucet-core",
- "aptos-logger",
- "aptos-sdk",
- "clap 4.5.4",
- "dot-movement",
- "suzuka-config",
- "tokio",
-]
-
-[[package]]
-name = "monza-full-node"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "async-channel",
- "dot-movement",
- "m1-da-light-node-client",
- "maptos-dof-execution",
- "monza-config",
- "movement-types",
- "serde_json",
- "sha2 0.10.8",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "monza-full-node-setup"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "hex",
- "m1-da-light-node-setup",
- "m1-da-light-node-util",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "suzuka-config",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
 
 [[package]]
 name = "more-asserts"

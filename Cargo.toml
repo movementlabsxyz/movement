@@ -16,7 +16,6 @@ members = [
     "util/*",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
-    "networks/monza/*",
     "networks/suzuka/*",
 ]
 
@@ -67,6 +66,8 @@ commander = { path = "util/commander" }
 # networks
 suzuka-config = { path = "networks/suzuka/suzuka-config" }
 monza-config = { path = "networks/monza/monza-config" }
+# util
+godfig = { path = "util/godfig" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
