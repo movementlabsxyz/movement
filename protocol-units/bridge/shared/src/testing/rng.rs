@@ -1,10 +1,10 @@
-use rand::RngCore;
 use rand::SeedableRng;
+use rand::{Rng, RngCore};
 use rand_chacha::ChaChaRng;
 
 pub type TestRng = ChaChaRng;
 
-pub trait RngSeededClone: SeedableRng {
+pub trait RngSeededClone: Rng + SeedableRng {
 	fn seeded_clone(&mut self) -> Self;
 }
 
