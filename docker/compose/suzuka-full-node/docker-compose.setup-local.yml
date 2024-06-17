@@ -1,0 +1,14 @@
+services:
+  setup:
+    build:
+      context: ../../..
+      dockerfile: docker/build/suzuka-full-node-setup/Dockerfile
+    container_name: setup
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_ADDRESS: celestia-light-node:26657
+    volumes:
+      - dot-movement:/.movement
+
+volumes:
+  dot-movement:

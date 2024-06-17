@@ -3,6 +3,7 @@ services:
     image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${REV}
     container_name: setup
     environment:
-      - DOT_MOVEMENT_PATH=/.movement
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_ADDRESS: m1-da-light-node-celestia-bridge:26657
     volumes:
-      - dot-movement:/.movement
+      - ${DOT_MOVEMENT_PATH}:/.movement

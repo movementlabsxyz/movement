@@ -1,13 +1,13 @@
 services:
 
   m1-da-light-node-celestia-appd:
-    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:${REV}
+    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:59e3c9ad55c7a55e4190c907e608decc4deb4cf4
     container_name: m1-da-light-node-celestia-appd
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      CELESTIA_RPC_ADDRESS: celestia-light-node:26657
+      CELESTIA_RPC_ADDRESS: m1-da-light-node-celestia-appd:26657
     volumes:
-      - dot-movement:/.movement
+      - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
         condition: service_completed_successfully
@@ -18,15 +18,16 @@ services:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 1
       start_period: 5s
+    networks:
+      - celestia-network
 
   m1-da-light-node-celestia-bridge:
     image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${REV}
     container_name: m1-da-light-node-celestia-bridge
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      CELESTIA_RPC_ADDRESS: celestia-light-node:26657
     volumes:
-      - dot-movement:/.movement
+      - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
         condition: service_completed_successfully
@@ -36,6 +37,8 @@ services:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 1
       start_period: 5s
+    networks:
+      - celestia-network
 
   celestia-light-node:
     image: busybox
@@ -44,9 +47,13 @@ services:
     environment:
       - DOT_MOVEMENT_PATH=/.movement
     volumes:
-      - dot-movement:/.movement
+      - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       m1-da-light-node-celestia-appd:
         condition: service_healthy
       m1-da-light-node-celestia-bridge:
         condition: service_healthy
+
+networks:
+  celestia-network:
+    driver: bridge
