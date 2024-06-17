@@ -82,8 +82,6 @@ impl Runner for Local {
 				"0.0.0.0",
 				"--rpc.addr",
 				"0.0.0.0",
-				"--log.level",
-				"FATAL",
 			],
 		)
 		.await?;

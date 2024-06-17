@@ -50,7 +50,9 @@ pub mod aptos {
 
 		/// The default URL of the Aptos REST server
 		pub fn default_aptos_rest_listen_url() -> Option<String> {
-			Some("0.0.0.0:30731".to_string())
+			let maybe_env =
+				std::env::var("APTOS_REST_LISTEN_URL").unwrap_or("0.0.0.0:30731".to_string());
+			Some(maybe_env)
 		}
 
 		/// Gets the URL of the Aptos REST server as a result
@@ -60,7 +62,9 @@ pub mod aptos {
 
 		/// The default URL of the Aptos faucet server
 		pub fn default_aptos_faucet_listen_url() -> Option<String> {
-			Some("0.0.0.0:30732".to_string())
+			let maybe_env =
+				std::env::var("APTOS_FAUCET_LISTEN_URL").unwrap_or("0.0.0.0:30732".to_string());
+			Some(maybe_env)
 		}
 
 		/// Gets the URL of the Aptos faucet server as a result
@@ -70,7 +74,9 @@ pub mod aptos {
 
 		/// The default URL of the Aptos finality view server
 		pub fn default_aptos_finality_view_listen_url() -> Option<String> {
-			Some("0.0.0.0:30800".to_string())
+			let maybe_env = std::env::var("APTOS_FINALITY_VIEW_LISTEN_URL")
+				.unwrap_or("0.0.0.0:30800".to_string());
+			Some(maybe_env)
 		}
 
 		/// Gets the URL of the Aptos finality view server as a result

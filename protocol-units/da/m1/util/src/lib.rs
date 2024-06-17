@@ -79,8 +79,11 @@ impl Default for Config {
 impl Config {
 	/// The default Celestia RPC URL.
 	const DEFAULT_CELESTIA_RPC_ADDRESS: &'static str = "0.0.0.0:26657";
+	const CELESTIA_RPC_ADDRESS_ENV_VAR: &'static str = "CELESTIA_RPC_ADDRESS";
 	pub fn default_celestia_rpc_address() -> Option<String> {
-		Some(Self::DEFAULT_CELESTIA_RPC_ADDRESS.to_string())
+		let maybe_env = std::env::var(Self::CELESTIA_RPC_ADDRESS_ENV_VAR)
+			.unwrap_or(Self::DEFAULT_CELESTIA_RPC_ADDRESS.to_string());
+		Some(maybe_env)
 	}
 
 	/// Gets a result for the Celestia RPC address member.
@@ -93,8 +96,11 @@ impl Config {
 
 	/// The default Celestia node URL.
 	const DEFAULT_CELESTIA_NODE_URL: &'static str = "ws://0.0.0.0:26658";
+	const CELESTIA_NODE_URL_ENV_VAR: &'static str = "CELESTIA_NODE_URL";
 	pub fn default_celestia_node_url() -> Option<String> {
-		Some(Self::DEFAULT_CELESTIA_NODE_URL.to_string())
+		let maybe_env = std::env::var(Self::CELESTIA_NODE_URL_ENV_VAR)
+			.unwrap_or(Self::DEFAULT_CELESTIA_NODE_URL.to_string());
+		Some(maybe_env)
 	}
 
 	/// Gets a result for the Celestia node URL member.
@@ -107,9 +113,12 @@ impl Config {
 
 	/// The default namespace bytes.
 	const DEFAULT_NAMESPACE_BYTES: &'static str = "a673006fb64aa2e5360d";
+	const NAMESPACE_BYTES_ENV_VAR: &'static str = "CELESTIA_NAMESPACE_BYTES";
 	/// Trys to create a default namespace from the default namespace bytes.
 	pub fn try_default_namespace() -> Result<Namespace, anyhow::Error> {
-		let namespace_bytes = hex::decode(Self::DEFAULT_NAMESPACE_BYTES)
+		let maybe_env = std::env::var(Self::NAMESPACE_BYTES_ENV_VAR)
+			.unwrap_or(Self::DEFAULT_NAMESPACE_BYTES.to_string());
+		let namespace_bytes = hex::decode(maybe_env.as_str())
 			.map_err(|e| anyhow::anyhow!("Failed to decode default namespace bytes: {}", e))?;
 		Namespace::new_v0(&namespace_bytes).context("Failed to create default namespace")
 	}
@@ -128,8 +137,11 @@ impl Config {
 
 	/// The default verification mode.
 	const DEFAULT_VERIFICATION_MODE: &'static str = "M_OF_N";
+	const VERIFICATION_MODE_ENV_VAR: &'static str = "CELESTIA_VERIFICATION_MODE";
 	pub fn default_verification_mode() -> Option<String> {
-		Some(Self::DEFAULT_VERIFICATION_MODE.to_string())
+		let maybe_env = std::env::var(Self::VERIFICATION_MODE_ENV_VAR)
+			.unwrap_or(Self::DEFAULT_VERIFICATION_MODE.to_string());
+		Some(maybe_env)
 	}
 
 	/// Gets verification mode str as a result.
@@ -172,8 +184,12 @@ impl Config {
 
 	/// The default service address.
 	const DEFAULT_SERVICE_ADDRESS: &'static str = "0.0.0.0:30730";
+	const SERVICE_ADDRESS_ENV_VAR: &'static str = "M1_DA_LIGHT_NODE_SERVICE_ADDRESS";
 	pub fn default_service_address() -> Option<String> {
-		Some(Self::DEFAULT_SERVICE_ADDRESS.to_string())
+		Some(
+			std::env::var(Self::SERVICE_ADDRESS_ENV_VAR)
+				.unwrap_or(Self::DEFAULT_SERVICE_ADDRESS.to_string()),
+		)
 	}
 
 	/// Gets a result for the service address member.
