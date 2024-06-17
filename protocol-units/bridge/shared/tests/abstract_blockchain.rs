@@ -1,6 +1,6 @@
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
-	TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, InitiatorAddress,
+	RecipientAddress, TimeLock,
 };
 use bridge_shared::{
 	testing::blockchain::{
@@ -20,7 +20,7 @@ struct TestAddress(pub &'static str);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestHash(pub &'static str);
 
-impl bridge_shared::types::GenUniqueHash for TestHash {
+impl GenUniqueHash for TestHash {
 	fn gen_unique_hash() -> Self {
 		TestHash("unique_hash")
 	}
@@ -30,6 +30,8 @@ impl bridge_shared::types::GenUniqueHash for TestHash {
 async fn test_initiate_bridge_transfer() {
 	let rng = ChaChaRng::from_seed([0u8; 32]);
 	let mut blockchain = AbstractBlockchain::<TestAddress, TestHash, _>::new(rng, "TestBlockchain");
+
+	let monitor = blockchain.add_event_listener();
 
 	let initiator_address = InitiatorAddress(TestAddress("initiator"));
 	let recipient_address = RecipientAddress(TestAddress("recipient"));
@@ -48,7 +50,10 @@ async fn test_initiate_bridge_transfer() {
 	blockchain.transaction_sender.unbounded_send(transaction).unwrap();
 
 	let event = blockchain.next().await;
+	let monitor_event = monitor.try_iter().next();
 	assert!(event.is_some());
+	assert!(monitor_event.is_some());
+	assert_eq!(event, monitor_event);
 
 	let event = event.unwrap();
 	assert_eq!(
@@ -82,6 +87,8 @@ async fn test_lock_bridge_transfer() {
 	let rng = ChaChaRng::from_seed([0u8; 32]);
 	let mut blockchain = AbstractBlockchain::<TestAddress, TestHash, _>::new(rng, "TestBlockchain");
 
+	let monitor = blockchain.add_event_listener();
+
 	let bridge_transfer_id = BridgeTransferId(TestHash("unique_hash"));
 	let hash_lock = HashLock(TestHash("hash_lock"));
 	let time_lock = TimeLock(100);
@@ -99,7 +106,10 @@ async fn test_lock_bridge_transfer() {
 	blockchain.transaction_sender.unbounded_send(transaction).unwrap();
 
 	let event = blockchain.next().await;
+	let monitor_event = monitor.try_iter().next();
+	assert!(monitor_event.is_some());
 	assert!(event.is_some());
+	assert_eq!(event, monitor_event);
 
 	let event = event.unwrap();
 	assert_eq!(
