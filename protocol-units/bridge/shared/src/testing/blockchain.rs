@@ -84,20 +84,52 @@ where
 		self.transaction_sender.clone()
 	}
 
-	pub fn client(&self) -> AbstractBlockchainClient<A, H> {
-		AbstractBlockchainClient { transaction_sender: self.transaction_sender.clone() }
+	pub fn client(&mut self) -> AbstractBlockchainClient<A, H, R> {
+		AbstractBlockchainClient::new(
+			self.transaction_sender.clone(),
+			self.rng.seeded_clone(),
+			0.1,
+			0.05,
+		) // Example rates: 10% failure, 5% false positive
 	}
 }
 
-pub struct AbstractBlockchainClient<A, H> {
+pub struct AbstractBlockchainClient<A, H, R> {
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
+	pub rng: R,
+	pub failure_rate: f64,
+	pub false_positive_rate: f64,
 }
 
-impl<A, H> AbstractBlockchainClient<A, H> {
-	pub fn send_transaction(&self, transaction: Transaction<A, H>) {
+impl<A, H, R> AbstractBlockchainClient<A, H, R>
+where
+	R: RngSeededClone,
+{
+	pub fn new(
+		transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
+		rng: R,
+		failure_rate: f64,
+		false_positive_rate: f64,
+	) -> Self {
+		Self { transaction_sender, rng, failure_rate, false_positive_rate }
+	}
+
+	pub fn send_transaction(&mut self, transaction: Transaction<A, H>) -> Result<(), String> {
+		let random_value: f64 = self.rng.gen();
+
+		if random_value < self.failure_rate {
+			return Err("Random failure occurred".to_string());
+		}
+
+		if random_value < self.false_positive_rate {
+			// Not sending transaction, but thought it was send
+			return Ok(());
+		}
+
 		self.transaction_sender
 			.unbounded_send(transaction)
 			.expect("Failed to send transaction");
+		Ok(())
 	}
 }
 
