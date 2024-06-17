@@ -1,4 +1,3 @@
-use crate::Runner;
 use anyhow::{Context, Result};
 use reqwest::Client;
 use serde_json::Value;
@@ -14,13 +13,20 @@ impl Local {
 		Local
 	}
 
-	async fn get_genesis_block(&self, config: &m1_da_light_node_util::Config) -> Result<String> {
+	async fn get_genesis_block(
+		&self,
+		config: &m1_da_light_node_util::config::local::Config,
+	) -> Result<String> {
 		let client = Client::new();
 		let mut genesis = String::new();
 		let mut cnt = 0;
 		let max_attempts = 30;
 
-		let celestia_rpc_address = config.try_celestia_rpc_address()?;
+		// get the required connection details from the config
+		let connection_hostname = config.bridge.celestia_rpc_connection_hostname.clone();
+		let connection_port = config.bridge.celestia_rpc_connection_port.clone();
+		let celestia_rpc_address = format!("{}:{}", connection_hostname, connection_port);
+
 		let first_block_request_url = format!("http://{}/block?height=1", celestia_rpc_address);
 		while genesis.len() <= 4 && cnt < max_attempts {
 			info!("Waiting for genesis block.");
@@ -47,17 +53,17 @@ impl Local {
 		info!("Discovered genesis: {}", genesis);
 		Ok(genesis)
 	}
-}
 
-impl Runner for Local {
-	async fn run(
+	pub async fn run(
 		&self,
 		dot_movement: dot_movement::DotMovement,
-		config: m1_da_light_node_util::Config,
+		config: m1_da_light_node_util::config::local::Config,
 	) -> Result<()> {
 		let genesis = self.get_genesis_block(&config).await?;
 
-		let node_store = config.try_celestia_node_path()?;
+		let node_store = config.bridge.celestia_bridge_path.clone().context(
+			"Failed to get Celestia node store path from config. This is required for initializing Celestia bridge.",
+		)?;
 		info!("Initializing Celestia Bridge with node store at {}", node_store);
 		// celestia bridge init --node.store $CELESTIA_NODE_PATH
 		commander::run_command("celestia", &["bridge", "init", "--node.store", &node_store])
@@ -71,15 +77,16 @@ impl Runner for Local {
 		// --gateway.addr 0.0.0.0 \
 		// --rpc.addr 0.0.0.0 \
 		// --log.level $CELESTIA_LOG_LEVEL
-		let CELESTIA_CUSTOM = format!("{}:{}", &config.try_celestia_chain_id()?, &genesis);
-		env::set_var("CELESTIA_CUSTOM", CELESTIA_CUSTOM);
+		let chain_id = config.appd.celestia_chain_id.clone();
+		let celestia_custom = format!("{}:{}", &chain_id, &genesis);
+		env::set_var("CELESTIA_CUSTOM", celestia_custom);
 		commander::run_command(
 			"celestia",
 			&[
 				"bridge",
 				"start",
 				"--node.store",
-				&config.try_celestia_node_path()?,
+				&node_store,
 				"--gateway",
 				"--core.ip",
 				"0.0.0.0",

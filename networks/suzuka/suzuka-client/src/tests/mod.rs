@@ -11,42 +11,29 @@ use url::Url;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let path = dot_movement.get_path().join("config.toml");
-	suzuka_config::Config::try_from_toml_file(&path).unwrap()
+	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>.unwrap();
 });
 
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	Url::from_str(
-		format!(
-			"http://{}",
-			SUZUKA_CONFIG
-				.execution_config
-				.try_aptos_config()
-				.unwrap()
-				.try_aptos_rest_listen_url()
-				.unwrap()
-				.as_str()
-		)
-		.as_str(),
-	)
+
+	let node_connection_address = SUZUKA_CONFIG.execution_config.maptos_config.client.maptos_faucet_rest_connection_hostname;
+	let node_connection_port = SUZUKA_CONFIG.execution_config.maptos_config.client.maptos_faucet_rest_connection_port;
+
+	let node_connection_url = format!("http://{}:{}", node_connection_address, node_connection_port);
+
+	Url::from_str(node_connection_url.as_str())
 	.unwrap()
 });
 
 static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	Url::from_str(
-		format!(
-			"http://{}",
-			SUZUKA_CONFIG
-				.execution_config
-				.try_aptos_config()
-				.unwrap()
-				.try_aptos_faucet_listen_url()
-				.unwrap()
-				.as_str()
-		)
-		.as_str(),
-	)
+
+	let faucet_listen_address = SUZUKA_CONFIG.execution_config.maptos_config.faucet.maptos_faucet_rest_listen_hostname;
+	let faucet_listen_port = SUZUKA_CONFIG.execution_config.maptos_config.faucet.maptos_faucet_rest_listen_port;
+
+	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
+
+	Url::from_str(faucet_listen_url.as_str())
 	.unwrap()
 });
 // <:!:section_1c
