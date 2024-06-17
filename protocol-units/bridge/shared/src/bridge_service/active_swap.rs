@@ -6,8 +6,8 @@ use std::{
 };
 
 use futures::{Future, FutureExt, Stream};
+use futures_timer::Delay;
 use thiserror::Error;
-use tracing::{trace_span, Instrument};
 
 use crate::{
 	blockchain_service::BlockchainService,
@@ -17,18 +17,32 @@ use crate::{bridge_contracts::BridgeContractCounterparty, types::RecipientAddres
 
 pub type BoxedFuture<R, E> = Pin<Box<dyn Future<Output = Result<R, E>> + Send>>;
 
-pub enum ActiveSwap<BFrom, BTo>
+struct ActiveSwap<BFrom, BTo>
 where
 	BFrom: BlockchainService,
 	BTo: BlockchainService,
 {
-	LockingTokens(
-		BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
-		BoxedFuture<(), LockBridgeTransferAssetsError>,
-	),
-	WaitingForCompletedEvent(BridgeTransferId<BTo::Hash>),
+	pub details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
+	pub state: ActiveSwapState,
+	_phantom: std::marker::PhantomData<BTo>,
+}
+
+pub enum ActiveSwapState {
+	LockingTokens(BoxedFuture<(), LockBridgeTransferAssetsError>),
+	LockingTokensError(usize, Delay),
+	WaitingForCompletedEvent,
 	CompletingBridging(BoxedFuture<(), ()>),
 	Completed,
+}
+
+pub struct ActiveSwapConfig {
+	error_attempts: usize,
+	error_delay: std::time::Duration,
+}
+impl Default for ActiveSwapConfig {
+	fn default() -> Self {
+		Self { error_attempts: 3, error_delay: std::time::Duration::from_secs(5) }
+	}
 }
 
 pub struct ActiveSwapMap<BFrom, BTo>
@@ -36,6 +50,7 @@ where
 	BFrom: BlockchainService,
 	BTo: BlockchainService,
 {
+	pub config: ActiveSwapConfig,
 	pub initiator_contract: BFrom::InitiatorContract,
 	pub counterparty_contract: BTo::CounterpartyContract,
 	swaps: HashMap<BridgeTransferId<BFrom::Hash>, ActiveSwap<BFrom, BTo>>,
@@ -50,7 +65,12 @@ where
 		initiator_contract: BFrom::InitiatorContract,
 		counterparty_contract: BTo::CounterpartyContract,
 	) -> Self {
-		Self { initiator_contract, counterparty_contract, swaps: HashMap::new() }
+		Self {
+			initiator_contract,
+			counterparty_contract,
+			swaps: HashMap::new(),
+			config: ActiveSwapConfig::default(),
+		}
 	}
 
 	pub fn get(&self, key: &BridgeTransferId<BFrom::Hash>) -> Option<&ActiveSwap<BFrom, BTo>> {
@@ -75,14 +95,14 @@ where
 
 		self.swaps.insert(
 			bridge_transfer_id,
-			ActiveSwap::<BFrom, BTo>::LockingTokens(
-				details.clone(),
-				call_lock_bridge_transfer_assets::<BFrom, BTo>(counterparty_contract, details)
-					.instrument(trace_span!(
-						"call_lock_bridge_transfer_assets[{bridge_transfer_id:?}]"
-					))
-					.boxed(),
-			),
+			ActiveSwap {
+				details: details.clone(),
+				state: ActiveSwapState::LockingTokens(
+					call_lock_bridge_transfer_assets::<BFrom, BTo>(counterparty_contract, details)
+						.boxed(),
+				),
+				_phantom: std::marker::PhantomData,
+			},
 		);
 	}
 }
@@ -97,17 +117,21 @@ impl<BFrom, BTo> Stream for ActiveSwapMap<BFrom, BTo>
 where
 	BFrom: BlockchainService + Unpin + 'static,
 	BTo: BlockchainService + Unpin + 'static,
+	<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
+	<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 
-		for swap in this.swaps.values_mut() {
-			match swap {
-				ActiveSwap::LockingTokens(details, future) => {
+		for ActiveSwap { details, state, .. } in this.swaps.values_mut() {
+			match state {
+				ActiveSwapState::LockingTokens(future) => {
 					match future.poll_unpin(cx) {
 						Poll::Ready(Ok(())) => {
+							*state = ActiveSwapState::WaitingForCompletedEvent;
+
 							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLocked(
 								details.bridge_transfer_id.clone(),
 							)));
@@ -115,6 +139,10 @@ where
 						Poll::Ready(Err(error)) => {
 							// Locking tokens failed
 							// Transition to the next state
+							*state = ActiveSwapState::LockingTokensError(
+								this.config.error_attempts,
+								Delay::new(this.config.error_delay),
+							);
 							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLockingError(
 								error,
 							)));
@@ -122,9 +150,22 @@ where
 						Poll::Pending => {}
 					}
 				}
-				ActiveSwap::WaitingForCompletedEvent(_) => todo!(),
-				ActiveSwap::CompletingBridging(_) => todo!(),
-				ActiveSwap::Completed => todo!(),
+				ActiveSwapState::LockingTokensError(attempt, delay) => {
+					// test if the delay has expired
+					// if it has, retry the lock
+					if let Poll::Ready(()) = delay.poll_unpin(cx) {
+						*state = ActiveSwapState::LockingTokens(
+							call_lock_bridge_transfer_assets::<BFrom, BTo>(
+								this.counterparty_contract.clone(),
+								details.clone(),
+							)
+							.boxed(),
+						);
+					}
+				}
+				ActiveSwapState::WaitingForCompletedEvent => {}
+				ActiveSwapState::CompletingBridging(_) => todo!(),
+				ActiveSwapState::Completed => todo!(),
 			}
 		}
 

@@ -50,11 +50,12 @@ impl<B1, B2> Stream for BridgeService<B1, B2>
 where
 	B1: BlockchainService + Unpin + 'static,
 	B2: BlockchainService + Unpin + 'static,
-	B2::Hash: From<B1::Hash>,
-	// B2::Hash: From<B1::Hash>,
-	// B2::Address: From<B1::Address>,
+
 	<B2::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B1::Hash>,
 	<B2::CounterpartyContract as BridgeContractCounterparty>::Address: From<B1::Address>,
+
+	<B1::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B2::Hash>,
+	<B1::CounterpartyContract as BridgeContractCounterparty>::Address: From<B2::Address>,
 {
 	type Item = ();
 
@@ -70,9 +71,16 @@ where
 							"BridgeService: Bridge assets locked for transfer {:?}",
 							bridge_transfer_id
 						);
+						// The smart contract has been called on blockchain_2. Now, we have to wait for
+						// confirmation from the blockchain_2 event.
 					}
 					active_swap::ActiveSwapEvent::BridgeAssetsLockingError(error) => {
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
+						// An error occurred while calling the lock_bridge_transfer_assets method. This
+						// could be due to a network error or an issue with the smart contract call.
+
+						// We should retry this active swap for a number of times before giving up, and
+						// otherwise refund the bridge transfer.
 					}
 				}
 			}
