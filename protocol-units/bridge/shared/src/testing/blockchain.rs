@@ -83,6 +83,22 @@ where
 	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<A, H>> {
 		self.transaction_sender.clone()
 	}
+
+	pub fn client(&self) -> AbstractBlockchainClient<A, H> {
+		AbstractBlockchainClient { transaction_sender: self.transaction_sender.clone() }
+	}
+}
+
+pub struct AbstractBlockchainClient<A, H> {
+	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
+}
+
+impl<A, H> AbstractBlockchainClient<A, H> {
+	pub fn send_transaction(&self, transaction: Transaction<A, H>) {
+		self.transaction_sender
+			.unbounded_send(transaction)
+			.expect("Failed to send transaction");
+	}
 }
 
 impl<A, H, R> Stream for AbstractBlockchain<A, H, R>
