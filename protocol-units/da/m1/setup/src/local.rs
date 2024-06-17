@@ -263,7 +263,7 @@ impl Local {
 	async fn update_celestia_node_config(&self, home: &str) -> Result<(), anyhow::Error> {
 		let config_path = format!("{}/config/config.toml", home);
 		let sed_commands = [
-			("s#\"tcp://127.0.0.1:26657\"#\"tcp://0.0.0.0:26657\"#g", &config_path),
+			("s#\"tcp://0.0.0.0:26657\"#\"tcp://0.0.0.0:26657\"#g", &config_path),
 			("s/^timeout_commit\\s*=.*/timeout_commit = \"2s\"/g", &config_path),
 			("s/^timeout_propose\\s*=.*/timeout_propose = \"2s\"/g", &config_path),
 		];

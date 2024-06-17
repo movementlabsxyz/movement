@@ -2,5 +2,7 @@ services:
   setup:
     image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${REV}
     container_name: setup
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
     volumes:
       - dot-movement:/.movement

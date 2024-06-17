@@ -3,6 +3,8 @@ services:
     image: busybox
     container_name: setup
     command: sh -c 'echo "No setup type specified."'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
     volumes:
       - dot-movement:/.movement
 
@@ -10,14 +12,20 @@ services:
     image: busybox
     container_name: celestia-light-node
     command: sh -c 'echo "No setup type specified."'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
     volumes:
       - dot-movement:/.movement
     depends_on:
       setup:
         condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 5s
 
   celestia-light-node-synced:
-    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-client:${REV}
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${REV}
     container_name: celestia-light-node-synced
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -26,6 +34,10 @@ services:
     depends_on:
       celestia-light-node:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 5s
 
   m1-da-light-node:
     image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
@@ -37,6 +49,10 @@ services:
     depends_on:
       celestia-light-node-synced:
         condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 5s
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
@@ -48,6 +64,10 @@ services:
     depends_on:
       m1-da-light-node:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 5s
 
   suzuka-faucet-service:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${REV}
