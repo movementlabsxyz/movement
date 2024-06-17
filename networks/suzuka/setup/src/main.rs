@@ -1,6 +1,4 @@
-use anyhow::Context;
 use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
-use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -16,12 +14,9 @@ async fn main() -> Result<(), anyhow::Error> {
 	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
 	let local = Local::new();
-	let config = local.setup(dot_movement, config).await?;
+	let config = local.setup(dot_movement.clone(), config).await?;
 
-	info!("Writing the updated config {:#?} to file: {:?}", config, path);
-	config
-		.try_write_to_toml_file(&path)
-		.context("Failed to write the updated config")?;
+	dot_movement.try_write_config_to_json(&config)?;
 
 	Ok(())
 }

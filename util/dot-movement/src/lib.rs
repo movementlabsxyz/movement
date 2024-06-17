@@ -30,6 +30,19 @@ impl DotMovement {
 		Ok(config)
 	}
 
+	/// Tries to write a configuration to a JSON file.
+	pub fn try_write_config_to_json<T: serde::Serialize>(
+		&self,
+		config: &T,
+	) -> Result<(), anyhow::Error> {
+		let file = std::fs::File::create(self.get_config_json_path())
+			.map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
+		let writer = std::io::BufWriter::new(file);
+		serde_json::to_writer_pretty(writer, config)
+			.map_err(|e| anyhow::anyhow!("Failed to write config: {}", e))?;
+		Ok(())
+	}
+
 	pub fn try_from_env() -> Result<Self, anyhow::Error> {
 		let path = std::env::var(Self::DEFAULT_DOT_MOVEMENT_PATH_VAR_NAME)
 			.map_err(|_| anyhow::anyhow!("Dot movement path not provided"))?;

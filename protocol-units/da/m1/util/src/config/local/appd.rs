@@ -1,5 +1,5 @@
 use crate::config::common::{
-	default_celestia_namespace, default_celestia_rpc_listen_hostname,
+	default_celestia_chain_id, default_celestia_namespace, default_celestia_rpc_listen_hostname,
 	default_celestia_rpc_listen_port, default_celestia_websocket_listen_hostname,
 	default_celestia_websocket_listen_port,
 };
@@ -29,6 +29,10 @@ pub struct Config {
 	/// The auth token for the Celestia node
 	pub celestia_auth_token: Option<String>,
 
+	/// The Chain ID for the Celestia node
+	#[serde(default = "default_celestia_chain_id")]
+	pub celestia_chain_id: String,
+
 	/// The namespace for the Celestia node
 	#[serde(default = "default_celestia_namespace")]
 	pub celestia_namespace: Namespace,
@@ -49,6 +53,7 @@ impl Default for Config {
 			celestia_rpc_listen_port: default_celestia_rpc_listen_port(),
 			celestia_websocket_listen_hostname: default_celestia_websocket_listen_hostname(),
 			celestia_websocket_listen_port: default_celestia_websocket_listen_port(),
+			celestia_chain_id: default_celestia_chain_id(),
 			celestia_auth_token: None,
 			celestia_namespace: default_celestia_namespace(),
 			celestia_path: None,

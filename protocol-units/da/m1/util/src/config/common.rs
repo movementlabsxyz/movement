@@ -94,3 +94,9 @@ pub fn default_celestia_namespace() -> Namespace {
 		Err(_) => Namespace::new_v0(b"movement").unwrap(),
 	}
 }
+
+// The default Celestia chain id
+env_default!(default_celestia_chain_id, "CELESTIA_CHAIN_ID", String, "movement".to_string());
+
+// Whether to force a new chain
+env_default!(default_celestia_force_new_chain, "CELESTIA_FORCE_NEW_CHAIN", bool, true);

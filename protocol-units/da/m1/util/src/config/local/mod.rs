@@ -1,6 +1,8 @@
 pub mod appd;
 pub mod bridge;
 pub mod m1_da_light_node;
+use crate::config::common::default_celestia_force_new_chain;
+use memseq_util::Config as MemseqConfig;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -16,6 +18,14 @@ pub struct Config {
 	/// The m1-da-light-node configuration
 	#[serde(default)]
 	pub m1_da_light_node: m1_da_light_node::Config,
+
+	/// Whether to force a new chain
+	#[serde(default = "default_celestia_force_new_chain")]
+	pub celestia_force_new_chain: bool,
+
+	/// The memseq configuration
+	#[serde(default)]
+	pub memseq: MemseqConfig,
 }
 
 impl Default for Config {
@@ -24,6 +34,8 @@ impl Default for Config {
 			appd: appd::Config::default(),
 			bridge: bridge::Config::default(),
 			m1_da_light_node: m1_da_light_node::Config::default(),
+			celestia_force_new_chain: default_celestia_force_new_chain(),
+			memseq: MemseqConfig::default(),
 		}
 	}
 }
