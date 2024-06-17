@@ -3,7 +3,7 @@ use aptos_api::Context;
 use poem::listener::TcpListener;
 use poem::{
 	get, handler,
-	middleware::{AddData, Tracing},
+	middleware::Tracing,
 	web::{Data, Path},
 	EndpointExt, IntoResponse, Response, Route, Server,
 };

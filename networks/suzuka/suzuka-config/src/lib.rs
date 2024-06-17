@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 use maptos_execution_util::config::Config as ExecConfig;
-use mcr_settlement_client::eth_client::Config as McrConfig;
+use mcr_settlement_config::Config as McrConfig;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {

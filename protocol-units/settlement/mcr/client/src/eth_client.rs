@@ -3,6 +3,7 @@ use crate::send_eth_tx::SendTxErrorRule;
 use crate::send_eth_tx::UnderPriced;
 use crate::send_eth_tx::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
+use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use movement_types::{Commitment, Id};
 
@@ -25,42 +26,10 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 
 use anyhow::Context;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio_stream::StreamExt;
 
 use std::array::TryFromSliceError;
-
-const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
-
-/// Configuration of the MCR settlement client.
-///
-/// This structure is meant to be used in serialization.
-/// Validation is done by the builder interface of the [`Client`].
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Config {
-	pub rpc_url: Option<String>,
-	pub ws_url: Option<String>,
-	pub signer_private_key: Option<String>,
-	pub mcr_contract_address: String,
-	pub gas_limit: u128,
-	pub num_tx_send_retries: u32,
-}
-
-impl Default for Config {
-	fn default() -> Self {
-		Config {
-			rpc_url: None,
-			ws_url: None,
-			signer_private_key: None,
-			mcr_contract_address: MCR_CONTRACT_ADDRESS.into(),
-			gas_limit: DEFAULT_TX_GAS_LIMIT,
-			num_tx_send_retries: MAX_TX_SEND_RETRIES,
-		}
-	}
-}
 
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
@@ -134,7 +103,7 @@ impl
 			signer_address,
 			contract_address,
 			config.gas_limit,
-			config.num_tx_send_retries,
+			config.tx_send_retries,
 		)
 		.await
 	}
@@ -284,6 +253,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "integration-tests")]
 mod tests {
 	use super::*;
 	use alloy_primitives::Bytes;
@@ -304,7 +274,6 @@ mod tests {
 	// After genesis ceremony, 2 validator send the commitment for height 1.
 	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
 	// Wait the commitment accepted event.
-	//#[cfg(feature = "integration-tests")]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		//Activate to debug the test.
