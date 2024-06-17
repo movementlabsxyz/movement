@@ -13,17 +13,17 @@ rust-version = { workspace = true }
 
 [dependencies]
 #move to workspace when impl is done.
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub", "signers", "signer-wallet", "signer-yubihsm"]}
-alloy-primitives = { version = "0.7.2", default-features = false }
-alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = ["ws"]}
-alloy-sol-types = { version = "0.7.2", features = ["json"] }
-alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network"}
-alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport"}
-alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http"}
-alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract"}
-alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet"}
-alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types"}
-alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws"}
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", features = ["pubsub", "signers", "signer-wallet", "signer-yubihsm"], rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy-primitives = { version = "0.7.2", default-features = false}
+alloy_provider = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-provider", features = ["ws"], rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy-sol-types = { version = "0.7.2", features = ["json"]}
+alloy_network = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-network", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy_transport = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy_transport_http = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-http", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy_contract = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-contract", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy_signer_wallet = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-signer-wallet", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy_rpc_types = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-rpc-types", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
+alloy_transport_ws = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy-transport-ws", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f"}
 
 thiserror = "1.0.60"
 

@@ -9,23 +9,40 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
+### define here all scenarios execution binaries 
+[[bin]]
+name = "demo_scenario"
+path = "bin/demo_scenario.rs"
+#[[bin]]
+# name = "basic_alice_bob"
+# path = "bin/basic_alice_bob.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
 anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+itertools = { workspace = true, default-features = true }
+maptos-execution-util = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
-url = { workspace = true }
 rand = { workspace = true }
-maptos-execution-util = { workspace = true }
 commander = { workspace = true }
 buildtime-helpers = { workspace = true }
 serde = { workspace = true }
 serde_yaml = { workspace = true }
 chrono = { workspace = true }
 bcs = { workspace = true }
+rayon = { workspace = true }
+serde_json  = { workspace = true }
+thiserror = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+tracing = { workspace = true }
+url = { workspace = true }
+
 
 [lints]
 workspace = true

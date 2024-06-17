@@ -175,6 +175,7 @@ proptest-derive = "0.4"
 quote = "1.0"
 rand = "0.7.3"
 rand_core = "0.5.1"
+rayon = "1.10.0"
 risc0-build = "0.20"
 risc0-zkvm = { version = "0.21", features = ["std", "getrandom"] }
 rocksdb = { version = "0.21.0", features = [
