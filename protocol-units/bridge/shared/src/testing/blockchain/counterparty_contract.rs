@@ -5,6 +5,10 @@ use crate::types::{
 	RecipientAddress, TimeLock,
 };
 
+pub enum CounterpartyCall<A, H> {
+	LockBridgeTransfer(BridgeTransferId<H>, HashLock<H>, TimeLock, RecipientAddress<A>, Amount),
+}
+
 #[derive(Debug)]
 pub struct SmartContractCounterparty<A, H> {
 	pub locked_transfers: HashMap<BridgeTransferId<H>, LockedAssetsDetails<A, H>>,
