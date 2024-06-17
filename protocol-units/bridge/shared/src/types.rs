@@ -39,6 +39,15 @@ pub struct BridgeTransferDetails<A, H> {
 	pub amount: Amount,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct LockedAssetsDetails<A, H> {
+	pub bridge_transfer_id: BridgeTransferId<H>,
+	pub recipient_address: RecipientAddress<A>,
+	pub hash_lock: HashLock<H>,
+	pub time_lock: TimeLock,
+	pub amount: Amount,
+}
+
 // Types
 pub trait BridgeHashType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 pub trait BridgeAddressType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
