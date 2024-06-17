@@ -5,20 +5,27 @@ use std::{
 	task::{Context, Poll},
 };
 
-use self::{
+pub use self::{
+	client::AbstractBlockchainClient,
 	counterparty_contract::{CounterpartyCall, SmartContractCounterparty},
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
 };
 
 use super::rng::RngSeededClone;
-use crate::types::{Amount, BridgeAddressType, BridgeHashType, GenUniqueHash};
+use crate::types::{
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+	GenUniqueHash, LockedAssetsDetails,
+};
 
+pub mod client;
 pub mod counterparty_contract;
 pub mod initiator_contract;
 
-#[derive(Debug, Clone)]
-pub enum AbstractBlockchainEvent {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AbstractBlockchainEvent<A, H> {
 	Noop,
+	BridgeTransferInitiated(BridgeTransferDetails<A, H>),
+	BridgeTransferAssetsLocked(LockedAssetsDetails<A, H>),
 }
 
 pub enum Transaction<A, H> {
@@ -31,7 +38,7 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub name: String,
 	pub time: u64,
 	pub accounts: HashMap<A, Amount>,
-	pub events: Vec<AbstractBlockchainEvent>,
+	pub events: Vec<AbstractBlockchainEvent<A, H>>,
 	pub rng: R,
 
 	pub initiater_contract: SmartContractInitiator<A, H>,
@@ -84,52 +91,17 @@ where
 		self.transaction_sender.clone()
 	}
 
-	pub fn client(&mut self) -> AbstractBlockchainClient<A, H, R> {
+	pub fn client(
+		&mut self,
+		failure_rate: f64,
+		false_positive_rate: f64,
+	) -> AbstractBlockchainClient<A, H, R> {
 		AbstractBlockchainClient::new(
 			self.transaction_sender.clone(),
 			self.rng.seeded_clone(),
-			0.1,
-			0.05,
+			failure_rate,
+			false_positive_rate,
 		) // Example rates: 10% failure, 5% false positive
-	}
-}
-
-pub struct AbstractBlockchainClient<A, H, R> {
-	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
-	pub rng: R,
-	pub failure_rate: f64,
-	pub false_positive_rate: f64,
-}
-
-impl<A, H, R> AbstractBlockchainClient<A, H, R>
-where
-	R: RngSeededClone,
-{
-	pub fn new(
-		transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
-		rng: R,
-		failure_rate: f64,
-		false_positive_rate: f64,
-	) -> Self {
-		Self { transaction_sender, rng, failure_rate, false_positive_rate }
-	}
-
-	pub fn send_transaction(&mut self, transaction: Transaction<A, H>) -> Result<(), String> {
-		let random_value: f64 = self.rng.gen();
-
-		if random_value < self.failure_rate {
-			return Err("Random failure occurred".to_string());
-		}
-
-		if random_value < self.false_positive_rate {
-			// Not sending transaction, but thought it was send
-			return Ok(());
-		}
-
-		self.transaction_sender
-			.unbounded_send(transaction)
-			.expect("Failed to send transaction");
-		Ok(())
 	}
 }
 
@@ -139,7 +111,7 @@ where
 	H: BridgeHashType + GenUniqueHash,
 	R: Unpin,
 {
-	type Item = AbstractBlockchainEvent;
+	type Item = AbstractBlockchainEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -155,12 +127,22 @@ where
 						hash_lock,
 					) => {
 						this.initiater_contract.initiate_bridge_transfer(
-							initiator_address,
-							recipient_address,
-							amount,
-							time_lock,
-							hash_lock,
+							initiator_address.clone(),
+							recipient_address.clone(),
+							amount.clone(),
+							time_lock.clone(),
+							hash_lock.clone(),
 						);
+						this.events.push(AbstractBlockchainEvent::BridgeTransferInitiated(
+							BridgeTransferDetails {
+								bridge_transfer_id: BridgeTransferId::<H>::gen_unique_hash(),
+								initiator_address,
+								recipient_address,
+								hash_lock,
+								time_lock,
+								amount,
+							},
+						));
 					}
 				},
 				Transaction::Counterparty(call) => match call {
@@ -172,12 +154,21 @@ where
 						amount,
 					) => {
 						this.counterparty_contract.lock_bridge_transfer(
-							bridge_transfer_id,
-							hash_lock,
-							time_lock,
-							recipient_address,
-							amount,
+							bridge_transfer_id.clone(),
+							hash_lock.clone(),
+							time_lock.clone(),
+							recipient_address.clone(),
+							amount.clone(),
 						);
+						this.events.push(AbstractBlockchainEvent::BridgeTransferAssetsLocked(
+							LockedAssetsDetails {
+								bridge_transfer_id,
+								hash_lock,
+								time_lock,
+								recipient_address,
+								amount,
+							},
+						));
 					}
 				},
 			}
