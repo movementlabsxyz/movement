@@ -1,16 +1,19 @@
-use std::path::PathBuf;
+use anyhow::Context;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use dot_movement::DotMovement;
-use serde::{Deserialize, Serialize};
 use m1_da_light_node_grpc::*;
-use anyhow::Context;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 /// The configuration for the m1-da-light-node
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
+	/// The URL of the Celestia RPC
+	#[serde(default = "Config::default_celestia_rpc_address")]
+	pub celestia_rpc_address: Option<String>,
 
-	/// The URL of the Celestia node
+	/// The URL of the Celestia node websocket
 	#[serde(default = "Config::default_celestia_node_url")]
 	pub celestia_node_url: Option<String>,
 
@@ -52,12 +55,12 @@ pub struct Config {
 	/// Whether to force a new network or not
 	#[serde(default = "Config::default_force_new_network")]
 	pub force_new_network: Option<bool>,
-
 }
 
 impl Default for Config {
 	fn default() -> Self {
 		Config {
+			celestia_rpc_address: Config::default_celestia_rpc_address(),
 			celestia_node_url: Config::default_celestia_node_url(),
 			celestia_auth_token: None,
 			celestia_namespace: Config::default_namespace(),
@@ -74,16 +77,32 @@ impl Default for Config {
 }
 
 impl Config {
+	/// The default Celestia RPC URL.
+	const DEFAULT_CELESTIA_RPC_ADDRESS: &'static str = "0.0.0.0:26657";
+	pub fn default_celestia_rpc_address() -> Option<String> {
+		Some(Self::DEFAULT_CELESTIA_RPC_ADDRESS.to_string())
+	}
+
+	/// Gets a result for the Celestia RPC address member.
+	pub fn try_celestia_rpc_address(&self) -> Result<String, anyhow::Error> {
+		self.celestia_rpc_address
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No Celestia RPC address provided"))
+			.map(|s| s.to_string())
+	}
 
 	/// The default Celestia node URL.
-	const DEFAULT_CELESTIA_NODE_URL: &'static str = "ws://localhost:26658";
+	const DEFAULT_CELESTIA_NODE_URL: &'static str = "ws://0.0.0.0:26658";
 	pub fn default_celestia_node_url() -> Option<String> {
 		Some(Self::DEFAULT_CELESTIA_NODE_URL.to_string())
 	}
 
 	/// Gets a result for the Celestia node URL member.
 	pub fn try_celestia_node_url(&self) -> Result<String, anyhow::Error> {
-		self.celestia_node_url.as_ref().ok_or(anyhow::anyhow!("No Celestia node URL provided")).map(|s| s.to_string())
+		self.celestia_node_url
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No Celestia node URL provided"))
+			.map(|s| s.to_string())
 	}
 
 	/// The default namespace bytes.
@@ -101,7 +120,10 @@ impl Config {
 
 	/// Gets a result for the namespace member.
 	pub fn try_celestia_namespace(&self) -> Result<Namespace, anyhow::Error> {
-		self.celestia_namespace.as_ref().ok_or(anyhow::anyhow!("No Celestia namespace provided")).map(|n| n.clone())
+		self.celestia_namespace
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No Celestia namespace provided"))
+			.map(|n| n.clone())
 	}
 
 	/// The default verification mode.
@@ -112,20 +134,24 @@ impl Config {
 
 	/// Gets verification mode str as a result.
 	pub fn try_verification_mode_str(&self) -> Result<String, anyhow::Error> {
-		self.verification_mode.as_ref().ok_or(anyhow::anyhow!("No verification mode provided")).map(|s| s.to_string())
+		self.verification_mode
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No verification mode provided"))
+			.map(|s| s.to_string())
 	}
 
 	/// Gets a result for the verification mode member.
 	pub fn try_verification_mode(&self) -> Result<VerificationMode, anyhow::Error> {
 		let verification_mode_str = self.try_verification_mode_str()?;
-		Ok(VerificationMode::from_str_name(verification_mode_str.as_str()).ok_or(
-			anyhow::anyhow!("Invalid verification mode: {}", verification_mode_str),
-		)?)
+		Ok(VerificationMode::from_str_name(verification_mode_str.as_str())
+			.ok_or(anyhow::anyhow!("Invalid verification mode: {}", verification_mode_str))?)
 	}
 
 	/// Gets a result for the auth token member.
 	pub fn try_celestia_auth_token(&self) -> Result<&str, anyhow::Error> {
-		self.celestia_auth_token.as_deref().ok_or(anyhow::anyhow!("No Celestia auth token provided"))
+		self.celestia_auth_token
+			.as_deref()
+			.ok_or(anyhow::anyhow!("No Celestia auth token provided"))
 	}
 
 	/// Produces the default memseq config.
@@ -138,7 +164,10 @@ impl Config {
 
 	/// Gets a result for the memseq config member.
 	pub fn try_memseq_config(&self) -> Result<memseq_util::Config, anyhow::Error> {
-		self.memseq_config.as_ref().ok_or(anyhow::anyhow!("No memseq config provided")).map(|c| c.clone())
+		self.memseq_config
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No memseq config provided"))
+			.map(|c| c.clone())
 	}
 
 	/// The default service address.
@@ -149,22 +178,34 @@ impl Config {
 
 	/// Gets a result for the service address member.
 	pub fn try_service_address(&self) -> Result<String, anyhow::Error> {
-		self.service_address.as_ref().ok_or(anyhow::anyhow!("No service address provided")).map(|s| s.to_string())
+		self.service_address
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No service address provided"))
+			.map(|s| s.to_string())
 	}
 
 	/// Gets a result for the celestia app path member.
 	pub fn try_celestia_app_path(&self) -> Result<String, anyhow::Error> {
-		self.celestia_app_path.as_ref().ok_or(anyhow::anyhow!("No Celestia app path provided")).map(|s| s.to_string())
+		self.celestia_app_path
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No Celestia app path provided"))
+			.map(|s| s.to_string())
 	}
 
 	/// Gets a result for the celestia chain id member.
 	pub fn try_celestia_chain_id(&self) -> Result<String, anyhow::Error> {
-		self.celestia_chain_id.as_ref().ok_or(anyhow::anyhow!("No Celestia chain id provided")).map(|s| s.to_string())
+		self.celestia_chain_id
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No Celestia chain id provided"))
+			.map(|s| s.to_string())
 	}
 
 	/// Gets a result for the celestia node path member.
 	pub fn try_celestia_node_path(&self) -> Result<String, anyhow::Error> {
-		self.celestia_node_path.as_ref().ok_or(anyhow::anyhow!("No Celestia node path provided")).map(|s| s.to_string())
+		self.celestia_node_path
+			.as_ref()
+			.ok_or(anyhow::anyhow!("No Celestia node path provided"))
+			.map(|s| s.to_string())
 	}
 
 	/// The default force new network.
@@ -180,22 +221,19 @@ impl Config {
 
 	/// Try to read the location of the config file from the environment and then read the config from the file
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
-		
 		let path = DotMovement::try_from_env()?;
 		let config = Self::try_from_toml_file(&path.into())?;
 		Ok(config)
-
 	}
 
 	/// Try to read the config from a TOML file
 	pub fn try_from_toml_file(path: &PathBuf) -> Result<Self, anyhow::Error> {
-		
 		let config: Config = toml::from_str(
-			&std::fs::read_to_string(path).map_err(|e| anyhow::anyhow!("Failed to read config file: {}", e))?,
+			&std::fs::read_to_string(path)
+				.map_err(|e| anyhow::anyhow!("Failed to read config file: {}", e))?,
 		)
 		.map_err(|e| anyhow::anyhow!("Failed to parse config file: {}", e))?;
 		Ok(config)
-
 	}
 
 	/// Try to write the config file to the location specified in the environment
@@ -206,33 +244,30 @@ impl Config {
 
 	/// Try to write the config to a TOML file
 	pub fn try_write_to_toml_file(&self, path: &PathBuf) -> Result<(), anyhow::Error> {
-		let toml = toml::to_string(self).map_err(|e| anyhow::anyhow!("Failed to serialize config to toml: {}", e))?;
-		std::fs::write(path, toml).map_err(|e| anyhow::anyhow!("Failed to write config to file: {}", e))?;
+		let toml = toml::to_string(self)
+			.map_err(|e| anyhow::anyhow!("Failed to serialize config to toml: {}", e))?;
+		std::fs::write(path, toml)
+			.map_err(|e| anyhow::anyhow!("Failed to write config to file: {}", e))?;
 		Ok(())
 	}
 
 	/// Connects to a Celestia node using the config
 	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
-
 		let celestia_node_url = self.try_celestia_node_url()?.to_string();
 		let celestia_auth_token = self.try_celestia_auth_token()?.to_string();
 
 		let client =
-			Client::new(
-				&celestia_node_url, 
-				Some(&celestia_auth_token)
-			).await.map_err(|e| {
+			Client::new(&celestia_node_url, Some(&celestia_auth_token)).await.map_err(|e| {
 				anyhow::anyhow!(
 					"Failed to connect to Celestia client at {:?}: {}",
 					self.celestia_node_url,
 					e
 				)
 			})?;
-		
+
 		Ok(client)
 	}
 }
-
 
 #[cfg(test)]
 pub mod test {
@@ -240,7 +275,6 @@ pub mod test {
 
 	#[test]
 	fn test_to_and_from_toml_file() -> Result<(), anyhow::Error> {
-		
 		let config = Config::default();
 
 		let temp_directory = tempfile::tempdir()?;
@@ -252,8 +286,5 @@ pub mod test {
 		assert_eq!(config, read_config);
 
 		Ok(())
-
-
 	}
-
 }

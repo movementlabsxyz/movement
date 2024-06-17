@@ -10,6 +10,9 @@ services:
     depends_on:
       setup:
         condition: service_completed_successfully
+    ports:
+      - "26657:26657"
+      - "26658:26658"
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 1
