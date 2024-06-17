@@ -2,6 +2,7 @@ use futures::{channel::mpsc, Stream, StreamExt};
 use std::{
 	collections::HashMap,
 	pin::Pin,
+	sync::mpsc as std_mpsc,
 	task::{Context, Poll},
 };
 
@@ -47,6 +48,8 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
 
+	pub event_listeners: Vec<std_mpsc::Sender<AbstractBlockchainEvent<A, H>>>,
+
 	pub _phantom: std::marker::PhantomData<H>,
 }
 
@@ -60,6 +63,7 @@ where
 		let accounts = HashMap::new();
 		let events = Vec::new();
 		let (event_sender, event_receiver) = mpsc::unbounded();
+		let event_listeners = Vec::new();
 
 		Self {
 			name: name.into(),
@@ -71,8 +75,15 @@ where
 			counterparty_contract: SmartContractCounterparty::new(),
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
+			event_listeners,
 			_phantom: std::marker::PhantomData,
 		}
+	}
+
+	pub fn add_event_listener(&mut self) -> std_mpsc::Receiver<AbstractBlockchainEvent<A, H>> {
+		let (sender, receiver) = std_mpsc::channel();
+		self.event_listeners.push(sender);
+		receiver
 	}
 
 	pub fn forward_time(&mut self, duration: u64) {
@@ -175,6 +186,9 @@ where
 		}
 
 		if let Some(event) = this.events.pop() {
+			for listener in &this.event_listeners {
+				let _ = listener.send(event.clone());
+			}
 			return Poll::Ready(Some(event));
 		}
 
