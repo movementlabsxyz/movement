@@ -2,6 +2,7 @@ pub mod chain;
 pub mod client;
 pub mod common;
 pub mod faucet;
+pub mod fin;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,6 +18,10 @@ pub struct Config {
 	/// The faucet configuration
 	#[serde(default)]
 	pub faucet: faucet::Config,
+
+	/// The fin configuration
+	#[serde(default)]
+	pub fin: fin::Config,
 }
 
 impl Default for Config {
@@ -25,6 +30,7 @@ impl Default for Config {
 			chain: chain::Config::default(),
 			client: client::Config::default(),
 			faucet: faucet::Config::default(),
+			fin: fin::Config::default(),
 		}
 	}
 }

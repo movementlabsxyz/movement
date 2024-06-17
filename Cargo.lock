@@ -10884,6 +10884,7 @@ name = "suzuka-config"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "m1-da-light-node-util",
  "maptos-execution-util",
  "mcr-settlement-client",
  "serde",
