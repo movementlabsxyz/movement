@@ -267,12 +267,30 @@ impl SuzukaPartialNode<Executor> {
 		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
+
+		// todo: extract into getter
+		let light_node_connection_hostname = match &config.m1_da_light_node.m1_da_light_node_config
+		{
+			m1_da_light_node_util::config::Config::Local(local) => {
+				local.bridge.celestia_rpc_connection_hostname.clone()
+			}
+		};
+
+		// todo: extract into getter
+		let light_node_connection_port = match &config.m1_da_light_node.m1_da_light_node_config {
+			m1_da_light_node_util::config::Config::Local(local) => {
+				local.bridge.celestia_rpc_connection_port.clone()
+			}
+		};
+
+		// todo: extract into getter
 		let light_node_client = LightNodeServiceClient::connect(format!(
-			"http://{}",
-			config.execution_config.light_node_config.try_service_address()?
+			"http://{}:{}",
+			light_node_connection_hostname, light_node_connection_port
 		))
 		.await?;
-		let executor = Executor::try_from_config(tx, config.execution_config)
+
+		let executor = Executor::try_from_config(tx, config.execution_config.maptos_config)
 			.context("Failed to get executor from environment")?;
 		// TODO: switch to real settlement client
 		// let settlement_client = McrEthSettlementClient::build_with_config(config.mcr).await?;

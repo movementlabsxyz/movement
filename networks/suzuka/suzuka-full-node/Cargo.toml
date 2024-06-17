@@ -14,6 +14,7 @@ rust-version = { workspace = true }
 [dependencies]
 maptos-dof-execution = { workspace = true }
 m1-da-light-node-client = { workspace = true }
+m1-da-light-node-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 mcr-settlement-manager = { workspace = true }
 async-channel = { workspace = true }

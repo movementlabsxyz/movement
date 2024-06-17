@@ -10917,6 +10917,7 @@ dependencies = [
  "async-channel",
  "dot-movement",
  "m1-da-light-node-client",
+ "m1-da-light-node-util",
  "maptos-dof-execution",
  "mcr-settlement-client",
  "mcr-settlement-manager",
