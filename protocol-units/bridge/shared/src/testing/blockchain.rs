@@ -5,101 +5,15 @@ use std::{
 	task::{Context, Poll},
 };
 
-use super::rng::RngSeededClone;
-use crate::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, HashLock, InitiatorAddress, LockedAssetsDetails, RecipientAddress, TimeLock,
+use self::{
+	counterparty_contract::SmartContractCounterparty, initiator_contract::SmartContractInitiator,
 };
 
-#[derive(Debug)]
-pub struct SmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockedAssetsDetails<A, H>>,
-}
+use super::rng::RngSeededClone;
+use crate::types::{Amount, BridgeAddressType, BridgeHashType, GenUniqueHash};
 
-impl<A, H> Default for SmartContractCounterparty<A, H>
-where
-	H: BridgeHashType + GenUniqueHash,
-{
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-impl<A, H> SmartContractCounterparty<A, H>
-where
-	H: BridgeHashType + GenUniqueHash,
-{
-	pub fn new() -> Self {
-		Self { locked_transfers: HashMap::new() }
-	}
-
-	pub fn lock_bridge_transfer(
-		&mut self,
-
-		bridge_transfer_id: BridgeTransferId<H>,
-		hash_lock: HashLock<H>,
-		time_lock: TimeLock,
-		recipient_address: RecipientAddress<A>,
-		amount: Amount,
-	) {
-		self.locked_transfers.insert(
-			bridge_transfer_id.clone(),
-			LockedAssetsDetails {
-				bridge_transfer_id,
-				recipient_address,
-				hash_lock,
-				time_lock,
-				amount,
-			},
-		);
-	}
-}
-
-#[derive(Debug)]
-pub struct SmartContractInitiator<A, H> {
-	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
-}
-
-impl<A, H> Default for SmartContractInitiator<A, H>
-where
-	H: BridgeHashType + GenUniqueHash,
-{
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-impl<A, H> SmartContractInitiator<A, H>
-where
-	H: BridgeHashType + GenUniqueHash,
-{
-	pub fn new() -> Self {
-		Self { initiated_transfers: HashMap::new() }
-	}
-
-	pub fn initiate_bridge_transfer(
-		&mut self,
-		initiator: InitiatorAddress<A>,
-		recipient: RecipientAddress<A>,
-		amount: Amount,
-		time_lock: TimeLock,
-		hash_lock: HashLock<H>,
-	) {
-		let bridge_tranfer_id = BridgeTransferId::<H>::gen_unique_hash();
-		// initiate bridge transfer
-		self.initiated_transfers.insert(
-			bridge_tranfer_id.clone(),
-			BridgeTransferDetails {
-				bridge_transfer_id: bridge_tranfer_id,
-				initiator_address: initiator,
-				recipient_address: recipient,
-				hash_lock,
-				time_lock,
-				amount,
-			},
-		);
-	}
-}
+pub mod counterparty_contract;
+pub mod initiator_contract;
 
 #[derive(Debug, Clone)]
 pub enum AbstractBlockchainEvent {
