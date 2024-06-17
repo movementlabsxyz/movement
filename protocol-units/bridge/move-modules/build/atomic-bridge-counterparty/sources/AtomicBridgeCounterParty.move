@@ -7,11 +7,12 @@ module MoveBridge::AtomicBridgeCounterParty {
 
     /// A mapping of bridge transfer IDs to their details
     struct BridgeTransferStore has key, store {
-        transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
+        pending_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
+        completed_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
+        aborted_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
     }
 
     struct BridgeTransferDetails has key, store {
-        exists: bool,
         recipient: address,
         amount: u64,
         hash_lock: vector<u8>,
@@ -44,7 +45,9 @@ module MoveBridge::AtomicBridgeCounterParty {
 
     public fun initialize(owner: &signer) {
         let bridge_transfer_store = BridgeTransferStore {
-            transfers: smart_table::new(),
+            pending_transfers: smart_table::new(),
+            completed_transfers: smart_table::new(),
+            aborted_transfers: smart_table::new(),
         };
         move_to(owner, bridge_transfer_store);
     }
@@ -59,14 +62,13 @@ module MoveBridge::AtomicBridgeCounterParty {
     ): bool acquires BridgeTransferStore {
         let bridge_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(initiator));
         let details = BridgeTransferDetails {
-            exists: true,
             recipient,
             amount,
             hash_lock,
             time_lock: timestamp::now_seconds() + time_lock,
         };
 
-        smart_table::add(&mut bridge_store.transfers, bridge_transfer_id, details);
+        smart_table::add(&mut bridge_store.pending_transfers, bridge_transfer_id, details);
         event::emit(
             BridgeTransferAssetsLockedEvent {
                 bridge_transfer_id,
@@ -82,34 +84,34 @@ module MoveBridge::AtomicBridgeCounterParty {
     }
 
     public fun complete_bridge_transfer(
-        _bridge_transfer_id: vector<u8>,
-        _secret: vector<u8>
-    ) {
-        // TODO: Implement the logic for completing the bridge transfer
+        initiator: &signer,
+        bridge_transfer_id: vector<u8>,
+        secret: vector<u8>
+    ) acquires BridgeTransferStore {
+        let bridge_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(initiator));
+        let details: BridgeTransferDetails = smart_table::remove(&mut bridge_store.pending_transfers, bridge_transfer_id);
+        assert!(details.recipient != @0x0, 1); 
+        smart_table::add(&mut bridge_store.completed_transfers, bridge_transfer_id, details);
         event::emit(
             BridgeTransferCompletedEvent {
-                bridge_transfer_id: _bridge_transfer_id,
-                secret: _secret,
+                bridge_transfer_id,
+                secret,
             },
         );
     }
 
     public fun abort_bridge_transfer(
-        _bridge_transfer_id: vector<u8>
-    ) {
-        // TODO: Implement the logic for aborting the bridge transfer
+        initiator: &signer,
+        bridge_transfer_id: vector<u8>
+    ) acquires BridgeTransferStore {
+        let bridge_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(initiator));
+        let details: BridgeTransferDetails = smart_table::remove(&mut bridge_store.pending_transfers, bridge_transfer_id);
+        assert!(details.recipient != @0x0, 1); // Ensure the transfer exists
+        smart_table::add(&mut bridge_store.aborted_transfers, bridge_transfer_id, details);
         event::emit(
             BridgeTransferCancelledEvent {
-                bridge_transfer_id: _bridge_transfer_id,
+                bridge_transfer_id,
             },
         );
     }
-
-    public fun get_bridge_transfer_details(
-        _bridge_transfer_id: vector<u8>
-    ): (bool, address, u64, vector<u8>, u64) {
-        // TODO: Implement the logic for retrieving bridge transfer details
-        (false, @0x0, 0, vector::empty<u8>(), 0)
-    }
 }
-
