@@ -5,6 +5,15 @@ use derive_more::Deref;
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
+impl<H> GenUniqueHash for BridgeTransferId<H>
+where
+	H: GenUniqueHash,
+{
+	fn gen_unique_hash() -> Self {
+		BridgeTransferId(H::gen_unique_hash())
+	}
+}
+
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddress<A>(pub A);
 
@@ -37,3 +46,7 @@ pub trait BridgeAddressType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync
 // Blankets
 impl<T> BridgeHashType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 impl<T> BridgeAddressType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
+
+pub trait GenUniqueHash {
+	fn gen_unique_hash() -> Self;
+}
