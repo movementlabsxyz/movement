@@ -10,6 +10,12 @@ pub enum Config {
 	Local(local::Config),
 }
 
+impl Default for Config {
+	fn default() -> Self {
+		Self::Local(local::Config::default())
+	}
+}
+
 impl Config {
 	/// Connects to a Celestia node using the config
 	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
@@ -37,5 +43,25 @@ impl Config {
 				Ok(client)
 			}
 		}
+	}
+}
+
+/// The M1 DA Light Node configuration as should be read from file.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct M1DaLightNodeConfig {
+	#[serde(default)]
+	pub m1_da_light_node_config: Config,
+}
+
+impl Default for M1DaLightNodeConfig {
+	fn default() -> Self {
+		Self { m1_da_light_node_config: Config::default() }
+	}
+}
+
+impl M1DaLightNodeConfig {
+	/// Connects to a Celestia node using the config
+	pub async fn connect_celestia(&self) -> Result<Client, anyhow::Error> {
+		self.m1_da_light_node_config.connect_celestia().await
 	}
 }

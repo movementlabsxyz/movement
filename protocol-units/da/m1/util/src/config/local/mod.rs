@@ -17,3 +17,13 @@ pub struct Config {
 	#[serde(default)]
 	pub m1_da_light_node: m1_da_light_node::Config,
 }
+
+impl Default for Config {
+	fn default() -> Self {
+		Self {
+			appd: appd::Config::default(),
+			bridge: bridge::Config::default(),
+			m1_da_light_node: m1_da_light_node::Config::default(),
+		}
+	}
+}
