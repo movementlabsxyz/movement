@@ -1,7 +1,7 @@
 services:
 
   m1-da-light-node-celestia-appd:
-    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:59e3c9ad55c7a55e4190c907e608decc4deb4cf4
+    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:${REV}
     container_name: m1-da-light-node-celestia-appd
     environment:
       DOT_MOVEMENT_PATH: /.movement
