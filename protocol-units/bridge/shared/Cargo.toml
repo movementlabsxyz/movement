@@ -19,6 +19,8 @@ futures.workspace = true
 futures-timer = "3.0.3"
 thiserror.workspace = true
 tracing.workspace = true
+rand.workspace = true
+rand_chacha = "0.2.2"
 
 [dev-dependencies]
 test-log = { version = "0.2.16", features = ["trace"] }
