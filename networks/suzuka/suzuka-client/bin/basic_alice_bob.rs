@@ -46,14 +46,12 @@ impl Scenario for BasicScenario {
 		let node_url = Url::from_str(
 			format!("http://{}", suzuka_config.aptos_config.aptos_rest_listen_url.as_str())
 				.as_str(),
-		)
-		.unwrap();
+		)?;
 
 		let faucet_url = Url::from_str(
 			format!("http://{}", suzuka_config.aptos_config.aptos_faucet_listen_url.as_str())
 				.as_str(),
-		)
-		.unwrap();
+		)?;
 
 		let rest_client = Client::new(node_url.clone());
 		let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone()); // <:!:section_1a

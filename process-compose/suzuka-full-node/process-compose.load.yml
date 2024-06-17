@@ -6,7 +6,7 @@ processes:
 
   suzuka-client-loadtests:
     command: |
-      LOADTEST_NB_SCENARIO=1 LOADTEST_NB_SCENARIO_PER_CLIENT=1 cargo run -p suzuka-client --bin basic_alice_bob
+      LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo run -p suzuka-client --bin basic_alice_bob
     depends_on:
       suzuka-full-node:
         condition: process_healthy

@@ -15,7 +15,7 @@ fn main() {
 		min_scenarios: 6,
 		max_scenarios: 10,
 		duration: std::time::Duration::from_secs(20),
-		nb_clycle: 4,
+		number_clycle: 4,
 	};
 
 	// Init the Test before execution

@@ -1,5 +1,4 @@
 use super::EXEC_LOG_FILTER;
-use anyhow::Result;
 
 /// A scenario is any struct that implements the Scenario trait.
 /// To ease scenario execution and logs, an id (usize) is provided during creation.
@@ -14,7 +13,7 @@ use anyhow::Result;
 ///  Return the execution result. If the scenario fails, return an error.
 #[async_trait::async_trait]
 pub trait Scenario {
-	async fn run(self: Box<Self>) -> Result<()>;
+	async fn run(self: Box<Self>) -> Result<(), anyhow::Error>;
 
 	fn log_exec_info(&self, msg: &str) {
 		tracing::info!(target:EXEC_LOG_FILTER, msg);
