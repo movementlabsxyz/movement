@@ -5,6 +5,7 @@ services:
     container_name: m1-da-light-node-celestia-appd
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - CELESTIA_RPC_ADDR=celestia-light-node:26657
     volumes:
       - dot-movement:/.movement
     depends_on:
@@ -23,6 +24,7 @@ services:
     container_name: m1-da-light-node-celestia-bridge
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - CELESTIA_RPC_ADDR=celestia-light-node:26657
     volumes:
       - dot-movement:/.movement
     depends_on:

@@ -14,16 +14,18 @@ impl Local {
 		Local
 	}
 
-	async fn get_genesis_block(&self) -> Result<String> {
+	async fn get_genesis_block(&self, config: &m1_da_light_node_util::Config) -> Result<String> {
 		let client = Client::new();
 		let mut genesis = String::new();
 		let mut cnt = 0;
 		let max_attempts = 30;
 
+		let celestia_rpc_address = config.try_celestia_rpc_address()?;
+		let first_block_request_url = format!("http://{}/block?height=1", celestia_rpc_address);
 		while genesis.len() <= 4 && cnt < max_attempts {
 			info!("Waiting for genesis block.");
 			let response =
-				client.get("http://0.0.0.0:26657/block?height=1").send().await?.text().await?;
+				client.get(first_block_request_url.as_str()).send().await?.text().await?;
 			let json: Value = serde_json::from_str(&response)?;
 			genesis = json["result"]["block_id"]["hash"].as_str().unwrap_or("").to_string();
 			info!("Genesis: {}", genesis);
@@ -48,7 +50,7 @@ impl Runner for Local {
 		dot_movement: dot_movement::DotMovement,
 		config: m1_da_light_node_util::Config,
 	) -> Result<()> {
-		let genesis = self.get_genesis_block().await?;
+		let genesis = self.get_genesis_block(&config).await?;
 
 		let node_store = config.try_celestia_node_path()?;
 		info!("Initializing Celestia Bridge with node store at {}", node_store);
