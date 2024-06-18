@@ -58,7 +58,7 @@ async fn test_bridge_service_integration() {
 		B1CounterpartyContractMonitoring
 	);
 
-	let blockchain_service_1 = B1Service {
+	let blockchain_1 = B1Service {
 		initiator_contract: B1Client::build(client_1.clone()),
 		initiator_monitoring: monitor_1_initiator,
 		counterparty_contract: B1Client::build(client_1),
@@ -75,14 +75,14 @@ async fn test_bridge_service_integration() {
 		B2CounterpartyContractMonitoring
 	);
 
-	let blockchain_service_2 = B2Service {
+	let blockchain_2 = B2Service {
 		initiator_contract: B2Client::build(client_2.clone()),
 		initiator_monitoring: monitor_2_initiator,
 		counterparty_contract: B2Client::build(client_2),
 		counterparty_monitoring: monitor_2_counterparty,
 	};
 
-	let mut bridge_service = BridgeService::new(blockchain_service_1, blockchain_service_2);
+	let mut bridge_service = BridgeService::new(blockchain_1, blockchain_2);
 
 	let mut cx = Context::from_waker(futures::task::noop_waker_ref());
 	let _ = bridge_service.poll_next_unpin(&mut cx);
