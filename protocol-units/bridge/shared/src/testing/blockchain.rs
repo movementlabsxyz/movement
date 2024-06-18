@@ -93,8 +93,8 @@ where
 		self.accounts.insert(address, amount);
 	}
 
-	pub fn get_balance(&mut self, address: &A) -> Option<Amount> {
-		self.accounts.get(address).cloned()
+	pub fn get_balance(&mut self, address: &A) -> Option<&Amount> {
+		self.accounts.get(address)
 	}
 
 	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<A, H>> {

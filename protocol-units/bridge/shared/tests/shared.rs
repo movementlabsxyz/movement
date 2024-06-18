@@ -1,8 +1,3 @@
-use std::{
-	pin::Pin,
-	task::{Context, Poll},
-};
-
 use async_trait::async_trait;
 use bridge_shared::{
 	bridge_contracts::{
@@ -24,6 +19,10 @@ use bridge_shared::{
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use std::{
+	pin::Pin,
+	task::{Context, Poll},
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Hash(pub &'static str);
