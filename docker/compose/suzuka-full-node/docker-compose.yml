@@ -36,10 +36,6 @@ services:
     depends_on:
       celestia-light-node:
         condition: service_healthy
-    healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
-      start_period: 3s
 
   m1-da-light-node:
     image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
@@ -53,27 +49,19 @@ services:
         condition: service_completed_successfully
     ports:
       - "30730:30730"
-    healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
-      start_period: 3s
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
     container_name: suzuka-full-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - RUST_LOG=debug
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
-      m1-da-light-node:
-        condition: service_healthy
+      - m1-da-light-node
     ports:
       - "30731:30731"
-    healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
-      start_period: 3s
 
   suzuka-faucet-service:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${REV}
@@ -85,8 +73,7 @@ services:
     ports:
       - "30732:30732"
     depends_on:
-      suzuka-full-node:
-        condition: service_healthy
+      - suzuka-full-node
 
 volumes:
   dot-movement:
