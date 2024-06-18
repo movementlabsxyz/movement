@@ -11,7 +11,9 @@ async fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
+	let config = dot_movement
+		.try_get_config_from_json::<suzuka_config::Config>()
+		.unwrap_or_default();
 
 	let local = Local::new();
 	let config = local.setup(dot_movement.clone(), config).await?;

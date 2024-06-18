@@ -29,8 +29,9 @@ async fn main() -> Result<()> {
 	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
 	// get the connection url
-	let connection_host = config.execution_config.maptos_config.chain.maptos_rest_listen_hostname;
-	let connection_port = config.execution_config.maptos_config.chain.maptos_rest_listen_port;
+	let connection_host =
+		config.execution_config.maptos_config.faucet.maptos_rest_connection_hostname;
+	let connection_port = config.execution_config.maptos_config.faucet.maptos_rest_connection_port;
 	let connection_url = format!("http://{}:{}", connection_host, connection_port);
 
 	// get the key

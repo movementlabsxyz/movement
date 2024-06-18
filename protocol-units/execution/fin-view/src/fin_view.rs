@@ -44,10 +44,8 @@ impl FinalityView {
 			node_config,
 			None,
 		));
-		let listen_url = format!(
-			"http://{}:{}",
-			config.fin.fin_rest_listen_hostname, config.fin.fin_rest_listen_port,
-		);
+		let listen_url =
+			format!("{}:{}", config.fin.fin_rest_listen_hostname, config.fin.fin_rest_listen_port,);
 		Ok(Self::new(inner, context, listen_url))
 	}
 

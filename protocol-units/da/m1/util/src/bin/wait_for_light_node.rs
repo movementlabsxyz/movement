@@ -1,5 +1,5 @@
 use celestia_rpc::HeaderClient;
-use m1_da_light_node_util::config::Config;
+use m1_da_light_node_util::config::M1DaLightNodeConfig;
 use tracing::info;
 
 #[tokio::main]
@@ -13,7 +13,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement.try_get_config_from_json::<Config>()?;
+	let config = dot_movement.try_get_config_from_json::<M1DaLightNodeConfig>()?;
 	let client = config.connect_celestia().await?;
 
 	loop {

@@ -340,11 +340,12 @@ impl Executor {
 	}
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
-		let listen_url = format!(
-			"http://{}:{}",
+		let listen_address = format!(
+			"{}:{}",
 			self.maptos_config.chain.maptos_rest_listen_hostname,
 			self.maptos_config.chain.maptos_rest_listen_port
 		);
+		let listen_url = format!("http://{}", listen_address);
 		info!("Starting maptos-opt-executor services at: {:?}", listen_url);
 
 		let api_service = get_api_service(self.context()).server(listen_url.clone());
@@ -364,7 +365,7 @@ impl Executor {
 			.data(self.context())
 			.with(cors);
 
-		Server::new(TcpListener::bind(listen_url))
+		Server::new(TcpListener::bind(listen_address))
 			.run(app)
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;

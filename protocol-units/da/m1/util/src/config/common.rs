@@ -4,45 +4,40 @@ use godfig::env_default;
 // The default hostname for the Celestia RPC
 env_default!(
 	default_celestia_rpc_listen_hostname,
-	"CELESTIA_APPD_RPC_LISTEN_HOSTNAME",
+	"CELESTIA_RPC_LISTEN_HOSTNAME",
 	String,
 	"0.0.0.0".to_string()
 );
 
 // The default port for the Celestia RPC
-env_default!(default_celestia_rpc_listen_port, "CELESTIA_APPD_RPC_LISTEN_PORT", u16, 26657);
+env_default!(default_celestia_rpc_listen_port, "CELESTIA_RPC_LISTEN_PORT", u16, 26657);
 
 // The default Celestia RPC connection hostname
 env_default!(
 	default_celestia_rpc_connection_hostname,
-	"CELESTIA_APPD_RPC_CONNECTION_HOSTNAME",
+	"CELESTIA_RPC_CONNECTION_HOSTNAME",
 	String,
 	"0.0.0.0".to_string()
 );
 
 // The default Celestia RPC connection port
-env_default!(default_celestia_rpc_connection_port, "CELESTIA_APPD_RPC_CONNECTION_PORT", u16, 26657);
+env_default!(default_celestia_rpc_connection_port, "CELESTIA_RPC_CONNECTION_PORT", u16, 26657);
 
 // The default hostname for the Celestia Node websocket
 env_default!(
 	default_celestia_websocket_listen_hostname,
-	"CELESTIA_APPD_WEBSOCKET_LISTEN_HOSTNAME",
+	"CELESTIA_WEBSOCKET_LISTEN_HOSTNAME",
 	String,
 	"0.0.0.0".to_string()
 );
 
 // The default port for the Celestia Node websocket
-env_default!(
-	default_celestia_websocket_listen_port,
-	"CELESTIA_APPD_WEBSOCKET_LISTEN_PORT",
-	u16,
-	26658
-);
+env_default!(default_celestia_websocket_listen_port, "CELESTIA_WEBSOCKET_LISTEN_PORT", u16, 26658);
 
 // The default Celestia Node websocket connection hostname
 env_default!(
 	default_celestia_websocket_connection_hostname,
-	"CELESTIA_APPD_WEBSOCKET_CONNECTION_HOSTNAME",
+	"CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME",
 	String,
 	"0.0.0.0".to_string()
 );
@@ -50,7 +45,7 @@ env_default!(
 // The default Celestia Node websocket connection port
 env_default!(
 	default_celestia_websocket_connection_port,
-	"CELESTIA_APPD_WEBSOCKET_CONNECTION_PORT",
+	"CELESTIA_WEBSOCKET_CONNECTION_PORT",
 	u16,
 	26658
 );

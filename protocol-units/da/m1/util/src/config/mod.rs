@@ -23,9 +23,9 @@ impl Config {
 		match self {
 			Config::Local(local) => {
 				let celestia_node_url = format!(
-					"http://{}:{}",
-					local.bridge.celestia_rpc_connection_hostname,
-					local.bridge.celestia_rpc_connection_port
+					"ws://{}:{}",
+					local.bridge.celestia_websocket_connection_hostname,
+					local.bridge.celestia_websocket_connection_port
 				);
 				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
                     "Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
