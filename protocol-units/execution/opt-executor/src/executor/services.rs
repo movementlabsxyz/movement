@@ -49,7 +49,7 @@ mod tests {
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
-	use maptos_execution_util::config::aptos::Config as AptosConfig;
+	use maptos_execution_util::config::Config;
 
 	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();

@@ -110,7 +110,7 @@ mod tests {
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
-	use maptos_execution_util::config::aptos::Config as AptosConfig;
+	use maptos_execution_util::config::Config;
 
 	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -132,7 +132,10 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
 		let mut executor = Executor::try_test_default()?;
-		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
+		let user_transaction = create_signed_transaction(
+			0, 
+			executor.maptos_config.chain.maptos_chain_id.clone()
+		);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();

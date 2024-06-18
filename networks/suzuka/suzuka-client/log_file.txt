@@ -1,0 +1,10 @@
+[2m2024-06-18T17:13:11.697469Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 5 panicked
+[2m2024-06-18T17:13:11.697497Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 4 panicked
+[2m2024-06-18T17:13:11.697561Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 1 panicked
+[2m2024-06-18T17:13:11.697590Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 3 panicked
+[2m2024-06-18T17:13:11.697668Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 2 panicked
+[2m2024-06-18T17:13:11.697678Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 8 panicked
+[2m2024-06-18T17:13:11.697691Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 6 panicked
+[2m2024-06-18T17:13:11.697697Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 10 panicked
+[2m2024-06-18T17:13:11.697731Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 9 panicked
+[2m2024-06-18T17:13:11.697744Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m Error during scenario spawning: task 7 panicked

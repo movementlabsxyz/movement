@@ -236,7 +236,7 @@ mod tests {
 			SignedTransaction, Transaction, TransactionPayload,
 		},
 	};
-	use maptos_execution_util::config::aptos::Config as AptosConfig;
+	use maptos_execution_util::config::Config;
 	use rand::SeedableRng;
 
 	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
@@ -257,8 +257,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
-		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_test_default()?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -295,7 +294,9 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.private_key.clone()),
+			AccountKey::from_private_key(
+				executor.maptos_config.chain.maptos_private_key.clone(),
+			),
 			0,
 		);
 
@@ -396,7 +397,9 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.private_key.clone()),
+			AccountKey::from_private_key(
+				executor.maptos_config.chain.maptos_private_key.clone(),
+			),
 			0,
 		);
 
