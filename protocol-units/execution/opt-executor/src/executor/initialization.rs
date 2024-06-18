@@ -1,6 +1,7 @@
+use anyhow::Context as _;
 use aptos_api::Context;
 use aptos_config::config::NodeConfig;
-use aptos_crypto::ed25519::Ed25519PublicKey;
+use aptos_crypto::{ed25519::Ed25519PublicKey, PrivateKey};
 use aptos_db::AptosDB;
 use aptos_executor::{
 	block_executor::BlockExecutor,
@@ -18,7 +19,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
-use maptos_execution_util::config::aptos::Config as AptosConfig;
+use maptos_execution_util::config::Config;
 
 use super::Executor;
 use futures::channel::mpsc as futures_mpsc;
@@ -99,12 +100,12 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		aptos_config: &AptosConfig,
+		maptos_config: &Config,
 	) -> Result<Self, anyhow::Error> {
 		let (db, signer) = Self::bootstrap_empty_db(
-			&aptos_config.db_path,
-			aptos_config.chain_id.clone(),
-			&aptos_config.public_key,
+			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
+			maptos_config.chain.maptos_chain_id.clone(),
+			&maptos_config.chain.maptos_private_key.clone().public_key(),
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
@@ -118,21 +119,36 @@ impl Executor {
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
 			context: Arc::new(Context::new(
-				aptos_config.chain_id.clone(),
+				maptos_config.chain.maptos_chain_id.clone(),	
 				reader,
 				mempool_client_sender,
 				node_config,
 				None,
 			)),
-			listen_url: aptos_config.opt_listen_url.clone(),
+			listen_url: format!(
+				"{}:{}",
+				maptos_config.chain.maptos_rest_listen_hostname,
+				maptos_config.chain.maptos_rest_listen_port
+			),
+			maptos_config : maptos_config.clone()
 		})
 	}
 
-	pub fn try_from_config(aptos_config: &AptosConfig) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, aptos_config)
+		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
 	}
+
+	pub fn try_test_default() -> Result<Self, anyhow::Error> {
+		let mut maptos_config = Config::default();
+
+		// replace the db path with a temporary directory
+		let value = tempfile::tempdir()?.into_path(); // todo: this works because it's at the top level, but won't be cleaned up automatically
+		maptos_config.chain.maptos_db_path.replace(value);
+		Self::try_from_config(&maptos_config)
+	}
+
 }

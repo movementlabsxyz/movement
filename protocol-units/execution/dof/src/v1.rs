@@ -28,7 +28,7 @@ impl Executor {
 		transaction_channel: Sender<SignedTransaction>,
 		config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_config(config.clone())?;
+		let executor = OptExecutor::try_from_config(&config.clone())?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),

@@ -69,8 +69,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
-		let config = AptosConfig::try_from_env()?;
-		let mut executor = Executor::try_from_config(&config)?;
+		let mut executor = Executor::try_test_default()?;
 		let server_executor = executor.clone();
 
 		let handle = tokio::spawn(async move {
@@ -78,7 +77,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let user_transaction = create_signed_transaction(0, config.chain_id.clone());
+		let user_transaction = create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();

@@ -270,7 +270,7 @@ mod tests {
 			chrono::Utc::now().timestamp_micros() as u64,
 		));
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0, config.chain_id.clone()),
+			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone()),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![
 			SignatureVerifiedTransaction::Valid(block_metadata),
@@ -289,8 +289,7 @@ mod tests {
 		// Logger::builder().level(Level::Info).build();
 
 		// Create an executor instance from the environment configuration.
-		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_test_default()?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -316,7 +315,7 @@ mod tests {
 			let current_time_microseconds = chrono::Utc::now().timestamp_micros() as u64;
 
 			// Create a transaction factory with the chain ID of the executor, used for creating transactions.
-			let tx_factory = TransactionFactory::new(config.chain_id.clone())
+			let tx_factory = TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone())
 				.with_transaction_expiration_time(
 					current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
 				);
@@ -391,8 +390,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
-		let config = AptosConfig::try_from_env()?;
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_test_default()?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -407,7 +405,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
