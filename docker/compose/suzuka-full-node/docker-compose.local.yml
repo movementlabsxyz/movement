@@ -17,9 +17,7 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 1
-      start_period: 5s
-    networks:
-      - celestia-network
+      start_period: 30s
 
   m1-da-light-node-celestia-bridge:
     image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${REV}
@@ -37,8 +35,6 @@ services:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 1
       start_period: 5s
-    networks:
-      - celestia-network
 
   celestia-light-node:
     image: busybox
@@ -53,7 +49,3 @@ services:
         condition: service_healthy
       m1-da-light-node-celestia-bridge:
         condition: service_healthy
-
-networks:
-  celestia-network:
-    driver: bridge

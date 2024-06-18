@@ -18,6 +18,11 @@ impl Local {
 		// get the app path
 		let app_path = config.appd.celestia_path.context("Celestia app path not set")?;
 
+		// get the websocket address
+		let websocket_hostname = config.appd.celestia_websocket_listen_hostname.clone();
+		let websocket_port = config.appd.celestia_websocket_listen_port.clone();
+		let websocket_address = format!("{}:{}", websocket_hostname, websocket_port);
+
 		// get the rpc address
 		let listen_hostname = config.appd.celestia_rpc_listen_hostname.clone();
 		let listen_port = config.appd.celestia_rpc_listen_port.clone();
@@ -27,6 +32,10 @@ impl Local {
 			"celestia-appd",
 			&[
 				"start",
+				"--address",
+				format!("tcp://{}", websocket_address).as_str(),
+				"--proxy_app",
+				format!("tcp://{}", websocket_address).as_str(),
 				"--grpc.enable",
 				"--home",
 				&app_path,
