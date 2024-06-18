@@ -122,11 +122,11 @@ dependencies = [
  "alloy-contract",
  "alloy-core",
  "alloy-eips",
- "alloy-genesis",
+ "alloy-genesis 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
  "alloy-provider",
  "alloy-pubsub",
  "alloy-rpc-client",
- "alloy-serde",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
  "alloy-signer",
  "alloy-signer-wallet",
  "alloy-transport-http",
@@ -141,7 +141,7 @@ dependencies = [
  "alloy-eips",
  "alloy-primitives",
  "alloy-rlp",
- "alloy-serde",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
  "c-kzg",
  "serde",
 ]
@@ -201,7 +201,7 @@ source = "git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
- "alloy-serde",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
  "c-kzg",
  "once_cell",
  "serde",
@@ -214,7 +214,18 @@ version = "0.1.0"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f#607359a8d7ba7543d702da5d406b7bc78eff3d9f"
 dependencies = [
  "alloy-primitives",
- "alloy-serde",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "alloy-genesis"
+version = "0.1.0"
+source = "git+https://github.com/alloy-rs/alloy.git#774a898db5006090a11ca60ebf9e8eb5614c16f1"
+dependencies = [
+ "alloy-primitives",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git)",
  "serde",
  "serde_json",
 ]
@@ -258,6 +269,21 @@ dependencies = [
  "async-trait",
  "futures-utils-wasm",
  "thiserror",
+]
+
+[[package]]
+name = "alloy-node-bindings"
+version = "0.1.0"
+source = "git+https://github.com/alloy-rs/alloy.git#774a898db5006090a11ca60ebf9e8eb5614c16f1"
+dependencies = [
+ "alloy-genesis 0.1.0 (git+https://github.com/alloy-rs/alloy.git)",
+ "alloy-primitives",
+ "k256",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tracing",
+ "url",
 ]
 
 [[package]]
@@ -383,10 +409,10 @@ source = "git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
- "alloy-genesis",
+ "alloy-genesis 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
  "alloy-primitives",
  "alloy-rlp",
- "alloy-serde",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
  "alloy-sol-types",
  "itertools 0.12.1",
  "serde",
@@ -401,7 +427,17 @@ source = "git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d
 dependencies = [
  "alloy-primitives",
  "alloy-rpc-types",
- "alloy-serde",
+ "alloy-serde 0.1.0 (git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f)",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "alloy-serde"
+version = "0.1.0"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d406b7bc78eff3d9f#607359a8d7ba7543d702da5d406b7bc78eff3d9f"
+dependencies = [
+ "alloy-primitives",
  "serde",
  "serde_json",
 ]
@@ -9265,7 +9301,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 
 [[package]]
-name = "ppv-lite86"
+9name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
@@ -11172,15 +11208,23 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
+ "async-trait",
+ "futures",
+ "itertools 0.12.1",
  "dot-movement",
  "maptos-execution-util",
  "mcr-settlement-client",
  "once_cell",
  "rand 0.7.3",
- "reqwest 0.12.4",
+ "rayon",
+ "serde",
  "serde_json",
+ "thiserror",
+ "reqwest 0.12.4",
  "suzuka-config",
  "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
