@@ -8,8 +8,6 @@ use alloy_primitives::hex;
 use k256::ecdsa::SigningKey;
 use tracing::info;
 
-use std::future::Future;
-
 const DEFAULT_ETH_RPC_PORT: u16 = 8545;
 const DEFAULT_ETH_WS_PORT: u16 = 8545;
 
@@ -35,31 +33,29 @@ impl Default for Local {
 }
 
 impl Setup for Local {
-	fn setup(
+	async fn setup(
 		&self,
 		_dot_movement: &DotMovement,
 		mut config: Config,
-	) -> impl Future<Output = Result<Config, anyhow::Error>> + Send {
-		async move {
-			// Can't use rand 0.7 while k256 is on rand 0.6
-			let mut rng = k256::elliptic_curve::rand_core::OsRng;
+	) -> Result<Config, anyhow::Error> {
+		// Can't use rand 0.7 while k256 is on rand 0.6
+		let mut rng = k256::elliptic_curve::rand_core::OsRng;
 
-			info!("setting up MCR Ethereum client");
+		info!("setting up MCR Ethereum client");
 
-			if config.rpc_url.is_none() {
-				config.rpc_url = Some(format!("http://localhost:{}", self.eth_rpc_port));
-			}
-			if config.ws_url.is_none() {
-				config.ws_url = Some(format!("http://localhost:{}", self.eth_ws_port));
-			}
-			if config.signer_private_key.is_none() {
-				let key = SigningKey::random(&mut rng);
-				let key_bytes = key.to_bytes();
-				let private_key = hex::encode(key_bytes.as_slice());
-				config.signer_private_key = Some(private_key);
-			}
-
-			Ok(config)
+		if config.rpc_url.is_none() {
+			config.rpc_url = Some(format!("http://localhost:{}", self.eth_rpc_port));
 		}
+		if config.ws_url.is_none() {
+			config.ws_url = Some(format!("http://localhost:{}", self.eth_ws_port));
+		}
+		if config.signer_private_key.is_none() {
+			let key = SigningKey::random(&mut rng);
+			let key_bytes = key.to_bytes();
+			let private_key = hex::encode(key_bytes.as_slice());
+			config.signer_private_key = Some(private_key);
+		}
+
+		Ok(config)
 	}
 }
