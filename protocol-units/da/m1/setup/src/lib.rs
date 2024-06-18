@@ -1,11 +1,12 @@
+use dot_movement::DotMovement;
+use m1_da_light_node_util::Config;
+
 pub mod local;
 
 pub trait M1DaLightNodeSetupOperations {
-
-    async fn setup(
-        &self,
-        dot_movement : dot_movement::DotMovement,
-        config : m1_da_light_node_util::Config,
-    ) -> Result<m1_da_light_node_util::Config, anyhow::Error>;
-
+	async fn setup(
+		&self,
+		dot_movement: &DotMovement,
+		config: Config,
+	) -> Result<Config, anyhow::Error>;
 }
