@@ -14,6 +14,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -26,6 +27,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -255,13 +259,12 @@ dependencies = [
 [[package]]
 name = "alloy-genesis"
 version = "0.1.1"
-source = "git+https://github.com/alloy-rs/alloy.git#30317d9262be3aa93c4fd31ec3ea819b962c2448"
+source = "git+https://github.com/alloy-rs/alloy.git#041c7c47b33907523cbe4023db03ae7bb57bf7bd"
 dependencies = [
  "alloy-primitives",
  "alloy-serde 0.1.1",
 >>>>>>> 342de5ee (test impl before integration in process-compose)
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -310,7 +313,7 @@ dependencies = [
 =======
 name = "alloy-node-bindings"
 version = "0.1.1"
-source = "git+https://github.com/alloy-rs/alloy.git#30317d9262be3aa93c4fd31ec3ea819b962c2448"
+source = "git+https://github.com/alloy-rs/alloy.git#041c7c47b33907523cbe4023db03ae7bb57bf7bd"
 dependencies = [
  "alloy-genesis 0.1.1",
  "alloy-primitives",
@@ -368,7 +371,11 @@ dependencies = [
  "futures",
  "futures-utils-wasm",
  "lru 0.12.3",
+<<<<<<< HEAD
  "pin-project 1.1.5",
+=======
+ "pin-project",
+>>>>>>> 8fc02d8a (correct build)
  "reqwest 0.12.5",
  "serde_json",
  "tokio",
@@ -428,7 +435,11 @@ dependencies = [
  "alloy-transport-http",
  "alloy-transport-ws",
  "futures",
+<<<<<<< HEAD
  "pin-project 1.1.5",
+=======
+ "pin-project",
+>>>>>>> 8fc02d8a (correct build)
  "reqwest 0.12.5",
  "serde",
  "serde_json",
@@ -495,7 +506,7 @@ dependencies = [
 =======
 name = "alloy-serde"
 version = "0.1.1"
-source = "git+https://github.com/alloy-rs/alloy.git#30317d9262be3aa93c4fd31ec3ea819b962c2448"
+source = "git+https://github.com/alloy-rs/alloy.git#041c7c47b33907523cbe4023db03ae7bb57bf7bd"
 dependencies = [
  "alloy-primitives",
  "serde",
@@ -744,6 +755,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -756,6 +768,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-gas-algebra",
@@ -771,6 +786,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -783,6 +799,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -795,6 +814,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -807,6 +827,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -824,6 +847,7 @@ version = "0.2.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -836,6 +860,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -884,6 +911,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -896,6 +924,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -928,6 +959,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -940,6 +972,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "hex",
@@ -951,6 +986,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -963,6 +999,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "serde",
  "serde_bytes",
@@ -974,6 +1013,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -986,6 +1026,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1024,6 +1067,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1036,6 +1080,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1060,6 +1107,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1072,6 +1120,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "futures",
  "rustversion",
@@ -1084,6 +1135,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1096,6 +1148,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "shadow-rs",
 ]
@@ -1106,6 +1161,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1118,6 +1174,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1135,6 +1194,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1147,6 +1207,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -1161,6 +1224,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1173,6 +1237,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -1187,6 +1254,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1199,6 +1267,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1235,6 +1306,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1247,6 +1319,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -1272,6 +1347,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1284,6 +1360,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto-derive",
@@ -1332,6 +1411,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1344,6 +1424,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -1356,6 +1439,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1368,6 +1452,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-config",
  "aptos-crypto",
@@ -1401,6 +1488,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1413,6 +1501,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-accumulator",
@@ -1463,6 +1554,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1475,6 +1567,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1504,6 +1599,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1516,6 +1612,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1550,6 +1649,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1562,6 +1662,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-experimental-runtimes",
  "aptos-infallible",
@@ -1576,6 +1679,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1588,6 +1692,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-channels",
@@ -1607,6 +1714,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1619,6 +1727,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1655,6 +1766,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1667,6 +1779,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1706,6 +1821,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1718,6 +1834,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1743,6 +1862,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1755,6 +1875,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1779,6 +1902,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1791,6 +1915,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-runtimes",
  "core_affinity",
@@ -1806,6 +1933,7 @@ version = "2.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1818,6 +1946,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1854,6 +1985,7 @@ version = "2.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1866,6 +1998,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -1883,6 +2018,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1895,6 +2031,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1972,6 +2111,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -1984,6 +2124,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "either",
  "move-core-types",
@@ -1995,6 +2138,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2007,6 +2151,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -2025,6 +2172,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2037,6 +2185,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -2062,6 +2213,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2074,6 +2226,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-global-constants",
@@ -2091,6 +2246,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2103,6 +2259,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -2130,6 +2289,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2142,6 +2302,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 
 [[package]]
 name = "aptos-id-generator"
@@ -2149,6 +2312,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2161,6 +2325,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 
 [[package]]
 name = "aptos-infallible"
@@ -2168,6 +2335,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2180,6 +2348,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 
 [[package]]
 name = "aptos-jellyfish-merkle"
@@ -2187,6 +2358,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2199,6 +2371,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2229,6 +2404,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2241,6 +2417,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -2253,6 +2432,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2265,6 +2445,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
@@ -2314,6 +2497,7 @@ version = "0.2.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2326,6 +2510,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -2342,6 +2529,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2354,6 +2542,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -2366,6 +2557,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2378,6 +2570,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-infallible",
  "aptos-log-derive",
@@ -2401,6 +2596,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2413,6 +2609,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-meter",
@@ -2429,6 +2628,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2441,6 +2641,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-bounded-executor",
@@ -2483,6 +2686,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2495,6 +2699,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-runtimes",
  "aptos-types",
@@ -2511,6 +2718,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2523,6 +2731,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-infallible",
  "bytes 1.6.0",
@@ -2536,6 +2747,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2548,6 +2760,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "prometheus",
@@ -2559,6 +2774,7 @@ version = "0.1.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2571,6 +2787,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-gas-schedule",
@@ -2599,6 +2818,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2611,6 +2831,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2636,6 +2859,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2648,6 +2872,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -2667,6 +2894,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2679,6 +2907,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
@@ -2698,6 +2929,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2710,6 +2942,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -2760,6 +2995,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2772,6 +3008,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-build-info",
  "aptos-infallible",
@@ -2790,6 +3029,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2802,6 +3042,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -2814,6 +3057,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2826,6 +3070,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -2841,6 +3088,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2853,6 +3101,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -2868,6 +3119,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2880,6 +3132,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-config",
  "aptos-types",
@@ -2895,6 +3150,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2907,6 +3163,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "crossbeam",
  "proptest",
@@ -2916,6 +3175,7 @@ dependencies = [
 [[package]]
 name = "aptos-protos"
 version = "1.3.0"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -2937,6 +3197,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "futures-core",
  "pbjson",
@@ -2952,6 +3215,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2964,6 +3228,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "ipnet",
 ]
@@ -2974,6 +3241,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -2986,6 +3254,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -2999,6 +3270,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3011,6 +3283,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-infallible",
  "aptos-logger",
@@ -3027,6 +3302,7 @@ version = "0.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3039,6 +3315,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -3067,6 +3346,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3079,6 +3359,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-logger",
  "tokio",
@@ -3090,6 +3373,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3102,6 +3386,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-config",
  "rocksdb",
@@ -3113,6 +3400,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3125,6 +3413,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "rayon",
  "tokio",
@@ -3136,6 +3427,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3148,6 +3440,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -3167,6 +3462,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3179,6 +3475,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-crypto",
  "aptos-drop-helper",
@@ -3201,6 +3500,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3213,6 +3513,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -3236,6 +3539,7 @@ version = "0.2.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3248,6 +3552,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -3269,6 +3576,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3281,6 +3589,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -3302,6 +3613,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3314,6 +3626,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -3338,6 +3653,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3350,6 +3666,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -3363,6 +3682,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3375,6 +3695,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -3389,6 +3712,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3401,6 +3725,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -3435,6 +3762,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3447,6 +3775,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-channels",
  "aptos-config",
@@ -3463,6 +3794,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3475,6 +3807,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-compression",
  "aptos-config",
@@ -3493,6 +3828,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3505,6 +3841,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-gas-schedule",
@@ -3528,6 +3867,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3540,6 +3880,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -3551,6 +3894,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3563,6 +3907,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-infallible",
  "enum_dispatch",
@@ -3578,6 +3925,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3590,6 +3938,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -3643,6 +3994,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3655,6 +4007,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 
 [[package]]
 name = "aptos-vault-client"
@@ -3662,6 +4017,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3674,6 +4030,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-crypto",
  "base64 0.13.1",
@@ -3692,6 +4051,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3704,6 +4064,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -3762,6 +4125,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3774,6 +4138,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -3798,6 +4165,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3810,6 +4178,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "aptos-crypto",
  "aptos-logger",
@@ -3827,6 +4198,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3839,6 +4211,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -3862,6 +4237,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -3874,6 +4250,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "aptos-event-notifications",
@@ -8747,6 +9126,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8759,6 +9139,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8778,6 +9161,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8790,6 +9174,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "backtrace",
@@ -8807,6 +9194,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8819,6 +9207,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 
 [[package]]
 name = "move-bytecode-source-map"
@@ -8826,6 +9217,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8838,6 +9230,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8855,6 +9250,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8867,6 +9263,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -8881,6 +9280,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8893,6 +9293,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "fail 0.4.0",
@@ -8910,6 +9313,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8922,6 +9326,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "clap 4.5.8",
@@ -8941,6 +9348,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -8953,6 +9361,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9001,6 +9412,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9013,6 +9425,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "difference",
@@ -9032,6 +9447,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9044,6 +9460,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9075,6 +9494,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9087,6 +9507,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -9122,6 +9545,7 @@ version = "0.0.4"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9134,6 +9558,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -9161,6 +9588,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9173,6 +9601,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9195,6 +9626,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9207,6 +9639,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "clap 4.5.8",
@@ -9227,6 +9662,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9239,6 +9675,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "codespan",
@@ -9260,6 +9699,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9272,6 +9712,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9288,6 +9731,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9300,6 +9744,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9321,6 +9768,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9333,6 +9781,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -9354,6 +9805,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9366,6 +9818,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "hex",
@@ -9381,6 +9836,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9393,6 +9849,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "hex",
@@ -9409,6 +9868,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9421,6 +9881,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "codespan",
@@ -9451,6 +9914,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9463,6 +9927,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9502,6 +9969,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9514,6 +9982,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9555,6 +10026,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9567,6 +10039,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "async-trait",
@@ -9599,6 +10074,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9611,6 +10087,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -9644,6 +10123,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9656,6 +10136,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9686,6 +10169,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9698,6 +10182,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "abstract-domain-derive",
  "codespan",
@@ -9727,6 +10214,7 @@ version = "0.1.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9739,6 +10227,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "hex",
@@ -9764,6 +10255,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9776,6 +10268,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "once_cell",
  "serde",
@@ -9787,6 +10282,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9799,6 +10295,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -9819,6 +10318,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9831,6 +10331,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "better_any",
@@ -9864,6 +10367,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9876,6 +10380,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "better_any",
  "bytes 1.6.0",
@@ -9903,6 +10410,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9915,6 +10423,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "anyhow",
  "bytes 1.6.0",
@@ -9932,6 +10443,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 =======
 <<<<<<< HEAD
@@ -9944,6 +10456,9 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93
 >>>>>>> 342de5ee (test impl before integration in process-compose)
 =======
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+>>>>>>> 8fc02d8a (correct build)
 dependencies = [
  "bcs 0.1.4",
  "derivative",
@@ -11727,7 +12242,11 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
+<<<<<<< HEAD
  "hyper 1.4.0",
+=======
+ "hyper 1.3.1",
+>>>>>>> 8fc02d8a (correct build)
  "hyper-rustls",
  "hyper-tls 0.6.0",
  "hyper-util",
@@ -12966,15 +13485,21 @@ dependencies = [
  "aptos-sdk",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
  "aptos-types",
  "async-trait",
 <<<<<<< HEAD
 <<<<<<< HEAD
  "bcs 0.1.4",
+=======
+ "async-trait",
+ "bcs 0.1.6",
+>>>>>>> 8fc02d8a (correct build)
  "buildtime-helpers",
  "chrono",
  "commander",
  "dot-movement",
+<<<<<<< HEAD
 =======
  "bcs 0.1.6",
 >>>>>>> 47dbc1c4 (implement move fct call in rust. Raw version)
@@ -12991,6 +13516,8 @@ dependencies = [
 =======
  "bcs 0.1.6",
 >>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+=======
+>>>>>>> 8fc02d8a (correct build)
  "futures",
  "itertools 0.12.1",
  "maptos-execution-util",
@@ -13000,20 +13527,27 @@ dependencies = [
  "rayon",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
  "reqwest 0.12.5",
  "serde",
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
 =======
  "reqwest 0.12.4",
+=======
+ "reqwest 0.12.5",
+>>>>>>> 8fc02d8a (correct build)
  "serde",
  "serde_json",
 >>>>>>> 342de5ee (test impl before integration in process-compose)
  "suzuka-config",
+<<<<<<< HEAD
 =======
  "serde",
  "serde_json",
 >>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
+=======
+>>>>>>> 8fc02d8a (correct build)
  "thiserror",
  "tokio",
  "tracing",
@@ -13157,6 +13691,15 @@ checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
 [[package]]
 name = "sync_wrapper"
 version = "1.0.1"
+<<<<<<< HEAD
+=======
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
+
+[[package]]
+name = "synstructure"
+version = "0.13.1"
+>>>>>>> 8fc02d8a (correct build)
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
 
@@ -13870,6 +14413,7 @@ dependencies = [
 ]
 
 [[package]]
+<<<<<<< HEAD
 name = "tracing-test"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13894,6 +14438,11 @@ dependencies = [
 name = "triomphe"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+=======
+name = "triomphe"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+>>>>>>> 8fc02d8a (correct build)
 checksum = "e6631e42e10b40c0690bf92f404ebcfe6e1fdb480391d15f17cc8e96eeed5369"
 dependencies = [
  "serde",
