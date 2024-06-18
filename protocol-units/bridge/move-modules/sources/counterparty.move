@@ -134,10 +134,12 @@ module MoveBridge::AtomicBridgeCounterParty {
         );
     }
 
-    #[test]
-    fun test_initialize() {
-        let owner = create_signer(account(0));
-        let moveth_minter = account(1);
+    #[test(creator = @MoveBridge)]
+    fun test_initialize(
+        creator: &signer,
+    ) {
+        let owner = signer::address_of(creator);
+        let moveth_minter = @0x1; 
         AtomicBridgeCounterParty::initialize(&owner, moveth_minter);
 
         // Verify that the BridgeTransferStore and BridgeConfig have been initialized
@@ -148,9 +150,11 @@ module MoveBridge::AtomicBridgeCounterParty {
         assert!(bridge_store.pending_transfers.len() == 0, 2);
     }
 
-    #[test]
-    fun test_lock_bridge_transfer_assets() {
-        let initiator = create_signer(account(0));
+    #[test(creator = @MoveBridge)]
+    fun test_lock_bridge_transfer_assets(
+        creator: &signer,
+    ) {
+        let initiator = signer::address_of(creator); 
         let recipient = account(1);
         let moveth_minter = account(2);
         AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
@@ -173,15 +177,17 @@ module MoveBridge::AtomicBridgeCounterParty {
 
         // Verify that the transfer is stored in pending_transfers
         let bridge_store = borrow_global<AtomicBridgeCounterParty::BridgeTransferStore>(signer::address_of(&initiator));
-        let transfer_details = SmartTable::get(&bridge_store.pending_transfers, &bridge_transfer_id).unwrap();
+        let transfer_details = smart_table::borrow(&bridge_store.pending_transfers, &bridge_transfer_id);
         assert!(transfer_details.recipient == recipient, 2);
         assert!(transfer_details.amount == amount, 3);
         assert!(transfer_details.hash_lock == hash_lock, 4);
     }
 
-    #[test]
-    fun test_complete_bridge_transfer() {
-        let initiator = create_signer(account(0));
+    #[test(creator = @Movebridge)]
+    fun test_complete_bridge_transfer(
+        creator: &signer,
+    ) {
+        let initiator = signer::address_of(creator); 
         let recipient = account(1);
         let moveth_minter = account(2);
         AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
@@ -214,9 +220,11 @@ module MoveBridge::AtomicBridgeCounterParty {
         assert!(transfer_details.amount == amount, 2);
     }
 
-    #[test]
-    fun test_abort_bridge_transfer() {
-        let initiator = create_signer(account(0));
+    #[test(creator = @MoveBridge)]
+    fun test_abort_bridge_transfer(
+        creator: &signer,
+    ) {
+        let initiator = signer::address_of(creator);    
         let recipient = account(1);
         let moveth_minter = account(2);
         AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
@@ -242,7 +250,7 @@ module MoveBridge::AtomicBridgeCounterParty {
 
         // Verify that the transfer is stored in aborted_transfers
         let bridge_store = borrow_global<AtomicBridgeCounterParty::BridgeTransferStore>(signer::address_of(&initiator));
-        let transfer_details = SmartTable::get(&bridge_store.aborted_transfers, &bridge_transfer_id).unwrap();
+        let transfer_details = smart_table::borrow(&bridge_store.aborted_transfers, &bridge_transfer_id); 
         assert!(transfer_details.recipient == recipient, 1);
         assert!(transfer_details.amount == amount, 2);
     }

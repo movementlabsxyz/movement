@@ -13,14 +13,6 @@ denylister = "0x1"
 stablecoin = "0x1"
 moveth = "0x1"
 
-[dev-addresses]
-stablecoin = "0xcafe"
-master_minter = "0xbab"
-minter = "0xface"
-pauser = "0xdafe"
-denylister = "0xcade"
-moveth = "0xdead"
-
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"
 rev = "monza-testing"
