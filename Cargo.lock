@@ -11,7 +11,7 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "abstract-domain-derive"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -130,7 +130,7 @@ dependencies = [
  "alloy-signer",
  "alloy-signer-wallet",
  "alloy-transport-http",
- "reqwest 0.12.4",
+ "reqwest 0.12.5",
 ]
 
 [[package]]
@@ -306,7 +306,7 @@ dependencies = [
  "futures-utils-wasm",
  "lru 0.12.3",
  "pin-project 1.1.5",
- "reqwest 0.12.4",
+ "reqwest 0.12.5",
  "serde_json",
  "tokio",
  "tracing",
@@ -366,7 +366,7 @@ dependencies = [
  "alloy-transport-ws",
  "futures",
  "pin-project 1.1.5",
- "reqwest 0.12.4",
+ "reqwest 0.12.5",
  "serde",
  "serde_json",
  "tokio",
@@ -543,7 +543,7 @@ source = "git+https://github.com/alloy-rs/alloy.git?rev=607359a8d7ba7543d702da5d
 dependencies = [
  "alloy-json-rpc",
  "alloy-transport",
- "reqwest 0.12.4",
+ "reqwest 0.12.5",
  "serde_json",
  "tower",
  "tracing",
@@ -654,7 +654,7 @@ checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 [[package]]
 name = "aptos-abstract-gas-usage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-gas-algebra",
@@ -667,7 +667,7 @@ dependencies = [
 [[package]]
 name = "aptos-accumulator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -677,7 +677,7 @@ dependencies = [
 [[package]]
 name = "aptos-aggregator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -692,7 +692,7 @@ dependencies = [
 [[package]]
 name = "aptos-api"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -738,7 +738,7 @@ dependencies = [
 [[package]]
 name = "aptos-api-types"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -768,7 +768,7 @@ dependencies = [
 [[package]]
 name = "aptos-bcs-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "hex",
@@ -777,7 +777,7 @@ dependencies = [
 [[package]]
 name = "aptos-bitvec"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -786,7 +786,7 @@ dependencies = [
 [[package]]
 name = "aptos-block-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -822,7 +822,7 @@ dependencies = [
 [[package]]
 name = "aptos-block-partitioner"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -844,7 +844,7 @@ dependencies = [
 [[package]]
 name = "aptos-bounded-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "futures",
  "rustversion",
@@ -854,7 +854,7 @@ dependencies = [
 [[package]]
 name = "aptos-build-info"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "shadow-rs",
 ]
@@ -862,14 +862,14 @@ dependencies = [
 [[package]]
 name = "aptos-cached-packages"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-framework",
  "aptos-package-builder",
  "aptos-types",
  "bcs 0.1.4",
- "include_dir 0.7.3",
+ "include_dir 0.7.4",
  "move-core-types",
  "once_cell",
 ]
@@ -877,7 +877,7 @@ dependencies = [
 [[package]]
 name = "aptos-channels"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -889,7 +889,7 @@ dependencies = [
 [[package]]
 name = "aptos-compression"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -901,7 +901,7 @@ dependencies = [
 [[package]]
 name = "aptos-config"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -935,7 +935,7 @@ dependencies = [
 [[package]]
 name = "aptos-consensus-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -958,7 +958,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto-derive",
@@ -1004,7 +1004,7 @@ dependencies = [
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -1014,7 +1014,7 @@ dependencies = [
 [[package]]
 name = "aptos-data-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-config",
  "aptos-crypto",
@@ -1045,7 +1045,7 @@ dependencies = [
 [[package]]
 name = "aptos-db"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-accumulator",
@@ -1093,7 +1093,7 @@ dependencies = [
 [[package]]
 name = "aptos-db-indexer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1120,7 +1120,7 @@ dependencies = [
 [[package]]
 name = "aptos-dkg"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1152,7 +1152,7 @@ dependencies = [
 [[package]]
 name = "aptos-drop-helper"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-experimental-runtimes",
  "aptos-infallible",
@@ -1164,7 +1164,7 @@ dependencies = [
 [[package]]
 name = "aptos-event-notifications"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-channels",
@@ -1181,7 +1181,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1215,7 +1215,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor-service"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1252,7 +1252,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor-test-helpers"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1275,7 +1275,7 @@ dependencies = [
 [[package]]
 name = "aptos-executor-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-block-partitioner",
@@ -1297,7 +1297,7 @@ dependencies = [
 [[package]]
 name = "aptos-experimental-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-runtimes",
  "core_affinity",
@@ -1310,7 +1310,7 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-core"
 version = "2.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1344,7 +1344,7 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-metrics-server"
 version = "2.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -1359,7 +1359,7 @@ dependencies = [
 [[package]]
 name = "aptos-framework"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1391,7 +1391,7 @@ dependencies = [
  "either",
  "flate2",
  "hex",
- "include_dir 0.7.3",
+ "include_dir 0.7.4",
  "itertools 0.10.5",
  "libsecp256k1",
  "log",
@@ -1434,7 +1434,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-algebra"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "either",
  "move-core-types",
@@ -1443,7 +1443,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-meter"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -1459,7 +1459,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-profiling"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1482,7 +1482,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-schedule"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-global-constants",
@@ -1497,7 +1497,7 @@ dependencies = [
 [[package]]
 name = "aptos-genesis"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1522,22 +1522,22 @@ dependencies = [
 [[package]]
 name = "aptos-global-constants"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 
 [[package]]
 name = "aptos-id-generator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 
 [[package]]
 name = "aptos-infallible"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 
 [[package]]
 name = "aptos-jellyfish-merkle"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1565,7 +1565,7 @@ dependencies = [
 [[package]]
 name = "aptos-keygen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -1575,7 +1575,7 @@ dependencies = [
 [[package]]
 name = "aptos-language-e2e-tests"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
@@ -1622,7 +1622,7 @@ dependencies = [
 [[package]]
 name = "aptos-ledger"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -1636,7 +1636,7 @@ dependencies = [
 [[package]]
 name = "aptos-log-derive"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -1646,7 +1646,7 @@ dependencies = [
 [[package]]
 name = "aptos-logger"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-infallible",
  "aptos-log-derive",
@@ -1667,7 +1667,7 @@ dependencies = [
 [[package]]
 name = "aptos-memory-usage-tracker"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-meter",
@@ -1681,7 +1681,7 @@ dependencies = [
 [[package]]
 name = "aptos-mempool"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-bounded-executor",
@@ -1721,7 +1721,7 @@ dependencies = [
 [[package]]
 name = "aptos-mempool-notifications"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-runtimes",
  "aptos-types",
@@ -1735,7 +1735,7 @@ dependencies = [
 [[package]]
 name = "aptos-memsocket"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-infallible",
  "bytes 1.6.0",
@@ -1746,7 +1746,7 @@ dependencies = [
 [[package]]
 name = "aptos-metrics-core"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "prometheus",
@@ -1755,7 +1755,7 @@ dependencies = [
 [[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-gas-schedule",
@@ -1781,7 +1781,7 @@ dependencies = [
 [[package]]
 name = "aptos-mvhashmap"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1804,7 +1804,7 @@ dependencies = [
 [[package]]
 name = "aptos-native-interface"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -1821,7 +1821,7 @@ dependencies = [
 [[package]]
 name = "aptos-netcore"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
@@ -1838,7 +1838,7 @@ dependencies = [
 [[package]]
 name = "aptos-network"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -1886,7 +1886,7 @@ dependencies = [
 [[package]]
 name = "aptos-node-resource-metrics"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-build-info",
  "aptos-infallible",
@@ -1902,7 +1902,7 @@ dependencies = [
 [[package]]
 name = "aptos-num-variants"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -1912,7 +1912,7 @@ dependencies = [
 [[package]]
 name = "aptos-openapi"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -1925,7 +1925,7 @@ dependencies = [
 [[package]]
 name = "aptos-package-builder"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1938,7 +1938,7 @@ dependencies = [
 [[package]]
 name = "aptos-peer-monitoring-service-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-config",
  "aptos-types",
@@ -1951,7 +1951,7 @@ dependencies = [
 [[package]]
 name = "aptos-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "crossbeam",
  "proptest",
@@ -1961,7 +1961,7 @@ dependencies = [
 [[package]]
 name = "aptos-protos"
 version = "1.3.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "futures-core",
  "pbjson",
@@ -1974,7 +1974,7 @@ dependencies = [
 [[package]]
 name = "aptos-proxy"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "ipnet",
 ]
@@ -1982,7 +1982,7 @@ dependencies = [
 [[package]]
 name = "aptos-push-metrics"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -1993,7 +1993,7 @@ dependencies = [
 [[package]]
 name = "aptos-rate-limiter"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-infallible",
  "aptos-logger",
@@ -2007,7 +2007,7 @@ dependencies = [
 [[package]]
 name = "aptos-rest-client"
 version = "0.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2033,7 +2033,7 @@ dependencies = [
 [[package]]
 name = "aptos-retrier"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-logger",
  "tokio",
@@ -2042,7 +2042,7 @@ dependencies = [
 [[package]]
 name = "aptos-rocksdb-options"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-config",
  "rocksdb",
@@ -2051,7 +2051,7 @@ dependencies = [
 [[package]]
 name = "aptos-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "rayon",
  "tokio",
@@ -2060,7 +2060,7 @@ dependencies = [
 [[package]]
 name = "aptos-schemadb"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -2077,7 +2077,7 @@ dependencies = [
 [[package]]
 name = "aptos-scratchpad"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-crypto",
  "aptos-drop-helper",
@@ -2097,7 +2097,7 @@ dependencies = [
 [[package]]
 name = "aptos-sdk"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2118,7 +2118,7 @@ dependencies = [
 [[package]]
 name = "aptos-sdk-builder"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -2137,7 +2137,7 @@ dependencies = [
 [[package]]
 name = "aptos-secure-net"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -2156,7 +2156,7 @@ dependencies = [
 [[package]]
 name = "aptos-secure-storage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2178,7 +2178,7 @@ dependencies = [
 [[package]]
 name = "aptos-short-hex-str"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -2189,7 +2189,7 @@ dependencies = [
 [[package]]
 name = "aptos-speculative-state-helper"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -2201,7 +2201,7 @@ dependencies = [
 [[package]]
 name = "aptos-storage-interface"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2233,7 +2233,7 @@ dependencies = [
 [[package]]
 name = "aptos-storage-service-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-channels",
  "aptos-config",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "aptos-storage-service-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-compression",
  "aptos-config",
@@ -2263,7 +2263,7 @@ dependencies = [
 [[package]]
 name = "aptos-table-natives"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-gas-schedule",
@@ -2284,7 +2284,7 @@ dependencies = [
 [[package]]
 name = "aptos-temppath"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -2293,7 +2293,7 @@ dependencies = [
 [[package]]
 name = "aptos-time-service"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-infallible",
  "enum_dispatch",
@@ -2306,7 +2306,7 @@ dependencies = [
 [[package]]
 name = "aptos-types"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -2357,12 +2357,12 @@ dependencies = [
 [[package]]
 name = "aptos-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 
 [[package]]
 name = "aptos-vault-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-crypto",
  "base64 0.13.1",
@@ -2378,7 +2378,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2434,7 +2434,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-genesis"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -2456,7 +2456,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-logging"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "aptos-crypto",
  "aptos-logger",
@@ -2471,7 +2471,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2492,7 +2492,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-validator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "aptos-event-notifications",
@@ -2943,7 +2943,7 @@ dependencies = [
  "pin-project-lite",
  "rustversion",
  "serde",
- "sync_wrapper",
+ "sync_wrapper 0.1.2",
  "tower",
  "tower-layer",
  "tower-service",
@@ -4599,15 +4599,15 @@ dependencies = [
 
 [[package]]
 name = "derive_more"
-version = "0.99.17"
+version = "0.99.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fb810d30a7c1953f91334de7244731fc3f3c10d7fe163338a35b9f640960321"
+checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
 dependencies = [
  "convert_case",
  "proc-macro2 1.0.85",
  "quote 1.0.36",
  "rustc_version 0.4.0",
- "syn 1.0.109",
+ "syn 2.0.66",
 ]
 
 [[package]]
@@ -4706,6 +4706,8 @@ name = "dot-movement"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -5368,6 +5370,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "godfig"
+version = "0.3.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "goldenfile"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5726,9 +5735,9 @@ checksum = "add0ab9360ddbd88cfeb3bd9574a1d85cfdfa14db10b3e21d3700dbc4328758f"
 
 [[package]]
 name = "httparse"
-version = "1.9.3"
+version = "1.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0e7a4dd27b9476dc40cb050d3632d3bba3a70ddbff012285f7f8559a1e7e545"
+checksum = "0fcc0b4a115bf80b728eb8ea024ad5bd707b615bfed49e0665b6e0f86fd082d9"
 
 [[package]]
 name = "httpdate"
@@ -6131,9 +6140,9 @@ dependencies = [
 
 [[package]]
 name = "include_dir"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18762faeff7122e89e0857b02f7ce6fcc0d101d5e9ad2ad7846cc01d61b7f19e"
+checksum = "923d117408f1e49d914f1a379a309cffe4f18c05cf4e3d12e613a15fc81bd0dd"
 dependencies = [
  "glob",
  "include_dir_macros",
@@ -6154,9 +6163,9 @@ dependencies = [
 
 [[package]]
 name = "include_dir_macros"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b139284b5cf57ecfa712bcc66950bb635b31aff41c188e8a4cfc758eca374a3f"
+checksum = "7cab85a7ed0bd5f0e76d93846e0147172bed2e2d3f859bcc33a8d9699cad1a75"
 dependencies = [
  "proc-macro2 1.0.85",
  "quote 1.0.36",
@@ -6954,7 +6963,7 @@ dependencies = [
  "hex",
  "m1-da-light-node-util",
  "rand 0.7.3",
- "reqwest 0.12.4",
+ "reqwest 0.12.5",
  "serde",
  "serde_json",
  "tempfile",
@@ -6995,6 +7004,7 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "dot-movement",
+ "godfig",
  "hex",
  "jsonrpsee 0.20.3",
  "m1-da-light-node-grpc",
@@ -7070,8 +7080,8 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-crypto",
- "aptos-sdk",
  "aptos-types",
+ "godfig",
  "m1-da-light-node-util",
  "rand 0.7.3",
  "serde",
@@ -7121,6 +7131,7 @@ dependencies = [
  "aptos-faucet-core",
  "aptos-framework",
  "aptos-language-e2e-tests",
+ "aptos-logger",
  "aptos-mempool",
  "aptos-sdk",
  "aptos-storage-interface",
@@ -7159,6 +7170,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "tracing-test",
 ]
 
 [[package]]
@@ -7202,6 +7214,7 @@ dependencies = [
  "futures",
  "mcr-settlement-config",
  "movement-types",
+ "serde",
  "serde_json",
  "thiserror",
  "tokio",
@@ -7332,9 +7345,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "miniz_oxide"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87dfd01fe195c66b572b37921ad8803d010623c0aca821bea2302239d155cdae"
+checksum = "b8a240ddb74feaf34a79a7add65a741f3167852fba007066dcac1ca548d89c08"
 dependencies = [
  "adler",
  "simd-adler32",
@@ -7359,93 +7372,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9be0862c1b3f26a88803c4a49de6889c10e608b3ee9344e6ef5b45fb37ad3d1"
 
 [[package]]
-name = "monza-client"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "aptos-sdk",
- "dot-movement",
- "maptos-execution-util",
- "monza-config",
- "once_cell",
- "rand 0.7.3",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "monza-config"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "maptos-execution-util",
- "serde",
- "serde_derive",
- "tokio",
- "toml 0.8.14",
- "tracing",
-]
-
-[[package]]
-name = "monza-faucet-service"
-version = "2.0.1"
-dependencies = [
- "anyhow",
- "aptos-config",
- "aptos-faucet-core",
- "aptos-logger",
- "aptos-sdk",
- "clap 4.5.7",
- "dot-movement",
- "suzuka-config",
- "tokio",
-]
-
-[[package]]
-name = "monza-full-node"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "async-channel",
- "dot-movement",
- "m1-da-light-node-client",
- "maptos-dof-execution",
- "monza-config",
- "movement-types",
- "serde_json",
- "sha2 0.10.8",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
-name = "monza-full-node-setup"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "async-recursion",
- "celestia-rpc",
- "celestia-types",
- "commander",
- "dot-movement",
- "hex",
- "m1-da-light-node-setup",
- "m1-da-light-node-util",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "suzuka-config",
- "tempfile",
- "tokio",
- "tokio-stream",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
 name = "more-asserts"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7454,7 +7380,7 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7471,7 +7397,7 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "backtrace",
@@ -7486,12 +7412,12 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7506,7 +7432,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -7518,7 +7444,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "fail 0.4.0",
@@ -7533,7 +7459,7 @@ dependencies = [
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "clap 4.5.7",
@@ -7550,7 +7476,7 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7596,7 +7522,7 @@ dependencies = [
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "difference",
@@ -7613,7 +7539,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7642,7 +7568,7 @@ dependencies = [
 [[package]]
 name = "move-compiler-v2"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -7675,7 +7601,7 @@ dependencies = [
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -7700,7 +7626,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7720,7 +7646,7 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "clap 4.5.7",
@@ -7738,7 +7664,7 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "codespan",
@@ -7757,7 +7683,7 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7771,7 +7697,7 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7790,7 +7716,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -7809,7 +7735,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "hex",
@@ -7822,7 +7748,7 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "hex",
@@ -7836,7 +7762,7 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "codespan",
@@ -7864,7 +7790,7 @@ dependencies = [
 [[package]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7901,7 +7827,7 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7940,7 +7866,7 @@ dependencies = [
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7970,7 +7896,7 @@ dependencies = [
 [[package]]
 name = "move-prover-bytecode-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -8001,7 +7927,7 @@ dependencies = [
 [[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8029,7 +7955,7 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "abstract-domain-derive",
  "codespan",
@@ -8056,7 +7982,7 @@ dependencies = [
 [[package]]
 name = "move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "hex",
@@ -8079,7 +8005,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "once_cell",
  "serde",
@@ -8088,7 +8014,7 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8106,7 +8032,7 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "better_any",
@@ -8137,7 +8063,7 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "better_any",
  "bytes 1.6.0",
@@ -8162,7 +8088,7 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "anyhow",
  "bytes 1.6.0",
@@ -8177,7 +8103,7 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=27c5f780ec881d93dda2879e303323399e958d80#27c5f780ec881d93dda2879e303323399e958d80"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=20b44f6231514da8db6fad46a5e30c950464754c#20b44f6231514da8db6fad46a5e30c950464754c"
 dependencies = [
  "bcs 0.1.4",
  "derivative",
@@ -8820,7 +8746,7 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.5.1",
+ "redox_syscall 0.5.2",
  "smallvec",
  "windows-targets 0.52.5",
 ]
@@ -9820,9 +9746,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "469052894dcb553421e483e4209ee581a45100d31b4018de03e5a7ad86374a7e"
+checksum = "c82cf8cff14456045f55ec4241383baeff27af886adb72ffb2162f99911de0fd"
 dependencies = [
  "bitflags 2.5.0",
 ]
@@ -9932,7 +9858,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sync_wrapper",
+ "sync_wrapper 0.1.2",
  "system-configuration",
  "tokio",
  "tokio-native-tls",
@@ -9948,9 +9874,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.4"
+version = "0.12.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "566cafdd92868e0939d3fb961bd0dc25fcfaaed179291093b3d43e6b3150ea10"
+checksum = "c7d6d2a27d57148378eb5e111173f4276ad26340ecc5c49a4a2152167a2d6a37"
 dependencies = [
  "base64 0.22.1",
  "bytes 1.6.0",
@@ -9962,6 +9888,7 @@ dependencies = [
  "http-body 1.0.0",
  "http-body-util",
  "hyper 1.3.1",
+ "hyper-rustls",
  "hyper-tls 0.6.0",
  "hyper-util",
  "ipnet",
@@ -9976,7 +9903,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sync_wrapper",
+ "sync_wrapper 1.0.1",
  "system-configuration",
  "tokio",
  "tokio-native-tls",
@@ -10300,7 +10227,7 @@ dependencies = [
  "rustls-webpki 0.102.4",
  "security-framework",
  "security-framework-sys",
- "webpki-roots 0.26.2",
+ "webpki-roots 0.26.3",
  "winapi 0.3.9",
 ]
 
@@ -11184,15 +11111,29 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
+ "aptos-types",
+ "async-trait",
+ "bcs 0.1.4",
+ "buildtime-helpers",
+ "chrono",
+ "commander",
  "dot-movement",
+ "futures",
+ "itertools 0.12.1",
  "maptos-execution-util",
  "mcr-settlement-client",
  "once_cell",
  "rand 0.7.3",
- "reqwest 0.12.4",
+ "rayon",
+ "reqwest 0.12.5",
+ "serde",
  "serde_json",
+ "serde_yaml 0.9.34+deprecated",
  "suzuka-config",
+ "thiserror",
  "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
@@ -11201,7 +11142,9 @@ name = "suzuka-config"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "m1-da-light-node-util",
  "maptos-execution-util",
+ "mcr-settlement-client",
  "mcr-settlement-config",
  "serde",
  "serde_derive",
@@ -11233,6 +11176,7 @@ dependencies = [
  "async-channel",
  "dot-movement",
  "m1-da-light-node-client",
+ "m1-da-light-node-util",
  "maptos-dof-execution",
  "mcr-settlement-client",
  "mcr-settlement-manager",
@@ -11323,6 +11267,12 @@ name = "sync_wrapper"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
+
+[[package]]
+name = "sync_wrapper"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7065abeca94b6a8a577f9bd45aa0867a2238b74e8eb67cf10d492bc39351394"
 
 [[package]]
 name = "synstructure"
@@ -12038,10 +11988,31 @@ dependencies = [
 ]
 
 [[package]]
-name = "triomphe"
-version = "0.1.12"
+name = "tracing-test"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b2cb4fbb9995eeb36ac86fadf24031ccd58f99d6b4b2d7b911db70bddb80d90"
+checksum = "557b891436fe0d5e0e363427fc7f217abf9ccd510d5136549847bdcbcd011d68"
+dependencies = [
+ "tracing-core",
+ "tracing-subscriber 0.3.18",
+ "tracing-test-macro",
+]
+
+[[package]]
+name = "tracing-test-macro"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04659ddb06c87d233c566112c1c9c5b9e98256d9af50ec3bc9c8327f873a7568"
+dependencies = [
+ "quote 1.0.36",
+ "syn 2.0.66",
+]
+
+[[package]]
+name = "triomphe"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6631e42e10b40c0690bf92f404ebcfe6e1fdb480391d15f17cc8e96eeed5369"
 dependencies = [
  "serde",
  "stable_deref_trait",
@@ -12588,9 +12559,9 @@ checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "webpki-roots"
-version = "0.26.2"
+version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c452ad30530b54a4d8e71952716a212b08efd0f3562baa66c29a618b07da7c3"
+checksum = "bd7c23921eeb1713a4e851530e9b9756e4fb0e89978582942612524cf09f01cd"
 dependencies = [
  "rustls-pki-types",
 ]

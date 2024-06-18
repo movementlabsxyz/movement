@@ -9,12 +9,12 @@ pub use passthrough::*;
 pub use sequencer::*;
 
 use m1_da_light_node_grpc::light_node_service_server::{LightNodeService, LightNodeServiceServer};
+use m1_da_light_node_util::config::Config;
 use tonic::transport::Server;
-use m1_da_light_node_util::Config;
 
 pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone {
 	/// Initializes from environment variables.
-	async fn try_from_config(config : Config) -> Result<Self, anyhow::Error>;
+	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error>;
 
 	/// Runs the background tasks.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
