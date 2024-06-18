@@ -109,12 +109,12 @@ impl Default for ExecutionConfig {
 pub enum TestKind {
 	/// Load: try to run all scenario (number_scenarios) concurrently
 	Load { number_scenarios: usize },
-	/// Soak: start min_scenarios at first then increase the number to max_scenarios then decrease and do number_clycle during duration
+	/// Soak: start min_scenarios at first then increase the number to max_scenarios then decrease and do number_cycle during duration
 	Soak {
 		min_scenarios: usize,
 		max_scenarios: usize,
 		duration: std::time::Duration,
-		number_clycle: u32,
+		number_cycle: u32,
 	},
 }
 
@@ -128,7 +128,7 @@ impl TestKind {
 		duration: std::time::Duration,
 		number_cycle: u32,
 	) -> Self {
-		TestKind::Soak { min_scenarios, max_scenarios, duration, number_clycle }
+		TestKind::Soak { min_scenarios, max_scenarios, duration, number_cycle }
 	}
 }
 
@@ -167,16 +167,20 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 		.into_iter()
 		.filter_map(|res| (res.average_execution_time_milli > 0).then_some(res))
 		.collect();
-
-	let average_exec_time = no_zero_exec_time
-		.iter()
-		.map(|res| res.average_execution_time_milli)
-		.sum::<u128>()
-		/ no_zero_exec_time.len() as u128;
-	let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
-		.unwrap_or("Metric  execution result serialization error.".to_string());
-	tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
-	tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
+	if no_zero_exec_time.len() > 0 {
+		let average_exec_time = no_zero_exec_time
+			.iter()
+			.map(|res| res.average_execution_time_milli)
+			.sum::<u128>()
+			/ no_zero_exec_time.len() as u128;
+		let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
+			.unwrap_or("Metric  execution result serialization error.".to_string());
+		tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
+		tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
+	} else {
+		tracing::info!(target:EXEC_LOG_FILTER, "No scenario has been executed");
+		tracing::info!("Scenarios execution: No scenario has been executed");
+	};
 
 	tracing::info!("End test scenario execution.");
 }
@@ -204,7 +208,7 @@ impl TestClient {
 		};
 		let scenario_results = match kind {
 			TestKind::Load { .. } => rt.block_on(self.load_runner(create_scanario.clone())),
-			TestKind::Soak { min_scenarios, max_scenarios, duration, number_clycle } => {
+			TestKind::Soak { min_scenarios, max_scenarios, duration, number_cycle } => {
 				// The scenario that run all the time and part time are divided using the client.
 				// min_scenarios first ids are run permanently, the others client run part time.
 				//ids start at 1.
@@ -221,7 +225,7 @@ impl TestClient {
 					// Part-time scenario duration max: Duration / (number_cycle * 2)
 					// scenario start delta: (Part-time scenario duration max * scenario index / nb scenario) + (Duration * current cycle / nb cycle)
 					let number_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
-					let parttime_scenario_duration = duration / (number_clycle * 2);
+					let parttime_scenario_duration = duration / (number_cycle * 2);
 					vec![]
 				}
 			}
