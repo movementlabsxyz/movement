@@ -70,6 +70,22 @@ impl Local {
 			.await?;
 
 		info!("Starting celestia bridge.");
+		if config.bridge.celestia_bridge_use_replace_args {
+			// Convert Vec<String> to Vec<&str>
+			let args: Vec<&str> = config
+				.bridge
+				.celestia_bridge_replace_args
+				.iter()
+				.map(|arg| arg.as_str())
+				.collect();
+
+			// Convert Vec<&str> to &[&str]
+			let args_slice: &[&str] = &args;
+
+			commander::run_command("celestia", args_slice).await?;
+			return Ok(());
+		}
+
 		// celestia bridge start \
 		// --node.store $CELESTIA_NODE_PATH --gateway \
 		// --core.ip 0.0.0.0 \
@@ -89,13 +105,13 @@ impl Local {
 				&node_store,
 				"--gateway",
 				"--core.ip",
-				&config.bridge.celestia_websocket_connection_hostname,
+				&config.bridge.celestia_websocket_listen_hostname,
 				"--keyring.accname",
 				"validator",
 				"--gateway.addr",
 				"0.0.0.0",
 				"--rpc.addr",
-				&config.bridge.celestia_websocket_connection_hostname,
+				&config.bridge.celestia_websocket_listen_hostname,
 			],
 		)
 		.await?;

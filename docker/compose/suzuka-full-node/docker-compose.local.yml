@@ -13,7 +13,7 @@ services:
         condition: service_completed_successfully
     ports:
       - "26657:26657"
-      - "26658:26658"
+      - "9090:9090"
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 1
@@ -26,6 +26,8 @@ services:
       DOT_MOVEMENT_PATH: /.movement
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "26658:26658"
     depends_on:
       setup:
         condition: service_completed_successfully

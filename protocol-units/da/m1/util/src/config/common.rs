@@ -95,3 +95,30 @@ env_default!(default_celestia_chain_id, "CELESTIA_CHAIN_ID", String, "movement".
 
 // Whether to force a new chain
 env_default!(default_celestia_force_new_chain, "CELESTIA_FORCE_NEW_CHAIN", bool, true);
+
+// Whether to use replace args for Celestia appd
+env_default!(default_celestia_appd_use_replace_args, "CELESTIA_USE_REPLACE_ARGS", bool, false);
+
+// The replacement args for Celestia appd
+pub fn default_celestia_appd_replace_args() -> Vec<String> {
+	match std::env::var("CELESTIA_REPLACE_ARGS") {
+		Ok(val) => val.split(',').map(|s| s.to_string()).collect(),
+		Err(_) => vec![],
+	}
+}
+
+// Whether to use replace args for Celestia bridge
+env_default!(
+	default_celestia_bridge_use_replace_args,
+	"CELESTIA_BRIDGE_USE_REPLACE_ARGS",
+	bool,
+	false
+);
+
+// The replacement args for Celestia bridge
+pub fn default_celestia_bridge_replace_args() -> Vec<String> {
+	match std::env::var("CELESTIA_BRIDGE_REPLACE_ARGS") {
+		Ok(val) => val.split(',').map(|s| s.to_string()).collect(),
+		Err(_) => vec![],
+	}
+}
