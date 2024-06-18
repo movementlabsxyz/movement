@@ -7234,6 +7234,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mcr-settlement-setup"
+version = "0.3.0"
+dependencies = [
+ "alloy-primitives",
+ "anyhow",
+ "dot-movement",
+ "k256",
+ "mcr-settlement-config",
+ "tracing",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11249,6 +11261,7 @@ dependencies = [
  "hex",
  "m1-da-light-node-setup",
  "m1-da-light-node-util",
+ "mcr-settlement-setup",
  "rand 0.7.3",
  "serde",
  "serde_json",
