@@ -6,7 +6,7 @@ interface IAtomicBridgeInitiator {
     event BridgeTransferInitiated(
         bytes32 indexed _bridgeTransferId,
         address indexed _originator,
-        address indexed _recipient,
+        bytes32 indexed _recipient,
         uint256 amount,
         bytes32 _hashLock,
         uint256 _timeLock
@@ -23,6 +23,7 @@ interface IAtomicBridgeInitiator {
     error NonExistentBridgeTransfer();
     error BridgeTransferCompleted();
     error TimeLockNotExpired();
+    error ZeroAddress();
 
     /**
      * @dev Creates a new atomic bridge transfer using native ETH
