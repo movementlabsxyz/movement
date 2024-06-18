@@ -1,17 +1,15 @@
 module malicious_test::moon_coin {
     struct MoonCoin {}
 
-    fun init_module(sender: &signer) {
+    fun init_module(admin: &signer) {
         aptos_framework::managed_coin::initialize<MoonCoin>(
-            sender,
+            admin,
             b"Moon Coin",
             b"MOON",
             6,
             false,
         );
+        aptos_framework::managed_coin::register<MoonCoin>(admin);
     }
 
-    //to test that everything works
-    public entry fun test() { //account: &signer
-    }
 }

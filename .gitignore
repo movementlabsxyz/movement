@@ -10,3 +10,6 @@ state_merkle_db/
 .idea
 .vscode
 .env
+.aptos
+build/
+

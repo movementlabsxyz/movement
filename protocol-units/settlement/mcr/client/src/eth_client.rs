@@ -33,7 +33,7 @@ use std::array::TryFromSliceError;
 
 const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const MAX_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_TX_GAS_LIMIT: u128 = 10_000_000_000_000_000;
+const DEFAULT_TX_GAS_LIMIT: u64 = 10_000_000_000_000_000;
 
 /// Configuration of the MCR settlement client.
 ///
@@ -45,7 +45,7 @@ pub struct Config {
 	pub ws_url: Option<String>,
 	pub signer_private_key: Option<String>,
 	pub mcr_contract_address: String,
-	pub gas_limit: u128,
+	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,
 }
 
@@ -133,7 +133,7 @@ impl
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit,
+			config.gas_limit as u128,
 			config.num_tx_send_retries,
 		)
 		.await

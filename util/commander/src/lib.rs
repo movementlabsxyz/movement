@@ -1,8 +1,9 @@
-use tokio::process::Command;
-use std::process::Stdio;
-use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use anyhow::Result;
 use futures::future::try_join;
+use std::path::Path;
+use std::process::Stdio;
+use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::process::Command;
 
 async fn pipe_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
     reader: R,
@@ -36,15 +37,24 @@ async fn pipe_error_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
 
 /// Runs a command, piping its output to stdout and stderr, and returns the stdout output if successful.
 pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
+    run_command_current_dir::<&str>(command, args, None).await
+}
+
+/// Runs a command, piping its output to stdout and stderr, and returns the stdout output if successful.
+pub async fn run_command_current_dir<P: AsRef<Path>>(command: &str, args: &[&str], current_dir: Option<P>) -> Result<String> {
 
     // print command out with args joined by space
     println!("Running command: {} {}", command, args.join(" "));
 
-    let mut child = Command::new(command)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+    let mut cmd = Command::new(command);
+        cmd.args(args);
+        cmd.stdout(Stdio::piped());
+        cmd.stderr(Stdio::piped());
+    if let Some(path) = current_dir {
+        cmd.current_dir(path);
+    }
+
+    let mut child = cmd.spawn()?;
 
     let stdout = child.stdout.take().ok_or_else(|| {
         anyhow::anyhow!("Failed to capture standard output from command {}", command)
