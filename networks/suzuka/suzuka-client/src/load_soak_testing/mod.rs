@@ -220,8 +220,8 @@ impl TestClient {
 					// max_scenarios - min_scenarios scenarios run part-time depending on the number of cycle.
 					// Part-time scenario duration max: Duration / (number_cycle * 2)
 					// scenario start delta: (Part-time scenario duration max * scenario index / nb scenario) + (Duration * current cycle / nb cycle)
-					let number_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
-					let parttime_scenario_duration = duration / (number_cycle * 2);
+					let _number_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
+					let _parttime_scenario_duration = duration / (number_cycle * 2);
 					vec![]
 				}
 			}

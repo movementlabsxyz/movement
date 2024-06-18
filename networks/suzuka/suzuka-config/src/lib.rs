@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use serde::{Deserialize, Serialize};
 
 use m1_da_light_node_util::config::M1DaLightNodeConfig;

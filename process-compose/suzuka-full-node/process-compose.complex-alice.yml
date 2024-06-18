@@ -13,4 +13,4 @@ processes:
       suzuka-faucet:
         condition: process_healthy
     availability:
-      exit_on_end: false # todo: revert
+      exit_on_end: true

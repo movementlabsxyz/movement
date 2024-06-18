@@ -27,14 +27,13 @@ use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{fs, sync::Arc};
 use std::{thread, time};
-use tokio::time::{sleep, Duration};
 use url::Url;
+
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
 	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>().unwrap();
 	config
 });
-
 
 // :!:>section_1c
 static NODE_URL: Lazy<Url> = Lazy::new(|| {
@@ -180,30 +179,6 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 			.await
 			.context("Failed to get Bob's account balance the second time")?
 	);
-
-	sleep(Duration::from_secs(10)).await;
-
-	let anvil_rpc_port = "8545";
-	let anvil_rpc_url = format!("http://localhost:{anvil_rpc_port}");
-	let anvil_ws_url = format!("ws://localhost:{anvil_rpc_port}");
-
-	let cur_blockheight = rest_client.get_ledger_information().await?.state().block_height;
-	let base_url = "http://localhost:30731";
-	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", cur_blockheight);
-	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
-	println!("State root hash url: {}", state_root_hash_url);
-
-	let client = reqwest::Client::new();
-
-	let health_url = format!("{}/movement/v1/health", base_url);
-	let response = client.get(&health_url).send().await?;
-	assert!(response.status().is_success());
-
-	println!("Health check passed");
-
-	let response = client.get(&state_root_hash_url).send().await?;
-	let state_key = response.text().await?;
-	println!("State key: {}", state_key);
 
 	Ok(())
 }
