@@ -89,13 +89,13 @@ impl Local {
 				&node_store,
 				"--gateway",
 				"--core.ip",
-				"0.0.0.0",
+				&config.bridge.celestia_websocket_connection_hostname,
 				"--keyring.accname",
 				"validator",
 				"--gateway.addr",
 				"0.0.0.0",
 				"--rpc.addr",
-				"0.0.0.0",
+				&config.bridge.celestia_websocket_connection_hostname,
 			],
 		)
 		.await?;
