@@ -4,6 +4,7 @@ use crate::testing::rng::RngSeededClone;
 
 use super::Transaction;
 
+#[derive(Clone)]
 pub struct AbstractBlockchainClient<A, H, R> {
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
 	pub rng: R,

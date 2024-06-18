@@ -31,7 +31,7 @@ async fn test_initiate_bridge_transfer() {
 	let rng = ChaChaRng::from_seed([0u8; 32]);
 	let mut blockchain = AbstractBlockchain::<TestAddress, TestHash, _>::new(rng, "TestBlockchain");
 
-	let monitor = blockchain.add_event_listener();
+	let mut monitor = blockchain.add_event_listener();
 
 	let initiator_address = InitiatorAddress(TestAddress("initiator"));
 	let recipient_address = RecipientAddress(TestAddress("recipient"));
@@ -50,7 +50,7 @@ async fn test_initiate_bridge_transfer() {
 	blockchain.transaction_sender.unbounded_send(transaction).unwrap();
 
 	let event = blockchain.next().await;
-	let monitor_event = monitor.try_iter().next();
+	let monitor_event = monitor.next().await;
 	assert!(event.is_some());
 	assert!(monitor_event.is_some());
 	assert_eq!(event, monitor_event);
@@ -87,7 +87,7 @@ async fn test_lock_bridge_transfer() {
 	let rng = ChaChaRng::from_seed([0u8; 32]);
 	let mut blockchain = AbstractBlockchain::<TestAddress, TestHash, _>::new(rng, "TestBlockchain");
 
-	let monitor = blockchain.add_event_listener();
+	let mut monitor = blockchain.add_event_listener();
 
 	let bridge_transfer_id = BridgeTransferId(TestHash("unique_hash"));
 	let hash_lock = HashLock(TestHash("hash_lock"));
@@ -106,7 +106,7 @@ async fn test_lock_bridge_transfer() {
 	blockchain.transaction_sender.unbounded_send(transaction).unwrap();
 
 	let event = blockchain.next().await;
-	let monitor_event = monitor.try_iter().next();
+	let monitor_event = monitor.next().await;
 	assert!(monitor_event.is_some());
 	assert!(event.is_some());
 	assert_eq!(event, monitor_event);
