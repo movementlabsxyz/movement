@@ -11,6 +11,53 @@ use crate::{
 	types::{BridgeAddressType, BridgeHashType},
 };
 
+#[macro_export]
+macro_rules! struct_blockchain_service {
+	($Name:ident, $Address:ty, $Hash:ty, $InitiatorContract:ty, $CounterpartyContract:ty, $InitiatorMonitoring:ty, $CounterpartyMonitoring:ty) => {
+		pub struct $Name {
+			pub initiator_contract: $InitiatorContract,
+			pub initiator_monitoring: $InitiatorMonitoring,
+			pub counterparty_contract: $CounterpartyContract,
+			pub counterparty_monitoring: $CounterpartyMonitoring,
+		}
+
+		impl BlockchainService for $Name {
+			type Address = $Address;
+			type Hash = $Hash;
+
+			type InitiatorContract = $InitiatorContract;
+			type CounterpartyContract = $CounterpartyContract;
+			type InitiatorMonitoring = $InitiatorMonitoring;
+			type CounterpartyMonitoring = $CounterpartyMonitoring;
+
+			fn initiator_contract(&self) -> &Self::InitiatorContract {
+				&self.initiator_contract
+			}
+
+			fn counterparty_contract(&self) -> &Self::CounterpartyContract {
+				&self.counterparty_contract
+			}
+
+			fn initiator_monitoring(&mut self) -> &mut Self::InitiatorMonitoring {
+				&mut self.initiator_monitoring
+			}
+
+			fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring {
+				&mut self.counterparty_monitoring
+			}
+		}
+
+		impl Stream for $Name {
+			type Item = BlockchainEvent<$Address, $Hash>;
+
+			fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+				let this = self.get_mut();
+				this.poll_next_event(cx)
+			}
+		}
+	};
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum BlockchainEvent<A, H> {
 	InitiatorEvent(BridgeContractInitiatorEvent<A, H>),
