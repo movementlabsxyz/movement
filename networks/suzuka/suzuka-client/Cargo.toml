@@ -32,7 +32,6 @@ maptos-execution-util = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
-
 rayon = { workspace = true }
 serde  = { workspace = true, features = ["derive"] }
 serde_json  = { workspace = true }

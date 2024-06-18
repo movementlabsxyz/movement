@@ -45,9 +45,6 @@ impl BasicScenario {
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
 	async fn run(self: Box<Self>) -> Result<()> {
-		// let _ =
-		// 	tokio::time::sleep(tokio::time::Duration::from_millis(1000 * (self.id as u64))).await;
-
 		let suzuka_config = maptos_execution_util::config::Config::default();
 		let node_url = Url::from_str(
 			format!(
