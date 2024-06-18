@@ -49,7 +49,7 @@ jobs:
       run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
 
   m1-da-light-node:
-    if: false
+    if: false # this is effectively tested by the above
     strategy:
       matrix:
         include:
