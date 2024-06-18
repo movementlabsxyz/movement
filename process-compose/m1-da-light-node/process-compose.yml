@@ -4,28 +4,43 @@ environment:
 
 processes:
 
+  build:
+    command: |
+      exit 0
+
+  setup:
+    command: |
+      exit 0
+    depends_on:
+      build:
+        condition: process_completed_successfully
+
   celestia-light-node:
     command: |
-      ./scripts/celestia/celestia-local
+      ./scripts/services/celestia/celestia-local
     readiness_probe:
       exec:
         command: echo "true"
+    depends_on:
+      setup:
+        condition: process_completed_successfully
 
   celestia-light-node-synced:
     command: |
-      cargo run --bin wait-for-celestia-light-node
+      wait-for-celestia-light-node
     depends_on:
       celestia-light-node:
         condition: process_healthy
 
   m1-da-light-node:
     command: |
-      ./target/$CARGO_PROFILE/m1-da-light-node
+      m1-da-light-node
     depends_on:
-      m1-da-light-node-verifier-tests:
-        condition: process_completed_successfully
       celestia-light-node:
         condition: process_healthy
+      celestia-light-node-synced:
+        condition: process_completed_successfully
     readiness_probe:
+      initial_delay_seconds: 5
       exec:
         command: echo "true"

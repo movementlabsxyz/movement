@@ -1,8 +1,8 @@
 [package]
 name = "suzuka-client"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -37,6 +37,11 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
 url = { workspace = true }
 
+[dev-dependencies]
+reqwest = { workspace = true }
+mcr-settlement-client = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
 
 [lints]
 workspace = true

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+mkdir -p $DOT_MOVEMENT
+mkdir -p $DOT_MOVEMENT/env

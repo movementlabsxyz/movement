@@ -6,6 +6,7 @@ processes:
 
   suzuka-client-tests:
     command: |
+      set -e
       cargo test -p suzuka-client -- --test-threads=1
     depends_on:
       suzuka-full-node:

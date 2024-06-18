@@ -1,0 +1,27 @@
+[package]
+name = "maptos-execution-util"
+description = "Executor for the AptosVM"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aptos-types = { workspace = true }
+aptos-sdk = { workspace = true }
+m1-da-light-node-util = { workspace = true }
+anyhow = { workspace = true }
+aptos-crypto = { workspace = true, features = ["cloneable-private-keys"] }
+rand = { workspace = true }
+tempfile = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+serde_derive = { workspace = true }
+toml = { workspace = true }
+

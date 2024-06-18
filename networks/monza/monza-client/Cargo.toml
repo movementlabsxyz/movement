@@ -1,8 +1,8 @@
 [package]
 name = "monza-client"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -19,6 +19,8 @@ tokio = { workspace = true }
 url = { workspace = true }
 rand = { workspace = true }
 maptos-execution-util = { workspace = true }
+dot-movement = { workspace = true }
+monza-config = { workspace = true }
 
 [lints]
 workspace = true

@@ -53,6 +53,7 @@ contract LockedTokenTest is Test {
         assert(underlyingToken.balanceOf(address(token)) == 100);
         assert(underlyingToken.balanceOf(alice) == 0);
 
+        vm.warp(block.timestamp + 1);
         // cannot release locked tokens
         vm.prank(alice);
         token.release();
@@ -61,7 +62,7 @@ contract LockedTokenTest is Test {
         assert(underlyingToken.balanceOf(alice) == 0);
 
         // tick forward
-        vm.warp(101);
+        vm.warp(block.timestamp + 101);
 
         // release locked tokens
         vm.prank(alice);
@@ -105,6 +106,7 @@ contract LockedTokenTest is Test {
         assert(underlyingToken.balanceOf(alice) == 0);
 
         // cannot release locked tokens
+        vm.warp(block.timestamp + 1);
         vm.prank(alice);
         token.release();
         assert(token.balanceOf(alice) == 100);
@@ -116,7 +118,7 @@ contract LockedTokenTest is Test {
         assert(token.balanceOf(alice) == 150);
 
         // tick forward
-        vm.warp(101);
+        vm.warp(block.timestamp + 101);
 
         // release locked tokens
         vm.prank(alice);
