@@ -13,6 +13,7 @@ members = [
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
+    "protocol-units/settlement/mcr/setup",
     "protocol-units/movement-rest",
     "util/*",
     "util/buildtime/buildtime-helpers",

@@ -3,7 +3,9 @@ use mcr_settlement_config::Config;
 
 use std::future::Future;
 
-pub mod local;
+mod local;
+
+pub use local::Local;
 
 /// Abstraction trait for MCR settlement setup strategies.
 pub trait Setup {
