@@ -17,6 +17,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	let local = Local::new();
 	let config = local.setup(dot_movement.clone(), config).await?;
+	tracing::info!("SuzukaFullNodeSetup: Finished setup with config: {:#?}", config);
 
 	dot_movement.try_write_config_to_json(&config)?;
 
