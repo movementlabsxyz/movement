@@ -11,7 +11,7 @@ use url::Url;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let path = dot_movement.get_path().join("config.toml");
+	let path = dot_movement.path().join("config.toml");
 	suzuka_config::Config::try_from_toml_file(&path).unwrap()
 });
 

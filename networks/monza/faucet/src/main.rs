@@ -30,7 +30,7 @@ impl Args {
 async fn main() -> Result<()> {
 
     let dot_movement = dot_movement::DotMovement::try_from_env()?;
-    let path = dot_movement.get_path().join("config.toml");
+    let path = dot_movement.path().join("config.toml");
     let config = suzuka_config::Config::try_from_toml_file(&path)?;
 
     let listener_url = config.execution_config.try_aptos_config()?.try_aptos_faucet_listen_url()?;

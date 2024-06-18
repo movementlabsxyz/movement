@@ -1,11 +1,14 @@
+use dot_movement::DotMovement;
+use suzuka_config::Config;
+
+use std::future::Future;
+
 pub mod local;
 
-pub trait SuzukaFullNodeSetupOperations {
-
-    async fn setup(
-        &self,
-        dot_movement : dot_movement::DotMovement,
-        config : suzuka_config::Config
-    ) -> Result<suzuka_config::Config, anyhow::Error>;
-
+pub trait Setup {
+	fn setup(
+		&self,
+		dot_movement: &DotMovement,
+		config: Config,
+	) -> impl Future<Output = Result<Config, anyhow::Error>> + Send;
 }
