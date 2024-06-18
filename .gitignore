@@ -15,3 +15,6 @@ state_merkle_db/
 .vscode
 .data
 .env
+.aptos
+build/
+

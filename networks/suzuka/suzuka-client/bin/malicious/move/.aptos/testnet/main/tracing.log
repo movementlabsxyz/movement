@@ -1,2 +1,0 @@
-{"timestamp":"2024-06-12T13:47:41.125769Z","level":"INFO","message":"Binding host services to 127.0.0.1","filename":"crates/aptos/src/node/local_testnet/mod.rs","line_number":247,"threadName":"main","threadId":"ThreadId(1)"}
-{"timestamp":"2024-06-12T13:47:41.560730Z","level":"ERROR","message":"[Indexer Cache] Failed to connect to indexer data service gRPC server: transport error","address":"http://127.0.0.1:50051/","filename":"ecosystem/indexer-grpc/indexer-grpc-utils/src/lib.rs","line_number":84,"threadName":"main","threadId":"ThreadId(1)"}

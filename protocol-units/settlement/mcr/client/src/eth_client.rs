@@ -120,8 +120,8 @@ impl
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit,
-			config.tx_send_retries,
+			config.gas_limit as u128,
+			config.num_tx_send_retries,
 		)
 		.await?;
 		if let Some(pid) = config.anvil_process_pid {

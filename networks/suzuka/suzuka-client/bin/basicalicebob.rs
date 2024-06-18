@@ -51,17 +51,34 @@ impl Scenario for BasicScenario {
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
 		let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
+		//		let suzuka_config = maptos_execution_util::config::Config::default();
 		let node_url = Url::from_str(
-			format!("http://{}", suzuka_config.aptos_config.aptos_rest_listen_url.as_str())
-				.as_str(),
+			format!(
+				"http://{}",
+				suzuka_config
+					.aptos_config
+					.as_ref()
+					.and_then(|conf| conf.aptos_rest_listen_url.as_ref())
+					.expect("Rest url not defined in Config")
+					.as_str()
+			)
+			.as_str(),
 		)
-		.unwrap();
+		.expect("Rest url in Config is badly formated");
 
 		let faucet_url = Url::from_str(
-			format!("http://{}", suzuka_config.aptos_config.aptos_faucet_listen_url.as_str())
-				.as_str(),
+			format!(
+				"http://{}",
+				suzuka_config
+					.aptos_config
+					.as_ref()
+					.and_then(|conf| conf.aptos_faucet_listen_url.as_ref())
+					.expect("Faucet url not defined in Config")
+					.as_str()
+			)
+			.as_str(),
 		)
-		.unwrap();
+		.expect("Faucet url in Config is badly formated");
 
 		// :!:>section_1a
 		let rest_client = Client::new(node_url.clone());
