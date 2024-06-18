@@ -14,7 +14,6 @@ path = "src/lib.rs"
 
 [dependencies]
 aptos-types = { workspace = true }
-aptos-sdk = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 anyhow = { workspace = true }
 aptos-crypto = { workspace = true, features = ["cloneable-private-keys"] }

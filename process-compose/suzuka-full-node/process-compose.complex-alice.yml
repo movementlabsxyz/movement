@@ -4,13 +4,13 @@ environment:
 
 processes:
 
-  suzuka-client-tests:
+  complex-alice-tests:
     command: |
-      cargo test -p suzuka-client test_example_interaction -- --test-threads=1
+      cargo test -p suzuka-client test_complex_alice -- --nocapture
     depends_on:
       suzuka-full-node:
         condition: process_healthy
       suzuka-faucet:
         condition: process_healthy
     availability:
-      exit_on_end: true
+      exit_on_end: false # todo: revert

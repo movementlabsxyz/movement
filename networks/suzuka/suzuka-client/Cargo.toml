@@ -13,6 +13,7 @@ rust-version = { workspace = true }
 
 [dependencies]
 aptos-sdk = { workspace = true }
+aptos-types = { workspace = true }
 anyhow = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
@@ -27,6 +28,12 @@ maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+commander = { workspace = true }
+buildtime-helpers = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+bcs = { workspace = true }
 
 [lints]
 workspace = true

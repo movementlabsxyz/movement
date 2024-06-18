@@ -223,7 +223,7 @@ impl LightNodeV1 {
 	}
 
 	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let timestamp = chrono::Utc::now().timestamp() as u64;
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		Ok(Blob {
 			data: blob.data,

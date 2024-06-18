@@ -9,5 +9,9 @@ state_merkle_db/
 .movement
 .idea
 .vscode
+<<<<<<< HEAD
 .env
 .data
+=======
+.data
+>>>>>>> l-monninger/timestamp-fix
