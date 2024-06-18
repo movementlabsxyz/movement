@@ -22,7 +22,8 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
-## `m1-da-light-node`
+## Running Natively
+### `m1-da-light-node`
 
 - **Features**:
     - `build`: Build the `m1-da-light-node` binaries.
@@ -36,7 +37,7 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 just m1-da-light-node native build.setup.test.local
 ```
 
-## `suzuka-full-node`
+### `suzuka-full-node`
 
 - **Features**:
     - `build`: Build the `suzuka-full-node` binaries.
@@ -48,6 +49,28 @@ just m1-da-light-node native build.setup.test.local
 # example test with local
 just monza-full-node native build.setup.test.local
 ```
+
+## Run with Docker Compose
+When running with `docker compose` specif your revision in a file `.env` at the root of the project. The file should look like this:
+
+```bash
+REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
+```
+
+### `suzuka-full-node`
+
+- **Features**:
+    - `setup`: Run setup for new `suzuka-full-node` network with single node.
+    - `local`: Run a local Celesta Data Availability service.
+
+**Note:** Currently, both `setup` and `local` must be used. We only support running the `suzuka-full-node` with a local Celesta Data Availability service via Docker Compose.
+
+```bash
+# example setup with local
+just suzuka-full-node docker-compose setup.local
+```
+
+**Note:** if you want to recreate the network, but not rely on the just target above, please read through the scripts to identify the correct `docker-compose` files to run.
 
 ## Troubleshooting
 

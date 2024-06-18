@@ -7,7 +7,7 @@ use aptos_faucet_core::{
 	funder::ApiConnectionConfig,
 	server::{self, Server},
 };
-use tracing::info;
+use aptos_logger::info;
 use aptos_sdk::crypto::{ed25519::Ed25519PrivateKey, ValidCryptoMaterialStringExt};
 use clap::Parser;
 
@@ -62,6 +62,9 @@ async fn main() -> Result<()> {
 		server => server,
 	};
 	root_args.server = modified_server;
+
+	aptos_logger::Logger::builder().level(aptos_logger::Level::Info).build();
+
 	info!("Running with root args: {:#?}", root_args);
 
 	root_args.run_command().await
