@@ -14,4 +14,6 @@ docs/
 
 # Dotenv file
 .env
+
+lib/
 .vscode/

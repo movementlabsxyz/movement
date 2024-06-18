@@ -22,6 +22,7 @@ tracing = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-api = { workspace = true }
 aptos-types = { workspace = true }
+aptos-sdk = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
 maptos-fin-view = { workspace = true }

@@ -65,6 +65,8 @@ maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
 aptos-logger = { workspace = true }
 
+movement-rest = { workspace = true }
+
 dirs = { workspace = true }
 tempfile = { workspace = true }
 tracing-test = { workspace = true }

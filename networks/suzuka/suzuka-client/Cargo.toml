@@ -44,5 +44,14 @@ tracing = { workspace = true }
 url = { workspace = true }
 
 
+[dev-dependencies]
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+
+maptos-execution-util = { workspace = true }
+mcr-settlement-client = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
+
 [lints]
 workspace = true

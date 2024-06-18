@@ -1,6 +1,5 @@
 use std::{sync::Arc, time::Duration};
 
-use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
@@ -197,11 +196,14 @@ impl<T: DynOptFinExecutor + Send + Sync + Clone> MonzaFullNode for MonzaPartialN
 }
 
 impl MonzaPartialNode<Executor> {
-	pub async fn try_from_env() -> Result<Self, anyhow::Error> {
+	pub async fn try_from_config(config: monza_config::Config) -> Result<Self, anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
-		let executor =
-			Executor::try_from_env(tx).context("Failed to get executor from environment")?;
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}",
+			config.execution_config.light_node_config.try_service_address()?
+		))
+		.await?;
+		let executor = Executor::try_from_config(tx, config.execution_config)?;
 		Self::bound(executor, light_node_client)
 	}
 }

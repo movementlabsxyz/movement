@@ -32,4 +32,16 @@ contract MOVETokenTest is Test {
 
     }
 
+    function testGrants() public {
+
+        MOVEToken token = new MOVEToken();
+
+        // Call the initialize function
+        token.initialize();
+
+        // Check the token details
+        assertEq(token.hasRole(token.MINTER_ROLE(), address(this)), true);
+
+    }
+
 }

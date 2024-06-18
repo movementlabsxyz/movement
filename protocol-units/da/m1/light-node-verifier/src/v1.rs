@@ -86,14 +86,17 @@ pub mod test {
 	/// todo: Investigate why this test sporadically fails.
 	#[tokio::test]
 	pub async fn test_valid_verifies() -> Result<(), anyhow::Error> {
-		let config = Config::try_from_env()?;
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let path = dot_movement.get_path().join("config.toml");
+		let config = Config::try_from_toml_file(&path).unwrap_or_default();
 		let client = Arc::new(config.connect_celestia().await?);
+		let celestia_namespace = config.try_celestia_namespace()?;
 
 		let verifier =
-			V1Verifier { client: client.clone(), namespace: config.celestia_namespace.clone() };
+			V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-		let blob = Blob::new(config.celestia_namespace.clone(), data.clone())?;
+		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
 
 		let height = client.blob_submit(&[blob], GasPrice::default()).await?;
 
@@ -106,14 +109,17 @@ pub mod test {
 
 	#[tokio::test]
 	pub async fn test_absent_does_not_verify() -> Result<(), anyhow::Error> {
-		let config = Config::try_from_env()?;
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let path = dot_movement.get_path().join("config.toml");
+		let config = Config::try_from_toml_file(&path).unwrap_or_default();
 		let client = Arc::new(config.connect_celestia().await?);
+		let celestia_namespace = config.try_celestia_namespace()?;
 
 		let verifier =
-			V1Verifier { client: client.clone(), namespace: config.celestia_namespace.clone() };
+			V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-		let blob = Blob::new(config.celestia_namespace.clone(), data.clone())?;
+		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
 
 		let height = client.blob_submit(&[blob], GasPrice::default()).await?;
 
@@ -137,14 +143,17 @@ pub mod test {
 
 	#[tokio::test]
 	pub async fn test_wrong_height_does_not_verify() -> Result<(), anyhow::Error> {
-		let config = Config::try_from_env()?;
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let path = dot_movement.get_path().join("config.toml");
+		let config = Config::try_from_toml_file(&path).unwrap_or_default();
 		let client = Arc::new(config.connect_celestia().await?);
+		let celestia_namespace = config.try_celestia_namespace()?;
 
 		let verifier =
-			V1Verifier { client: client.clone(), namespace: config.celestia_namespace.clone() };
+			V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-		let blob = Blob::new(config.celestia_namespace.clone(), data.clone())?;
+		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
 
 		let height = client.blob_submit(&[blob], GasPrice::default()).await?;
 

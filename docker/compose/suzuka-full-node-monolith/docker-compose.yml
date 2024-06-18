@@ -1,7 +1,7 @@
 services:
   suzuka-full-node:
-    image: mvlbs/movement:7cb00d17d88e74a42c201e7993b3c22505d1a833
-    container_name: suzuka-full-node-monolith
+    image: mvlbs/movement:2f75b348936c0538a8d0aa766ea475235a32a931
+    container_name: suzuka-full-node
     ports:
       - "30370:30730" # m1 da light node rpc
       - "30371:30731" # aptos api
