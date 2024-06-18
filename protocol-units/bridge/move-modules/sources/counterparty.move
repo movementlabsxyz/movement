@@ -2,7 +2,7 @@ module MoveBridge::AtomicBridgeCounterParty {
     use std::signer;
     use std::event;
     use std::vector;
-    use std::timestamp;
+    use aptos_framework::timestamp;
     use aptos_std::smart_table::{Self, SmartTable};
     use MOVETH::moveth;
 
@@ -154,11 +154,12 @@ module MoveBridge::AtomicBridgeCounterParty {
     #[test(creator = @MoveBridge)]
     fun test_lock_bridge_transfer_assets(
         creator: &signer,
-    ) {
+    ) acquires BridgeTransferStore {
+        timestamp::set_time_has_started_for_testing(creator);
         let initiator = signer::address_of(creator); 
-        let recipient = account(1);
-        let moveth_minter = account(2);
-        AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
+        let recipient = @0xface; 
+        let moveth_minter = @0xdead; 
+        initialize(creator, moveth_minter);
 
         let bridge_transfer_id = b"transfer1";
         let hash_lock = b"hashlock1";
@@ -166,7 +167,7 @@ module MoveBridge::AtomicBridgeCounterParty {
         let amount = 100;
 
         let result = lock_bridge_transfer_assets(
-            &initiator,
+            creator,
             bridge_transfer_id,
             hash_lock,
             time_lock,
@@ -176,8 +177,8 @@ module MoveBridge::AtomicBridgeCounterParty {
 
         assert!(result, 1);
 
-        // Verify that the transfer is stored in pending_transfers
-        let bridge_store = borrow_global<BridgeTransferStore>(initiator);
+        //Verify that the transfer is stored in pending_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
         let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
         assert!(transfer_details.recipient == recipient, 2);
         assert!(transfer_details.amount == amount, 3);
