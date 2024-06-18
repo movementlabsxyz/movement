@@ -1,8 +1,9 @@
-import {console} from "forge-std/Test.sol";
-import "./IAtomicBridgeInitiator.sol";
-import "./WETH/interfaces/IWETH10.sol";
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.22;
+
+import {console} from "forge-std/Test.sol";
+import {IAtomicBridgeInitiator} from "./interfaces/IAtomicBridgeInitiator.sol";
+import {IWETH10} from "./WETH/interfaces/IWETH10.sol";
 
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
     struct BridgeTransfer {
@@ -10,12 +11,11 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
         address originator;
         address recipient;
         bytes32 hashLock;
-        uint timeLock;
-        bool exists;
+        uint256 timeLock;
+        bool completed;
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-    mapping(bytes32 => BridgeTransfer) public completedBridgeTransfers;
     IWETH10 public weth;
 
     constructor(address _weth) {
@@ -24,114 +24,68 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator {
 
     function initiateBridgeTransfer(
         uint256 _wethAmount,
-        address _originator, 
-        address _recipient, 
-        bytes32 _hashLock, 
-        uint _timeLock
+        address _originator,
+        address _recipient,
+        bytes32 _hashLock,
+        uint256 _timeLock
     ) external payable override returns (bytes32 _bridgeTransferId) {
         console.log("initiateBridgeTransfer");
-        uint256 totalAmount = _wethAmount;
-
-        // If msg.value is greater than 0, convert ETH to WETH and add to total amount
-        if (msg.value > 0) {
-            weth.deposit{value: msg.value}();
-            //Transfer WETH to this contract, revert if transfer fails
-            require(weth.transfer(address(this), msg.value), "WETH transfer failed");
-            totalAmount += msg.value;
-        }
-
-        // Ensure there is a valid total amount
-        require(totalAmount > 0, "Total amount must be greater than 0");
-
-        _bridgeTransferId = keccak256(
-            abi.encodePacked(
-                _originator, 
-                _recipient, 
-                _hashLock, 
-                _timeLock, 
-                block.timestamp
-        ));
-
+        uint256 ethAmount = msg.value;
+        uint256 totalAmount = _wethAmount + ethAmount;
+        _bridgeTransferId = keccak256(abi.encodePacked(_originator, _recipient, _hashLock, _timeLock, block.timestamp));
         // Check if the bridge transfer already exists
-        require(bridgeTransfers[_bridgeTransferId].amount == 0, "Bridge transfer already exists");
+        if (bridgeTransfers[_bridgeTransferId].amount != 0) revert BridgeTransferExists();
+        // Ensure there is a valid total amount
+        if (totalAmount == 0) revert ZeroAmount();
+        //Transfer WETH to this contract, revert if transfer fails
+        if (!weth.transfer(address(this), wethAmount)) revert WETHTransferFailed();
+        // If msg.value is greater than 0, convert ETH to WETH
+        if (ethAmount > 0) weth.deposit{value: ethAmount}();
 
         bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: _originator,
             recipient: _recipient,
             hashLock: _hashLock,
-            timeLock: block.timestamp + _timeLock,
-            exists: true
+            timeLock: block.timestamp + _timeLock
         });
 
-        emit BridgeTransferInitiated(_bridgeTransferId, _originator, _recipient, _hashLock, _timeLock);
+        emit BridgeTransferInitiated(_bridgeTransferId, _originator, _recipient, totalAmount, _hashLock, _timeLock);
         return _bridgeTransferId;
     }
 
     function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 _secret) external override {
+        // Retrieve the bridge transfer
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[_bridgeTransferId];
-        require(bridgeTransfer.exists, "Bridge transfer does not exist");
-        require(keccak256(abi.encodePacked(_secret)) == bridgeTransfer.hashLock, "Invalid secret");
+        uint256 amount = bridgeTransfer.amount;
+        if (amount == 0) revert NonExistentBridgeTransfer();
+        if (bridgeTransfer.completed) revert BridgeTransferCompleted();
+        if (keccak256(abi.encodePacked(_secret)) != bridgeTransfer.hashLock) revert InvalidSecret();
 
-        // Move the bridge transfer to completed
-        completedBridgeTransfers[_bridgeTransferId] = bridgeTransfer;
+        bridgeTransfer.completed = true;
 
-        // Delete from active bridgeTransfers
-        delete bridgeTransfers[_bridgeTransferId];
-
-        payable(bridgeTransfer.recipient).transfer(bridgeTransfer.amount);
+        // todo: we need to verify if transfers are cheaper in weth or eth
+        // then decide on which transfer to use.
+        if (!weth.transfer(bridgeTransfer.recipient, amount)) revert WETHTransferFailed();
+        // payable(bridgeTransfer.recipient).transfer(amount);
 
         emit BridgeTransferCompleted(_bridgeTransferId, _secret);
     }
 
     function refundBridgeTransfer(bytes32 _bridgeTransferId) external override {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[_bridgeTransferId];
-        require(bridgeTransfer.exists, "Bridge transfer does not exist");
-        require(block.timestamp > bridgeTransfer.timeLock, "Timelock has not expired");
+        uint256 amount = bridgeTransfer.amount;
+        if (amount == 0) revert NonExistentBridgeTransfer();
+        if (bridgeTransfer.completed) revert BridgeTransferCompleted();
+        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
 
-        delete bridgeTransfers[_bridgeTransferId];
+        bridgeTransfer.completed = true;
 
-        payable(bridgeTransfer.originator).transfer(bridgeTransfer.amount);
+        // todo: we need to verify if transfers are cheaper in weth or eth
+        // then decide on which transfer to use.
+        if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
+        // payable(bridgeTransfer.originator).transfer(amount);
 
         emit BridgeTransferRefunded(_bridgeTransferId);
     }
-
-    function getBridgeTransferDetail(bytes32 _bridgeTransferId) external view override returns (
-        bool exists, 
-        uint amount, 
-        address originator, 
-        address recipient, 
-        bytes32 hashLock, 
-        uint timeLock
-    ) {
-        BridgeTransfer storage bridgeTransfer = bridgeTransfers[_bridgeTransferId];
-        return (
-            bridgeTransfer.exists, 
-            bridgeTransfer.amount,
-            bridgeTransfer.originator,
-            bridgeTransfer.recipient,
-            bridgeTransfer.hashLock,
-            bridgeTransfer.timeLock
-        );
-    }
-
-    function getCompletedBridgeTransferDetail(bytes32 _bridgeTransferId) external view returns (
-        bool exists, 
-        uint amount, 
-        address originator, 
-        address recipient, 
-        bytes32 hashLock, 
-        uint timeLock
-    ) {
-        BridgeTransfer storage bridgeTransfer = completedBridgeTransfers[_bridgeTransferId];
-        return (
-            bridgeTransfer.exists, 
-            bridgeTransfer.amount, 
-            bridgeTransfer.originator, 
-            bridgeTransfer.recipient, 
-            bridgeTransfer.hashLock, 
-            bridgeTransfer.timeLock
-        );
-    }
 }
-
