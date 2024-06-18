@@ -87,6 +87,9 @@ extra-nix-path = nixpkgs=flake:nixpkgs
 upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/stable/universal
 ```
 
+### `ledger_info.is_some()`
+The current revision does not support graceful restarts of the network from an existing config. For testing purposes, please delete you `.movement` directory and run the setup again.
+
 ## License
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
