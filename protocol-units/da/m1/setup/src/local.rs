@@ -1,4 +1,4 @@
-use crate::M1DaLightNodeSetupOperations;
+use crate::Setup;
 use commander::run_command;
 use dot_movement::DotMovement;
 use m1_da_light_node_util::Config;
@@ -293,7 +293,7 @@ impl Local {
 	}
 }
 
-impl M1DaLightNodeSetupOperations for Local {
+impl Setup for Local {
 	async fn setup(
 		&self,
 		dot_movement: &DotMovement,

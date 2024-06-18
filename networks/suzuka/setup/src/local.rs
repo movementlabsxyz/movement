@@ -1,6 +1,6 @@
-use crate::SuzukaFullNodeSetupOperations;
+use crate::Setup;
 use dot_movement::DotMovement;
-use m1_da_light_node_setup::M1DaLightNodeSetupOperations;
+use m1_da_light_node_setup::Setup as _;
 use mcr_settlement_setup::Setup as _;
 use suzuka_config::Config;
 
@@ -54,7 +54,7 @@ impl Local {
 	}
 }
 
-impl SuzukaFullNodeSetupOperations for Local {
+impl Setup for Local {
 	async fn setup(
 		&self,
 		dot_movement: &DotMovement,

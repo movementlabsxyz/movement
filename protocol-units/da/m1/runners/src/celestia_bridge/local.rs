@@ -48,7 +48,7 @@ impl Local {
 }
 
 impl Runner for Local {
-	async fn run(&self, dot_movement: &DotMovement, config: Config) -> Result<()> {
+	async fn run(&self, _dot_movement: &DotMovement, config: Config) -> Result<()> {
 		let genesis = self.get_genesis_block().await?;
 
 		let node_store = config.try_celestia_node_path()?;

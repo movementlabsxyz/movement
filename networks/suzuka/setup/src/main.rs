@@ -1,4 +1,4 @@
-use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
+use suzuka_full_node_setup::{local::Local, Setup};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {

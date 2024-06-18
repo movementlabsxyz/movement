@@ -1,4 +1,4 @@
-use monza_full_node_setup::{local::Local, MonzaFullNodeSetupOperations};
+use monza_full_node_setup::{local::Local, Setup};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {

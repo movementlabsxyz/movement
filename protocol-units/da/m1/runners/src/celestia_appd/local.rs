@@ -12,7 +12,7 @@ impl Local {
 }
 
 impl Runner for Local {
-	async fn run(&self, dot_movement: &DotMovement, config: Config) -> Result<(), anyhow::Error> {
+	async fn run(&self, _dot_movement: &DotMovement, config: Config) -> Result<(), anyhow::Error> {
 		// celestia-appd start --grpc.enable --home $CELESTIA_APP_PATH --log_level $LOG_LEVEL
 		commander::run_command(
 			"celestia-appd",

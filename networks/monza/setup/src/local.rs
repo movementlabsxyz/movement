@@ -1,6 +1,6 @@
-use crate::MonzaFullNodeSetupOperations;
+use crate::Setup;
 use dot_movement::DotMovement;
-use m1_da_light_node_setup::M1DaLightNodeSetupOperations;
+use m1_da_light_node_setup::Setup as _;
 use monza_config::Config;
 use tracing::info;
 
@@ -36,7 +36,7 @@ impl Local {
 	}
 }
 
-impl MonzaFullNodeSetupOperations for Local {
+impl Setup for Local {
 	async fn setup(
 		&self,
 		dot_movement: &DotMovement,
