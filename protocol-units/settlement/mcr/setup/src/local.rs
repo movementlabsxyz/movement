@@ -10,6 +10,9 @@ use tracing::info;
 
 use std::future::Future;
 
+const DEFAULT_ETH_RPC_PORT: u16 = 8545;
+const DEFAULT_ETH_WS_PORT: u16 = 8545;
+
 /// The local setup strategy for MCR settlement
 #[derive(Debug, Clone)]
 pub struct Local {
@@ -22,6 +25,12 @@ impl Local {
 	/// to configure for Ethernet RPC and WebSocket client access.
 	pub fn new(eth_rpc_port: u16, eth_ws_port: u16) -> Self {
 		Self { eth_rpc_port, eth_ws_port }
+	}
+}
+
+impl Default for Local {
+	fn default() -> Self {
+		Local::new(DEFAULT_ETH_RPC_PORT, DEFAULT_ETH_WS_PORT)
 	}
 }
 
