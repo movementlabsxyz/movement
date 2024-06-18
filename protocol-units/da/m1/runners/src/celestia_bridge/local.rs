@@ -112,6 +112,8 @@ impl Local {
 				&config.bridge.celestia_websocket_listen_hostname,
 				"--rpc.addr",
 				&config.bridge.celestia_websocket_listen_hostname,
+				"--log.level",
+				"error",
 			],
 		)
 		.await?;

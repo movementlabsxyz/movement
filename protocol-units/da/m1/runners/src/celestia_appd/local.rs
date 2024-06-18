@@ -53,6 +53,8 @@ impl Local {
 				&app_path,
 				"--rpc.laddr",
 				format!("tcp://{}", rpc_address).as_str(),
+				"--log_level",
+				"error",
 			],
 		)
 		.await?;

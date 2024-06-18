@@ -3,6 +3,7 @@ use crate::send_eth_tx::SendTxErrorRule;
 use crate::send_eth_tx::UnderPriced;
 use crate::send_eth_tx::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
+// use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use movement_types::{Commitment, Id};
 
@@ -25,10 +26,10 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 
 use anyhow::Context;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use tokio_stream::StreamExt;
 
+use serde::{Deserialize, Serialize};
 use std::array::TryFromSliceError;
 
 const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
@@ -284,6 +285,7 @@ where
 }
 
 #[cfg(test)]
+#[cfg(feature = "integration-tests")]
 mod tests {
 	use super::*;
 	use alloy_primitives::Bytes;
@@ -304,7 +306,6 @@ mod tests {
 	// After genesis ceremony, 2 validator send the commitment for height 1.
 	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
 	// Wait the commitment accepted event.
-	//#[cfg(feature = "integration-tests")]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		//Activate to debug the test.

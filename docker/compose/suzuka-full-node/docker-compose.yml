@@ -24,7 +24,7 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
-      start_period: 5s
+      start_period: 3s
 
   celestia-light-node-synced:
     image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${REV}
@@ -39,7 +39,7 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
-      start_period: 5s
+      start_period: 3s
 
   m1-da-light-node:
     image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
@@ -56,7 +56,7 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
-      start_period: 5s
+      start_period: 3s
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
@@ -73,7 +73,7 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
-      start_period: 5s
+      start_period: 3s
 
   suzuka-faucet-service:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${REV}
