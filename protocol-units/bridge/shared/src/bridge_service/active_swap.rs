@@ -184,7 +184,7 @@ pub enum LockBridgeTransferAssetsError {
 }
 
 async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: BlockchainService>(
-	counterparty_contract: BTo::CounterpartyContract,
+	mut counterparty_contract: BTo::CounterpartyContract,
 	BridgeTransferDetails {
 		bridge_transfer_id,
 		hash_lock,

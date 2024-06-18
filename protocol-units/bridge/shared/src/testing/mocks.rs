@@ -307,7 +307,7 @@ where
 	type Hash = H;
 
 	async fn lock_bridge_transfer_assets(
-		&self,
+		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_hash_lock: HashLock<Self::Hash>,
 		_time_lock: TimeLock,
@@ -318,7 +318,7 @@ where
 	}
 
 	async fn complete_bridge_transfer<S: Send>(
-		&self,
+		&mut self,
 		_bridge_transfer_id: Self::Hash,
 		_secret: S,
 	) -> BridgeContractResult<()> {
@@ -326,14 +326,14 @@ where
 	}
 
 	async fn abort_bridge_transfer(
-		&self,
+		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
-		&self,
+		&mut self,
 		_bridge_transfer_id: Self::Hash,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)

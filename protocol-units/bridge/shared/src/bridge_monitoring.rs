@@ -1,6 +1,6 @@
 use futures::Stream;
 
-use crate::types::{BridgeTransferDetails, BridgeTransferId};
+use crate::types::{BridgeTransferDetails, BridgeTransferId, LockedAssetsDetails};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum BridgeContractInitiatorEvent<A, H> {
@@ -11,7 +11,7 @@ pub enum BridgeContractInitiatorEvent<A, H> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyEvent<A, H> {
-	BridgeTransferLocked(BridgeTransferDetails<A, H>),
+	BridgeTransferLocked(LockedAssetsDetails<A, H>),
 }
 
 pub trait BridgeContractInitiatorMonitoring:

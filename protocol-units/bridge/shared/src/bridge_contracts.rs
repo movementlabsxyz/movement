@@ -56,7 +56,7 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	type Hash: BridgeHashType;
 
 	async fn lock_bridge_transfer_assets(
-		&self,
+		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
@@ -65,18 +65,18 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	) -> bool;
 
 	async fn complete_bridge_transfer<S: Send>(
-		&self,
+		&mut self,
 		bridge_transfer_id: Self::Hash,
 		secret: S,
 	) -> BridgeContractResult<()>;
 
 	async fn abort_bridge_transfer(
-		&self,
+		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()>;
 
 	async fn get_bridge_transfer_details(
-		&self,
+		&mut self,
 		bridge_transfer_id: Self::Hash,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }

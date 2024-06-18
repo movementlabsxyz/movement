@@ -2,7 +2,6 @@ use futures::{channel::mpsc, Stream, StreamExt};
 use std::{
 	collections::HashMap,
 	pin::Pin,
-	sync::mpsc as std_mpsc,
 	task::{Context, Poll},
 };
 
@@ -48,7 +47,7 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
 
-	pub event_listeners: Vec<std_mpsc::Sender<AbstractBlockchainEvent<A, H>>>,
+	pub event_listeners: Vec<mpsc::UnboundedSender<AbstractBlockchainEvent<A, H>>>,
 
 	pub _phantom: std::marker::PhantomData<H>,
 }
@@ -80,8 +79,8 @@ where
 		}
 	}
 
-	pub fn add_event_listener(&mut self) -> std_mpsc::Receiver<AbstractBlockchainEvent<A, H>> {
-		let (sender, receiver) = std_mpsc::channel();
+	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<AbstractBlockchainEvent<A, H>> {
+		let (sender, receiver) = mpsc::unbounded();
 		self.event_listeners.push(sender);
 		receiver
 	}
@@ -186,8 +185,8 @@ where
 		}
 
 		if let Some(event) = this.events.pop() {
-			for listener in &this.event_listeners {
-				let _ = listener.send(event.clone());
+			for listener in &mut this.event_listeners {
+				listener.unbounded_send(event.clone()).expect("listener dropped");
 			}
 			return Poll::Ready(Some(event));
 		}
