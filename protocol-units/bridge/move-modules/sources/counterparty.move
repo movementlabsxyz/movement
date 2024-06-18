@@ -49,7 +49,7 @@ module MoveBridge::AtomicBridgeCounterParty {
         bridge_transfer_id: vector<u8>,
     }
 
-    public entry fun init_module(owner: &signer, moveth_minter: address) {
+    entry fun initialize(owner: &signer, moveth_minter: address) {
         let bridge_transfer_store = BridgeTransferStore {
             pending_transfers: smart_table::new(),
             completed_transfers: smart_table::new(),
@@ -99,11 +99,12 @@ module MoveBridge::AtomicBridgeCounterParty {
         bridge_transfer_id: vector<u8>,
         secret: vector<u8>
     ) acquires BridgeTransferStore {
-        //@TODO with the secret, hash_lock, and hash_algo, verify that the secret is correct.  
-        // This is an update to the original design, but I think it is necessary to ensure that the secret is correct.
         let bridge_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(initiator));
         let details: BridgeTransferDetails = smart_table::remove(&mut bridge_store.pending_transfers, bridge_transfer_id);
         assert!(details.recipient != @0x0, 1); 
+
+        // check secret against details.hash_lock
+
 
         // Mint MOVETH tokens to the recipient
         moveth::mint(initiator, details.recipient, details.amount);
@@ -134,65 +135,54 @@ module MoveBridge::AtomicBridgeCounterParty {
         );
     }
 
-    #[view]
-    public fun get_bridge_transfer_details(
-        initiator: &signer,
-        bridge_transfer_id: vector<u8>
-    ): &BridgeTransferStore acquires BridgeTransferStore {
-        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(initiator));
-        let transfer_details = smart_table::borrow(&bridge_store.pending_transfers, &bridge_transfer_id);
-
-        transfer_details
-    }
-
-
     #[test(creator = @MoveBridge)]
     fun test_initialize(
         creator: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         let owner = signer::address_of(creator);
         let moveth_minter = @0x1; 
-        init_module(creator, moveth_minter);
+        initialize(creator, moveth_minter);
 
         // Verify that the BridgeTransferStore and BridgeConfig have been initialized
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
         let bridge_config = borrow_global<BridgeConfig>(signer::address_of(creator));
 
         assert!(bridge_config.moveth_minter == moveth_minter, 1);
+        assert!(bridge_config.bridge_module_deployer == owner, 2);
     }
 
-    // #[test(creator = @MoveBridge)]
-    // fun test_lock_bridge_transfer_assets(
-    //     creator: &signer,
-    // ) {
-    //     let initiator = signer::address_of(creator); 
-    //     let recipient = account(1);
-    //     let moveth_minter = account(2);
-    //     AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
+    #[test(creator = @MoveBridge)]
+    fun test_lock_bridge_transfer_assets(
+        creator: &signer,
+    ) {
+        let initiator = signer::address_of(creator); 
+        let recipient = account(1);
+        let moveth_minter = account(2);
+        AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
 
-    //     let bridge_transfer_id = b"transfer1".to_vec();
-    //     let hash_lock = b"hashlock1".to_vec();
-    //     let time_lock = 3600;
-    //     let amount = 100;
+        let bridge_transfer_id = b"transfer1";
+        let hash_lock = b"hashlock1";
+        let time_lock = 3600;
+        let amount = 100;
 
-    //     let result = AtomicBridgeCounterParty::lock_bridge_transfer_assets(
-    //         &initiator,
-    //         bridge_transfer_id.clone(),
-    //         hash_lock.clone(),
-    //         time_lock,
-    //         recipient,
-    //         amount
-    //     );
+        let result = lock_bridge_transfer_assets(
+            &initiator,
+            bridge_transfer_id,
+            hash_lock,
+            time_lock,
+            recipient,
+            amount
+        );
 
-    //     assert!(result, 1);
+        assert!(result, 1);
 
-    //     // Verify that the transfer is stored in pending_transfers
-    //     let bridge_store = borrow_global<AtomicBridgeCounterParty::BridgeTransferStore>(signer::address_of(&initiator));
-    //     let transfer_details = smart_table::borrow(&bridge_store.pending_transfers, &bridge_transfer_id);
-    //     assert!(transfer_details.recipient == recipient, 2);
-    //     assert!(transfer_details.amount == amount, 3);
-    //     assert!(transfer_details.hash_lock == hash_lock, 4);
-    // }
+        // Verify that the transfer is stored in pending_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(initiator);
+        let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
+        assert!(transfer_details.recipient == recipient, 2);
+        assert!(transfer_details.amount == amount, 3);
+        assert!(transfer_details.hash_lock == hash_lock, 4);
+    }
 
     // #[test(creator = @Movebridge)]
     // fun test_complete_bridge_transfer(
