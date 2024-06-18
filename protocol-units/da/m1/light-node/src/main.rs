@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // get the dot movement from the environment
     let dot_movement = dot_movement::DotMovement::try_from_env()?;
     // get the path to the configuration file
-    let path = dot_movement.get_path().join("config.toml");
+    let path = dot_movement.path().join("config.toml");
     // get the configuration from the configuration file
     let config = m1_da_light_node_util::Config::try_from_toml_file(&path).unwrap_or_default();
     

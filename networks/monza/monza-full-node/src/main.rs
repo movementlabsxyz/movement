@@ -15,7 +15,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	}
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let path = dot_movement.get_path().join("config.toml");
+	let path = dot_movement.path().join("config.toml");
 	let config = monza_config::Config::try_from_toml_file(&path).unwrap_or_default();
 	let executor = MonzaPartialNode::try_from_config(config)
 		.await
