@@ -222,7 +222,7 @@ dependencies = [
 [[package]]
 name = "alloy-genesis"
 version = "0.1.1"
-source = "git+https://github.com/alloy-rs/alloy.git#fd6116eea4059ab9acf6c86dd5fc98ff75f8103d"
+source = "git+https://github.com/alloy-rs/alloy.git#ad5c84077655db2f0de2c39ca460fd3d0b04453b"
 dependencies = [
  "alloy-primitives",
  "alloy-serde 0.1.1",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "alloy-node-bindings"
 version = "0.1.1"
-source = "git+https://github.com/alloy-rs/alloy.git#fd6116eea4059ab9acf6c86dd5fc98ff75f8103d"
+source = "git+https://github.com/alloy-rs/alloy.git#ad5c84077655db2f0de2c39ca460fd3d0b04453b"
 dependencies = [
  "alloy-genesis 0.1.1",
  "alloy-primitives",
@@ -445,7 +445,7 @@ dependencies = [
 [[package]]
 name = "alloy-serde"
 version = "0.1.1"
-source = "git+https://github.com/alloy-rs/alloy.git#fd6116eea4059ab9acf6c86dd5fc98ff75f8103d"
+source = "git+https://github.com/alloy-rs/alloy.git#ad5c84077655db2f0de2c39ca460fd3d0b04453b"
 dependencies = [
  "alloy-primitives",
  "serde",
@@ -7239,9 +7239,9 @@ checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "miniz_oxide"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87dfd01fe195c66b572b37921ad8803d010623c0aca821bea2302239d155cdae"
+checksum = "b8a240ddb74feaf34a79a7add65a741f3167852fba007066dcac1ca548d89c08"
 dependencies = [
  "adler",
  "simd-adler32",
@@ -10124,7 +10124,7 @@ dependencies = [
  "rustls-webpki 0.102.4",
  "security-framework",
  "security-framework-sys",
- "webpki-roots 0.26.2",
+ "webpki-roots 0.26.3",
  "winapi 0.3.9",
 ]
 
@@ -11840,9 +11840,9 @@ dependencies = [
 
 [[package]]
 name = "triomphe"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b2cb4fbb9995eeb36ac86fadf24031ccd58f99d6b4b2d7b911db70bddb80d90"
+checksum = "e6631e42e10b40c0690bf92f404ebcfe6e1fdb480391d15f17cc8e96eeed5369"
 dependencies = [
  "serde",
  "stable_deref_trait",
@@ -12389,9 +12389,9 @@ checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "webpki-roots"
-version = "0.26.2"
+version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c452ad30530b54a4d8e71952716a212b08efd0f3562baa66c29a618b07da7c3"
+checksum = "bd7c23921eeb1713a4e851530e9b9756e4fb0e89978582942612524cf09f01cd"
 dependencies = [
  "rustls-pki-types",
 ]
