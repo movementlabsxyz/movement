@@ -345,7 +345,7 @@ impl Executor {
 			self.maptos_config.chain.maptos_rest_listen_hostname,
 			self.maptos_config.chain.maptos_rest_listen_port
 		);
-		let listen_url = format!("http://{}", listen_address);
+		let listen_url = format!("http://{:}", listen_address);
 		info!("Starting maptos-opt-executor services at: {:?}", listen_url);
 
 		let api_service = get_api_service(self.context()).server(listen_url.clone());

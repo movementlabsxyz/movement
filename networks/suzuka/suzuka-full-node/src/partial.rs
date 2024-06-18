@@ -272,14 +272,14 @@ impl SuzukaPartialNode<Executor> {
 		let light_node_connection_hostname = match &config.m1_da_light_node.m1_da_light_node_config
 		{
 			m1_da_light_node_util::config::Config::Local(local) => {
-				local.bridge.celestia_rpc_connection_hostname.clone()
+				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
 			}
 		};
 
 		// todo: extract into getter
 		let light_node_connection_port = match &config.m1_da_light_node.m1_da_light_node_config {
 			m1_da_light_node_util::config::Config::Local(local) => {
-				local.bridge.celestia_rpc_connection_port.clone()
+				local.m1_da_light_node.m1_da_light_node_connection_port.clone()
 			}
 		};
 

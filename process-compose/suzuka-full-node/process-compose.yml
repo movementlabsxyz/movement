@@ -49,18 +49,19 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: echo "true"
 
   suzuka-faucet:
+  
     command : |
       suzuka-faucet-service run-simple
     depends_on:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 
