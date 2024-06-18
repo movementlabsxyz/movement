@@ -7,12 +7,14 @@ use std::{
 use test_log::test;
 
 use bridge_shared::{
-	blockchain_service::{BlockchainEvent, BlockchainService},
+	blockchain_service::{BlockchainService, ContractEvent},
+	bridge_contracts::BridgeContractInitiator,
 	bridge_service::BridgeService,
 	testing::{
 		blockchain::{AbstractBlockchain, AbstractBlockchainClient},
 		rng::{RngSeededClone, TestRng},
 	},
+	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 
 use crate::shared::{
@@ -58,10 +60,11 @@ async fn test_bridge_service_integration() {
 		B1CounterpartyContractMonitoring
 	);
 
-	let blockchain_1 = B1Service {
-		initiator_contract: B1Client::build(client_1.clone()),
+	let mut blockchain_1_client = B1Client::build(client_1.clone());
+	let blockchain_1_service = B1Service {
+		initiator_contract: blockchain_1_client.clone(),
 		initiator_monitoring: monitor_1_initiator,
-		counterparty_contract: B1Client::build(client_1),
+		counterparty_contract: blockchain_1_client.clone(),
 		counterparty_monitoring: monitor_1_counterparty,
 	};
 
@@ -75,17 +78,35 @@ async fn test_bridge_service_integration() {
 		B2CounterpartyContractMonitoring
 	);
 
-	let blockchain_2 = B2Service {
-		initiator_contract: B2Client::build(client_2.clone()),
+	let blockchain_2_client = B2Client::build(client_2.clone());
+	let blockchain_2_service = B2Service {
+		initiator_contract: blockchain_2_client.clone(),
 		initiator_monitoring: monitor_2_initiator,
-		counterparty_contract: B2Client::build(client_2),
+		counterparty_contract: blockchain_2_client.clone(),
 		counterparty_monitoring: monitor_2_counterparty,
 	};
 
-	let mut bridge_service = BridgeService::new(blockchain_1, blockchain_2);
+	let mut bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
+
+	// Initiate a bridge transfer
+	blockchain_1_client
+		.initiate_bridge_transfer(
+			InitiatorAddress(BC1Address("initiator")),
+			RecipientAddress(BC1Address("recipient")),
+			HashLock(BC1Hash("hash_lock")),
+			TimeLock(100),
+			Amount(1000),
+		)
+		.await
+		.expect("initiate_bridge_transfer failed");
 
 	let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-	let _ = bridge_service.poll_next_unpin(&mut cx);
-	let _ = bridge_service.poll_next_unpin(&mut cx);
-	let _ = bridge_service.poll_next_unpin(&mut cx);
+
+	tokio::spawn(blockchain_1);
+	tokio::spawn(blockchain_2);
+
+	let transfer_initiated_event = bridge_service.next().await;
+	dbg!(&transfer_initiated_event);
+
+	let event = bridge_service.next().await;
 }

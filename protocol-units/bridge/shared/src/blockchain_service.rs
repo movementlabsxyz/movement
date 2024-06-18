@@ -47,8 +47,14 @@ macro_rules! struct_blockchain_service {
 			}
 		}
 
+		impl std::fmt::Debug for $Name {
+			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+				f.debug_struct(stringify!($Name)).finish()
+			}
+		}
+
 		impl Stream for $Name {
-			type Item = BlockchainEvent<$Address, $Hash>;
+			type Item = ContractEvent<$Address, $Hash>;
 
 			fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 				let this = self.get_mut();
@@ -59,13 +65,13 @@ macro_rules! struct_blockchain_service {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum BlockchainEvent<A, H> {
+pub enum ContractEvent<A, H> {
 	InitiatorEvent(BridgeContractInitiatorEvent<A, H>),
 	CounterpartyEvent(BridgeContractCounterpartyEvent<A, H>),
 }
 
 pub trait BlockchainService:
-	Stream<Item = BlockchainEvent<Self::Address, Self::Hash>> + Unpin
+	Stream<Item = ContractEvent<Self::Address, Self::Hash>> + Unpin
 {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
@@ -89,10 +95,10 @@ pub trait BlockchainService:
 			self.counterparty_monitoring().poll_next_unpin(cx),
 		) {
 			(Poll::Ready(Some(event)), _) => {
-				Poll::Ready(Some(BlockchainEvent::InitiatorEvent(event)))
+				Poll::Ready(Some(ContractEvent::InitiatorEvent(event)))
 			}
 			(_, Poll::Ready(Some(event))) => {
-				Poll::Ready(Some(BlockchainEvent::CounterpartyEvent(event)))
+				Poll::Ready(Some(ContractEvent::CounterpartyEvent(event)))
 			}
 			_ => Poll::Pending,
 		}
