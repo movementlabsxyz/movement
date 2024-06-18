@@ -5,6 +5,7 @@ use crate::types::{
 	RecipientAddress, TimeLock,
 };
 
+#[derive(Debug)]
 pub enum CounterpartyCall<A, H> {
 	LockBridgeTransfer(BridgeTransferId<H>, HashLock<H>, TimeLock, RecipientAddress<A>, Amount),
 }

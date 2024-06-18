@@ -12,7 +12,7 @@ use crate::bridge_monitoring::{
 };
 use crate::types::{BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId};
 use crate::{
-	blockchain_service::{BlockchainEvent, BlockchainService},
+	blockchain_service::{ContractEvent, BlockchainService},
 	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use crate::{
@@ -75,7 +75,7 @@ where
 	H: BridgeHashType,
 {
 	type Item =
-		BlockchainEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
+		ContractEvent<<Self as BlockchainService>::Address, <Self as BlockchainService>::Hash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -86,7 +86,7 @@ where
 
 		// poll the events from the contracts and forward them
 		if let Poll::Ready(Some(event)) = this.initiator_contract.poll_next_unpin(cx) {
-			return Poll::Ready(Some(BlockchainEvent::InitiatorEvent(event)));
+			return Poll::Ready(Some(ContractEvent::InitiatorEvent(event)));
 		}
 
 		Poll::Pending

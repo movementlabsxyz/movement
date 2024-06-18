@@ -5,6 +5,7 @@ use crate::types::{
 	InitiatorAddress, RecipientAddress, TimeLock,
 };
 
+#[derive(Debug)]
 pub enum InitiatorCall<A, H> {
 	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress<A>, Amount, TimeLock, HashLock<H>),
 }

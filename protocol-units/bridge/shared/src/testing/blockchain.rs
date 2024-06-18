@@ -1,4 +1,4 @@
-use futures::{channel::mpsc, Stream, StreamExt};
+use futures::{channel::mpsc, task::AtomicWaker, Future, Stream, StreamExt};
 use std::{
 	collections::HashMap,
 	pin::Pin,
@@ -28,6 +28,7 @@ pub enum AbstractBlockchainEvent<A, H> {
 	BridgeTransferAssetsLocked(LockedAssetsDetails<A, H>),
 }
 
+#[derive(Debug)]
 pub enum Transaction<A, H> {
 	Initiator(InitiatorCall<A, H>),
 	Counterparty(CounterpartyCall<A, H>),
@@ -48,6 +49,8 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
 
 	pub event_listeners: Vec<mpsc::UnboundedSender<AbstractBlockchainEvent<A, H>>>,
+
+	waker: AtomicWaker,
 
 	pub _phantom: std::marker::PhantomData<H>,
 }
@@ -75,6 +78,7 @@ where
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
 			event_listeners,
+			waker: AtomicWaker::new(),
 			_phantom: std::marker::PhantomData,
 		}
 	}
@@ -115,6 +119,22 @@ where
 	}
 }
 
+impl<A, H, R> Future for AbstractBlockchain<A, H, R>
+where
+	A: BridgeAddressType,
+	H: BridgeHashType + GenUniqueHash,
+	R: Unpin,
+{
+	type Output = ();
+
+	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		match self.poll_next(cx) {
+			Poll::Ready(None) => Poll::Ready(()),
+			Poll::Pending | Poll::Ready(Some(_)) => Poll::Pending,
+		}
+	}
+}
+
 impl<A, H, R> Stream for AbstractBlockchain<A, H, R>
 where
 	A: BridgeAddressType,
@@ -124,9 +144,15 @@ where
 	type Item = AbstractBlockchainEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
 		let this = self.get_mut();
 
 		if let Poll::Ready(Some(transaction)) = this.transaction_receiver.poll_next_unpin(cx) {
+			tracing::trace!(
+				"AbstractBlockchain[{}]: Received transaction: {:?}",
+				this.name,
+				transaction
+			);
 			match transaction {
 				Transaction::Initiator(call) => match call {
 					InitiatorCall::InitiateBridgeTransfer(
@@ -190,6 +216,8 @@ where
 			}
 			return Poll::Ready(Some(event));
 		}
+
+		this.waker.register(cx.waker());
 
 		Poll::Pending
 	}

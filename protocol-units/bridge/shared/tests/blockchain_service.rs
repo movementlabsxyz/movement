@@ -4,9 +4,7 @@ use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
 	TimeLock,
 };
-use bridge_shared::{
-	blockchain_service::BlockchainEvent, bridge_contracts::BridgeContractInitiator,
-};
+use bridge_shared::{blockchain_service::ContractEvent, bridge_contracts::BridgeContractInitiator};
 use futures::StreamExt;
 use std::task::{Context, Poll};
 
@@ -32,7 +30,7 @@ async fn test_bridge_transfer_initiated() {
 
 	assert_eq!(
 		event,
-		Poll::Ready(Some(BlockchainEvent::InitiatorEvent(
+		Poll::Ready(Some(ContractEvent::InitiatorEvent(
 			BridgeContractInitiatorEvent::BridgeTransferInitiated(BridgeTransferDetails {
 				bridge_transfer_id: BridgeTransferId("transfer_id"),
 				initiator_address: InitiatorAddress("initiator"),
