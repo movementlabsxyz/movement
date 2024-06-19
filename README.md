@@ -54,7 +54,7 @@ just monza-full-node native build.setup.test.local
 When running with `docker compose` specif your revision in a file `.env` at the root of the project. The file should look like this:
 
 ```bash
-REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
+CONTAINER_REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
 ```
 
 ### `suzuka-full-node`
@@ -71,6 +71,17 @@ just suzuka-full-node docker-compose setup.local
 ```
 
 **Note:** if you want to recreate the network, but not rely on the just target above, please read through the scripts to identify the correct `docker-compose` files to run.
+
+## Services
+
+### `suzuka-full-node`
+
+Both `native` and `docker-compose` runners will serve the following services listening on the specified default addresses:
+
+**Note:** Only APIs intended for the end-user are listed here. For a full list of services, please refer to respective `docker-compose` files.
+
+- **[Aptos REST API](https://api.devnet.aptoslabs.com/v1/spec#/)**: `0.0.0.0:30731`
+- **[Aptos Faucet API](https://aptos.dev/apis/#faucet-api-only-testnetdevnet)**: `0.0.0.0:30732`
 
 ## Troubleshooting
 

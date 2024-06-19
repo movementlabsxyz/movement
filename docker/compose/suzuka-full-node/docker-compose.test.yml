@@ -1,7 +1,7 @@
 services:
 
   suzuka-client-e2e-simple-interaction:
-    image: ghcr.io/movementlabsxyz/suzuka-client-e2e-simple-interaction:${REV}
+    image: ghcr.io/movementlabsxyz/suzuka-client-e2e-simple-interaction:${CONTAINER_REV}
     container_name: suzuka-client-e2e-simple-interaction
     command: run-simple
     environment:

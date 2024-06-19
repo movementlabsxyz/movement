@@ -20,7 +20,7 @@ jobs:
   
       - name: Read the commit SHA
         id: vars
-        run: echo "REV=${{ github.sha }}" >> .env
+        run: echo "CONTAINER_REV=${{ github.sha }}" >> .env
 
       - name: Display .env file
         run: cat .env
