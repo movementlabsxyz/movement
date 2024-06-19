@@ -156,6 +156,7 @@ module MoveBridge::AtomicBridgeCounterParty {
         creator: &signer,
     ) acquires BridgeTransferStore {
         timestamp::set_time_has_started_for_testing(creator);
+        moveth::init_for_test(creator);
         let initiator = signer::address_of(creator); 
         let recipient = @0xface; 
         let moveth_minter = @0xdead; 

@@ -1,5 +1,3 @@
-/// moveth based on the moveth FA module 
-/// https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/move-examples/fungible_asset/stablecoin/sources/usdk.move 
 module MOVETH::moveth {
     use aptos_framework::account;
     use aptos_framework::dispatchable_fungible_asset;
@@ -321,6 +319,8 @@ module MOVETH::moveth {
         let roles = borrow_global<Roles>(moveth_address());
         let minter_addr = signer::address_of(minter);
         assert!(minter_addr == roles.master_minter || vector::contains(&roles.minters, &minter_addr), EUNAUTHORIZED);
+        } else {
+            assert!(false, ENOT_MINTER);
         }
     }
 
@@ -328,7 +328,8 @@ module MOVETH::moveth {
         if (exists<State>(moveth_address())) {
             let state = borrow_global<State>(moveth_address());
             assert!(!state.paused, EPAUSED);
-
+        } else {
+            assert!(false, EPAUSED);
         }
     }
 

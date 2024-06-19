@@ -1,5 +1,5 @@
 /// moveth based on the moveth FA module 
-/// https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/move-examples/fungible_asset/stablecoin/sources/usdk.move 
+/// https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/move-examples/fungible_asset/stablecoin/sources/moveth.move 
 module MOVETH::moveth {
     use aptos_framework::account;
     use aptos_framework::dispatchable_fungible_asset;
