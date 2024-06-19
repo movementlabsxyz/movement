@@ -202,8 +202,8 @@
               DOT_MOVEMENT_PATH=$(pwd)/.movement
               mkdir -p $DOT_MOVEMENT_PATH
               echo "Building movement-swap-core..."
-              chmod -R 755 $MOVEMENT_SWAP_PATH
               cp -R "$MOVEMENT_SWAP_PATH" $DOT_MOVEMENT_PATH/movementswap-core
+              chmod -R 755 $DOT_MOVEMENT_PATH/movementswap-core
               WORKING_DIRECTORY=$(pwd)
               cd $DOT_MOVEMENT_PATH/movementswap-core/tests/typescript-sdk
               npm install pnpm
