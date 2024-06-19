@@ -6,6 +6,7 @@
     foundry.url = "github:shazow/foundry.nix/monthly"; 
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
+    
   };
 
   outputs = {
@@ -76,6 +77,7 @@
           celestia-app
           monza-aptos
           jq
+          nodejs_18
         ];
 
         # Specific version of toolchain
@@ -122,8 +124,8 @@
           src = pkgs.fetchFromGitHub {
               owner = "movementlabsxyz";
               repo = "movementswap-core";
-              rev = "d5b1075999fad5a0e78c68f9d0848d37680d9f30";
-              sha256 = "sha256-l7oLh7Rq0qUfa8nI+e2nPWYe1kOARKrfFBJubZkziZw=";
+              rev = "b05e21ad220de11af266696bb3b00ab8b0893e24";
+              sha256 = "sha256-hSmzcr3ZJIVCuOt5x+Run3o3xyUtS6qqQiE8Tsefb9g=";
           };
           installPhase = ''
               cp -r . $out
@@ -197,13 +199,14 @@
               #!/bin/bash -e
 
               // # Movement Swap Core
+              DOT_MOVEMENT_PATH=$(pwd)/.movement
               echo "Building movement-swap-core..."
-              cp -R "$MOVEMENT_SWAP_PATH" $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
-              cd $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
-              # curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
-              cd $MOVEMENT_SWAP_PATH/tests/typescript-sdk
+              cp -R "$MOVEMENT_SWAP_PATH" $DOT_MOVEMENT_PATH/movementswap-core
+              WORKING_DIRECTORY=$(pwd)
+              cd $DOT_MOVEMENT_PATH/movementswap-core/tests/typescript-sdk
               npm install pnpm
               pnpm install
+              cd $WORKING_DIRECTORY
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               echo "Movementswap path: $MOVEMENT_SWAP_PATH"
