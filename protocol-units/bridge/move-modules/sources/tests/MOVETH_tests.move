@@ -35,30 +35,30 @@ module moveth::moveth_tests{
     }
 
 
-    // #[test(creator = @moveth, pauser = @0xdafe, minter = @0xface, master_minter = @0xbab)]
-    // #[expected_failure(abort_code = 2, location = moveth::moveth)]
-    // fun test_pause(creator: &signer, pauser: &signer, minter: &signer, master_minter: &signer) {
-    //     moveth::init_for_test(creator);
-    //     let minter_address = signer::address_of(minter);
-    //     moveth::set_pause(pauser, true);
-    //     moveth::add_minter(master_minter, minter_address);
-    // }
+    #[test(creator = @moveth, pauser = @0xdafe, minter = @0xface, master_minter = @0xbab)]
+    #[expected_failure(abort_code = 2, location = moveth::moveth)]
+    fun test_pause(creator: &signer, pauser: &signer, minter: &signer, master_minter: &signer) {
+        moveth::init_for_test(creator);
+        let minter_address = signer::address_of(minter);
+        moveth::set_pause(pauser, true);
+        moveth::add_minter(master_minter, minter_address);
+    }
 
-    // test the ability of a denylisted account to transfer out newly created store
-    // #[test(creator = @moveth, denylister = @0xcade, receiver = @0xdead)]
-    // #[expected_failure(abort_code = 327683, location = aptos_framework::object)]
-    // fun test_untransferrable_store(creator: &signer, denylister: &signer, receiver: &signer) {
-    //     moveth::init_for_test(creator);
-    //     let receiver_address = signer::address_of(receiver);
-    //     let asset = moveth::metadata();
+    //test the ability of a denylisted account to transfer out newly created store
+    #[test(creator = @moveth, denylister = @0xcade, receiver = @0xdead)]
+    #[expected_failure(abort_code = 327683, location = aptos_framework::object)]
+    fun test_untransferrable_store(creator: &signer, denylister: &signer, receiver: &signer) {
+        moveth::init_for_test(creator);
+        let receiver_address = signer::address_of(receiver);
+        let asset = moveth::metadata();
 
-    //     moveth::denylist(denylister, receiver_address);
-    //     assert!(primary_fungible_store::is_frozen(receiver_address, asset), 0);
+        moveth::denylist(denylister, receiver_address);
+        assert!(primary_fungible_store::is_frozen(receiver_address, asset), 0);
 
-    //     let constructor_ref = object::create_object(receiver_address);
-    //     fungible_asset::create_store(&constructor_ref, asset);
-    //     let store = object::object_from_constructor_ref<FungibleStore>(&constructor_ref);
+        let constructor_ref = object::create_object(receiver_address);
+        fungible_asset::create_store(&constructor_ref, asset);
+        let store = object::object_from_constructor_ref<FungibleStore>(&constructor_ref);
 
-    //     object::transfer(receiver, store, @0xdeadbeef);
-    // }
+        object::transfer(receiver, store, @0xdeadbeef);
+    }
 }
