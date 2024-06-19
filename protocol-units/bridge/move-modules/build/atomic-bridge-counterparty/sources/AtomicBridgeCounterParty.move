@@ -183,77 +183,18 @@ module MoveBridge::AtomicBridgeCounterParty {
         assert!(transfer_details.recipient == recipient, 2);
         assert!(transfer_details.amount == amount, 3);
         assert!(transfer_details.hash_lock == hash_lock, 4);
+
+       let secret = b"secret"; 
+       complete_bridge_transfer(
+           creator,
+           bridge_transfer_id,
+           secret
+       );
+
+        // Verify that the transfer is stored in completed_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
+        let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.completed_transfers, bridge_transfer_id);
+        assert!(transfer_details.recipient == recipient, 1);
+        assert!(transfer_details.amount == amount, 2);
     }
-
-    // #[test(creator = @Movebridge)]
-    // fun test_complete_bridge_transfer(
-    //     creator: &signer,
-    // ) {
-    //     let initiator = signer::address_of(creator); 
-    //     let recipient = account(1);
-    //     let moveth_minter = account(2);
-    //     AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
-
-    //     let bridge_transfer_id = b"transfer2".to_vec();
-    //     let hash_lock = b"hashlock2".to_vec();
-    //     let time_lock = 3600;
-    //     let amount = 100;
-
-    //     AtomicBridgeCounterParty::lock_bridge_transfer_assets(
-    //         &initiator,
-    //         bridge_transfer_id.clone(),
-    //         hash_lock,
-    //         time_lock,
-    //         recipient,
-    //         amount
-    //     );
-
-    //     let secret = b"secret".to_vec();
-    //     AtomicBridgeCounterParty::complete_bridge_transfer(
-    //         &initiator,
-    //         bridge_transfer_id.clone(),
-    //         secret.clone()
-    //     );
-
-    //     // Verify that the transfer is stored in completed_transfers
-    //     let bridge_store = borrow_global<AtomicBridgeCounterParty::BridgeTransferStore>(signer::address_of(&initiator));
-    //     let transfer_details: BridgeTransferDetails = SmartTable::get(&bridge_store.completed_transfers, &bridge_transfer_id).unwrap();
-    //     assert!(transfer_details.recipient == recipient, 1);
-    //     assert!(transfer_details.amount == amount, 2);
-    // }
-
-    // #[test(creator = @MoveBridge)]
-    // fun test_abort_bridge_transfer(
-    //     creator: &signer,
-    // ) {
-    //     let initiator = signer::address_of(creator);    
-    //     let recipient = account(1);
-    //     let moveth_minter = account(2);
-    //     AtomicBridgeCounterParty::initialize(&initiator, moveth_minter);
-
-    //     let bridge_transfer_id = b"transfer3".to_vec();
-    //     let hash_lock = b"hashlock3".to_vec();
-    //     let time_lock = 3600;
-    //     let amount = 100;
-
-    //     AtomicBridgeCounterParty::lock_bridge_transfer_assets(
-    //         &initiator,
-    //         bridge_transfer_id.clone(),
-    //         hash_lock,
-    //         time_lock,
-    //         recipient,
-    //         amount
-    //     );
-
-    //     AtomicBridgeCounterParty::abort_bridge_transfer(
-    //         &initiator,
-    //         bridge_transfer_id.clone()
-    //     );
-
-    //     // Verify that the transfer is stored in aborted_transfers
-    //     let bridge_store = borrow_global<AtomicBridgeCounterParty::BridgeTransferStore>(signer::address_of(&initiator));
-    //     let transfer_details = smart_table::borrow(&bridge_store.aborted_transfers, bridge_transfer_id); 
-    //     assert!(transfer_details.recipient == recipient, 1);
-    //     assert!(transfer_details.amount == amount, 2);
-    // }
 }
