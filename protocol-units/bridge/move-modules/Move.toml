@@ -1,27 +1,28 @@
 [package]
-name = "atomic-bridge-counterparty"
+name = "bridge-modules"
 version = "1.0.0"
 authors = []
 
 [addresses]
-MoveBridge = "0x1"
-MOVETH = "0x1" 
-moveth = "0x1" 
+atomic_bridge = "_"
+moveth = "_"
 master_minter = "_"
-stablecoin = "_" 
-minter = "_" 
+minter = "_"
 pauser = "_"
 denylister = "_"
 
 [dev-addresses]
-stablecoin = "0xcafe"
+atomic_bridge = "0xfeef"
+moveth = "0xbeef"
 master_minter = "0xbab"
 minter = "0xface"
 pauser = "0xdafe"
 denylister = "0xcade"
 
 [dependencies.AptosFramework]
-git = "https://github.com/movementlabsxyz/aptos-core.git"
-rev = "monza-testing"
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "devnet"
 subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
 
