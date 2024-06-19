@@ -3,10 +3,6 @@ use crate::send_eth_tx::SendTxErrorRule;
 use crate::send_eth_tx::UnderPriced;
 use crate::send_eth_tx::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
-use mcr_settlement_config::Config;
-use movement_types::BlockCommitment;
-use movement_types::{Commitment, Id};
-
 use alloy::pubsub::PubSubFrontend;
 use alloy_network::Ethereum;
 use alloy_network::EthereumSigner;
@@ -24,12 +20,16 @@ use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
-
 use anyhow::Context;
+use mcr_settlement_config::Config;
+use movement_types::BlockCommitment;
+use movement_types::{Commitment, Id};
+use serde_json::Value as JsonValue;
+use std::array::TryFromSliceError;
+use std::fs;
+use std::path::Path;
 use thiserror::Error;
 use tokio_stream::StreamExt;
-
-use std::array::TryFromSliceError;
 
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
@@ -252,6 +252,45 @@ where
 	}
 }
 
+pub struct AnvilAddressEntry {
+	pub address: String,
+	pub private_key: String,
+}
+
+/// Read the Anvil config file keys and return all address/private key.
+pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
+	anvil_conf_path: P,
+) -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
+	let file_content = fs::read_to_string(anvil_conf_path)?;
+
+	let json_value: JsonValue = serde_json::from_str(&file_content)?;
+
+	// Extract the available_accounts and private_keys fields
+	let available_accounts_iter = json_value["available_accounts"]
+		.as_array()
+		.expect("available_accounts should be an array")
+		.iter()
+		.map(|v| {
+			let s = v.as_str().expect("available_accounts elements should be strings");
+			s.to_owned()
+		});
+
+	let private_keys_iter = json_value["private_keys"]
+		.as_array()
+		.expect("private_keys should be an array")
+		.iter()
+		.map(|v| {
+			let s = v.as_str().expect("private_keys elements should be strings");
+			s.to_owned()
+		});
+
+	let res = available_accounts_iter
+		.zip(private_keys_iter)
+		.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
+		.collect::<Vec<_>>();
+	Ok(res)
+}
+
 #[cfg(test)]
 #[cfg(feature = "integration-tests")]
 mod tests {
@@ -265,8 +304,6 @@ mod tests {
 	use movement_types::Commitment;
 
 	use anyhow::Context;
-	use serde_json::Value as JsonValue;
-
 	use std::env;
 	use std::fs;
 
@@ -290,7 +327,10 @@ mod tests {
 		let rpc_url = format!("http://localhost:{rpc_port}");
 		let ws_url = format!("ws://localhost:{rpc_port}");
 
-		let anvil_addresses = read_anvil_json_file_addresses()?;
+		let anvil_conf_file = env::var("ANVIL_JSON_PATH").context(
+			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil json file",
+		)?;
+		let anvil_addresses = crate::eth::utils::read_anvil_json_file_addresses(&anvil_conf_file)?;
 
 		//Do SC ceremony init stake calls.
 		do_genesis_ceremonial(&anvil_addresses, &rpc_url).await?;
@@ -398,45 +438,6 @@ mod tests {
 		assert_eq!(commitment, None);
 
 		Ok(())
-	}
-
-	struct AnvilAddressEntry {
-		address: String,
-		private_key: String,
-	}
-
-	fn read_anvil_json_file_addresses() -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
-		let anvil_conf_file = env::var("ANVIL_JSON_PATH").context(
-			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil json file",
-		)?;
-		let file_content = fs::read_to_string(anvil_conf_file)?;
-
-		let json_value: JsonValue = serde_json::from_str(&file_content)?;
-
-		// Extract the available_accounts and private_keys fields
-		let available_accounts_iter = json_value["available_accounts"]
-			.as_array()
-			.expect("available_accounts should be an array")
-			.iter()
-			.map(|v| {
-				let s = v.as_str().expect("available_accounts elements should be strings");
-				s.to_owned()
-			});
-
-		let private_keys_iter = json_value["private_keys"]
-			.as_array()
-			.expect("private_keys should be an array")
-			.iter()
-			.map(|v| {
-				let s = v.as_str().expect("private_keys elements should be strings");
-				s.to_owned()
-			});
-
-		let res = available_accounts_iter
-			.zip(private_keys_iter)
-			.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
-			.collect::<Vec<_>>();
-		Ok(res)
 	}
 
 	fn read_mcr_sc_adress() -> Result<Address, anyhow::Error> {

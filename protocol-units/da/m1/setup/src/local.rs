@@ -1,16 +1,15 @@
+use crate::M1DaLightNodeSetupOperations;
+use celestia_types::nmt::Namespace;
 use commander::run_command;
 use dot_movement::DotMovement;
+use rand::Rng;
 use tokio::fs;
 use tracing::info;
-use celestia_types::nmt::Namespace;
-use crate::M1DaLightNodeSetupOperations;
-use rand::Rng;
 
 #[derive(Debug, Clone)]
 pub struct Local;
 
 impl Local {
-    
     pub fn new() -> Self {
         Self
     }

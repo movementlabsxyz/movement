@@ -12,12 +12,16 @@ rust-version.workspace = true
 
 [dependencies]
 mcr-settlement-config = { workspace = true }
+mcr-settlement-client = { workspace = true }
 dot-movement = { workspace = true }
+commander = { workspace = true }
 
 alloy-primitives = { workspace = true }
 
 anyhow = { workspace = true }
 k256 = { workspace = true }
+rand = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
 
 [lints]
