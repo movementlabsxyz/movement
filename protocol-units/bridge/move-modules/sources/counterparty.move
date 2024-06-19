@@ -191,6 +191,8 @@ module MoveBridge::AtomicBridgeCounterParty {
            secret
        );
 
+       //@TODO: fix assert_not_paused error in MOVETH.move need to deploy and make mintable. 
+
         // Verify that the transfer is stored in completed_transfers
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
         let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.completed_transfers, bridge_transfer_id);
