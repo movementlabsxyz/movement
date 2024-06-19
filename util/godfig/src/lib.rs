@@ -1,3 +1,5 @@
+pub mod backend;
+
 #[macro_export]
 macro_rules! env_default {
 	// Case with default value
