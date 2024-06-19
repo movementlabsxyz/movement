@@ -5,13 +5,20 @@ authors = []
 
 [addresses]
 MoveBridge = "0x1"
-MOVETH = "0x1"
-master_minter = "0x1"
-minter = "0x1"
-pauser = "0x1"
-denylister = "0x1"
-stablecoin = "0x1"
-moveth = "0x1"
+MOVETH = "0x1" 
+moveth = "0x1" 
+master_minter = "_"
+stablecoin = "_" 
+minter = "_" 
+pauser = "_"
+denylister = "_"
+
+[dev-addresses]
+stablecoin = "0xcafe"
+master_minter = "0xbab"
+minter = "0xface"
+pauser = "0xdafe"
+denylister = "0xcade"
 
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"

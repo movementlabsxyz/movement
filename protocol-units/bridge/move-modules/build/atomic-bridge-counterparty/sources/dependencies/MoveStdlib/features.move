@@ -757,4 +757,3 @@ module std::features {
         assert!(is_enabled(23), 4);
     }
 }
-
