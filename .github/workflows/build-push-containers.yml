@@ -497,4 +497,4 @@ jobs:
 
       - name: Run docker-compose local.setup.test
         run: |
-          nix develop --command bash  -c "timeout 5m just suzuka-full-node docker-compose local.setup.test"
+          nix develop --command bash  -c "docker --version && docker compose up --help && timeout 5m just suzuka-full-node docker-compose local.setup.test --abort-on-container-failure"

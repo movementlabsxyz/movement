@@ -21,4 +21,4 @@ for element in "${split[@]}"; do
 done
 
 echo "Running docker-compose for $SERVICE with override files: ${override_files[@]}..."
-docker compose --env-file .env -f docker/compose/$SERVICE/docker-compose.yml "${override_files[@]}"  "${@:4}" up --abort-on-container-failure  
+docker compose --env-file .env -f docker/compose/$SERVICE/docker-compose.yml "${override_files[@]}" up "${@:4}"
