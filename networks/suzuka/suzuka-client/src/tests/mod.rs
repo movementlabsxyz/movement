@@ -560,6 +560,8 @@ async fn test_hey_partners_internal() -> Result<(), anyhow::Error> {
     let combined_path = if let Ok(path) = env::var("MOVEMENT_SWAP_PATH") {
         root.join(path)
     };
+
+	
     
     println!("Combined path: {:?}", combined_path);
 	let output =

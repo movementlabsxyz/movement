@@ -116,6 +116,25 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
+        movementswap-core = pkgs.stdenv.mkDerivation {
+          pname = "movementswap-core";
+          version = "branch-main";
+          src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "movementswap-core";
+              rev = "d5b1075999fad5a0e78c68f9d0848d37680d9f30";
+              sha256 = "sha256-l7oLh7Rq0qUfa8nI+e2nPWYe1kOARKrfFBJubZkziZw=";
+          };
+          installPhase = ''
+              cp -r . $out
+          '';
+          meta = with pkgs.lib; {
+              description = "Movementswap core repository";
+              homepage = "https://github.com/movementlabsxyz/movementswap-core";
+              license = licenses.asl20;
+          };
+        };
+
         # aptos-faucet-service
         aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
           inherit pkgs; 
@@ -142,6 +161,8 @@
           packages.celestia-node = celestia-node;
 
           packages.celestia-app = celestia-app;
+
+          packages.movementswap-core = movementswap-core;
           
           # Used for workaround for failing vendor dep builds in nix
           devShells.docker-build = mkShell {
@@ -167,13 +188,25 @@
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             MONZA_APTOS_PATH = monza-aptos;
+            MOVEMENT_SWAP_PATH = movementswap-core;
 
             buildInputs = [] ++buildDependencies ++sysDependencies ++testDependencies;
             nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
 
             shellHook = ''
               #!/bin/bash -e
+
+              // # Movement Swap Core
+              echo "Building movement-swap-core..."
+              cp -R "$MOVEMENT_SWAP_PATH" $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
+              cd $MOVEMENT_BASE_STORAGE_PATH/movementswap-core
+              # curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+              cd $MOVEMENT_SWAP_PATH/tests/typescript-sdk
+              npm install pnpm
+              pnpm install
+
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
+              echo "Movementswap path: $MOVEMENT_SWAP_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
@@ -187,3 +220,5 @@
         }
     );
 }
+
+
