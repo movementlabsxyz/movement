@@ -8,7 +8,7 @@ WORKDIR /tmp/build
 
 # Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop .#docker-build --command bash -c "cargo build --bin suzuka-client-e2e-simple-interaction"
+        develop .#docker-build --command bash -c "cargo build --release --bin suzuka-client-e2e-simple-interaction"
 
 RUN rust_binary="./target/release/suzuka-client-e2e-simple-interaction"; dest_dir="/tmp/runtime"; \
     mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \

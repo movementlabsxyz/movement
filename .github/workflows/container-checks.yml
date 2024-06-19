@@ -8,7 +8,7 @@ on:
 
 jobs:
   container-checks:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-8vcpu-ubuntu-2204
 
     steps:
       - name: Checkout repository
