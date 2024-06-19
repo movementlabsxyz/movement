@@ -1,0 +1,35 @@
+name: Container Checks
+
+on:
+  workflow_run:
+    workflows: ["build-push-containers.yml"]
+    types:
+      - completed
+
+jobs:
+  container-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v1
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+  
+      - name: Read the commit SHA
+        id: vars
+        run: echo "REV=${{ github.sha }}" >> .env
+
+      - name: Display .env file
+        run: cat .env
+
+      - name: Run docker-compose local.setup.test
+        run: |
+          nix develop --command bash  -c "timeout 5m just suzuka-full-node docker-compose local.setup.test"
