@@ -2,7 +2,7 @@ name: Container Checks
 
 on:
   workflow_run:
-    workflows: ["Build Push Containers"]
+    workflows: [Build Push Containers]
     types:
       - completed
 
