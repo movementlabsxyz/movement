@@ -152,7 +152,7 @@ module MoveBridge::AtomicBridgeCounterParty {
     }
 
     #[test(creator = @MoveBridge)]
-    fun test_lock_bridge_transfer_assets(
+    fun test_complete_transfer_assets(
         creator: &signer,
     ) acquires BridgeTransferStore {
         timestamp::set_time_has_started_for_testing(creator);
@@ -190,6 +190,8 @@ module MoveBridge::AtomicBridgeCounterParty {
            bridge_transfer_id,
            secret
        );
+
+       //@TODO: fix assert_not_paused error in MOVETH.move need to deploy and make mintable. 
 
         // Verify that the transfer is stored in completed_transfers
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));

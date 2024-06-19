@@ -317,14 +317,19 @@ module MOVETH::moveth {
     }
 
     fun assert_is_minter(minter: &signer) acquires Roles {
+        if (exists<Roles>(moveth_address())) {
         let roles = borrow_global<Roles>(moveth_address());
         let minter_addr = signer::address_of(minter);
         assert!(minter_addr == roles.master_minter || vector::contains(&roles.minters, &minter_addr), EUNAUTHORIZED);
+        }
     }
 
     fun assert_not_paused() acquires State {
-        let state = borrow_global<State>(moveth_address());
-        assert!(!state.paused, EPAUSED);
+        if (exists<State>(moveth_address())) {
+            let state = borrow_global<State>(moveth_address());
+            assert!(!state.paused, EPAUSED);
+
+        }
     }
 
     // Check that the account is not denylisted by checking the frozen flag on the primary store
