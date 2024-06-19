@@ -2,7 +2,7 @@ name: Container Checks
 
 on:
   workflow_run:
-    workflows: ["build-push-containers.yml"]
+    workflows: ["Build Push Containers"]
     types:
       - completed
 
@@ -11,11 +11,6 @@ jobs:
     runs-on: buildjet-8vcpu-ubuntu-2204
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v1
 
       - name: Checkout repository
         uses: actions/checkout@v4
