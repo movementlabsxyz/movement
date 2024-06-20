@@ -495,6 +495,25 @@ jobs:
       - name: Display .env file
         run: cat .env
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+  
+      - name: Download Docker Desktop
+        run: |
+          wget https://desktop.docker.com/linux/main/amd64/docker-desktop-26.0.0-amd64.deb -O docker-desktop.deb
+  
+      - name: Install Docker Desktop
+        run: |
+          sudo apt-get install -y ./docker-desktop.deb
+  
+      - name: Verify Docker Installation
+        run: |
+          docker compose version
+          docker --version
+          docker version
+
       - name: Run docker-compose local.setup.test
         run: |
           nix develop --command bash  -c "docker --version && docker compose up --help && timeout 5m just suzuka-full-node docker-compose local.setup.test --abort-on-container-failure"
