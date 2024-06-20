@@ -70,6 +70,7 @@ impl Executor {
 		(genesis, test_validators)
 	}
 
+	/// Bootstrap a database with a genesis transaction if it is empty.
 	pub fn maybe_bootstrap_empty_db(
 		db_dir: &PathBuf,
 		chain_id: ChainId,

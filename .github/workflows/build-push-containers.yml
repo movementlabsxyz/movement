@@ -513,6 +513,7 @@ jobs:
 
       - name: Run docker-compose local.setup.test
         run: |
-          nix develop --command bash  -c "docker --version && docker compose up --help && timeout 7m just suzuka-full-node docker-compose local.setup.test --abort-on-container-failure || [ $? -eq 124 ]"
-          # see if restarts are graceful
-          nix develop --command bash  -c "docker --version && docker compose up --help && timeout 7m just suzuka-full-node docker-compose local.setup.test --abort-on-container-failure || [ $? -eq 124 ]"
+          # timeout here nneds to be 10m so that services have time to stop properly
+          nix develop --command bash  -c "just container-test"  
+          # run again to test restarts
+          nix develop --command bash  -c "just container-test"  

@@ -10,3 +10,5 @@ build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}
 mcr FEATURES *ARGS:
     ./scripts/movement/run mcr {{ FEATURES }} {{ ARGS }}
+container-test:
+    ./scripts/tests/container-test
