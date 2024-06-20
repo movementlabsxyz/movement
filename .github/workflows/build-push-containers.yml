@@ -500,13 +500,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wget
   
-      - name: Download Docker Desktop
-        run: |
-          wget https://desktop.docker.com/linux/main/amd64/docker-desktop-26.0.0-amd64.deb -O docker-desktop.deb
   
-      - name: Install Docker Desktop
+      - name: Install docker-ce-cli
         run: |
-          sudo apt-get install -y ./docker-desktop.deb
+          sudo apt-get install -y docker-ce-cli
   
       - name: Verify Docker Installation
         run: |
