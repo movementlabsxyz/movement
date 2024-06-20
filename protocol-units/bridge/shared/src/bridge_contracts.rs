@@ -1,8 +1,8 @@
 use thiserror::Error;
 
 use crate::types::{
-	BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock,
-	InitiatorAddress, RecipientAddress, TimeLock,
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock,
+	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
 #[derive(Error, Debug)]
@@ -20,7 +20,7 @@ pub enum BridgeContractError {
 pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
 
 #[async_trait::async_trait]
-pub trait BridgeContractInitiator: Clone + Unpin {
+pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
 
@@ -30,13 +30,13 @@ pub trait BridgeContractInitiator: Clone + Unpin {
 		recipient_address: RecipientAddress<Self::Address>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		amount: crate::types::Amount,
+		amount: Amount,
 	) -> BridgeContractResult<()>;
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		secret: S,
+		secret: HashLockPreImage,
 	) -> BridgeContractResult<()>;
 
 	async fn refund_bridge_transfer(
@@ -61,13 +61,13 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		recipient: RecipientAddress<Self::Address>,
-		amount: crate::types::Amount,
+		amount: Amount,
 	) -> bool;
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
-		bridge_transfer_id: Self::Hash,
-		secret: S,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		secret: HashLockPreImage,
 	) -> BridgeContractResult<()>;
 
 	async fn abort_bridge_transfer(
@@ -77,6 +77,6 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		bridge_transfer_id: Self::Hash,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }

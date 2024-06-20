@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::types::{
-	Amount, BridgeHashType, BridgeTransferId, GenUniqueHash, HashLock, LockedAssetsDetails,
+	Amount, BridgeHashType, BridgeTransferId, GenUniqueHash, HashLock, LockDetails,
 	RecipientAddress, TimeLock,
 };
 
@@ -12,7 +12,7 @@ pub enum CounterpartyCall<A, H> {
 
 #[derive(Debug)]
 pub struct SmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockedAssetsDetails<A, H>>,
+	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
 }
 
 impl<A, H> Default for SmartContractCounterparty<A, H>
@@ -43,13 +43,7 @@ where
 	) {
 		self.locked_transfers.insert(
 			bridge_transfer_id.clone(),
-			LockedAssetsDetails {
-				bridge_transfer_id,
-				recipient_address,
-				hash_lock,
-				time_lock,
-				amount,
-			},
+			LockDetails { bridge_transfer_id, recipient_address, hash_lock, time_lock, amount },
 		);
 	}
 }

@@ -8,14 +8,16 @@ use bridge_shared::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
-	testing::blockchain::{
-		AbstractBlockchainClient, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall,
-		Transaction,
+	testing::{
+		blockchain::{
+			AbstractBlockchainClient, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall,
+			Transaction,
+		},
+		rng::TestRng,
 	},
-	testing::rng::TestRng,
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, InitiatorAddress,
-		RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
+		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -100,9 +102,7 @@ impl Stream for B1InitiatorContractMonitoring {
 		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
 			match event {
 				AbstractBlockchainEvent::BridgeTransferInitiated(details) => {
-					return Poll::Ready(Some(
-						BridgeContractInitiatorEvent::BridgeTransferInitiated(details),
-					))
+					return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
 				}
 				_ => return Poll::Pending,
 			}
@@ -139,9 +139,7 @@ impl Stream for B2InitiatorContractMonitoring {
 		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
 			match event {
 				AbstractBlockchainEvent::BridgeTransferInitiated(details) => {
-					return Poll::Ready(Some(
-						BridgeContractInitiatorEvent::BridgeTransferInitiated(details),
-					))
+					return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
 				}
 				_ => return Poll::Pending,
 			}
@@ -178,9 +176,7 @@ impl Stream for B1CounterpartyContractMonitoring {
 		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
 			match event {
 				AbstractBlockchainEvent::BridgeTransferAssetsLocked(details) => {
-					return Poll::Ready(Some(
-						BridgeContractCounterpartyEvent::BridgeTransferLocked(details),
-					))
+					return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(details)))
 				}
 				_ => return Poll::Pending,
 			}
@@ -217,9 +213,7 @@ impl Stream for B2CounterpartyContractMonitoring {
 		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
 			match event {
 				AbstractBlockchainEvent::BridgeTransferAssetsLocked(details) => {
-					return Poll::Ready(Some(
-						BridgeContractCounterpartyEvent::BridgeTransferLocked(details),
-					))
+					return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(details)))
 				}
 				_ => return Poll::Pending,
 			}
@@ -264,10 +258,10 @@ impl BridgeContractInitiator for B1Client {
 			.map_err(BridgeContractError::GenericError)
 	}
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: S,
+		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
@@ -310,10 +304,10 @@ impl BridgeContractCounterparty for B1Client {
 		self.client.send_transaction(transaction).is_ok()
 	}
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
-		_bridge_transfer_id: Self::Hash,
-		_secret: S,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
@@ -327,7 +321,7 @@ impl BridgeContractCounterparty for B1Client {
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		_bridge_transfer_id: Self::Hash,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
 	}
@@ -369,10 +363,10 @@ impl BridgeContractInitiator for B2Client {
 			.map_err(BridgeContractError::GenericError)
 	}
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: S,
+		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
@@ -415,10 +409,10 @@ impl BridgeContractCounterparty for B2Client {
 		self.client.send_transaction(transaction).is_ok()
 	}
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
-		_bridge_transfer_id: Self::Hash,
-		_secret: S,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
@@ -432,7 +426,7 @@ impl BridgeContractCounterparty for B2Client {
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		_bridge_transfer_id: Self::Hash,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
 	}

@@ -11,13 +11,20 @@ use thiserror::Error;
 
 use crate::{
 	blockchain_service::BlockchainService,
-	types::{BridgeTransferDetails, BridgeTransferId, HashLock},
+	bridge_contracts::BridgeContractError,
+	types::{
+		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, HashLock,
+		UnlockDetails,
+	},
 };
-use crate::{bridge_contracts::BridgeContractCounterparty, types::RecipientAddress};
+use crate::{
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	types::RecipientAddress,
+};
 
 pub type BoxedFuture<R, E> = Pin<Box<dyn Future<Output = Result<R, E>> + Send>>;
 
-struct ActiveSwap<BFrom, BTo>
+pub struct ActiveSwap<BFrom, BTo>
 where
 	BFrom: BlockchainService,
 	BTo: BlockchainService,
@@ -30,8 +37,8 @@ where
 pub enum ActiveSwapState {
 	LockingTokens(BoxedFuture<(), LockBridgeTransferAssetsError>),
 	LockingTokensError(usize, Delay),
-	WaitingForCompletedEvent,
-	CompletingBridging(BoxedFuture<(), ()>),
+	WaitingForUnlockedEvent,
+	CompletingBridging(BoxedFuture<(), CompleteBridgeTransferError>),
 	Completed,
 }
 
@@ -56,6 +63,12 @@ where
 	swaps: HashMap<BridgeTransferId<BFrom::Hash>, ActiveSwap<BFrom, BTo>>,
 }
 
+#[derive(Debug, Error)]
+pub enum ActiveSwapMapError {
+	#[error("Non existing swap")]
+	NonExistingSwap,
+}
+
 impl<BTo, BFrom> ActiveSwapMap<BFrom, BTo>
 where
 	BTo: BlockchainService + 'static,
@@ -77,12 +90,21 @@ where
 		self.swaps.get(key)
 	}
 
+	pub fn get_mut(
+		&mut self,
+		key: &BridgeTransferId<BFrom::Hash>,
+	) -> Option<&mut ActiveSwap<BFrom, BTo>> {
+		self.swaps.get_mut(key)
+	}
+
 	pub fn already_executing(&self, key: &BridgeTransferId<BFrom::Hash>) -> bool {
 		self.swaps.contains_key(key)
 	}
 
-	pub fn start(&mut self, details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>)
-	where
+	pub fn start_bridge_transfer(
+		&mut self,
+		details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
+	) where
 		<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
 		<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
 	{
@@ -104,6 +126,36 @@ where
 				_phantom: std::marker::PhantomData,
 			},
 		);
+	}
+
+	pub fn complete_bridge_transfer(
+		&mut self,
+		details: UnlockDetails<BTo::Address, BTo::Hash>,
+	) -> Result<(), ActiveSwapMapError>
+	where
+		<BFrom as BlockchainService>::Hash: From<<BTo as BlockchainService>::Hash>,
+		<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
+			From<<BTo as BlockchainService>::Hash>,
+	{
+		let active_swap = self
+			.swaps
+			.get_mut(&convert_bridge_transfer_id(details.bridge_transfer_id.clone()))
+			.ok_or(ActiveSwapMapError::NonExistingSwap)?;
+
+		debug_assert!(matches!(active_swap.state, ActiveSwapState::WaitingForUnlockedEvent));
+
+		let initiator_contract = self.initiator_contract.clone();
+
+		tracing::trace!(
+			"Completing active swap for bridge transfer {:?}",
+			details.bridge_transfer_id
+		);
+
+		active_swap.state = ActiveSwapState::CompletingBridging(
+			call_complete_bridge_transfer::<BFrom, BTo>(initiator_contract, details).boxed(),
+		);
+
+		Ok(())
 	}
 }
 
@@ -130,7 +182,7 @@ where
 				ActiveSwapState::LockingTokens(future) => {
 					match future.poll_unpin(cx) {
 						Poll::Ready(Ok(())) => {
-							*state = ActiveSwapState::WaitingForCompletedEvent;
+							*state = ActiveSwapState::WaitingForUnlockedEvent;
 
 							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLocked(
 								details.bridge_transfer_id.clone(),
@@ -163,7 +215,7 @@ where
 						);
 					}
 				}
-				ActiveSwapState::WaitingForCompletedEvent => {}
+				ActiveSwapState::WaitingForUnlockedEvent => {}
 				ActiveSwapState::CompletingBridging(_) => todo!(),
 				ActiveSwapState::Completed => todo!(),
 			}
@@ -216,6 +268,34 @@ where
 			amount,
 		)
 		.await;
+
+	Ok(())
+}
+
+#[derive(Debug, Error)]
+pub enum CompleteBridgeTransferError {
+	#[error("Failed to complete bridge transfer")]
+	CompletingError,
+	#[error(transparent)]
+	ContractCallError(#[from] BridgeContractError), // TODO; addd contact call errors
+}
+
+async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
+	mut initiator_contract: BFrom::InitiatorContract,
+	UnlockDetails { bridge_transfer_id, secret, .. }: UnlockDetails<BTo::Address, BTo::Hash>,
+) -> Result<(), CompleteBridgeTransferError>
+where
+	<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
+		std::convert::From<<BTo as BlockchainService>::Hash>,
+{
+	tracing::trace!(
+		"Calling complete bridge transfer on counterparty contract for bridge transfer {:?}",
+		bridge_transfer_id
+	);
+
+	initiator_contract
+		.complete_bridge_transfer(convert_bridge_transfer_id(bridge_transfer_id), secret)
+		.await?;
 
 	Ok(())
 }

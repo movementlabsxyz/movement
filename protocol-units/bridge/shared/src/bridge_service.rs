@@ -5,9 +5,9 @@ use tracing::{trace, warn};
 
 use crate::{
 	blockchain_service::{BlockchainService, ContractEvent},
-	bridge_contracts::BridgeContractCounterparty,
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::BridgeTransferDetails,
+	types::{BridgeTransferDetails, UnlockDetails},
 };
 
 pub mod active_swap;
@@ -69,7 +69,7 @@ impl<A, H> IEvent<A, H> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CWarn<A, H> {
-	Noop(BridgeTransferDetails<A, H>),
+	CannotCompleteUnexistingSwap(UnlockDetails<A, H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -136,12 +136,17 @@ where
 
 	<B1::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B2::Hash>,
 	<B1::CounterpartyContract as BridgeContractCounterparty>::Address: From<B2::Address>,
+
+	<B1 as BlockchainService>::Hash: From<<B2 as BlockchainService>::Hash>,
+	<<B1 as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
+		From<<B2 as BlockchainService>::Hash>,
 {
 	type Item = Event<B1, B2>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 
+		// Handle active swaps initiated from blockchain 1
 		match this.active_swaps_b1_to_b2.poll_next_unpin(cx) {
 			Poll::Ready(Some(event)) => {
 				trace!("BridgeService: Received event from active swaps B1 -> B2: {:?}", event);
@@ -172,6 +177,7 @@ where
 			}
 		}
 
+		// Handle active swaps initiated from blockchain 2
 		match this.active_swaps_b2_to_b1.poll_next_unpin(cx) {
 			Poll::Ready(Some(event)) => {
 				trace!("BridgeService: Received event from active swaps B2 -> B1: {:?}", event);
@@ -204,7 +210,7 @@ where
 					ContractEvent::InitiatorEvent(initiator_event) => {
 						trace!("BridgeService: Initiator event from blockchain service 1");
 						match initiator_event {
-							BridgeContractInitiatorEvent::BridgeTransferInitiated(ref details) => {
+							BridgeContractInitiatorEvent::Initiated(ref details) => {
 								// Bridge transfer initiated. Now, as the counterparty, we should lock
 								// the appropriate tokens using the same secret.
 								if this
@@ -217,13 +223,13 @@ where
 									))));
 								}
 
-								this.active_swaps_b1_to_b2.start(details.clone());
+								this.active_swaps_b1_to_b2.start_bridge_transfer(details.clone());
 								return Poll::Ready(Some(B1I(IEvent::ContractEvent(
 									initiator_event,
 								))));
 							}
-							BridgeContractInitiatorEvent::BridgeTransferCompleted(_) => todo!(),
-							BridgeContractInitiatorEvent::BridgeTransferRefunded(_) => todo!(),
+							BridgeContractInitiatorEvent::Completed(_) => todo!(),
+							BridgeContractInitiatorEvent::Refunded(_) => todo!(),
 						}
 					}
 					ContractEvent::CounterpartyEvent(_) => {
@@ -246,8 +252,54 @@ where
 					ContractEvent::InitiatorEvent(_) => {
 						trace!("BridgeService: Initiator event from blockchain service 2");
 					}
-					ContractEvent::CounterpartyEvent(_) => {
+					ContractEvent::CounterpartyEvent(event) => {
 						trace!("BridgeService: Counterparty event from blockchain service 2");
+						use BridgeContractCounterpartyEvent::*;
+						match event {
+							Locked(_details) => {
+								// Asset locking on the counterpart bridge has been successfully confirmed. The
+								// system will now begin monitoring for the claim event, allowing the bridge to
+								// access the secret and unlock the corresponding funds on the opposite end.
+							}
+							Unlocked(ref details) => {
+								// The client implementation has successfully unlocked the assets on the
+								// counterparty bridge. Consequently, the bridge will now proceed to claim the
+								// funds on the initiator's side using the provided pre-image
+
+								match this
+									.active_swaps_b1_to_b2
+									.complete_bridge_transfer(details.clone())
+								{
+									Ok(_) => {
+										trace!(
+											"BridgeService: Bridge transfer completed successfully"
+										);
+										return Poll::Ready(Some(B2C(CEvent::ContractEvent(
+											event,
+										))));
+									}
+									Err(error) => {
+										warn!(
+											"BridgeService: Error completing bridge transfer: {:?}",
+											error
+										);
+										// This situation is critical and requires immediate attention. The bridge has
+										// received an event from the blockchain to close the active swap but failed to
+										// do so, potentially resulting in fund loss (for the bridge operator). To address this issue, we should
+										// make a manual call to the contract using the available details.
+										match error {
+											active_swap::ActiveSwapMapError::NonExistingSwap => {
+												return Poll::Ready(Some(B2C(CEvent::Warn(
+													CWarn::CannotCompleteUnexistingSwap(
+														details.clone(),
+													),
+												))));
+											}
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 			}
