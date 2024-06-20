@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2015, 2016, 2017 Dapphub
 // Adapted by Ethereum Community 2021
-pragma solidity 0.7.6;
+pragma solidity ^0.8.22;
 
 import "./IERC20.sol";
 import "./IERC2612.sol";
@@ -11,9 +11,8 @@ import "./IERC3156FlashLender.sol";
 /// `withdraw` ETH from WETH10, which will then burn WETH10 token in your wallet. The amount of WETH10 token in any wallet is always identical to the
 /// balance of ETH deposited minus the ETH withdrawn with that specific wallet.
 interface IWETH10 is IERC20, IERC2612, IERC3156FlashLender {
-
     /// @dev Returns current amount of flash-minted WETH10 token.
-    function flashMinted() external view returns(uint256);
+    function flashMinted() external view returns (uint256);
 
     /// @dev `msg.value` of ETH sent to this contract grants caller account a matching increase in WETH10 token balance.
     /// Emits {Transfer} event to reflect WETH10 token mint of `msg.value` from `address(0)` to caller account.
@@ -24,7 +23,7 @@ interface IWETH10 is IERC20, IERC2612, IERC3156FlashLender {
     function depositTo(address to) external payable;
 
     /// @dev Burn `value` WETH10 token from caller account and withdraw matching ETH to the same.
-    /// Emits {Transfer} event to reflect WETH10 token burn of `value` to `address(0)` from caller account. 
+    /// Emits {Transfer} event to reflect WETH10 token burn of `value` to `address(0)` from caller account.
     /// Requirements:
     ///   - caller account must have at least `value` balance of WETH10 token.
     function withdraw(uint256 value) external;
@@ -58,7 +57,7 @@ interface IWETH10 is IERC20, IERC2612, IERC3156FlashLender {
     /// For more information on {approveAndCall} format, see https://github.com/ethereum/EIPs/issues/677.
     function approveAndCall(address spender, uint256 value, bytes calldata data) external returns (bool);
 
-    /// @dev Moves `value` WETH10 token from caller's account to account (`to`), 
+    /// @dev Moves `value` WETH10 token from caller's account to account (`to`),
     /// after which a call is executed to an ERC677-compliant contract with the `data` parameter.
     /// A transfer to `address(0)` triggers an ETH withdraw matching the sent WETH10 token in favor of caller.
     /// Emits {Transfer} event.
@@ -66,5 +65,5 @@ interface IWETH10 is IERC20, IERC2612, IERC3156FlashLender {
     /// Requirements:
     ///   - caller account must have at least `value` WETH10 token.
     /// For more information on {transferAndCall} format, see https://github.com/ethereum/EIPs/issues/677.
-    function transferAndCall(address to, uint value, bytes calldata data) external returns (bool);
+    function transferAndCall(address to, uint256 value, bytes calldata data) external returns (bool);
 }

@@ -1,26 +1,40 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.22;
 pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitator.sol";
-import {WETH10} from "../src/WETH/WETH10.sol"; 
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {WETH10} from "../src/WETH/WETH10.sol";
 
 contract AtomicBridgeInitiatorTest is Test {
-    AtomicBridgeInitiator public atomicBridgeInitiator;
+    AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
     WETH10 public weth;
+    ProxyAdmin public proxyAdmin;
+    TransparentUpgradeableProxy public proxy;
+    AtomicBridgeInitiator public atomicBridgeInitiator;
 
     address public originator = address(1);
-    address public recipient = address(2);
+    // convert to bytes32
+    bytes32 public recipient = keccak256(abi.encodePacked(address(2)));
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
-    uint public amount = 1 ether;
-    uint public timeLock = 100;
+    uint256 public amount = 1 ether;
+    uint256 public timeLock = 100;
 
     function setUp() public {
         // Deploy the WETH contract
+
         weth = new WETH10();
         // Deploy the AtomicBridgeInitiator contract with the WETH address
-        atomicBridgeInitiator = new AtomicBridgeInitiator(address(weth));
+        atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
+        proxyAdmin = new ProxyAdmin(msg.sender);
+        proxy = new TransparentUpgradeableProxy(
+            address(atomicBridgeInitiatorImplementation),
+            address(proxyAdmin),
+            abi.encodeWithSignature("initialize(address)", address(weth))
+        );
+        atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
     }
 
     function testInitiateBridgeTransferWithEth() public {
@@ -29,22 +43,21 @@ contract AtomicBridgeInitiatorTest is Test {
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
             0, // _wethAmount
-            originator,
             recipient,
             hashLock,
             timeLock
         );
 
         (
-            bool exists, 
-            uint transferAmount,  
-            address transferOriginator, 
-            address transferRecipient,
+            uint256 transferAmount,
+            address transferOriginator,
+            bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint transferTimeLock 
-        ) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
+            uint256 transferTimeLock,
+            bool completed
+        ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
-        assertTrue(exists);
+        assertTrue(!completed);
         assertEq(transferAmount, amount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
@@ -62,37 +75,36 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.startPrank(originator);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
-            0, // _wethAmount is 0 
-            originator, 
-            recipient, 
-            testHashLock, 
+            0, // _wethAmount is 0
+            recipient,
+            testHashLock,
             timeLock
         );
 
         vm.stopPrank();
 
-        vm.startPrank(recipient);
+        // vm.startPrank(msg.sender);
         atomicBridgeInitiator.completeBridgeTransfer(bridgeTransferId, secret);
 
-        (bool exists,,,,,) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
-        assertFalse(exists);
+        (,,,,, bool completed1) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
+        assertFalse(completed1);
 
         (
-            bool completedExists, 
-            uint completedAmount, 
-            address completedOriginator, 
-            address completedRecipient, 
-            bytes32 completedHashLock, 
-            uint completedTimeLock 
-        ) = atomicBridgeInitiator.getCompletedBridgeTransferDetail(bridgeTransferId);
-        assertTrue(completedExists);
+            uint256 completedAmount,
+            address completedOriginator,
+            bytes32 completedRecipient,
+            bytes32 completedHashLock,
+            uint256 completedTimeLock,
+            bool completedCompleted
+        ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
+        assertTrue(completedCompleted);
         assertEq(completedAmount, amount);
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
         assertGt(completedTimeLock, block.timestamp);
 
-        vm.stopPrank();
+        // vm.stopPrank();
     }
 
     function testInitiateBridgeTransferWithWeth() public {
@@ -103,24 +115,19 @@ contract AtomicBridgeInitiatorTest is Test {
         weth.deposit{value: wethAmount}();
         weth.transfer(originator, wethAmount);
 
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(
-            wethAmount,
-            originator,
-            recipient,
-            hashLock,
-            timeLock
-        );
+        bytes32 bridgeTransferId =
+            atomicBridgeInitiator.initiateBridgeTransfer(wethAmount, recipient, hashLock, timeLock);
 
         (
-            bool exists, 
-            uint transferAmount,  
-            address transferOriginator, 
-            address transferRecipient,
+            uint256 transferAmount,
+            address transferOriginator,
+            bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint transferTimeLock 
-        ) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
+            uint256 transferTimeLock,
+            bool transferCompleted
+        ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
-        assertTrue(exists);
+        assertTrue(transferCompleted);
         assertEq(transferAmount, wethAmount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
@@ -137,7 +144,7 @@ contract AtomicBridgeInitiatorTest is Test {
 
         // Ensure the originator has sufficient ETH
         vm.deal(originator, 100 ether);
-        
+
         vm.startPrank(originator);
         // Ensure WETH contract is correctly funded and transfer WETH to originator
         weth.deposit{value: wethAmount}();
@@ -148,26 +155,21 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.startPrank(originator);
 
         // Try to initiate bridge transfer
-        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(
-            wethAmount,
-            originator,
-            recipient,
-            hashLock,
-            timeLock
-        );
+        bytes32 bridgeTransferId =
+            atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(wethAmount, recipient, hashLock, timeLock);
 
         // Fetch the details of the initiated bridge transfer
         (
-            bool exists, 
-            uint transferAmount,  
-            address transferOriginator, 
-            address transferRecipient,
+            uint256 transferAmount,
+            address transferOriginator,
+            bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint transferTimeLock 
-        ) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
+            uint256 transferTimeLock,
+            bool completed
+        ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
         // Assertions
-        assertTrue(exists, "Bridge transfer does not exist");
+        assertTrue(completed, "Bridge transfer does not exist");
         assertEq(transferAmount, totalAmount, "Transfer amount mismatch");
         assertEq(transferOriginator, originator, "Originator address mismatch");
         assertEq(transferRecipient, recipient, "Recipient address mismatch");
@@ -177,16 +179,14 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.stopPrank();
     }
 
-
     function testRefundBridgeTransfer() public {
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
             0, // _wethAmount is 0
-            originator, 
-            recipient, 
-            hashLock, 
+            recipient,
+            hashLock,
             timeLock
         );
 
@@ -196,10 +196,9 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.startPrank(originator);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
-        (bool exists,,,,,) = atomicBridgeInitiator.getBridgeTransferDetail(bridgeTransferId);
-        assertFalse(exists);
+        (,,,,, bool completed) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
+        assertFalse(completed);
 
         vm.stopPrank();
     }
 }
-

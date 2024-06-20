@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.6;
+pragma solidity ^0.8.22;
 
 interface IAtomicBridgeInitiator {
     // Event emitted when a new atomic bridge transfer is created
@@ -21,27 +21,24 @@ interface IAtomicBridgeInitiator {
     error BridgeTransferExists();
     error InvalidSecret();
     error NonExistentBridgeTransfer();
-    error BridgeTransferCompleted();
+    error BridgeTransferHasBeenCompleted();
     error TimeLockNotExpired();
     error ZeroAddress();
+    error Unauthorized();
 
     /**
      * @dev Creates a new atomic bridge transfer using native ETH
      * @param _wethAmount The amount of WETH to send
-     * @param _originator The address allowed to withdraw (claim) the funds once the correct secret is provided on timeout. Used to transfer the funds.
      * @param _recipient The address on the other chain to which to transfer the funds
      * @param _hashLock The hash of the secret (HASH) that will unlock the funds
      * @param _timeLock The number of blocks until which this BridgeTransfer is valid and can be executed
      * @return _bridgeTransferId A unique id representing this BridgeTransfer
      *
      */
-    function initiateBridgeTransfer(
-        uint256 _wethAmount,
-        address _originator,
-        address _recipient,
-        bytes32 _hashLock,
-        uint256 _timeLock
-    ) external payable returns (bytes32 _bridgeTransferId);
+    function initiateBridgeTransfer(uint256 _wethAmount, bytes32 _recipient, bytes32 _hashLock, uint256 _timeLock)
+        external
+        payable
+        returns (bytes32 _bridgeTransferId);
 
     /**
      * @dev Completes the bridging Counterparty
@@ -57,20 +54,4 @@ interface IAtomicBridgeInitiator {
      *
      */
     function refundBridgeTransfer(bytes32 _bridgeTransferId) external;
-
-    /**
-     * @dev Returns the details of a specific bridge transfer
-     * @param _bridgeTransferId Unique identifier for the bridge transfer
-     * @return exists Boolean indicating if the bridge transfer exists
-     * @return amount The amount of assets to be allocated and sent
-     * @return originator The address allowed to withdraw (claim) the funds
-     * @return recipient The address intended to receive the assets
-     * @return hashLock The hash of the secret that will unlock the funds
-     * @return timeLock The timestamp until which this BridgeTransfer is valid
-     *
-     */
-    function getBridgeTransferDetail(bytes32 _bridgeTransferId)
-        external
-        view
-        returns (bool exists, uint256 amount, address originator, address recipient, bytes32 hashLock, uint256 timeLock);
 }
