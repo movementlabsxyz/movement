@@ -5,7 +5,7 @@ import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH10} from "./WETH/interfaces/IWETH10.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
+contract AtomicBridgeInitiatorETHStore is IAtomicBridgeInitiator, Initializable {
     struct BridgeTransfer {
         uint256 amount;
         address originator;
@@ -18,6 +18,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
     IWETH10 public weth;
     address public authority;
+
+    fallback() external payable {}
 
     modifier onlyAuthorized() {
         if (msg.sender != authority) revert Unauthorized();
@@ -50,9 +52,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         //Transfer WETH to this contract, revert if transfer fails
         if (_wethAmount > 0) {
             if (!weth.transferFrom(originator, address(this), _wethAmount)) revert WETHTransferFailed();
+            weth.withdraw(_wethAmount);
         }
-        // If msg.value is greater than 0, convert ETH to WETH
-        if (ethAmount > 0) weth.deposit{value: ethAmount}();
 
         bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
@@ -88,8 +89,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         assembly {
             recip := shr(96, recipient)
         }
-        if (!weth.transfer(recip, amount)) revert WETHTransferFailed();
-        // payable(bridgeTransfer.recipient).transfer(amount);
+        // if (!weth.transfer(recip, amount)) revert WETHTransferFailed();
+        payable(recip).transfer(amount);
 
         emit BridgeTransferCompleted(_bridgeTransferId, _secret);
     }
@@ -105,8 +106,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
         // todo: we need to verify if transfers are cheaper in weth or eth
         // then decide on which transfer to use.
-        if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
-        // payable(bridgeTransfer.originator).transfer(amount);
+        // if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
+        payable(bridgeTransfer.originator).transfer(amount);
 
         emit BridgeTransferRefunded(_bridgeTransferId);
     }
