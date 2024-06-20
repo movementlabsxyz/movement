@@ -12,8 +12,8 @@ pauser = "_"
 denylister = "_"
 
 [dev-addresses]
-atomic_bridge = "0xfeef"
 moveth = "0xbeef"
+atomic_bridge = "0xfeef"
 master_minter = "0xbab"
 minter = "0xface"
 pauser = "0xdafe"
