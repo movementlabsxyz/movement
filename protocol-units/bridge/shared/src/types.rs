@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash::Hash};
 
-use derive_more::Deref;
+use derive_more::{Deref, DerefMut};
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
@@ -39,13 +39,13 @@ pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
 	HashLock(From::from(other.0))
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct HashLockPreImage(pub Vec<u8>);
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq)]
+#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Amount(pub u64);
 
 #[derive(Debug, PartialEq, Eq, Clone)]

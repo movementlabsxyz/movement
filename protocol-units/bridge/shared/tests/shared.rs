@@ -29,8 +29,20 @@ use std::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Hash(pub &'static str);
 
+impl PartialEq<HashLockPreImage> for BC1Hash {
+	fn eq(&self, _other: &HashLockPreImage) -> bool {
+		true
+	}
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC2Hash(pub &'static str);
+
+impl PartialEq<HashLockPreImage> for BC2Hash {
+	fn eq(&self, _other: &HashLockPreImage) -> bool {
+		true
+	}
+}
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Address(pub &'static str);
@@ -365,10 +377,16 @@ impl BridgeContractInitiator for B2Client {
 
 	async fn complete_bridge_transfer(
 		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: HashLockPreImage,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
+		self.client
+			.send_transaction(transaction)
+			.map_err(BridgeContractError::GenericError)
 	}
 
 	async fn refund_bridge_transfer(

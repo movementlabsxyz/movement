@@ -16,8 +16,8 @@ use bridge_shared::{
 		rng::{RngSeededClone, TestRng},
 	},
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress,
-		RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
 
@@ -82,7 +82,7 @@ async fn test_bridge_service_integration() {
 		B2CounterpartyContractMonitoring
 	);
 
-	let blockchain_2_client = B2Client::build(client_2.clone());
+	let mut blockchain_2_client = B2Client::build(client_2.clone());
 	let blockchain_2_service = B2Service {
 		initiator_contract: blockchain_2_client.clone(),
 		initiator_monitoring: monitor_2_initiator,
@@ -122,6 +122,14 @@ async fn test_bridge_service_integration() {
 		})
 	);
 	dbg!(&transfer_initiated_event);
+
+	blockchain_2_client
+		.complete_bridge_transfer(
+			BridgeTransferId(BC2Hash("unique_hash")),
+			HashLockPreImage(vec![1, 2, 3, 4]),
+		)
+		.await
+		.expect("complete_bridge_transfer failed");
 
 	let event = bridge_service.next().await;
 }
