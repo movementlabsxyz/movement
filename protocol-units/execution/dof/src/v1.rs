@@ -272,7 +272,6 @@ mod tests {
 
 		#[derive(Debug)]
 		struct Commit {
-			hash: HashValue,
 			info: LedgerInfoWithSignatures,
 			cur_ver: Version,
 		}
@@ -335,16 +334,15 @@ mod tests {
 			executor.execute_block_opt(block).await?;
 
 			blockheight += 1;
+			cur_ver += txns_to_commit.len() as u64;
 			committed_blocks.insert(
 				blockheight,
 				Commit {
-					hash: ledger_info_with_sigs.commit_info().executed_state_id(),
 					info: ledger_info_with_sigs.clone(),
 					cur_ver,
 				},
 			);
 			commit_versions.push(cur_ver);
-			cur_ver += txns_to_commit.len() as u64;
 			//blockheight += 1;
 		}
 
@@ -353,25 +351,20 @@ mod tests {
 		let revert = committed_blocks.get(&revert_block_num).unwrap();
 
 		// Get the version to revert to
-		let version_to_revert = revert.cur_ver - 1;
+		let version_to_revert_to = revert.cur_ver;
 
 		if let Some((_max_blockheight, last_commit)) =
 			committed_blocks.iter().max_by_key(|(&k, _)| k)
 		{
 			let db_writer = executor.executor.db.writer.clone();
-			db_writer.revert_commit(
-				version_to_revert,
-				last_commit.cur_ver,
-				revert.hash,
-				revert.info.clone(),
-			)?;
+			db_writer.revert_commit(&revert.info)?;
 		} else {
 			panic!("No blocks to revert");
 		}
 
 		let db_reader = executor.executor.db.reader.clone();
 		let latest_version = db_reader.get_latest_version()?;
-		assert_eq!(latest_version, version_to_revert - 1);
+		assert_eq!(latest_version, version_to_revert_to);
 
 		services_handle.abort();
 		background_handle.abort();
