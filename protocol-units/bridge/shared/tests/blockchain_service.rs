@@ -30,15 +30,15 @@ async fn test_bridge_transfer_initiated() {
 
 	assert_eq!(
 		event,
-		Poll::Ready(Some(ContractEvent::InitiatorEvent(
-			BridgeContractInitiatorEvent::BridgeTransferInitiated(BridgeTransferDetails {
+		Poll::Ready(Some(ContractEvent::InitiatorEvent(BridgeContractInitiatorEvent::Initiated(
+			BridgeTransferDetails {
 				bridge_transfer_id: BridgeTransferId("transfer_id"),
 				initiator_address: InitiatorAddress("initiator"),
 				recipient_address: RecipientAddress("recipient"),
 				hash_lock: HashLock("hash_lock"),
 				time_lock: TimeLock(100),
 				amount: Amount(1000),
-			})
-		)))
+			}
+		))))
 	);
 }

@@ -14,7 +14,7 @@ pub use self::{
 use super::rng::RngSeededClone;
 use crate::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, LockedAssetsDetails,
+	GenUniqueHash, LockDetails,
 };
 
 pub mod client;
@@ -25,7 +25,7 @@ pub mod initiator_contract;
 pub enum AbstractBlockchainEvent<A, H> {
 	Noop,
 	BridgeTransferInitiated(BridgeTransferDetails<A, H>),
-	BridgeTransferAssetsLocked(LockedAssetsDetails<A, H>),
+	BridgeTransferAssetsLocked(LockDetails<A, H>),
 }
 
 #[derive(Debug)]
@@ -197,7 +197,7 @@ where
 							amount.clone(),
 						);
 						this.events.push(AbstractBlockchainEvent::BridgeTransferAssetsLocked(
-							LockedAssetsDetails {
+							LockDetails {
 								bridge_transfer_id,
 								hash_lock,
 								time_lock,

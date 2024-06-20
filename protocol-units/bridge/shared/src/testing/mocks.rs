@@ -6,18 +6,21 @@ use std::{
 	task::{Context, Poll},
 };
 
-use crate::bridge_monitoring::{
-	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
-	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
-};
 use crate::types::{BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId};
 use crate::{
-	blockchain_service::{ContractEvent, BlockchainService},
+	blockchain_service::{BlockchainService, ContractEvent},
 	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use crate::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator, BridgeContractResult},
 	types::Amount,
+};
+use crate::{
+	bridge_monitoring::{
+		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
+		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
+	},
+	types::HashLockPreImage,
 };
 
 pub struct MockBlockchainService<A, H> {
@@ -250,23 +253,23 @@ where
 		let mut state = self.state.lock().expect("lock poisoned");
 		let next_bridge_transfer_id =
 			state.mock_next_bridge_transfer_id.take().expect("no next bridge transfer id");
-		state.events.push(BridgeContractInitiatorEvent::BridgeTransferInitiated(
-			BridgeTransferDetails {
+		state
+			.events
+			.push(BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
 				bridge_transfer_id: next_bridge_transfer_id,
 				initiator_address,
 				recipient_address,
 				hash_lock,
 				time_lock,
 				amount,
-			},
-		));
+			}));
 		Ok(())
 	}
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: S,
+		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
@@ -317,10 +320,10 @@ where
 		true
 	}
 
-	async fn complete_bridge_transfer<S: Send>(
+	async fn complete_bridge_transfer(
 		&mut self,
-		_bridge_transfer_id: Self::Hash,
-		_secret: S,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		Ok(())
 	}
@@ -334,7 +337,7 @@ where
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		_bridge_transfer_id: Self::Hash,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
 	}

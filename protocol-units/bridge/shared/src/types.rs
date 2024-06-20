@@ -5,6 +5,18 @@ use derive_more::Deref;
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
+impl<H> From<H> for BridgeTransferId<H> {
+	fn from(hash: H) -> Self {
+		BridgeTransferId(hash)
+	}
+}
+
+pub fn convert_bridge_transfer_id<H: From<O>, O>(
+	other: BridgeTransferId<O>,
+) -> BridgeTransferId<H> {
+	BridgeTransferId(From::from(other.0))
+}
+
 impl<H> GenUniqueHash for BridgeTransferId<H>
 where
 	H: GenUniqueHash,
@@ -23,6 +35,13 @@ pub struct RecipientAddress<A>(pub A);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
 
+pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
+	HashLock(From::from(other.0))
+}
+
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct HashLockPreImage(pub Vec<u8>);
+
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
@@ -40,11 +59,20 @@ pub struct BridgeTransferDetails<A, H> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct LockedAssetsDetails<A, H> {
+pub struct LockDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
+	pub amount: Amount,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct UnlockDetails<A, H> {
+	pub bridge_transfer_id: BridgeTransferId<H>,
+	pub recipient_address: RecipientAddress<A>,
+	pub hash_lock: HashLock<H>,
+	pub secret: HashLockPreImage,
 	pub amount: Amount,
 }
 

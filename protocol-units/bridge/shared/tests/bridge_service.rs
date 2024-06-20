@@ -112,7 +112,7 @@ async fn test_bridge_service_integration() {
 	let transfer_initiated_event = bridge_service.next().await.expect("No event");
 	assert_eq!(
 		transfer_initiated_event.B1I_ContractEvent().unwrap(),
-		&BridgeContractInitiatorEvent::BridgeTransferInitiated(BridgeTransferDetails {
+		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
 			bridge_transfer_id: BridgeTransferId(BC1Hash("unique_hash")),
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress(BC1Address("recipient")),

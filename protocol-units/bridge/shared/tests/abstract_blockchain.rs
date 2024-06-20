@@ -6,7 +6,7 @@ use bridge_shared::{
 	testing::blockchain::{
 		AbstractBlockchain, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall, Transaction,
 	},
-	types::LockedAssetsDetails,
+	types::LockDetails,
 };
 use futures::StreamExt;
 use rand::SeedableRng;
@@ -114,7 +114,7 @@ async fn test_lock_bridge_transfer() {
 	let event = event.unwrap();
 	assert_eq!(
 		event,
-		AbstractBlockchainEvent::BridgeTransferAssetsLocked(LockedAssetsDetails {
+		AbstractBlockchainEvent::BridgeTransferAssetsLocked(LockDetails {
 			bridge_transfer_id: bridge_transfer_id.clone(),
 			hash_lock: hash_lock.clone(),
 			time_lock: time_lock.clone(),
