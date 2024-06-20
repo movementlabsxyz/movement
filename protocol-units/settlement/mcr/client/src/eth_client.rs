@@ -34,7 +34,7 @@ use tokio_stream::StreamExt;
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Tx fail because gaz estimation is to high. Estimated gaz:{0} gaz limit:{1}"
+		"MCR Settlement Tx fail because gas estimation is to high. Estimated gas:{0} gas limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
 	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]
@@ -66,7 +66,7 @@ struct AnvilKillAtDrop {
 
 impl Drop for AnvilKillAtDrop {
 	fn drop(&mut self) {
-		tracing::info!("Killing Anvil process");
+		tracing::info!("Killing Anvil process pid:{}", self.pid);
 		if let Err(err) = std::process::Command::new("kill").args(&[&self.pid.to_string()]).spawn()
 		{
 			tracing::info!("warn, an error occurs during Anvil process kill : {err}");
@@ -80,7 +80,7 @@ pub struct Client<P> {
 	signer_address: Address,
 	contract_address: Address,
 	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
-	gas_limit: u128,
+	gas_limit: u64,
 	num_tx_send_retries: u32,
 	kill_anvil_process: Option<AnvilKillAtDrop>,
 }
@@ -120,7 +120,7 @@ impl
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit as u128,
+			config.gas_limit,
 			config.tx_send_retries,
 		)
 		.await?;
@@ -137,7 +137,7 @@ impl<P> Client<P> {
 		ws_url: S,
 		signer_address: Address,
 		contract_address: Address,
-		gas_limit: u128,
+		gas_limit: u64,
 		num_tx_send_retries: u32,
 	) -> Result<Self, anyhow::Error>
 	where
@@ -189,7 +189,7 @@ where
 			call_builder,
 			&self.send_tx_error_rules,
 			self.num_tx_send_retries,
-			self.gas_limit,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -218,7 +218,7 @@ where
 			call_builder,
 			&self.send_tx_error_rules,
 			self.num_tx_send_retries,
-			self.gas_limit,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -526,7 +526,7 @@ mod tests {
 		contract: &MCR::MCRInstance<T, &P, Ethereum>,
 		contract_address: Address,
 		signer: Address,
-		amount: u128,
+		amount: u64,
 	) -> Result<(), anyhow::Error> {
 		let stake_genesis_call = contract.stakeGenesis();
 		let calldata = stake_genesis_call.calldata().to_owned();
@@ -538,7 +538,7 @@ mod tests {
 		call_data: Bytes,
 		contract_address: Address,
 		signer: Address,
-		amount: u128,
+		amount: u64,
 	) -> Result<(), anyhow::Error> {
 		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
 		let tx = TransactionRequest::default()
