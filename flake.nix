@@ -48,9 +48,11 @@
           protobuf
           rustPlatform.bindgenHook
           lld
+          mold
           coreutils
           gcc
           rust
+          mold
         ];
         
         sysDependencies = with pkgs; [] 

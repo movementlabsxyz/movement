@@ -1,4 +1,5 @@
 .DS_Store
+proc-compose.temp.log
 methods/guest/Cargo.lock
 .idea/
 target/
@@ -8,4 +9,9 @@ state_merkle_db/
 .movement
 .idea
 .vscode
+<<<<<<< HEAD
 .env
+.data
+=======
+.data
+>>>>>>> l-monninger/timestamp-fix
