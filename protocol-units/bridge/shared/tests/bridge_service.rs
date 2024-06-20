@@ -9,12 +9,16 @@ use test_log::test;
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_contracts::BridgeContractInitiator,
+	bridge_monitoring::BridgeContractInitiatorEvent,
 	bridge_service::BridgeService,
 	testing::{
 		blockchain::{AbstractBlockchain, AbstractBlockchainClient},
 		rng::{RngSeededClone, TestRng},
 	},
-	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
+	types::{
+		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress,
+		RecipientAddress, TimeLock,
+	},
 };
 
 use crate::shared::{
@@ -100,12 +104,23 @@ async fn test_bridge_service_integration() {
 		.await
 		.expect("initiate_bridge_transfer failed");
 
-	let mut cx = Context::from_waker(futures::task::noop_waker_ref());
+	// let mut cx = Context::from_waker(futures::task::noop_waker_ref());
 
 	tokio::spawn(blockchain_1);
 	tokio::spawn(blockchain_2);
 
-	let transfer_initiated_event = bridge_service.next().await;
+	let transfer_initiated_event = bridge_service.next().await.expect("No event");
+	assert_eq!(
+		transfer_initiated_event.B1I_ContractEvent().unwrap(),
+		&BridgeContractInitiatorEvent::BridgeTransferInitiated(BridgeTransferDetails {
+			bridge_transfer_id: BridgeTransferId(BC1Hash("unique_hash")),
+			initiator_address: InitiatorAddress(BC1Address("initiator")),
+			recipient_address: RecipientAddress(BC1Address("recipient")),
+			hash_lock: HashLock(BC1Hash("hash_lock")),
+			time_lock: TimeLock(100),
+			amount: Amount(1000)
+		})
+	);
 	dbg!(&transfer_initiated_event);
 
 	let event = bridge_service.next().await;

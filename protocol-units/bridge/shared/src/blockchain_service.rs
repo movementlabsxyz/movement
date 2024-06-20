@@ -47,6 +47,14 @@ macro_rules! struct_blockchain_service {
 			}
 		}
 
+		// NOTE For comparison in tests we only care we are the same types
+		impl PartialEq for $Name {
+			fn eq(&self, other: &Self) -> bool {
+				use std::any::{Any, TypeId};
+				TypeId::of::<Self>() == TypeId::of::<Self>()
+			}
+		}
+
 		impl std::fmt::Debug for $Name {
 			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 				f.debug_struct(stringify!($Name)).finish()

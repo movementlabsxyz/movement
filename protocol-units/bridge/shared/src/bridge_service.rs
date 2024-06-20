@@ -47,32 +47,83 @@ where
 	}
 }
 
-#[derive(Debug)]
-pub enum IWarn<B: BlockchainService> {
-	AlreadyPresent(BridgeTransferDetails<B::Address, B::Hash>),
+#[derive(Debug, PartialEq, Eq)]
+pub enum IWarn<A, H> {
+	AlreadyPresent(BridgeTransferDetails<A, H>),
 }
 
-#[derive(Debug)]
-pub enum IEvent<B: BlockchainService> {
-	ContractEvent(BridgeContractInitiatorEvent<B::Address, B::Hash>),
-	Warn(IWarn<B>),
+#[derive(Debug, PartialEq, Eq)]
+pub enum IEvent<A, H> {
+	ContractEvent(BridgeContractInitiatorEvent<A, H>),
+	Warn(IWarn<A, H>),
 }
 
-#[derive(Debug)]
-pub enum CEvent<B: BlockchainService> {
-	ContractEvent(BridgeContractCounterpartyEvent<B::Address, B::Hash>),
+impl<A, H> IEvent<A, H> {
+	pub fn contract_event(&self) -> Option<&BridgeContractInitiatorEvent<A, H>> {
+		match self {
+			IEvent::ContractEvent(event) => Some(event),
+			_ => None,
+		}
+	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
+pub enum CWarn<A, H> {
+	Noop(BridgeTransferDetails<A, H>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum CEvent<A, H> {
+	ContractEvent(BridgeContractCounterpartyEvent<A, H>),
+	Warn(CWarn<A, H>),
+}
+
+impl<A, H> CEvent<A, H> {
+	pub fn contract_event(&self) -> Option<&BridgeContractCounterpartyEvent<A, H>> {
+		match self {
+			CEvent::ContractEvent(event) => Some(event),
+			_ => None,
+		}
+	}
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum Event<B1, B2>
 where
 	B1: BlockchainService,
 	B2: BlockchainService,
 {
-	B1I(IEvent<B1>),
-	B1C(CEvent<B1>),
-	B2I(IEvent<B2>),
-	B2C(CEvent<B2>),
+	B1I(IEvent<B1::Address, B1::Hash>),
+	B1C(CEvent<B1::Address, B1::Hash>),
+	B2I(IEvent<B2::Address, B2::Hash>),
+	B2C(CEvent<B2::Address, B2::Hash>),
+}
+
+#[allow(non_snake_case)]
+impl<B1: BlockchainService, B2: BlockchainService> Event<B1, B2> {
+	pub fn B1I(&self) -> Option<&IEvent<B1::Address, B1::Hash>> {
+		match self {
+			Event::B1I(event) => Some(event),
+			_ => None,
+		}
+	}
+	pub fn B1I_ContractEvent(
+		&self,
+	) -> Option<&BridgeContractInitiatorEvent<B1::Address, B1::Hash>> {
+		self.B1I()?.contract_event()
+	}
+
+	pub fn B2I(&self) -> Option<&IEvent<B2::Address, B2::Hash>> {
+		match self {
+			Event::B2I(event) => Some(event),
+			_ => None,
+		}
+	}
+	pub fn B2I_ContractEvent(
+		&self,
+	) -> Option<&BridgeContractInitiatorEvent<B2::Address, B2::Hash>> {
+		self.B2I()?.contract_event()
+	}
 }
 
 impl<B1, B2> Stream for BridgeService<B1, B2>
