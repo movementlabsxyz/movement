@@ -22,3 +22,4 @@ dot-movement = { workspace = true }
 suzuka-config = { workspace = true }
 aptos-config = { workspace = true }
 aptos-sdk = { workspace = true }
+tracing = { workspace = true }
