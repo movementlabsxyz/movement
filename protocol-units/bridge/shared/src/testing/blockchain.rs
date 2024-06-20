@@ -19,6 +19,7 @@ use crate::types::{
 
 pub mod client;
 pub mod counterparty_contract;
+pub mod hasher;
 pub mod initiator_contract;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -179,6 +180,13 @@ where
 								amount,
 							},
 						));
+					}
+					InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
+						this.initiater_contract.complete_bridge_transfer(
+							&mut this.accounts,
+							bridge_transfer_id.clone(),
+							secret.clone(),
+						);
 					}
 				},
 				Transaction::Counterparty(call) => match call {
