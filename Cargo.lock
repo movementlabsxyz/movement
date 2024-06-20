@@ -7245,6 +7245,7 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-config",
  "rand 0.7.3",
+ "serde_json",
  "tokio",
  "tracing",
 ]

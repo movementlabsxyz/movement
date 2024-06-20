@@ -21,6 +21,7 @@ alloy-primitives = { workspace = true }
 anyhow = { workspace = true }
 k256 = { workspace = true }
 rand = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 

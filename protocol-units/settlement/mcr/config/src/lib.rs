@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const DEFAULT_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_GAS_LIMIT: u128 = 10_000_000_000_000_000;
+const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000_000_000;
 
 /// Configuration of the MCR settlement client.
 ///
@@ -22,16 +22,17 @@ pub struct Config {
 	#[serde(default = "default_mcr_contract_address")]
 	pub mcr_contract_address: String,
 	#[serde(default = "default_gas_limit")]
-	pub gas_limit: u128,
+	pub gas_limit: u64,
 	#[serde(default = "default_tx_send_retries")]
 	pub tx_send_retries: u32,
+	pub anvil_process_pid: Option<u32>,
 }
 
 fn default_mcr_contract_address() -> String {
 	MCR_CONTRACT_ADDRESS.into()
 }
 
-const fn default_gas_limit() -> u128 {
+const fn default_gas_limit() -> u64 {
 	DEFAULT_GAS_LIMIT
 }
 
@@ -48,6 +49,7 @@ impl Default for Config {
 			mcr_contract_address: default_mcr_contract_address(),
 			gas_limit: default_gas_limit(),
 			tx_send_retries: default_tx_send_retries(),
+			anvil_process_pid: None,
 		}
 	}
 }

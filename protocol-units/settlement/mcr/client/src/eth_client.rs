@@ -57,6 +57,23 @@ sol!(
 	"abis/MCRLegacy.json"
 );
 
+// When created, kill the pid when dropped.
+// Use to kill Anvil process when Suzuka Node end.
+// TODO should be removed by new config.
+struct AnvilKillAtDrop {
+	pid: u32,
+}
+
+impl Drop for AnvilKillAtDrop {
+	fn drop(&mut self) {
+		tracing::info!("Killing Anvil process");
+		if let Err(err) = std::process::Command::new("kill").args(&[&self.pid.to_string()]).spawn()
+		{
+			tracing::info!("warn, an error occurs during Anvil process kill : {err}");
+		}
+	}
+}
+
 pub struct Client<P> {
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
@@ -65,6 +82,7 @@ pub struct Client<P> {
 	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u128,
 	num_tx_send_retries: u32,
+	kill_anvil_process: Option<AnvilKillAtDrop>,
 }
 
 impl
@@ -97,15 +115,19 @@ impl
 			.on_builtin(&rpc_url)
 			.await?;
 
-		Client::build_with_provider(
+		let mut client = Client::build_with_provider(
 			rpc_provider,
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit,
+			config.gas_limit as u128,
 			config.tx_send_retries,
 		)
-		.await
+		.await?;
+		if let Some(pid) = config.anvil_process_pid {
+			client.kill_anvil_process = Some(AnvilKillAtDrop { pid })
+		}
+		Ok(client)
 	}
 }
 
@@ -138,6 +160,7 @@ impl<P> Client<P> {
 			send_tx_error_rules,
 			gas_limit,
 			num_tx_send_retries,
+			kill_anvil_process: None,
 		})
 	}
 }
