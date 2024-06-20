@@ -3,6 +3,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     use std::event;
     use std::vector;
     use aptos_framework::timestamp;
+    use aptos_framework::aptos_hash::keccak256;
     use aptos_std::smart_table::{Self, SmartTable};
     use moveth::moveth;
 
@@ -106,6 +107,10 @@ module atomic_bridge::atomic_bridge_counterparty {
         // check secret against details.hash_lock
         let config = borrow_global<BridgeConfig>(signer::address_of(initiator));
 
+        // Check secret against details.hash_lock
+        let computed_hash = keccak256(secret);
+        assert!(computed_hash == details.hash_lock, 2);
+
         // Mint moveth tokens to the recipient
         moveth::mint(initiator, details.recipient, details.amount);
 
@@ -170,8 +175,9 @@ module atomic_bridge::atomic_bridge_counterparty {
         moveth::init_for_test(moveth);
         let receiver_address = @0xcafe1;
 
-        // set minter and have minter call mint, check balance
+        // the master minter sets creator to be a minter
         moveth::add_minter(master_minter, signer::address_of(creator));
+        //creator now mints themselves 100 moveth
         moveth::mint(creator, signer::address_of(creator), 100);
         let asset = moveth::metadata();
         debug::print(&utf8(msg));
@@ -181,12 +187,15 @@ module atomic_bridge::atomic_bridge_counterparty {
 
         let initiator = signer::address_of(creator); 
         let recipient = @0xface; 
+
+        // In this case the moveth_minter (2nd param) is also the creator.
         initialize(creator, signer::address_of(creator));
 
         debug::print(&utf8(msg));
 
         let bridge_transfer_id = b"transfer1";
-        let hash_lock = b"hashlock1";
+        let secret = b"secret";
+        let hash_lock = keccak256(secret); // Compute the hash lock using keccak256
         let time_lock = 3600;
         let amount = 100;
 
@@ -201,7 +210,7 @@ module atomic_bridge::atomic_bridge_counterparty {
 
         assert!(result, 1);
 
-        //Verify that the transfer is stored in pending_transfers
+        // Verify that the transfer is stored in pending_transfers
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
         let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
         assert!(transfer_details.recipient == recipient, 2);
