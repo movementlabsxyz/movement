@@ -57,7 +57,7 @@ contract AtomicBridgeInitiatorTest is Test {
             bool completed
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
-        assertTrue(!completed);
+        assertFalse(completed);
         assertEq(transferAmount, amount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
@@ -87,7 +87,7 @@ contract AtomicBridgeInitiatorTest is Test {
         atomicBridgeInitiator.completeBridgeTransfer(bridgeTransferId, secret);
 
         (,,,,, bool completed1) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-        assertFalse(completed1);
+        assertTrue(completed1);
 
         (
             uint256 completedAmount,
@@ -113,8 +113,7 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
         weth.deposit{value: wethAmount}();
-        weth.transfer(originator, wethAmount);
-
+        weth.approve(address(atomicBridgeInitiator), wethAmount);
         bytes32 bridgeTransferId =
             atomicBridgeInitiator.initiateBridgeTransfer(wethAmount, recipient, hashLock, timeLock);
 
@@ -127,7 +126,7 @@ contract AtomicBridgeInitiatorTest is Test {
             bool transferCompleted
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
-        assertTrue(transferCompleted);
+        assertFalse(transferCompleted);
         assertEq(transferAmount, wethAmount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
@@ -148,12 +147,12 @@ contract AtomicBridgeInitiatorTest is Test {
         vm.startPrank(originator);
         // Ensure WETH contract is correctly funded and transfer WETH to originator
         weth.deposit{value: wethAmount}();
-        weth.transfer(originator, wethAmount);
 
         assertEq(weth.balanceOf(originator), wethAmount, "WETH balance mismatch");
-
-        vm.startPrank(originator);
-
+        vm.expectRevert();
+        // Try to initiate bridge transfer
+        atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(wethAmount, recipient, hashLock, timeLock);
+        weth.approve(address(atomicBridgeInitiator), wethAmount);
         // Try to initiate bridge transfer
         bytes32 bridgeTransferId =
             atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(wethAmount, recipient, hashLock, timeLock);
@@ -169,7 +168,7 @@ contract AtomicBridgeInitiatorTest is Test {
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
         // Assertions
-        assertTrue(completed, "Bridge transfer does not exist");
+        assertFalse(completed, "Bridge transfer not completed");
         assertEq(transferAmount, totalAmount, "Transfer amount mismatch");
         assertEq(transferOriginator, originator, "Originator address mismatch");
         assertEq(transferRecipient, recipient, "Recipient address mismatch");
@@ -197,7 +196,7 @@ contract AtomicBridgeInitiatorTest is Test {
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
         (,,,,, bool completed) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-        assertFalse(completed);
+        assertTrue(completed);
 
         vm.stopPrank();
     }
