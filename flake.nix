@@ -77,7 +77,6 @@
           celestia-app
           monza-aptos
           jq
-          nodejs_18
         ];
 
         # Specific version of toolchain
@@ -118,6 +117,24 @@
         # celestia-app
         celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
 
+        # aptos-faucet-service
+        aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
+          inherit pkgs; 
+          commonArgs = {
+            src = pkgs.fetchFromGitHub {
+              owner = "movementlabsxyz";
+              repo = "aptos-core";
+              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
+              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
+            };
+            strictDeps = true;
+            
+            buildInputs = with pkgs; [] ++buildDependencies ++ sysDependencies;
+            nativeBuildInputs = with pkgs; [] ++buildDependencies ++sysDependencies;
+          };
+          inherit craneLib;
+        };
+
         movementswap-core = pkgs.stdenv.mkDerivation {
           pname = "movementswap-core";
           version = "branch-main";
@@ -136,24 +153,6 @@
               license = licenses.asl20;
           };
         };
-
-        # aptos-faucet-service
-        aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
-          inherit pkgs; 
-          commonArgs = {
-            src = pkgs.fetchFromGitHub {
-              owner = "movementlabsxyz";
-              repo = "aptos-core";
-              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
-            };
-            strictDeps = true;
-            
-            buildInputs = with pkgs; [] ++buildDependencies ++ sysDependencies;
-            nativeBuildInputs = with pkgs; [] ++buildDependencies ++sysDependencies;
-          };
-          inherit craneLib;
-        };
     
       in
         with pkgs; {
@@ -163,8 +162,6 @@
           packages.celestia-node = celestia-node;
 
           packages.celestia-app = celestia-app;
-
-          packages.movementswap-core = movementswap-core;
           
           # Used for workaround for failing vendor dep builds in nix
           devShells.docker-build = mkShell {
