@@ -1,7 +1,5 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
-use aptos_sdk::move_types::effects::Op;
-use maptos_execution_util::config::aptos::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
 use movement_types::BlockCommitment;
@@ -26,15 +24,15 @@ impl Executor {
 		Self { executor, finality_view, transaction_channel }
 	}
 
-	pub async fn try_from_config(
+	pub fn try_from_config(
 		transaction_channel: Sender<SignedTransaction>,
 		config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_config(config.clone())?;
+		let executor = OptExecutor::try_from_config(&config.clone())?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),
-			&config.try_aptos_config()?,
+			config,
 		)?;
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
@@ -98,6 +96,11 @@ impl DynOptFinExecutor for Executor {
 		// Create a block metadata transaction.
 		Ok(BlockMetadata::new(block_id, epoch, round, signer.author(), vec![], vec![], timestamp))
 	}
+
+	/// Rollover the genesis block
+	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
+		self.executor.rollover_genesis_now().await
+	}
 }
 
 #[cfg(test)]
@@ -124,6 +127,7 @@ mod tests {
 			SignedTransaction, Transaction, TransactionPayload, Version,
 		},
 	};
+	use maptos_execution_util::config::Config;
 
 	use rand::SeedableRng;
 
@@ -147,14 +151,23 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
-		let config = Config::try_from_env()?;
+		let config = Config::default();
 		let (tx, _rx) = async_channel::unbounded();
-		let executor = Executor::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, config)?;
 		let block_id = HashValue::random();
-		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0),
-		));
-		let txs = ExecutableTransactions::Unsharded(vec![tx]);
+		let block_metadata = executor
+			.build_block_metadata(block_id.clone(), chrono::Utc::now().timestamp_micros() as u64)
+			.await
+			.unwrap();
+		let txs = ExecutableTransactions::Unsharded(
+			[
+				Transaction::BlockMetadata(block_metadata),
+				Transaction::UserTransaction(create_signed_transaction(0)),
+			]
+			.into_iter()
+			.map(SignatureVerifiedTransaction::Valid)
+			.collect(),
+		);
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		executor.execute_block_opt(block).await?;
 		Ok(())
@@ -162,9 +175,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
-		let config = Config::try_from_env()?;
+		let config = Config::default();
 		let (tx, rx) = async_channel::unbounded();
-		let executor = Executor::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 
@@ -197,9 +210,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
-		let config = Config::try_from_env()?;
+		let config = Config::default();
 		let (tx, rx) = async_channel::unbounded();
-		let executor = Executor::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 
@@ -264,9 +277,9 @@ mod tests {
 			cur_ver: Version,
 		}
 
-		let config = Config::try_from_env()?;
+		let config = Config::default();
 		let (tx, rx) = async_channel::unbounded::<SignedTransaction>();
-		let executor = Executor::try_from_config(tx, &config)?;
+		let executor = Executor::try_from_config(tx, config)?;
 		let services_executor = executor.clone();
 		let background_executor = executor.clone();
 		let services_handle = tokio::spawn(async move {
@@ -369,13 +382,14 @@ mod tests {
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
-		let config = Config::try_from_env()?;
-		let executor = Executor::try_from_config(tx, &config)?;
+		let config = Config::default();
+		let aptos_config = config.try_aptos_config()?;
+		let executor = Executor::try_from_config(tx, config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.private_key.clone()),
+			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
 			0,
 		);
 
@@ -384,7 +398,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -437,13 +451,14 @@ mod tests {
 	async fn test_set_finalized_block_height_get_fin_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
-		let config = Config::try_from_env()?;
-		let executor = Executor::try_from_config(tx, &config)?;
+		let config = Config::default();
+		let aptos_config = config.try_aptos_config()?;
+		let executor = Executor::try_from_config(tx, config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.private_key.clone()),
+			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
 			0,
 		);
 
@@ -452,7 +467,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.chain_id.clone());
+		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
 		let mut transaction_hashes = Vec::new();
 
 		// Simulate the execution of multiple blocks.

@@ -65,7 +65,7 @@ pub async fn send_tx<
 >(
 	base_call_builder: CallBuilder<T, &&P, D, Ethereum>,
 	send_tx_error_rules: &[Box<dyn VerifyRule>],
-	nb_retry: usize,
+	nb_retry: u32,
 	gas_limit: u128,
 ) -> Result<(), anyhow::Error> {
 	//validate gaz price.
@@ -83,7 +83,7 @@ pub async fn send_tx<
 		let gas_price = call_builder.provider.get_gas_price().await?;
 		let tx_fee_wei = estimate_gas * gas_price;
 		if tx_fee_wei > gas_limit {
-			return Err(McrEthConnectorError::GasLimitExceed(tx_fee_wei, gas_limit).into());
+			return Err(McrEthConnectorError::GasLimitExceed(tx_fee_wei, gas_limit as u128).into());
 		}
 
 		//send the Tx and detect send error.

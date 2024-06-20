@@ -50,4 +50,7 @@ pub trait DynOptFinExecutor {
 		block_id: HashValue,
 		timestamp: u64,
 	) -> Result<BlockMetadata, anyhow::Error>;
+
+	/// Rollover the genesis block
+	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error>;
 }

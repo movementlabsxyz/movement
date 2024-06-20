@@ -1,8 +1,8 @@
 [package]
 name = "m1-da-light-node-util"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -37,6 +37,7 @@ toml = { workspace = true }
 memseq-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+godfig = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

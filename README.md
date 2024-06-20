@@ -25,29 +25,33 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 ## `m1-da-light-node`
 
 - **Features**:
+    - `build`: Build the `m1-da-light-node` binaries.
+    - `setup`: Run setup for new `m1-da-light-node` network with single node.
     - `local`: Run a local Celestia Data Availability service. (Default.)
     - `arabica`: Run an Arabica Celestia Data Availability service. (Overrides local.)
     - `test`: Run the test suite for the `m1-da-light-node`. (Can be combined with `local` or `arabica`. Exits on completion by default.)
 
 ```bash
 # example test with local  Celestia Data Availability service
-just m1-da-light-node test.local
+just m1-da-light-node native build.setup.test.local
 ```
 
-## `monza-full-node`
+## `suzuka-full-node`
 
 - **Features**:
+    - `build`: Build the `suzuka-full-node` binaries.
+    - `setup`: Run setup for new `suzuka-full-node` network with single node.
     - `local`: Run a local Celesta Data Availability service. 
-    - `test`: run the test suite for `monza-full-node`. (Can be combined with `local`. Exits on completion by default.)
+    - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
 # example test with local
-just monza-full-node test.local
+just monza-full-node native build.setup.test.local
 ```
 
 ## Troubleshooting
 
-### `cp: cannot stat '': No such file or directory`
+### `cp: cannot stat '': No such file or directory` when running `just suzuka-full-node native build.setup.test.local`
 
 Try the following `nix.conf`:
 
