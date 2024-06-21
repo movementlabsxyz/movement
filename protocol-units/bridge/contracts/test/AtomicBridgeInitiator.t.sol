@@ -8,7 +8,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {WETH10} from "../src/WETH/WETH10.sol";
 
-contract AtomicBridgeInitiatorTest is Test {
+contract AtomicBridgeInitiatorWethTest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
     WETH10 public weth;
     ProxyAdmin public proxyAdmin;
