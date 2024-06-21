@@ -198,6 +198,7 @@
               // # Movement Swap Core
               DOT_MOVEMENT_PATH=$(pwd)/.movement
               mkdir -p $DOT_MOVEMENT_PATH
+              export $MOVEMENT_SWAP_PATH
               echo "Building movement-swap-core..."
               cp -R "$MOVEMENT_SWAP_PATH" $DOT_MOVEMENT_PATH/movementswap-core
               chmod -R 755 $DOT_MOVEMENT_PATH/movementswap-core

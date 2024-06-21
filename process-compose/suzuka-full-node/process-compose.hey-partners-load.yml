@@ -4,7 +4,9 @@ environment:
 
 processes:
 
-  hey-partners-tests:
+  hey-partners-load:
+    env:
+      MOVEMENT_SWAP_PATH: ${MOVEMENT_SWAP_PATH}
     command: |
       LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo test -p suzuka-client hey_partners_load -- --nocapture
     depends_on:
