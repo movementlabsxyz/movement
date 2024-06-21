@@ -24,7 +24,7 @@ fn main() -> Result<ExitCode, anyhow::Error> {
 		tracing::error!("Suzuka node main task exit with an error : {err}",);
 	}
 
-	// Terminate all runtime task.
+	// Terminate all running task.
 	runtime.shutdown_background();
 	Ok(ExitCode::SUCCESS)
 }
@@ -55,16 +55,13 @@ async fn start_suzuka() -> Result<(), anyhow::Error> {
 	});
 
 	//Start suzuka node process
-	let (gb_jh, run_jh) = {
-		let dot_movement = dot_movement::DotMovement::try_from_env()?;
-		let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
-		let (executor, background_task) = SuzukaPartialNode::try_from_config(config)
-			.await
-			.context("Failed to create the executor")?;
-		let gb_jh = tokio::spawn(background_task);
-		let run_jh = tokio::spawn(async move { executor.run().await });
-		(gb_jh, run_jh)
-	};
+	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
+	let (executor, background_task) = SuzukaPartialNode::try_from_config(config)
+		.await
+		.context("Failed to create the executor")?;
+	let gb_jh = tokio::spawn(background_task);
+	let run_jh = tokio::spawn(async move { executor.run().await });
 
 	// Wait for a task to end.
 	select! {

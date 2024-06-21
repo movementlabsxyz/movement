@@ -39,7 +39,7 @@ async fn pipe_error_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
 pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
 
     // print command out with args joined by space
-    println!("Running command: {} {}", command, args.join(" "));
+    tracing::info!("Running command: {} {}", command, args.join(" "));
 
     let mut child = Command::new(command)
         .args(args)
@@ -82,7 +82,7 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
 pub async fn spawn_command(command: String, args: Vec<String>) -> Result<(Option<u32>, JoinHandle<Result<String, anyhow::Error>>)> {
 
     // print command out with args joined by space
-    println!("spawn command: {} {}", command, args.join(" "));
+    tracing::info!("spawn command: {} {}", command, args.join(" "));
 
     let mut child = Command::new(&command)
         .args(&args)
