@@ -11166,6 +11166,7 @@ dependencies = [
  "dot-movement",
  "suzuka-config",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
