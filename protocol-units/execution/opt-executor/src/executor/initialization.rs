@@ -121,7 +121,6 @@ impl Executor {
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
 			&maptos_config.chain.maptos_private_key.clone().public_key(),
-			maptos_config
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
