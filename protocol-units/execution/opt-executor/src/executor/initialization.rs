@@ -75,7 +75,6 @@ impl Executor {
 		db_dir: &PathBuf,
 		chain_id: ChainId,
 		public_key: &Ed25519PublicKey,
-		maptos_config: &Config,
 	) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
 
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
