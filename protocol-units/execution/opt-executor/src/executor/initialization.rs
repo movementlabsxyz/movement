@@ -75,7 +75,6 @@ impl Executor {
 		db_dir: &PathBuf,
 		chain_id: ChainId,
 		public_key: &Ed25519PublicKey,
-		maptos_config: &Config,
 	) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
 
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
@@ -122,7 +121,6 @@ impl Executor {
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
 			&maptos_config.chain.maptos_private_key.clone().public_key(),
-			maptos_config
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
