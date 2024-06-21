@@ -90,7 +90,7 @@ contract AtomicBridgeInitiatorETHStore is IAtomicBridgeInitiator, Initializable 
             recip := shr(96, recipient)
         }
         // if (!weth.transfer(recip, amount)) revert WETHTransferFailed();
-        payable(recip).transfer(amount);
+        recip.call{value: amount}("");
 
         emit BridgeTransferCompleted(_bridgeTransferId, _secret);
     }
@@ -107,7 +107,7 @@ contract AtomicBridgeInitiatorETHStore is IAtomicBridgeInitiator, Initializable 
         // todo: we need to verify if transfers are cheaper in weth or eth
         // then decide on which transfer to use.
         // if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
-        payable(bridgeTransfer.originator).transfer(amount);
+        bridgeTransfer.originator.call{value: amount}("");
 
         emit BridgeTransferRefunded(_bridgeTransferId);
     }
