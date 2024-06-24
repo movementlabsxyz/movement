@@ -23,13 +23,13 @@ pub enum FrwLockError {
 /// This only mutually excludes processes trying to violate the lock, not the same process--which is not considered contention.
 /// If you want to prevent contention within the same process, you should wrap this in your preferred synchronization primitive.
 pub struct FrwLock<T: AsFd> {
-    cell: UnsafeCell<T>
+    cell: UnsafeCell<T>,
 }
 
 impl<T: AsFd> FrwLock<T> {
     pub fn new(file: T) -> Self {
         Self {
-            cell: UnsafeCell::new(file)
+            cell: UnsafeCell::new(file),
         }
     }
 
@@ -84,6 +84,7 @@ impl<T: AsFd> FrwLock<T> {
             }
         }
     }
+
 }
 
 // As long as T: Send + Sync, it's fine to send and share FrwLock<T> between threads.

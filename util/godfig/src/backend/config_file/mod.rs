@@ -11,14 +11,21 @@ use std::io::Seek;
 #[derive(Clone)]
 pub struct ConfigFile {
     pub (crate) lock: Arc<TfrwLock<File>>,
+    pub (crate) polling_interval: std::time::Duration,
 }
 
 impl ConfigFile {
     
     pub fn new(file: File) -> Self {
         Self {
-            lock: Arc::new(TfrwLock::new(file))
+            lock: Arc::new(TfrwLock::new(file)),
+            polling_interval: std::time::Duration::from_millis(20),
         }
+    }
+
+    pub fn with_polling_interval(mut self, interval: std::time::Duration) -> Self {
+        self.polling_interval = interval;
+        self
     }
 
 }
@@ -188,7 +195,7 @@ pub mod test {
         // start another thread that will set the value
         let config_file_clone = config_file.clone();
         let set_task = tokio::spawn(async move {
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             config_file_clone.try_set(vec!["key".to_string()], Some(42)).await?;
             Ok::<(), anyhow::Error>(())
         });
