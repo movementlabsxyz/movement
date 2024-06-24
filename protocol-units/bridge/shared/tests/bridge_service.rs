@@ -12,8 +12,8 @@ use bridge_shared::{
 	bridge_monitoring::BridgeContractInitiatorEvent,
 	bridge_service::BridgeService,
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, Convert, HashLock, HashLockPreImage, InitiatorAddress,
+		RecipientAddress, TimeLock,
 	},
 };
 
@@ -126,13 +126,14 @@ async fn test_bridge_service_integration() {
 	);
 	dbg!(&transfer_initiated_event);
 
+	let _event = bridge_service.next().await;
+	dbg!(&_event);
+
 	blockchain_2_client
 		.complete_bridge_transfer(
-			BridgeTransferId(BC2Hash::from("unique_hash")),
-			HashLockPreImage(vec![1, 2, 3, 4]),
+			Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+			HashLockPreImage(b"hash_lock".to_vec()),
 		)
 		.await
 		.expect("complete_bridge_transfer failed");
-
-	let _event = bridge_service.next().await;
 }

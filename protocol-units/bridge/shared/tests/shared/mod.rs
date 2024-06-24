@@ -11,8 +11,8 @@ use bridge_shared::{
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, BridgeTransferId, Convert, GenUniqueHash, HashLock,
+		HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -49,6 +49,12 @@ impl From<&'static str> for BC1Hash {
 	}
 }
 
+impl GenUniqueHash for BC1Hash {
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		Self(rng.gen())
+	}
+}
+
 impl std::fmt::Debug for BC1Hash {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "Bc1Hash({:02x})", u64::from_be_bytes(self.0))
@@ -58,6 +64,12 @@ impl std::fmt::Debug for BC1Hash {
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct BC2Hash([u8; 8]);
 
+impl GenUniqueHash for BC2Hash {
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		Self(rng.gen())
+	}
+}
+
 impl From<&'static str> for BC2Hash {
 	fn from(pre_image: &'static str) -> Self {
 		Self(hash_static_string(pre_image))
@@ -66,7 +78,7 @@ impl From<&'static str> for BC2Hash {
 
 impl std::fmt::Debug for BC2Hash {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f, "Bc1Hash({:02x})", u64::from_be_bytes(self.0))
+		write!(f, "BC2Hash({:02x})", u64::from_be_bytes(self.0))
 	}
 }
 
@@ -75,18 +87,6 @@ pub struct BC1Address(pub &'static str);
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC2Address(pub &'static str);
-
-impl GenUniqueHash for BC1Hash {
-	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
-		Self(rng.gen())
-	}
-}
-
-impl GenUniqueHash for BC2Hash {
-	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
-		Self(rng.gen())
-	}
-}
 
 impl From<BC1Address> for BC2Address {
 	fn from(address: BC1Address) -> Self {
@@ -97,6 +97,18 @@ impl From<BC1Address> for BC2Address {
 impl From<BC2Address> for BC1Address {
 	fn from(address: BC2Address) -> Self {
 		Self(address.0)
+	}
+}
+
+impl Convert<BC1Hash> for BC2Hash {
+	fn convert(me: &BC2Hash) -> BC1Hash {
+		BC1Hash(me.0)
+	}
+}
+
+impl Convert<BC2Hash> for BC1Hash {
+	fn convert(me: &BC1Hash) -> BC2Hash {
+		BC2Hash(me.0)
 	}
 }
 
