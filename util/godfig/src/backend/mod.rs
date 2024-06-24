@@ -1,3 +1,6 @@
+pub mod config_file;
+
+/// Backend trait for key-value storage.
 pub(crate) trait BackendInternalOperations {
     /// Acquires a--usually time-limited--lock on a key.
     async fn try_acquire<K>(&self, key: K) -> Result<(), anyhow::Error>
@@ -22,6 +25,7 @@ pub(crate) trait BackendInternalOperations {
         K: Into<String> + Send;
 }
 
+/// Backend trait for key-value storage.
 pub trait BackendOperations: BackendInternalOperations {
     /// Tries to get a value from a key.
     async fn try_get<K, T>(&self, key: K) -> Result<T, anyhow::Error>
@@ -47,6 +51,21 @@ pub trait BackendOperations: BackendInternalOperations {
         self.try_set_unsafe(key_str.clone(), value).await?;
         self.try_release(key_str).await?;
         Ok(())
+    }
+
+    /// Try wait for a key to be set.
+    async fn try_wait_for<K, T>(&self, key: K) -> Result<T, anyhow::Error>
+    where
+        K: Into<String> + Send,
+        T: serde::de::DeserializeOwned,
+    {
+        let key_str = key.into();
+        loop {
+            match self.try_get_unsafe(key_str.clone()).await {
+                Ok(value) => return Ok(value),
+                Err(_) => tokio::time::sleep(std::time::Duration::from_millis(100)).await,
+            }
+        }
     }
 
     /// Tries to stream values from a key.

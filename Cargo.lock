@@ -5093,6 +5093,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "flocks"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "rustix 0.38.34",
+ "serde",
+ "tempfile",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5375,6 +5388,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "futures",
+ "rustix 0.38.34",
  "serde",
  "tokio",
 ]

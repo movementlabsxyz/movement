@@ -240,6 +240,8 @@ url = "2.2.2"
 x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
 rayon = "1.10.0"
+inotify = "0.10.2"
+rustix = "0.38.34" 
 
 
 [workspace.lints.rust]
