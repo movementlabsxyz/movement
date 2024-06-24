@@ -37,7 +37,11 @@ impl Executor {
 		let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 		let validators = &validators_;
 
-		let epoch_duration_secs = 60 * 60 * 24 * 1024 * 256; // several centuries
+		// This number should not exceed u64::MAX / 1_000_000_000
+		// to avoid overflowing calculations in aptos-vm-genesis.
+		// This will last several centuries.
+		const EPOCH_DURATION_SECS: u64 = 60 * 60 * 24 * 1024 * 128;
+
 		let genesis = encode_genesis_change_set(
 			&public_key,
 			validators,
@@ -46,16 +50,16 @@ impl Executor {
 			// todo: get this config from somewhere
 			&GenesisConfiguration {
 				allow_new_validators: true,
-				epoch_duration_secs: epoch_duration_secs,
+				epoch_duration_secs: EPOCH_DURATION_SECS,
 				is_test: true,
 				min_stake: 0,
 				min_voting_threshold: 0,
 				// 1M APTOS coins (with 8 decimals).
 				max_stake: 100_000_000_000_000,
-				recurring_lockup_duration_secs: epoch_duration_secs * 2,
+				recurring_lockup_duration_secs: EPOCH_DURATION_SECS * 2,
 				required_proposer_stake: 0,
 				rewards_apy_percentage: 10,
-				voting_duration_secs: epoch_duration_secs,
+				voting_duration_secs: EPOCH_DURATION_SECS,
 				voting_power_increase_limit: 50,
 				employee_vesting_start: 1663456089,
 				employee_vesting_period_duration: 5 * 60, // 5 minutes
