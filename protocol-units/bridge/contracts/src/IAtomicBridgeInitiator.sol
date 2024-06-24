@@ -12,15 +12,14 @@ interface IAtomicBridgeInitiator {
         uint256 _timeLock
     );
     // Event emitted when a BridgeTransfer is completed (withdrawn)
-    event BridgeTransferCompleted(bytes32 indexed _bridgeTransferId, bytes32 _secret);
+    event BridgeTransferCompleted(bytes32 indexed _bridgeTransferId, bytes32 pre_image);
     // Event emitted when a BridgeTransfer is refunded
     event BridgeTransferRefunded(bytes32 indexed _bridgeTransferId);
 
     error ZeroAmount();
     error WETHTransferFailed();
-    error BridgeTransferExists();
+    error BridgeTransferInvalid();
     error InvalidSecret();
-    error NonExistentBridgeTransfer();
     error BridgeTransferHasBeenCompleted();
     error TimeLockNotExpired();
     error ZeroAddress();
@@ -43,10 +42,10 @@ interface IAtomicBridgeInitiator {
     /**
      * @dev Completes the bridging Counterparty
      * @param _bridgeTransferId Unique identifier for the BridgeTransfer
-     * @param _secret The secret that unlocks the funds
+     * @param pre_image The secret that unlocks the funds
      *
      */
-    function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 _secret) external;
+    function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 pre_image) external;
 
     /**
      * @dev Refunds the funds back to the initiator if the timelock has expired

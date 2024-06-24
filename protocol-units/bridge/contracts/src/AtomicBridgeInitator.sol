@@ -4,8 +4,10 @@ pragma solidity ^0.8.22;
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH10} from "./WETH/interfaces/IWETH10.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {_setupRole}"@openzeppelin/contracts/access/AccessControl.sol"};
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
+contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessControl {
+
     struct BridgeTransfer {
         uint256 amount;
         address originator;
@@ -16,98 +18,82 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
+    bytes public constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
     IWETH10 public weth;
-    address public authority;
-
-    modifier onlyAuthorized() {
-        if (msg.sender != authority) revert Unauthorized();
-        _;
-    }
+    uint256 private nonce;
 
     function initialize(address _weth) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
-        authority = msg.sender;
+        _setupRole(REFUNDER_ROLE, msg.sender);
         weth = IWETH10(_weth);
     }
 
-    function initiateBridgeTransfer(uint256 _wethAmount, bytes32 _recipient, bytes32 _hashLock, uint256 _timeLock)
+    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
         external
         payable
-        returns (bytes32 _bridgeTransferId)
+        returns (bytes32 bridgeTransferId)
     {
         address originator = msg.sender;
         uint256 ethAmount = msg.value;
-        uint256 totalAmount = _wethAmount + ethAmount;
-        _bridgeTransferId = keccak256(abi.encodePacked(originator, _recipient, _hashLock, _timeLock, block.timestamp));
+        uint256 totalAmount = wethAmount + ethAmount;
         // Check if the bridge transfer already exists
-        if (bridgeTransfers[_bridgeTransferId].amount != 0) revert BridgeTransferExists();
+        if (bridgeTransfers[bridgeTransferId].amount != 0) revert BridgeTransferInvalid();
         // Ensure there is a valid total amount
         if (totalAmount == 0) {
             revert ZeroAmount();
         }
         // If msg.value is greater than 0, convert ETH to WETH
         if (ethAmount > 0) weth.deposit{value: ethAmount}();
-
         //Transfer WETH to this contract, revert if transfer fails
-        if (_wethAmount > 0) {
-            if (!weth.transferFrom(originator, address(this), _wethAmount)) revert WETHTransferFailed();
+        if (wethAmount > 0) {
+            if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
         }
-        bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
+
+        nonce++; //increment the nonce
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
+
+        bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
-            recipient: _recipient,
-            hashLock: _hashLock,
-            timeLock: block.timestamp + _timeLock,
+            recipient: recipient,
+            hashLock: hashLock,
+            timeLock: block.timestamp + timeLock,
             completed: false
         });
 
-        emit BridgeTransferInitiated(_bridgeTransferId, originator, _recipient, totalAmount, _hashLock, _timeLock);
-        return _bridgeTransferId;
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
+        return bridgeTransferId;
     }
 
-    function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 _secret) external onlyAuthorized {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 pre_image) external {
         // Retrieve the bridge transfer
-        BridgeTransfer storage bridgeTransfer = bridgeTransfers[_bridgeTransferId];
+        BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
-        if (amount == 0) revert NonExistentBridgeTransfer();
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
-        if (keccak256(abi.encodePacked(_secret)) != bridgeTransfer.hashLock) revert InvalidSecret();
+        if (keccak256(abi.encodePacked(pre_image)) != bridgeTransfer.hashLock) revert InvalidSecret();
+
+        // WETH remains stored in the contract
+        // Only to be released upon bridge transfer in the oppisite direction
 
         bridgeTransfer.completed = true;
-
-        // Mock transfer to recipient by serializing the address
-        // this is supposed to be removed in production
-        address recip;
-        bytes32 recipient = bridgeTransfer.recipient;
-        assembly {
-            recip := shr(96, recipient)
-        }
-        if (!weth.transfer(recip, amount)) revert WETHTransferFailed();
-        // payable(bridgeTransfer.recipient).transfer(amount);
-
-        emit BridgeTransferCompleted(_bridgeTransferId, _secret);
+        emit BridgeTransferCompleted(bridgeTransferId, pre_image);
     }
 
-    function refundBridgeTransfer(bytes32 _bridgeTransferId) external {
-        BridgeTransfer storage bridgeTransfer = bridgeTransfers[_bridgeTransferId];
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external {
+        // Check that the calling account has the refunder role
+        require(hasRole(REFUNDER_ROLE, msg.sender), "Caller is not a minter");
+
+        BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
-        if (amount == 0) revert NonExistentBridgeTransfer();
+
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
-
+        
         bridgeTransfer.completed = true;
 
-        // todo: we need to verify if transfers are cheaper in weth or eth
-        // then decide on which transfer to use.
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
-        // payable(bridgeTransfer.originator).transfer(amount);
-
-        emit BridgeTransferRefunded(_bridgeTransferId);
-    }
-
-    function receiveFunds(bytes32 _secret) external {
-        // This function is used to receive ETH from Moveth Bridge
+        emit BridgeTransferRefunded(bridgeTransferId);
     }
 }
