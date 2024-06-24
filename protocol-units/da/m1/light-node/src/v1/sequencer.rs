@@ -1,5 +1,8 @@
+use m1_da_light_node_util::config::Config;
 use tokio_stream::Stream;
 use tracing::{debug, info};
+
+use std::{fmt::Debug, path::PathBuf};
 
 use celestia_rpc::HeaderClient;
 
@@ -16,17 +19,30 @@ pub struct LightNodeV1 {
 	pub memseq: memseq::Memseq<memseq::RocksdbMempool>,
 }
 
+impl Debug for LightNodeV1 {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("LightNodeV1").field("pass_through", &self.pass_through).finish()
+	}
+}
+
 impl LightNodeV1Operations for LightNodeV1 {
-	async fn try_from_env() -> Result<Self, anyhow::Error> {
+	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
 
-		let pass_through = LightNodeV1PassThrough::try_from_env().await?;
+		let pass_through = LightNodeV1PassThrough::try_from_config(config.clone()).await?;
 		info!("Initialized pass through for LightNodeV1 in sequencer mode.");
 
-		let memseq = memseq::Memseq::try_move_rocks_from_env()?;
+		let memseq_path = pass_through.config.try_memseq_path()?;
+		info!("Memseq path: {:?}", memseq_path);
+
+		let memseq = memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?;
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
 		Ok(Self { pass_through, memseq })
+	}
+
+	fn try_service_address(&self) -> Result<String, anyhow::Error> {
+		self.pass_through.try_service_address()
 	}
 
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {

@@ -1,0 +1,94 @@
+services:
+
+  setup:
+    image: busybox
+    container_name: setup
+    command: sh -c 'echo "No setup type specified."'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+
+  celestia-light-node:
+    image: busybox
+    container_name: celestia-light-node
+    command: sh -c 'echo "No setup type specified."'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s
+
+  celestia-light-node-synced:
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${REV}
+    container_name: celestia-light-node-synced
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      celestia-light-node:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s
+
+  m1-da-light-node:
+    image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
+    container_name: m1-da-light-node
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      celestia-light-node-synced:
+        condition: service_completed_successfully
+    ports:
+      - "30730:30730"
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s
+
+  suzuka-full-node:
+    image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
+    container_name: suzuka-full-node
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      m1-da-light-node:
+        condition: service_healthy
+    ports:
+      - "30731:30731"
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s
+
+  suzuka-faucet-service:
+    image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${REV}
+    container_name: suzuka-faucet-service
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - dot-movement:/.movement
+    ports:
+      - "30732:30732"
+    depends_on:
+      suzuka-full-node:
+        condition: service_healthy
+
+volumes:
+  dot-movement:
+
+

@@ -20,7 +20,7 @@ sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	MCR,
-	"../../../protocol-units/settlement/mcr/client/abi/MCR.json"
+	"../../../protocol-units/settlement/mcr/client/abis/MCRLegacy.json"
 );
 
 #[tokio::test]

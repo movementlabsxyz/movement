@@ -12,8 +12,9 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-suzuka-executor = { workspace = true }
+maptos-dof-execution = { workspace = true }
 m1-da-light-node-client = { workspace = true }
+m1-da-light-node-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 mcr-settlement-manager = { workspace = true }
 async-channel = { workspace = true }
@@ -25,7 +26,9 @@ sha2 = { workspace = true }
 tonic = { workspace = true }
 tracing = { workspace = true }
 movement-types = { workspace = true }
-maptos-rest = { workspace = true }
+movement-rest = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
 
 tracing-subscriber = { workspace = true, optional = true }
 

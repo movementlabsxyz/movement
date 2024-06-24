@@ -3,23 +3,26 @@ use m1_da_light_node_client::{
 	blob_response, BatchWriteRequest, BlobWrite, LightNodeServiceClient,
 	StreamReadFromHeightRequest,
 };
-use maptos_rest::MaptosRest;
-use mcr_settlement_client::McrSettlementClientOperations;
-use mcr_settlement_manager::{
-	CommitmentEventStream, McrSettlementManager, McrSettlementManagerOperations,
+use maptos_dof_execution::{
+	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
+	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use movement_types::{Block, BlockCommitmentEvent};
-use suzuka_executor::{
-	v1::SuzukaExecutorV1, ExecutableBlock, ExecutableTransactions, HashValue,
-	SignatureVerifiedTransaction, SignedTransaction, SuzukaExecutor, Transaction,
+use mcr_settlement_client::{
+	eth_client::Client as McrEthSettlementClient, McrSettlementClientOperations,
 };
+use mcr_settlement_manager::CommitmentEventStream;
+use mcr_settlement_manager::McrSettlementManager;
+use mcr_settlement_manager::McrSettlementManagerOperations;
+use movement_rest::MovementRest;
+use movement_types::BlockCommitmentEvent;
+use movement_types::{Block /*BlockCommitmentEvent*/};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
-use tracing::debug;
+use tracing::{debug, info};
 
 use std::future::Future;
 use std::sync::Arc;
@@ -31,24 +34,25 @@ pub struct SuzukaPartialNode<T> {
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
-	maptos_rest: MaptosRest,
+	movement_rest: MovementRest,
 }
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: SuzukaExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
-		maptos_rest: MaptosRest,
+		movement_rest: MovementRest,
 	) -> (Self, impl Future<Output = Result<(), anyhow::Error>> + Send)
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
 		let (settlement_manager, commitment_events) = McrSettlementManager::new(settlement_client);
 		let (transaction_sender, transaction_receiver) = async_channel::unbounded();
+		let bg_executor = executor.clone();
 		(
 			Self {
 				executor,
@@ -56,9 +60,9 @@ where
 				transaction_receiver,
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
-				maptos_rest,
+				movement_rest,
 			},
-			read_commitment_events(commitment_events),
+			read_commitment_events(commitment_events, bg_executor),
 		)
 	}
 
@@ -70,13 +74,13 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
-		maptos_rest: MaptosRest,
+		movement_rest: MovementRest,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
 		let (mut node, background_task) =
-			Self::new(executor, light_node_client, settlement_client, maptos_rest);
+			Self::new(executor, light_node_client, settlement_client, movement_rest);
 		node.bind_transaction_channel();
 		Ok((node, background_task))
 	}
@@ -160,6 +164,7 @@ where
 			let block: Block = serde_json::from_slice(&block_bytes)?;
 
 			debug!("Got block: {:?}", block);
+			info!("Block micros timestamp: {:?}", block_timestamp);
 
 			// get the transactions
 			let mut block_transactions = Vec::new();
@@ -195,23 +200,36 @@ where
 
 			debug!("read_blocks_from_da Executed block: {:?}", block_id);
 
-			self.settlement_manager.post_block_commitment(commitment).await?;
-			debug!("read_blocks_from_da After post_block_commitment: {:?}", block_id);
+			// todo: this needs defaults
+			match self.settlement_manager.post_block_commitment(commitment).await {
+				Ok(_) => {}
+				Err(e) => {
+					debug!("Failed to post block commitment: {:?}", e);
+				}
+			}
 		}
 
 		Ok(())
 	}
 }
 
-async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Result<()> {
+pub async fn read_commitment_events<T>(
+	mut stream: CommitmentEventStream,
+	executor: T,
+) -> anyhow::Result<()>
+where
+	T: DynOptFinExecutor + Send + Sync,
+{
 	while let Some(res) = stream.next().await {
 		let event = res?;
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
+				executor.set_finalized_block_height(commitment.height)?;
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
+				// TODO: block reversion
 			}
 		}
 	}
@@ -220,7 +238,7 @@ async fn read_commitment_events(mut stream: CommitmentEventStream) -> anyhow::Re
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
 where
-	T: SuzukaExecutor + Send + Sync,
+	T: DynOptFinExecutor + Clone + Send + Sync,
 {
 	/// Runs the services until crash or shutdown.
 	async fn run_services(&self) -> Result<(), anyhow::Error> {
@@ -239,7 +257,8 @@ where
 	// ! Currently this only implements opt.
 	/// Runs the executor until crash or shutdown.
 	async fn run_executor(&self) -> Result<(), anyhow::Error> {
-		debug!("SuzukaPartialNode run_executor");
+		// ! todo: this is a temporary solution to rollover the genesis block, really this (a) needs to be read from the DA and (b) requires modifications to Aptos Core.
+		self.executor.rollover_genesis_block().await?;
 		// wait for both tasks to finish
 		tokio::try_join!(self.write_transactions_to_da(), self.read_blocks_from_da())?;
 
@@ -247,63 +266,44 @@ where
 	}
 
 	/// Runs the maptos rest api service until crash or shutdown.
-	async fn run_maptos_rest(&self) -> Result<(), anyhow::Error> {
-		self.maptos_rest.run_service().await?;
+	async fn run_movement_rest(&self) -> Result<(), anyhow::Error> {
+		self.movement_rest.run_service().await?;
 		Ok(())
 	}
 }
 
-impl SuzukaPartialNode<SuzukaExecutorV1> {
-	pub async fn try_from_env(
+impl SuzukaPartialNode<Executor> {
+	pub async fn try_from_config(
+		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
 		let (tx, _) = async_channel::unbounded();
-		let light_node_client = LightNodeServiceClient::connect("http://0.0.0.0:30730").await?;
 
-		let executor = SuzukaExecutorV1::try_from_env(tx)
-			.await
+		// todo: extract into getter
+		let light_node_connection_hostname = match &config.m1_da_light_node.m1_da_light_node_config
+		{
+			m1_da_light_node_util::config::Config::Local(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
+			}
+		};
+
+		// todo: extract into getter
+		let light_node_connection_port = match &config.m1_da_light_node.m1_da_light_node_config {
+			m1_da_light_node_util::config::Config::Local(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_port.clone()
+			}
+		};
+
+		// todo: extract into getter
+		let light_node_client = LightNodeServiceClient::connect(format!(
+			"http://{}:{}",
+			light_node_connection_hostname, light_node_connection_port
+		))
+		.await?;
+
+		let executor = Executor::try_from_config(tx, config.execution_config.maptos_config)
 			.context("Failed to get executor from environment")?;
-
-		let settlement_client = build_settlement_client().await?;
-		let maptos_rest = MaptosRest::try_from_env(Some(executor.executor.context.clone()))?;
-		Self::bound(executor, light_node_client, settlement_client, maptos_rest)
+		let settlement_client = McrEthSettlementClient::build_with_config(config.mcr).await?;
+		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
+		Self::bound(executor, light_node_client, settlement_client, movement_rest)
 	}
-}
-
-pub const ETH_RPC_URL_ENV_VAR: &'static str = "ETH_RPC_URL";
-pub const ETH_WS_URL_ENV_VAR: &'static str = "ETH_WS_URL";
-pub const ETH_MCR_CONTRACT_ADDRESS_VAR: &'static str = "ETH_MCR_CONTRACT_ADDRESS";
-pub const ETH_DEFAULT_TX_GAS_LIMIT_VAR: &'static str = "ETH_DEFAULT_TX_GAS_LIMIT";
-pub const ETH_MAX_TX_SEND_RETRY_VAR: &'static str = "ETH_MAX_TX_SEND_RETRY";
-pub const ETH_VALIDATOR_PRIVATE_ADDRESS_VAR: &'static str = "ETH_VALIDATOR_PRIVATE_ADDRESS";
-
-#[cfg(not(test))]
-use mcr_settlement_client::eth_client::{
-	McrEthSettlementClient, McrEthSettlementConfig, DEFAULT_TX_GAS_LIMIT, MAX_TX_SEND_RETRY,
-	MCR_CONTRACT_ADDRESS,
-};
-#[cfg(not(test))]
-async fn build_settlement_client() -> anyhow::Result<impl McrSettlementClientOperations> {
-	let rpc_url = std::env::var(ETH_RPC_URL_ENV_VAR).unwrap_or("http://localhost:8545".to_string());
-	let ws_url = std::env::var(ETH_WS_URL_ENV_VAR).unwrap_or("ws://localhost:8545".to_string());
-	let gas_limit = std::env::var(ETH_DEFAULT_TX_GAS_LIMIT_VAR)
-		.unwrap_or(DEFAULT_TX_GAS_LIMIT.to_string())
-		.parse()?;
-	let tx_send_nb_retry = std::env::var(ETH_MAX_TX_SEND_RETRY_VAR)
-		.unwrap_or(MAX_TX_SEND_RETRY.to_string())
-		.parse()?;
-	let mrc_contract_address =
-		std::env::var(ETH_MCR_CONTRACT_ADDRESS_VAR).unwrap_or(MCR_CONTRACT_ADDRESS.to_string());
-	let config = McrEthSettlementConfig { mrc_contract_address, gas_limit, tx_send_nb_retry };
-
-	let private_address = std::env::var(ETH_VALIDATOR_PRIVATE_ADDRESS_VAR)?;
-	let client =
-		McrEthSettlementClient::build_with_urls(&rpc_url, ws_url, &private_address, config).await?;
-	Ok(client)
-}
-
-#[cfg(test)]
-use mcr_settlement_client::mock::MockMcrSettlementClient;
-#[cfg(test)]
-async fn build_settlement_client() -> anyhow::Result<impl McrSettlementClientOperations> {
-	Ok(MockMcrSettlementClient::new())
 }

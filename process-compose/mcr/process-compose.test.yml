@@ -6,6 +6,7 @@ processes:
 
   mcr-client-tests:
     command: |
+      set -e
       cargo test -p mcr-settlement-client
     depends_on:
       eth: 

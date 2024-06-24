@@ -1,2 +1,0 @@
-#!/bin/bash -e
-. ./scripts/mcr/mcr-env

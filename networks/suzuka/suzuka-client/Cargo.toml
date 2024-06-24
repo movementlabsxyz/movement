@@ -14,28 +14,46 @@ rust-version = { workspace = true }
 [dependencies]
 async-channel = { workspace = true }
 alloy-sol-types = { workspace = true  }
-alloy_provider = { workspace = true }
-alloy_signer_wallet = { workspace = true }
-alloy_network = { workspace = true }
+alloy-provider = { workspace = true }
+alloy-signer-wallet = { workspace = true }
+alloy-network = { workspace = true }
 alloy-primitives = { workspace = true  }
-alloy_contract = { workspace = true }
-alloy_transport = { workspace = true }
-alloy_rpc_types = { workspace = true }
+alloy-contract = { workspace = true }
+alloy-transport = { workspace = true }
+alloy-rpc-types = { workspace = true }
 
 aptos-sdk = { workspace = true }
+aptos-types = { workspace = true }
 anyhow = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+itertools = { workspace = true, default-features = true }
+maptos-execution-util = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
-url = { workspace = true }
 rand = { workspace = true }
+commander = { workspace = true }
+buildtime-helpers = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+chrono = { workspace = true }
+bcs = { workspace = true }
+rayon = { workspace = true }
+serde_json  = { workspace = true }
+thiserror = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+tracing = { workspace = true }
+url = { workspace = true }
+
 
 [dev-dependencies]
 reqwest = { workspace = true }
 serde_json = { workspace = true }
 
 maptos-execution-util = { workspace = true }
-suzuka-executor = { workspace = true }
 mcr-settlement-client = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
 
 dotenv = "0.15.0"
 

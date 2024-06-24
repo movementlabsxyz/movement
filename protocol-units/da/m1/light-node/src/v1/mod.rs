@@ -1,5 +1,3 @@
-#[cfg(all(feature = "sequencer", feature = "dynamic"))]
-pub mod dynamic;
 pub mod passthrough;
 #[cfg(feature = "sequencer")]
 pub mod sequencer;
@@ -7,21 +5,22 @@ pub mod sequencer;
 #[cfg(not(feature = "sequencer"))]
 pub use passthrough::*;
 
-#[cfg(all(feature = "sequencer", not(feature = "dynamic")))]
+#[cfg(feature = "sequencer")]
 pub use sequencer::*;
 
-#[cfg(all(feature = "dynamic", feature = "sequencer"))]
-pub use dynamic::*;
-
 use m1_da_light_node_grpc::light_node_service_server::{LightNodeService, LightNodeServiceServer};
+use m1_da_light_node_util::config::Config;
 use tonic::transport::Server;
 
 pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone {
 	/// Initializes from environment variables.
-	async fn try_from_env() -> Result<Self, anyhow::Error>;
+	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error>;
 
 	/// Runs the background tasks.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
+
+	/// Tries to get the service address
+	fn try_service_address(&self) -> Result<String, anyhow::Error>;
 
 	/// Runs the server
 	async fn run_server(&self) -> Result<(), anyhow::Error> {
@@ -29,15 +28,12 @@ pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone 
 			.register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
 			.build()?;
 
-		let env_addr =
-			std::env::var("M1_DA_LIGHT_NODE_ADDR").unwrap_or_else(|_| "0.0.0.0:30730".to_string());
-		let addr = env_addr.parse()?;
-
+		let address = self.try_service_address()?;
 		Server::builder()
 			.accept_http1(true)
 			.add_service(LightNodeServiceServer::new(self.clone()))
 			.add_service(reflection)
-			.serve(addr)
+			.serve(address.parse()?)
 			.await?;
 
 		Ok(())

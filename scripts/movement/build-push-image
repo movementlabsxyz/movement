@@ -1,3 +1,3 @@
-#!/bin/bash
+#!/usr/bin/env bash
 FILE_PATH=./docker/build/$1/Dockerfile
-./scripts/docker/build-push-image $FILE_PATH mvlbs $1
+./scripts/docker/build-push-image $FILE_PATH ghcr.io/movementlabsxyz $1

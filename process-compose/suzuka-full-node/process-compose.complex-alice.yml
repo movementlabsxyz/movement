@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  complex-alice-tests:
+    command: |
+      cargo test -p suzuka-client test_complex_alice -- --nocapture
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: true
