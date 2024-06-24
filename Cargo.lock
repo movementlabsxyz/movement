@@ -6958,6 +6958,7 @@ dependencies = [
  "serde_json",
  "tempfile",
  "toml 0.8.14",
+ "url",
 ]
 
 [[package]]
@@ -7098,6 +7099,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "serde",
+ "serde_json",
  "toml 0.8.14",
 ]
 
@@ -7113,6 +7115,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -11006,6 +11009,7 @@ dependencies = [
  "itertools 0.12.1",
  "maptos-execution-util",
  "mcr-settlement-client",
+ "mcr-settlement-config",
  "once_cell",
  "rand 0.7.3",
  "rayon",

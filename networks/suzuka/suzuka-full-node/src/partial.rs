@@ -198,7 +198,7 @@ where
 			let block_id = executable_block.block_id;
 			let commitment = self.executor.execute_block_opt(executable_block).await?;
 
-			debug!("read_blocks_from_da Executed block: {:?}", block_id);
+			info!("read_blocks_from_da Executed block: {:?}", block_id);
 
 			// todo: this needs defaults
 			match self.settlement_manager.post_block_commitment(commitment).await {

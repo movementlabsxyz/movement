@@ -24,3 +24,4 @@ serde = { workspace = true }
 serde_derive = { workspace = true }
 toml = { workspace = true }
 godfig = { workspace = true }
+url = { workspace = true }

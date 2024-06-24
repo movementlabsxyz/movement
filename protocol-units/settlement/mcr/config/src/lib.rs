@@ -26,6 +26,10 @@ pub struct Config {
 	#[serde(default = "default_tx_send_retries")]
 	pub tx_send_retries: u32,
 	pub anvil_process_pid: Option<u32>,
+
+	// Configuration define for test with Anvil node.
+	// TOOD: update with new config management.
+	pub test_local: Option<anvil::TestLocal>,
 }
 
 fn default_mcr_contract_address() -> String {
@@ -50,6 +54,73 @@ impl Default for Config {
 			gas_limit: default_gas_limit(),
 			tx_send_retries: default_tx_send_retries(),
 			anvil_process_pid: None,
+			test_local: None,
+		}
+	}
+}
+
+// To be moved in the new config management process and Anvil Test.
+pub mod anvil {
+	use super::{Deserialize, Serialize};
+	use serde_json::Value as JsonValue;
+	use std::fs;
+	use std::path::Path;
+	use std::path::PathBuf;
+
+	#[derive(Clone, Debug, Serialize, Deserialize)]
+	pub struct TestLocal {
+		pub anvil_admin_key: AnvilAddressEntry,
+		pub anvil_conf_path: PathBuf,
+		pub anvil_keys: Vec<AnvilAddressEntry>,
+	}
+
+	#[derive(Clone, Debug, Serialize, Deserialize)]
+	pub struct AnvilAddressEntry {
+		pub address: String,
+		pub private_key: String,
+	}
+
+	impl TestLocal {
+		pub fn new<P: AsRef<Path>>(conf_path: P) -> Result<Self, anyhow::Error> {
+			let mut anvil_keys = TestLocal::read_anvil_json_file_addresses(&conf_path)?;
+			let anvil_admin_key = anvil_keys.remove(0);
+			let mut anvil_conf_path = PathBuf::new();
+			anvil_conf_path.push(conf_path);
+			Ok(TestLocal { anvil_admin_key, anvil_conf_path, anvil_keys })
+		}
+
+		/// Read the Anvil config file keys and return all address/private key.
+		fn read_anvil_json_file_addresses<P: AsRef<Path>>(
+			anvil_conf_path: P,
+		) -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
+			let file_content = fs::read_to_string(anvil_conf_path)?;
+
+			let json_value: JsonValue = serde_json::from_str(&file_content)?;
+
+			// Extract the available_accounts and private_keys fields
+			let available_accounts_iter = json_value["available_accounts"]
+				.as_array()
+				.expect("available_accounts should be an array")
+				.iter()
+				.map(|v| {
+					let s = v.as_str().expect("available_accounts elements should be strings");
+					s.to_owned()
+				});
+
+			let private_keys_iter = json_value["private_keys"]
+				.as_array()
+				.expect("private_keys should be an array")
+				.iter()
+				.map(|v| {
+					let s = v.as_str().expect("private_keys elements should be strings");
+					s.to_owned()
+				});
+
+			let res = available_accounts_iter
+				.zip(private_keys_iter)
+				.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
+				.collect::<Vec<_>>();
+			Ok(res)
 		}
 	}
 }
@@ -73,6 +144,8 @@ mod tests {
 			mcr_contract_address,
 			gas_limit,
 			tx_send_retries,
+			test_local: _,
+			anvil_process_pid: _,
 		} = toml::from_str(EXAMPLE_CONFIG_TOML)?;
 		assert_eq!(rpc_url.unwrap(), "http://localhost:8545");
 		assert_eq!(ws_url.unwrap(), "http://localhost:8546");

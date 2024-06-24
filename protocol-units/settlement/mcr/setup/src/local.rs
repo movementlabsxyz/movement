@@ -91,13 +91,12 @@ impl Setup for Local {
 					let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 				}
 
+				//load Anvil Conf
+				let anvil_conf = mcr_settlement_config::anvil::TestLocal::new(&path)?;
+
 				// Deploy MCR smart contract.
-				let anvil_addresses =
-					mcr_settlement_client::eth_client::read_anvil_json_file_addresses(
-						&*anvil_path,
-					)?;
-				let smart_contract_private_key = &anvil_addresses[1].private_key;
-				let smart_contract_address = &anvil_addresses[1].address;
+				let smart_contract_private_key = &anvil_conf.anvil_keys[0].private_key;
+				let smart_contract_address = &anvil_conf.anvil_keys[0].address;
 
 				let mut solidity_path = std::env::current_dir()?;
 				solidity_path.push("protocol-units/settlement/mcr/contracts");
@@ -161,13 +160,14 @@ impl Setup for Local {
 					})?;
 
 				info!("setting up MCR Ethereum client mcr_address:{mcr_address}");
-				let settlement_private_key = &anvil_addresses[1].private_key;
+				let settlement_private_key = smart_contract_private_key;
 				config.signer_private_key = Some(settlement_private_key.to_string());
 				//				let mcr_address = mcr_address.as_str();
 				//the mcr_address contains " that has to be removed.
 				//let mcr_address = mcr_address.replace("\"", "");
 				config.mcr_contract_address = mcr_address.to_string();
 				config.anvil_process_pid = anvil_cmd_id;
+				config.test_local = Some(anvil_conf);
 
 				info!("MCR config:{config:?}");
 			}

@@ -24,10 +24,7 @@ use anyhow::Context;
 use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use movement_types::{Commitment, Id};
-use serde_json::Value as JsonValue;
 use std::array::TryFromSliceError;
-use std::fs;
-use std::path::Path;
 use thiserror::Error;
 use tokio_stream::StreamExt;
 
@@ -152,6 +149,8 @@ impl<P> Client<P> {
 		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
 		let send_tx_error_rules = vec![rule1, rule2];
 
+		tracing::info!("settlement client build_with_provider");
+
 		Ok(Client {
 			rpc_provider,
 			ws_provider,
@@ -185,6 +184,11 @@ where
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
 
+		tracing::info!(
+			"settlement client post_block_commitment height:{}",
+			block_commitment.height
+		);
+
 		crate::send_eth_tx::send_tx(
 			call_builder,
 			&self.send_tx_error_rules,
@@ -203,9 +207,11 @@ where
 		let eth_block_commitment: Vec<_> = block_commitments
 			.into_iter()
 			.map(|block_commitment| {
+				let height = U256::from(block_commitment.height);
+				tracing::info!("settlement client post_block_commitment_batch height:{height}",);
 				Ok(MCR::BlockCommitment {
 					// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
-					height: U256::from(block_commitment.height),
+					height,
 					commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 					blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
 				})
@@ -237,6 +243,9 @@ where
 							alloy_sol_types::Error::Other(err.to_string().into())
 						},
 					)?;
+
+					tracing::info!("settlement client stream_block_commitments height:{height}",);
+
 					Ok(BlockCommitment {
 						height,
 						block_id: Id(commitment.blockHash.0),
@@ -273,45 +282,6 @@ where
 		let return_height: u64 = block_height.try_into()?;
 		Ok(return_height)
 	}
-}
-
-pub struct AnvilAddressEntry {
-	pub address: String,
-	pub private_key: String,
-}
-
-/// Read the Anvil config file keys and return all address/private key.
-pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
-	anvil_conf_path: P,
-) -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
-	let file_content = fs::read_to_string(anvil_conf_path)?;
-
-	let json_value: JsonValue = serde_json::from_str(&file_content)?;
-
-	// Extract the available_accounts and private_keys fields
-	let available_accounts_iter = json_value["available_accounts"]
-		.as_array()
-		.expect("available_accounts should be an array")
-		.iter()
-		.map(|v| {
-			let s = v.as_str().expect("available_accounts elements should be strings");
-			s.to_owned()
-		});
-
-	let private_keys_iter = json_value["private_keys"]
-		.as_array()
-		.expect("private_keys should be an array")
-		.iter()
-		.map(|v| {
-			let s = v.as_str().expect("private_keys elements should be strings");
-			s.to_owned()
-		});
-
-	let res = available_accounts_iter
-		.zip(private_keys_iter)
-		.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
-		.collect::<Vec<_>>();
-	Ok(res)
 }
 
 #[cfg(test)]

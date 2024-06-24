@@ -53,14 +53,20 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 		let mut ahead_of_settlement = false;
 		let mut commitments_to_settle = BTreeMap::new();
 		let mut batch_acc = Vec::new();
+		tracing::info!("Settlement manager init process max_height:{max_height}");
 		loop {
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
+					tracing::info!("Settlement manager post commitment height:{}", block_commitment.height);
+
 					commitments_to_settle.insert(
 						block_commitment.height,
 						block_commitment.commitment.clone(),
 					);
+
 					if block_commitment.height > max_height {
+						tracing::info!("Settlement manager  post set ahead_of_settlement");
+
 						ahead_of_settlement = true;
 						let batch = mem::replace(&mut batch_acc, Vec::new());
 						if let Err(e) = client.post_block_commitment_batch(batch).await {
@@ -68,6 +74,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 							break;
 						}
 					}
+					tracing::info!("Settlement manager post adding commitment to batch.");
 					batch_acc.push(block_commitment);
 				}
 				Some(res) = settlement_stream.next() => {
@@ -107,6 +114,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 							}
 						};
 						if new_max_height > max_height {
+							tracing::info!("Settlement manager notify commitment new_max_height:{new_max_height} > max_height:{max_height}");
 							max_height = new_max_height;
 							ahead_of_settlement = false;
 						}

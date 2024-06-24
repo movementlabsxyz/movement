@@ -29,6 +29,7 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true, default-features = true }
 maptos-execution-util = { workspace = true }
+mcr-settlement-config = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
@@ -44,7 +45,6 @@ thiserror = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
 url = { workspace = true }
-
 
 [dev-dependencies]
 reqwest = { workspace = true }
