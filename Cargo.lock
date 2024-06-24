@@ -5387,8 +5387,8 @@ name = "godfig"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "flocks",
  "futures",
- "rustix 0.38.34",
  "serde",
  "tokio",
 ]

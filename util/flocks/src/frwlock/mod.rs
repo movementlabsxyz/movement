@@ -1,8 +1,8 @@
 pub mod read_guard;
 pub mod write_guard;
 
-use write_guard::FrwLockWriteGuard;
-use read_guard::FrwLockReadGuard;
+pub use write_guard::FrwLockWriteGuard;
+pub use read_guard::FrwLockReadGuard;
 use rustix::{
     fs::{flock, FlockOperation},
     fd::AsFd,
@@ -152,6 +152,32 @@ mod tests {
                 Err(_) => (),
            }
 
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    pub async fn works_with_buf_writer_and_reader() -> Result<(), anyhow::Error> {
+        let file = tempfile()?;
+        let frwlock = FrwLock::new(file);
+
+        // get a write lock and use it
+        {
+            let mut write_guard = frwlock.write().await?;
+            let mut writer = std::io::BufWriter::new(&mut *write_guard);
+            writer.write_all(b"hello world")?;
+            writer.flush()?;
+        }
+
+        // use write lock to read the data
+        {
+            let mut write_guard = frwlock.write().await?;
+            let mut reader = std::io::BufReader::new(&mut *write_guard);
+            let mut buf = Vec::new();
+            reader.seek(std::io::SeekFrom::Start(0))?;
+            reader.read_to_end(&mut buf)?;
+            assert_eq!(buf, b"hello world");
         }
 
         Ok(())

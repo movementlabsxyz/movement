@@ -16,7 +16,7 @@ serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
-rustix = { workspace = true }
+flocks = { workspace = true }
 
 [lints]
 workspace = true

@@ -72,6 +72,7 @@ commander = { path = "util/commander" }
 suzuka-config = { path = "networks/suzuka/suzuka-config" }
 monza-config = { path = "networks/monza/monza-config" }
 # util
+flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 
 # Serialization and Deserialization
