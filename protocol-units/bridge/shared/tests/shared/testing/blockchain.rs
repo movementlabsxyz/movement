@@ -15,7 +15,7 @@ pub use self::{
 use super::rng::RngSeededClone;
 use bridge_shared::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, LockDetails,
+	GenUniqueHash, HashLockPreImage, LockDetails,
 };
 
 pub mod client;
@@ -28,6 +28,7 @@ pub enum AbstractBlockchainEvent<A, H> {
 	Noop,
 	BridgeTransferInitiated(BridgeTransferDetails<A, H>),
 	BridgeTransferAssetsLocked(LockDetails<A, H>),
+	BridgeTransferCompleted(BridgeTransferId<H>, HashLockPreImage),
 }
 
 #[derive(Debug)]
@@ -207,7 +208,7 @@ where
 							hash_lock.clone(),
 							time_lock.clone(),
 							recipient_address.clone(),
-							amount.clone(),
+							amount,
 						);
 						this.events.push(AbstractBlockchainEvent::BridgeTransferAssetsLocked(
 							LockDetails {
@@ -217,6 +218,19 @@ where
 								recipient_address,
 								amount,
 							},
+						));
+					}
+					CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
+						this.counterparty_contract
+							.complete_bridge_transfer(
+								&mut this.accounts,
+								&bridge_transfer_id,
+								&pre_image,
+							)
+							.expect("Failed to call complete_bridge_transfer");
+						this.events.push(AbstractBlockchainEvent::BridgeTransferCompleted(
+							bridge_transfer_id,
+							pre_image,
 						));
 					}
 				},
@@ -232,6 +246,8 @@ where
 
 		this.waker.register(cx.waker());
 
-		Poll::Pending
+		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
+
+		Poll::Ready(Some(AbstractBlockchainEvent::Noop))
 	}
 }

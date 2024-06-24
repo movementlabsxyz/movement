@@ -17,6 +17,12 @@ pub enum BridgeContractError {
 	GenericError(String),
 }
 
+impl BridgeContractError {
+	pub fn generic<E: std::error::Error>(e: E) -> Self {
+		Self::GenericError(e.to_string())
+	}
+}
+
 pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
 
 #[async_trait::async_trait]
