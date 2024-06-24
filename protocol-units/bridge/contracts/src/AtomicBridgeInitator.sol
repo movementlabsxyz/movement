@@ -54,8 +54,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         if (_wethAmount > 0) {
             if (!weth.transferFrom(originator, address(this), _wethAmount)) revert WETHTransferFailed();
         }
-        // If msg.value is greater than 0, convert ETH to WETH
-
         bridgeTransfers[_bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
