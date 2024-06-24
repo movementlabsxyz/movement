@@ -1,12 +1,13 @@
-use anyhow::Context;
 use flocks::tfrwlock::{TfrwLock, TfrwLockWriteGuard};
 use std::sync::Arc;
-use std::fs::File;
+use tokio::{
+    fs::File,
+    io::{AsyncReadExt, AsyncWriteExt, AsyncSeekExt}
+};
+
 use crate::backend::{BackendOperations, GodfigBackendError};
 use async_stream::stream;
 use futures::Stream;
-use std::io::{Read, Write};
-use std::io::Seek;
 
 #[derive(Clone)]
 pub struct ConfigFile {
@@ -34,8 +35,11 @@ impl ConfigFile {
         T: serde::de::DeserializeOwned,
     {
         let mut contents = String::new();
-        write_guard.seek(std::io::SeekFrom::Start(0))?;
-        write_guard.read_to_string(&mut contents)?;
+        write_guard.seek(std::io::SeekFrom::Start(0)).await?;
+        write_guard.read_to_string(&mut contents).await?;
+        if contents.is_empty() {
+            return Ok((None, write_guard));
+        }
         
         let json: serde_json::Value = serde_json::from_str(&contents).map_err(
             |e| GodfigBackendError::TypeContractMismatch(e.to_string())
@@ -60,11 +64,8 @@ impl ConfigFile {
         T: serde::Serialize,
     {
         let mut contents = String::new();
-        write_guard.seek(std::io::SeekFrom::Start(0))?;
-        write_guard.read_to_string(&mut contents).context(
-            "Failed to read contents of file"
-        )?; // read the contents of the file (if any
-
+        // write_guard.seek(std::io::SeekFrom::Start(0)).await?;
+        write_guard.read_to_string(&mut contents).await?;
         let mut json: serde_json::Value = if contents.is_empty() {
             serde_json::Value::Object(serde_json::Map::new())
         } else {
@@ -94,10 +95,10 @@ impl ConfigFile {
         }
 
         // serialize the contents and write to the file
-        contents = serde_json::to_string(&json)?;
-        write_guard.seek(std::io::SeekFrom::Start(0))?;
-        write_guard.write_all(contents.as_bytes())?;
-        write_guard.flush()?;
+        contents = serde_json::to_string_pretty(&json)?;
+        write_guard.seek(std::io::SeekFrom::Start(0)).await?;
+        write_guard.write_all(contents.as_bytes()).await?;
+        write_guard.flush().await?;
 
         Ok(write_guard)
     }
@@ -202,8 +203,8 @@ pub mod test {
 
     #[tokio::test]
     async fn test_locking() -> Result<(), anyhow::Error> {
-        let file = File::create("test.txt")?;
-        let config_file = ConfigFile::new(file);
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file.into());
 
         // cannot read and write at the same time
         let _write_guard = config_file.lock.write().await?;
@@ -218,7 +219,7 @@ pub mod test {
     #[tokio::test]
     async fn test_get_set() -> Result<(), anyhow::Error> {
         let file = tempfile::tempfile()?;
-        let config_file = ConfigFile::new(file);
+        let config_file = ConfigFile::new(file.into());
 
         // set a value
         config_file.try_set(vec!["key".to_string()], Some(42)).await?;
@@ -233,7 +234,7 @@ pub mod test {
     async fn test_wait_for() -> Result<(), anyhow::Error> {
 
         let file = tempfile::tempfile()?;
-        let config_file = ConfigFile::new(file);
+        let config_file = ConfigFile::new(file.into());
 
         // start one thread that will wait for the value
         let config_file_clone = config_file.clone();
@@ -261,7 +262,7 @@ pub mod test {
     #[tokio::test]
     async fn test_transaction() -> Result<(), anyhow::Error> {
         let file = tempfile::tempfile()?;
-        let config_file = ConfigFile::new(file);
+        let config_file = ConfigFile::new(file.into());
 
         // set a value
         config_file.try_set(vec!["key".to_string()], Some(42)).await?;
@@ -286,7 +287,7 @@ pub mod test {
     #[tokio::test]
     async fn test_struct() -> Result<(), anyhow::Error> {
         let file = tempfile::tempfile()?;
-        let config_file = ConfigFile::new(file);
+        let config_file = ConfigFile::new(file.into());
 
         // set a value
         config_file.try_set(vec!["key".to_string()], Some(TestConfig {
