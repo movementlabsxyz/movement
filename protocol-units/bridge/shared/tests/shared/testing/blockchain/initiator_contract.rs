@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rand::Rng;
 use thiserror::Error;
 
-use crate::types::{
+use bridge_shared::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
 	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };

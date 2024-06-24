@@ -11,10 +11,6 @@ use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
 	bridge_monitoring::BridgeContractInitiatorEvent,
 	bridge_service::BridgeService,
-	testing::{
-		blockchain::{AbstractBlockchain, AbstractBlockchainClient},
-		rng::{RngSeededClone, TestRng},
-	},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
 		InitiatorAddress, RecipientAddress, TimeLock,
@@ -28,6 +24,11 @@ use crate::shared::{
 };
 
 mod shared;
+
+use shared::testing::{
+	blockchain::{AbstractBlockchain, AbstractBlockchainClient},
+	rng::{RngSeededClone, TestRng},
+};
 
 #[test(tokio::test)]
 async fn test_bridge_service_integration() {

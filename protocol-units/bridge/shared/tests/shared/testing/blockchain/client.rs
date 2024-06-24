@@ -1,6 +1,6 @@
 use futures::channel::mpsc;
 
-use crate::testing::rng::RngSeededClone;
+use crate::shared::testing::rng::RngSeededClone;
 
 use super::Transaction;
 

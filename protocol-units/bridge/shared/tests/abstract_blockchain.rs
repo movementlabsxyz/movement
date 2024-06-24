@@ -1,18 +1,19 @@
+use bridge_shared::types::LockDetails;
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, InitiatorAddress,
 	RecipientAddress, TimeLock,
-};
-use bridge_shared::{
-	testing::blockchain::{
-		AbstractBlockchain, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall, Transaction,
-	},
-	types::LockDetails,
 };
 use futures::StreamExt;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 
 use test_log::test;
+
+mod shared;
+
+use shared::testing::blockchain::{
+	AbstractBlockchain, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall, Transaction,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestAddress(pub &'static str);
