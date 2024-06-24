@@ -6,16 +6,18 @@ use std::{
 	task::{Context, Poll},
 };
 
-use crate::types::{BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId};
-use crate::{
+use bridge_shared::types::{
+	BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+};
+use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
-use crate::{
+use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator, BridgeContractResult},
 	types::Amount,
 };
-use crate::{
+use bridge_shared::{
 	bridge_monitoring::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,

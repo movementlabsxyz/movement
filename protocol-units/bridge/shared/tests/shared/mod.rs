@@ -1,3 +1,5 @@
+#![allow(dead_code)] // TODO: Remove this line once the code is complete
+
 use async_trait::async_trait;
 use bridge_shared::{
 	bridge_contracts::{
@@ -7,13 +9,6 @@ use bridge_shared::{
 	bridge_monitoring::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
-	},
-	testing::{
-		blockchain::{
-			AbstractBlockchainClient, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall,
-			Transaction,
-		},
-		rng::TestRng,
 	},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
@@ -27,6 +22,16 @@ use std::{
 	hash::{DefaultHasher, Hash, Hasher},
 	pin::Pin,
 	task::{Context, Poll},
+};
+
+pub mod testing;
+
+use testing::{
+	blockchain::{
+		AbstractBlockchainClient, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall,
+		Transaction,
+	},
+	rng::TestRng,
 };
 
 pub fn hash_static_string(pre_image: &'static str) -> [u8; 8] {

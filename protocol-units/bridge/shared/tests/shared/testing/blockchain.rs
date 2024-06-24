@@ -13,7 +13,7 @@ pub use self::{
 };
 
 use super::rng::RngSeededClone;
-use crate::types::{
+use bridge_shared::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
 	GenUniqueHash, LockDetails,
 };

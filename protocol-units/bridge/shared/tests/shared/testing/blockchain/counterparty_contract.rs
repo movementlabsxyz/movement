@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::types::{
+use bridge_shared::types::{
 	Amount, BridgeHashType, BridgeTransferId, GenUniqueHash, HashLock, LockDetails,
 	RecipientAddress, TimeLock,
 };

@@ -1,5 +1,4 @@
 use bridge_shared::bridge_monitoring::BridgeContractInitiatorEvent;
-use bridge_shared::testing::mocks::MockBlockchainService;
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
 	TimeLock,
@@ -7,6 +6,10 @@ use bridge_shared::types::{
 use bridge_shared::{blockchain_service::ContractEvent, bridge_contracts::BridgeContractInitiator};
 use futures::StreamExt;
 use std::task::{Context, Poll};
+
+mod shared;
+
+use shared::testing::mocks::MockBlockchainService;
 
 #[tokio::test]
 async fn test_bridge_transfer_initiated() {
