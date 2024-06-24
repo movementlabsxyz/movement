@@ -79,10 +79,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
         bridgeTransfer.completed = true;
 
-        // todo: we need to verify if transfers are cheaper in weth or eth
-        // then decide on which transfer to use.
-        // This should not be done in the contract, this should only release funds
-        // to transfer on the other side.
         // Mock transfer to recipient by serializing the address
         // this is supposed to be removed in production
         address recip;
