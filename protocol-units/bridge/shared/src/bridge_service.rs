@@ -256,10 +256,11 @@ where
 						trace!("BridgeService: Counterparty event from blockchain service 2");
 						use BridgeContractCounterpartyEvent::*;
 						match event {
-							Locked(_details) => {
+							Locked(ref _details) => {
 								// Asset locking on the counterpart bridge has been successfully confirmed. The
 								// system will now begin monitoring for the claim event, allowing the bridge to
 								// access the secret and unlock the corresponding funds on the opposite end.
+								return Poll::Ready(Some(B2C(CEvent::ContractEvent(event))));
 							}
 							Unlocked(ref details) => {
 								// The client implementation has successfully unlocked the assets on the

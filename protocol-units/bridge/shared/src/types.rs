@@ -6,6 +6,15 @@ use rand::Rng;
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
+impl<H, O> Convert<BridgeTransferId<O>> for BridgeTransferId<H>
+where
+	H: Convert<O>,
+{
+	fn convert(me: &BridgeTransferId<H>) -> BridgeTransferId<O> {
+		BridgeTransferId(Convert::convert(&me.0))
+	}
+}
+
 impl<H> From<H> for BridgeTransferId<H> {
 	fn from(hash: H) -> Self {
 		BridgeTransferId(hash)
@@ -80,6 +89,10 @@ pub struct UnlockDetails<A, H> {
 // Types
 pub trait BridgeHashType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 pub trait BridgeAddressType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
+
+pub trait Convert<O> {
+	fn convert(other: &Self) -> O;
+}
 
 // Blankets
 impl<T> BridgeHashType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
