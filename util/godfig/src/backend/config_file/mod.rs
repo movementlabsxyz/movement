@@ -1,8 +1,8 @@
 use anyhow::Context;
-use flocks::tfrwlock::TfrwLock;
+use flocks::tfrwlock::{TfrwLock, TfrwLockWriteGuard};
 use std::sync::Arc;
 use std::fs::File;
-use crate::backend::BackendOperations;
+use crate::backend::{BackendOperations, GodfigBackendError};
 use async_stream::stream;
 use futures::Stream;
 use std::io::{Read, Write};
@@ -28,42 +28,37 @@ impl ConfigFile {
         self
     }
 
-}
-
-impl BackendOperations for ConfigFile {
-    async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, anyhow::Error>
+    async fn try_get_with_guard<K, T>(mut write_guard : TfrwLockWriteGuard<'_, File>, key: K) -> Result<(Option<T>, TfrwLockWriteGuard<'_, File>), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned,
     {
-        let contents = {
-            let mut write_guard = self.lock.write().await?;
-            let mut contents = String::new();
-            write_guard.seek(std::io::SeekFrom::Start(0))?;
-            write_guard.read_to_string(&mut contents)?;
-            contents
-        };
+        let mut contents = String::new();
+        write_guard.seek(std::io::SeekFrom::Start(0))?;
+        write_guard.read_to_string(&mut contents)?;
+        
+        let json: serde_json::Value = serde_json::from_str(&contents).map_err(
+            |e| GodfigBackendError::TypeContractMismatch(e.to_string())
+        )?;
 
-        let json: serde_json::Value = serde_json::from_str(&contents)?;
         let keys = key.into();
         let mut current = &json;
         for k in keys {
             if current.get(&k).is_none() {
-                return Ok(None);
+                return Ok((None, write_guard));
             }
             current = &current[&k];
         }
         let result = serde_json::from_value(current.clone())?;
-        Ok(Some(result))
+        Ok((Some(result), write_guard))
+
     }
 
-    async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), anyhow::Error>
+    async fn try_set_with_guard<K, T>(mut write_guard : TfrwLockWriteGuard<'_, File>, key: K, value: Option<T>) -> Result<TfrwLockWriteGuard<'_, File>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
         T: serde::Serialize,
     {
-        // here we want to hold the write lock for the duration of the function
-        let mut write_guard = self.lock.write().await?;
         let mut contents = String::new();
         write_guard.seek(std::io::SeekFrom::Start(0))?;
         write_guard.read_to_string(&mut contents).context(
@@ -73,7 +68,7 @@ impl BackendOperations for ConfigFile {
         let mut json: serde_json::Value = if contents.is_empty() {
             serde_json::Value::Object(serde_json::Map::new())
         } else {
-            serde_json::from_str(&contents)?
+            serde_json::from_str(&contents)?// parse the contents as JSON (if any
         };
 
         let keys = key.into();
@@ -104,10 +99,34 @@ impl BackendOperations for ConfigFile {
         write_guard.write_all(contents.as_bytes())?;
         write_guard.flush()?;
 
+        Ok(write_guard)
+    }
+
+}
+
+impl BackendOperations for ConfigFile {
+    async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, GodfigBackendError>
+    where
+        K: Into<Vec<String>> + Send,
+        T: serde::de::DeserializeOwned,
+    {
+        let write_guard = self.lock.write().await?;
+        let (value, guard) = Self::try_get_with_guard(write_guard, key).await?;
+        Ok(value)
+    }
+
+    async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), GodfigBackendError>
+    where
+        K: Into<Vec<String>> + Send,
+        T: serde::Serialize,
+    {
+        let write_guard = self.lock.write().await?;
+        Self::try_set_with_guard(write_guard, key, value).await?;
+
         Ok(())
     }
 
-    async fn try_wait_for<K, T>(&self, key: K) -> Result<T, anyhow::Error>
+    async fn try_wait_for<K, T>(&self, key: K) -> Result<T, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned,
@@ -121,7 +140,7 @@ impl BackendOperations for ConfigFile {
         }
     }
 
-    async fn try_stream<K, T>(&self, key: K) -> Result<impl Stream<Item = Result<Option<T>, anyhow::Error>>, anyhow::Error>
+    async fn try_stream<K, T>(&self, key: K) -> Result<impl Stream<Item = Result<Option<T>, GodfigBackendError>>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned + serde::Serialize,
@@ -142,6 +161,31 @@ impl BackendOperations for ConfigFile {
             }
         })
     }
+
+    async fn try_transaction<K, T, F, Fut>(&self, key: K, callback: F) -> Result<(), GodfigBackendError>
+    where
+        K: Into<Vec<String>> + Send,
+        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        F: FnOnce(Option<T>) -> Fut + Send,
+        Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
+
+            let key = key.into();
+       
+            // obtain the write_guard which will be held for the duration of the function
+            let mut write_guard = self.lock.write().await?;
+      
+            // get the current value
+            let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
+
+            let new_value = callback(current_value).await?;
+
+            // set the new value
+            write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+
+            Ok(())
+
+        }
+
 }
 
 
@@ -189,7 +233,7 @@ pub mod test {
         let wait_task = tokio::spawn(async move {
             let result = config_file_clone.try_wait_for::<_, i32>(vec!["key".to_string()]).await?;
             assert_eq!(result, 42);
-            Ok::<(), anyhow::Error>(())
+            Ok::<(), GodfigBackendError>(())
         });
 
         // start another thread that will set the value
@@ -197,7 +241,7 @@ pub mod test {
         let set_task = tokio::spawn(async move {
             tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             config_file_clone.try_set(vec!["key".to_string()], Some(42)).await?;
-            Ok::<(), anyhow::Error>(())
+            Ok::<(), GodfigBackendError>(())
         });
 
         // wait for both tasks to finish
@@ -205,6 +249,31 @@ pub mod test {
 
         Ok(())
 
+    }
+
+    #[tokio::test]
+    async fn test_transaction() -> Result<(), anyhow::Error> {
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file);
+
+        // set a value
+        config_file.try_set(vec!["key".to_string()], Some(42)).await?;
+
+        // increment the value
+        config_file.try_transaction(vec!["key".to_string()], |value| async move {
+            Ok(value.map(|v : i32| v + 1))
+        }).await?;
+
+        // increment the value again
+        config_file.try_transaction(vec!["key".to_string()], |value| async move {
+            Ok(value.map(|v : i32| v + 1))
+        }).await?;
+
+        // check the value
+        let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
+        assert_eq!(result, Some(44));
+
+        Ok(())
     }
 
 }
