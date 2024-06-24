@@ -1,16 +1,14 @@
-use std::marker::PhantomData;
 use std::ops::Deref;
 use rustix::{
     fs::{flock, FlockOperation},
-    fd::AsFd,
+    fd::AsFd
 };
 
-pub struct FrwLockReadGuard<'a, T: AsFd> {
-    pub(crate) data: *const T,
-    pub(crate) _marker: PhantomData<&'a T>, // Ensuring lifetime and immutability semantics.
+pub struct FrwLockReadGuard<T: AsFd> {
+    pub(crate) data: *const T
 }
 
-impl<T: AsFd> Deref for FrwLockReadGuard<'_, T> {
+impl<T: AsFd> Deref for FrwLockReadGuard<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -18,11 +16,10 @@ impl<T: AsFd> Deref for FrwLockReadGuard<'_, T> {
     }
 }
 
-impl<T: AsFd> Drop for FrwLockReadGuard<'_, T> {
+impl<T: AsFd> Drop for FrwLockReadGuard<T> {
     fn drop(&mut self) {
         flock(
-            unsafe { &*self.data },
-            FlockOperation::Unlock,
-        ).expect("Failed to unlock file");
+            unsafe { &*self.data }, 
+            FlockOperation::Unlock).expect("Failed to unlock file");
     }
 }

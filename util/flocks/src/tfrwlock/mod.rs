@@ -1,13 +1,14 @@
-pub mod read_guard;
 pub mod write_guard;
+pub mod read_guard;
 
 pub use write_guard::TfrwLockWriteGuard;
 pub use read_guard::TfrwLockReadGuard;
 
 use tokio::sync::RwLock;
+use crate::frwlock::{FrwLock, FrwLockError};
 use rustix::fd::AsFd;
 use thiserror::Error;
-use crate::frwlock::{FrwLock, FrwLockError};
+
 
 #[derive(Debug, Error)]
 pub enum TfrwLockError {
@@ -26,24 +27,29 @@ impl From<FrwLockError> for TfrwLockError {
     }
 }
 
+/// A file-based read-write lock.
+/// This only mutually excludes processes trying to violate the lock, not the same process--which is not considered contention.
+/// If you want to prevent contention within the same process, you should wrap this in your preferred synchronization primitive.
 pub struct TfrwLock<T: AsFd> {
-    lock: RwLock<FrwLock<T>>,
+    lock : RwLock<FrwLock<T>>
 }
 
 impl<T: AsFd> TfrwLock<T> {
     pub fn new(file: T) -> Self {
         Self {
-            lock: RwLock::new(FrwLock::new(file)),
+            lock: RwLock::new(FrwLock::new(file))
         }
     }
 
-    pub async fn write<'a>(&'a self) -> Result<TfrwLockWriteGuard<'a, T>, TfrwLockError> {
+    pub async fn write(&self) -> Result<TfrwLockWriteGuard<T>, TfrwLockError> {
         let outer_guard = self.lock.write().await;
-        TfrwLockWriteGuard::new(outer_guard).map_err(|e| e.into())
+        let inner_guard = outer_guard.write().await?;
+        Ok(TfrwLockWriteGuard::new(outer_guard, inner_guard))
     }
 
-    pub async fn read<'a>(&'a self) -> Result<TfrwLockReadGuard<'a, T>, TfrwLockError> {
+    pub async fn read(&self) -> Result<TfrwLockReadGuard<T>, TfrwLockError> {
         let outer_guard = self.lock.read().await;
-        TfrwLockReadGuard::new(outer_guard).map_err(|e| e.into())
+        let inner_guard = outer_guard.read().await?;
+        Ok(TfrwLockReadGuard::new(outer_guard, inner_guard))
     }
 }
