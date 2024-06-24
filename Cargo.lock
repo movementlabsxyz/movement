@@ -5387,9 +5387,11 @@ name = "godfig"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "async-stream",
  "flocks",
  "futures",
  "serde",
+ "serde_json",
  "tokio",
 ]
 

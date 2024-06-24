@@ -1,28 +1,25 @@
 pub mod config_file;
 
-/// Backend trait for key-value storage.
+use futures::Stream;
+
 pub trait BackendOperations {
-    /// Tries to get a value from a key.
-    async fn try_get<K, T>(&self, key: K) -> Result<T, anyhow::Error>
+    async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, anyhow::Error>
     where
-        K: Into<String> + Send,
+        K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned;
 
-    /// Tries to set a key-value pair.
-    async fn try_set<K, T>(&self, key: K, value: T) -> Result<(), anyhow::Error>
+    async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), anyhow::Error>
     where
-        K: Into<String> + Send,
+        K: Into<Vec<String>> + Send,
         T: serde::Serialize;
 
-    /// Try wait for a key to be set.
     async fn try_wait_for<K, T>(&self, key: K) -> Result<T, anyhow::Error>
     where
-        K: Into<String> + Send,
+        K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned;
 
-    /// Tries to stream values from a key.
-    async fn try_stream<K, T>(&self, key: K) -> Result<impl futures::Stream<Item = T>, anyhow::Error>
+    async fn try_stream<K, T>(&self, key: K) -> Result<impl Stream<Item = Result<Option<T>, anyhow::Error>>, anyhow::Error>
     where
-        K: Into<String> + Send,
-        T: serde::de::DeserializeOwned;
+        K: Into<Vec<String>> + Send,
+        T: serde::de::DeserializeOwned + serde::Serialize;
 }
