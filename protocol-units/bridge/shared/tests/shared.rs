@@ -21,26 +21,47 @@ use bridge_shared::{
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use rand::Rng;
 use std::{
+	fmt::Formatter,
+	hash::{DefaultHasher, Hash, Hasher},
 	pin::Pin,
 	task::{Context, Poll},
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct BC1Hash(pub &'static str);
+pub fn hash_static_string(pre_image: &'static str) -> [u8; 8] {
+	let mut hasher = DefaultHasher::new();
+	pre_image.hash(&mut hasher);
+	hasher.finish().to_be_bytes()
+}
 
-impl PartialEq<HashLockPreImage> for BC1Hash {
-	fn eq(&self, _other: &HashLockPreImage) -> bool {
-		true
+#[derive(Clone, Eq, PartialEq, Hash)]
+pub struct BC1Hash([u8; 8]);
+
+impl From<&'static str> for BC1Hash {
+	fn from(pre_image: &'static str) -> Self {
+		Self(hash_static_string(pre_image))
 	}
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct BC2Hash(pub &'static str);
+impl std::fmt::Debug for BC1Hash {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Bc1Hash({:02x})", u64::from_be_bytes(self.0))
+	}
+}
 
-impl PartialEq<HashLockPreImage> for BC2Hash {
-	fn eq(&self, _other: &HashLockPreImage) -> bool {
-		true
+#[derive(Clone, Eq, PartialEq, Hash)]
+pub struct BC2Hash([u8; 8]);
+
+impl From<&'static str> for BC2Hash {
+	fn from(pre_image: &'static str) -> Self {
+		Self(hash_static_string(pre_image))
+	}
+}
+
+impl std::fmt::Debug for BC2Hash {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Bc1Hash({:02x})", u64::from_be_bytes(self.0))
 	}
 }
 
@@ -51,14 +72,14 @@ pub struct BC1Address(pub &'static str);
 pub struct BC2Address(pub &'static str);
 
 impl GenUniqueHash for BC1Hash {
-	fn gen_unique_hash() -> Self {
-		Self("unique_hash")
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		Self(rng.gen())
 	}
 }
 
 impl GenUniqueHash for BC2Hash {
-	fn gen_unique_hash() -> Self {
-		Self("unique_hash")
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		Self(rng.gen())
 	}
 }
 

@@ -9,7 +9,7 @@ use bridge_shared::{
 	types::LockDetails,
 };
 use futures::StreamExt;
-use rand::SeedableRng;
+use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
 
 use test_log::test;
@@ -21,7 +21,7 @@ struct TestAddress(pub &'static str);
 struct TestHash(pub &'static str);
 
 impl GenUniqueHash for TestHash {
-	fn gen_unique_hash() -> Self {
+	fn gen_unique_hash<R: Rng>(_rng: &mut R) -> Self {
 		TestHash("unique_hash")
 	}
 }

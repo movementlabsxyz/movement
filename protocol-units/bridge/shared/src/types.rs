@@ -1,6 +1,7 @@
 use std::{fmt::Debug, hash::Hash};
 
 use derive_more::{Deref, DerefMut};
+use rand::Rng;
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
@@ -21,8 +22,8 @@ impl<H> GenUniqueHash for BridgeTransferId<H>
 where
 	H: GenUniqueHash,
 {
-	fn gen_unique_hash() -> Self {
-		BridgeTransferId(H::gen_unique_hash())
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		BridgeTransferId(H::gen_unique_hash(rng))
 	}
 }
 
@@ -85,5 +86,5 @@ impl<T> BridgeHashType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Se
 impl<T> BridgeAddressType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 
 pub trait GenUniqueHash {
-	fn gen_unique_hash() -> Self;
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self;
 }
