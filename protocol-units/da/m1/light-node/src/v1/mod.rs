@@ -11,6 +11,7 @@ pub use sequencer::*;
 use m1_da_light_node_grpc::light_node_service_server::{LightNodeService, LightNodeServiceServer};
 use m1_da_light_node_util::config::Config;
 use tonic::transport::Server;
+use tracing::info;
 
 pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone {
 	/// Initializes from environment variables.
@@ -29,6 +30,7 @@ pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone 
 			.build()?;
 
 		let address = self.try_service_address()?;
+		info!("Server listening on: {}", address);
 		Server::builder()
 			.accept_http1(true)
 			.add_service(LightNodeServiceServer::new(self.clone()))
@@ -49,6 +51,7 @@ pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone 
 		};
 		let server = self.run_server();
 
+		info!("Running server and background tasks.");
 		tokio::try_join!(server, background_tasks)?;
 
 		Ok(())

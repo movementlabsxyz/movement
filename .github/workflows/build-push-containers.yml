@@ -152,7 +152,7 @@ jobs:
       run: |
         ./scripts/movement/build-push-image m1-da-light-node-celestia-bridge
 
-  celestia-node-manifest:
+  m1-da-light-node-celestia-bridge-manifest:
     permissions:
       contents: read
       packages: write
@@ -411,5 +411,108 @@ jobs:
         run: |
           ./scripts/movement/manifest suzuka-faucet-service
 
-  
+  suzuka-client-e2e-simple-interaction-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
     
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image suzuka-client-e2e-simple-interaction
+
+  suzuka-client-e2e-simple-interaction-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: suzuka-client-e2e-simple-interaction-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest suzuka-client-e2e-simple-interaction
+  
+  container-checks:
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    needs: 
+      - m1-da-light-node-manifest
+      - m1-da-light-node-celestia-appd-manifest
+      - m1-da-light-node-celestia-bridge-manifest
+      - suzuka-full-node-setup-manifest
+      - wait-for-celestia-light-node-manifest
+      - suzuka-full-node-manifest
+      - suzuka-faucet-service-manifest
+      - suzuka-client-e2e-simple-interaction-manifest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+  
+      - name: Read the commit SHA
+        id: vars
+        run: echo "CONTAINER_REV=${{ github.sha }}" >> .env
+
+      - name: Display .env file
+        run: cat .env
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+  
+  
+      - name: Install docker-ce-cli
+        run: |
+          sudo apt-get install -y docker-ce-cli
+  
+      - name: Verify Docker Installation
+        run: |
+          docker compose version
+          docker --version
+          docker version
+
+      - name: Run docker-compose local.setup.test
+        run: |
+          nix develop --command bash  -c "just container-test"  
+          # run again to test restarts
+          nix develop --command bash  -c "just container-test"  
