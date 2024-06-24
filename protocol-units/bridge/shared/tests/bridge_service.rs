@@ -97,7 +97,7 @@ async fn test_bridge_service_integration() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress(BC1Address("recipient")),
-			HashLock(BC1Hash("hash_lock")),
+			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
 			Amount(1000),
 		)
@@ -110,13 +110,15 @@ async fn test_bridge_service_integration() {
 	tokio::spawn(blockchain_2);
 
 	let transfer_initiated_event = bridge_service.next().await.expect("No event");
+	let transfer_initiated_event =
+		transfer_initiated_event.B1I_ContractEvent().expect("Not a B1I event");
 	assert_eq!(
-		transfer_initiated_event.B1I_ContractEvent().unwrap(),
+		transfer_initiated_event,
 		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
-			bridge_transfer_id: BridgeTransferId(BC1Hash("unique_hash")),
+			bridge_transfer_id: transfer_initiated_event.bridge_transfer_id().clone(),
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress(BC1Address("recipient")),
-			hash_lock: HashLock(BC1Hash("hash_lock")),
+			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
 			amount: Amount(1000)
 		})
@@ -125,7 +127,7 @@ async fn test_bridge_service_integration() {
 
 	blockchain_2_client
 		.complete_bridge_transfer(
-			BridgeTransferId(BC2Hash("unique_hash")),
+			BridgeTransferId(BC2Hash::from("unique_hash")),
 			HashLockPreImage(vec![1, 2, 3, 4]),
 		)
 		.await

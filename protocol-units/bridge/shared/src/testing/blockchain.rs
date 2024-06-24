@@ -1,4 +1,5 @@
 use futures::{channel::mpsc, task::AtomicWaker, Future, Stream, StreamExt};
+use rand::Rng;
 use std::{
 	collections::HashMap,
 	pin::Pin,
@@ -43,7 +44,7 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub events: Vec<AbstractBlockchainEvent<A, H>>,
 	pub rng: R,
 
-	pub initiater_contract: SmartContractInitiator<A, H>,
+	pub initiater_contract: SmartContractInitiator<A, H, R>,
 	pub counterparty_contract: SmartContractCounterparty<A, H>,
 
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
@@ -62,7 +63,7 @@ where
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
 {
-	pub fn new(rng: R, name: impl Into<String>) -> Self {
+	pub fn new(mut rng: R, name: impl Into<String>) -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
 		let (event_sender, event_receiver) = mpsc::unbounded();
@@ -73,8 +74,8 @@ where
 			time: 0,
 			accounts,
 			events,
+			initiater_contract: SmartContractInitiator::new(rng.seeded_clone()),
 			rng,
-			initiater_contract: SmartContractInitiator::new(),
 			counterparty_contract: SmartContractCounterparty::new(),
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
@@ -124,7 +125,7 @@ impl<A, H, R> Future for AbstractBlockchain<A, H, R>
 where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
-	R: Unpin,
+	R: Rng + Unpin,
 {
 	type Output = ();
 
@@ -140,7 +141,7 @@ impl<A, H, R> Stream for AbstractBlockchain<A, H, R>
 where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
-	R: Unpin,
+	R: Rng + Unpin,
 {
 	type Item = AbstractBlockchainEvent<A, H>;
 
@@ -172,7 +173,9 @@ where
 						);
 						this.events.push(AbstractBlockchainEvent::BridgeTransferInitiated(
 							BridgeTransferDetails {
-								bridge_transfer_id: BridgeTransferId::<H>::gen_unique_hash(),
+								bridge_transfer_id: BridgeTransferId::<H>::gen_unique_hash(
+									&mut this.rng,
+								),
 								initiator_address,
 								recipient_address,
 								hash_lock,

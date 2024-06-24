@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use rand::Rng;
 use thiserror::Error;
 
 use crate::types::{
@@ -14,18 +15,9 @@ pub enum InitiatorCall<A, H> {
 }
 
 #[derive(Debug)]
-pub struct SmartContractInitiator<A, H> {
+pub struct SmartContractInitiator<A, H, R> {
 	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
-}
-
-impl<A, H> Default for SmartContractInitiator<A, H>
-where
-	A: BridgeAddressType,
-	H: BridgeHashType + GenUniqueHash,
-{
-	fn default() -> Self {
-		Self::new()
-	}
+	pub rng: R,
 }
 
 #[derive(Error, Debug)]
@@ -38,13 +30,14 @@ pub enum SmartContractInitiatorError {
 	InvalidHashLockPreImage,
 }
 
-impl<A, H> SmartContractInitiator<A, H>
+impl<A, H, R> SmartContractInitiator<A, H, R>
 where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
+	R: Rng,
 {
-	pub fn new() -> Self {
-		Self { initiated_transfers: HashMap::new() }
+	pub fn new(rng: R) -> Self {
+		Self { initiated_transfers: HashMap::new(), rng }
 	}
 
 	pub fn initiate_bridge_transfer(
@@ -55,7 +48,7 @@ where
 		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
 	) {
-		let bridge_tranfer_id = BridgeTransferId::<H>::gen_unique_hash();
+		let bridge_tranfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
 		// initiate bridge transfer
 		self.initiated_transfers.insert(
 			bridge_tranfer_id.clone(),
