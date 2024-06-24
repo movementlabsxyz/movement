@@ -136,7 +136,7 @@ impl BackendOperations for ConfigFile {
             if let Ok(Some(result)) = self.try_get(key_clone.clone()).await {
                 return Ok(result);
             }
-            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(self.polling_interval).await;
         }
     }
 
@@ -157,7 +157,7 @@ impl BackendOperations for ConfigFile {
                         yield Ok(result);
                     }
                 }
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+                tokio::time::sleep(self.polling_interval).await;
             }
         })
     }
@@ -192,6 +192,13 @@ impl BackendOperations for ConfigFile {
 #[cfg(test)]
 pub mod test {
     use super::*;
+    use serde::{Serialize, Deserialize};
+
+    #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+    pub struct TestConfig {
+        pub key: String,
+        pub value: i32,
+    }
 
     #[tokio::test]
     async fn test_locking() -> Result<(), anyhow::Error> {
@@ -272,6 +279,27 @@ pub mod test {
         // check the value
         let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
         assert_eq!(result, Some(44));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_struct() -> Result<(), anyhow::Error> {
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file);
+
+        // set a value
+        config_file.try_set(vec!["key".to_string()], Some(TestConfig {
+            key: "test".to_string(),
+            value: 42,
+        })).await?;
+
+        // get the value
+        let result = config_file.try_get::<_, TestConfig>(vec!["key".to_string()]).await?;
+        assert_eq!(result, Some(TestConfig {
+            key: "test".to_string(),
+            value: 42,
+        }));
 
         Ok(())
     }
