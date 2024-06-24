@@ -303,9 +303,7 @@ impl BridgeContractInitiator for B1Client {
 			time_lock,
 			hash_lock,
 		));
-		self.client
-			.send_transaction(transaction)
-			.map_err(BridgeContractError::GenericError)
+		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
 	}
 
 	async fn complete_bridge_transfer(
@@ -408,9 +406,7 @@ impl BridgeContractInitiator for B2Client {
 			time_lock,
 			hash_lock,
 		));
-		self.client
-			.send_transaction(transaction)
-			.map_err(BridgeContractError::GenericError)
+		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
 	}
 
 	async fn complete_bridge_transfer(
@@ -422,9 +418,7 @@ impl BridgeContractInitiator for B2Client {
 			bridge_transfer_id,
 			secret,
 		));
-		self.client
-			.send_transaction(transaction)
-			.map_err(BridgeContractError::GenericError)
+		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
 	}
 
 	async fn refund_bridge_transfer(
@@ -470,7 +464,11 @@ impl BridgeContractCounterparty for B2Client {
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
+			_bridge_transfer_id,
+			_secret,
+		));
+		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
 	}
 
 	async fn abort_bridge_transfer(

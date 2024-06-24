@@ -48,12 +48,18 @@ where
 		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
 	) {
-		let bridge_tranfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
+		let bridge_transfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
+
+		tracing::trace!(
+			"SmartContractInitiator: Initiating bridge transfer: {:?}",
+			bridge_transfer_id
+		);
+
 		// initiate bridge transfer
 		self.initiated_transfers.insert(
-			bridge_tranfer_id.clone(),
+			bridge_transfer_id.clone(),
 			BridgeTransferDetails {
-				bridge_transfer_id: bridge_tranfer_id,
+				bridge_transfer_id,
 				initiator_address: initiator,
 				recipient_address: recipient,
 				hash_lock,
@@ -69,20 +75,23 @@ where
 		transfer_id: BridgeTransferId<H>,
 		_secret: HashLockPreImage,
 	) -> Result<(), SmartContractInitiatorError> {
+		tracing::trace!("SmartContractInitiator: Completing bridge transfer: {:?}", transfer_id);
+
 		// complete bridge transfer
 		let transfer = self
 			.initiated_transfers
 			.get(&transfer_id)
 			.ok_or(SmartContractInitiatorError::TransferNotFound)?;
 
+		// TODO: Implement hash lock pre image verification
 		// let hash = calculate_hash(&secret.0);
 		//
 		// if transfer.hash_lock != hash {
 		// 	return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
 		// }
 
-		let balance = accounts.entry((*transfer.recipient_address).clone()).or_insert(Amount(0));
-		**balance += *transfer.amount;
+		// let balance = accounts.entry((*transfer.recipient_address).clone()).or_insert(Amount(0));
+		// **balance += *transfer.amount;
 
 		Ok(())
 	}

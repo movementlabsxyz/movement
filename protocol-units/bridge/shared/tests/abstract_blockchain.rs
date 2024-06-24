@@ -101,7 +101,7 @@ async fn test_lock_bridge_transfer() {
 		hash_lock.clone(),
 		time_lock.clone(),
 		recipient_address.clone(),
-		amount.clone(),
+		amount,
 	));
 
 	blockchain.transaction_sender.unbounded_send(transaction).unwrap();
@@ -120,7 +120,7 @@ async fn test_lock_bridge_transfer() {
 			hash_lock: hash_lock.clone(),
 			time_lock: time_lock.clone(),
 			recipient_address: recipient_address.clone(),
-			amount: amount.clone(),
+			amount,
 		},)
 	);
 

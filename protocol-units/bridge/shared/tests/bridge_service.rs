@@ -8,12 +8,12 @@ use test_log::test;
 
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
-	bridge_contracts::BridgeContractInitiator,
-	bridge_monitoring::BridgeContractInitiatorEvent,
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::BridgeService,
 	types::{
 		Amount, BridgeTransferDetails, Convert, HashLock, HashLockPreImage, InitiatorAddress,
-		RecipientAddress, TimeLock,
+		LockDetails, RecipientAddress, TimeLock,
 	},
 };
 
@@ -41,7 +41,7 @@ async fn test_bridge_service_integration() {
 
 	// Contracts and monitors for blockchain 1
 	let client_1 =
-		AbstractBlockchainClient::new(blockchain_1.connection(), rng.seeded_clone(), 0.1, 0.05);
+		AbstractBlockchainClient::new(blockchain_1.connection(), rng.seeded_clone(), 0.0, 0.00);
 	let monitor_1_initiator =
 		B1InitiatorContractMonitoring::build(blockchain_1.add_event_listener());
 	let monitor_1_counterparty =
@@ -49,11 +49,14 @@ async fn test_bridge_service_integration() {
 
 	// Contracts and monitors for blockchain 2
 	let client_2 =
-		AbstractBlockchainClient::new(blockchain_2.connection(), rng.seeded_clone(), 0.1, 0.05);
+		AbstractBlockchainClient::new(blockchain_2.connection(), rng.seeded_clone(), 0.0, 0.00);
 	let monitor_2_initiator =
 		B2InitiatorContractMonitoring::build(blockchain_2.add_event_listener());
 	let monitor_2_counterparty =
 		B2CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
+
+	tokio::spawn(blockchain_1);
+	tokio::spawn(blockchain_2);
 
 	bridge_shared::struct_blockchain_service!(
 		B1Service,
@@ -93,7 +96,8 @@ async fn test_bridge_service_integration() {
 
 	let mut bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
 
-	// Initiate a bridge transfer
+	// The initiator of the swap triggers a bridge transfer, simultaneously time-locking the assets
+	// in the smart contract.
 	blockchain_1_client
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC1Address("initiator")),
@@ -105,11 +109,7 @@ async fn test_bridge_service_integration() {
 		.await
 		.expect("initiate_bridge_transfer failed");
 
-	// let mut cx = Context::from_waker(futures::task::noop_waker_ref());
-
-	tokio::spawn(blockchain_1);
-	tokio::spawn(blockchain_2);
-
+	// We expect the bridge to recognize the contract event and emit the appropriate message
 	let transfer_initiated_event = bridge_service.next().await.expect("No event");
 	let transfer_initiated_event =
 		transfer_initiated_event.B1I_ContractEvent().expect("Not a B1I event");
@@ -126,14 +126,36 @@ async fn test_bridge_service_integration() {
 	);
 	dbg!(&transfer_initiated_event);
 
-	let _event = bridge_service.next().await;
-	dbg!(&_event);
+	// Upon recognizing the event, our bridge server has invoked the counterparty
+	// contract on blockchain 2 to initiate asset locking within the smart contract.
+	let counterparty_locked_event = bridge_service.next().await.expect("No event");
+	let counterparty_locked_event =
+		counterparty_locked_event.B2C_ContractEvent().expect("Not a B2C event");
 
-	blockchain_2_client
-		.complete_bridge_transfer(
-			Convert::convert(transfer_initiated_event.bridge_transfer_id()),
-			HashLockPreImage(b"hash_lock".to_vec()),
-		)
-		.await
-		.expect("complete_bridge_transfer failed");
+	dbg!(&counterparty_locked_event);
+	assert_eq!(
+		counterparty_locked_event,
+		&BridgeContractCounterpartyEvent::Locked(LockDetails {
+			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+			hash_lock: HashLock(BC2Hash::from("hash_lock")),
+			time_lock: TimeLock(100),
+			recipient_address: RecipientAddress(BC2Address("recipient")),
+			amount: Amount(1000)
+		})
+	);
+
+	// Once the assets are secured within the counterparty smart contract, the initiator is able
+	// to execute the complete bridge transfer by disclosing the secret key required to unlock the assets.
+	<B2Client as BridgeContractCounterparty>::complete_bridge_transfer(
+		&mut blockchain_2_client,
+		Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+		HashLockPreImage(b"hash_lock".to_vec()),
+	)
+	.await
+	.expect("complete_bridge_transfer failed");
+
+	// TODO: handle followoing event to complete the swap
+
+	let _event = bridge_service.next().await.expect("No event");
+	dbg!(&_event);
 }

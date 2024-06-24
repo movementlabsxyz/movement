@@ -124,6 +124,19 @@ impl<B1: BlockchainService, B2: BlockchainService> Event<B1, B2> {
 	) -> Option<&BridgeContractInitiatorEvent<B2::Address, B2::Hash>> {
 		self.B2I()?.contract_event()
 	}
+
+	pub fn B2C(&self) -> Option<&CEvent<B2::Address, B2::Hash>> {
+		match self {
+			Event::B2C(event) => Some(event),
+			_ => None,
+		}
+	}
+
+	pub fn B2C_ContractEvent(
+		&self,
+	) -> Option<&BridgeContractCounterpartyEvent<B2::Address, B2::Hash>> {
+		self.B2C()?.contract_event()
+	}
 }
 
 impl<B1, B2> Stream for BridgeService<B1, B2>
