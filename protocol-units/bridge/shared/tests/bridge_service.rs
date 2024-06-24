@@ -133,5 +133,5 @@ async fn test_bridge_service_integration() {
 		.await
 		.expect("complete_bridge_transfer failed");
 
-	let event = bridge_service.next().await;
+	let _event = bridge_service.next().await;
 }
