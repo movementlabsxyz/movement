@@ -1,3 +1,4 @@
+use anyhow::Context;
 use flocks::tfrwlock::TfrwLock;
 use std::sync::Arc;
 use std::fs::File;
@@ -31,6 +32,7 @@ impl BackendOperations for ConfigFile {
         let contents = {
             let mut write_guard = self.lock.write().await?;
             let mut contents = String::new();
+            write_guard.seek(std::io::SeekFrom::Start(0))?;
             write_guard.read_to_string(&mut contents)?;
             contents
         };
@@ -56,7 +58,10 @@ impl BackendOperations for ConfigFile {
         // here we want to hold the write lock for the duration of the function
         let mut write_guard = self.lock.write().await?;
         let mut contents = String::new();
-        write_guard.read_to_string(&mut contents)?;
+        write_guard.seek(std::io::SeekFrom::Start(0))?;
+        write_guard.read_to_string(&mut contents).context(
+            "Failed to read contents of file"
+        )?; // read the contents of the file (if any
 
         let mut json: serde_json::Value = if contents.is_empty() {
             serde_json::Value::Object(serde_json::Map::new())
@@ -152,6 +157,47 @@ pub mod test {
         Ok(())
     }
 
-    
+    #[tokio::test]
+    async fn test_get_set() -> Result<(), anyhow::Error> {
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file);
+
+        // set a value
+        config_file.try_set(vec!["key".to_string()], Some(42)).await?;
+        // get the value
+        let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
+        assert_eq!(result, Some(42));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_wait_for() -> Result<(), anyhow::Error> {
+
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file);
+
+        // start one thread that will wait for the value
+        let config_file_clone = config_file.clone();
+        let wait_task = tokio::spawn(async move {
+            let result = config_file_clone.try_wait_for::<_, i32>(vec!["key".to_string()]).await?;
+            assert_eq!(result, 42);
+            Ok::<(), anyhow::Error>(())
+        });
+
+        // start another thread that will set the value
+        let config_file_clone = config_file.clone();
+        let set_task = tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            config_file_clone.try_set(vec!["key".to_string()], Some(42)).await?;
+            Ok::<(), anyhow::Error>(())
+        });
+
+        // wait for both tasks to finish
+        tokio::try_join!(wait_task, set_task)?;
+
+        Ok(())
+
+    }
 
 }

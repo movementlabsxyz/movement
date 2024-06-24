@@ -1,14 +1,16 @@
+use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use rustix::{
     fs::{flock, FlockOperation},
-    fd::AsFd
+    fd::AsFd,
 };
 
-pub struct FrwLockWriteGuard<T: AsFd> {
-    pub(crate) data: *mut T
+pub struct FrwLockWriteGuard<'a, T: AsFd> {
+    pub(crate) data: *mut T,
+    pub(crate) _marker: PhantomData<&'a mut T>, // Ensuring lifetime and mutability semantics.
 }
 
-impl<T: AsFd> Deref for FrwLockWriteGuard<T> {
+impl<T: AsFd> Deref for FrwLockWriteGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -16,16 +18,17 @@ impl<T: AsFd> Deref for FrwLockWriteGuard<T> {
     }
 }
 
-impl<T: AsFd> DerefMut for FrwLockWriteGuard<T> {
+impl<T: AsFd> DerefMut for FrwLockWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.data }
     }
 }
 
-impl <T: AsFd> Drop for FrwLockWriteGuard<T> {
+impl<T: AsFd> Drop for FrwLockWriteGuard<'_, T> {
     fn drop(&mut self) {
         flock(
             unsafe { &*self.data },
-    FlockOperation::Unlock).expect("Failed to unlock file");
+            FlockOperation::Unlock,
+        ).expect("Failed to unlock file");
     }
 }
