@@ -67,7 +67,7 @@ where
 		&mut self,
 		accounts: &mut HashMap<A, Amount>,
 		transfer_id: BridgeTransferId<H>,
-		secret: HashLockPreImage,
+		_secret: HashLockPreImage,
 	) -> Result<(), SmartContractInitiatorError> {
 		// complete bridge transfer
 		let transfer = self

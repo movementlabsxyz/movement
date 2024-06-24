@@ -202,7 +202,7 @@ where
 						Poll::Pending => {}
 					}
 				}
-				ActiveSwapState::LockingTokensError(attempt, delay) => {
+				ActiveSwapState::LockingTokensError(_attempt, delay) => {
 					// test if the delay has expired
 					// if it has, retry the lock
 					if let Poll::Ready(()) = delay.poll_unpin(cx) {

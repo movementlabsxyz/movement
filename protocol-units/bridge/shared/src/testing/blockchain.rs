@@ -167,7 +167,7 @@ where
 						this.initiater_contract.initiate_bridge_transfer(
 							initiator_address.clone(),
 							recipient_address.clone(),
-							amount.clone(),
+							amount,
 							time_lock.clone(),
 							hash_lock.clone(),
 						);
@@ -185,11 +185,13 @@ where
 						));
 					}
 					InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-						this.initiater_contract.complete_bridge_transfer(
-							&mut this.accounts,
-							bridge_transfer_id.clone(),
-							secret.clone(),
-						);
+						this.initiater_contract
+							.complete_bridge_transfer(
+								&mut this.accounts,
+								bridge_transfer_id.clone(),
+								secret.clone(),
+							)
+							.expect("Failed to call complete_bridge_transfer");
 					}
 				},
 				Transaction::Counterparty(call) => match call {
