@@ -20,6 +20,7 @@ ssh ubuntu@ec2-54-215-191-59.us-west-1.compute.amazonaws.com
 ```bash
 ansible-playbook --inventory ec2-54-215-191-59.us-west-1.compute.amazonaws.com, \
                  --user ubuntu  \
-                 --extra-vars "movement_container_version="${CONTAINER_REV}"" \
+                 --extra-vars "movement_container_version=${CONTAINER_REV}" \
+                 --extra-vars "user=ubuntu" \
                  docs/movement-node/run/ansible/suzuka-full-node.yml
 ```

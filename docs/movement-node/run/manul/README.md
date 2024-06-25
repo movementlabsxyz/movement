@@ -11,9 +11,9 @@ We recommend that you run a movement node using containers to leverage the porta
 ## Run the movement node as an RPC provider
 
 
-1. Colone the movement repo.
+1. Clone the movement repo.
 
-_The paths below are not mandatory, they are presented for a better understatement 
+_The paths below are not mandatory, they are presented for a better understanding 
 of the setup. If you would like to follow the steps below you will need to use them._
 
 ```bash
