@@ -1,15 +1,19 @@
 use crate::{BlockCommitmentEvent, CommitmentEventStream, McrSettlementManagerOperations};
 
 use mcr_settlement_client::McrSettlementClientOperations;
+use mcr_settlement_config::Config;
 use movement_types::{BlockCommitment, BlockCommitmentRejectionReason};
 
 use async_stream::stream;
 use async_trait::async_trait;
+use futures::future::{self, Either};
 use tokio::sync::mpsc;
+use tokio::time;
 use tokio_stream::StreamExt;
 
 use std::collections::BTreeMap;
 use std::mem;
+use std::time::Duration;
 
 /// Public handle for the MCR settlement manager.
 pub struct Manager {
@@ -24,9 +28,11 @@ impl Manager {
 	/// process the commitments.
 	pub fn new<C: McrSettlementClientOperations + Send + 'static>(
 		client: C,
+		config: &Config,
 	) -> (Self, CommitmentEventStream) {
+		let batch_timeout = Duration::from_millis(config.batch_timeout);
 		let (sender, receiver) = mpsc::channel(16);
-		let event_stream = process_commitments(receiver, client);
+		let event_stream = process_commitments(receiver, client, batch_timeout);
 		(Self { sender }, event_stream)
 	}
 }
@@ -45,6 +51,7 @@ impl McrSettlementManagerOperations for Manager {
 fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 	mut receiver: mpsc::Receiver<BlockCommitment>,
 	client: C,
+	batch_timeout: Duration,
 ) -> CommitmentEventStream {
 	// Can't mix try_stream! and select!, see https://github.com/tokio-rs/async-stream/issues/63
 	Box::pin(stream! {
@@ -53,7 +60,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 		let mut ahead_of_settlement = false;
 		let mut commitments_to_settle = BTreeMap::new();
 		let mut batch_acc = Vec::new();
-		tracing::info!("Settlement manager init process max_height:{max_height}");
+		let mut batch_ready = Either::Left(future::pending::<()>());
 		loop {
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
@@ -65,8 +72,9 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 					);
 
 					if block_commitment.height > max_height {
-						tracing::info!("Settlement manager  post set ahead_of_settlement");
-
+						// Can't post this commitment to the contract yet.
+						// Post the previously accumulated commitments as a batch
+						// and pause reading from input.
 						ahead_of_settlement = true;
 						let batch = mem::replace(&mut batch_acc, Vec::new());
 						if let Err(e) = client.post_block_commitment_batch(batch).await {
@@ -74,8 +82,21 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 							break;
 						}
 					}
-					tracing::info!("Settlement manager post adding commitment to batch.");
+					// If this commitment starts a new batch, start the timeout
+					if batch_acc.is_empty() {
+						batch_ready = Either::Right(Box::pin(time::sleep(batch_timeout)));
+					}
 					batch_acc.push(block_commitment);
+				}
+				_ = &mut batch_ready => {
+					// Batch timeout has expired, post the commitments we have now
+					let batch = mem::replace(&mut batch_acc, Vec::new());
+					if let Err(e) = client.post_block_commitment_batch(batch).await {
+						yield Err(e);
+						break;
+					}
+					// Disable the batch timeout
+					batch_ready = Either::Left(future::pending::<()>());
 				}
 				Some(res) = settlement_stream.next() => {
 					let settled_commitment = match res {
@@ -134,9 +155,10 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
+		let config = Config::default();
 		let mut client = MockMcrSettlementClient::new();
 		client.block_lead_tolerance = 1;
-		let (manager, mut event_stream) = Manager::new(client.clone());
+		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -158,9 +180,10 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_block_commitment_rejected() -> Result<(), anyhow::Error> {
+		let config = Config::default();
 		let mut client = MockMcrSettlementClient::new();
 		client.block_lead_tolerance = 1;
-		let (manager, mut event_stream) = Manager::new(client.clone());
+		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -195,10 +218,11 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_back_pressure() -> Result<(), anyhow::Error> {
+		let config = Config::default();
 		let mut client = MockMcrSettlementClient::new();
 		client.block_lead_tolerance = 2;
 		client.pause_after(2).await;
-		let (manager, mut event_stream) = Manager::new(client.clone());
+		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
 		let commitment1 = BlockCommitment {
 			height: 1,
@@ -248,6 +272,49 @@ mod tests {
 
 		let event = event_stream.next().await.expect("stream has ended")?;
 		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment3.clone()));
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_batch_timeout() -> Result<(), anyhow::Error> {
+		let config = Config { batch_timeout: 1000, ..Config::default() };
+		let client = MockMcrSettlementClient::new();
+		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
+
+		let commitment1 = BlockCommitment {
+			height: 1,
+			block_id: Default::default(),
+			commitment: Commitment([1; 32]),
+		};
+		manager.post_block_commitment(commitment1.clone()).await?;
+		let commitment2 = BlockCommitment {
+			height: 2,
+			block_id: Default::default(),
+			commitment: Commitment([2; 32]),
+		};
+		manager.post_block_commitment(commitment2.clone()).await?;
+
+		let item = time::timeout(Duration::from_secs(2), event_stream.next())
+			.await
+			.expect("no timeout");
+		let event = item.expect("stream has ended")?;
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment1.clone()));
+		let event = event_stream.next().await.expect("stream has ended")?;
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment2.clone()));
+
+		let commitment3 = BlockCommitment {
+			height: 3,
+			block_id: Default::default(),
+			commitment: Commitment([3; 32]),
+		};
+		manager.post_block_commitment(commitment3.clone()).await?;
+
+		let item = time::timeout(Duration::from_secs(2), event_stream.next())
+			.await
+			.expect("no timeout");
+		let event = item.expect("stream has ended")?;
+		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment3));
 
 		Ok(())
 	}

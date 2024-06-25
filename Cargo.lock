@@ -7110,7 +7110,9 @@ dependencies = [
  "anyhow",
  "async-stream",
  "async-trait",
+ "futures",
  "mcr-settlement-client",
+ "mcr-settlement-config",
  "movement-types",
  "serde_json",
  "tokio",
@@ -11054,6 +11056,7 @@ dependencies = [
  "dot-movement",
  "suzuka-config",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

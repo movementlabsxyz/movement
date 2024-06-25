@@ -306,10 +306,20 @@ impl Local {
 		dot_movement: DotMovement,
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
+
+		// By default the M1 DA Light Node is not initialized.
+		if !config.m1_da_light_node_is_initial {
+			info!("M1 DA Light Node is already initialized.");
+			return Ok(config);
+		}
+
 		info!("Setting up Celestia for M1 DA Light Node.");
-		let config = self.setup_celestia(dot_movement, config).await?;
+		let mut config = self.setup_celestia(dot_movement, config).await?;
 
 		info!("M1 DA Light Node setup complete.");
+
+		// Now we set the config to initialized.
+		config.m1_da_light_node_is_initial = false;
 
 		// Placeholder for returning the actual configuration.
 		Ok(config)
