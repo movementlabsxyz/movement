@@ -7,7 +7,7 @@
   vars:
     repo_url: "https://github.com/movementlabsxyz/movement/"
     destination_path: "/home/{{ user }}/movement"
-    mvmt_config_dir: "{{ destination_path }}/docs/movement-node/run/ansible"
+    # mvmt_config_dir: "{{ destination_path }}/docs/movement-node/run/ansible"
 
   tasks:
     - name: Install required packages
@@ -82,7 +82,7 @@
 
     - name: Create suzuka-full-node systemd service
       ansible.builtin.template:
-        src: "{{ mvmt_config_dir }}/suzuka-full-node.service.j2"
+        src: "./suzuka-full-node.service.j2"
         dest: /etc/systemd/system/suzuka-full-node.service
 
     - name: Stop the suzuka-full-node service if running
