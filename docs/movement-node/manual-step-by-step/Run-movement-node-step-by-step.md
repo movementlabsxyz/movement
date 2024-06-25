@@ -43,15 +43,20 @@ mkdir -p .movement
 
 3. Set the movement container version.
 ```bash
-echo "CONTAINER_REV=$(git rev-parse HEAD)" >> "${MOVEMENT_ENV_FILE}"
-echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
+CONTAINER_REV=$(git rev-parse HEAD)
+[[ -n "${CONTAINER_REV}" ]] \
+  && export CONTAINER_REV=${CONTAINER_REV} \
+  && echo "CONTAINER_REV=${CONTAINER_REV}" >> "${MOVEMENT_ENV_FILE}"
+echo "INFO: movement version is"
+cat ${MOVEMENT_ENV_FILE}
 ```
 
 
 4. Pull the container images. For this you need to set `DOT_MOVEMENT_PATH`
 ```bash
-mkdir -p "/home/${USER}/.movement"
-echo "DOT_MOVEMENT_PATH=/home/${USER}/.movement" >> "${MOVEMENT_ENV_FILE}"
+DOT_MOVEMENT_PATH="/home/${USER}/.movement"
+mkdir -p "${DOT_MOVEMENT_PATH}"
+echo "DOT_MOVEMENT_PATH=${DOT_MOVEMENT_PATH}" >> "${MOVEMENT_ENV_FILE}"
 docker compose \
         -f docker/compose/suzuka-full-node/docker-compose.yml \
         -f docker/compose/suzuka-full-node/docker-compose.setup.yml \
@@ -77,6 +82,42 @@ ghcr.io/movementlabsxyz/wait-for-celestia-light-node       e6cb8e287cb837af6e614
 ```
 
 6. Set variables and create a systemd service named `suzuka-full-node.service`
-```bash
 
+```bash
+printenv | grep --quiet USER \
+  && printenv | grep --quiet CONTAINER_REV \
+  && echo "INFO: Using USER=${USER} and CONTAINER_REV=${CONTAINER_REV}" \
+  && envsubst < docs/movement-node/suzuka-full-node.service.template \
+              > docs/movement-node/suzuka-full-node.service
+```
+output should look like this:
+```
+INFO: Using USER=ubuntu and CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285c9
+```
+
+Do a visual sanity check.
+```bash
+cat docs/movement-node/suzuka-full-node.service
+```
+
+Copy the systemd service to a systemd know path.
+```
+sudo cp docs/movement-node/suzuka-full-node.service /etc/systemd/system/suzuka-full-node.service
+```
+
+7. Reload systemd to apply changes
+```bash
+sudo systemctl daemon-reload
+```
+
+8. Enable and start the suzuka-full-node service
+```bash
+sudo systemctl enable suzuka-full-node.service
+sudo systemctl start suzuka-full-node.service
+sudo systemctl status suzuka-full-node.service
+```
+
+9. Have a look at the logs. Display full logs line by using the follow flag `-f`
+```bash
+sudo journalctl -u suzuka-full-node.service -f
 ```
