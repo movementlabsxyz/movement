@@ -94,8 +94,9 @@ CONTAINER_REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
 We recommend to use the latest commit of the "main" branch:
 ```bash
 GIT_ROOT=$(git rev-parse --show-toplevel)
-[[ -n "${GIT_ROOT}" ]] && MOVEMENT_ENV_FILE="${GIT_ROOT}/.env"
-echo  "CONTAINER_REV=$(git rev-parse HEAD)" > "${MOVEMENT_ENV_FILE}"
+MOVEMENT_ENV_FILE="${GIT_ROOT}/.env"
+[[ -n "${GIT_ROOT}" ]] \
+  && echo  "CONTAINER_REV=$(git rev-parse HEAD)" > "${MOVEMENT_ENV_FILE}"
 echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ```
 
