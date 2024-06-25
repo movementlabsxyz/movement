@@ -1,0 +1,15 @@
+[Unit]
+Description=Suzuka Full Node
+After=network.target
+
+[Service]
+Type=simple
+User=${USER}
+WorkingDirectory=/home/${USER}/movement
+Environment="DOT_MOVEMENT_PATH=/home/${USER}/.movement"
+Environment="CONTAINER_REV=${MOVEMENT_CONTAINER_REV}"
+ExecStart=/usr/bin/docker compose --env-file .env -f docker/compose/suzuka-full-node/docker-compose.yml -f docker/compose/suzuka-full-node/docker-compose.setup.yml -f docker/compose/suzuka-full-node/docker-compose.local.yml up
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

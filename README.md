@@ -22,6 +22,36 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
+## Naming Conventions
+Because we are in early stages of the "movement" network we decided to version the
+network using formula one track names ("Monaco", "Monza", "Suzuka") instead of a more 
+classical semantic versioning. 
+
+### Naming Conventions Latest: SUZUKA
+
+## Prerequisites
+### Prerequisites - Just command
+`just` is a handy way to save and run project-specific commands. Please install it
+[following just install instructioins](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
+
+### Just command - macOS
+```bash 
+brew install just
+```
+Check install
+```bash
+just --version
+```
+
+### Just command - debian
+```bash 
+sudo apt update && sudo apt install --yes just
+```
+Check install
+```bash
+just --version
+```
+
 ## Running Natively
 ### `m1-da-light-node`
 
@@ -50,11 +80,23 @@ just m1-da-light-node native build.setup.test.local
 just monza-full-node native build.setup.test.local
 ```
 
-## Run with Docker Compose
-When running with `docker compose` specif your revision in a file `.env` at the root of the project. The file should look like this:
+## Run a Movement Node with Docker Compose
+1. Make sure you have installed the `just` command on your system. If not check the 
+"Prerequisites" section of this repo.
 
+2. When running with `docker compose` specify your revision in a file `.env` at the root of
+the project. The file should look like this:
 ```bash
+# /path/to/movement/.env
 CONTAINER_REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
+```
+
+We recommend to use the latest commit of the "main" branch:
+```bash
+GIT_ROOT=$(git rev-parse --show-toplevel)
+[[ -n "${GIT_ROOT}" ]] && MOVEMENT_ENV_FILE="${GIT_ROOT}/.env"
+echo  "CONTAINER_REV=$(git rev-parse HEAD)" > "${MOVEMENT_ENV_FILE}"
+echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ```
 
 ### `suzuka-full-node`
@@ -63,14 +105,31 @@ CONTAINER_REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
     - `setup`: Run setup for new `suzuka-full-node` network with single node.
     - `local`: Run a local Celesta Data Availability service.
 
-**Note:** Currently, both `setup` and `local` must be used. We only support running the `suzuka-full-node` with a local Celesta Data Availability service via Docker Compose.
+**Note:** Currently, both `setup` and `local` must be used. 
+We only support running the `suzuka-full-node` with a local Celesta Data Availability 
+service via Docker Compose.
 
 ```bash
 # example setup with local
 just suzuka-full-node docker-compose setup.local
 ```
+Under the hood, `just` runs
+```bash
+# working directory = GIT_ROOT
+GIT_ROOT=$(git rev-parse --show-toplevel)
+docker compose --env-file .env \
+               --file docker/compose/suzuka-full-node/docker-compose.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.setup.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.local.yml \
+               up
+```
 
 **Note:** if you want to recreate the network, but not rely on the just target above, please read through the scripts to identify the correct `docker-compose` files to run.
+
+**Note** For attesters in order to receive rewards you need to launch the node in 
+"attester mode". To do this you will need to provide a private key at runtime. 
+This feature is not implemented yet, at this moment.
+
 
 ## Services
 
