@@ -45,17 +45,17 @@ mkdir -p .movement
 CONTAINER_REV=$(git rev-parse HEAD)
 [[ -n "${CONTAINER_REV}" ]] \
   && export CONTAINER_REV=${CONTAINER_REV} \
-  && echo "CONTAINER_REV=${CONTAINER_REV}" >> "${MOVEMENT_ENV_FILE}"
+  && echo "REV=${CONTAINER_REV}" >> "${MOVEMENT_ENV_FILE}"
 echo "INFO: movement version is"
 cat ${MOVEMENT_ENV_FILE}
 ```
 
 
-4. Pull the container images. For this you need to set `DOT_MOVEMENT_PATH`
+4. Pull the container images. For this you need to make sure the movement config dir
+exists.
 ```bash
 DOT_MOVEMENT_PATH="/home/${USER}/.movement"
 mkdir -p "${DOT_MOVEMENT_PATH}"
-echo "DOT_MOVEMENT_PATH=${DOT_MOVEMENT_PATH}" >> "${MOVEMENT_ENV_FILE}"
 docker compose \
         -f docker/compose/suzuka-full-node/docker-compose.yml \
         -f docker/compose/suzuka-full-node/docker-compose.setup.yml \
