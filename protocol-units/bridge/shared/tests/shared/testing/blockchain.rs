@@ -131,10 +131,17 @@ where
 	type Output = ();
 
 	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-		match self.poll_next(cx) {
-			Poll::Ready(None) => Poll::Ready(()),
-			Poll::Pending | Poll::Ready(Some(_)) => Poll::Pending,
+		let this = self.get_mut();
+
+		// This simulates
+		// async move { while (blockchain_1.next().await).is_some() {} }
+		while let Poll::Ready(event) = this.poll_next_unpin(cx) {
+			match event {
+				Some(_) => {}
+				None => return Poll::Ready(()),
+			}
 		}
+		Poll::Pending
 	}
 }
 
@@ -235,19 +242,22 @@ where
 					}
 				},
 			}
+		} else {
+			tracing::trace!("AbstractBlockchain[{}]: No events in transaction_receiver", this.name);
 		}
 
 		if let Some(event) = this.events.pop() {
 			for listener in &mut this.event_listeners {
+				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
 				listener.unbounded_send(event.clone()).expect("listener dropped");
 			}
+
+			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);
 			return Poll::Ready(Some(event));
 		}
 
-		this.waker.register(cx.waker());
-
 		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
 
-		Poll::Ready(Some(AbstractBlockchainEvent::Noop))
+		Poll::Pending
 	}
 }

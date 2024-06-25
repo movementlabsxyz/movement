@@ -30,7 +30,7 @@ use shared::testing::{
 	rng::{RngSeededClone, TestRng},
 };
 
-#[test(tokio::test)]
+#[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
 async fn test_bridge_service_integration() {
 	let mut rng = TestRng::from_seed([0u8; 32]);
 
@@ -113,6 +113,7 @@ async fn test_bridge_service_integration() {
 	let transfer_initiated_event = bridge_service.next().await.expect("No event");
 	let transfer_initiated_event =
 		transfer_initiated_event.B1I_ContractEvent().expect("Not a B1I event");
+	tracing::debug!(?transfer_initiated_event);
 	assert_eq!(
 		transfer_initiated_event,
 		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
@@ -124,15 +125,13 @@ async fn test_bridge_service_integration() {
 			amount: Amount(1000)
 		})
 	);
-	dbg!(&transfer_initiated_event);
 
 	// Upon recognizing the event, our bridge server has invoked the counterparty
 	// contract on blockchain 2 to initiate asset locking within the smart contract.
 	let counterparty_locked_event = bridge_service.next().await.expect("No event");
 	let counterparty_locked_event =
 		counterparty_locked_event.B2C_ContractEvent().expect("Not a B2C event");
-
-	dbg!(&counterparty_locked_event);
+	tracing::debug!(?counterparty_locked_event);
 	assert_eq!(
 		counterparty_locked_event,
 		&BridgeContractCounterpartyEvent::Locked(LockDetails {
@@ -157,5 +156,5 @@ async fn test_bridge_service_integration() {
 	// TODO: handle followoing event to complete the swap
 
 	let _event = bridge_service.next().await.expect("No event");
-	dbg!(&_event);
+	tracing::debug!(?_event);
 }
