@@ -7,7 +7,7 @@ use crate::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{BridgeTransferDetails, UnlockDetails},
+	types::{BridgeTransferDetails, CompletedDetails},
 };
 
 pub mod active_swap;
@@ -69,7 +69,7 @@ impl<A, H> IEvent<A, H> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CWarn<A, H> {
-	CannotCompleteUnexistingSwap(UnlockDetails<A, H>),
+	CannotCompleteUnexistingSwap(CompletedDetails<A, H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -275,7 +275,7 @@ where
 								// access the secret and unlock the corresponding funds on the opposite end.
 								return Poll::Ready(Some(B2C(CEvent::ContractEvent(event))));
 							}
-							Unlocked(ref details) => {
+							Completed(ref details) => {
 								// The client implementation has successfully unlocked the assets on the
 								// counterparty bridge. Consequently, the bridge will now proceed to claim the
 								// funds on the initiator's side using the provided pre-image

@@ -34,6 +34,10 @@ use testing::{
 	rng::TestRng,
 };
 
+use crate::shared::testing::blockchain::counterparty_contract::SmartContractCounterpartyEvent;
+
+use self::testing::blockchain::initiator_contract::SmartContractInitiatorEvent;
+
 pub fn hash_static_string(pre_image: &'static str) -> [u8; 8] {
 	let mut hasher = DefaultHasher::new();
 	pre_image.hash(&mut hasher);
@@ -124,24 +128,22 @@ impl From<BC2Hash> for BC1Hash {
 	}
 }
 
-pub struct B1InitiatorContractMonitoring {
-	listener: UnboundedReceiver<AbstractBlockchainEvent<BC1Address, BC1Hash>>,
+pub struct InitiatorContractMonitoring<A, H> {
+	listener: UnboundedReceiver<AbstractBlockchainEvent<A, H>>,
 }
 
-impl B1InitiatorContractMonitoring {
-	pub fn build(
-		listener: UnboundedReceiver<AbstractBlockchainEvent<BC1Address, BC1Hash>>,
-	) -> Self {
+impl<A, H> InitiatorContractMonitoring<A, H> {
+	pub fn build(listener: UnboundedReceiver<AbstractBlockchainEvent<A, H>>) -> Self {
 		Self { listener }
 	}
 }
 
-impl BridgeContractInitiatorMonitoring for B1InitiatorContractMonitoring {
-	type Address = BC1Address;
-	type Hash = BC1Hash;
+impl<A, H> BridgeContractInitiatorMonitoring for InitiatorContractMonitoring<A, H> {
+	type Address = A;
+	type Hash = H;
 }
 
-impl Stream for B1InitiatorContractMonitoring {
+impl<A, H> Stream for InitiatorContractMonitoring<A, H> {
 	type Item = BridgeContractInitiatorEvent<
 		<Self as BridgeContractInitiatorMonitoring>::Address,
 		<Self as BridgeContractInitiatorMonitoring>::Hash,
@@ -150,122 +152,72 @@ impl Stream for B1InitiatorContractMonitoring {
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
-			match event {
-				AbstractBlockchainEvent::BridgeTransferInitiated(details) => {
-					return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
+			// Only listen to the initiator contract events
+			if let AbstractBlockchainEvent::InitiatorContractEvent(contract_result) = event {
+				use SmartContractInitiatorEvent::*;
+				match contract_result {
+					Ok(contract_event) => match contract_event {
+						InitiatedBridgeTransfer(details) => {
+							return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(
+								details,
+							)))
+						}
+						CompletedBridgeTransfer(bridge_transfer_id, _) => {
+							return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
+								bridge_transfer_id,
+							)))
+						}
+					},
+					Err(_) => {
+						// Handle error
+					}
 				}
-				_ => return Poll::Pending,
 			}
 		}
 		Poll::Pending
 	}
 }
 
-pub struct B2InitiatorContractMonitoring {
-	listener: UnboundedReceiver<AbstractBlockchainEvent<BC2Address, BC2Hash>>,
+pub struct CounterpartyContractMonitoring<A, H> {
+	listener: UnboundedReceiver<AbstractBlockchainEvent<A, H>>,
 }
 
-impl B2InitiatorContractMonitoring {
-	pub fn build(
-		listener: UnboundedReceiver<AbstractBlockchainEvent<BC2Address, BC2Hash>>,
-	) -> Self {
+impl<A, H> CounterpartyContractMonitoring<A, H> {
+	pub fn build(listener: UnboundedReceiver<AbstractBlockchainEvent<A, H>>) -> Self {
 		Self { listener }
 	}
 }
 
-impl BridgeContractInitiatorMonitoring for B2InitiatorContractMonitoring {
-	type Address = BC2Address;
-	type Hash = BC2Hash;
+impl<A, H> BridgeContractCounterpartyMonitoring for CounterpartyContractMonitoring<A, H> {
+	type Address = A;
+	type Hash = H;
 }
 
-impl Stream for B2InitiatorContractMonitoring {
-	type Item = BridgeContractInitiatorEvent<
-		<Self as BridgeContractInitiatorMonitoring>::Address,
-		<Self as BridgeContractInitiatorMonitoring>::Hash,
-	>;
+impl<A, H> Stream for CounterpartyContractMonitoring<A, H> {
+	type Item = BridgeContractCounterpartyEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
-			match event {
-				AbstractBlockchainEvent::BridgeTransferInitiated(details) => {
-					return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
+			if let AbstractBlockchainEvent::CounterpartyContractEvent(contract_result) = event {
+				use SmartContractCounterpartyEvent::*;
+				match contract_result {
+					Ok(contract_event) => match contract_event {
+						LockedBridgeTransfer(details) => {
+							return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(
+								details,
+							)))
+						}
+						CompletedBridgeTransfer(details) => {
+							return Poll::Ready(Some(BridgeContractCounterpartyEvent::Completed(
+								details,
+							)))
+						}
+					},
+					Err(_) => {
+						// Handle error
+					}
 				}
-				_ => return Poll::Pending,
-			}
-		}
-		Poll::Pending
-	}
-}
-
-pub struct B1CounterpartyContractMonitoring {
-	listener: UnboundedReceiver<AbstractBlockchainEvent<BC1Address, BC1Hash>>,
-}
-
-impl B1CounterpartyContractMonitoring {
-	pub fn build(
-		listener: UnboundedReceiver<AbstractBlockchainEvent<BC1Address, BC1Hash>>,
-	) -> Self {
-		Self { listener }
-	}
-}
-
-impl BridgeContractCounterpartyMonitoring for B1CounterpartyContractMonitoring {
-	type Address = BC1Address;
-	type Hash = BC1Hash;
-}
-
-impl Stream for B1CounterpartyContractMonitoring {
-	type Item = BridgeContractCounterpartyEvent<
-		<Self as BridgeContractCounterpartyMonitoring>::Address,
-		<Self as BridgeContractCounterpartyMonitoring>::Hash,
-	>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
-			match event {
-				AbstractBlockchainEvent::BridgeTransferAssetsLocked(details) => {
-					return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(details)))
-				}
-				_ => return Poll::Pending,
-			}
-		}
-		Poll::Pending
-	}
-}
-
-pub struct B2CounterpartyContractMonitoring {
-	listener: UnboundedReceiver<AbstractBlockchainEvent<BC2Address, BC2Hash>>,
-}
-
-impl B2CounterpartyContractMonitoring {
-	pub fn build(
-		listener: UnboundedReceiver<AbstractBlockchainEvent<BC2Address, BC2Hash>>,
-	) -> Self {
-		Self { listener }
-	}
-}
-
-impl BridgeContractCounterpartyMonitoring for B2CounterpartyContractMonitoring {
-	type Address = BC2Address;
-	type Hash = BC2Hash;
-}
-
-impl Stream for B2CounterpartyContractMonitoring {
-	type Item = BridgeContractCounterpartyEvent<
-		<Self as BridgeContractCounterpartyMonitoring>::Address,
-		<Self as BridgeContractCounterpartyMonitoring>::Hash,
-	>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
-			match event {
-				AbstractBlockchainEvent::BridgeTransferAssetsLocked(details) => {
-					return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(details)))
-				}
-				_ => return Poll::Pending,
 			}
 		}
 		Poll::Pending

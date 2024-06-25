@@ -11,24 +11,25 @@ pub use self::{
 	counterparty_contract::{CounterpartyCall, SmartContractCounterparty},
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
 };
+use self::{counterparty_contract::SCCResult, initiator_contract::SCIResult};
 
 use super::rng::RngSeededClone;
-use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, HashLockPreImage, LockDetails,
-};
+use bridge_shared::types::{Amount, BridgeAddressType, BridgeHashType, GenUniqueHash};
 
 pub mod client;
 pub mod counterparty_contract;
 pub mod hasher;
 pub mod initiator_contract;
 
+pub enum SmartContractCall<A, H> {
+	Initiator(),
+	Counterparty(CounterpartyCall<A, H>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockchainEvent<A, H> {
-	Noop,
-	BridgeTransferInitiated(BridgeTransferDetails<A, H>),
-	BridgeTransferAssetsLocked(LockDetails<A, H>),
-	BridgeTransferCompleted(BridgeTransferId<H>, HashLockPreImage),
+	InitiatorContractEvent(SCIResult<A, H>),
+	CounterpartyContractEvent(SCCResult<A, H>),
 }
 
 #[derive(Debug)]
@@ -172,24 +173,14 @@ where
 						time_lock,
 						hash_lock,
 					) => {
-						this.initiater_contract.initiate_bridge_transfer(
-							initiator_address.clone(),
-							recipient_address.clone(),
-							amount,
-							time_lock.clone(),
-							hash_lock.clone(),
-						);
-						this.events.push(AbstractBlockchainEvent::BridgeTransferInitiated(
-							BridgeTransferDetails {
-								bridge_transfer_id: BridgeTransferId::<H>::gen_unique_hash(
-									&mut this.rng,
-								),
-								initiator_address,
-								recipient_address,
-								hash_lock,
-								time_lock,
+						this.events.push(AbstractBlockchainEvent::InitiatorContractEvent(
+							this.initiater_contract.initiate_bridge_transfer(
+								initiator_address.clone(),
+								recipient_address.clone(),
 								amount,
-							},
+								time_lock.clone(),
+								hash_lock.clone(),
+							),
 						));
 					}
 					InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
@@ -210,34 +201,23 @@ where
 						recipient_address,
 						amount,
 					) => {
-						this.counterparty_contract.lock_bridge_transfer(
-							bridge_transfer_id.clone(),
-							hash_lock.clone(),
-							time_lock.clone(),
-							recipient_address.clone(),
-							amount,
-						);
-						this.events.push(AbstractBlockchainEvent::BridgeTransferAssetsLocked(
-							LockDetails {
-								bridge_transfer_id,
-								hash_lock,
-								time_lock,
-								recipient_address,
+						this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
+							this.counterparty_contract.lock_bridge_transfer(
+								bridge_transfer_id.clone(),
+								hash_lock.clone(),
+								time_lock.clone(),
+								recipient_address.clone(),
 								amount,
-							},
+							),
 						));
 					}
 					CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-						this.counterparty_contract
-							.complete_bridge_transfer(
+						this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
+							this.counterparty_contract.complete_bridge_transfer(
 								&mut this.accounts,
 								&bridge_transfer_id,
-								&pre_image,
-							)
-							.expect("Failed to call complete_bridge_transfer");
-						this.events.push(AbstractBlockchainEvent::BridgeTransferCompleted(
-							bridge_transfer_id,
-							pre_image,
+								pre_image,
+							),
 						));
 					}
 				},

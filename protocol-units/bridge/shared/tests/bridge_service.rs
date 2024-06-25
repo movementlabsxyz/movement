@@ -18,9 +18,8 @@ use bridge_shared::{
 };
 
 use crate::shared::{
-	B1Client, B1CounterpartyContractMonitoring, B1InitiatorContractMonitoring, B2Client,
-	B2CounterpartyContractMonitoring, B2InitiatorContractMonitoring, BC1Address, BC1Hash,
-	BC2Address, BC2Hash,
+	B1Client, B2Client, BC1Address, BC1Hash, BC2Address, BC2Hash, CounterpartyContractMonitoring,
+	InitiatorContractMonitoring,
 };
 
 mod shared;
@@ -42,18 +41,16 @@ async fn test_bridge_service_integration() {
 	// Contracts and monitors for blockchain 1
 	let client_1 =
 		AbstractBlockchainClient::new(blockchain_1.connection(), rng.seeded_clone(), 0.0, 0.00);
-	let monitor_1_initiator =
-		B1InitiatorContractMonitoring::build(blockchain_1.add_event_listener());
+	let monitor_1_initiator = InitiatorContractMonitoring::build(blockchain_1.add_event_listener());
 	let monitor_1_counterparty =
-		B1CounterpartyContractMonitoring::build(blockchain_1.add_event_listener());
+		CounterpartyContractMonitoring::build(blockchain_1.add_event_listener());
 
 	// Contracts and monitors for blockchain 2
 	let client_2 =
 		AbstractBlockchainClient::new(blockchain_2.connection(), rng.seeded_clone(), 0.0, 0.00);
-	let monitor_2_initiator =
-		B2InitiatorContractMonitoring::build(blockchain_2.add_event_listener());
+	let monitor_2_initiator = InitiatorContractMonitoring::build(blockchain_2.add_event_listener());
 	let monitor_2_counterparty =
-		B2CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
+		CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
 
 	tokio::spawn(blockchain_1);
 	tokio::spawn(blockchain_2);
@@ -64,8 +61,8 @@ async fn test_bridge_service_integration() {
 		BC1Hash,
 		B1Client,
 		B1Client,
-		B1InitiatorContractMonitoring,
-		B1CounterpartyContractMonitoring
+		InitiatorContractMonitoring<BC1Address, BC1Hash>,
+		CounterpartyContractMonitoring<BC1Address, BC1Hash>
 	);
 
 	let mut blockchain_1_client = B1Client::build(client_1.clone());
@@ -82,8 +79,8 @@ async fn test_bridge_service_integration() {
 		BC2Hash,
 		B2Client,
 		B2Client,
-		B2InitiatorContractMonitoring,
-		B2CounterpartyContractMonitoring
+		InitiatorContractMonitoring<BC2Address, BC2Hash>,
+		CounterpartyContractMonitoring<BC2Address, BC2Hash>
 	);
 
 	let mut blockchain_2_client = B2Client::build(client_2.clone());
