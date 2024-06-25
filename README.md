@@ -42,7 +42,7 @@ just m1-da-light-node native build.setup.test.local
 - **Features**:
     - `build`: Build the `suzuka-full-node` binaries.
     - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service. 
+    - `local`: Run a local Celestia Data Availability service. 
     - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
@@ -61,9 +61,9 @@ CONTAINER_REV=0fe2a4f28820c04ca0db07cdd44cafc98b792f3f
 
 - **Features**:
     - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service.
+    - `local`: Run a local Celestia Data Availability service.
 
-**Note:** Currently, both `setup` and `local` must be used. We only support running the `suzuka-full-node` with a local Celesta Data Availability service via Docker Compose.
+**Note:** Currently, both `setup` and `local` must be used. We only support running the `suzuka-full-node` with a local Celestia Data Availability service via Docker Compose.
 
 ```bash
 # example setup with local
