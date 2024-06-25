@@ -3,9 +3,9 @@ pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
-import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, AccessControlUpgradeable {
+contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     struct BridgeTransfer {
         uint256 amount;
         address originator;
@@ -17,20 +17,13 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, AccessControlUpgradeab
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
     bytes32[] public bridgeTransferIds;
-    // keccak256(abi.encode(uint256(keccak256("Bridge"")))
-    bytes32 public BRIDGE_ROLE = 0x7149ba3a956df41b15775a58d31c6519ac4174ae65ab86e40583abd483069022;
     IWETH9 public weth;
     uint256 private nonce;
-
-    modifier onlyBridgeService() {
-        if (!_checkRole(BRIDGE_ROLE)) revert Unauthorized();
-    }
 
     function initialize(address _weth) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
-        _grantRole(BRIDGE_ROLE, msg.sender);
         weth = IWETH9(_weth);
     }
 
