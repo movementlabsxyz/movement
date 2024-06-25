@@ -1,89 +1,137 @@
 ---
-- name: Append the revision to the .env file
+- name: Install requirements and the Movement Node
   hosts: all
   become: true
   remote_user: "{{ user }}"
   gather_facts: false
   vars:
-    ansible_connection: aws_ssm
-    ansible_aws_ssm_bucket_name: "{{ ansible_aws_ssm_bucket_name }}"
-    ansible_aws_ssm_region: "{{ ansible_aws_ssm_region }}"
-    ansible_aws_ssm_timeout: 300
-    # When the S3 bucket isn't in the same region as the Instance
-    # Explicitly setting the addressing style to 'virtual' may be necessary
-    # https://repost.aws/knowledge-center/s3-http-307-response
-    ansible_aws_ssm_s3_addressing_style: virtual
-  tasks:
+    repo_url: "https://github.com/movementlabsxyz/movement/"
+    destination_path: "/home/{{ user }}/movement"
+    mvmt_config_dir: "{{ destination_path }}/docs/movement-node/run/ansible/"
 
-    - name: Append the revision to the .env file
-      lineinfile:
-        path: "/home/{{ user }}/movement/.env"
-        line: "REV={{ rev }}"
-        create: yes
+  tasks:
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - xz-utils
+          - git
+          - nginx
+        state: present
+        update_cache: yes
+
+    - name: Clone the main branch of the repository
+      ansible.builtin.git:
+        repo: "{{ repo_url }}"
+        dest: "{{ destination_path }}"
+        version: "{{ movement_container_version }}"
+        clone: yes
+        update: yes
+        force: true
+      become: no  # Run git clone as the ansible user or specify a different user
+
+    - name: Install Docker
+      ansible.builtin.shell: curl -fsSL https://get.docker.com | bash
+
+    - name: Enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Add user to Docker group
+      ansible.builtin.user:
+        name: "{{ user }}"
+        groups: docker
+        append: yes
+
+    - name: Install Docker Compose
+      ansible.builtin.shell: curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
+
+    - name: Ensure pip is installed
+      ansible.builtin.package:
+        name: python3-pip
+        state: present
+
+    - name: Ensure Docker SDK for Python is installed
+      ansible.builtin.pip:
+        name:
+          - docker==6.1.3
+          - requests==2.27.1
+        state: present
+
+    - name: Ensure Docker Compose SDK for Python is installed
+      ansible.builtin.pip:
+        name:
+          - docker-compose
+          - requests==2.27.1
+        state: present
+
+    - name: Install OpenSSL and CA certificates
+      ansible.builtin.package:
+        name:
+          - openssl
+          - ca-certificates
+        state: present
+
+    - name: Update CA certificates
+      ansible.builtin.shell: update-ca-certificates
+
+    # - name: Append the revision to the .env file
+    #   lineinfile:
+    #     path: "/home/{{ user }}/movement/.env"
+    #     line: "REV={{ rev }}"
+    #     create: yes
 
     - name: Create suzuka-full-node systemd service
-      template:
+      ansible.builtin.template:
         src: "{{ mvmt_config_dir }}/suzuka-full-node.service.j2"
         dest: /etc/systemd/system/suzuka-full-node.service
 
     - name: Stop the suzuka-full-node service if running
-      systemd:
+      ansible.builtin.systemd:
         name: suzuka-full-node
         state: stopped
         enabled: no
 
     - name: Reload systemd to apply changes
-      command: systemctl daemon-reload
+      ansible.builtin.command: systemctl daemon-reload
 
     - name: Enable and start the suzuka-full-node service
-      systemd:
+      ansible.builtin.systemd:
         name: suzuka-full-node
         enabled: yes
         state: started
 
-- name: Add reverse proxy
-  hosts: all
-  become: yes
-  remote_user: "{{ user }}"
-  gather_facts: true
-  vars:
-    ansible_connection: aws_ssm
-    ansible_aws_ssm_bucket_name: "{{ ansible_aws_ssm_bucket_name }}"
-    ansible_aws_ssm_region: "{{ ansible_aws_ssm_region }}"
-    ansible_aws_ssm_timeout: 300
-    # When the S3 bucket isn't in the same region as the Instance
-    # Explicitly setting the addressing style to 'virtual' may be necessary
-    # https://repost.aws/knowledge-center/s3-http-307-response
-    ansible_aws_ssm_s3_addressing_style: virtual
+# # CHECK
+#   tasks:
+#     - name: Configure server_names_hash_bucket_size
+#       blockinfile:
+#         path: /etc/nginx/nginx.conf
+#         insertafter: http {
+#         block: |
+#           server_names_hash_bucket_size 256;
 
-  tasks:
-    - name: Configure server_names_hash_bucket_size
-      blockinfile:
-        path: /etc/nginx/nginx.conf
-        insertafter: http {
-        block: |
-          server_names_hash_bucket_size 256;
+#     - name: Create nginx reverse proxy configuration
+#       template:
+#         src: ./nginx-suzuka.j2
+#         dest: /etc/nginx/sites-available/suzuka
 
-    - name: Create nginx reverse proxy configuration
-      template:
-        src: ./nginx-suzuka.j2
-        dest: /etc/nginx/sites-available/suzuka
+#     - name: Enable nginx configuration
+#       file:
+#         src: /etc/nginx/sites-available/suzuka
+#         dest: /etc/nginx/sites-enabled/suzuka
+#         state: link
 
-    - name: Enable nginx configuration
-      file:
-        src: /etc/nginx/sites-available/suzuka
-        dest: /etc/nginx/sites-enabled/suzuka
-        state: link
+#     - name: Remove default nginx configuration
+#       file:
+#         path: /etc/nginx/sites-enabled/default
+#         state: absent
 
-    - name: Remove default nginx configuration
-      file:
-        path: /etc/nginx/sites-enabled/default
-        state: absent
+#     - name: Test nginx configuration
+#       command: nginx -t
 
-    - name: Test nginx configuration
-      command: nginx -t
-
-    - name: Reload nginx
-      systemd:
-        name: nginx
-        state: reloaded
+#     - name: Reload nginx
+#       systemd:
+#         name: nginx
+#         state: reloaded

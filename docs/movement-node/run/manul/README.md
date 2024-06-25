@@ -6,7 +6,6 @@ We recommend that you run a movement node using containers to leverage the porta
 1. Ubuntu 22.04 amd64
 2. [Docker](https://docs.docker.com/engine/install/ubuntu/)
 3. [Docker compose](https://docs.docker.com/compose/install/linux/)
-4. [Just command](https://github.com/casey/just?tab=readme-ov-file#installation)
 4. Make sure you are logged in as the user that wants to run the node
 
 ## Run the movement node as an RPC provider
@@ -87,8 +86,8 @@ ghcr.io/movementlabsxyz/wait-for-celestia-light-node       e6cb8e287cb837af6e614
 printenv | grep --quiet USER \
   && printenv | grep --quiet CONTAINER_REV \
   && echo "INFO: Using USER=${USER} and CONTAINER_REV=${CONTAINER_REV}" \
-  && envsubst < docs/movement-node/suzuka-full-node.service.template \
-              > docs/movement-node/suzuka-full-node.service
+  && envsubst < docs/movement-node/run/manul/suzuka-full-node.service.template \
+              > docs/movement-node/run/manul/suzuka-full-node.service
 ```
 output should look like this:
 ```
@@ -97,12 +96,12 @@ INFO: Using USER=ubuntu and CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285
 
 Do a visual sanity check.
 ```bash
-cat docs/movement-node/suzuka-full-node.service
+cat docs/movement-node/run/manul/suzuka-full-node.service
 ```
 
 Copy the systemd service to a systemd know path.
 ```
-sudo cp docs/movement-node/suzuka-full-node.service /etc/systemd/system/suzuka-full-node.service
+sudo cp docs/movement-node/run/manul/suzuka-full-node.service /etc/systemd/system/suzuka-full-node.service
 ```
 
 7. Reload systemd to apply changes
