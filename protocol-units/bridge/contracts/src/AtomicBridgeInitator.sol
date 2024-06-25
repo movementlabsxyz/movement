@@ -4,7 +4,6 @@ pragma solidity ^0.8.22;
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH10} from "./WETH/interfaces/IWETH10.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import {_setupRole}"@openzeppelin/contracts/access/AccessControl.sol"};
 
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessControl {
 
@@ -18,7 +17,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-    bytes public constant REFUNDER_ROLE = keccak256("REFUNDER_ROLE");
     IWETH10 public weth;
     uint256 private nonce;
 
@@ -38,8 +36,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
         address originator = msg.sender;
         uint256 ethAmount = msg.value;
         uint256 totalAmount = wethAmount + ethAmount;
-        // Check if the bridge transfer already exists
-        if (bridgeTransfers[bridgeTransferId].amount != 0) revert BridgeTransferInvalid();
         // Ensure there is a valid total amount
         if (totalAmount == 0) {
             revert ZeroAmount();
@@ -53,6 +49,10 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
 
         nonce++; //increment the nonce
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
+
+        // Check if the bridge transfer already exists
+        if (bridgeTransfers[bridgeTransferId].amount != 0) revert BridgeTransferInvalid();
+
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
@@ -75,19 +75,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
         if (keccak256(abi.encodePacked(pre_image)) != bridgeTransfer.hashLock) revert InvalidSecret();
 
         // WETH remains stored in the contract
-        // Only to be released upon bridge transfer in the oppisite direction
+        // Only to be released upon bridge transfer in the opposite  wdirection
 
         bridgeTransfer.completed = true;
         emit BridgeTransferCompleted(bridgeTransferId, pre_image);
     }
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
-        // Check that the calling account has the refunder role
-        require(hasRole(REFUNDER_ROLE, msg.sender), "Caller is not a minter");
-
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
-
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         
