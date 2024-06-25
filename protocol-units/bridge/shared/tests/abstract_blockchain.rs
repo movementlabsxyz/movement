@@ -15,6 +15,11 @@ use shared::testing::blockchain::{
 	AbstractBlockchain, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall, Transaction,
 };
 
+use crate::shared::testing::blockchain::{
+	counterparty_contract::SmartContractCounterpartyEvent,
+	initiator_contract::SmartContractInitiatorEvent,
+};
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestAddress(pub &'static str);
 
@@ -59,14 +64,16 @@ async fn test_initiate_bridge_transfer() {
 	let event = event.unwrap();
 	assert_eq!(
 		event,
-		AbstractBlockchainEvent::BridgeTransferInitiated(BridgeTransferDetails {
-			bridge_transfer_id: BridgeTransferId(TestHash("unique_hash")),
-			initiator_address: initiator_address.clone(),
-			recipient_address: recipient_address.clone(),
-			amount: amount.clone(),
-			time_lock: time_lock.clone(),
-			hash_lock: hash_lock.clone(),
-		})
+		AbstractBlockchainEvent::InitiatorContractEvent(Ok(
+			SmartContractInitiatorEvent::InitiatedBridgeTransfer(BridgeTransferDetails {
+				bridge_transfer_id: BridgeTransferId(TestHash("unique_hash")),
+				initiator_address: initiator_address.clone(),
+				recipient_address: recipient_address.clone(),
+				amount: amount.clone(),
+				time_lock: time_lock.clone(),
+				hash_lock: hash_lock.clone(),
+			})
+		))
 	);
 
 	let details = blockchain
@@ -115,13 +122,15 @@ async fn test_lock_bridge_transfer() {
 	let event = event.unwrap();
 	assert_eq!(
 		event,
-		AbstractBlockchainEvent::BridgeTransferAssetsLocked(LockDetails {
-			bridge_transfer_id: bridge_transfer_id.clone(),
-			hash_lock: hash_lock.clone(),
-			time_lock: time_lock.clone(),
-			recipient_address: recipient_address.clone(),
-			amount,
-		},)
+		AbstractBlockchainEvent::CounterpartyContractEvent(Ok(
+			SmartContractCounterpartyEvent::LockedBridgeTransfer(LockDetails {
+				bridge_transfer_id: bridge_transfer_id.clone(),
+				hash_lock: hash_lock.clone(),
+				time_lock: time_lock.clone(),
+				recipient_address: recipient_address.clone(),
+				amount,
+			})
+		))
 	);
 
 	let details = blockchain.counterparty_contract.locked_transfers.get(&bridge_transfer_id);

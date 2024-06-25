@@ -78,12 +78,37 @@ pub struct LockDetails<A, H> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct UnlockDetails<A, H> {
+pub struct CompletedDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub secret: HashLockPreImage,
 	pub amount: Amount,
+}
+
+impl<A, H> CompletedDetails<A, H> {
+	pub fn from_bridge_transfer_details(
+		bridge_transfer_details: BridgeTransferDetails<A, H>,
+		secret: HashLockPreImage,
+	) -> Self {
+		CompletedDetails {
+			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
+			recipient_address: bridge_transfer_details.recipient_address,
+			hash_lock: bridge_transfer_details.hash_lock,
+			secret,
+			amount: bridge_transfer_details.amount,
+		}
+	}
+
+	pub fn from_lock_details(lock_details: LockDetails<A, H>, secret: HashLockPreImage) -> Self {
+		CompletedDetails {
+			bridge_transfer_id: lock_details.bridge_transfer_id,
+			recipient_address: lock_details.recipient_address,
+			hash_lock: lock_details.hash_lock,
+			secret,
+			amount: lock_details.amount,
+		}
+	}
 }
 
 // Types

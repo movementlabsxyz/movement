@@ -8,6 +8,12 @@ use bridge_shared::types::{
 	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmartContractInitiatorEvent<A, H> {
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
+	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+}
+
 #[derive(Debug)]
 pub enum InitiatorCall<A, H> {
 	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress<A>, Amount, TimeLock, HashLock<H>),
@@ -20,7 +26,7 @@ pub struct SmartContractInitiator<A, H, R> {
 	pub rng: R,
 }
 
-#[derive(Error, Debug)]
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorError {
 	#[error("Failed to initiate bridge transfer")]
 	InitiateTransferError,
@@ -29,6 +35,8 @@ pub enum SmartContractInitiatorError {
 	#[error("Invalid hash lock pre image (secret)")]
 	InvalidHashLockPreImage,
 }
+
+pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
 
 impl<A, H, R> SmartContractInitiator<A, H, R>
 where
@@ -47,7 +55,7 @@ where
 		amount: Amount,
 		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
-	) {
+	) -> SCIResult<A, H> {
 		let bridge_transfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
 
 		tracing::trace!(
@@ -59,14 +67,23 @@ where
 		self.initiated_transfers.insert(
 			bridge_transfer_id.clone(),
 			BridgeTransferDetails {
-				bridge_transfer_id,
-				initiator_address: initiator,
-				recipient_address: recipient,
-				hash_lock,
-				time_lock,
+				bridge_transfer_id: bridge_transfer_id.clone(),
+				initiator_address: initiator.clone(),
+				recipient_address: recipient.clone(),
+				hash_lock: hash_lock.clone(),
+				time_lock: time_lock.clone(),
 				amount,
 			},
 		);
+
+		Ok(SmartContractInitiatorEvent::InitiatedBridgeTransfer(BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: initiator,
+			recipient_address: recipient,
+			hash_lock,
+			time_lock,
+			amount,
+		}))
 	}
 
 	pub fn complete_bridge_transfer(
@@ -74,7 +91,7 @@ where
 		accounts: &mut HashMap<A, Amount>,
 		transfer_id: BridgeTransferId<H>,
 		_secret: HashLockPreImage,
-	) -> Result<(), SmartContractInitiatorError> {
+	) -> SCIResult<A, H> {
 		tracing::trace!("SmartContractInitiator: Completing bridge transfer: {:?}", transfer_id);
 
 		// complete bridge transfer
@@ -93,6 +110,6 @@ where
 		// let balance = accounts.entry((*transfer.recipient_address).clone()).or_insert(Amount(0));
 		// **balance += *transfer.amount;
 
-		Ok(())
+		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id, _secret))
 	}
 }

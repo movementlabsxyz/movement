@@ -13,8 +13,8 @@ use crate::{
 	blockchain_service::BlockchainService,
 	bridge_contracts::BridgeContractError,
 	types::{
-		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, HashLock,
-		UnlockDetails,
+		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, CompletedDetails,
+		HashLock,
 	},
 };
 use crate::{
@@ -130,7 +130,7 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		details: UnlockDetails<BTo::Address, BTo::Hash>,
+		details: CompletedDetails<BTo::Address, BTo::Hash>,
 	) -> Result<(), ActiveSwapMapError>
 	where
 		<BFrom as BlockchainService>::Hash: From<<BTo as BlockchainService>::Hash>,
@@ -282,7 +282,7 @@ pub enum CompleteBridgeTransferError {
 
 async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
 	mut initiator_contract: BFrom::InitiatorContract,
-	UnlockDetails { bridge_transfer_id, secret, .. }: UnlockDetails<BTo::Address, BTo::Hash>,
+	CompletedDetails { bridge_transfer_id, secret, .. }: CompletedDetails<BTo::Address, BTo::Hash>,
 ) -> Result<(), CompleteBridgeTransferError>
 where
 	<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
