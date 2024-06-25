@@ -6,7 +6,6 @@ import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {WETH10} from "../src/WETH/WETH10.sol";
 
 contract AtomicBridgeInitiatorWethTest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
@@ -23,9 +22,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
     uint256 public timeLock = 100;
 
     function setUp() public {
-        // Deploy the WETH contract
+        //Sepolia WETH9 address
+        address weth = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
 
-        weth = new WETH10();
         // Deploy the AtomicBridgeInitiator contract with the WETH address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
         proxyAdmin = new ProxyAdmin(msg.sender);

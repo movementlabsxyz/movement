@@ -2,7 +2,7 @@
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
-import {IWETH10} from "./WETH/interfaces/IWETH10.sol";
+import {IWETH10} from "./IWETH9.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
@@ -18,14 +18,14 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
     bytes32 [] public bridgeTransferIds; 
-    IWETH10 public weth;
+    IWETH9 public weth;
     uint256 private nonce;
 
     function initialize(address _weth) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
-        weth = IWETH10(_weth);
+        weth = IWETH9(_weth);
     }
 
     function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
@@ -95,7 +95,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         emit BridgeTransferRefunded(bridgeTransferId);
     }
 
-    // Get all bridge transfer ids, the solidity method only returns one item by index
+    // Get all bridge transfer ids, the solidity get method only returns one item by index
     function getAllBridgeTransferIds() external view returns (bytes32[] memory) {
         return bridgeTransferIds;
     }
