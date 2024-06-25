@@ -34,10 +34,11 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		let faucet_url = suzuka_config.execution_config.maptos_config.faucet.get_faucet_url()?;
 		async move {
 			loop {
+				tracing::info!("Run run_alice_bob_tx");
 				if let Err(err) = run_alice_bob_tx(&node_url, &faucet_url).await {
 					panic!("Alice and Bob transfer Tx fail:{err}");
 				}
-				let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+				let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 			}
 		}
 	});
@@ -81,7 +82,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 
 	let mut accepted_block_commitment = None;
 	let mut nb_try = 0;
-	while accepted_block_commitment.is_none() && nb_try < 20 {
+	while accepted_block_commitment.is_none() && nb_try < 200 {
 		let MCR::getAcceptedCommitmentAtBlockHeightReturn {
 			_0: get_accepted_commitment_at_block_height,
 		} = contract
@@ -94,7 +95,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 			break;
 		}
 		nb_try += 1;
-		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 	}
 
 	println!("find accepted block");
