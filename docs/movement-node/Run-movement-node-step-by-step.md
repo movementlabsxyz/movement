@@ -1,4 +1,4 @@
-# Run a Movement Node in Production Mode
+# Run a Movement Node
 We recommend that you run a movement node using containers to leverage the portability and reproducibility properties that come with containers.
 
 
@@ -7,7 +7,7 @@ We recommend that you run a movement node using containers to leverage the porta
 2. [Docker](https://docs.docker.com/engine/install/ubuntu/)
 3. [Docker compose](https://docs.docker.com/compose/install/linux/)
 4. [Just command](https://github.com/casey/just?tab=readme-ov-file#installation)
-
+4. Make sure you are logged in as the user that wants to run the node
 
 ## Run the movement node as an RPC provider
 
@@ -50,6 +50,7 @@ echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 
 4. Pull the container images. For this you need to set `DOT_MOVEMENT_PATH`
 ```bash
+mkdir -p "/home/${USER}/.movement"
 echo "DOT_MOVEMENT_PATH=/home/${USER}/.movement" >> "${MOVEMENT_ENV_FILE}"
 docker compose \
         -f docker/compose/suzuka-full-node/docker-compose.yml \
