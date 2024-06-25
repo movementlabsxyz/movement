@@ -1,0 +1,89 @@
+---
+- name: Append the revision to the .env file
+  hosts: all
+  become: true
+  remote_user: "{{ user }}"
+  gather_facts: false
+  vars:
+    ansible_connection: aws_ssm
+    ansible_aws_ssm_bucket_name: "{{ ansible_aws_ssm_bucket_name }}"
+    ansible_aws_ssm_region: "{{ ansible_aws_ssm_region }}"
+    ansible_aws_ssm_timeout: 300
+    # When the S3 bucket isn't in the same region as the Instance
+    # Explicitly setting the addressing style to 'virtual' may be necessary
+    # https://repost.aws/knowledge-center/s3-http-307-response
+    ansible_aws_ssm_s3_addressing_style: virtual
+  tasks:
+
+    - name: Append the revision to the .env file
+      lineinfile:
+        path: "/home/{{ user }}/movement/.env"
+        line: "REV={{ rev }}"
+        create: yes
+
+    - name: Create suzuka-full-node systemd service
+      template:
+        src: "{{ mvmt_config_dir }}/suzuka-full-node.service.j2"
+        dest: /etc/systemd/system/suzuka-full-node.service
+
+    - name: Stop the suzuka-full-node service if running
+      systemd:
+        name: suzuka-full-node
+        state: stopped
+        enabled: no
+
+    - name: Reload systemd to apply changes
+      command: systemctl daemon-reload
+
+    - name: Enable and start the suzuka-full-node service
+      systemd:
+        name: suzuka-full-node
+        enabled: yes
+        state: started
+
+- name: Add reverse proxy
+  hosts: all
+  become: yes
+  remote_user: "{{ user }}"
+  gather_facts: true
+  vars:
+    ansible_connection: aws_ssm
+    ansible_aws_ssm_bucket_name: "{{ ansible_aws_ssm_bucket_name }}"
+    ansible_aws_ssm_region: "{{ ansible_aws_ssm_region }}"
+    ansible_aws_ssm_timeout: 300
+    # When the S3 bucket isn't in the same region as the Instance
+    # Explicitly setting the addressing style to 'virtual' may be necessary
+    # https://repost.aws/knowledge-center/s3-http-307-response
+    ansible_aws_ssm_s3_addressing_style: virtual
+
+  tasks:
+    - name: Configure server_names_hash_bucket_size
+      blockinfile:
+        path: /etc/nginx/nginx.conf
+        insertafter: http {
+        block: |
+          server_names_hash_bucket_size 256;
+
+    - name: Create nginx reverse proxy configuration
+      template:
+        src: ./nginx-suzuka.j2
+        dest: /etc/nginx/sites-available/suzuka
+
+    - name: Enable nginx configuration
+      file:
+        src: /etc/nginx/sites-available/suzuka
+        dest: /etc/nginx/sites-enabled/suzuka
+        state: link
+
+    - name: Remove default nginx configuration
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Test nginx configuration
+      command: nginx -t
+
+    - name: Reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
