@@ -1,29 +1,34 @@
 use std::ops::{Deref, DerefMut};
 use tokio::sync::RwLockWriteGuard;
-use rustix::fd::AsFd;
-use crate::frwlock::{FrwLock, FrwLockWriteGuard};
+use rustix::{
+    fs::{flock, FlockOperation},
+    fd::AsFd
+};
 
 pub struct TfrwLockWriteGuard<'a, T: AsFd> {
-    _outer: RwLockWriteGuard<'a, FrwLock<T>>,
-    inner: FrwLockWriteGuard<T>,
+    pub (crate) guard: RwLockWriteGuard<'a, T>
 }
 
-impl<'a, T: AsFd> TfrwLockWriteGuard<'a, T> {
-    pub(crate) fn new(outer: RwLockWriteGuard<'a, FrwLock<T>>, inner: FrwLockWriteGuard<T>) -> Self {
-        Self { _outer : outer, inner }
-    }
-}
-
-impl<'a, T: AsFd> Deref for TfrwLockWriteGuard<'a, T> {
+impl<T: AsFd> Deref for TfrwLockWriteGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &*self.inner
+        &*self.guard
     }
 }
 
-impl<'a, T: AsFd> DerefMut for TfrwLockWriteGuard<'a, T> {
+impl<T: AsFd> DerefMut for TfrwLockWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.inner
+        &mut *self.guard
+    }
+}
+
+impl<T: AsFd> Drop for TfrwLockWriteGuard<'_, T> {
+    fn drop(&mut self) {
+        flock(
+            &*self.guard,
+            FlockOperation::Unlock,
+        ).expect("Failed to unlock file");
+        // self.guard drops here
     }
 }

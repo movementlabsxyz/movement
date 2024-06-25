@@ -1,23 +1,28 @@
 use std::ops::Deref;
 use tokio::sync::RwLockReadGuard;
-use rustix::fd::AsFd;
-use crate::frwlock::{FrwLock, FrwLockReadGuard};
+use rustix::{
+    fs::{flock, FlockOperation},
+    fd::AsFd
+};
 
 pub struct TfrwLockReadGuard<'a, T: AsFd> {
-    _outer: RwLockReadGuard<'a, FrwLock<T>>,
-    inner: FrwLockReadGuard<T>,
+    pub(crate) guard: RwLockReadGuard<'a, T>,
 }
 
-impl<'a, T: AsFd> TfrwLockReadGuard<'a, T> {
-    pub(crate) fn new(outer: RwLockReadGuard<'a, FrwLock<T>>, inner: FrwLockReadGuard<T>) -> Self {
-        Self { _outer : outer, inner }
-    }
-}
-
-impl<'a, T: AsFd> Deref for TfrwLockReadGuard<'a, T> {
+impl<T: AsFd> Deref for TfrwLockReadGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &*self.inner
+        &*self.guard
+    }
+}
+
+impl<T: AsFd> Drop for TfrwLockReadGuard<'_, T> {
+    fn drop(&mut self) {
+        flock(
+            &*self.guard,
+            FlockOperation::Unlock,
+        ).expect("Failed to unlock file");
+        // self.guard drops here
     }
 }
