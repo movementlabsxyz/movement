@@ -5,7 +5,7 @@ import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH10} from "./WETH/interfaces/IWETH10.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessControl {
+contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     struct BridgeTransfer {
         uint256 amount;
@@ -17,6 +17,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
+    bytes32 [] public bridgeTransferIds; 
     IWETH10 public weth;
     uint256 private nonce;
 
@@ -24,7 +25,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
-        _setupRole(REFUNDER_ROLE, msg.sender);
         weth = IWETH10(_weth);
     }
 
@@ -63,6 +63,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
             completed: false
         });
 
+        bridgeTransferIds.push(bridgeTransferId); 
+
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
         return bridgeTransferId;
     }
@@ -91,5 +93,10 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable, AccessC
 
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
         emit BridgeTransferRefunded(bridgeTransferId);
+    }
+
+    // Get all bridge transfer ids, the solidity method only returns one item by index
+    function getAllBridgeTransferIds() external view returns (bytes32[] memory) {
+        return bridgeTransferIds;
     }
 }
