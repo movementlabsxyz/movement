@@ -12,8 +12,8 @@ use bridge_shared::{
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::BridgeService,
 	types::{
-		Amount, BridgeTransferDetails, Convert, HashLock, HashLockPreImage, InitiatorAddress,
-		LockDetails, RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, CompletedDetails, Convert, HashLock, HashLockPreImage,
+		InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 	},
 };
 
@@ -152,6 +152,25 @@ async fn test_bridge_service_integration() {
 
 	// TODO: handle followoing event to complete the swap
 
-	let _event = bridge_service.next().await.expect("No event");
-	tracing::debug!(?_event);
+	// As the claim was made by the counterparty, we anticipate the bridge to generate a bridge
+	// contract counterpart event.
+	let completed_event_counterparty = bridge_service.next().await.expect("No event");
+	let completed_event_counterparty =
+		completed_event_counterparty.B2C_ContractEvent().expect("Not a B2C event");
+	tracing::debug!(?completed_event_counterparty);
+	assert_eq!(
+		completed_event_counterparty,
+		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
+			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+			recipient_address: RecipientAddress(BC2Address("recipient")),
+			hash_lock: HashLock(BC2Hash::from("hash_lock")),
+			secret: HashLockPreImage(b"hash_lock".to_vec()),
+			amount: Amount(1000)
+		})
+	);
+
+	// As the initiator has successfully claimed the funds on the Counterparty blockchain, the bridge
+	// is now expected to finalize the swap by completing the necessary tasks on the initiator
+	// blockchain.
+	let completed_event_initiator = bridge_service.next().await.expect("No event");
 }
