@@ -7,7 +7,7 @@
   vars:
     repo_url: "https://github.com/movementlabsxyz/movement/"
     destination_path: "/home/{{ user }}/movement"
-    mvmt_config_dir: "{{ destination_path }}/docs/movement-node/run/ansible/"
+    mvmt_config_dir: "{{ destination_path }}/docs/movement-node/run/ansible"
 
   tasks:
     - name: Install required packages
@@ -53,7 +53,7 @@
     #   ansible.builtin.package:
     #     name: python3-pip
     #     state: present
-  
+
     # - name: Ensure Docker and Docker Compose SDK for Python is installed
     #   ansible.builtin.pip:
     #     name:
