@@ -6,10 +6,11 @@ import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {IWETH9} from "../src/IWETH9.sol";
 
 contract AtomicBridgeInitiatorWethTest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
-    // WETH9 public weth;
+    IWETH9 public weth;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiator public atomicBridgeInitiator;

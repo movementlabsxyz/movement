@@ -12,15 +12,11 @@
 
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.22;
 
-interface IWETH9 {
-    event Approval(address indexed src, address indexed guy, uint256 wad);
-    event Transfer(address indexed src, address indexed dst, uint256 wad);
-    event Deposit(address indexed dst, uint256 wad);
-    event Withdrawal(address indexed src, uint256 wad);
-
+interface IWETH9 is IERC20 {
     function deposit() external payable;
     function withdraw(uint256 wad) external;
     function totalSupply() external view returns (uint256);
