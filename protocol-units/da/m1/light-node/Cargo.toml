@@ -32,6 +32,7 @@ tempfile = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 dot-movement = { workspace = true }
+godfig = { workspace = true }
 
 
 # sequencer

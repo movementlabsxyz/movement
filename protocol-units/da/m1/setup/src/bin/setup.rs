@@ -12,8 +12,9 @@ async fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement.try_get_config_from_json::<M1DaLightNodeConfig>()?;
+	let config = dot_movement.try_get_config_from_json::<M1DaLightNodeConfig>().unwrap_or_default();
 
+	tracing::info!("Setting up the light node.");
 	let config = setup(dot_movement.clone(), config).await?;
 
 	dot_movement.try_write_config_to_json(&config)?;
