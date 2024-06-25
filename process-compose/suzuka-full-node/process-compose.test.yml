@@ -5,7 +5,7 @@ environment:
 processes:
   suzuka-client-tests:
     command: |
-      RUST_BACKTRACE=1 cargo test -p suzuka-client test_node_settlement_state -- --test-threads=1
+      RUST_BACKTRACE=1 cargo test -p suzuka-client test_node_settlement_state -- --nocapture --test-threads=1
     depends_on:
       suzuka-full-node:
         condition: process_healthy

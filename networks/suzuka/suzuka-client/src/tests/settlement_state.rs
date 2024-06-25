@@ -134,16 +134,24 @@ async fn run_alice_bob_tx(node_url: &Url, faucet_url: &Url) -> anyhow::Result<()
 
 	faucet_client.fund(alice.address(), 100_000_000).await?;
 	faucet_client.create_account(bob.address()).await?;
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
-	// Have Alice send Bob some coins.
-	let txn_hash = coin_client.transfer(&mut alice, bob.address(), 1_000, None).await?;
-	rest_client.wait_for_transaction(&txn_hash).await?;
+	loop {
+		println!("Do trasferts 1");
+		// Have Alice send Bob some coins.
+		let txn_hash = coin_client.transfer(&mut alice, bob.address(), 1_000, None).await?;
+		rest_client.wait_for_transaction(&txn_hash).await?;
 
-	// Have Bod send Alice some more coins.
-	let txn_hash = coin_client.transfer(&mut bob, alice.address(), 1_000, None).await?;
-	rest_client.wait_for_transaction(&txn_hash).await?;
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+		println!("Do trasferts 1");
+		// Have Bod send Alice some more coins.
+		let txn_hash = coin_client.transfer(&mut bob, alice.address(), 1_000, None).await?;
+		rest_client.wait_for_transaction(&txn_hash).await?;
 
-	Ok(())
+		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+	}
+
+	//Ok(())
 }
 
 // fn load_local_env() -> Result<(), anyhow::Error> {
