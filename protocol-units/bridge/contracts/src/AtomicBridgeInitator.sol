@@ -2,11 +2,10 @@
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
-import {IWETH10} from "./IWETH9.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {IWETH9} from "./IWETH9.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
-
+contract AtomicBridgeInitiator is IAtomicBridgeInitiator, AccessControlUpgradeable {
     struct BridgeTransfer {
         uint256 amount;
         address originator;
@@ -17,14 +16,21 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-    bytes32 [] public bridgeTransferIds; 
+    bytes32[] public bridgeTransferIds;
+    // keccak256(abi.encode(uint256(keccak256("Bridge"")))
+    bytes32 public BRIDGE_ROLE = 0x7149ba3a956df41b15775a58d31c6519ac4174ae65ab86e40583abd483069022;
     IWETH9 public weth;
     uint256 private nonce;
+
+    modifier onlyBridgeService() {
+        if (!_checkRole(BRIDGE_ROLE)) revert Unauthorized();
+    }
 
     function initialize(address _weth) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
+        _grantRole(BRIDGE_ROLE, msg.sender);
         weth = IWETH9(_weth);
     }
 
@@ -48,11 +54,11 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         }
 
         nonce++; //increment the nonce
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
+        bridgeTransferId =
+            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
 
         // Check if the bridge transfer already exists
         if (bridgeTransfers[bridgeTransferId].amount != 0) revert BridgeTransferInvalid();
-
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
@@ -63,24 +69,24 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             completed: false
         });
 
-        bridgeTransferIds.push(bridgeTransferId); 
+        bridgeTransferIds.push(bridgeTransferId);
 
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
         return bridgeTransferId;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 pre_image) external {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         // Retrieve the bridge transfer
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
-        if (keccak256(abi.encodePacked(pre_image)) != bridgeTransfer.hashLock) revert InvalidSecret();
+        if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
 
         // WETH remains stored in the contract
         // Only to be released upon bridge transfer in the opposite  wdirection
 
         bridgeTransfer.completed = true;
-        emit BridgeTransferCompleted(bridgeTransferId, pre_image);
+        emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
@@ -88,7 +94,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         uint256 amount = bridgeTransfer.amount;
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
-        
+
         bridgeTransfer.completed = true;
 
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();

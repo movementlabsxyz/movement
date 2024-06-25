@@ -9,7 +9,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 
 contract AtomicBridgeInitiatorWethTest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
-    WETH10 public weth;
+    // WETH9 public weth;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiator public atomicBridgeInitiator;
@@ -23,7 +23,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
     function setUp() public {
         //Sepolia WETH9 address
-        address weth = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
+        address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
@@ -31,7 +31,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address)", address(weth))
+            abi.encodeWithSignature("initialize(address)", wethAddress)
         );
         atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
     }
