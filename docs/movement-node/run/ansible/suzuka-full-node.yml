@@ -17,6 +17,7 @@
           - xz-utils
           - git
           - nginx
+          - python3-pip
         state: present
         update_cache: yes
 
@@ -48,24 +49,20 @@
     - name: Install Docker Compose
       ansible.builtin.shell: curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && chmod +x /usr/local/bin/docker-compose
 
-    - name: Ensure pip is installed
-      ansible.builtin.package:
-        name: python3-pip
-        state: present
+    # - name: Ensure pip is installed
+    #   ansible.builtin.package:
+    #     name: python3-pip
+    #     state: present
+  
+    # - name: Ensure Docker and Docker Compose SDK for Python is installed
+    #   ansible.builtin.pip:
+    #     name:
+    #       - docker==6.1.3
+    #       - requests==2.27.1
+    #       - docker-compose
+    #     state: present
+    #     break_system_packages: true
 
-    - name: Ensure Docker SDK for Python is installed
-      ansible.builtin.pip:
-        name:
-          - docker==6.1.3
-          - requests==2.27.1
-        state: present
-
-    - name: Ensure Docker Compose SDK for Python is installed
-      ansible.builtin.pip:
-        name:
-          - docker-compose
-          - requests==2.27.1
-        state: present
 
     - name: Install OpenSSL and CA certificates
       ansible.builtin.package:
