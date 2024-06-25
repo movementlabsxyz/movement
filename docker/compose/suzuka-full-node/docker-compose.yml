@@ -27,7 +27,7 @@ services:
       start_period: 3s
 
   celestia-light-node-synced:
-    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${REV}
+    image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${CONTAINER_REV}
     container_name: celestia-light-node-synced
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -38,7 +38,7 @@ services:
         condition: service_healthy
 
   m1-da-light-node:
-    image: ghcr.io/movementlabsxyz/m1-da-light-node:${REV}
+    image: ghcr.io/movementlabsxyz/m1-da-light-node:${CONTAINER_REV}
     container_name: m1-da-light-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -51,7 +51,7 @@ services:
       - "30730:30730"
 
   suzuka-full-node:
-    image: ghcr.io/movementlabsxyz/suzuka-full-node:${REV}
+    image: ghcr.io/movementlabsxyz/suzuka-full-node:${CONTAINER_REV}
     container_name: suzuka-full-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -76,7 +76,7 @@ services:
         echo "suzuka-full-node is ready"
 
   suzuka-faucet-service:
-    image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${REV}
+    image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
     container_name: suzuka-faucet-service
     command: run-simple
     environment:

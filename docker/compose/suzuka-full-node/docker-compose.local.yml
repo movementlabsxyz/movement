@@ -1,7 +1,7 @@
 services:
 
   m1-da-light-node-celestia-appd:
-    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:${REV}
+    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:${CONTAINER_REV}
     container_name: m1-da-light-node-celestia-appd
     environment:
       DOT_MOVEMENT_PATH: /.movement
@@ -19,7 +19,7 @@ services:
       retries: 3
 
   m1-da-light-node-celestia-bridge:
-    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${REV}
+    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${CONTAINER_REV}
     container_name: m1-da-light-node-celestia-bridge
     environment:
       DOT_MOVEMENT_PATH: /.movement
