@@ -73,9 +73,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        // WETH remains stored in the contract
-        // Only to be released upon bridge transfer in the opposite  wdirection
-
         bridgeTransfer.completed = true;
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
