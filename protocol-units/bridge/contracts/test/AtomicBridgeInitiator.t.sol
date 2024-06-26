@@ -86,7 +86,6 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         vm.stopPrank();
 
-        // vm.startPrank(msg.sender);
         atomicBridgeInitiator.completeBridgeTransfer(bridgeTransferId, secret);
         (
             uint256 completedAmount,
@@ -101,8 +100,6 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
         assertGt(completedTimeLock, block.timestamp);
-
-        // vm.stopPrank();
     }
 
     function testInitiateBridgeTransferWithWeth() public {
