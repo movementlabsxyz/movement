@@ -7,7 +7,8 @@ use crate::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{BridgeTransferDetails, CompletedDetails},
+	bridge_service::active_swap::ActiveSwapEvent,
+	types::{BridgeTransferDetails, CompletedDetails, Convert},
 };
 
 pub mod active_swap;
@@ -156,6 +157,9 @@ where
 	<B2::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B1::Hash>,
 	<B2::CounterpartyContract as BridgeContractCounterparty>::Address: From<B1::Address>,
 
+	<B1 as BlockchainService>::Hash: Convert<B2::Hash>,
+	<B2 as BlockchainService>::Hash: Convert<B1::Hash>,
+
 	<B1 as BlockchainService>::Hash: From<<B2 as BlockchainService>::Hash>,
 	<<B1 as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
 		From<<B2 as BlockchainService>::Hash>,
@@ -165,12 +169,14 @@ where
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 
+		use ActiveSwapEvent::*;
+
 		// Handle active swaps initiated from blockchain 1
 		match this.active_swaps_b1_to_b2.poll_next_unpin(cx) {
 			Poll::Ready(Some(event)) => {
 				trace!("BridgeService: Received event from active swaps B1 -> B2: {:?}", event);
 				match event {
-					active_swap::ActiveSwapEvent::BridgeAssetsLocked(bridge_transfer_id) => {
+					BridgeAssetsLocked(bridge_transfer_id) => {
 						trace!(
 							"BridgeService: Bridge assets locked for transfer {:?}",
 							bridge_transfer_id
@@ -178,16 +184,27 @@ where
 						// The smart contract has been called on blockchain_2. Now, we have to wait for
 						// confirmation from the blockchain_2 event.
 					}
-					active_swap::ActiveSwapEvent::BridgeAssetsLockingError(error) => {
+					BridgeAssetsLockingError(error) => {
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
 						// An error occurred while calling the lock_bridge_transfer_assets method. This
 						// could be due to a network error or an issue with the smart contract call.
 
-						// We should retry this active swap for a number of times before giving up, and
-						// otherwise refund the bridge transfer.
+						// This will cause the call to be retried a number of tries before giving up
 					}
-					active_swap::ActiveSwapEvent::BridgeAssetsCompleted(_) => todo!(),
-					active_swap::ActiveSwapEvent::BridgeAssetsCompletingError(_) => todo!(),
+					BridgeAssetsCompleted(bridge_transfer_id) => {
+						trace!(
+							"BridgeService: Bridge assets completed for transfer {:?}",
+							bridge_transfer_id
+						);
+						// The bridge assets have been successfully completed.
+					}
+					BridgeAssetsCompletingError(error) => {
+						warn!("BridgeService: Error completing bridge assets: {:?}", error);
+						// An error occurred while called the complete_bridge_transfer method. This could
+						// be due to a network error or an issue with the smart contract call.
+
+						// This will cause the call to be retried a number of tries before giving up
+					}
 				}
 			}
 			Poll::Ready(None) => {
@@ -203,17 +220,17 @@ where
 			Poll::Ready(Some(event)) => {
 				trace!("BridgeService: Received event from active swaps B2 -> B1: {:?}", event);
 				match event {
-					active_swap::ActiveSwapEvent::BridgeAssetsLocked(bridge_transfer_id) => {
+					BridgeAssetsLocked(bridge_transfer_id) => {
 						trace!(
 							"BridgeService: Bridge assets locked for transfer {:?}",
 							bridge_transfer_id
 						);
 					}
-					active_swap::ActiveSwapEvent::BridgeAssetsLockingError(error) => {
+					BridgeAssetsLockingError(error) => {
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
 					}
-					active_swap::ActiveSwapEvent::BridgeAssetsCompleted(_) => todo!(),
-					active_swap::ActiveSwapEvent::BridgeAssetsCompletingError(_) => todo!(),
+					BridgeAssetsCompleted(_) => todo!(),
+					BridgeAssetsCompletingError(_) => todo!(),
 				}
 			}
 			Poll::Ready(None) => {

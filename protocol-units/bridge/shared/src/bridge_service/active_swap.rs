@@ -189,6 +189,7 @@ where
 		From<<BTo as BlockchainService>::Address>,
 
 	BTo: BlockchainService + Unpin + 'static,
+
 	<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
 	<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
 {
@@ -197,7 +198,10 @@ where
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> where {
 		let this = self.get_mut();
 
-		for ActiveSwap { details, state, .. } in this.swaps.values_mut() {
+		let mut cleanup: Vec<BridgeTransferId<BFrom::Hash>> = Vec::new();
+		for (bridge_transfer_id, ActiveSwap { details: bridge_transfer, state, .. }) in
+			this.swaps.iter_mut()
+		{
 			use ActiveSwapState::*;
 			match state {
 				LockingTokens(future, attempts) => {
@@ -206,7 +210,7 @@ where
 							*state = ActiveSwapState::WaitingForUnlockedEvent;
 
 							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLocked(
-								details.bridge_transfer_id.clone(),
+								bridge_transfer_id.clone(),
 							)));
 						}
 						Poll::Ready(Err(error)) => {
@@ -230,18 +234,24 @@ where
 						*state = ActiveSwapState::LockingTokens(
 							call_lock_bridge_transfer_assets::<BFrom, BTo>(
 								this.counterparty_contract.clone(),
-								details.clone(),
+								bridge_transfer.clone(),
 							)
 							.boxed(),
 							*attempts + 1,
 						);
 					}
 				}
-				WaitingForUnlockedEvent => {}
+				WaitingForUnlockedEvent => {
+					continue;
+				}
 				CompletingBridging(future, details, attempts) => {
 					match future.poll_unpin(cx) {
 						Poll::Ready(Ok(())) => {
 							*state = ActiveSwapState::Completed;
+
+							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsCompleted(
+								bridge_transfer_id.clone(),
+							)));
 						}
 						Poll::Ready(Err(error)) => {
 							// Completing bridging failed
@@ -273,8 +283,15 @@ where
 						);
 					}
 				}
-				Completed => todo!(),
+				Completed => {
+					cleanup.push(bridge_transfer_id.clone());
+				}
 			}
+		}
+
+		// cleanup completed swaps
+		for bridge_transfer_id in cleanup {
+			this.swaps.remove(&bridge_transfer_id);
 		}
 
 		Poll::Pending
