@@ -2,15 +2,23 @@
 set -e
 set -euo pipefail
 
-echo "$@"
+if [ "$#" -lt 3 ]; then
+    echo "Usage: $0 <service> <runtime> <flags> [process-compose flags...]"
+    echo "Example: $0 suzuka-full-node native setup.local.test"
+    exit 1
+fi
 
-IFS='.' read -r -a split <<< "$3"
+SERVICE=$1
+RUNTIME=$2 # runtime is already known, but we reuse
+FEATURES=$3
+
+IFS='.' read -r -a split <<< "$FEATURES"
 
 override_files=()
 for element in "${split[@]}"; do
     override_files+=("-f")
-    override_files+=("process-compose/$1/process-compose.$element.yml")
+    override_files+=("docker/compose/$SERVICE/process-compose.$element.yml")
 done
 
-echo "Running process-compose for $1 with override files: ${override_files[@]}..."
-process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}" "${@:4}"
+echo "Running process-compose for $SERVICE with override files: ${override_files[@]}..."
+docker compose -f docker/compose/$SERVICE/process-compose.yml "${override_files[@]}" "${@:4}"
