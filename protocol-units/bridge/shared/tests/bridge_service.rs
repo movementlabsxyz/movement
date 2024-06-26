@@ -156,8 +156,6 @@ async fn test_bridge_service_integration() {
 	.await
 	.expect("complete_bridge_transfer failed");
 
-	// TODO: handle followoing event to complete the swap
-
 	// As the claim was made by the counterparty, we anticipate the bridge to generate a bridge
 	// contract counterpart event.
 	let completed_event_counterparty = bridge_service.next().await.expect("No event");

@@ -14,7 +14,9 @@ pub use self::{
 use self::{counterparty_contract::SCCResult, initiator_contract::SCIResult};
 
 use super::rng::RngSeededClone;
-use bridge_shared::types::{Amount, BridgeAddressType, BridgeHashType, GenUniqueHash};
+use bridge_shared::types::{
+	Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
+};
 
 pub mod client;
 pub mod counterparty_contract;
@@ -64,6 +66,7 @@ where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
+	H: From<HashLockPreImage>,
 {
 	pub fn new(mut rng: R, name: impl Into<String>) -> Self {
 		let accounts = HashMap::new();
@@ -128,6 +131,7 @@ where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
+	H: From<HashLockPreImage>,
 {
 	type Output = ();
 
@@ -151,6 +155,7 @@ where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
+	H: From<HashLockPreImage>,
 {
 	type Item = AbstractBlockchainEvent<A, H>;
 

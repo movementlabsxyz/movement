@@ -31,16 +31,6 @@ pub struct SmartContractCounterparty<A, H> {
 	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
 }
 
-impl<A, H> Default for SmartContractCounterparty<A, H>
-where
-	A: BridgeAddressType,
-	H: BridgeHashType + GenUniqueHash,
-{
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
 pub type SCCResult<A, H> =
 	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
@@ -48,6 +38,7 @@ impl<A, H> SmartContractCounterparty<A, H>
 where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
+	H: From<HashLockPreImage>,
 {
 	pub fn new() -> Self {
 		Self { locked_transfers: HashMap::new() }
@@ -98,6 +89,11 @@ where
 			.ok_or(SmartContractCounterpartyError::TransferNotFound)?;
 
 		tracing::trace!("SmartContractCounterparty: Completing bridge transfer: {:?}", transfer);
+
+		// check if the secret is correct
+		if transfer.hash_lock.0 != From::from(pre_image.clone()) {
+			return Err(SmartContractCounterpartyError::InvalidHashLockPreImage);
+		}
 
 		let balance = accounts.entry((*transfer.recipient_address).clone()).or_insert(Amount(0));
 		**balance += *transfer.amount;
