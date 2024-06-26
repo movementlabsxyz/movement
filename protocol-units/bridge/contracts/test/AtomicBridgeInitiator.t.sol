@@ -15,7 +15,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiator public atomicBridgeInitiator;
 
-    address public originator = address(1);
+    address public originator =  address(1);
     // convert to bytes32
     bytes32 public recipient = keccak256(abi.encodePacked(address(2)));
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
@@ -25,6 +25,10 @@ contract AtomicBridgeInitiatorWethTest is Test {
     function setUp() public {
         //Sepolia WETH9 address
         address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
+        weth = IWETH9(wethAddress);
+
+        //generate random address for each test
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))));
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
@@ -109,10 +113,11 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
     function testInitiateBridgeTransferWithWeth() public {
         uint256 wethAmount = 1 ether; // use ethers unit
-
+        weth.totalSupply();
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
         weth.deposit{value: wethAmount}();
+        assertEq(weth.balanceOf(originator), wethAmount);
         weth.approve(address(atomicBridgeInitiator), wethAmount);
         bytes32 bridgeTransferId =
             atomicBridgeInitiator.initiateBridgeTransfer(wethAmount, recipient, hashLock, timeLock);
