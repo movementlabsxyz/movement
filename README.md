@@ -18,7 +18,9 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 ## Organization
 - [`scripts`](./scripts): Scripts for running Movement Labs software. See the [scripts README](./scripts/README.md) for more information about the organization of scripts.
 - [`process-compose`](./process-compose): Process compose files for running Movement Labs software. These files are part of the standard flow for running and testing components in the Movement Network. See the [scripts README](./scripts/README.md) for more information about the organization of scripts.
+- [`docker`](./docker): Dockerfiles for building Movement Labs software and Docker compose files for orchestrating services. See the [docker README](./docker/README.md) for more information about the organization of Dockerfiles.
 - [`protocol-units`](./protocol-units): Protocol units for the Movement Network. These are the core building blocks of the Movement Network. See the [protocol-units README](./protocol-units/README.md) for more information about the organization of protocol units.
+- [`networks`](./networks): Network runner entry points for the Movement Network. These are the entry points for running the Movement Network. See the [networks README](./networks/README.md) for more information about the organization of network runners.
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
