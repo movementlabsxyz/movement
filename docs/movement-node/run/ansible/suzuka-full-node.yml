@@ -7,7 +7,6 @@
   vars:
     repo_url: "https://github.com/movementlabsxyz/movement/"
     destination_path: "/home/{{ user }}/movement"
-    # mvmt_config_dir: "{{ destination_path }}/docs/movement-node/run/ansible"
 
   tasks:
     - name: Install required packages

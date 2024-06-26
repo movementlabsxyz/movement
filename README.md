@@ -52,6 +52,11 @@ Check install
 just --version
 ```
 
+### Prerequisites - Nix : the package manager
+
+https://nix.dev/install-nix
+
+
 ## Running Natively
 ### `m1-da-light-node`
 
@@ -128,7 +133,7 @@ docker compose --env-file .env \
 **Note:** if you want to recreate the network, but not rely on the just target above, please read through the scripts to identify the correct `docker-compose` files to run.
 
 **Note** For attesters in order to receive rewards you need to launch the node in 
-"attester mode". To do this you will need to provide a private key at runtime. 
+`Attester` mode. To do this you will need to provide a private key at runtime.
 This feature is not implemented yet, at this moment.
 
 
