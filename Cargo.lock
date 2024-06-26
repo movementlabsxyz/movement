@@ -5093,6 +5093,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "flocks"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "rustix 0.38.34",
+ "serde",
+ "tempfile",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5373,7 +5386,15 @@ dependencies = [
 name = "godfig"
 version = "0.3.0"
 dependencies = [
+ "anyhow",
+ "async-stream",
+ "flocks",
+ "futures",
  "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -6911,6 +6932,7 @@ dependencies = [
  "celestia-types",
  "chrono",
  "dot-movement",
+ "godfig",
  "hex",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",

@@ -1,5 +1,5 @@
 [package]
-name = "godfig"
+name = "flocks"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -16,11 +16,9 @@ serde = { workspace = true, features = ["derive"] }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
-flocks = { workspace = true }
-async-stream = { workspace = true }
-serde_json = { workspace = true }
-tempfile = { workspace = true }
+rustix = { workspace = true, features = ["fs"]}
 thiserror = { workspace = true }
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

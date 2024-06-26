@@ -1,4 +1,4 @@
-use m1_da_light_node::v1::{LightNodeV1, LightNodeV1Operations};
+use m1_da_light_node::v1::{Manager, LightNodeV1};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -13,15 +13,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement
-		.try_get_config_from_json::<m1_da_light_node_util::config::M1DaLightNodeConfig>()?;
-
-	let light_node = LightNodeV1::try_from_config(config.m1_da_light_node_config).await?;
-
-	// log out the node's configuration with tracing
-	tracing::info!("{:?}", light_node);
-
-	light_node.run().await?;
+	let config_path = dot_movement.get_config_json_path();
+	let config_file = tokio::fs::File::open(config_path).await?;
+	let manager = Manager::<LightNodeV1>::new(config_file).await?;
+	manager.try_run().await?;
 
 	Ok(())
 }
