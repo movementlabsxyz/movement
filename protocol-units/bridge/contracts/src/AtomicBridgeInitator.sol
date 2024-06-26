@@ -12,6 +12,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         bytes32 recipient;
         bytes32 hashLock;
         uint256 timeLock;
+        bool completed;
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
@@ -56,7 +57,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.timestamp + timeLock
+            timeLock: block.timestamp + timeLock,
+            completed: false
         });
 
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
@@ -64,11 +66,10 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     }
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
-        // Retrieve the bridge transfer
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        delete bridgeTransfers[bridgeTransferId];
+        bridgeTransfer.completed = true;
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
@@ -76,8 +77,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        //Transfer the WETH back to the originator, revert if fails
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
-        weth.transferFrom(address(this), bridgeTransfer.originator, amount);
+
         emit BridgeTransferRefunded(bridgeTransferId);
     }
 }

@@ -200,9 +200,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.startPrank(originator);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
-        (,,,,, bool completed) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-        assertTrue(completed);
-
+        assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
         vm.stopPrank();
     }
 }
