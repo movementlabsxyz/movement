@@ -7,10 +7,11 @@ pub use read_guard::TfrwLockReadGuard;
 use tokio::sync::RwLock;
 use thiserror::Error;
 use rustix::{
-    fs::{flock, FlockOperation},
+    fs::FlockOperation,
     fd::AsFd,
 };
-use tokio::task::yield_now;
+use crate::asynchronous::flock;
+use crate::asynchronous::AsyncFlockError;
 
 #[derive(Debug, Error)]
 pub enum TfrwLockError {
@@ -18,11 +19,25 @@ pub enum TfrwLockError {
     LockNotAvailable,
     #[error("File error: {0}")]
     FileError(#[from] std::io::Error),
+    #[error("Internal error: {0}")]
+    InternalError(String),
 }
 
 impl From<tokio::sync::TryLockError> for TfrwLockError {
-    fn from(e: tokio::sync::TryLockError) -> Self {
+    fn from(_e: tokio::sync::TryLockError) -> Self {
         TfrwLockError::LockNotAvailable
+    }
+}
+
+impl From<AsyncFlockError> for TfrwLockError {
+    fn from(e: AsyncFlockError) -> Self {
+        match e {
+            AsyncFlockError::IOError(e) => match e {
+                rustix::io::Errno::WOULDBLOCK => TfrwLockError::LockNotAvailable,
+                _ => TfrwLockError::InternalError(e.to_string()),
+            },
+            _ => TfrwLockError::InternalError(e.to_string()),
+        }
     }
 }
 
@@ -39,12 +54,13 @@ impl<T: AsFd> TfrwLock<T> {
         }
     }
 
-    pub(crate) fn try_write(&self) -> Result<TfrwLockWriteGuard<'_, T>, TfrwLockError> {
+    /// Tries to acquire a write lock and exits immediately if it is not available.
+    pub async fn try_write(&self) -> Result<TfrwLockWriteGuard<'_, T>, TfrwLockError> {
 
         let (res, write) = {
             let file = self.lock.try_write()?;
             (
-                flock(&*file, FlockOperation::NonBlockingLockExclusive),
+                flock(&*file, FlockOperation::NonBlockingLockExclusive).await,
                 file
             )
         };
@@ -55,18 +71,18 @@ impl<T: AsFd> TfrwLock<T> {
                     guard : write
                 })
             },
-            Err(rustix::io::Errno::WOULDBLOCK) => Err(TfrwLockError::LockNotAvailable),
-            Err(e) => Err(TfrwLockError::FileError(e.into())),
+            Err(e) => Err(e.into()),
         }
 
     }
 
-    pub(crate) fn try_read(&self) -> Result<TfrwLockReadGuard<'_, T>, TfrwLockError> {
+    /// Tries to acquire a read lock and exits immediately if it is not available.
+    pub async fn try_read(&self) -> Result<TfrwLockReadGuard<'_, T>, TfrwLockError> {
         
         let (res, read) = {
             let file = self.lock.try_read()?;
             (
-                flock(&*file, FlockOperation::NonBlockingLockShared),
+                flock(&*file, FlockOperation::NonBlockingLockShared).await,
                 file
             )
         };
@@ -77,36 +93,39 @@ impl<T: AsFd> TfrwLock<T> {
                     guard : read
                 })
             },
-            Err(rustix::io::Errno::WOULDBLOCK) => Err(TfrwLockError::LockNotAvailable),
-            Err(e) => Err(TfrwLockError::FileError(e.into())),
+            Err(e) => Err(e.into()),
         }
 
     }
 
+    /// Acquires a write lock, waiting until it is available.
     pub async fn write(&self) -> Result<TfrwLockWriteGuard<'_, T>, TfrwLockError> {
-        loop {
-            match self.try_write() {
-                Ok(guard) => return Ok(guard),
-                Err(TfrwLockError::LockNotAvailable) => {
-                    // Yield control to other tasks
-                    yield_now().await;
-                },
-                Err(e) => return Err(e),
-            }
+       
+        let mut write = self.lock.write().await;
+        let res = flock(&*write, FlockOperation::LockExclusive).await;
+
+        match res {
+            Ok(_) => Ok(TfrwLockWriteGuard {
+                guard : write
+            }),
+            Err(e) => Err(e.into()),
         }
+
     }
 
+    /// Acquires a read lock, waiting until it is available.
     pub async fn read(&self) -> Result<TfrwLockReadGuard<'_, T>, TfrwLockError> {
-        loop {
-            match self.try_read() {
-                Ok(guard) => return Ok(guard),
-                Err(TfrwLockError::LockNotAvailable) => {
-                    // Yield control to other tasks
-                    yield_now().await;
-                },
-                Err(e) => return Err(e),
-            }
+       
+        let read = self.lock.read().await;
+        let res = flock(&*read, FlockOperation::LockShared).await;
+
+        match res {
+            Ok(_) => Ok(TfrwLockReadGuard {
+                guard : read
+            }),
+            Err(e) => Err(e.into()),
         }
+
     }
 
 }
@@ -157,7 +176,7 @@ mod tests {
         let write_guard = tfrwlock.write().await?;
 
         /// This should be fine
-        let err = tfrwlock.try_read().err().ok_or(anyhow::Error::msg("Expected error"))?;
+        let err = tfrwlock.try_read().await.err().ok_or(anyhow::Error::msg("Expected error"))?;
         match err {
             TfrwLockError::LockNotAvailable => (),
             _ => panic!("Expected LockNotAvailable")
