@@ -42,10 +42,10 @@ interface IAtomicBridgeInitiator {
     /**
      * @dev Completes the bridging Counterparty
      * @param _bridgeTransferId Unique identifier for the BridgeTransfer
-     * @param pre_image The secret that unlocks the funds
+     * @param preImage The secret that unlocks the funds
      *
      */
-    function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 pre_image) external;
+    function completeBridgeTransfer(bytes32 _bridgeTransferId, bytes32 preImage) external;
 
     /**
      * @dev Refunds the funds back to the initiator if the timelock has expired
