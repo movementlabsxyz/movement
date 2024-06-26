@@ -30,15 +30,24 @@ where
 	BTo: BlockchainService,
 {
 	pub details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
-	pub state: ActiveSwapState,
-	_phantom: std::marker::PhantomData<BTo>,
+	pub state: ActiveSwapState<BTo>,
 }
 
-pub enum ActiveSwapState {
-	LockingTokens(BoxedFuture<(), LockBridgeTransferAssetsError>),
-	LockingTokensError(usize, Delay),
+type Attempts = usize;
+
+pub enum ActiveSwapState<BTo>
+where
+	BTo: BlockchainService,
+{
+	LockingTokens(BoxedFuture<(), LockBridgeTransferAssetsError>, Attempts),
+	LockingTokensError(Delay, Attempts),
 	WaitingForUnlockedEvent,
-	CompletingBridging(BoxedFuture<(), CompleteBridgeTransferError>),
+	CompletingBridging(
+		BoxedFuture<(), CompleteBridgeTransferError>,
+		CompletedDetails<BTo::Address, BTo::Hash>,
+		Attempts,
+	),
+	CompletingBridgingError(Delay, CompletedDetails<BTo::Address, BTo::Hash>, Attempts),
 	Completed,
 }
 
@@ -122,8 +131,8 @@ where
 				state: ActiveSwapState::LockingTokens(
 					call_lock_bridge_transfer_assets::<BFrom, BTo>(counterparty_contract, details)
 						.boxed(),
+					0,
 				),
-				_phantom: std::marker::PhantomData,
 			},
 		);
 	}
@@ -152,7 +161,10 @@ where
 		);
 
 		active_swap.state = ActiveSwapState::CompletingBridging(
-			call_complete_bridge_transfer::<BFrom, BTo>(initiator_contract, details).boxed(),
+			call_complete_bridge_transfer::<BFrom, BTo>(initiator_contract, details.clone())
+				.boxed(),
+			details.clone(),
+			self.config.error_attempts,
 		);
 
 		Ok(())
@@ -163,23 +175,32 @@ where
 pub enum ActiveSwapEvent<H> {
 	BridgeAssetsLocked(BridgeTransferId<H>),
 	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
+	BridgeAssetsCompleted(BridgeTransferId<H>),
+	BridgeAssetsCompletingError(CompleteBridgeTransferError),
 }
 
 impl<BFrom, BTo> Stream for ActiveSwapMap<BFrom, BTo>
 where
 	BFrom: BlockchainService + Unpin + 'static,
+
+	<BFrom::InitiatorContract as BridgeContractInitiator>::Hash:
+		From<<BTo as BlockchainService>::Hash>,
+	<BFrom::InitiatorContract as BridgeContractInitiator>::Address:
+		From<<BTo as BlockchainService>::Address>,
+
 	BTo: BlockchainService + Unpin + 'static,
 	<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
 	<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
 
-	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> where {
 		let this = self.get_mut();
 
 		for ActiveSwap { details, state, .. } in this.swaps.values_mut() {
+			use ActiveSwapState::*;
 			match state {
-				ActiveSwapState::LockingTokens(future) => {
+				LockingTokens(future, attempts) => {
 					match future.poll_unpin(cx) {
 						Poll::Ready(Ok(())) => {
 							*state = ActiveSwapState::WaitingForUnlockedEvent;
@@ -192,8 +213,8 @@ where
 							// Locking tokens failed
 							// Transition to the next state
 							*state = ActiveSwapState::LockingTokensError(
-								this.config.error_attempts,
 								Delay::new(this.config.error_delay),
+								*attempts,
 							);
 							return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsLockingError(
 								error,
@@ -202,7 +223,7 @@ where
 						Poll::Pending => {}
 					}
 				}
-				ActiveSwapState::LockingTokensError(_attempt, delay) => {
+				LockingTokensError(delay, attempts) => {
 					// test if the delay has expired
 					// if it has, retry the lock
 					if let Poll::Ready(()) = delay.poll_unpin(cx) {
@@ -212,12 +233,47 @@ where
 								details.clone(),
 							)
 							.boxed(),
+							*attempts + 1,
 						);
 					}
 				}
-				ActiveSwapState::WaitingForUnlockedEvent => {}
-				ActiveSwapState::CompletingBridging(_) => todo!(),
-				ActiveSwapState::Completed => todo!(),
+				WaitingForUnlockedEvent => {}
+				CompletingBridging(future, details, attempts) => {
+					match future.poll_unpin(cx) {
+						Poll::Ready(Ok(())) => {
+							*state = ActiveSwapState::Completed;
+						}
+						Poll::Ready(Err(error)) => {
+							// Completing bridging failed
+							// Transition to the next state
+							*state = ActiveSwapState::CompletingBridgingError(
+								Delay::new(this.config.error_delay),
+								details.clone(),
+								*attempts + 1,
+							);
+							return Poll::Ready(Some(
+								ActiveSwapEvent::BridgeAssetsCompletingError(error),
+							));
+						}
+						Poll::Pending => {}
+					}
+				}
+				CompletingBridgingError(delay, details, attempts) => {
+					// test if the delay has expired
+					// if it has, retry the lock
+					if let Poll::Ready(()) = delay.poll_unpin(cx) {
+						*state = ActiveSwapState::CompletingBridging(
+							call_complete_bridge_transfer::<BFrom, BTo>(
+								this.initiator_contract.clone(),
+								details.clone(),
+							)
+							.boxed(),
+							details.clone(),
+							*attempts + 1,
+						);
+					}
+				}
+				Completed => todo!(),
 			}
 		}
 

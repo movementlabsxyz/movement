@@ -144,11 +144,17 @@ where
 	B1: BlockchainService + Unpin + 'static,
 	B2: BlockchainService + Unpin + 'static,
 
-	<B2::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B1::Hash>,
-	<B2::CounterpartyContract as BridgeContractCounterparty>::Address: From<B1::Address>,
+	<B1::InitiatorContract as BridgeContractInitiator>::Hash: From<B2::Hash>,
+	<B1::InitiatorContract as BridgeContractInitiator>::Address: From<B2::Address>,
 
 	<B1::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B2::Hash>,
 	<B1::CounterpartyContract as BridgeContractCounterparty>::Address: From<B2::Address>,
+
+	<B2::InitiatorContract as BridgeContractInitiator>::Hash: From<B1::Hash>,
+	<B2::InitiatorContract as BridgeContractInitiator>::Address: From<B1::Address>,
+
+	<B2::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B1::Hash>,
+	<B2::CounterpartyContract as BridgeContractCounterparty>::Address: From<B1::Address>,
 
 	<B1 as BlockchainService>::Hash: From<<B2 as BlockchainService>::Hash>,
 	<<B1 as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
@@ -180,6 +186,8 @@ where
 						// We should retry this active swap for a number of times before giving up, and
 						// otherwise refund the bridge transfer.
 					}
+					active_swap::ActiveSwapEvent::BridgeAssetsCompleted(_) => todo!(),
+					active_swap::ActiveSwapEvent::BridgeAssetsCompletingError(_) => todo!(),
 				}
 			}
 			Poll::Ready(None) => {
@@ -204,6 +212,8 @@ where
 					active_swap::ActiveSwapEvent::BridgeAssetsLockingError(error) => {
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
 					}
+					active_swap::ActiveSwapEvent::BridgeAssetsCompleted(_) => todo!(),
+					active_swap::ActiveSwapEvent::BridgeAssetsCompletingError(_) => todo!(),
 				}
 			}
 			Poll::Ready(None) => {
