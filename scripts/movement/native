@@ -17,8 +17,8 @@ IFS='.' read -r -a split <<< "$FEATURES"
 override_files=()
 for element in "${split[@]}"; do
     override_files+=("-f")
-    override_files+=("docker/compose/$SERVICE/process-compose.$element.yml")
+    override_files+=("process-compose/$SERVICE/process-compose.$element.yml")
 done
 
 echo "Running process-compose for $SERVICE with override files: ${override_files[@]}..."
-docker compose -f docker/compose/$SERVICE/process-compose.yml "${override_files[@]}" "${@:4}"
+process-compose -f docker/compose/$SERVICE/process-compose.yml "${override_files[@]}" "${@:4}"
