@@ -29,7 +29,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         weth = IWETH9(wethAddress);
 
         //generate random address for each test
-        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
@@ -65,7 +65,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
-        assertGt(transferTimeLock, block.timestamp);
+        assertGt(transferTimeLock, block.number);
 
         vm.stopPrank();
     }
@@ -99,7 +99,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
-        assertGt(completedTimeLock, block.timestamp);
+        assertGt(completedTimeLock, block.number);
     }
 
     function testInitiateBridgeTransferWithWeth() public {
@@ -125,7 +125,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
-        assertGt(transferTimeLock, block.timestamp);
+        assertGt(transferTimeLock, block.number);
 
         vm.stopPrank();
     }
@@ -166,7 +166,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator, "Originator address mismatch");
         assertEq(transferRecipient, recipient, "Recipient address mismatch");
         assertEq(transferHashLock, hashLock, "HashLock mismatch");
-        assertGt(transferTimeLock, block.timestamp, "TimeLock is not greater than current block timestamp");
+        assertGt(transferTimeLock, block.number, "TimeLock is not greater than current block number");
 
         vm.stopPrank();
     }
@@ -184,7 +184,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         vm.stopPrank();
 
-        vm.warp(block.timestamp + timeLock + 1);
+        vm.warp(block.number + timeLock + 1);
         vm.startPrank(originator);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 

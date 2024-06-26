@@ -14,7 +14,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         address originator;
         bytes32 recipient;
         bytes32 hashLock;
-        uint256 timeLock;
+        uint256 timeLock; // in blocks
         MessageState state;
     }
 
@@ -60,7 +60,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.timestamp + timeLock,
+            timeLock: block.number + timeLock,
             state: MessageState.INITIALIZED 
         });
 
