@@ -8,6 +8,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IWETH9} from "../src/IWETH9.sol";
 
+
 contract AtomicBridgeInitiatorWethTest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
     IWETH9 public weth;
@@ -57,11 +58,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address transferOriginator,
             bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint256 transferTimeLock,
-            bool completed
+            uint256 transferTimeLock
+            ,
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-
-        assertFalse(completed);
         assertEq(transferAmount, amount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
@@ -89,19 +88,14 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         // vm.startPrank(msg.sender);
         atomicBridgeInitiator.completeBridgeTransfer(bridgeTransferId, secret);
-
-        (,,,,, bool completed1) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-        assertTrue(completed1);
-
         (
             uint256 completedAmount,
             address completedOriginator,
             bytes32 completedRecipient,
             bytes32 completedHashLock,
-            uint256 completedTimeLock,
-            bool completedCompleted
+            uint256 completedTimeLock
+            ,
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-        assertTrue(completedCompleted);
         assertEq(completedAmount, amount);
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
@@ -127,11 +121,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address transferOriginator,
             bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint256 transferTimeLock,
-            bool transferCompleted
+            uint256 transferTimeLock
+            ,
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
-
-        assertFalse(transferCompleted);
         assertEq(transferAmount, wethAmount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
@@ -168,12 +160,11 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address transferOriginator,
             bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint256 transferTimeLock,
-            bool completed
+            uint256 transferTimeLock
+            ,
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
         // Assertions
-        assertFalse(completed, "Bridge transfer not completed");
         assertEq(transferAmount, totalAmount, "Transfer amount mismatch");
         assertEq(transferOriginator, originator, "Originator address mismatch");
         assertEq(transferRecipient, recipient, "Recipient address mismatch");

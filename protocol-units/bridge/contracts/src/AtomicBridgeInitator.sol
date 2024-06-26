@@ -5,14 +5,17 @@ import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
+
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
+    enum MessageState { INITIALIZED, COMPLETED, REFUNDED }
+
     struct BridgeTransfer {
         uint256 amount;
         address originator;
         bytes32 recipient;
         bytes32 hashLock;
         uint256 timeLock;
-        bool completed;
+        MessageState state;
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
@@ -58,7 +61,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             recipient: recipient,
             hashLock: hashLock,
             timeLock: block.timestamp + timeLock,
-            completed: false
+            state: MessageState.INITIALIZED 
         });
 
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
@@ -67,9 +70,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
+        if (bridgeTransfer.state == MessageState.COMPLETED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        bridgeTransfer.completed = true;
+        bridgeTransfer.state = MessageState.COMPLETED; 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
@@ -77,6 +80,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        bridgeTransfer.state = MessageState.REFUNDED;
+
         //Transfer the WETH back to the originator, revert if fails
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
 
