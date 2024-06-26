@@ -93,6 +93,8 @@ async fn test_bridge_service_integration() {
 
 	let mut bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
 
+	// Step 1: Initiating the swap on Blockchain 1
+
 	// The initiator of the swap triggers a bridge transfer, simultaneously time-locking the assets
 	// in the smart contract.
 	blockchain_1_client
@@ -123,6 +125,8 @@ async fn test_bridge_service_integration() {
 		})
 	);
 
+	// Step 2: Locking the assets on the Blockchain 2
+
 	// Upon recognizing the event, our bridge server has invoked the counterparty
 	// contract on blockchain 2 to initiate asset locking within the smart contract.
 	let counterparty_locked_event = bridge_service.next().await.expect("No event");
@@ -139,6 +143,8 @@ async fn test_bridge_service_integration() {
 			amount: Amount(1000)
 		})
 	);
+
+	// Step 3: Client completes the swap on Blockchain 2, revealing the pre_image of the hash lock
 
 	// Once the assets are secured within the counterparty smart contract, the initiator is able
 	// to execute the complete bridge transfer by disclosing the secret key required to unlock the assets.
@@ -169,8 +175,19 @@ async fn test_bridge_service_integration() {
 		})
 	);
 
+	// Step 4: Bridge service completes the swap, using the secret to claim the funds on Blockchain 1
+
 	// As the initiator has successfully claimed the funds on the Counterparty blockchain, the bridge
 	// is now expected to finalize the swap by completing the necessary tasks on the initiator
 	// blockchain.
 	let completed_event_initiator = bridge_service.next().await.expect("No event");
+	let completed_event_initiator =
+		completed_event_initiator.B1I_ContractEvent().expect("Not a B1I event");
+	tracing::debug!(?completed_event_initiator);
+	assert_eq!(
+		completed_event_initiator,
+		&BridgeContractInitiatorEvent::Completed(
+			transfer_initiated_event.bridge_transfer_id().clone()
+		)
+	);
 }
