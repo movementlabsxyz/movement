@@ -71,10 +71,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         // Retrieve the bridge transfer
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        uint256 amount = bridgeTransfer.amount;
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-
         // WETH remains stored in the contract
         // Only to be released upon bridge transfer in the opposite  wdirection
 

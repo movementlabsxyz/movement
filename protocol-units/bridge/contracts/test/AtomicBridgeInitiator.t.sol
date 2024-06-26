@@ -28,7 +28,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         weth = IWETH9(wethAddress);
 
         //generate random address for each test
-        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.difficulty))));
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
