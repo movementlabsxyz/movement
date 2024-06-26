@@ -12,11 +12,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         bytes32 recipient;
         bytes32 hashLock;
         uint256 timeLock;
-        bool completed;
     }
 
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-    bytes32[] public bridgeTransferIds;
     IWETH9 public weth;
     uint256 private nonce;
 
@@ -58,11 +56,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.timestamp + timeLock,
-            completed: false
+            timeLock: block.timestamp + timeLock
         });
-
-        bridgeTransferIds.push(bridgeTransferId);
 
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
         return bridgeTransferId;
@@ -73,24 +68,16 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        bridgeTransfer.completed = true;
+        delete bridgeTransfers[bridgeTransferId];
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         uint256 amount = bridgeTransfer.amount;
-        if (bridgeTransfer.completed) revert BridgeTransferHasBeenCompleted();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
-
-        bridgeTransfer.completed = true;
-
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
+        weth.transferFrom(address(this), bridgeTransfer.originator, amount);
         emit BridgeTransferRefunded(bridgeTransferId);
-    }
-
-    // Get all bridge transfer ids, the solidity get method only returns one item by index
-    function getAllBridgeTransferIds() external view returns (bytes32[] memory) {
-        return bridgeTransferIds;
     }
 }
