@@ -86,8 +86,8 @@ ghcr.io/movementlabsxyz/wait-for-celestia-light-node       e6cb8e287cb837af6e614
 printenv | grep --quiet USER \
   && printenv | grep --quiet CONTAINER_REV \
   && echo "INFO: Using USER=${USER} and CONTAINER_REV=${CONTAINER_REV}" \
-  && envsubst < docs/movement-node/run/manul/suzuka-full-node.service.template \
-              > docs/movement-node/run/manul/suzuka-full-node.service
+  && envsubst < docs/movement-node/run/manual/suzuka-full-node.service.template \
+              > docs/movement-node/run/manual/suzuka-full-node.service
 ```
 output should look like this:
 ```
@@ -96,12 +96,12 @@ INFO: Using USER=ubuntu and CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285
 
 Do a visual sanity check.
 ```bash
-cat docs/movement-node/run/manul/suzuka-full-node.service
+cat docs/movement-node/run/manual/suzuka-full-node.service
 ```
 
 Copy the systemd service to a systemd know path.
 ```
-sudo cp docs/movement-node/run/manul/suzuka-full-node.service /etc/systemd/system/suzuka-full-node.service
+sudo cp docs/movement-node/run/manual/suzuka-full-node.service /etc/systemd/system/suzuka-full-node.service
 ```
 
 7. Reload systemd to apply changes
