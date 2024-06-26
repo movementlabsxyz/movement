@@ -77,7 +77,7 @@ impl Verifier for V1Verifier {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "integration-tests"))]
 mod tests {
 	use super::*;
 	use celestia_types::blob::GasPrice;
