@@ -43,6 +43,7 @@ where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng,
+	H: From<HashLockPreImage>,
 {
 	pub fn new(rng: R) -> Self {
 		Self { initiated_transfers: HashMap::new(), rng }
@@ -90,7 +91,7 @@ where
 		&mut self,
 		accounts: &mut HashMap<A, Amount>,
 		transfer_id: BridgeTransferId<H>,
-		_secret: HashLockPreImage,
+		secret: HashLockPreImage,
 	) -> SCIResult<A, H> {
 		tracing::trace!("SmartContractInitiator: Completing bridge transfer: {:?}", transfer_id);
 
@@ -100,16 +101,11 @@ where
 			.get(&transfer_id)
 			.ok_or(SmartContractInitiatorError::TransferNotFound)?;
 
-		// TODO: Implement hash lock pre image verification
-		// let hash = calculate_hash(&secret.0);
-		//
-		// if transfer.hash_lock != hash {
-		// 	return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
-		// }
+		// check if the secret is correct
+		if transfer.hash_lock.0 != From::from(secret.clone()) {
+			return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
+		}
 
-		// let balance = accounts.entry((*transfer.recipient_address).clone()).or_insert(Amount(0));
-		// **balance += *transfer.amount;
-
-		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id, _secret))
+		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id, secret))
 	}
 }

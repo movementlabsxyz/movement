@@ -1,8 +1,8 @@
-use bridge_shared::types::LockDetails;
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, InitiatorAddress,
 	RecipientAddress, TimeLock,
 };
+use bridge_shared::types::{HashLockPreImage, LockDetails};
 use futures::StreamExt;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
@@ -25,6 +25,12 @@ struct TestAddress(pub &'static str);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestHash(pub &'static str);
+
+impl From<HashLockPreImage> for TestHash {
+	fn from(value: HashLockPreImage) -> Self {
+		todo!()
+	}
+}
 
 impl GenUniqueHash for TestHash {
 	fn gen_unique_hash<R: Rng>(_rng: &mut R) -> Self {

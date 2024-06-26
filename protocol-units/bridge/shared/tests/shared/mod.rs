@@ -44,8 +44,20 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 8] {
 	hasher.finish().to_be_bytes()
 }
 
+pub fn hash_vec_u8(data: &[u8]) -> [u8; 8] {
+	let mut hasher = DefaultHasher::new();
+	data.hash(&mut hasher);
+	hasher.finish().to_be_bytes()
+}
+
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct BC1Hash([u8; 8]);
+
+impl From<HashLockPreImage> for BC1Hash {
+	fn from(value: HashLockPreImage) -> Self {
+		Self(hash_vec_u8(&value.0))
+	}
+}
 
 impl From<&'static str> for BC1Hash {
 	fn from(pre_image: &'static str) -> Self {
@@ -67,6 +79,12 @@ impl std::fmt::Debug for BC1Hash {
 
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct BC2Hash([u8; 8]);
+
+impl From<HashLockPreImage> for BC2Hash {
+	fn from(value: HashLockPreImage) -> Self {
+		Self(hash_vec_u8(&value.0))
+	}
+}
 
 impl GenUniqueHash for BC2Hash {
 	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
