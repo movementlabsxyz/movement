@@ -38,7 +38,11 @@ processes:
       celestia-light-node-synced:
         condition: process_completed_successfully
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 3
+      exec:
+        command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
       exec:
         command: echo "true"
 
@@ -54,13 +58,14 @@ processes:
         command: echo "true"
 
   suzuka-faucet:
+  
     command : |
       suzuka-faucet-service run-simple
     depends_on:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 

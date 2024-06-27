@@ -9,4 +9,5 @@ state_merkle_db/
 .movement
 .idea
 .vscode
+.data
 .env

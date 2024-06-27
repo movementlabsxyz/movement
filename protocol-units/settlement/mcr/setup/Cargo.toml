@@ -1,0 +1,24 @@
+[package]
+name = "mcr-settlement-setup"
+description = "Setting up of MCR configuration"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+mcr-settlement-config = { workspace = true }
+dot-movement = { workspace = true }
+
+alloy-primitives = { workspace = true }
+
+anyhow = { workspace = true }
+k256 = { workspace = true }
+tracing = { workspace = true }
+
+[lints]
+workspace = true

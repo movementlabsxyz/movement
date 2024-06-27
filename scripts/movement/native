@@ -13,4 +13,4 @@ for element in "${split[@]}"; do
 done
 
 echo "Running process-compose for $1 with override files: ${override_files[@]}..."
-process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}"  "${@:4}"
+process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}" "${@:4}"
