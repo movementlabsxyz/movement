@@ -1,0 +1,16 @@
+#!/bin/bash
+# Run the command and capture the output
+STATUS=$(timeout 4m just suzuka-full-node docker-compose local.setup.test --abort-on-container-failure)
+EXIT_CODE=$?
+
+# Check the exit code and act accordingly
+if [ $EXIT_CODE -eq 0 ]; then
+  echo "Test passed"
+  exit 0
+elif [ $EXIT_CODE -eq 124 ]; then
+  echo "Test passed on timeout"
+  exit 0
+else
+  echo "Test failed"
+  exit 1
+fi

@@ -9,6 +9,13 @@ processes:
       m1-da-light-node-celestia-appd
     readiness_probe:
       initial_delay_seconds: 3
+<<<<<<< HEAD
+=======
+      exec:
+        command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
+>>>>>>> 9c54d9e7d022632e80929850e9434c30e2df5b38
       exec:
         command: echo "true"
     depends_on:
@@ -22,6 +29,10 @@ processes:
       initial_delay_seconds: 3
       exec:
         command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
+      exec:
+        command: echo "true"
     depends_on:
        celestia-node-appd:
         condition: process_healthy
@@ -32,6 +43,14 @@ processes:
       echo "started"
     readiness_probe:
       initial_delay_seconds: 3
+<<<<<<< HEAD
+=======
+      exec:
+        command: |
+          echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
+>>>>>>> 9c54d9e7d022632e80929850e9434c30e2df5b38
       exec:
         command: |
           echo "true"

@@ -39,6 +39,10 @@ processes:
       initial_delay_seconds: 3
       exec:
         command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
+      exec:
+        command: echo "true"
 
   postgres:
     command: |
@@ -63,13 +67,14 @@ processes:
         command: echo "true"
 
   suzuka-faucet:
+  
     command : |
       suzuka-faucet-service run-simple
     depends_on:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
 

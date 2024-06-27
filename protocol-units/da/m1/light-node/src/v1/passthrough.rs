@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use anyhow::Context;
 use std::fmt::{self, Debug, Formatter};
+use std::sync::Arc;
 
 use tokio::sync::RwLock;
 use tokio_stream::{Stream, StreamExt};
@@ -11,7 +12,7 @@ use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
-use m1_da_light_node_util::Config;
+use m1_da_light_node_util::config::Config;
 use m1_da_light_node_verifier::{v1::V1Verifier, Verifier};
 
 use crate::v1::LightNodeV1Operations;
@@ -26,36 +27,35 @@ pub struct LightNodeV1 {
 }
 
 impl Debug for LightNodeV1 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LightNodeV1")
-            .field("celestia_node_url", &self.config.celestia_node_url)
-            .field("celestia_auth_token", &self.config.celestia_auth_token)
-            .field("celestia_namespace", &self.config.celestia_namespace)
-            .finish()
-    }
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.debug_struct("LightNodeV1")
+			.field("celestia_namespace", &self.config.celestia_namespace())
+			.finish()
+	}
 }
 
 impl LightNodeV1Operations for LightNodeV1 {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
-	async fn try_from_config(config : Config) -> Result<Self, anyhow::Error> {
+	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let client = Arc::new(config.connect_celestia().await?);
 
 		Ok(Self {
-			config : config.clone(),
-			celestia_namespace : config.try_celestia_namespace()?.clone(),
+			config: config.clone(),
+			celestia_namespace: config.celestia_namespace(),
 			default_client: client.clone(),
 			verification_mode: Arc::new(RwLock::new(
-				config.try_verification_mode()?.try_into().map_err(|e| anyhow::anyhow!("{}", e))?,
+				VerificationMode::from_str_name("M_OF_N")
+					.context("Failed to parse verification mode")?,
 			)),
 			verifier: Arc::new(Box::new(V1Verifier {
 				client,
-				namespace: config.try_celestia_namespace()?.clone(),
+				namespace: config.celestia_namespace(),
 			})),
 		})
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
-		Ok(self.config.try_service_address()?.to_string())
+		Ok(self.config.m1_da_light_node_service())
 	}
 
 	/// Runs background tasks for the LightNodeV1 instance.
@@ -65,7 +65,6 @@ impl LightNodeV1Operations for LightNodeV1 {
 }
 
 impl LightNodeV1 {
-
 	/// Creates a new blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
 		CelestiaBlob::new(self.celestia_namespace, data)
@@ -224,7 +223,7 @@ impl LightNodeV1 {
 	}
 
 	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let timestamp = chrono::Utc::now().timestamp() as u64;
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		Ok(Blob {
 			data: blob.data,
