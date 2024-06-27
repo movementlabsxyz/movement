@@ -69,13 +69,14 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
+        if (block.number > bridgeTransfer.timeLock) revert TimelockExpired();
         bridgeTransfer.state = MessageState.COMPLETED; 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state == MessageState.REFUNDED) revert BridgeTransferHasBeenRefunded();
+        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         uint256 amount = bridgeTransfer.amount;
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
