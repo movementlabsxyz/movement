@@ -20,9 +20,9 @@ members = [
     "util/buildtime/buildtime-macros",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
-    "protocol-units/bridge/shared", 
-    "protocol-units/bridge/cli", 
-    "protocol-units/bridge/service",
+    "protocol-units/bridge/shared",
+    "protocol-units/bridge/cli",
+    "protocol-units/bridge/chains/ethereum",
 ]
 
 [workspace.package]
@@ -37,6 +37,8 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
+## bridge
+bridge-shared = { path = "protocol-units/bridge/shared" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }

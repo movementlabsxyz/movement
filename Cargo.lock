@@ -3351,10 +3351,6 @@ name = "bridge-cli"
 version = "0.3.0"
 
 [[package]]
-name = "bridge-service"
-version = "0.3.0"
-
-[[package]]
 name = "bridge-shared"
 version = "0.3.0"
 dependencies = [
@@ -4947,6 +4943,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
 dependencies = [
  "version_check",
+]
+
+[[package]]
+name = "ethereum-bridge"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "bridge-shared",
+ "poem",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
