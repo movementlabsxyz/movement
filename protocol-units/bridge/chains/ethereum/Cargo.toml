@@ -19,6 +19,8 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 aptos-api = { workspace = true }
 tracing-subscriber = { workspace = true }
-alloy-providers = { workspace = true }
+alloy = { workspace = true }
+alloy-provider = { workspace = true }
+alloy-primitives = { workspace = true }
 
 bridge-shared = { workspace = true }
