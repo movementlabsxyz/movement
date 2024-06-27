@@ -53,6 +53,7 @@
           gcc
           rust
           mold
+          postgresql
         ];
         
         sysDependencies = with pkgs; [] 
