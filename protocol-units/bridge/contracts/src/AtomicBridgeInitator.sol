@@ -77,11 +77,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        uint256 amount = bridgeTransfer.amount;
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-
-        //Transfer the WETH back to the originator, revert if fails
+        uint256 amount = bridgeTransfer.amount;
         if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
