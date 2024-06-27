@@ -4968,8 +4968,14 @@ name = "ethereum-bridge"
 version = "0.3.0"
 dependencies = [
  "alloy",
+ "alloy-contract",
+ "alloy-network",
  "alloy-primitives",
  "alloy-provider",
+ "alloy-signer-wallet",
+ "alloy-sol-types",
+ "alloy-transport",
+ "alloy-transport-ws",
  "anyhow",
  "aptos-api",
  "bridge-shared",
