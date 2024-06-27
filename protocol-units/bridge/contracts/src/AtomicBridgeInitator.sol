@@ -52,9 +52,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         bridgeTransferId =
             keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
 
-        // Check if the bridge transfer already exists
-        if (bridgeTransfers[bridgeTransferId].amount != 0) revert BridgeTransferInvalid();
-
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
@@ -70,7 +67,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state == MessageState.COMPLETED) revert BridgeTransferHasBeenCompleted();
+        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
         bridgeTransfer.state = MessageState.COMPLETED; 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -78,6 +75,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
+        if (bridgeTransfer.state == MessageState.REFUNDED) revert BridgeTransferHasBeenRefunded();
         uint256 amount = bridgeTransfer.amount;
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
