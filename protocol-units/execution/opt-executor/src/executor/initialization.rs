@@ -168,13 +168,13 @@ impl Executor {
 
 		node_config.indexer_grpc.enabled = true;
 
-		node_config.indexer.postgres_uri = Some("postgresql://localhost:5432".to_string());
+		node_config.indexer.postgres_uri = Some("postgresql://postgres:password@localhost:5432".to_string());
 
 		// indexer_grpc config
 		node_config.indexer_grpc.processor_batch_size = 4;
 		node_config.indexer_grpc.processor_task_count = 4;
 		node_config.indexer_grpc.output_batch_size = 4;
-		node_config.indexer_grpc.address = "0.0.0.0:8090".to_string().parse()?;
+		node_config.indexer_grpc.address = "0.0.0.0:30741".to_string().parse()?;
 
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
 	}
