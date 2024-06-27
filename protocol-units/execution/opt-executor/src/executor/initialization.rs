@@ -76,7 +76,6 @@ impl Executor {
 		chain_id: ChainId,
 		public_key: &Ed25519PublicKey,
 	) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
-
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
 		let (genesis, validators) =
 			Self::genesis_change_set_and_validators(chain_id, Some(1), public_key);
@@ -87,15 +86,12 @@ impl Executor {
 		);
 
 		// check for context
-		
+
 		match db_rw.reader.get_latest_ledger_info_option()? {
 			Some(ledger_info) => {
 				// context exists
-				tracing::info!(
-					"Ledger info found, not bootstrapping DB: {:?}",
-					ledger_info
-				);
-			},
+				tracing::info!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
+			}
 			None => {
 				// context does not exist
 				// simply continue
@@ -108,7 +104,6 @@ impl Executor {
 		}
 
 		Ok((db_rw, validator_signer))
-
 	}
 
 	pub fn bootstrap(
@@ -134,7 +129,7 @@ impl Executor {
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
 			context: Arc::new(Context::new(
-				maptos_config.chain.maptos_chain_id.clone(),	
+				maptos_config.chain.maptos_chain_id.clone(),
 				reader,
 				mempool_client_sender,
 				node_config,
@@ -145,7 +140,7 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_hostname,
 				maptos_config.chain.maptos_rest_listen_port
 			),
-			maptos_config : maptos_config.clone()
+			maptos_config: maptos_config.clone(),
 		})
 	}
 
@@ -165,5 +160,4 @@ impl Executor {
 		maptos_config.chain.maptos_db_path.replace(value);
 		Self::try_from_config(&maptos_config)
 	}
-
 }

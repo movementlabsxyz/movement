@@ -103,6 +103,9 @@ impl
 			config.signer_private_key.context("Signer private key is not set")?;
 		let signer: LocalWallet = signer_private_key.parse()?;
 		let signer_address = signer.address();
+
+		tracing::info!("MCR Client sender address:{signer_address}");
+
 		let contract_address = config.mcr_contract_address.parse()?;
 		let rpc_url = config.rpc_url.context("Ethereum RPC URL is not set")?;
 		let ws_url = config.ws_url.context("Ethereum WebSocket URL is not set")?;
@@ -149,8 +152,6 @@ impl<P> Client<P> {
 		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
 		let send_tx_error_rules = vec![rule1, rule2];
 
-		tracing::info!("settlement client build_with_provider");
-
 		Ok(Client {
 			rpc_provider,
 			ws_provider,
@@ -184,11 +185,6 @@ where
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
 
-		tracing::info!(
-			"settlement client post_block_commitment height:{}",
-			block_commitment.height
-		);
-
 		crate::send_eth_tx::send_tx(
 			call_builder,
 			&self.send_tx_error_rules,
@@ -207,11 +203,13 @@ where
 		let eth_block_commitment: Vec<_> = block_commitments
 			.into_iter()
 			.map(|block_commitment| {
-				let height = U256::from(block_commitment.height);
-				tracing::info!("settlement client post_block_commitment_batch height:{height}",);
+				tracing::info!(
+					"settlement client post_block_commitment_batch height:{}",
+					block_commitment.height
+				);
 				Ok(MCR::BlockCommitment {
 					// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
-					height,
+					height: U256::from(block_commitment.height),
 					commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 					blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
 				})
@@ -243,9 +241,9 @@ where
 							alloy_sol_types::Error::Other(err.to_string().into())
 						},
 					)?;
-
-					tracing::info!("settlement client stream_block_commitments height:{height}",);
-
+					tracing::info!(
+						"settlement client stream_block_commitments received for height:{height}",
+					);
 					Ok(BlockCommitment {
 						height,
 						block_id: Id(commitment.blockHash.0),
@@ -293,12 +291,7 @@ mod tests {
 	use alloy_rpc_types::TransactionRequest;
 	use alloy_signer_wallet::LocalWallet;
 	use alloy_transport::Transport;
-
 	use movement_types::Commitment;
-
-	use anyhow::Context;
-	use std::env;
-	use std::fs;
 
 	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
 	// After genesis ceremony, 2 validator send the commitment for height 1.
@@ -307,31 +300,36 @@ mod tests {
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		//Activate to debug the test.
-		// use tracing_subscriber::EnvFilter;
+		tracing_subscriber::fmt()
+			.with_env_filter(
+				tracing_subscriber::EnvFilter::try_from_default_env()
+					.unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+			)
+			.init();
 
-		// tracing_subscriber::fmt()
-		// 	.with_env_filter(
-		// 		EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		// 	)
-		// 	.init();
+		//load local env.
+		let dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
-		// Inititalize Test variables
-		let rpc_port = env::var("MCR_ANVIL_PORT").unwrap();
-		let rpc_url = format!("http://localhost:{rpc_port}");
-		let ws_url = format!("ws://localhost:{rpc_port}");
+		let rpc_url = suzuka_config.mcr.rpc_url.ok_or_else(|| {
+			anyhow::anyhow!(format!("Anvil rpc Url not defined in config. Aborting."))
+		})?;
 
-		let anvil_conf_file = env::var("ANVIL_JSON_PATH").context(
-			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil json file",
-		)?;
-		let anvil_addresses = crate::eth::utils::read_anvil_json_file_addresses(&anvil_conf_file)?;
+		let ws_url = suzuka_config.mcr.ws_url.ok_or_else(|| {
+			anyhow::anyhow!(format!("Anvil rpc Url not defined in config. Aborting."))
+		})?;
+
+		let anvil_config = suzuka_config
+			.mcr
+			.test_local
+			.ok_or_else(|| anyhow::anyhow!("Test local anvil configuration not intialized?"))?;
+
+		println!("test anvil_address");
+
+		let mcr_address: Address = suzuka_config.mcr.mcr_contract_address.trim().parse()?;
 
 		//Do SC ceremony init stake calls.
-		do_genesis_ceremonial(&anvil_addresses, &rpc_url).await?;
-
-		let mcr_address = read_mcr_sc_adress()?;
-		//Define Signers. Ceremony define 2 signers with half stake each.
-		let signer1: LocalWallet = anvil_addresses[1].private_key.parse()?;
-		let signer1_addr = signer1.address();
+		do_genesis_ceremonial(mcr_address, &anvil_config.anvil_keys, &rpc_url).await?;
 
 		let config = Config {
 			mcr_contract_address: mcr_address.to_string(),
@@ -341,8 +339,10 @@ mod tests {
 		};
 
 		//Build client 1 and send first commitment.
-		let config1 =
-			Config { signer_private_key: Some(signer1_addr.to_string()), ..config.clone() };
+		let config1 = Config {
+			signer_private_key: Some(anvil_config.anvil_keys[0].private_key.clone()),
+			..config.clone()
+		};
 		let client1 = Client::build_with_config(config1).await.unwrap();
 
 		let mut client1_stream = client1.stream_block_commitments().await.unwrap();
@@ -361,7 +361,7 @@ mod tests {
 
 		//Build client 2 and send the second commitment.
 		let config2 = Config {
-			signer_private_key: Some(anvil_addresses[2].private_key.clone()),
+			signer_private_key: Some(anvil_config.anvil_keys[1].private_key.clone()),
 			..config.clone()
 		};
 		let client2 = Client::build_with_config(config2).await.unwrap();
@@ -433,23 +433,16 @@ mod tests {
 		Ok(())
 	}
 
-	fn read_mcr_sc_adress() -> Result<Address, anyhow::Error> {
-		let file_path = env::var("MCR_SC_ADDRESS_FILE")?;
-		let addr_str = fs::read_to_string(file_path)?;
-		let addr: Address = addr_str.trim().parse()?;
-		Ok(addr)
-	}
-
 	// Do the Genesis ceremony in Rust because if node by forge script,
 	// it's never done from Rust call.
 	async fn do_genesis_ceremonial(
-		anvil_addresses: &[AnvilAddressEntry],
+		mcr_address: Address,
+		anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
 		rpc_url: &str,
 	) -> Result<(), anyhow::Error> {
-		let mcr_address = read_mcr_sc_adress()?;
 		//Define Signer. Signer1 is the MCRSettelement client
-		let signer1: LocalWallet = anvil_addresses[1].private_key.parse()?;
-		let signer1_addr: Address = anvil_addresses[1].address.parse()?;
+		let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
+		let signer1_addr: Address = anvil_address[0].address.parse()?;
 		let signer1_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer1))
@@ -465,8 +458,8 @@ mod tests {
 		)
 		.await?;
 
-		let signer2: LocalWallet = anvil_addresses[2].private_key.parse()?;
-		let signer2_addr: Address = anvil_addresses[2].address.parse()?;
+		let signer2: LocalWallet = anvil_address[1].private_key.parse()?;
+		let signer2_addr: Address = anvil_address[1].address.parse()?;
 		let signer2_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer2))
@@ -496,7 +489,7 @@ mod tests {
 		contract: &MCR::MCRInstance<T, &P, Ethereum>,
 		contract_address: Address,
 		signer: Address,
-		amount: u64,
+		amount: u128,
 	) -> Result<(), anyhow::Error> {
 		let stake_genesis_call = contract.stakeGenesis();
 		let calldata = stake_genesis_call.calldata().to_owned();
@@ -508,7 +501,7 @@ mod tests {
 		call_data: Bytes,
 		contract_address: Address,
 		signer: Address,
-		amount: u64,
+		amount: u128,
 	) -> Result<(), anyhow::Error> {
 		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
 		let tx = TransactionRequest::default()

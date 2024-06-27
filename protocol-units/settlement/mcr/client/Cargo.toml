@@ -39,6 +39,8 @@ serde = { workspace = true }
 [dev-dependencies]
 alloy-rpc-types = { workspace = true }
 futures = { workspace = true }
+suzuka-config = { workspace = true }
+dot-movement = { workspace = true }
 
 [features]
 default = ["eth"]

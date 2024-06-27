@@ -19,7 +19,12 @@ pub trait SuzukaFullNode {
 	/// Runs the full node until crash or shutdown.
 	async fn run(&self) -> Result<(), anyhow::Error> {
 		// run services and executor concurrently
-		tokio::try_join!(self.run_background_tasks(), self.run_services(), self.run_executor())?;
+		tokio::try_join!(
+			self.run_background_tasks(),
+			self.run_services(),
+			self.run_executor(),
+			self.run_movement_rest(),
+		)?;
 
 		Ok(())
 	}

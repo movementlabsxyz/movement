@@ -92,11 +92,13 @@ impl Setup for Local {
 				}
 
 				//load Anvil Conf
-				let anvil_conf = mcr_settlement_config::anvil::TestLocal::new(&path)?;
+				let mut anvil_conf = mcr_settlement_config::anvil::TestLocal::new(&path)?;
 
 				// Deploy MCR smart contract.
-				let smart_contract_private_key = &anvil_conf.anvil_keys[0].private_key;
-				let smart_contract_address = &anvil_conf.anvil_keys[0].address;
+				// Remove the settlement key from the Anvil keys to avoid its reuse.
+				let smart_contract_key = anvil_conf.anvil_keys.remove(0);
+				let smart_contract_private_key = smart_contract_key.private_key;
+				let smart_contract_address = smart_contract_key.address;
 
 				let mut solidity_path = std::env::current_dir()?;
 				solidity_path.push("protocol-units/settlement/mcr/contracts");
@@ -116,7 +118,7 @@ impl Setup for Local {
 						"--sender",
 						&smart_contract_address,
 						"--rpc-url",
-						&config.rpc_url.clone().unwrap(),
+						config.rpc_url.as_ref().unwrap(),
 						"--private-key",
 						&smart_contract_private_key,
 					],
@@ -159,12 +161,18 @@ impl Setup for Local {
 						s.to_owned()
 					})?;
 
+				// Do MRC smart contract genesis ceremonial before Suzuka node start.
+				let mcr_address: Address = mcr_address.parse()?;
+				do_genesis_ceremonial_one_validator(
+					mcr_address,
+					&anvil_conf.anvil_keys,
+					&config.rpc_url.as_ref().unwrap(),
+				)
+				.await?;
+
 				info!("setting up MCR Ethereum client mcr_address:{mcr_address}");
-				let settlement_private_key = smart_contract_private_key;
-				config.signer_private_key = Some(settlement_private_key.to_string());
-				//				let mcr_address = mcr_address.as_str();
-				//the mcr_address contains " that has to be removed.
-				//let mcr_address = mcr_address.replace("\"", "");
+				// The First address in key list is the one use by the settlement client and genesis ceremonial.
+				config.signer_private_key = Some(anvil_conf.anvil_keys[0].private_key.clone());
 				config.mcr_contract_address = mcr_address.to_string();
 				config.anvil_process_pid = anvil_cmd_id;
 				config.test_local = Some(anvil_conf);
@@ -175,4 +183,124 @@ impl Setup for Local {
 			Ok(config)
 		}
 	}
+}
+
+// Do the Genesis ceremony in Rust because if node by forge script,
+// it's never done from Rust call.
+use alloy_network::Ethereum;
+use alloy_network::EthereumSigner;
+use alloy_primitives::Address;
+use alloy_primitives::Bytes;
+use alloy_primitives::U256;
+use alloy_provider::Provider;
+use alloy_provider::ProviderBuilder;
+use alloy_rpc_types::TransactionRequest;
+use alloy_signer_wallet::LocalWallet;
+use alloy_sol_types::sol;
+use alloy_transport::Transport;
+
+// Load MRC smart contract ABI.
+sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	MCR,
+	"../client/abis/MCRLegacy.json"
+);
+
+async fn do_genesis_ceremonial_one_validator(
+	mcr_address: Address,
+	anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
+	rpc_url: &str,
+) -> Result<(), anyhow::Error> {
+	//Define Signer. Signer1 is the MCRSettelement client
+	let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
+	let signer1_addr: Address = anvil_address[0].address.parse()?;
+	tracing::info!("Genesis Main staking signer1_addr:{signer1_addr}");
+	let signer1_rpc_provider = ProviderBuilder::new()
+		.with_recommended_fillers()
+		.signer(EthereumSigner::from(signer1))
+		.on_http(rpc_url.parse()?);
+	let signer1_contract = MCR::new(mcr_address, &signer1_rpc_provider);
+
+	stake_genesis(
+		&signer1_rpc_provider,
+		&signer1_contract,
+		mcr_address,
+		signer1_addr,
+		95_000_000_000_000_000_000,
+	)
+	.await?;
+
+	let signer2: LocalWallet = anvil_address[1].private_key.parse()?;
+	let signer2_addr: Address = anvil_address[1].address.parse()?;
+	let signer2_rpc_provider = ProviderBuilder::new()
+		.with_recommended_fillers()
+		.signer(EthereumSigner::from(signer2))
+		.on_http(rpc_url.parse()?);
+	let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
+
+	//init staking
+	// Build a transaction to set the values.
+	stake_genesis(
+		&signer2_rpc_provider,
+		&signer2_contract,
+		mcr_address,
+		signer2_addr,
+		6_000_000_000_000_000_000,
+	)
+	.await?;
+
+	let MCR::hasGenesisCeremonyEndedReturn { _0: has_genesis_ceremony_ended } =
+		signer2_contract.hasGenesisCeremonyEnded().call().await?;
+	let ceremony: bool = has_genesis_ceremony_ended.try_into().unwrap();
+	tracing::info!("Genesis ceremony done.");
+	assert!(ceremony);
+
+	// TO TEST
+	let call_builder = signer1_contract.createBlockCommitment(
+		U256::from(1),
+		alloy_primitives::FixedBytes([1; 32].try_into()?),
+		alloy_primitives::FixedBytes([2; 32].try_into()?),
+	);
+	let MCR::createBlockCommitmentReturn { _0: eth_block_commitment } = call_builder.call().await?;
+
+	let call_builder = signer1_contract.submitBlockCommitment(eth_block_commitment);
+	let call_builder = call_builder.clone().gas(3_000_000);
+	let pending_tx = call_builder.send().await?;
+	println!("commitment sent pending_tx:{pending_tx:?}");
+	let receipt = pending_tx.get_receipt().await?;
+	println!("commitment sent receipt:{receipt:?}");
+
+	Ok(())
+}
+
+async fn stake_genesis<P: Provider<T, Ethereum>, T: Transport + Clone>(
+	provider: &P,
+	contract: &MCR::MCRInstance<T, &P, Ethereum>,
+	contract_address: Address,
+	signer: Address,
+	amount: u128,
+) -> Result<(), anyhow::Error> {
+	let stake_genesis_call = contract.stakeGenesis();
+	let calldata = stake_genesis_call.calldata().to_owned();
+	sendtx_function(provider, calldata, contract_address, signer, amount).await
+}
+async fn sendtx_function<P: Provider<T, Ethereum>, T: Transport + Clone>(
+	provider: &P,
+	call_data: Bytes,
+	contract_address: Address,
+	signer: Address,
+	amount: u128,
+) -> Result<(), anyhow::Error> {
+	let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
+	let tx = TransactionRequest::default()
+		.from(signer)
+		.to(contract_address)
+		.value(U256::from(amount))
+		.input(call_data.into())
+		.max_fee_per_gas(eip1559_fees.max_fee_per_gas)
+		.max_priority_fee_per_gas(eip1559_fees.max_priority_fee_per_gas);
+
+	provider.send_transaction(tx).await?.get_receipt().await?;
+	Ok(())
 }

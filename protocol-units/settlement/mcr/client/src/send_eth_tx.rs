@@ -114,8 +114,8 @@ pub async fn send_tx<
 					tx_receipt.gas_used
 				);
 				if tx_receipt.gas_used == estimate_gas {
-					tracing::warn!("Send commitment Tx  fail because of insufficient gas, receipt:{tx_receipt:?} ");
-					estimate_gas += (estimate_gas * 10) / 100;
+					tracing::warn!("Send commitment Tx  fail because of insufficient gas");
+					estimate_gas += (estimate_gas * 20) / 100;
 					continue;
 				} else {
 					return Err(McrEthConnectorError::RpcTxExecution(format!(
@@ -124,7 +124,9 @@ pub async fn send_tx<
 					.into());
 				}
 			}
-			Ok(_) => return Ok(()),
+			Ok(_) => {
+				return Ok(());
+			}
 			Err(err) => return Err(McrEthConnectorError::RpcTxExecution(err.to_string()).into()),
 		};
 	}

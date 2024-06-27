@@ -1,12 +1,9 @@
-use alloy_network::Ethereum;
 use alloy_network::EthereumSigner;
 use alloy_primitives::Address;
 use alloy_primitives::U256;
-use alloy_provider::Provider;
 use alloy_provider::ProviderBuilder;
 use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
-use alloy_transport::Transport;
 use aptos_sdk::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
@@ -58,13 +55,9 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 
 	let mcr_address: Address = suzuka_config.mcr.mcr_contract_address.trim().parse()?;
 
-	//Do SC ceremony init stake calls.
-	do_genesis_ceremonial(mcr_address, &anvil_config.anvil_keys, &rpc_url).await?;
-
-	println!("test do_genesis_ceremonial");
-
 	//Define Signers. Ceremony define 2 signers (index 0 and 1). The first has 95% of the stakes.
 	let signer: LocalWallet = anvil_config.anvil_keys[0].private_key.parse()?;
+	let signer_address = signer.address();
 	//	let signer_addr = signer.address();
 	//Build client 1 and send first commitment.
 	let provider_client = ProviderBuilder::new()
@@ -77,18 +70,72 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	println!("test contract");
 
 	//try to find the last accepted epoch.
-	let MCR::getCurrentEpochReturn { _0: current_epoch } =
-		contract.getCurrentEpoch().call().await?;
+	// let MCR::getCurrentEpochReturn { _0: current_epoch } =
+	// 	contract.getCurrentEpoch().call().await?;
 
 	let mut accepted_block_commitment = None;
 	let mut nb_try = 0;
-	while accepted_block_commitment.is_none() && nb_try < 200 {
+	while accepted_block_commitment.is_none() && nb_try < 20 {
+		// //FOR TEST
+		// let MCR::getCurrentEpochReturn { _0: get_current_epoch } =
+		// 	contract.getCurrentEpoch().call().await?;
+		// let current_epoch_test: u64 = get_current_epoch.try_into().unwrap();
+		// println!("current_epoch_test: {current_epoch_test:?}");
+
+		// let MCR::getMaxTolerableBlockHeightReturn { _0: getMaxTolerableBlockHeight } =
+		// 	contract.getMaxTolerableBlockHeight().call().await?;
+		// let getMaxTolerableBlockHeight: u64 = getMaxTolerableBlockHeight.try_into().unwrap();
+		// println!("getMaxTolerableBlockHeight: {getMaxTolerableBlockHeight:?}");
+
+		// let MCR::getCurrentEpochStakeReturn { _0: get_current_epoch_stake } =
+		// 	contract.getCurrentEpochStake(signer_address).call().await?;
+		// let data: u128 = get_current_epoch_stake.try_into().unwrap();
+		// println!("get_current_epoch_stake: {data}");
+
+		// let MCR::getValidatorCommitmentAtBlockHeightReturn {
+		// 	_0: get_validator_commitment_at_block_height,
+		// } = contract
+		// 	.getValidatorCommitmentAtBlockHeight(U256::from(current_epoch_test), signer_address)
+		// 	.call()
+		// 	.await?;
+		// println!(
+		// 	"getValidatorCommitmentAtBlockHeight {current_epoch_test}: {:?}, {:?}, {:?}",
+		// 	get_validator_commitment_at_block_height.height,
+		// 	get_validator_commitment_at_block_height.commitment,
+		// 	get_validator_commitment_at_block_height.blockId,
+		// );
+
+		// let MCR::getValidatorCommitmentAtBlockHeightReturn {
+		// 	_0: get_validator_commitment_at_block_height,
+		// } = contract
+		// 	.getValidatorCommitmentAtBlockHeight(U256::from(1), signer_address)
+		// 	.call()
+		// 	.await?;
+		// println!(
+		// 	"getValidatorCommitmentAtBlockHeight 1: {:?}, {:?}, {:?}",
+		// 	get_validator_commitment_at_block_height.height,
+		// 	get_validator_commitment_at_block_height.commitment,
+		// 	get_validator_commitment_at_block_height.blockId,
+		// );
+
+		// let MCR::getValidatorCommitmentAtBlockHeightReturn {
+		// 	_0: get_validator_commitment_at_block_height,
+		// } = contract
+		// 	.getValidatorCommitmentAtBlockHeight(U256::from(4), signer_address)
+		// 	.call()
+		// 	.await?;
+		// println!(
+		// 	"getValidatorCommitmentAtBlockHeight 4: {:?}, {:?}, {:?}",
+		// 	get_validator_commitment_at_block_height.height,
+		// 	get_validator_commitment_at_block_height.commitment,
+		// 	get_validator_commitment_at_block_height.blockId,
+		// );
+		// //FIn TEST
+
+		//try to get an accepted commitment at height 2
 		let MCR::getAcceptedCommitmentAtBlockHeightReturn {
 			_0: get_accepted_commitment_at_block_height,
-		} = contract
-			.getAcceptedCommitmentAtBlockHeight(U256::from(current_epoch))
-			.call()
-			.await?;
+		} = contract.getAcceptedCommitmentAtBlockHeight(U256::from(2)).call().await?;
 		//0 height mean None.
 		if get_accepted_commitment_at_block_height.height != U256::from(0) {
 			accepted_block_commitment = Some(get_accepted_commitment_at_block_height);
@@ -115,6 +162,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
 	let response = client.get(&state_root_hash_url).send().await?;
 	let state_key = response.text().await?;
+
 	println!("state_key;{state_key:?}",);
 
 	// verify that the block state match the settlement one. Block is FIN.
@@ -123,6 +171,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 }
 
 async fn run_alice_bob_tx(node_url: &Url, faucet_url: &Url) -> anyhow::Result<()> {
+	println!("Start alice bob");
 	let rest_client = Client::new(node_url.clone());
 	let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone()); // <:!:section_1a
 
@@ -131,27 +180,25 @@ async fn run_alice_bob_tx(node_url: &Url, faucet_url: &Url) -> anyhow::Result<()
 	// Create two accounts locally, Alice and Bob.
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let mut bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
+	println!("before fund alice bob LocalAccount");
 
 	faucet_client.fund(alice.address(), 100_000_000).await?;
-	faucet_client.create_account(bob.address()).await?;
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+	faucet_client.fund(bob.address(), 100_000_000).await?;
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+	println!("Do transferts 1");
+	// Have Alice send Bob some coins.
+	let txn_hash = coin_client.transfer(&mut alice, bob.address(), 1_000, None).await?;
+	rest_client.wait_for_transaction(&txn_hash).await?;
 
-	loop {
-		println!("Do trasferts 1");
-		// Have Alice send Bob some coins.
-		let txn_hash = coin_client.transfer(&mut alice, bob.address(), 1_000, None).await?;
-		rest_client.wait_for_transaction(&txn_hash).await?;
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+	println!("Do transferts 2");
+	// Have Bod send Alice some more coins.
+	let txn_hash = coin_client.transfer(&mut bob, alice.address(), 1_000, None).await?;
+	rest_client.wait_for_transaction(&txn_hash).await?;
 
-		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
-		println!("Do trasferts 1");
-		// Have Bod send Alice some more coins.
-		let txn_hash = coin_client.transfer(&mut bob, alice.address(), 1_000, None).await?;
-		rest_client.wait_for_transaction(&txn_hash).await?;
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
-	}
-
-	//Ok(())
+	Ok(())
 }
 
 // fn load_local_env() -> Result<(), anyhow::Error> {
@@ -204,86 +251,86 @@ async fn run_alice_bob_tx(node_url: &Url, faucet_url: &Url) -> anyhow::Result<()
 // 	Ok(mcr_address)
 // }
 
-// Do the Genesis ceremony in Rust because if node by forge script,
-// it's never done from Rust call.
-use alloy_primitives::Bytes;
-use alloy_rpc_types::TransactionRequest;
-async fn do_genesis_ceremonial(
-	mcr_address: Address,
-	anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
-	rpc_url: &str,
-) -> Result<(), anyhow::Error> {
-	//Define Signer. Signer1 is the MCRSettelement client
-	let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
-	let signer1_addr: Address = anvil_address[0].address.parse()?;
-	let signer1_rpc_provider = ProviderBuilder::new()
-		.with_recommended_fillers()
-		.signer(EthereumSigner::from(signer1))
-		.on_http(rpc_url.parse()?);
-	let signer1_contract = MCR::new(mcr_address, &signer1_rpc_provider);
+// // Do the Genesis ceremony in Rust because if node by forge script,
+// // it's never done from Rust call.
+// use alloy_primitives::Bytes;
+// use alloy_rpc_types::TransactionRequest;
+// async fn do_genesis_ceremonial(
+// 	mcr_address: Address,
+// 	anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
+// 	rpc_url: &str,
+// ) -> Result<(), anyhow::Error> {
+// 	//Define Signer. Signer1 is the MCRSettelement client
+// 	let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
+// 	let signer1_addr: Address = anvil_address[0].address.parse()?;
+// 	let signer1_rpc_provider = ProviderBuilder::new()
+// 		.with_recommended_fillers()
+// 		.signer(EthereumSigner::from(signer1))
+// 		.on_http(rpc_url.parse()?);
+// 	let signer1_contract = MCR::new(mcr_address, &signer1_rpc_provider);
 
-	stake_genesis(
-		&signer1_rpc_provider,
-		&signer1_contract,
-		mcr_address,
-		signer1_addr,
-		95_000_000_000_000_000_000,
-	)
-	.await?;
+// 	stake_genesis(
+// 		&signer1_rpc_provider,
+// 		&signer1_contract,
+// 		mcr_address,
+// 		signer1_addr,
+// 		95_000_000_000_000_000_000,
+// 	)
+// 	.await?;
 
-	let signer2: LocalWallet = anvil_address[1].private_key.parse()?;
-	let signer2_addr: Address = anvil_address[1].address.parse()?;
-	let signer2_rpc_provider = ProviderBuilder::new()
-		.with_recommended_fillers()
-		.signer(EthereumSigner::from(signer2))
-		.on_http(rpc_url.parse()?);
-	let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
+// 	let signer2: LocalWallet = anvil_address[1].private_key.parse()?;
+// 	let signer2_addr: Address = anvil_address[1].address.parse()?;
+// 	let signer2_rpc_provider = ProviderBuilder::new()
+// 		.with_recommended_fillers()
+// 		.signer(EthereumSigner::from(signer2))
+// 		.on_http(rpc_url.parse()?);
+// 	let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
 
-	//init staking
-	// Build a transaction to set the values.
-	stake_genesis(
-		&signer2_rpc_provider,
-		&signer2_contract,
-		mcr_address,
-		signer2_addr,
-		6_000_000_000_000_000_000,
-	)
-	.await?;
+// 	//init staking
+// 	// Build a transaction to set the values.
+// 	stake_genesis(
+// 		&signer2_rpc_provider,
+// 		&signer2_contract,
+// 		mcr_address,
+// 		signer2_addr,
+// 		6_000_000_000_000_000_000,
+// 	)
+// 	.await?;
 
-	let MCR::hasGenesisCeremonyEndedReturn { _0: has_genesis_ceremony_ended } =
-		signer2_contract.hasGenesisCeremonyEnded().call().await?;
-	let ceremony: bool = has_genesis_ceremony_ended.try_into().unwrap();
-	assert!(ceremony);
-	Ok(())
-}
+// 	let MCR::hasGenesisCeremonyEndedReturn { _0: has_genesis_ceremony_ended } =
+// 		signer2_contract.hasGenesisCeremonyEnded().call().await?;
+// 	let ceremony: bool = has_genesis_ceremony_ended.try_into().unwrap();
+// 	assert!(ceremony);
+// 	Ok(())
+// }
 
-async fn stake_genesis<P: Provider<T, Ethereum>, T: Transport + Clone>(
-	provider: &P,
-	contract: &MCR::MCRInstance<T, &P, Ethereum>,
-	contract_address: Address,
-	signer: Address,
-	amount: u128,
-) -> Result<(), anyhow::Error> {
-	let stake_genesis_call = contract.stakeGenesis();
-	let calldata = stake_genesis_call.calldata().to_owned();
-	sendtx_function(provider, calldata, contract_address, signer, amount).await
-}
-async fn sendtx_function<P: Provider<T, Ethereum>, T: Transport + Clone>(
-	provider: &P,
-	call_data: Bytes,
-	contract_address: Address,
-	signer: Address,
-	amount: u128,
-) -> Result<(), anyhow::Error> {
-	let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
-	let tx = TransactionRequest::default()
-		.from(signer)
-		.to(contract_address)
-		.value(U256::from(amount))
-		.input(call_data.into())
-		.max_fee_per_gas(eip1559_fees.max_fee_per_gas)
-		.max_priority_fee_per_gas(eip1559_fees.max_priority_fee_per_gas);
+// async fn stake_genesis<P: Provider<T, Ethereum>, T: Transport + Clone>(
+// 	provider: &P,
+// 	contract: &MCR::MCRInstance<T, &P, Ethereum>,
+// 	contract_address: Address,
+// 	signer: Address,
+// 	amount: u128,
+// ) -> Result<(), anyhow::Error> {
+// 	let stake_genesis_call = contract.stakeGenesis();
+// 	let calldata = stake_genesis_call.calldata().to_owned();
+// 	sendtx_function(provider, calldata, contract_address, signer, amount).await
+// }
+// async fn sendtx_function<P: Provider<T, Ethereum>, T: Transport + Clone>(
+// 	provider: &P,
+// 	call_data: Bytes,
+// 	contract_address: Address,
+// 	signer: Address,
+// 	amount: u128,
+// ) -> Result<(), anyhow::Error> {
+// 	let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
+// 	let tx = TransactionRequest::default()
+// 		.from(signer)
+// 		.to(contract_address)
+// 		.value(U256::from(amount))
+// 		.input(call_data.into())
+// 		.max_fee_per_gas(eip1559_fees.max_fee_per_gas)
+// 		.max_priority_fee_per_gas(eip1559_fees.max_priority_fee_per_gas);
 
-	provider.send_transaction(tx).await?.get_receipt().await?;
-	Ok(())
-}
+// 	provider.send_transaction(tx).await?.get_receipt().await?;
+// 	Ok(())
+// }
