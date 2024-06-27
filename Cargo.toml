@@ -245,6 +245,9 @@ x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
 rayon = "1.10.0"
 
+# trying to pin diesel
+diesel = "=2.1.1"
+migrations_internals = "=2.1.1"
 
 [workspace.lints.rust]
 dead_code = "deny"

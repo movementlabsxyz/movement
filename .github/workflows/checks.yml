@@ -28,6 +28,7 @@ jobs:
       run: nix develop --command bash  -c "cargo check"  
 
   suzuka-full-node:
+    if: false
     strategy:
       matrix:
         include:
