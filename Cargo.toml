@@ -154,6 +154,8 @@ celestia-types = { git = "https://github.com/eigerco/lumina" }
 
 ## Alloy Dependencies
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
+    "node-bindings",
+    "rpc-client",
     "pubsub",
     "signers",
     "signer-wallet",
