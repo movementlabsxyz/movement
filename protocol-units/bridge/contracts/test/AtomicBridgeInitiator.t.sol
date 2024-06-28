@@ -186,6 +186,10 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         vm.warp(block.number + timeLock + 1);
         vm.startPrank(originator);
+
+        // increase time / blockheight so that timelock expires 
+        uint256 futureBlockNumber = block.number + timeLock + 4200;
+        vm.roll(futureBlockNumber);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
         assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");

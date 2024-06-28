@@ -5,9 +5,12 @@ import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
-    enum MessageState { INITIALIZED, COMPLETED, REFUNDED }
+    enum MessageState {
+        INITIALIZED,
+        COMPLETED,
+        REFUNDED
+    }
 
     struct BridgeTransfer {
         uint256 amount;
@@ -50,10 +53,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
         nonce++; //increment the nonce
         bridgeTransferId =
-            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
-
-        // Check if the bridge transfer already exists
-        if (bridgeTransfers[bridgeTransferId].amount != 0) revert BridgeTransferInvalid();
+            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
@@ -61,7 +61,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             recipient: recipient,
             hashLock: hashLock,
             timeLock: block.number + timeLock,
-            state: MessageState.INITIALIZED 
+            state: MessageState.INITIALIZED
         });
 
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
@@ -70,20 +70,20 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        if (bridgeTransfer.state == MessageState.COMPLETED) revert BridgeTransferHasBeenCompleted();
+        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        bridgeTransfer.state = MessageState.COMPLETED; 
+        if (block.number > bridgeTransfer.timeLock) revert TimelockExpired();
+        bridgeTransfer.state = MessageState.COMPLETED;
+
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
-        uint256 amount = bridgeTransfer.amount;
-        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
+        if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-
-        //Transfer the WETH back to the originator, revert if fails
-        if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
+        if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
