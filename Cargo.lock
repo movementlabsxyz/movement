@@ -2761,7 +2761,7 @@ dependencies = [
  "ark-serialize 0.3.0",
  "ark-std 0.3.0",
  "derivative",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-traits",
  "paste",
  "rustc_version 0.3.3",
@@ -2781,7 +2781,7 @@ dependencies = [
  "derivative",
  "digest 0.10.7",
  "itertools 0.10.5",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-traits",
  "paste",
  "rayon",
@@ -2815,7 +2815,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db2fd794a08ccb318058009eefdf15bcaaaaf6f8161eb3345f907222bac38b20"
 dependencies = [
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-traits",
  "quote 1.0.36",
  "syn 1.0.109",
@@ -2827,7 +2827,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7abe79b0e4288889c4574159ab790824d0033b9fdcb2a112a3182fac2e514565"
 dependencies = [
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-traits",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
@@ -2895,7 +2895,7 @@ dependencies = [
  "ark-serialize-derive",
  "ark-std 0.4.0",
  "digest 0.10.7",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
 ]
 
 [[package]]
@@ -3300,7 +3300,7 @@ checksum = "51d712318a27c7150326677b321a5fa91b55f6d9034ffd67f20319e147d40cee"
 dependencies = [
  "autocfg",
  "libm",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
  "serde",
@@ -4884,7 +4884,7 @@ dependencies = [
  "chrono",
  "diesel_derives",
  "itoa",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
  "pq-sys",
@@ -7169,9 +7169,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.21"
+version = "0.4.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
+checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 dependencies = [
  "serde",
 ]
@@ -7887,7 +7887,7 @@ dependencies = [
  "dirs-next",
  "hex",
  "move-core-types",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "once_cell",
  "serde",
  "sha2 0.9.9",
@@ -7914,7 +7914,7 @@ dependencies = [
  "move-ir-to-bytecode",
  "move-ir-types",
  "move-symbol-pool",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "once_cell",
  "petgraph 0.5.1",
  "regex",
@@ -8684,7 +8684,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
 dependencies = [
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-complex",
  "num-integer",
  "num-iter",
@@ -8717,9 +8717,9 @@ dependencies = [
 
 [[package]]
 name = "num-bigint"
-version = "0.4.5"
+version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c165a9ab64cf766f73521c0dd2cfdff64f488b8f0b3e621face3462d3db536d7"
+checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
  "num-integer",
  "num-traits",
@@ -8804,7 +8804,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
 dependencies = [
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-integer",
  "num-traits",
 ]
@@ -10437,9 +10437,9 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.37"
+version = "0.8.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05aaa8004b64fd573fc9d002f4e632d51ad4f026c2b5ba95fcb6c2f32c2c47d8"
+checksum = "a7439be6844e40133eda024efd85bf07f59d0dd2f59b10c00dd6cfb92cc5c741"
 dependencies = [
  "bytemuck",
 ]
@@ -10554,7 +10554,7 @@ dependencies = [
  "ark-ff 0.4.2",
  "bytes 1.6.0",
  "fastrlp",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-traits",
  "parity-scale-codec 3.6.12",
  "primitive-types 0.12.2",
@@ -10894,7 +10894,7 @@ dependencies = [
  "core-foundation",
  "core-foundation-sys",
  "libc",
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "security-framework-sys",
 ]
 
@@ -11348,7 +11348,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adc4e5204eb1910f40f9cfa375f6f05b68c3abac4b6fd879c8ff5e7ae8a0a085"
 dependencies = [
- "num-bigint 0.4.5",
+ "num-bigint 0.4.6",
  "num-traits",
  "thiserror",
  "time",
