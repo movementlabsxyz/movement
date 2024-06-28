@@ -10,7 +10,7 @@ use maptos_execution_util::config::Config;
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tracing::info;
 
-use std::{fmt::format, sync::Arc};
+use std::sync::Arc;
 
 #[derive(Clone)]
 /// The API view into the finalized state of the chain.
@@ -101,11 +101,11 @@ mod tests {
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
 		// Create an Executor and a FinalityView instance from the environment configuration.
 		let config = Config::default();
-		let executor = Executor::try_from_config(config.clone())?;
+		let executor = Executor::try_from_config(&config)?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),
-			config,
+			config.clone(),
 		)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.

@@ -448,7 +448,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(chain_config.maptos_private_key.clone()),
+			AccountKey::from_private_key(chain_config.maptos_private_key),
 			0,
 		);
 
