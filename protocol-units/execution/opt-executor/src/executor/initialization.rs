@@ -175,6 +175,7 @@ impl Executor {
 		node_config.indexer_grpc.processor_task_count = 4;
 		node_config.indexer_grpc.output_batch_size = 4;
 		node_config.indexer_grpc.address = "0.0.0.0:30741".to_string().parse()?;
+		node_config.indexer_table_info.enabled = true;
 
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
 	}
