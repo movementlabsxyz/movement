@@ -123,6 +123,7 @@ aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6
 
 # indexer
 processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "c592ff7c0b70429bffe68abe18bf8c07365edbe5", subdir = "rust" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "c592ff7c0b70429bffe68abe18bf8c07365edbe5", subdir = "rust" }
 
 
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
@@ -253,6 +254,8 @@ rayon = "1.10.0"
 # trying to pin diesel
 diesel = "=2.1.1"
 migrations_internals = "=2.1.1"
+num_cpus = "=1.16.0"
+ahash = "=0.8.11"
 
 [workspace.lints.rust]
 dead_code = "deny"

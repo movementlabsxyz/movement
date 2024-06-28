@@ -105,3 +105,18 @@ env_default!(
 	u16,
 	30734
 );
+
+env_default!(
+	default_postgres_connection_string,
+	"INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING",
+	String,
+	"postgresql://postgres:password@localhost:5432".to_string()
+);
+
+
+env_default!(
+	default_indexer_processor_auth_token,
+	"INDEXER_PROCESSOR_AUTH_TOKEN",
+	String,
+	"auth_token".to_string()
+);

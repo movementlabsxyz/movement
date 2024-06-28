@@ -1,6 +1,4 @@
 use super::common::{
-	default_maptos_faucet_rest_listen_hostname, default_maptos_faucet_rest_listen_port,
-	default_maptos_rest_connection_hostname, default_maptos_rest_connection_port,
     default_maptos_indexer_grpc_listen_hostname, default_maptos_indexer_grpc_listen_port,
 };
 use serde::{Deserialize, Serialize};
