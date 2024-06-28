@@ -262,8 +262,8 @@ impl<H: SimpleHasher> SparseMerkleProof<H> {
         // The number of default leaves we need to add to the previous root. When splitting a leaf node, we create a new internal node
         // in place of the former leaf that has two leaf children. Hence we need to add some default siblings because the leaf node may
         // not be at the last level of the subtree of the last nibble.
-        // To get this number, we need to take the number of siblings modulo 4 (this yields the hight of the splitted leaf in the last binary subtree,
-        // or the number of bits in the last nibble of the splitted leaf), substract it to 4 (to get the number of bits needed to complete the last nibble)
+        // To get this number, we need to take the number of siblings modulo 4 (this yields the height of the splitted leaf in the last binary subtree,
+        // or the number of bits in the last nibble of the splitted leaf), subtract it to 4 (to get the number of bits needed to complete the last nibble)
         // and then take the result modulo 4 (in case num_siblings % 4 is zero, which happens when the leaf is at the lowest height of the last binary subtree).
         let default_siblings_prev_root = (4 - (num_siblings % 4)) % 4;
 
