@@ -96,4 +96,4 @@ rustflags = [
 ]
 
 [http]
-http.check-revoke = false
+check-revoke = false

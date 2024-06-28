@@ -52,7 +52,7 @@
           coreutils
           gcc
           rust
-          mold
+          postgresql
         ];
         
         sysDependencies = with pkgs; [] 
@@ -77,6 +77,7 @@
           monza-aptos
           jq
           docker
+          grpcurl
         ];
 
         # Specific version of toolchain

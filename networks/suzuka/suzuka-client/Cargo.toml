@@ -51,6 +51,7 @@ maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+aptos-protos = { workspace = true }
 
 [lints]
 workspace = true

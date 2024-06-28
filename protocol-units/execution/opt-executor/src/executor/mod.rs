@@ -15,6 +15,7 @@ use futures::channel::mpsc as futures_mpsc;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use aptos_api::context::Context;
+pub mod indexer;
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
 /// against the `AptosVM`.
