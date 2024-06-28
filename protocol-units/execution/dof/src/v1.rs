@@ -350,17 +350,15 @@ mod tests {
 		// Get the version to revert to
 		let version_to_revert_to = revert.current_version;
 
-		if let Some((_max_blockheight, last_commit)) =
-			committed_blocks.iter().max_by_key(|(&k, _)| k)
 		{
 			let db_writer = executor.executor.db.writer.clone();
 			db_writer.revert_commit(&revert.info)?;
-		} else {
-			panic!("No blocks to revert");
 		}
 
-		let db_reader = executor.executor.db.reader.clone();
-		let latest_version = db_reader.get_latest_version()?;
+		let latest_version = {
+			let db_reader = executor.executor.db.reader.clone();
+			db_reader.get_latest_version()?
+		};
 		assert_eq!(latest_version, version_to_revert_to);
 
 		services_handle.abort();
