@@ -25,7 +25,7 @@ jobs:
       uses: DeterminateSystems/nix-installer-action@main
 
     - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo check"  
+      run: nix develop --command bash  -c "cargo check --all-targets"  
 
   suzuka-full-node:
     strategy:

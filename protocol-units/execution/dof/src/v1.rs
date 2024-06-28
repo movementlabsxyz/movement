@@ -383,13 +383,13 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
 		let config = Config::default();
-		let aptos_config = config.try_aptos_config()?;
+		let chain_config = config.chain.clone();
 		let executor = Executor::try_from_config(tx, config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
+			AccountKey::from_private_key(chain_config.maptos_private_key),
 			0,
 		);
 
@@ -398,7 +398,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
+		let tx_factory = TransactionFactory::new(chain_config.maptos_chain_id);
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -452,13 +452,13 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
 		let config = Config::default();
-		let aptos_config = config.try_aptos_config()?;
+		let chain_config = config.chain.clone();
 		let executor = Executor::try_from_config(tx, config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
+			AccountKey::from_private_key(chain_config.maptos_private_key),
 			0,
 		);
 
@@ -467,7 +467,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
+		let tx_factory = TransactionFactory::new(chain_config.maptos_chain_id);
 		let mut transaction_hashes = Vec::new();
 
 		// Simulate the execution of multiple blocks.
