@@ -53,7 +53,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
         nonce++; //increment the nonce
         bridgeTransferId =
-            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce));
+            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
@@ -81,7 +81,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
     function refundBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
         if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
 
