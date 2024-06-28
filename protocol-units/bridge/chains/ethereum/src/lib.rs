@@ -1,11 +1,24 @@
-use alloy_primitives::{address, Address as EthAddress};
+use alloy::pubsub::PubSubFrontend;
+use alloy_network::{Ethereum, EthereumSigner};
 use alloy_primitives::private::serde::{Deserialize, Serialize};
-use alloy_provider::{ProviderBuilder};
-use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractResult};
-use bridge_shared::types::{Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock};
+use alloy_primitives::{address, Address as EthAddress};
+use alloy_provider::{
+	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, SignerFiller},
+	Provider, ProviderBuilder, RootProvider,
+};
 use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
+use alloy_transport::BoxTransport;
+use alloy_transport_ws::WsConnect;
 use anyhow::Context;
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractResult};
+use bridge_shared::types::{
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	RecipientAddress, TimeLock,
+};
+use mcr_settlement_client::send_eth_tx::{
+	send_tx, InsufficentFunds, SendTxErrorRule, UnderPriced, VerifyRule,
+};
 
 const INITIATOR_ADDRESS: &str = "0xinitiator";
 const COUNTERPARTY_ADDRESS: &str = "0xcounter";
@@ -38,34 +51,95 @@ impl Default for Config {
 	}
 }
 
-
 // Codegen from the abi
 sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeInitiator,
-	"../../../contracts/out/AtomicBridgeInitator.sol/AtomicBridgeInitiator.json"
+	"abis/AtomicBridgeInitiator.json"
 );
+
+type AlloyProvider = FillProvider<
+	JoinFill<
+		JoinFill<
+			JoinFill<JoinFill<alloy_provider::Identity, GasFiller>, NonceFiller>,
+			ChainIdFiller,
+		>,
+		SignerFiller<EthereumSigner>,
+	>,
+	RootProvider<BoxTransport>,
+	BoxTransport,
+	Ethereum,
+>;
 
 pub struct EthHash(); // Alloy type inside
 
-pub struct EthClient {
-	rpc_provider: Provider,
-	initiator: AtomicBridgeInitiator,
+pub struct EthClient<P> {
+	rpc_provider: P,
+	ws_provider: RootProvider<PubSubFrontend>,
+	initiator_address: Option<EthAddress>,
+	counterparty_address: Option<EthAddress>,
+	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
+	gas_limit: u64,
+	num_tx_send_retries: u32,
 }
 
-impl EthClient {
-	pub fn build_with_config(
-		config: Config
+impl EthClient<AlloyProvider> {
+	pub async fn build_with_config(
+		config: Config,
 		counterparty_address: &str,
 	) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.signer_private_key.context("signer_private_key not set")?;
 		let signer: LocalWallet = signer_private_key.parse()?;
-		let anvil = Anvil::new().fork(url).try_spawn()?;
-		let rpc_url = anvil.rpc_url()?;
-		let provider = ProviderBuilder::new().on_http(rpc_url);
-		let initiator = AtomicBridgeInitiator::new(initiator_address.parse()?, provider);
-		Ok(Self { provider, anvil, initiator })
+		let initiator_address = config.initiator_address.parse()?;
+		let rpc_url = config.rpc_url.context("rpc_url not set")?;
+		let ws_url = config.ws_url.context("ws_url not set")?;
+		let rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.signer(EthereumSigner::from(signer))
+			.on_builtin(&rpc_url)
+			.await?;
+
+		EthClient::build_with_provider(
+			rpc_provider,
+			RootProvider::new(ws_url),
+			initiator_address,
+			Some(counterparty_address.parse()?),
+			Some(counterparty_address.parse()?),
+			config.gas_limit,
+			config.num_tx_send_retries,
+		)
+		.await
+	}
+
+	async fn build_with_provider<S>(
+		rpc_provider: AlloyProvider,
+		ws_provider: RootProvider<S>,
+		signer_address: EthAddress,
+		initiator_address: Option<EthAddress>,
+		counterparty_address: Option<EthAddress>,
+		gas_limit: u64,
+		num_tx_send_retries: u32,
+	) -> Result<Self, anyhow::Error>
+	where
+		S: Into<String>,
+	{
+		let ws = WsConnect::new(ws_provider);
+		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+
+		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
+		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
+		let send_tx_error_rules = vec![rule1, rule2];
+
+		Ok(EthClient {
+			rpc_provider,
+			ws_provider,
+			initiator_address,
+			counterparty_address,
+			send_tx_error_rules,
+			gas_limit,
+			num_tx_send_retries,
+		})
 	}
 }
 
@@ -75,7 +149,10 @@ impl Clone for EthClient {
 	}
 }
 
-impl BridgeContractInitiator for EthClient {
+impl<P> BridgeContractInitiator for EthClient<P>
+where
+	P: Provider + Clone,
+{
 	type Address = EthAddress;
 	type Hash = EthHash;
 
@@ -87,11 +164,13 @@ impl BridgeContractInitiator for EthClient {
 		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
-		// do we for sure not want to do anything with the return from the contract?
-		let _res = self
-			.initiator
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_address, self.rpc_provider.clone());
+		let call = contract
 			.initiateBridgeTransfer(amount, recipient_address, hash_lock, time_lock)
 			.await?;
+		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
+			.await;
 		Ok(())
 	}
 
@@ -100,7 +179,11 @@ impl BridgeContractInitiator for EthClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		let _res = self.initiator.completeBridgeTransfer(bridge_transfer_id, pre_image).await?;
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_address, self.rpc_provider.clone());
+		let call = contract.completeBridgeTransfer(bridge_transfer_id, pre_image).await?;
+		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
+			.await;
 		Ok(())
 	}
 
@@ -108,6 +191,11 @@ impl BridgeContractInitiator for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_address, self.rpc_provider.clone());
+		let call = contract.refundBridgeTransfer(bridge_transfer_id).await?;
+		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
+			.await;
 		Ok(())
 	}
 
@@ -115,6 +203,11 @@ impl BridgeContractInitiator for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_address, self.rpc_provider.clone());
+		let call = contract.getBridgeTransferDetails(bridge_transfer_id).await?;
+		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
+			.await;
 		Ok(None)
 	}
 }
