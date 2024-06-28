@@ -4972,6 +4972,7 @@ dependencies = [
  "alloy-network",
  "alloy-primitives",
  "alloy-provider",
+ "alloy-rlp",
  "alloy-signer-wallet",
  "alloy-sol-types",
  "alloy-transport",
@@ -4980,6 +4981,7 @@ dependencies = [
  "aptos-api",
  "async-trait",
  "bridge-shared",
+ "keccak-hash",
  "mcr-settlement-client",
  "poem",
  "serde",
@@ -6682,6 +6684,16 @@ checksum = "47a3633291834c4fbebf8673acbc1b04ec9d151418ff9b8e26dcd79129928758"
 dependencies = [
  "digest 0.10.7",
  "sha3-asm",
+]
+
+[[package]]
+name = "keccak-hash"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b286e6b663fb926e1eeb68528e69cb70ed46c6d65871a21b2215ae8154c6d3c"
+dependencies = [
+ "primitive-types 0.12.2",
+ "tiny-keccak",
 ]
 
 [[package]]

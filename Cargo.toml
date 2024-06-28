@@ -167,6 +167,7 @@ alloy-primitives = { version = "0.7.2", default-features = false }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
     "ws",
 ] }
+alloy-rlp = "0.3.5"
 alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
@@ -196,6 +197,7 @@ hex = { version = "0.4.3", default-features = false, features = [
 ] }
 ics23 = { version = "0.11.0" }
 k256 = { version = "0.13.3" }
+keccak-hash = "0.10.0"
 itertools = { version = "0.12.1", default-features = false }
 jmt = "0.9.0"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }

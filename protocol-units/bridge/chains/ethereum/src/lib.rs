@@ -6,6 +6,7 @@ use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, SignerFiller},
 	Provider, ProviderBuilder, RootProvider,
 };
+use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
@@ -22,6 +23,7 @@ use mcr_settlement_client::send_eth_tx::{
 };
 
 use anyhow::Context;
+use keccak_hash::{keccak, H256};
 
 const INITIATOR_ADDRESS: &str = "0xinitiator";
 const COUNTERPARTY_ADDRESS: &str = "0xcounter";
@@ -74,6 +76,16 @@ type AlloyProvider = FillProvider<
 	BoxTransport,
 	Ethereum,
 >;
+
+#[derive(RlpDecodable, RlpEncodable)]
+struct EthBridgeTransferDetails {
+	pub amount: U256,
+	pub originator: EthAddress,
+	pub recipient: [u8; 32],
+	pub hash_lock: [u8; 32],
+	pub time_lock: U256,
+	pub state: u8, // Assuming the enum is u8 for now..
+}
 
 pub struct EthClient<P> {
 	rpc_provider: P,
@@ -224,15 +236,56 @@ where
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
-		    
-		// the mapping is the zeroth slot in the contract
-		let mapping_slot = U256::from(0);
-		    let slot = 
-		Ok(None)
-	}
+	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
+		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
+		let key = bridge_transfer_id.0;
+		let storage_slot = self.calculate_storage_slot(key, mapping_slot);
+		let storage: U256 = self
+			.rpc_provider
+			.get_storage_at(self.initiator_address, storage_slot)
+			.await
+			.unwrap_or_else(|_| panic!("Failed to get storage at slot"));
+		let storage_bytes = storage.to_be_bytes::<32>();
+		let mut storage_slice = &storage_bytes[..];
+		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice).unwrap();
 
+		let details = BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: InitiatorAddress(eth_details.originator),
+			recipient_address: RecipientAddress(EthAddress::from_word(FixedBytes(
+				eth_details.recipient,
+			))),
+			hash_lock: HashLock(eth_details.hash_lock),
+			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
+			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			state: match eth_details.state {
+				0 => bridge_shared::types::BridgeTransferState::Initialized,
+				1 => bridge_shared::types::BridgeTransferState::Completed,
+				2 => bridge_shared::types::BridgeTransferState::Refunded,
+				_ => panic!("Invalid state"),
+			},
+		};
+
+		Ok(Some(details))
+	}
+}
+
+impl<P> EthClient<P> {
+	fn calculate_storage_slot(&self, key: [u8; 32], mapping_slot: U256) -> U256 {
+		#[derive(RlpEncodable)]
+		struct SlotKey<'a> {
+			key: &'a [u8; 32],
+			mapping_slot: U256,
+		}
+
+		let slot_key = SlotKey { key: &key, mapping_slot };
+
+		let mut buffer = Vec::new();
+		slot_key.encode(&mut buffer);
+
+		let hash = keccak(buffer);
+		U256::from_be_slice(&hash.0)
+	}
 }
 
 fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
@@ -248,3 +301,4 @@ fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 }
 
 mod tests {}
+

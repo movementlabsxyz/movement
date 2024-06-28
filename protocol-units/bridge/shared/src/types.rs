@@ -59,6 +59,13 @@ pub struct TimeLock(pub u64);
 pub struct Amount(pub u64);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub enum BridgeTransferState {
+	Initialized,
+	Completed,
+	Refunded,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<A>,
@@ -66,6 +73,7 @@ pub struct BridgeTransferDetails<A, H> {
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
+	pub state: BridgeTransferState,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

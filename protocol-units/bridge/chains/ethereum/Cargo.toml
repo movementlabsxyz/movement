@@ -13,12 +13,13 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+aptos-api = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 poem = { workspace = true }
+keccak-hash = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-aptos-api = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 
@@ -29,9 +30,9 @@ alloy-primitives = { workspace = true }
 alloy-provider = { workspace = true }
 alloy-signer-wallet = { workspace = true }
 alloy-sol-types = { workspace = true }
+alloy-rlp = { workspace = true }
 alloy-transport = { workspace = true }
 alloy-transport-ws = { workspace = true }
 
 bridge-shared = { workspace = true }
 mcr-settlement-client = { workspace = true }
-
