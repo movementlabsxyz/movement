@@ -28,3 +28,7 @@ echo "Built suzuka-faucet-service!"
 echo "Building wait-for-celestia-light-node..."
 cargo build $CARGO_PROFILE_FLAGS --bin wait-for-celestia-light-node
 echo "Built wait-for-celestia-light-node!"
+
+echo "Building suzuka-indexer-processor..."
+cargo build $CARGO_PROFILE_FLAGS --bin suzuka-indexer-processor
+echo "Built suzuka-indexer-processor!"
