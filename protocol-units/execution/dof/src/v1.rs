@@ -273,7 +273,7 @@ mod tests {
 		#[derive(Debug)]
 		struct Commit {
 			info: LedgerInfoWithSignatures,
-			cur_ver: Version,
+			current_version: Version,
 		}
 
 		let config = Config::default();
@@ -296,7 +296,7 @@ mod tests {
 		// set range of min and max blocks to 5 to always gen 5 blocks
 		let (blocks, _) = val_generator.generate(arb_blocks_to_commit_with_block_nums(5, 5));
 		let mut blockheight = 0;
-		let mut cur_ver: Version = 0;
+		let mut current_version: Version = 0;
 		let mut commit_versions = vec![];
 
 		for (txns_to_commit, ledger_info_with_sigs) in &blocks {
@@ -334,15 +334,12 @@ mod tests {
 			executor.execute_block_opt(block).await?;
 
 			blockheight += 1;
-			cur_ver += txns_to_commit.len() as u64;
+			current_version += txns_to_commit.len() as u64;
 			committed_blocks.insert(
 				blockheight,
-				Commit {
-					info: ledger_info_with_sigs.clone(),
-					cur_ver,
-				},
+				Commit { info: ledger_info_with_sigs.clone(), current_version },
 			);
-			commit_versions.push(cur_ver);
+			commit_versions.push(current_version);
 			//blockheight += 1;
 		}
 
@@ -351,7 +348,7 @@ mod tests {
 		let revert = committed_blocks.get(&revert_block_num).unwrap();
 
 		// Get the version to revert to
-		let version_to_revert_to = revert.cur_ver;
+		let version_to_revert_to = revert.current_version;
 
 		if let Some((_max_blockheight, last_commit)) =
 			committed_blocks.iter().max_by_key(|(&k, _)| k)
