@@ -5,9 +5,12 @@ import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
-
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
-    enum MessageState { INITIALIZED, COMPLETED, REFUNDED }
+    enum MessageState {
+        INITIALIZED,
+        COMPLETED,
+        REFUNDED
+    }
 
     struct BridgeTransfer {
         uint256 amount;
@@ -58,7 +61,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
             recipient: recipient,
             hashLock: hashLock,
             timeLock: block.number + timeLock,
-            state: MessageState.INITIALIZED 
+            state: MessageState.INITIALIZED
         });
 
         emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
@@ -70,7 +73,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
         if (block.number > bridgeTransfer.timeLock) revert TimelockExpired();
-        bridgeTransfer.state = MessageState.COMPLETED; 
+        bridgeTransfer.state = MessageState.COMPLETED;
+
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
@@ -79,8 +83,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-        uint256 amount = bridgeTransfer.amount;
-        if (!weth.transfer(bridgeTransfer.originator, amount)) revert WETHTransferFailed();
+        if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
