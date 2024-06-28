@@ -225,11 +225,14 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider.clone());
-		// look up the Details by Id
+		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
+		    
+		// the mapping is the zeroth slot in the contract
+		let mapping_slot = U256::from(0);
+		    let slot = 
 		Ok(None)
 	}
+
 }
 
 fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
