@@ -180,6 +180,7 @@ impl Executor {
 			maptos_config.indexer.maptos_indexer_grpc_listen_hostname,
 			maptos_config.indexer.maptos_indexer_grpc_listen_port
 		).parse()?;
+		node_config.indexer_grpc.use_data_service_interface = true;
 
 		// indexer table info config
 		node_config.indexer_table_info.enabled = true;

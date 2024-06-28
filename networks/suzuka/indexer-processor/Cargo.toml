@@ -21,3 +21,5 @@ num_cpus = { workspace = true }
 dot-movement = { workspace = true }
 suzuka-config = { workspace = true }
 ahash = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

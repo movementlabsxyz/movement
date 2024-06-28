@@ -76,11 +76,8 @@
           celestia-app
           monza-aptos
           jq
-<<<<<<< HEAD
-          postgresql
-=======
           docker
->>>>>>> 9c54d9e7d022632e80929850e9434c30e2df5b38
+          grpcurl
         ];
 
         # Specific version of toolchain

@@ -11,14 +11,30 @@ const RUNTIME_WORKER_MULTIPLIER: usize = 2;
 
 fn main() -> Result<()> {
 
+    use tracing_subscriber::EnvFilter;
+
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .init();
+
     let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
+
+
+    let url = format!(
+        "http://{}:{}",
+        config.execution_config.maptos_config.client.maptos_indexer_grpc_connection_hostname,
+        config.execution_config.maptos_config.client.maptos_indexer_grpc_connection_port
+    );
+    println!("Connecting to indexer gRPC server at: {}", url);
 
     let config = IndexerGrpcProcessorConfig {
         processor_config: ProcessorConfig::DefaultProcessor,
         postgres_connection_string: config.execution_config.maptos_config.indexer_processor.postgres_connection_string.clone(),
         indexer_grpc_data_service_address: format!(
-            "{}:{}", 
+            "http://{}:{}", 
             config.execution_config.maptos_config.client.maptos_indexer_grpc_connection_hostname, 
             config.execution_config.maptos_config.client.maptos_indexer_grpc_connection_port
         ).parse()?,

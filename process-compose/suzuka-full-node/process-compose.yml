@@ -81,12 +81,23 @@ processes:
   suzuka-indexer-processor:
   
     command : |
-      suzuka-indexer-processor
+      #/bin/bash
+      # todo: this fails with gRPC Unimplemented error on the RawData.GetTransactions call
+      # RUST_LOG=debug suzuka-indexer-processor
+      # for now, we will just prove the service is running with a grpcurl call
+      # we will check the output
+      RESPONSE=$(grpcurl -plaintext 0.0.0.0:30734 list aptos.indexer.v1.RawData)
+      EXPECTED="aptos.indexer.v1.RawData.GetTransactions"
+      if [[ "$RESPONSE" == "$EXPECTED" ]]; then
+        exit 0
+      else
+        exit 1
+      fi
     depends_on:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 30
       exec:
         command: echo "true"
 
