@@ -77,3 +77,31 @@ pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
 	}
 }
+
+env_default!(
+	default_maptos_indexer_grpc_listen_hostname,
+	"MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()	
+);
+
+env_default!(
+	default_maptos_indexer_grpc_listen_port,
+	"MAPTOS_INDEXER_GRPC_LISTEN_PORT",
+	u16,
+	30734
+);
+
+env_default!(
+	default_maptos_indexer_grpc_connection_hostname,
+	"MAPTOS_INDEXER_GRPC_CONNECTION_HOSTNAME",
+	String,
+	"0.0.0.0".to_string()
+);
+
+env_default!(
+	default_maptos_indexer_grpc_connection_port,
+	"MAPTOS_INDEXER_GRPC_CONNECTION_PORT",
+	u16,
+	30734
+);

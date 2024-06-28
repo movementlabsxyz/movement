@@ -175,7 +175,11 @@ impl Executor {
 		node_config.indexer_grpc.processor_batch_size = 4;
 		node_config.indexer_grpc.processor_task_count = 4;
 		node_config.indexer_grpc.output_batch_size = 4;
-		node_config.indexer_grpc.address = "0.0.0.0:30741".to_string().parse()?;
+		node_config.indexer_grpc.address = format!(
+			"{}:{}",
+			maptos_config.indexer.maptos_indexer_grpc_listen_hostname,
+			maptos_config.indexer.maptos_indexer_grpc_listen_port
+		).parse()?;
 
 		// indexer table info config
 		node_config.indexer_table_info.enabled = true;

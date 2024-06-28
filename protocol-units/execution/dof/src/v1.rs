@@ -60,7 +60,7 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(self.run_transaction_pipe(), self.executor.run_indexer_background_task(),)?;
+		tokio::try_join!(self.run_transaction_pipe(),)?;
 		Ok(())
 	}
 

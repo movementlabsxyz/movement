@@ -3,6 +3,7 @@ pub mod client;
 pub mod common;
 pub mod faucet;
 pub mod fin;
+pub mod indexer;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -10,6 +11,10 @@ pub struct Config {
 	/// The chain configuration
 	#[serde(default)]
 	pub chain: chain::Config,
+
+	/// The indexer configuration
+	#[serde(default)]
+	pub indexer: indexer::Config,
 
 	/// The client configuration
 	#[serde(default)]
@@ -28,6 +33,7 @@ impl Default for Config {
 	fn default() -> Self {
 		Self {
 			chain: chain::Config::default(),
+			indexer: indexer::Config::default(),
 			client: client::Config::default(),
 			faucet: faucet::Config::default(),
 			fin: fin::Config::default(),

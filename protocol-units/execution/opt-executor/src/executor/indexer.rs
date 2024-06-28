@@ -13,7 +13,7 @@ impl Executor {
     pub async fn run_indexer_grpc_service(&self) -> Result<(), anyhow::Error> {
 
 		// bootstrap table info
-		let (runtime, _async_indexer_v2) = bootstrap_table_info(
+		let (_table_info_runtime, _async_indexer_v2) = bootstrap_table_info(
 			&self.node_config,
 			self.maptos_config.chain.maptos_chain_id.clone(),
 			self.db.clone(),
@@ -23,7 +23,8 @@ impl Executor {
 		)?;
 
 		// bootstrap indexer grpc
-		let indexer_grpc = bootstrap_indexer_grpc(
+		// this one actually serves the gRPC service
+		let _indexer_grpc = bootstrap_indexer_grpc(
 			&self.node_config,
 			self.maptos_config.chain.maptos_chain_id.clone(),
 			self.db.reader.clone(),
@@ -34,7 +35,7 @@ impl Executor {
 		)?;
 
 		// bootstrap indexer stream
-		let indexer_stream = bootstrap_indexer_stream(
+		let _indexer_stream = bootstrap_indexer_stream(
 			&self.node_config,
 			self.maptos_config.chain.maptos_chain_id.clone(),
 			self.db.reader.clone(),
@@ -42,32 +43,12 @@ impl Executor {
 		).ok_or(
 			anyhow::anyhow!("Failed to bootstrap indexer stream runtime"),
 		)?;
-	
-		/*let indexer_context = self.context.clone();
-		let server = FullnodeDataService {
-			service_context: ServiceContext {
-				context: indexer_context.clone(),
-				processor_task_count: 4,
-				processor_batch_size: 4,
-				output_batch_size: 4,
-			},
-		};
-
-		tonic::transport::Server::builder()
-			.add_service(FullnodeDataServer::new(server))
-			.serve(String::from("0.0.0.0:8090").to_socket_addrs().unwrap().next().unwrap())
-			.await
-			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))*/
 
 		// sleep forever
-		tokio::time::sleep(tokio::time::Duration::from_secs(100000)).await;
-		Ok(())
-	}
+		loop {
+			tokio::time::sleep(tokio::time::Duration::from_secs(100000)).await;
+		}
 
-	pub async fn run_indexer_background_task(&self) -> Result<(), anyhow::Error> {
-		/*let indexer_context = self.context.clone();
-		let indexer_config = self.node_config.indexer.clone();
-		run_forever(indexer_config, indexer_context.clone()).await;*/
 		Ok(())
 	}
 

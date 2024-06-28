@@ -81,7 +81,7 @@ impl Verifier for V1Verifier {
 pub mod test {
 	use super::*;
 	use celestia_types::blob::GasPrice;
-	use m1_da_light_node_util::Config;
+	use m1_da_light_node_util::config::Config;
 
 	/// todo: Investigate why this test sporadically fails.
 	#[tokio::test]
