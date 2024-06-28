@@ -65,9 +65,9 @@ aptos-cached-packages = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
 aptos-indexer-grpc-fullnode = { workspace = true }
+aptos-indexer-grpc-table-info = { workspace = true }
 aptos-indexer = { workspace = true }
 aptos-protos = { workspace = true }
-
 dirs = { workspace = true }
 tempfile = { workspace = true }
 tracing-test = { workspace = true }

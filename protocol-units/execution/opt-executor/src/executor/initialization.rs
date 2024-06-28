@@ -117,6 +117,7 @@ impl Executor {
 		node_config: NodeConfig,
 		maptos_config: &Config,
 	) -> Result<Self, anyhow::Error> {
+
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
@@ -175,7 +176,11 @@ impl Executor {
 		node_config.indexer_grpc.processor_task_count = 4;
 		node_config.indexer_grpc.output_batch_size = 4;
 		node_config.indexer_grpc.address = "0.0.0.0:30741".to_string().parse()?;
+
+		// indexer table info config
 		node_config.indexer_table_info.enabled = true;
+		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
 		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
 	}
