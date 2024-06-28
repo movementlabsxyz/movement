@@ -46,7 +46,7 @@ impl Default for Config {
 			rpc_url: Some("http://localhost:8545".to_string()),
 			ws_url: Some("ws://localhost:8546".to_string()),
 			signer_private_key: LocalWallet::random().to_bytes().to_string(),
-			initiator_address: Some(INITIATOR_ADDRESS.to_string()),
+			initiator_address: INITIATOR_ADDRESS.to_string(),
 			counterparty_address: Some(COUNTERPARTY_ADDRESS.to_string()),
 			gas_limit: DEFAULT_GAS_LIMIT,
 			num_tx_send_retries: MAX_RETRIES,
@@ -74,9 +74,6 @@ type AlloyProvider = FillProvider<
 	BoxTransport,
 	Ethereum,
 >;
-
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Serialize, Deserialize)]
-pub struct EthHash([u8; 32]);
 
 pub struct EthClient<P> {
 	rpc_provider: P,
@@ -153,13 +150,15 @@ impl<P> Clone for EthClient<P> {
 	}
 }
 
+type EthHash = [u8; 32];
+
 #[async_trait::async_trait]
 impl<P> BridgeContractInitiator for EthClient<P>
 where
 	P: Provider + Clone + Send + Sync + Unpin,
 {
-	type Address = [u8; 32];
-	type Hash = [u8; 32];
+	type Address = EthAddress;
+	type Hash = EthHash;
 
 	async fn initiate_bridge_transfer(
 		&mut self,
@@ -172,12 +171,17 @@ where
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
-			FixedBytes(recipient_address.0),
+			recipient_address.0.into_word(),
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 		);
-		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
-			.await;
+		let _ = send_tx(
+			call,
+			&self.send_tx_error_rules,
+			self.num_tx_send_retries,
+			self.gas_limit as u128,
+		)
+		.await;
 		Ok(())
 	}
 
@@ -188,12 +192,16 @@ where
 	) -> BridgeContractResult<()> {
 		let pre_image: [u8; 32] =
 			vec_to_array(pre_image.0).unwrap_or_else(|_| panic!("Failed to convert pre_image"));
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider.clone());
+		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
-			.await;
+		let _ = send_tx(
+			call,
+			&self.send_tx_error_rules,
+			self.num_tx_send_retries,
+			self.gas_limit as u128,
+		)
+		.await;
 		Ok(())
 	}
 
@@ -201,11 +209,15 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider.clone());
+		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		send_tx(call, &self.send_tx_error_rules, self.num_tx_send_retries, self.gas_limit as u128)
-			.await;
+		let _ = send_tx(
+			call,
+			&self.send_tx_error_rules,
+			self.num_tx_send_retries,
+			self.gas_limit as u128,
+		)
+		.await;
 		Ok(())
 	}
 
