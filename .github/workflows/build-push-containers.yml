@@ -13,7 +13,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'ubuntu-latest' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -25,6 +25,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
@@ -46,12 +52,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest m1-da-light-node
 
-  celestia-app-build:
+  m1-da-light-node-celestia-appd-build:
     permissions:
       contents: read
       packages: write
@@ -59,7 +71,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -72,15 +84,21 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image celestia-app
+        ./scripts/movement/build-push-image m1-da-light-node-celestia-appd
 
-  celestia-app-manifest:
+  m1-da-light-node-celestia-appd-manifest:
     permissions:
       contents: read
       packages: write
-    needs: celestia-app-build
+    needs: m1-da-light-node-celestia-appd-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -93,11 +111,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest celestia-app
+          ./scripts/movement/manifest m1-da-light-node-celestia-appd
 
-  celestia-node-build:
+  m1-da-light-node-celestia-bridge-build:
     permissions:
       contents: read
       packages: write
@@ -105,7 +129,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -118,15 +142,21 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image celestia-node
+        ./scripts/movement/build-push-image m1-da-light-node-celestia-bridge
 
-  celestia-node-manifest:
+  m1-da-light-node-celestia-bridge-manifest:
     permissions:
       contents: read
       packages: write
-    needs: celestia-node-build
+    needs: m1-da-light-node-celestia-bridge-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -139,11 +169,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest celestia-node
+          ./scripts/movement/manifest m1-da-light-node-celestia-bridge
 
-  suzuka-config-build:
+  suzuka-full-node-setup-build:
     permissions:
       contents: read
       packages: write
@@ -151,7 +187,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -164,15 +200,21 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image celestia-node
+        ./scripts/movement/build-push-image suzuka-full-node-setup
 
-  suzuka-config-manifest:
+  suzuka-full-node-setup-manifest:
     permissions:
       contents: read
       packages: write
-    needs: suzuka-config-build
+    needs: suzuka-full-node-setup-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -185,9 +227,15 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest celestia-node
+          ./scripts/movement/manifest suzuka-full-node-setup
 
   wait-for-celestia-light-node-build:
     permissions:
@@ -197,7 +245,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -209,6 +257,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
@@ -231,6 +285,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest wait-for-celestia-light-node
@@ -243,7 +303,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -255,6 +315,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
     - name: Build and Push Docker image movement
       run: |
@@ -277,11 +343,17 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest suzuka-full-node
 
-  faucet-build:
+  suzuka-faucet-service-build:
     permissions:
       contents: read
       packages: write
@@ -289,7 +361,7 @@ jobs:
       matrix:
         architecture: [x86_64, arm64]
         
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'movement-runner' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
 
     steps:
     - name: Checkout repository
@@ -302,15 +374,21 @@ jobs:
         username: ${{ github.repository_owner }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image faucet
+        ./scripts/movement/build-push-image suzuka-faucet-service
 
-  faucet-manifest:
+  suzuka-faucet-service-manifest:
     permissions:
       contents: read
       packages: write
-    needs: faucet-build
+    needs: suzuka-faucet-service-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -323,9 +401,118 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest faucet
+          ./scripts/movement/manifest suzuka-faucet-service
 
-  
+  suzuka-client-e2e-simple-interaction-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
     
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image suzuka-client-e2e-simple-interaction
+
+  suzuka-client-e2e-simple-interaction-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: suzuka-client-e2e-simple-interaction-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest suzuka-client-e2e-simple-interaction
+  
+  container-checks:
+    runs-on: buildjet-8vcpu-ubuntu-2204
+    needs: 
+      - m1-da-light-node-manifest
+      - m1-da-light-node-celestia-appd-manifest
+      - m1-da-light-node-celestia-bridge-manifest
+      - suzuka-full-node-setup-manifest
+      - wait-for-celestia-light-node-manifest
+      - suzuka-full-node-manifest
+      - suzuka-faucet-service-manifest
+      - suzuka-client-e2e-simple-interaction-manifest
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+  
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+  
+      - name: Read the commit SHA
+        id: vars
+        run: echo "CONTAINER_REV=${{ github.sha }}" >> .env
+
+      - name: Display .env file
+        run: cat .env
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+  
+  
+      - name: Install docker-ce-cli
+        run: |
+          sudo apt-get install -y docker-ce-cli
+  
+      - name: Verify Docker Installation
+        run: |
+          docker compose version
+          docker --version
+          docker version
+
+      - name: Run docker-compose local.setup.test
+        run: |
+          nix develop --command bash  -c "just container-test"  
+          # run again to test restarts
+          nix develop --command bash  -c "just container-test"  

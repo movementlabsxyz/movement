@@ -2,13 +2,23 @@
 set -e
 set -euo pipefail
 
-IFS='.' read -r -a split <<< "$3"
+if [ "$#" -lt 3 ]; then
+    echo "Usage: $0 <service> <runtime> <flags> [docker-compose flags...]"
+    echo "Example: $0 suzuka-full-node native setup.local.test"
+    exit 1
+fi
+
+SERVICE=$1
+RUNTIME=$2
+FLAGS=$3
+
+IFS='.' read -r -a split <<< "$FLAGS"
 
 override_files=()
 for element in "${split[@]}"; do
     override_files+=("-f")
-    override_files+=("process-compose/$1/process-compose.$element.yml")
+    override_files+=("docker/compose/$SERVICE/docker-compose.$element.yml")
 done
 
-echo "Running process-compose for $1 with override files: ${override_files[@]}..."
-process-compose -f process-compose/$1/process-compose.yml "${override_files[@]}"  "${@:4}"
+echo "Running docker-compose for $SERVICE with override files: ${override_files[@]}..."
+docker compose --env-file .env -f docker/compose/$SERVICE/docker-compose.yml "${override_files[@]}" up "${@:4}"
