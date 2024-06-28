@@ -122,8 +122,8 @@ aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/apto
 aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "69afec8ffc55e5e04711cc3f7477186fb50c2dd1" }
 
 # indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "180f2e5ffd537d62b5dcc83f64ceb6a13a9e1dab", subdir = "rust" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "180f2e5ffd537d62b5dcc83f64ceb6a13a9e1dab", subdir = "rust" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "efefd860fdb2f100f3314fc4aa05185e5082d3c7", subdir = "rust" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "efefd860fdb2f100f3314fc4aa05185e5082d3c7", subdir = "rust" }
 
 
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
