@@ -32,7 +32,7 @@ classical semantic versioning.
 ## Prerequisites
 ### Prerequisites - Just command
 `just` is a handy way to save and run project-specific commands. Please install it
-[following just install instructioins](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
+[following just install instructions](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
 
 ### Just command - macOS
 ```bash 
@@ -77,7 +77,7 @@ just m1-da-light-node native build.setup.test.local
 - **Features**:
     - `build`: Build the `suzuka-full-node` binaries.
     - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service. 
+    - `local`: Run a local Celestia Data Availability service. 
     - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
@@ -109,10 +109,10 @@ echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 
 - **Features**:
     - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service.
+    - `local`: Run a local Celestia Data Availability service.
 
 **Note:** Currently, both `setup` and `local` must be used. 
-We only support running the `suzuka-full-node` with a local Celesta Data Availability 
+We only support running the `suzuka-full-node` with a local Celestia Data Availability 
 service via Docker Compose.
 
 ```bash
@@ -164,7 +164,7 @@ upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/sta
 ```
 
 ### `ledger_info.is_some()`
-The current revision does not support graceful restarts of the network from an existing config. For testing purposes, please delete you `.movement` directory and run the setup again.
+The current revision does not support graceful restarts of the network from an existing config. For testing purposes, please delete your`.movement` directory and run the setup again.
 
 ## License
 
