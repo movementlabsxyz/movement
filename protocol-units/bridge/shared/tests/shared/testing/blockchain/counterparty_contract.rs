@@ -91,7 +91,12 @@ where
 		tracing::trace!("SmartContractCounterparty: Completing bridge transfer: {:?}", transfer);
 
 		// check if the secret is correct
-		if transfer.hash_lock.0 != From::from(pre_image.clone()) {
+		let secret_hash = H::from(pre_image.clone());
+		if transfer.hash_lock.0 != secret_hash {
+			tracing::warn!(
+				"Invalid hash lock pre image {pre_image:?} hash {secret_hash:?} != hash_lock {:?}",
+				transfer.hash_lock.0
+			);
 			return Err(SmartContractCounterpartyError::InvalidHashLockPreImage);
 		}
 

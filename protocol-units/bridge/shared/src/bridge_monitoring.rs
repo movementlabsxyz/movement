@@ -25,14 +25,14 @@ pub enum BridgeContractCounterpartyEvent<A, H> {
 }
 
 pub trait BridgeContractInitiatorMonitoring:
-	Stream<Item = BridgeContractInitiatorEvent<Self::Address, Self::Hash>>
+	Stream<Item = BridgeContractInitiatorEvent<Self::Address, Self::Hash>> + Unpin
 {
 	type Address;
 	type Hash;
 }
 
 pub trait BridgeContractCounterpartyMonitoring:
-	Stream<Item = BridgeContractCounterpartyEvent<Self::Address, Self::Hash>>
+	Stream<Item = BridgeContractCounterpartyEvent<Self::Address, Self::Hash>> + Unpin
 {
 	type Address;
 	type Hash;

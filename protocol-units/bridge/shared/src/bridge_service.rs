@@ -114,6 +114,19 @@ impl<B1: BlockchainService, B2: BlockchainService> Event<B1, B2> {
 		self.B1I()?.contract_event()
 	}
 
+	pub fn B1C(&self) -> Option<&CEvent<B1::Address, B1::Hash>> {
+		match self {
+			Event::B1C(event) => Some(event),
+			_ => None,
+		}
+	}
+
+	pub fn B1C_ContractEvent(
+		&self,
+	) -> Option<&BridgeContractCounterpartyEvent<B1::Address, B1::Hash>> {
+		self.B1C()?.contract_event()
+	}
+
 	pub fn B2I(&self) -> Option<&IEvent<B2::Address, B2::Hash>> {
 		match self {
 			Event::B2I(event) => Some(event),
@@ -142,8 +155,8 @@ impl<B1: BlockchainService, B2: BlockchainService> Event<B1, B2> {
 
 impl<B1, B2> Stream for BridgeService<B1, B2>
 where
-	B1: BlockchainService + Unpin + 'static,
-	B2: BlockchainService + Unpin + 'static,
+	B1: BlockchainService + 'static,
+	B2: BlockchainService + 'static,
 
 	<B1::InitiatorContract as BridgeContractInitiator>::Hash: From<B2::Hash>,
 	<B1::InitiatorContract as BridgeContractInitiator>::Address: From<B2::Address>,
