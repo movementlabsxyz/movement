@@ -11,13 +11,16 @@ use bridge_shared::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
+	bridge_service::BridgeService,
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, Convert, GenUniqueHash, HashLock,
 		HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
+
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use rand::Rng;
+use rand::SeedableRng;
 use std::{
 	fmt::Formatter,
 	hash::{DefaultHasher, Hash, Hasher},
@@ -28,16 +31,15 @@ use std::{
 pub mod testing;
 
 use testing::{
-	blockchain::{
-		AbstractBlockchainClient, AbstractBlockchainEvent, CounterpartyCall, InitiatorCall,
-		Transaction,
-	},
-	rng::TestRng,
+	blockchain::{AbstractBlockchain, AbstractBlockchainClient},
+	blockchain::{AbstractBlockchainEvent, CounterpartyCall, InitiatorCall, Transaction},
+	rng::{RngSeededClone, TestRng},
 };
 
-use crate::shared::testing::blockchain::counterparty_contract::SmartContractCounterpartyEvent;
-
-use self::testing::blockchain::initiator_contract::SmartContractInitiatorEvent;
+use crate::shared::testing::blockchain::{
+	counterparty_contract::SmartContractCounterpartyEvent,
+	initiator_contract::SmartContractInitiatorEvent,
+};
 
 pub fn hash_static_string(pre_image: &'static str) -> [u8; 8] {
 	hash_vec_u8(pre_image.as_bytes())
@@ -473,3 +475,54 @@ pub type B2Service = AbstractBlockchainService<
 	BC2Address,
 	BC2Hash,
 >;
+
+pub fn setup_bridge_service() -> (
+	BridgeService<B1Service, B2Service>,
+	B1Client,
+	B2Client,
+	AbstractBlockchain<BC1Address, BC1Hash, TestRng>,
+	AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
+) {
+	let mut rng = TestRng::from_seed([0u8; 32]);
+
+	let mut blockchain_1 =
+		AbstractBlockchain::<BC1Address, BC1Hash, _>::new(rng.seeded_clone(), "Blockchain1");
+	let mut blockchain_2 =
+		AbstractBlockchain::<BC2Address, BC2Hash, _>::new(rng.seeded_clone(), "Blockchain2");
+
+	// Contracts and monitors for blockchain 1
+	let client_1 =
+		AbstractBlockchainClient::new(blockchain_1.connection(), rng.seeded_clone(), 0.0, 0.00);
+	let monitor_1_initiator = InitiatorContractMonitoring::build(blockchain_1.add_event_listener());
+	let monitor_1_counterparty =
+		CounterpartyContractMonitoring::build(blockchain_1.add_event_listener());
+
+	// Contracts and monitors for blockchain 2
+	let client_2 =
+		AbstractBlockchainClient::new(blockchain_2.connection(), rng.seeded_clone(), 0.0, 0.00);
+	let monitor_2_initiator = InitiatorContractMonitoring::build(blockchain_2.add_event_listener());
+	let monitor_2_counterparty =
+		CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
+
+	let blockchain_1_client = B1Client::build(client_1.clone());
+	let blockchain_1_service = AbstractBlockchainService {
+		initiator_contract: blockchain_1_client.clone(),
+		initiator_monitoring: monitor_1_initiator,
+		counterparty_contract: blockchain_1_client.clone(),
+		counterparty_monitoring: monitor_1_counterparty,
+		_phantom: Default::default(),
+	};
+
+	let blockchain_2_client = B2Client::build(client_2.clone());
+	let blockchain_2_service = AbstractBlockchainService {
+		initiator_contract: blockchain_2_client.clone(),
+		initiator_monitoring: monitor_2_initiator,
+		counterparty_contract: blockchain_2_client.clone(),
+		counterparty_monitoring: monitor_2_counterparty,
+		_phantom: Default::default(),
+	};
+
+	let bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
+
+	(bridge_service, blockchain_1_client, blockchain_2_client, blockchain_1, blockchain_2)
+}

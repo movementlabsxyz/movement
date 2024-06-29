@@ -1,82 +1,18 @@
 use futures::StreamExt;
-use rand::SeedableRng;
 use test_log::test;
 
 use bridge_shared::{
-	blockchain_service::AbstractBlockchainService,
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	bridge_service::BridgeService,
 	types::{
 		Amount, BridgeTransferDetails, CompletedDetails, Convert, HashLock, HashLockPreImage,
 		InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 	},
 };
 
-use crate::shared::{
-	B1Client, B2Client, BC1Address, BC1Hash, BC2Address, BC2Hash, CounterpartyContractMonitoring,
-	InitiatorContractMonitoring,
-};
+use crate::shared::{setup_bridge_service, B2Client, BC1Address, BC1Hash, BC2Address, BC2Hash};
 
 mod shared;
-
-use shared::testing::{
-	blockchain::{AbstractBlockchain, AbstractBlockchainClient},
-	rng::{RngSeededClone, TestRng},
-};
-
-use self::shared::{B1Service, B2Service};
-
-async fn setup_bridge_service() -> (
-	BridgeService<B1Service, B2Service>,
-	B1Client,
-	B2Client,
-	AbstractBlockchain<BC1Address, BC1Hash, TestRng>,
-	AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
-) {
-	let mut rng = TestRng::from_seed([0u8; 32]);
-
-	let mut blockchain_1 =
-		AbstractBlockchain::<BC1Address, BC1Hash, _>::new(rng.seeded_clone(), "Blockchain1");
-	let mut blockchain_2 =
-		AbstractBlockchain::<BC2Address, BC2Hash, _>::new(rng.seeded_clone(), "Blockchain2");
-
-	// Contracts and monitors for blockchain 1
-	let client_1 =
-		AbstractBlockchainClient::new(blockchain_1.connection(), rng.seeded_clone(), 0.0, 0.00);
-	let monitor_1_initiator = InitiatorContractMonitoring::build(blockchain_1.add_event_listener());
-	let monitor_1_counterparty =
-		CounterpartyContractMonitoring::build(blockchain_1.add_event_listener());
-
-	// Contracts and monitors for blockchain 2
-	let client_2 =
-		AbstractBlockchainClient::new(blockchain_2.connection(), rng.seeded_clone(), 0.0, 0.00);
-	let monitor_2_initiator = InitiatorContractMonitoring::build(blockchain_2.add_event_listener());
-	let monitor_2_counterparty =
-		CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
-
-	let blockchain_1_client = B1Client::build(client_1.clone());
-	let blockchain_1_service = AbstractBlockchainService {
-		initiator_contract: blockchain_1_client.clone(),
-		initiator_monitoring: monitor_1_initiator,
-		counterparty_contract: blockchain_1_client.clone(),
-		counterparty_monitoring: monitor_1_counterparty,
-		_phantom: Default::default(),
-	};
-
-	let blockchain_2_client = B2Client::build(client_2.clone());
-	let blockchain_2_service = AbstractBlockchainService {
-		initiator_contract: blockchain_2_client.clone(),
-		initiator_monitoring: monitor_2_initiator,
-		counterparty_contract: blockchain_2_client.clone(),
-		counterparty_monitoring: monitor_2_counterparty,
-		_phantom: Default::default(),
-	};
-
-	let bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
-
-	(bridge_service, blockchain_1_client, blockchain_2_client, blockchain_1, blockchain_2)
-}
 
 #[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
 async fn test_bridge_service_integration_a_to_b() {
@@ -86,7 +22,7 @@ async fn test_bridge_service_integration_a_to_b() {
 		mut blockchain_2_client,
 		blockchain_1,
 		blockchain_2,
-	) = setup_bridge_service().await;
+	) = setup_bridge_service();
 
 	tokio::spawn(blockchain_1);
 	tokio::spawn(blockchain_2);
