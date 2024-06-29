@@ -22,7 +22,7 @@ use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use rand::Rng;
 use rand::SeedableRng;
 use std::{
-	fmt::Formatter,
+	fmt::{Debug, Formatter},
 	hash::{DefaultHasher, Hash, Hasher},
 	pin::Pin,
 	task::{Context, Poll},
@@ -72,7 +72,7 @@ impl GenUniqueHash for BC1Hash {
 	}
 }
 
-impl std::fmt::Debug for BC1Hash {
+impl Debug for BC1Hash {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "Bc1Hash({:02x})", u64::from_be_bytes(self.0))
 	}
@@ -99,7 +99,7 @@ impl From<&'static str> for BC2Hash {
 	}
 }
 
-impl std::fmt::Debug for BC2Hash {
+impl Debug for BC2Hash {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "BC2Hash({:02x})", u64::from_be_bytes(self.0))
 	}
@@ -157,12 +157,12 @@ impl<A, H> InitiatorContractMonitoring<A, H> {
 	}
 }
 
-impl<A, H> BridgeContractInitiatorMonitoring for InitiatorContractMonitoring<A, H> {
+impl<A: Debug, H: Debug> BridgeContractInitiatorMonitoring for InitiatorContractMonitoring<A, H> {
 	type Address = A;
 	type Hash = H;
 }
 
-impl<A, H> Stream for InitiatorContractMonitoring<A, H> {
+impl<A: Debug, H: Debug> Stream for InitiatorContractMonitoring<A, H> {
 	type Item = BridgeContractInitiatorEvent<
 		<Self as BridgeContractInitiatorMonitoring>::Address,
 		<Self as BridgeContractInitiatorMonitoring>::Hash,
@@ -170,26 +170,28 @@ impl<A, H> Stream for InitiatorContractMonitoring<A, H> {
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
-		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
+		if let Poll::Ready(Some(AbstractBlockchainEvent::InitiatorContractEvent(contract_result))) =
+			this.listener.poll_next_unpin(cx)
+		{
+			tracing::trace!(
+				"InitiatorContractMonitoring: Received contract event: {:?}",
+				contract_result
+			);
 			// Only listen to the initiator contract events
-			if let AbstractBlockchainEvent::InitiatorContractEvent(contract_result) = event {
-				use SmartContractInitiatorEvent::*;
-				match contract_result {
-					Ok(contract_event) => match contract_event {
-						InitiatedBridgeTransfer(details) => {
-							return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(
-								details,
-							)))
-						}
-						CompletedBridgeTransfer(bridge_transfer_id, _) => {
-							return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
-								bridge_transfer_id,
-							)))
-						}
-					},
-					Err(_) => {
-						// Handle error
+			use SmartContractInitiatorEvent::*;
+			match contract_result {
+				Ok(contract_event) => match contract_event {
+					InitiatedBridgeTransfer(details) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
 					}
+					CompletedBridgeTransfer(bridge_transfer_id, _) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
+							bridge_transfer_id,
+						)))
+					}
+				},
+				Err(_) => {
+					// Handle error
 				}
 			}
 		}
@@ -207,35 +209,40 @@ impl<A, H> CounterpartyContractMonitoring<A, H> {
 	}
 }
 
-impl<A, H> BridgeContractCounterpartyMonitoring for CounterpartyContractMonitoring<A, H> {
+impl<A: Debug, H: Debug> BridgeContractCounterpartyMonitoring
+	for CounterpartyContractMonitoring<A, H>
+{
 	type Address = A;
 	type Hash = H;
 }
 
-impl<A, H> Stream for CounterpartyContractMonitoring<A, H> {
+impl<A: Debug, H: Debug> Stream for CounterpartyContractMonitoring<A, H> {
 	type Item = BridgeContractCounterpartyEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
-		if let Poll::Ready(Some(event)) = this.listener.poll_next_unpin(cx) {
-			if let AbstractBlockchainEvent::CounterpartyContractEvent(contract_result) = event {
-				use SmartContractCounterpartyEvent::*;
-				match contract_result {
-					Ok(contract_event) => match contract_event {
-						LockedBridgeTransfer(details) => {
-							return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(
-								details,
-							)))
-						}
-						CompletedBridgeTransfer(details) => {
-							return Poll::Ready(Some(BridgeContractCounterpartyEvent::Completed(
-								details,
-							)))
-						}
-					},
-					Err(_) => {
-						// Handle error
+		if let Poll::Ready(Some(AbstractBlockchainEvent::CounterpartyContractEvent(
+			contract_result,
+		))) = this.listener.poll_next_unpin(cx)
+		{
+			tracing::trace!(
+				"CounterpartyContractMonitoring: Received contract event: {:?}",
+				contract_result
+			);
+			use SmartContractCounterpartyEvent::*;
+			match contract_result {
+				Ok(contract_event) => match contract_event {
+					LockedBridgeTransfer(details) => {
+						return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(details)))
 					}
+					CompletedBridgeTransfer(details) => {
+						return Poll::Ready(Some(BridgeContractCounterpartyEvent::Completed(
+							details,
+						)))
+					}
+				},
+				Err(_) => {
+					// Handle error
 				}
 			}
 		}
@@ -279,24 +286,29 @@ impl BridgeContractInitiator for B1Client {
 
 	async fn complete_bridge_transfer(
 		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: HashLockPreImage,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
+
+		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
 	}
 
 	async fn refund_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		unimplemented!()
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		Ok(None)
+		unimplemented!()
 	}
 }
 
@@ -328,21 +340,21 @@ impl BridgeContractCounterparty for B1Client {
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		unimplemented!()
 	}
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		unimplemented!()
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		Ok(None)
+		unimplemented!()
 	}
 }
 
@@ -476,13 +488,15 @@ pub type B2Service = AbstractBlockchainService<
 	BC2Hash,
 >;
 
-pub fn setup_bridge_service() -> (
-	BridgeService<B1Service, B2Service>,
-	B1Client,
-	B2Client,
-	AbstractBlockchain<BC1Address, BC1Hash, TestRng>,
-	AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
-) {
+pub struct SetupBridgeServiceResult(
+	pub BridgeService<B1Service, B2Service>,
+	pub B1Client,
+	pub B2Client,
+	pub AbstractBlockchain<BC1Address, BC1Hash, TestRng>,
+	pub AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
+);
+
+pub fn setup_bridge_service() -> SetupBridgeServiceResult {
 	let mut rng = TestRng::from_seed([0u8; 32]);
 
 	let mut blockchain_1 =
@@ -524,5 +538,11 @@ pub fn setup_bridge_service() -> (
 
 	let bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
 
-	(bridge_service, blockchain_1_client, blockchain_2_client, blockchain_1, blockchain_2)
+	SetupBridgeServiceResult(
+		bridge_service,
+		blockchain_1_client,
+		blockchain_2_client,
+		blockchain_1,
+		blockchain_2,
+	)
 }

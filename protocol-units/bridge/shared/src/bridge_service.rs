@@ -281,7 +281,13 @@ where
 									initiator_event,
 								))));
 							}
-							BridgeContractInitiatorEvent::Completed(_) => todo!(),
+							BridgeContractInitiatorEvent::Completed(_) => {
+								// The BridgeService successfully completed the swap on blockchain 1 after
+								// obtaining the pre-image of the hash, as the initiator claimed the funds.
+								return Poll::Ready(Some(B1I(IEvent::ContractEvent(
+									initiator_event,
+								))));
+							}
 							BridgeContractInitiatorEvent::Refunded(_) => todo!(),
 						}
 					}

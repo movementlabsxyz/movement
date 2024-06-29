@@ -83,7 +83,7 @@ async fn test_initiate_bridge_transfer() {
 	);
 
 	let details = blockchain
-		.initiater_contract
+		.initiator_contract
 		.initiated_transfers
 		.get(&BridgeTransferId(TestHash("unique_hash")));
 	assert!(details.is_some());
