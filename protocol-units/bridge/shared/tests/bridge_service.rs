@@ -10,13 +10,16 @@ use bridge_shared::{
 	},
 };
 
-use crate::shared::{setup_bridge_service, B2Client, BC1Address, BC1Hash, BC2Address, BC2Hash};
+use crate::shared::{
+	setup_bridge_service, B2Client, BC1Address, BC1Hash, BC2Address, BC2Hash,
+	SetupBridgeServiceResult,
+};
 
 mod shared;
 
 #[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
 async fn test_bridge_service_integration_a_to_b() {
-	let (
+	let SetupBridgeServiceResult(
 		mut bridge_service,
 		mut blockchain_1_client,
 		mut blockchain_2_client,
@@ -31,6 +34,7 @@ async fn test_bridge_service_integration_a_to_b() {
 
 	// The initiator of the swap triggers a bridge transfer, simultaneously time-locking the assets
 	// in the smart contract.
+	tracing::debug!("Initiating bridge transfer");
 	blockchain_1_client
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC1Address("initiator")),
@@ -63,6 +67,8 @@ async fn test_bridge_service_integration_a_to_b() {
 
 	// Upon recognizing the event, our bridge server has invoked the counterparty
 	// contract on blockchain 2 to initiate asset locking within the smart contract.
+	tracing::debug!("Locking assets on Blockchain 2");
+
 	let counterparty_locked_event = bridge_service.next().await.expect("No event");
 	let counterparty_locked_event =
 		counterparty_locked_event.B2C_ContractEvent().expect("Not a B2C event");
@@ -82,6 +88,8 @@ async fn test_bridge_service_integration_a_to_b() {
 
 	// Once the assets are secured within the counterparty smart contract, the initiator is able
 	// to execute the complete bridge transfer by disclosing the secret key required to unlock the assets.
+	tracing::debug!("Client completing bridge transfer on Blockchain 2");
+
 	<B2Client as BridgeContractCounterparty>::complete_bridge_transfer(
 		&mut blockchain_2_client,
 		Convert::convert(transfer_initiated_event.bridge_transfer_id()),
@@ -112,6 +120,8 @@ async fn test_bridge_service_integration_a_to_b() {
 	// As the initiator has successfully claimed the funds on the Counterparty blockchain, the bridge
 	// is now expected to finalize the swap by completing the necessary tasks on the initiator
 	// blockchain.
+	tracing::debug!("Bridge service completing bridge transfer on Blockchain 1");
+
 	let completed_event_initiator = bridge_service.next().await.expect("No event");
 	let completed_event_initiator =
 		completed_event_initiator.B1I_ContractEvent().expect("Not a B1I event");
