@@ -1,4 +1,7 @@
-use std::task::{Context, Poll};
+use std::{
+	pin::Pin,
+	task::{Context, Poll},
+};
 
 use futures::{Stream, StreamExt};
 
@@ -10,67 +13,6 @@ use crate::{
 	},
 	types::{BridgeAddressType, BridgeHashType},
 };
-
-#[macro_export]
-macro_rules! struct_blockchain_service {
-	($Name:ident, $Address:ty, $Hash:ty, $InitiatorContract:ty, $CounterpartyContract:ty, $InitiatorMonitoring:ty, $CounterpartyMonitoring:ty) => {
-		pub struct $Name {
-			pub initiator_contract: $InitiatorContract,
-			pub initiator_monitoring: $InitiatorMonitoring,
-			pub counterparty_contract: $CounterpartyContract,
-			pub counterparty_monitoring: $CounterpartyMonitoring,
-		}
-
-		impl BlockchainService for $Name {
-			type Address = $Address;
-			type Hash = $Hash;
-
-			type InitiatorContract = $InitiatorContract;
-			type CounterpartyContract = $CounterpartyContract;
-			type InitiatorMonitoring = $InitiatorMonitoring;
-			type CounterpartyMonitoring = $CounterpartyMonitoring;
-
-			fn initiator_contract(&self) -> &Self::InitiatorContract {
-				&self.initiator_contract
-			}
-
-			fn counterparty_contract(&self) -> &Self::CounterpartyContract {
-				&self.counterparty_contract
-			}
-
-			fn initiator_monitoring(&mut self) -> &mut Self::InitiatorMonitoring {
-				&mut self.initiator_monitoring
-			}
-
-			fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring {
-				&mut self.counterparty_monitoring
-			}
-		}
-
-		// NOTE For comparison in tests we only care we are the same types
-		impl PartialEq for $Name {
-			fn eq(&self, other: &Self) -> bool {
-				use std::any::{Any, TypeId};
-				TypeId::of::<Self>() == TypeId::of::<Self>()
-			}
-		}
-
-		impl std::fmt::Debug for $Name {
-			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-				f.debug_struct(stringify!($Name)).finish()
-			}
-		}
-
-		impl Stream for $Name {
-			type Item = ContractEvent<$Address, $Hash>;
-
-			fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-				let this = self.get_mut();
-				this.poll_next_event(cx)
-			}
-		}
-	};
-}
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ContractEvent<A, H> {
@@ -110,5 +52,125 @@ pub trait BlockchainService:
 			}
 			_ => Poll::Pending,
 		}
+	}
+}
+
+// Practical implementation
+
+pub struct AbstractBlockchainService<
+	InitiatorContract,
+	InitiatorContractMonitoring,
+	CounterpartyContract,
+	CounterpartyContractMonitoring,
+	Address,
+	Hash,
+> {
+	pub initiator_contract: InitiatorContract,
+	pub initiator_monitoring: InitiatorContractMonitoring,
+	pub counterparty_contract: CounterpartyContract,
+	pub counterparty_monitoring: CounterpartyContractMonitoring,
+	pub _phantom: std::marker::PhantomData<(Address, Hash)>,
+}
+
+impl<
+		InitiatorContract,
+		InitiatorContractMonitoring,
+		CounterpartyContract,
+		CounterpartyContractMonitoring,
+		Address,
+		Hash,
+	> BlockchainService
+	for AbstractBlockchainService<
+		InitiatorContract,
+		InitiatorContractMonitoring,
+		CounterpartyContract,
+		CounterpartyContractMonitoring,
+		Address,
+		Hash,
+	> where
+	InitiatorContract: BridgeContractInitiator<Address = Address, Hash = Hash>,
+	CounterpartyContract: BridgeContractCounterparty<Address = Address, Hash = Hash>,
+	InitiatorContractMonitoring: BridgeContractInitiatorMonitoring<Address = Address, Hash = Hash>,
+	CounterpartyContractMonitoring:
+		BridgeContractCounterpartyMonitoring<Address = Address, Hash = Hash>,
+	Address: BridgeAddressType,
+	Hash: BridgeHashType,
+{
+	type Address = Address;
+	type Hash = Hash;
+
+	type InitiatorContract = InitiatorContract;
+	type CounterpartyContract = CounterpartyContract;
+	type InitiatorMonitoring = InitiatorContractMonitoring;
+	type CounterpartyMonitoring = CounterpartyContractMonitoring;
+
+	fn initiator_contract(&self) -> &Self::InitiatorContract {
+		&self.initiator_contract
+	}
+
+	fn counterparty_contract(&self) -> &Self::CounterpartyContract {
+		&self.counterparty_contract
+	}
+
+	fn initiator_monitoring(&mut self) -> &mut Self::InitiatorMonitoring {
+		&mut self.initiator_monitoring
+	}
+
+	fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring {
+		&mut self.counterparty_monitoring
+	}
+}
+
+impl<
+		InitiatorContract,
+		InitiatorContractMonitoring,
+		CounterpartyContract,
+		CounterpartyContractMonitoring,
+		Address,
+		Hash,
+	> Stream
+	for AbstractBlockchainService<
+		InitiatorContract,
+		InitiatorContractMonitoring,
+		CounterpartyContract,
+		CounterpartyContractMonitoring,
+		Address,
+		Hash,
+	> where
+	InitiatorContract: BridgeContractInitiator<Address = Address, Hash = Hash>,
+	CounterpartyContract: BridgeContractCounterparty<Address = Address, Hash = Hash>,
+	InitiatorContractMonitoring: BridgeContractInitiatorMonitoring<Address = Address, Hash = Hash>,
+	CounterpartyContractMonitoring:
+		BridgeContractCounterpartyMonitoring<Address = Address, Hash = Hash>,
+	Address: BridgeAddressType,
+	Hash: BridgeHashType,
+{
+	type Item = ContractEvent<Address, Hash>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		this.poll_next_event(cx)
+	}
+}
+
+impl<
+		InitiatorContract,
+		InitiatorContractMonitoring,
+		CounterpartyContract,
+		CounterpartyContractMonitoring,
+		Address,
+		Hash,
+	> std::fmt::Debug
+	for AbstractBlockchainService<
+		InitiatorContract,
+		InitiatorContractMonitoring,
+		CounterpartyContract,
+		CounterpartyContractMonitoring,
+		Address,
+		Hash,
+	>
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct(stringify!("AbstractBlockchainService")).finish()
 	}
 }

@@ -1,13 +1,9 @@
-use futures::{Stream, StreamExt};
+use futures::StreamExt;
 use rand::SeedableRng;
-use std::{
-	pin::Pin,
-	task::{Context, Poll},
-};
 use test_log::test;
 
 use bridge_shared::{
-	blockchain_service::{BlockchainService, ContractEvent},
+	blockchain_service::AbstractBlockchainService,
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::BridgeService,
@@ -29,8 +25,15 @@ use shared::testing::{
 	rng::{RngSeededClone, TestRng},
 };
 
-#[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
-async fn test_bridge_service_integration() {
+use self::shared::{B1Service, B2Service};
+
+async fn setup_bridge_service() -> (
+	BridgeService<B1Service, B2Service>,
+	B1Client,
+	B2Client,
+	AbstractBlockchain<BC1Address, BC1Hash, TestRng>,
+	AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
+) {
 	let mut rng = TestRng::from_seed([0u8; 32]);
 
 	let mut blockchain_1 =
@@ -52,46 +55,41 @@ async fn test_bridge_service_integration() {
 	let monitor_2_counterparty =
 		CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
 
-	tokio::spawn(blockchain_1);
-	tokio::spawn(blockchain_2);
-
-	bridge_shared::struct_blockchain_service!(
-		B1Service,
-		BC1Address,
-		BC1Hash,
-		B1Client,
-		B1Client,
-		InitiatorContractMonitoring<BC1Address, BC1Hash>,
-		CounterpartyContractMonitoring<BC1Address, BC1Hash>
-	);
-
-	let mut blockchain_1_client = B1Client::build(client_1.clone());
-	let blockchain_1_service = B1Service {
+	let blockchain_1_client = B1Client::build(client_1.clone());
+	let blockchain_1_service = AbstractBlockchainService {
 		initiator_contract: blockchain_1_client.clone(),
 		initiator_monitoring: monitor_1_initiator,
 		counterparty_contract: blockchain_1_client.clone(),
 		counterparty_monitoring: monitor_1_counterparty,
+		_phantom: Default::default(),
 	};
 
-	bridge_shared::struct_blockchain_service!(
-		B2Service,
-		BC2Address,
-		BC2Hash,
-		B2Client,
-		B2Client,
-		InitiatorContractMonitoring<BC2Address, BC2Hash>,
-		CounterpartyContractMonitoring<BC2Address, BC2Hash>
-	);
-
-	let mut blockchain_2_client = B2Client::build(client_2.clone());
-	let blockchain_2_service = B2Service {
+	let blockchain_2_client = B2Client::build(client_2.clone());
+	let blockchain_2_service = AbstractBlockchainService {
 		initiator_contract: blockchain_2_client.clone(),
 		initiator_monitoring: monitor_2_initiator,
 		counterparty_contract: blockchain_2_client.clone(),
 		counterparty_monitoring: monitor_2_counterparty,
+		_phantom: Default::default(),
 	};
 
-	let mut bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
+	let bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
+
+	(bridge_service, blockchain_1_client, blockchain_2_client, blockchain_1, blockchain_2)
+}
+
+#[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
+async fn test_bridge_service_integration_a_to_b() {
+	let (
+		mut bridge_service,
+		mut blockchain_1_client,
+		mut blockchain_2_client,
+		blockchain_1,
+		blockchain_2,
+	) = setup_bridge_service().await;
+
+	tokio::spawn(blockchain_1);
+	tokio::spawn(blockchain_2);
 
 	// Step 1: Initiating the swap on Blockchain 1
 

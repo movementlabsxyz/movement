@@ -2,6 +2,7 @@
 
 use async_trait::async_trait;
 use bridge_shared::{
+	blockchain_service::AbstractBlockchainService,
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractError, BridgeContractInitiator,
 		BridgeContractResult,
@@ -39,9 +40,7 @@ use crate::shared::testing::blockchain::counterparty_contract::SmartContractCoun
 use self::testing::blockchain::initiator_contract::SmartContractInitiatorEvent;
 
 pub fn hash_static_string(pre_image: &'static str) -> [u8; 8] {
-	let mut hasher = DefaultHasher::new();
-	pre_image.hash(&mut hasher);
-	hasher.finish().to_be_bytes()
+	hash_vec_u8(pre_image.as_bytes())
 }
 
 pub fn hash_vec_u8(data: &[u8]) -> [u8; 8] {
@@ -455,3 +454,22 @@ impl BridgeContractCounterparty for B2Client {
 		Ok(None)
 	}
 }
+
+// Setup the BlockchainService
+pub type B1Service = AbstractBlockchainService<
+	B1Client,
+	InitiatorContractMonitoring<BC1Address, BC1Hash>,
+	B1Client,
+	CounterpartyContractMonitoring<BC1Address, BC1Hash>,
+	BC1Address,
+	BC1Hash,
+>;
+
+pub type B2Service = AbstractBlockchainService<
+	B2Client,
+	InitiatorContractMonitoring<BC2Address, BC2Hash>,
+	B2Client,
+	CounterpartyContractMonitoring<BC2Address, BC2Hash>,
+	BC2Address,
+	BC2Hash,
+>;
