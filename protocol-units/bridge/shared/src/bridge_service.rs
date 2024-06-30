@@ -55,7 +55,7 @@ where
 fn handle_initiator_event<BFrom, BTo>(
 	initiator_event: BridgeContractInitiatorEvent<BFrom::Address, BFrom::Hash>,
 	active_swaps: &mut ActiveSwapMap<BFrom, BTo>,
-) -> Option<Event<BFrom, BTo>>
+) -> Option<IEvent<BFrom::Address, BFrom::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
@@ -68,14 +68,12 @@ where
 		BridgeContractInitiatorEvent::Initiated(ref details) => {
 			if active_swaps.already_executing(&details.bridge_transfer_id) {
 				warn!("BridgeService: Bridge transfer {:?} already present, monitoring should only return event once", details.bridge_transfer_id);
-				return Some(Event::B1I(IEvent::Warn(IWarn::AlreadyPresent(details.clone()))));
+				return Some(IEvent::Warn(IWarn::AlreadyPresent(details.clone())));
 			}
 			active_swaps.start_bridge_transfer(details.clone());
-			Some(Event::B1I(IEvent::ContractEvent(initiator_event)))
+			Some(IEvent::ContractEvent(initiator_event))
 		}
-		BridgeContractInitiatorEvent::Completed(_) => {
-			Some(Event::B1I(IEvent::ContractEvent(initiator_event)))
-		}
+		BridgeContractInitiatorEvent::Completed(_) => Some(IEvent::ContractEvent(initiator_event)),
 		BridgeContractInitiatorEvent::Refunded(_) => todo!(),
 	}
 }
@@ -83,7 +81,7 @@ where
 fn handle_counterparty_event<BFrom, BTo>(
 	event: BridgeContractCounterpartyEvent<BTo::Address, BTo::Hash>,
 	active_swaps: &mut ActiveSwapMap<BFrom, BTo>,
-) -> Option<Event<BFrom, BTo>>
+) -> Option<CEvent<BTo::Address, BTo::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
@@ -93,18 +91,18 @@ where
 {
 	use BridgeContractCounterpartyEvent::*;
 	match event {
-		Locked(ref _details) => Some(Event::B2C(CEvent::ContractEvent(event))),
+		Locked(ref _details) => Some(CEvent::ContractEvent(event)),
 		Completed(ref details) => match active_swaps.complete_bridge_transfer(details.clone()) {
 			Ok(_) => {
 				trace!("BridgeService: Bridge transfer completed successfully");
-				Some(Event::B2C(CEvent::ContractEvent(event)))
+				Some(CEvent::ContractEvent(event))
 			}
 			Err(error) => {
 				warn!("BridgeService: Error completing bridge transfer: {:?}", error);
 				match error {
-					active_swap::ActiveSwapMapError::NonExistingSwap => Some(Event::B2C(
-						CEvent::Warn(CWarn::CannotCompleteUnexistingSwap(details.clone())),
-					)),
+					active_swap::ActiveSwapMapError::NonExistingSwap => {
+						Some(CEvent::Warn(CWarn::CannotCompleteUnexistingSwap(details.clone())))
+					}
 				}
 			}
 		},
@@ -134,6 +132,8 @@ where
 	<B1 as BlockchainService>::Hash: From<<B2 as BlockchainService>::Hash>,
 	<<B1 as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
 		From<<B2 as BlockchainService>::Hash>,
+
+	<B2 as BlockchainService>::Hash: From<<B1 as BlockchainService>::Hash>,
 {
 	type Item = Event<B1, B2>;
 
@@ -202,19 +202,28 @@ where
 		}
 
 		match this.blockchain_1.poll_next_unpin(cx) {
-			Poll::Ready(Some(event)) => {
-				trace!("BridgeService: Received event from blockchain service 1: {:?}", event);
-				match event {
+			Poll::Ready(Some(blockchain_event)) => {
+				trace!(
+					"BridgeService: Received event from blockchain service 1: {:?}",
+					blockchain_event
+				);
+				match blockchain_event {
 					ContractEvent::InitiatorEvent(initiator_event) => {
 						trace!("BridgeService: Initiator event from blockchain service 1");
-						if let Some(event) = handle_initiator_event::<B1, B2>(
+						if let Some(propagate_event) = handle_initiator_event::<B1, B2>(
 							initiator_event,
 							&mut this.active_swaps_b1_to_b2,
 						) {
-							return Poll::Ready(Some(event));
+							return Poll::Ready(Some(Event::B1I(propagate_event)));
 						}
 					}
-					ContractEvent::CounterpartyEvent(_) => {
+					ContractEvent::CounterpartyEvent(counterparty_event) => {
+						if let Some(propagate_event) = handle_counterparty_event::<B2, B1>(
+							counterparty_event,
+							&mut this.active_swaps_b2_to_b1,
+						) {
+							return Poll::Ready(Some(Event::B1C(propagate_event)));
+						}
 						trace!("BridgeService: Counterparty event from blockchain service 1");
 					}
 				}
@@ -228,19 +237,28 @@ where
 		}
 
 		match this.blockchain_2.poll_next_unpin(cx) {
-			Poll::Ready(Some(event)) => {
-				trace!("BridgeService: Received event from blockchain service 2: {:?}", event);
-				match event {
-					ContractEvent::InitiatorEvent(_) => {
+			Poll::Ready(Some(blockchain_event)) => {
+				trace!(
+					"BridgeService: Received event from blockchain service 2: {:?}",
+					blockchain_event
+				);
+				match blockchain_event {
+					ContractEvent::InitiatorEvent(initiator_event) => {
 						trace!("BridgeService: Initiator event from blockchain service 2");
+						if let Some(propagate_event) = handle_initiator_event::<B2, B1>(
+							initiator_event,
+							&mut this.active_swaps_b2_to_b1,
+						) {
+							return Poll::Ready(Some(Event::B2I(propagate_event)));
+						}
 					}
-					ContractEvent::CounterpartyEvent(event) => {
+					ContractEvent::CounterpartyEvent(counterparty_event) => {
 						trace!("BridgeService: Counterparty event from blockchain service 2");
-						if let Some(event) = handle_counterparty_event::<B1, B2>(
-							event,
+						if let Some(propagate_event) = handle_counterparty_event::<B1, B2>(
+							counterparty_event,
 							&mut this.active_swaps_b1_to_b2,
 						) {
-							return Poll::Ready(Some(event));
+							return Poll::Ready(Some(Event::B2C(propagate_event)));
 						}
 					}
 				}
