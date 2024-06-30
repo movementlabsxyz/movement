@@ -15,6 +15,9 @@ processes:
   build-suzuka-full-node:
     command: |
       ./scripts/services/suzuka-full-node/build
+  build-movement-swap:
+    command: |
+      ./scripts/services/movement-swap/build
 
   build:
     command: |
@@ -25,4 +28,6 @@ processes:
       build-wait-for-celestia-light-node:
         condition: process_completed_successfully
       build-suzuka-full-node:
+        condition: process_completed_successfully
+      build-movement-swap:
         condition: process_completed_successfully
