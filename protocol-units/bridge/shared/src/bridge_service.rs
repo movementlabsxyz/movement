@@ -189,8 +189,15 @@ where
 					BridgeAssetsLockingError(error) => {
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
 					}
-					BridgeAssetsCompleted(_) => todo!(),
-					BridgeAssetsCompletingError(_) => todo!(),
+					BridgeAssetsCompleted(bridge_transfer_id) => {
+						trace!(
+							"BridgeService: Bridge assets completed for transfer {:?}",
+							bridge_transfer_id
+						);
+					}
+					BridgeAssetsCompletingError(error) => {
+						warn!("BridgeService: Error completing bridge assets: {:?}", error);
+					}
 				}
 			}
 			Poll::Ready(None) => {
