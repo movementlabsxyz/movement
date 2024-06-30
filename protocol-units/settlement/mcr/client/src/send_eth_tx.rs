@@ -35,7 +35,7 @@ impl VerifyRule for SendTxErrorRule<UnderPriced> {
 			return Ok(false);
 		};
 
-		if payload.code == -32000 && payload.message.contains("transaction underpriced") {
+		if payload.code == -32000 && payload.message.contains("transaction under priced") {
 			Ok(true)
 		} else {
 			Ok(false)
