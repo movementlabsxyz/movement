@@ -337,10 +337,14 @@ impl BridgeContractCounterparty for B1Client {
 
 	async fn complete_bridge_transfer(
 		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: HashLockPreImage,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		secret: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		unimplemented!()
+		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
+		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
 	}
 
 	async fn abort_bridge_transfer(
@@ -458,14 +462,14 @@ impl BridgeContractCounterparty for B2Client {
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<()> {
-		Ok(())
+		unimplemented!()
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		Ok(None)
+		unimplemented!()
 	}
 }
 
