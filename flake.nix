@@ -134,25 +134,6 @@
           };
           inherit craneLib;
         };
-
-        movementswap-core = pkgs.stdenv.mkDerivation {
-          pname = "movementswap-core";
-          version = "branch-main";
-          src = pkgs.fetchFromGitHub {
-              owner = "movementlabsxyz";
-              repo = "movementswap-core";
-              rev = "b05e21ad220de11af266696bb3b00ab8b0893e24";
-              sha256 = "sha256-hSmzcr3ZJIVCuOt5x+Run3o3xyUtS6qqQiE8Tsefb9g=";
-          };
-          installPhase = ''
-              cp -r . $out
-          '';
-          meta = with pkgs.lib; {
-              description = "Movementswap core repository";
-              homepage = "https://github.com/movementlabsxyz/movementswap-core";
-              license = licenses.asl20;
-          };
-        };
     
       in
         with pkgs; {
@@ -187,7 +168,6 @@
             OPENSSL_DEV = pkgs.openssl.dev;
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
             MONZA_APTOS_PATH = monza-aptos;
-            MOVEMENT_SWAP_PATH = movementswap-core;
 
             buildInputs = [] ++buildDependencies ++sysDependencies ++testDependencies;
             nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
@@ -198,18 +178,8 @@
               // # Movement Swap Core
               DOT_MOVEMENT_PATH=$(pwd)/.movement
               mkdir -p $DOT_MOVEMENT_PATH
-              export $MOVEMENT_SWAP_PATH
-              echo "Building movement-swap-core..."
-              cp -R "$MOVEMENT_SWAP_PATH" $DOT_MOVEMENT_PATH/movementswap-core
-              chmod -R 755 $DOT_MOVEMENT_PATH/movementswap-core
-              WORKING_DIRECTORY=$(pwd)
-              cd $DOT_MOVEMENT_PATH/movementswap-core/tests/typescript-sdk
-              npm install pnpm
-              pnpm install
-              cd $WORKING_DIRECTORY
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
-              echo "Movementswap path: $MOVEMENT_SWAP_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
                 ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)

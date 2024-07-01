@@ -1,10 +1,3 @@
-{"timestamp":"2024-06-18T17:41:50.973094Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973094Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973100Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973146Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973152Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973164Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973170Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973194Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973255Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
-{"timestamp":"2024-06-18T17:41:50.973273Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":0,\"elapse_millli\":0,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2024-07-01T23:13:06.544875Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":130932,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2024-07-01T23:13:06.544942Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":130932}"},"target":"exec"}
+{"timestamp":"2024-07-01T23:13:06.545057Z","level":"INFO","fields":{"metrics_average_exec_time":"130932"},"target":"exec"}

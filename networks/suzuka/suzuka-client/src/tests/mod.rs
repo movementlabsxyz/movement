@@ -556,16 +556,15 @@ pub async fn test_hey_partners() -> Result<(), anyhow::Error> {
 }
 
 async fn test_hey_partners_internal() -> Result<(), anyhow::Error> {
-	let root: PathBuf = cargo_workspace()?;
-    let combined_path = if let Ok(path) = env::var("MOVEMENT_SWAP_PATH") {
-        root.join(path)
-    };
+    let root: PathBuf = cargo_workspace()?;
+	let additional_path = "networks/suzuka/suzuka-client/src/tests/hey-partners/";
+	let combined_path = root.join(additional_path);
 
-	
-    
-    println!("Combined path: {:?}", combined_path);
-	let output =
-	run_command("/bin/bash", &[format!("{}{}", combined_path, "test.sh").as_str()]).await?;
-	println!("Output: {}", output);
-	Ok(output)
+	let test = combined_path.to_string_lossy();
+	println!("{}", test);
+
+    let output =
+		run_command("/bin/bash", &[format!("{}{}", test, "test.sh").as_str()]).await?;
+    println!("Output: {}", output);
+    Ok(())
 }
