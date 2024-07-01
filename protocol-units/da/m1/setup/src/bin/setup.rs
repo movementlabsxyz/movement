@@ -1,5 +1,9 @@
 use m1_da_light_node_setup::setup;
 use m1_da_light_node_util::config::M1DaLightNodeConfig;
+use godfig::{
+	Godfig,
+	backend::config_file::ConfigFile
+};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -11,13 +15,28 @@ async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
+	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement.try_get_config_from_json::<M1DaLightNodeConfig>().unwrap_or_default();
+	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 
-	tracing::info!("Setting up the light node.");
-	let config = setup(dot_movement.clone(), config).await?;
+	// get a matching godfig object
+	let godfig : Godfig<M1DaLightNodeConfig, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
 
-	dot_movement.try_write_config_to_json(&config)?;
+	// run a godfig transaction to update the file
+	godfig.try_transaction(|config| async move {
+		println!("Config: {:?}", config);
+		match config {
+			Some(config) => {
+				let config = setup(dot_movement.clone(), config).await?;
+				Ok(Some(config))
+			},
+			None => {
+				let config = M1DaLightNodeConfig::default();
+				let config = setup(dot_movement.clone(), config).await?;
+				Ok(Some(config))
+			}
+		}
+	}).await?;
 
 	Ok(())
 }
