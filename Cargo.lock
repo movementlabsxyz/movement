@@ -7035,6 +7035,7 @@ dependencies = [
  "dot-movement",
  "hex",
  "m1-da-light-node-grpc",
+ "m1-da-light-node-setup",
  "m1-da-light-node-util",
  "prost",
  "serde_json",
@@ -7239,7 +7240,9 @@ dependencies = [
  "anyhow",
  "async-stream",
  "async-trait",
+ "futures",
  "mcr-settlement-client",
+ "mcr-settlement-config",
  "movement-types",
  "serde_json",
  "tokio",
@@ -11171,6 +11174,7 @@ dependencies = [
  "dot-movement",
  "suzuka-config",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
