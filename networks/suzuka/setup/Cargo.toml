@@ -16,6 +16,7 @@ dot-movement = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 m1-da-light-node-setup = { workspace = true }
 mcr-settlement-setup = { workspace = true }
+mcr-settlement-config = { workspace = true }
 suzuka-config = { workspace = true }
 
 anyhow = { workspace = true }
