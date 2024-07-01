@@ -8013,6 +8013,8 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-api",
+ "hex",
+ "movement-types",
  "poem",
  "tokio",
  "tracing",

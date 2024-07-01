@@ -25,24 +25,6 @@ pub struct Config {
 	pub maptos_faucet_rest_listen_port: u16,
 }
 
-impl Config {
-	pub fn get_rest_url(&self) -> Result<Url, anyhow::Error> {
-		let faucet_url = Url::from_str(&format!(
-			"http://{}:{}",
-			&self.maptos_rest_connection_hostname, self.maptos_rest_connection_port
-		))?;
-		Ok(faucet_url)
-	}
-
-	pub fn get_faucet_url(&self) -> Result<Url, anyhow::Error> {
-		let faucet_url = Url::from_str(&format!(
-			"http://{}:{}",
-			&self.maptos_faucet_rest_listen_hostname, self.maptos_faucet_rest_listen_port
-		))?;
-		Ok(faucet_url)
-	}
-}
-
 impl Default for Config {
 	fn default() -> Self {
 		Self {

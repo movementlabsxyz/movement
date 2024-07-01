@@ -294,9 +294,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(
-				executor.maptos_config.chain.maptos_private_key.clone(),
-			),
+			AccountKey::from_private_key(executor.maptos_config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -316,10 +314,11 @@ mod tests {
 			let current_time_microseconds = chrono::Utc::now().timestamp_micros() as u64;
 
 			// Create a transaction factory with the chain ID of the executor, used for creating transactions.
-			let tx_factory = TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone())
-				.with_transaction_expiration_time(
-					current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
-				);
+			let tx_factory =
+				TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone())
+					.with_transaction_expiration_time(
+						current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
+					);
 
 			// Create a block metadata transaction.
 			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
@@ -397,9 +396,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(
-				executor.maptos_config.chain.maptos_private_key.clone(),
-			),
+			AccountKey::from_private_key(executor.maptos_config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -408,7 +405,8 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone());
+		let tx_factory =
+			TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {

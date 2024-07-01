@@ -4,37 +4,15 @@ use crate::{
 	types::LocalAccount,
 };
 use anyhow::{Context, Result};
-use std::str::FromStr;
 use tokio::time::{sleep, Duration};
-use url::Url;
 
 #[tokio::test]
 async fn test_rest_state_root_hash() -> Result<()> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
-	let connection_host = suzuka_config
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_hostname;
-	let connection_port =
-		suzuka_config.execution_config.maptos_config.client.maptos_rest_connection_port;
-	let node_url =
-		Url::from_str(&format!("http://{}:{}", connection_host, connection_port)).unwrap();
-
-	let connection_host = suzuka_config
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_hostname;
-	let connection_port = suzuka_config
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_port;
-	let faucet_url =
-		Url::from_str(&format!("http://{}:{}", connection_host, connection_port)).unwrap();
+	let node_url = suzuka_config.execution_config.maptos_config.client.get_rest_url()?;
+	let faucet_url = suzuka_config.execution_config.maptos_config.client.get_faucet_url()?;
 
 	let rest_client = Client::new(node_url.clone());
 	let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone());
@@ -135,13 +113,12 @@ async fn test_rest_state_root_hash() -> Result<()> {
 	sleep(Duration::from_secs(10)).await;
 
 	let cur_blockheight = rest_client.get_ledger_information().await?.state().block_height;
-	let base_url = "http://localhost:30832";
-	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", cur_blockheight);
-	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
+	let state_root_hash_query = format!("movement/v1/state-root-hash/{}", cur_blockheight);
+	let state_root_hash_url = format!("{}{}", node_url, state_root_hash_query);
 	println!("State root hash url: {}", state_root_hash_url);
 
 	let client = reqwest::Client::new();
-	let health_url = format!("{}/health", base_url);
+	let health_url = format!("{}movement/v1/health", node_url);
 	let response = client.get(&health_url).send().await?;
 	println!("response:{response:?}",);
 	assert!(response.status().is_success());

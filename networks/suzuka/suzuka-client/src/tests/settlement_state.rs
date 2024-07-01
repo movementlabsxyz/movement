@@ -6,7 +6,7 @@ use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use aptos_sdk::{
 	coin_client::CoinClient,
-	rest_client::{Client, FaucetClient},
+	rest_client::{Client as AptosClient, FaucetClient},
 	types::LocalAccount,
 };
 use url::Url;
@@ -24,11 +24,14 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
+	let node_url = suzuka_config.execution_config.maptos_config.client.get_rest_url()?;
+	let faucet_url = suzuka_config.execution_config.maptos_config.client.get_faucet_url()?;
+
 	//1) start Alice an Bod transfer transactions.
 	// loop on Alice abd Bod transfer to produce Tx and block
 	let loop_jh = tokio::spawn({
-		let node_url = suzuka_config.execution_config.maptos_config.faucet.get_rest_url()?;
-		let faucet_url = suzuka_config.execution_config.maptos_config.faucet.get_faucet_url()?;
+		let node_url = node_url.clone();
+		let faucet_url = faucet_url.clone();
 		async move {
 			loop {
 				tracing::info!("Run run_alice_bob_tx");
@@ -157,13 +160,65 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 
 	//3) Get Suzuka block at settlement height
 	let client = reqwest::Client::new();
-	let base_url = "http://0.0.0.0:30832";
-	let state_root_hash_query = format!("/movement/v1/state-root-hash/{}", height);
-	let state_root_hash_url = format!("{}{}", base_url, state_root_hash_query);
+	println!("node_url:{node_url:?}");
+
+	let rest_client = AptosClient::new(node_url.clone());
+
+	for height in 1..10 {
+		let MCR::getValidatorCommitmentAtBlockHeightReturn {
+			_0: get_validator_commitment_at_block_height,
+		} = contract
+			.getValidatorCommitmentAtBlockHeight(U256::from(height), signer_address)
+			.call()
+			.await?;
+		println!(
+			"commitment height:{height}: {:?}, {:?}, {:?}",
+			get_validator_commitment_at_block_height.height,
+			get_validator_commitment_at_block_height.blockId,
+			get_validator_commitment_at_block_height.commitment,
+		);
+	}
+
+	let state_root_hash_query = format!("movement/v1/state-root-hash/{}", height);
+	let state_root_hash_url = format!("{}{}", node_url, state_root_hash_query);
+	println!("state_root_hash_url:{state_root_hash_url}");
 	let response = client.get(&state_root_hash_url).send().await?;
 	let state_key = response.text().await?;
-
 	println!("state_key;{state_key:?}",);
+
+	let MCR::getValidatorCommitmentAtBlockHeightReturn {
+		_0: get_validator_commitment_at_block_height,
+	} = contract
+		.getValidatorCommitmentAtBlockHeight(U256::from(2), signer_address)
+		.call()
+		.await?;
+	println!(
+		"getValidatorCommitmentAtBlockHeight 2: {:?}, {:?}, {:?}",
+		get_validator_commitment_at_block_height.height,
+		get_validator_commitment_at_block_height.commitment,
+		get_validator_commitment_at_block_height.blockId,
+	);
+
+	let cur_blockheight = rest_client.get_ledger_information().await?.state().block_height;
+	println!("cur_blockheight:{cur_blockheight:?}");
+	let state_root_hash_query = format!("movement/v1/state-root-hash/{}", cur_blockheight);
+	let state_root_hash_url = format!("{}{}", node_url, state_root_hash_query);
+	let response = client.get(&state_root_hash_url).send().await?;
+	let state_key = response.text().await?;
+	println!("state_key;{state_key:?}",);
+
+	let MCR::getValidatorCommitmentAtBlockHeightReturn {
+		_0: get_validator_commitment_at_block_height,
+	} = contract
+		.getValidatorCommitmentAtBlockHeight(U256::from(cur_blockheight), signer_address)
+		.call()
+		.await?;
+	println!(
+		"getValidatorCommitmentAtBlockHeight: {:?}, {:?}, {:?}",
+		get_validator_commitment_at_block_height.height,
+		get_validator_commitment_at_block_height.commitment,
+		get_validator_commitment_at_block_height.blockId,
+	);
 
 	// verify that the block state match the settlement one. Block is FIN.
 
@@ -172,7 +227,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 
 async fn run_alice_bob_tx(node_url: &Url, faucet_url: &Url) -> anyhow::Result<()> {
 	println!("Start alice bob");
-	let rest_client = Client::new(node_url.clone());
+	let rest_client = AptosClient::new(node_url.clone());
 	let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone()); // <:!:section_1a
 
 	let coin_client = CoinClient::new(&rest_client); // <:!:section_1b
