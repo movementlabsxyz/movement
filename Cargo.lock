@@ -3367,6 +3367,13 @@ dependencies = [
 [[package]]
 name = "bridge-cli"
 version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.7",
+ "ethereum-bridge",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "bridge-shared"

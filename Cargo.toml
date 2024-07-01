@@ -39,6 +39,7 @@ rust-version = "1.75"
 # internal
 ## bridge
 bridge-shared = { path = "protocol-units/bridge/shared" }
+ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }

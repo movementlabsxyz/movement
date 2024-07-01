@@ -301,4 +301,3 @@ fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 }
 
 mod tests {}
-
