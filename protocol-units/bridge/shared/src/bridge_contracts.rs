@@ -25,7 +25,6 @@ impl BridgeContractError {
 
 pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
 
-//@TODO implement for Aptos and Etherem
 #[async_trait::async_trait]
 pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
