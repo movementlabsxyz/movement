@@ -1,63 +1,88 @@
-use crate::send_eth_tx::InsufficentFunds;
-use crate::send_eth_tx::SendTxErrorRule;
-use crate::send_eth_tx::UnderPriced;
-use crate::send_eth_tx::VerifyRule;
+use crate::send_eth_transaction::InsufficentFunds;
+use crate::send_eth_transaction::SendTransactionErrorRule;
+use crate::send_eth_transaction::UnderPriced;
+use crate::send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
-use movement_types::BlockCommitment;
-use movement_types::{Commitment, Id};
-
-use alloy::pubsub::PubSubFrontend;
 use alloy_network::Ethereum;
-use alloy_network::EthereumSigner;
 use alloy_primitives::Address;
-use alloy_primitives::U256;
 use alloy_provider::fillers::ChainIdFiller;
 use alloy_provider::fillers::FillProvider;
 use alloy_provider::fillers::GasFiller;
 use alloy_provider::fillers::JoinFill;
 use alloy_provider::fillers::NonceFiller;
 use alloy_provider::fillers::SignerFiller;
-use alloy_provider::Provider;
+use std::array::TryFromSliceError;
+use std::str::FromStr;
+//use alloy_provider::fillers::TransactionFiller;
 use alloy_provider::{ProviderBuilder, RootProvider};
-use alloy_signer_wallet::LocalWallet;
+use alloy_transport::Transport;
+use movement_types::{Commitment, Id};
+use std::marker::PhantomData;
+use tokio_stream::StreamExt;
+//use alloy_network::Network;
+use alloy_provider::Provider;
+use thiserror::Error;
+//use alloy_network::EthereumSigner;
+use alloy_primitives::U256;
+//use alloy_provider::ProviderBuilder;
 use alloy_sol_types::sol;
+//use alloy_transport_http::Http;
+use alloy::pubsub::PubSubFrontend;
+use alloy_network::EthereumSigner;
+use alloy_signer_wallet::LocalWallet;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
+use movement_types::BlockCommitment;
+use std::env;
 
-use anyhow::Context;
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
-use tokio_stream::StreamExt;
+const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
+const MAX_TRANSACTION_SEND_RETRY: usize = 10;
+const DEFAULT_TRANSACTION_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 
-use std::array::TryFromSliceError;
-
-const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_TX_GAS_LIMIT: u64 = 10_000_000_000;
-
-/// Configuration of the MCR settlement client.
-///
-/// This structure is meant to be used in serialization.
-/// Validation is done by the builder interface of the [`Client`].
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Config {
-	pub rpc_url: Option<String>,
-	pub ws_url: Option<String>,
-	pub signer_private_key: Option<String>,
-	pub mcr_contract_address: String,
-	pub gas_limit: u64,
-	pub num_tx_send_retries: u32,
+#[derive(Clone, Debug)]
+pub struct McrEthSettlementConfig {
+	pub mrc_contract_address: String,
+	pub gas_limit: u128,
+	pub transaction_send_number_retry: usize,
 }
 
-impl Default for Config {
+impl McrEthSettlementConfig {
+	fn get_from_env<T: FromStr>(env_var: &str) -> Result<T, McrEthConnectorError>
+	where
+		<T as FromStr>::Err: std::fmt::Display,
+	{
+		env::var(env_var)
+			.map_err(|err| {
+				McrEthConnectorError::BadlyDefineEnvVariable(format!(
+					"{env_var} env var is not defined :{err}"
+				))
+			})
+			.and_then(|v| {
+				T::from_str(&v).map_err(|err| {
+					McrEthConnectorError::BadlyDefineEnvVariable(format!(
+						"Parse error for {env_var} env var:{err}"
+					))
+				})
+			})
+	}
+	pub fn try_from_env() -> Result<Self, McrEthConnectorError> {
+		Ok(McrEthSettlementConfig {
+			mrc_contract_address: env::var("MCR_CONTRACT_ADDRESS")
+				.unwrap_or(MRC_CONTRACT_ADDRESS.to_string()),
+			gas_limit: Self::get_from_env::<u128>("MCR_TRANSACTION_SEND_GAS_LIMIT")?,
+			transaction_send_number_retry: Self::get_from_env::<usize>(
+				"MCR_TRANSACTION_SEND_NUMBER_RETRY",
+			)?,
+		})
+	}
+}
+
+impl Default for McrEthSettlementConfig {
 	fn default() -> Self {
-		Config {
-			rpc_url: Some("http://localhost:8545".into()),
-			ws_url: Some("ws://localhost:8546".into()),
-			signer_private_key: Some(LocalWallet::random().to_bytes().to_string()),
-			mcr_contract_address: MCR_CONTRACT_ADDRESS.into(),
-			gas_limit: DEFAULT_TX_GAS_LIMIT,
-			num_tx_send_retries: MAX_TX_SEND_RETRIES,
+		McrEthSettlementConfig {
+			mrc_contract_address: MRC_CONTRACT_ADDRESS.to_string(),
+			gas_limit: DEFAULT_TRANSACTION_GAS_LIMIT,
+			transaction_send_number_retry: MAX_TRANSACTION_SEND_RETRY,
 		}
 	}
 }
@@ -65,22 +90,24 @@ impl Default for Config {
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Tx fail because gas estimation is to high. Estimated gas:{0} gas limit:{1}"
+		"MCR Settlement Transaction fail because gas estimation is to high. Estimated gas:{0} gas limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
-	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]
+	#[error("MCR Settlement Transaction fail because account funds are insufficient. error:{0}")]
 	InsufficientFunds(String),
-	#[error("MCR Settlement Tx send fail because :{0}")]
-	SendTxError(#[from] alloy_contract::Error),
-	#[error("MCR Settlement Tx send fail during its execution :{0}")]
-	RpcTxExecution(String),
+	#[error("MCR Settlement Transaction send fail because :{0}")]
+	SendTransactionError(#[from] alloy_contract::Error),
+	#[error("MCR Settlement Transaction send fail during its execution :{0}")]
+	RpcTransactionExecution(String),
 	#[error("MCR Settlement BlockAccepted event notification error :{0}")]
 	EventNotificationError(#[from] alloy_sol_types::Error),
 	#[error("MCR Settlement BlockAccepted event notification stream close")]
 	EventNotificationStreamClosed,
+	#[error("MCR Settlement Error environment variable:{0}")]
+	BadlyDefineEnvVariable(String),
 }
 
-// Codegen from artifact.
+// Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
 sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
@@ -88,18 +115,33 @@ sol!(
 	"abis/MCRLegacy.json"
 );
 
-pub struct Client<P> {
+// Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
+sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	MovementStaking,
+	"abis/MovementStaking.json"
+);
+
+// Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
+sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	MOVEToken,
+	"abis/MOVEToken.json"
+);
+
+pub struct McrEthSettlementClient<P, T> {
 	rpc_provider: P,
-	ws_provider: RootProvider<PubSubFrontend>,
 	signer_address: Address,
-	contract_address: Address,
-	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
-	gas_limit: u64,
-	num_tx_send_retries: u32,
+	ws_provider: RootProvider<PubSubFrontend>,
+	config: McrEthSettlementConfig,
+	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
+	_marker: PhantomData<T>,
 }
 
 impl
-	Client<
+	McrEthSettlementClient<
 		FillProvider<
 			JoinFill<
 				JoinFill<
@@ -112,77 +154,70 @@ impl
 			BoxTransport,
 			Ethereum,
 		>,
+		BoxTransport,
 	>
 {
-	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key =
-			config.signer_private_key.context("Signer private key is not set")?;
+	pub async fn build_with_urls<S2>(
+		rpc: &str,
+		ws_url: S2,
+		signer_private_key: &str,
+		config: McrEthSettlementConfig,
+	) -> Result<Self, anyhow::Error>
+	where
+		S2: Into<String>,
+	{
 		let signer: LocalWallet = signer_private_key.parse()?;
 		let signer_address = signer.address();
-		let contract_address = config.mcr_contract_address.parse()?;
-		let rpc_url = config.rpc_url.context("Ethereum RPC URL is not set")?;
-		let ws_url = config.ws_url.context("Ethereum WebSocket URL is not set")?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer))
-			.on_builtin(&rpc_url)
+			.on_builtin(rpc)
 			.await?;
 
-		Client::build_with_provider(
-			rpc_provider,
-			ws_url,
-			signer_address,
-			contract_address,
-			config.gas_limit,
-			config.num_tx_send_retries,
-		)
-		.await
+		McrEthSettlementClient::build_with_provider(rpc_provider, signer_address, ws_url, config)
+			.await
 	}
 }
 
-impl<P> Client<P> {
-	async fn build_with_provider<S>(
+impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrEthSettlementClient<P, T> {
+	pub async fn build_with_provider<S>(
 		rpc_provider: P,
-		ws_url: S,
 		signer_address: Address,
-		contract_address: Address,
-		gas_limit: u64,
-		num_tx_send_retries: u32,
+		ws_url: S,
+		config: McrEthSettlementConfig,
 	) -> Result<Self, anyhow::Error>
 	where
-		P: Provider + Clone,
 		S: Into<String>,
 	{
 		let ws = WsConnect::new(ws_url);
 
 		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 
-		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
-		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
-		let send_tx_error_rules = vec![rule1, rule2];
+		let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
+		let rule2: Box<dyn VerifyRule> =
+			Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
+		let send_transaction_error_rules = vec![rule1, rule2];
 
-		Ok(Client {
+		Ok(McrEthSettlementClient {
 			rpc_provider,
-			ws_provider,
 			signer_address,
-			contract_address,
-			send_tx_error_rules,
-			gas_limit,
-			num_tx_send_retries,
+			ws_provider,
+			send_transaction_error_rules,
+			config,
+			_marker: Default::default(),
 		})
 	}
 }
 
 #[async_trait::async_trait]
-impl<P> McrSettlementClientOperations for Client<P>
-where
-	P: Provider + Clone,
+impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClientOperations
+	for McrEthSettlementClient<P, T>
 {
 	async fn post_block_commitment(
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		let contract = MCR::new(self.contract_address, &self.rpc_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
 
 		let eth_block_commitment = MCR::BlockCommitment {
 			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
@@ -193,11 +228,11 @@ where
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
 
-		crate::send_eth_tx::send_tx(
+		crate::send_eth_transaction::send_transaction(
 			call_builder,
-			&self.send_tx_error_rules,
-			self.num_tx_send_retries,
-			self.gas_limit as u128,
+			&self.send_transaction_error_rules,
+			self.config.transaction_send_number_retry,
+			self.config.gas_limit,
 		)
 		.await
 	}
@@ -206,7 +241,7 @@ where
 		&self,
 		block_commitments: Vec<BlockCommitment>,
 	) -> Result<(), anyhow::Error> {
-		let contract = MCR::new(self.contract_address, &self.rpc_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
 
 		let eth_block_commitment: Vec<_> = block_commitments
 			.into_iter()
@@ -222,11 +257,11 @@ where
 
 		let call_builder = contract.submitBatchBlockCommitment(eth_block_commitment);
 
-		crate::send_eth_tx::send_tx(
+		crate::send_eth_transaction::send_transaction(
 			call_builder,
-			&self.send_tx_error_rules,
-			self.num_tx_send_retries,
-			self.gas_limit as u128,
+			&self.send_transaction_error_rules,
+			self.config.transaction_send_number_retry,
+			self.config.gas_limit,
 		)
 		.await
 	}
@@ -234,7 +269,7 @@ where
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		//register to contract BlockCommitmentSubmitted event
 
-		let contract = MCR::new(self.contract_address, &self.ws_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
 
 		let stream = event_filter.into_stream().map(|event| {
@@ -260,7 +295,7 @@ where
 		&self,
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
-		let contract = MCR::new(self.contract_address, &self.ws_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
 		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
 			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
 			.call()
@@ -275,7 +310,7 @@ where
 	}
 
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
-		let contract = MCR::new(self.contract_address, &self.ws_provider);
+		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
 			contract.getMaxTolerableBlockHeight().call().await?;
 		let return_height: u64 = block_height.try_into()?;
@@ -284,27 +319,19 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-	use super::*;
-	use alloy_primitives::Bytes;
-	use alloy_provider::ProviderBuilder;
-	use alloy_rpc_types::TransactionRequest;
-	use alloy_signer_wallet::LocalWallet;
-	use alloy_transport::Transport;
+pub mod test {
+	use crate::eth::mcr;
 
+	use super::*;
+	use alloy_provider::ProviderBuilder;
+	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
 
-	use anyhow::Context;
-	use serde_json::Value as JsonValue;
-
-	use std::env;
-	use std::fs;
-
-	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
+	// Define 2 validators (alice and bob) with each a little more than 50% of stake.
 	// After genesis ceremony, 2 validator send the commitment for height 1.
 	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
 	// Wait the commitment accepted event.
-	//#[cfg(feature = "integration-tests")]
+	//#[ignore]
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		//Activate to debug the test.
@@ -321,27 +348,36 @@ mod tests {
 		let rpc_url = format!("http://localhost:{rpc_port}");
 		let ws_url = format!("ws://localhost:{rpc_port}");
 
-		let anvil_addresses = read_anvil_json_file_addresses()?;
+		let anvil_address = read_anvil_json_file_address()?;
 
 		//Do SC ceremony init stake calls.
-		do_genesis_ceremonial(&anvil_addresses, &rpc_url).await?;
+		run_genesis_ceremony(&anvil_address, &rpc_url).await?;
 
-		let mcr_address = read_mcr_sc_adress()?;
+		let mcr_address = read_mcr_smart_contract_address()?;
 		//Define Signers. Ceremony define 2 signers with half stake each.
-		let signer1: LocalWallet = anvil_addresses[1].private_key.parse()?;
-		let signer1_addr = signer1.address();
-
-		let config = Config {
-			mcr_contract_address: mcr_address.to_string(),
-			rpc_url: Some(rpc_url),
-			ws_url: Some(ws_url),
-			..Default::default()
-		};
+		let alice: LocalWallet = anvil_address[1].1.parse()?;
+		let alice_address = alice.address();
 
 		//Build client 1 and send first commitment.
-		let config1 =
-			Config { signer_private_key: Some(signer1_addr.to_string()), ..config.clone() };
-		let client1 = Client::build_with_config(config1).await.unwrap();
+		let provider_client1 = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.signer(EthereumSigner::from(alice))
+			.on_http(rpc_url.parse().unwrap());
+
+		let config = McrEthSettlementConfig {
+			mrc_contract_address: mcr_address.to_string(),
+			gas_limit: DEFAULT_TRANSACTION_GAS_LIMIT,
+			transaction_send_number_retry: MAX_TRANSACTION_SEND_RETRY,
+		};
+
+		let client1 = McrEthSettlementClient::build_with_provider(
+			provider_client1,
+			alice_address,
+			ws_url.clone(),
+			config.clone(),
+		)
+		.await
+		.unwrap();
 
 		let mut client1_stream = client1.stream_block_commitments().await.unwrap();
 
@@ -358,11 +394,10 @@ mod tests {
 		assert!(res.is_err());
 
 		//Build client 2 and send the second commitment.
-		let config2 = Config {
-			signer_private_key: Some(anvil_addresses[2].private_key.clone()),
-			..config.clone()
-		};
-		let client2 = Client::build_with_config(config2).await.unwrap();
+		let client2 =
+			McrEthSettlementClient::build_with_urls(&rpc_url, ws_url, &anvil_address[2].1, config)
+				.await
+				.unwrap();
 
 		let mut client2_stream = client2.stream_block_commitments().await.unwrap();
 
@@ -431,100 +466,118 @@ mod tests {
 		Ok(())
 	}
 
-	struct AnvilAddressEntry {
-		address: String,
-		private_key: String,
-	}
-
-	fn read_anvil_json_file_addresses() -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
-		let anvil_conf_file = env::var("ANVIL_JSON_PATH").context(
-			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil json file",
-		)?;
+	use serde_json::{from_str, Value};
+	use std::fs;
+	fn read_anvil_json_file_address() -> Result<Vec<(String, String)>, anyhow::Error> {
+		let anvil_conf_file = env::var("ANVIL_JSON_PATH")?;
 		let file_content = fs::read_to_string(anvil_conf_file)?;
 
-		let json_value: JsonValue = serde_json::from_str(&file_content)?;
+		let json_value: Value = from_str(&file_content)?;
 
 		// Extract the available_accounts and private_keys fields
 		let available_accounts_iter = json_value["available_accounts"]
 			.as_array()
 			.expect("available_accounts should be an array")
 			.iter()
-			.map(|v| {
-				let s = v.as_str().expect("available_accounts elements should be strings");
-				s.to_owned()
-			});
+			.map(|v| v.as_str().map(|s| s.to_string()))
+			.flatten();
 
 		let private_keys_iter = json_value["private_keys"]
 			.as_array()
 			.expect("private_keys should be an array")
 			.iter()
-			.map(|v| {
-				let s = v.as_str().expect("private_keys elements should be strings");
-				s.to_owned()
-			});
+			.map(|v| v.as_str().map(|s| s.to_string()))
+			.flatten();
 
 		let res = available_accounts_iter
 			.zip(private_keys_iter)
-			.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
-			.collect::<Vec<_>>();
+			.collect::<Vec<(String, String)>>();
 		Ok(res)
 	}
 
-	fn read_mcr_sc_adress() -> Result<Address, anyhow::Error> {
-		let file_path = env::var("MCR_SC_ADDRESS_FILE")?;
+	fn read_mcr_smart_contract_address() -> Result<Address, anyhow::Error> {
+		let file_path = env::var("MCR_SMART_CONTRACT_ADDRESS_FILE")?;
 		let addr_str = fs::read_to_string(file_path)?;
-		let addr: Address = addr_str.trim().parse()?;
-		Ok(addr)
+		let address: Address = addr_str.trim().parse()?;
+		Ok(address)
+	}
+
+	fn read_staking_smart_contract_address() -> Result<Address, anyhow::Error> {
+		let file_path = env::var("STAKING_SMART_CONTRACT_ADDRESS_FILE")?;
+		let addr_str = fs::read_to_string(file_path)?;
+		let address: Address = addr_str.trim().parse()?;
+		Ok(address)
+	}
+
+	fn read_move_token_smart_contract_address() -> Result<Address, anyhow::Error> {
+		let file_path = env::var("MOVE_TOKEN_SMART_CONTRACT_ADDRESS_FILE")?;
+		let addr_str = fs::read_to_string(file_path)?;
+		let address: Address = addr_str.trim().parse()?;
+		Ok(address)
 	}
 
 	// Do the Genesis ceremony in Rust because if node by forge script,
 	// it's never done from Rust call.
-	async fn do_genesis_ceremonial(
-		anvil_addresses: &[AnvilAddressEntry],
+	use alloy_primitives::Bytes;
+	use alloy_rpc_types::TransactionRequest;
+
+	async fn run_genesis_ceremony(
+		anvil_address: &[(String, String)],
 		rpc_url: &str,
 	) -> Result<(), anyhow::Error> {
-		let mcr_address = read_mcr_sc_adress()?;
-		//Define Signer. Signer1 is the MCRSettelement client
-		let signer1: LocalWallet = anvil_addresses[1].private_key.parse()?;
-		let signer1_addr: Address = anvil_addresses[1].address.parse()?;
-		let signer1_rpc_provider = ProviderBuilder::new()
+		// Get the MCR and Staking contract address
+		let mcr_address = read_mcr_smart_contract_address()?;
+		let staking_address = read_staking_smart_contract_address()?;
+		let move_token_address = read_move_token_smart_contract_address()?;
+
+		// Build alice client for MOVEToken, MCR, and staking
+		let alice: LocalWallet = anvil_address[1].1.parse()?;
+		let alice_address: Address = anvil_address[1].0.parse()?;
+		let alice_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer1))
+			.signer(EthereumSigner::from(alice))
 			.on_http(rpc_url.parse()?);
-		let signer1_contract = MCR::new(mcr_address, &signer1_rpc_provider);
+		let alice_mcr = MCR::new(mcr_address, &alice_rpc_provider);
+		let alice_staking = MovementStaking::new(staking_address, &alice_rpc_provider);
+		let alice_move_token = MOVEToken::new(move_token_address, &alice_rpc_provider);
 
-		stake_genesis(
-			&signer1_rpc_provider,
-			&signer1_contract,
-			mcr_address,
-			signer1_addr,
-			55_000_000_000_000_000_000,
-		)
-		.await?;
-
-		let signer2: LocalWallet = anvil_addresses[2].private_key.parse()?;
-		let signer2_addr: Address = anvil_addresses[2].address.parse()?;
-		let signer2_rpc_provider = ProviderBuilder::new()
+		// Build bob client for MOVEToken, MCR, and staking
+		let bob: LocalWallet = anvil_address[2].1.parse()?;
+		let bob_address: Address = anvil_address[2].0.parse()?;
+		let bob_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer2))
+			.signer(EthereumSigner::from(bob))
 			.on_http(rpc_url.parse()?);
-		let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
+		let bob_mcr = MCR::new(mcr_address, &bob_rpc_provider);
+		let bob_staking = MovementStaking::new(staking_address, &bob_rpc_provider);
+		let bob_move_token = MOVEToken::new(move_token_address, &bob_rpc_provider);
 
-		//init staking
-		// Build a transaction to set the values.
-		stake_genesis(
-			&signer2_rpc_provider,
-			&signer2_contract,
-			mcr_address,
-			signer2_addr,
-			54_000_000_000_000_000_000,
-		)
-		.await?;
+		// Build the MCR client for staking
+		let mcr_signer: LocalWallet = mcr_address.to_string().parse()?;
+		let mcr_signer_address = mcr_address;
+		let mcr_rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.signer(EthereumSigner::from(mcr_signer))
+			.on_http(rpc_url.parse()?);
+		let mcr_staking = MovementStaking::new(staking_address, &mcr_rpc_provider);
 
-		let MCR::hasGenesisCeremonyEndedReturn { _0: has_genesis_ceremony_ended } =
-			signer2_contract.hasGenesisCeremonyEnded().call().await?;
-		let ceremony: bool = has_genesis_ceremony_ended.try_into().unwrap();
-		assert!(ceremony);
+		// alice stakes for mcr
+		alice_move_token.approve(mcr_address, U256::from(100)).call().await?;
+		alice_staking
+			.stake(mcr_address, move_token_address, U256::from(100))
+			.call()
+			.await?;
+
+		// bob stakes for mcr
+		bob_move_token.approve(mcr_address, U256::from(100)).call().await?;
+		bob_staking
+			.stake(mcr_address, move_token_address, U256::from(100))
+			.call()
+			.await?;
+
+		// mcr accepts the genesis
+		mcr_staking.acceptGenesisCeremony().call().await?;
+
 		Ok(())
 	}
 
@@ -533,22 +586,21 @@ mod tests {
 		contract: &MCR::MCRInstance<T, &P, Ethereum>,
 		contract_address: Address,
 		signer: Address,
-		amount: u64,
+		amount: u128,
 	) -> Result<(), anyhow::Error> {
 		let stake_genesis_call = contract.stakeGenesis();
 		let calldata = stake_genesis_call.calldata().to_owned();
-		send_tx(provider, calldata, contract_address, signer, amount).await
+		send_transaction_function(provider, calldata, contract_address, signer, amount).await
 	}
-
-	async fn send_tx<P: Provider<T, Ethereum>, T: Transport + Clone>(
+	async fn send_transaction_function<P: Provider<T, Ethereum>, T: Transport + Clone>(
 		provider: &P,
 		call_data: Bytes,
 		contract_address: Address,
 		signer: Address,
-		amount: u64,
+		amount: u128,
 	) -> Result<(), anyhow::Error> {
 		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
-		let tx = TransactionRequest::default()
+		let transaction = TransactionRequest::default()
 			.from(signer)
 			.to(contract_address)
 			.value(U256::from(amount))
@@ -556,7 +608,7 @@ mod tests {
 			.max_fee_per_gas(eip1559_fees.max_fee_per_gas)
 			.max_priority_fee_per_gas(eip1559_fees.max_priority_fee_per_gas);
 
-		provider.send_transaction(tx).await?.get_receipt().await?;
+		provider.send_transaction(transaction).await?.get_receipt().await?;
 		Ok(())
 	}
 }
