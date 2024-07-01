@@ -1,4 +1,6 @@
+use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
 use anyhow::Result;
+use bridge_shared::bridge_contracts::BridgeContractInitiator;
 use clap::{Parser, Subcommand};
 use ethereum_bridge::{Config, EthClient};
 
@@ -19,6 +21,8 @@ pub enum EthCommands {
 	Initiate {
 		#[arg(short, long)]
 		config_path: String,
+		#[arg(short, long)]
+		initiator_address: String,
 		#[arg(short, long)]
 		recipient_address: String,
 		#[arg(short, long)]
@@ -50,18 +54,30 @@ pub enum EthCommands {
 	},
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-	let eth_cli = EthCli::parse();
-
-	match &eth_cli.command {
+pub async fn run(command: &EthCommands) -> Result<()> {
+	match command {
 		EthCommands::Deploy { config_path } => {
 			let config = load_config(config_path)?;
 			deploy(config).await?;
 		}
-		EthCommands::Initiate { config_path, recipient_address, hash_lock, time_lock, amount } => {
+		EthCommands::Initiate {
+			config_path,
+			initiator_address,
+			recipient_address,
+			hash_lock,
+			time_lock,
+			amount,
+		} => {
 			let config = load_config(config_path)?;
-			initiate_transfer(config, recipient_address, hash_lock, *time_lock, *amount).await?;
+			initiate_transfer(
+				config,
+				initiator_address,
+				recipient_address,
+				hash_lock,
+				*time_lock,
+				*amount,
+			)
+			.await?;
 		}
 		EthCommands::Complete { config_path, bridge_transfer_id, pre_image } => {
 			let config = load_config(config_path)?;
@@ -95,17 +111,23 @@ async fn deploy(config: Config) -> Result<()> {
 
 async fn initiate_transfer(
 	config: Config,
+	initiator_address: &str,
 	recipient_address: &str,
 	hash_lock: &str,
 	time_lock: u64,
 	amount: u64,
 ) -> Result<()> {
 	let mut client = EthClient::build_with_config(config, recipient_address).await?;
+	let chain_id = 42; //dummy value for now
 	client
-        .initiate_bridge_transfer(
-            // Initialize with appropriate parameters
-        )
-        .await?;
+		.initiate_bridge_transfer(
+			EthAddress::parse_checksummed(initiator_address, Some(chain_id))?,
+			recipient_address,
+			hash_lock,
+			time_lock,
+			amounts,
+		)
+		.await?;
 	Ok(())
 }
 

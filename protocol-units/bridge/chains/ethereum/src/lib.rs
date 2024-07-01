@@ -300,4 +300,10 @@ fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 	}
 }
 
+impl From<&str> for EthAddress {
+		fn from(s:&str) -> Self {
+				EthAddress:parse_checksummed(s, None).expect("Failed to parse EthAddress")
+		}
+}
+
 mod tests {}
