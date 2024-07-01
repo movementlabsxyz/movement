@@ -11198,6 +11198,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "dot-movement",
+ "godfig",
  "m1-da-light-node-client",
  "m1-da-light-node-util",
  "maptos-dof-execution",
