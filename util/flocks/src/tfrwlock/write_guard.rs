@@ -5,11 +5,11 @@ use rustix::{
     fd::AsFd
 };
 
-pub struct TfrwLockWriteGuard<'a, T: AsFd> {
+pub struct FileRwLockWriteGuard<'a, T: AsFd> {
     pub (crate) guard: RwLockWriteGuard<'a, T>
 }
 
-impl<T: AsFd> Deref for TfrwLockWriteGuard<'_, T> {
+impl<T: AsFd> Deref for FileRwLockWriteGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -17,13 +17,13 @@ impl<T: AsFd> Deref for TfrwLockWriteGuard<'_, T> {
     }
 }
 
-impl<T: AsFd> DerefMut for TfrwLockWriteGuard<'_, T> {
+impl<T: AsFd> DerefMut for FileRwLockWriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut *self.guard
     }
 }
 
-impl<T: AsFd> Drop for TfrwLockWriteGuard<'_, T> {
+impl<T: AsFd> Drop for FileRwLockWriteGuard<'_, T> {
     fn drop(&mut self) {
         flock(
             &*self.guard,

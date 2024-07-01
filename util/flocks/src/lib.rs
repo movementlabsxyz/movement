@@ -1,7 +1,6 @@
-pub mod frwlock;
 pub mod tfrwlock;
 
-pub mod asynchronous {
+pub mod tokio {
 
     use rustix::{
         fd::AsFd,
@@ -11,12 +10,10 @@ pub mod asynchronous {
 
     #[derive(Debug, Error)]
     pub enum AsyncFlockError {
-        #[error("Lock is not available")]
-        JoinError(#[from] tokio::task::JoinError),
         #[error("File error: {0}")]
         IOError(#[from] rustix::io::Errno),
         #[error("Misc: {0}")]
-        MiscError(String),
+        Internal(String),
     }
     
     pub async fn flock<Fd: AsFd>(
@@ -25,10 +22,12 @@ pub mod asynchronous {
     ) -> Result<(), AsyncFlockError> {
         
         // spawn block and wait for it to finish
-        let fd = file.as_fd().try_clone_to_owned().map_err(|e| AsyncFlockError::MiscError(e.to_string()))?;
+        let fd = file.as_fd().try_clone_to_owned().map_err(|e| AsyncFlockError::Internal(e.to_string()))?;
         tokio::task::spawn_blocking(move || {
             sync_flock(fd, operation)
-        }).await??;
+        }).await.map_err(
+            |e| AsyncFlockError::Internal(e.to_string())
+        )??;
 
         Ok(())
 
