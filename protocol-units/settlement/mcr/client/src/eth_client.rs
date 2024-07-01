@@ -3,86 +3,61 @@ use crate::send_eth_transaction::SendTransactionErrorRule;
 use crate::send_eth_transaction::UnderPriced;
 use crate::send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
+use movement_types::BlockCommitment;
+use movement_types::{Commitment, Id};
+
+use alloy::pubsub::PubSubFrontend;
 use alloy_network::Ethereum;
+use alloy_network::EthereumSigner;
 use alloy_primitives::Address;
+use alloy_primitives::U256;
 use alloy_provider::fillers::ChainIdFiller;
 use alloy_provider::fillers::FillProvider;
 use alloy_provider::fillers::GasFiller;
 use alloy_provider::fillers::JoinFill;
 use alloy_provider::fillers::NonceFiller;
 use alloy_provider::fillers::SignerFiller;
-use std::array::TryFromSliceError;
-use std::str::FromStr;
-//use alloy_provider::fillers::TransactionFiller;
-use alloy_provider::{ProviderBuilder, RootProvider};
-use alloy_transport::Transport;
-use movement_types::{Commitment, Id};
-use std::marker::PhantomData;
-use tokio_stream::StreamExt;
-//use alloy_network::Network;
 use alloy_provider::Provider;
-use thiserror::Error;
-//use alloy_network::EthereumSigner;
-use alloy_primitives::U256;
-//use alloy_provider::ProviderBuilder;
-use alloy_sol_types::sol;
-//use alloy_transport_http::Http;
-use alloy::pubsub::PubSubFrontend;
-use alloy_network::EthereumSigner;
+use alloy_provider::{ProviderBuilder, RootProvider};
 use alloy_signer_wallet::LocalWallet;
+use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
-use movement_types::BlockCommitment;
-use std::env;
 
-const MRC_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TRANSACTION_SEND_RETRY: usize = 10;
-const DEFAULT_TRANSACTION_GAS_LIMIT: u128 = 10_000_000_000_000_000;
+use anyhow::Context;
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use tokio_stream::StreamExt;
 
-#[derive(Clone, Debug)]
-pub struct McrEthSettlementConfig {
-	pub mrc_contract_address: String,
-	pub gas_limit: u128,
-	pub transaction_send_number_retry: usize,
+use std::array::TryFromSliceError;
+
+const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
+const MAX_TX_SEND_RETRIES: u32 = 10;
+const DEFAULT_TX_GAS_LIMIT: u64 = 10_000_000_000;
+
+/// Configuration of the MCR settlement client.
+///
+/// This structure is meant to be used in serialization.
+/// Validation is done by the builder interface of the [`Client`].
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Config {
+	pub rpc_url: Option<String>,
+	pub ws_url: Option<String>,
+	pub signer_private_key: Option<String>,
+	pub mcr_contract_address: String,
+	pub gas_limit: u64,
+	pub number_transaction_send_retries: u32,
 }
 
-impl McrEthSettlementConfig {
-	fn get_from_env<T: FromStr>(env_var: &str) -> Result<T, McrEthConnectorError>
-	where
-		<T as FromStr>::Err: std::fmt::Display,
-	{
-		env::var(env_var)
-			.map_err(|err| {
-				McrEthConnectorError::BadlyDefineEnvVariable(format!(
-					"{env_var} env var is not defined :{err}"
-				))
-			})
-			.and_then(|v| {
-				T::from_str(&v).map_err(|err| {
-					McrEthConnectorError::BadlyDefineEnvVariable(format!(
-						"Parse error for {env_var} env var:{err}"
-					))
-				})
-			})
-	}
-	pub fn try_from_env() -> Result<Self, McrEthConnectorError> {
-		Ok(McrEthSettlementConfig {
-			mrc_contract_address: env::var("MCR_CONTRACT_ADDRESS")
-				.unwrap_or(MRC_CONTRACT_ADDRESS.to_string()),
-			gas_limit: Self::get_from_env::<u128>("MCR_TRANSACTION_SEND_GAS_LIMIT")?,
-			transaction_send_number_retry: Self::get_from_env::<usize>(
-				"MCR_TRANSACTION_SEND_NUMBER_RETRY",
-			)?,
-		})
-	}
-}
-
-impl Default for McrEthSettlementConfig {
+impl Default for Config {
 	fn default() -> Self {
-		McrEthSettlementConfig {
-			mrc_contract_address: MRC_CONTRACT_ADDRESS.to_string(),
-			gas_limit: DEFAULT_TRANSACTION_GAS_LIMIT,
-			transaction_send_number_retry: MAX_TRANSACTION_SEND_RETRY,
+		Config {
+			rpc_url: Some("http://localhost:8545".into()),
+			ws_url: Some("ws://localhost:8546".into()),
+			signer_private_key: Some(LocalWallet::random().to_bytes().to_string()),
+			mcr_contract_address: MCR_CONTRACT_ADDRESS.into(),
+			gas_limit: DEFAULT_TX_GAS_LIMIT,
+			number_transaction_send_retries: MAX_TX_SEND_RETRIES,
 		}
 	}
 }
@@ -103,8 +78,6 @@ pub enum McrEthConnectorError {
 	EventNotificationError(#[from] alloy_sol_types::Error),
 	#[error("MCR Settlement BlockAccepted event notification stream close")]
 	EventNotificationStreamClosed,
-	#[error("MCR Settlement Error environment variable:{0}")]
-	BadlyDefineEnvVariable(String),
 }
 
 // Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
@@ -131,17 +104,18 @@ sol!(
 	"abis/MOVEToken.json"
 );
 
-pub struct McrEthSettlementClient<P, T> {
+pub struct Client<P> {
 	rpc_provider: P,
-	signer_address: Address,
 	ws_provider: RootProvider<PubSubFrontend>,
-	config: McrEthSettlementConfig,
+	signer_address: Address,
+	contract_address: Address,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
-	_marker: PhantomData<T>,
+	gas_limit: u64,
+	number_transaction_send_retries: u32,
 }
 
 impl
-	McrEthSettlementClient<
+	Client<
 		FillProvider<
 			JoinFill<
 				JoinFill<
@@ -154,39 +128,45 @@ impl
 			BoxTransport,
 			Ethereum,
 		>,
-		BoxTransport,
 	>
 {
-	pub async fn build_with_urls<S2>(
-		rpc: &str,
-		ws_url: S2,
-		signer_private_key: &str,
-		config: McrEthSettlementConfig,
-	) -> Result<Self, anyhow::Error>
-	where
-		S2: Into<String>,
-	{
+	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
+		let signer_private_key =
+			config.signer_private_key.context("Signer private key is not set")?;
 		let signer: LocalWallet = signer_private_key.parse()?;
 		let signer_address = signer.address();
+		let contract_address = config.mcr_contract_address.parse()?;
+		let rpc_url = config.rpc_url.context("Ethereum RPC URL is not set")?;
+		let ws_url = config.ws_url.context("Ethereum WebSocket URL is not set")?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer))
-			.on_builtin(rpc)
+			.on_builtin(&rpc_url)
 			.await?;
 
-		McrEthSettlementClient::build_with_provider(rpc_provider, signer_address, ws_url, config)
-			.await
+		Client::build_with_provider(
+			rpc_provider,
+			ws_url,
+			signer_address,
+			contract_address,
+			config.gas_limit,
+			config.number_transaction_send_retries,
+		)
+		.await
 	}
 }
 
-impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrEthSettlementClient<P, T> {
-	pub async fn build_with_provider<S>(
+impl<P> Client<P> {
+	async fn build_with_provider<S>(
 		rpc_provider: P,
-		signer_address: Address,
 		ws_url: S,
-		config: McrEthSettlementConfig,
+		signer_address: Address,
+		contract_address: Address,
+		gas_limit: u64,
+		number_transaction_send_retries: u32,
 	) -> Result<Self, anyhow::Error>
 	where
+		P: Provider + Clone,
 		S: Into<String>,
 	{
 		let ws = WsConnect::new(ws_url);
@@ -198,26 +178,28 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrEthSettlementCli
 			Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
 		let send_transaction_error_rules = vec![rule1, rule2];
 
-		Ok(McrEthSettlementClient {
+		Ok(Client {
 			rpc_provider,
-			signer_address,
 			ws_provider,
+			signer_address,
+			contract_address,
 			send_transaction_error_rules,
-			config,
-			_marker: Default::default(),
+			gas_limit,
+			number_transaction_send_retries,
 		})
 	}
 }
 
 #[async_trait::async_trait]
-impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClientOperations
-	for McrEthSettlementClient<P, T>
+impl<P> McrSettlementClientOperations for Client<P>
+where
+	P: Provider + Clone,
 {
 	async fn post_block_commitment(
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
+		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
 		let eth_block_commitment = MCR::BlockCommitment {
 			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
@@ -231,8 +213,8 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		crate::send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
-			self.config.transaction_send_number_retry,
-			self.config.gas_limit,
+			self.number_transaction_send_retries,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -241,7 +223,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		&self,
 		block_commitments: Vec<BlockCommitment>,
 	) -> Result<(), anyhow::Error> {
-		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.rpc_provider);
+		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
 		let eth_block_commitment: Vec<_> = block_commitments
 			.into_iter()
@@ -260,8 +242,8 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		crate::send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
-			self.config.transaction_send_number_retry,
-			self.config.gas_limit,
+			self.number_transaction_send_retries,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -269,7 +251,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
 		//register to contract BlockCommitmentSubmitted event
 
-		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
+		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
 
 		let stream = event_filter.into_stream().map(|event| {
@@ -295,7 +277,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 		&self,
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
-		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
+		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
 			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
 			.call()
@@ -310,7 +292,7 @@ impl<P: Provider<T, Ethereum> + Clone, T: Transport + Clone> McrSettlementClient
 	}
 
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {
-		let contract = MCR::new(self.config.mrc_contract_address.parse()?, &self.ws_provider);
+		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
 			contract.getMaxTolerableBlockHeight().call().await?;
 		let return_height: u64 = block_height.try_into()?;

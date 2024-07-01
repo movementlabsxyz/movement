@@ -65,7 +65,7 @@ pub async fn send_transaction<
 >(
 	base_call_builder: CallBuilder<T, &&P, D, Ethereum>,
 	send_transaction_error_rules: &[Box<dyn VerifyRule>],
-	number_retry: usize,
+	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<(), anyhow::Error> {
 	//validate gas price.
