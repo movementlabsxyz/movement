@@ -17,3 +17,20 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/openzeppelin-contracts"]
 	path = protocol-units/settlement/mcr/contracts/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+
+[submodule "protocol-units/bridge/contracts/lib/forge-std"]
+	path = protocol-units/bridge/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+
+[submodule "protocol-units/bridge/contracts/lib/openzeppelin-contracts"]
+	path = protocol-units/bridge/contracts/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "protocol-units/bridge/contracts/lib/openzeppelin-contracts-upgradeable"]
+	path = protocol-units/bridge/contracts/lib/openzeppelin-contracts-upgradeable
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable
+[submodule "protocol-units/settlement/mcr/contracts/lib/forge-std"]
+	path = protocol-units/settlement/mcr/contracts/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "protocol-units/settlement/mcr/contracts/lib/murky"]
+	path = protocol-units/settlement/mcr/contracts/lib/murky
+	url = https://github.com/dmfxyz/murky

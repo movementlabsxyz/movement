@@ -1,8 +1,16 @@
 services:
   setup:
-    image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${REV}
+    image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${CONTAINER_REV}
     container_name: setup
     environment:
-      - DOT_MOVEMENT_PATH=/.movement
+      DOT_MOVEMENT_PATH: /.movement
+      # By default, all the listener hostnames and ports are reasonable.
+      # However, for container networking, we need to specify the hostnames on the connection.
+      # You can also use host.docker.internal for the host machine as all of these ports should be exposed.
+      CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
+      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-node
+      FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
     volumes:
-      - dot-movement:/.movement
+      - ${DOT_MOVEMENT_PATH}:/.movement

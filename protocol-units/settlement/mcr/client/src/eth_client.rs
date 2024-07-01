@@ -3,9 +3,6 @@ use crate::send_eth_transaction::SendTransactionErrorRule;
 use crate::send_eth_transaction::UnderPriced;
 use crate::send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
-use movement_types::BlockCommitment;
-use movement_types::{Commitment, Id};
-
 use alloy::pubsub::PubSubFrontend;
 use alloy_network::Ethereum;
 use alloy_network::EthereumSigner;
@@ -23,56 +20,28 @@ use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
-
 use anyhow::Context;
-use serde::{Deserialize, Serialize};
+use mcr_settlement_config::Config;
+use movement_types::BlockCommitment;
+use movement_types::{Commitment, Id};
+use serde_json::Value as JsonValue;
+use std::array::TryFromSliceError;
+use std::fs;
+use std::path::Path;
 use thiserror::Error;
 use tokio_stream::StreamExt;
-
-use std::array::TryFromSliceError;
-
-const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const MAX_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_TX_GAS_LIMIT: u64 = 10_000_000_000;
-
-/// Configuration of the MCR settlement client.
-///
-/// This structure is meant to be used in serialization.
-/// Validation is done by the builder interface of the [`Client`].
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Config {
-	pub rpc_url: Option<String>,
-	pub ws_url: Option<String>,
-	pub signer_private_key: Option<String>,
-	pub mcr_contract_address: String,
-	pub gas_limit: u64,
-	pub number_transaction_send_retries: u32,
-}
-
-impl Default for Config {
-	fn default() -> Self {
-		Config {
-			rpc_url: Some("http://localhost:8545".into()),
-			ws_url: Some("ws://localhost:8546".into()),
-			signer_private_key: Some(LocalWallet::random().to_bytes().to_string()),
-			mcr_contract_address: MCR_CONTRACT_ADDRESS.into(),
-			gas_limit: DEFAULT_TX_GAS_LIMIT,
-			number_transaction_send_retries: MAX_TX_SEND_RETRIES,
-		}
-	}
-}
 
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Transaction fail because gas estimation is to high. Estimated gas:{0} gas limit:{1}"
+		"MCR Settlement Transaction fails because gas estimation is too high. Estimated gas:{0} gas limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
-	#[error("MCR Settlement Transaction fail because account funds are insufficient. error:{0}")]
+	#[error("MCR Settlement Transaction fails because account funds are insufficient. error:{0}")]
 	InsufficientFunds(String),
-	#[error("MCR Settlement Transaction send fail because :{0}")]
+	#[error("MCR Settlement Transaction send failed because :{0}")]
 	SendTransactionError(#[from] alloy_contract::Error),
-	#[error("MCR Settlement Transaction send fail during its execution :{0}")]
+	#[error("MCR Settlement Transaction send failed during its execution :{0}")]
 	RpcTransactionExecution(String),
 	#[error("MCR Settlement BlockAccepted event notification error :{0}")]
 	EventNotificationError(#[from] alloy_sol_types::Error),
@@ -103,6 +72,22 @@ sol!(
 	MOVEToken,
 	"abis/MOVEToken.json"
 );
+// When created, kill the pid when dropped.
+// Use to kill Anvil process when Suzuka Node ends.
+// TODO should be removed by the new config.
+struct AnvilKillAtDrop {
+	pid: u32,
+}
+
+impl Drop for AnvilKillAtDrop {
+	fn drop(&mut self) {
+		tracing::info!("Killing Anvil process pid:{}", self.pid);
+		if let Err(err) = std::process::Command::new("kill").args(&[&self.pid.to_string()]).spawn()
+		{
+			tracing::info!("warn, an error occurs during Anvil process kill : {err}");
+		}
+	}
+}
 
 pub struct Client<P> {
 	rpc_provider: P,
@@ -111,7 +96,8 @@ pub struct Client<P> {
 	contract_address: Address,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u64,
-	number_transaction_send_retries: u32,
+	send_transaction_retries: u32,
+	kill_anvil_process: Option<AnvilKillAtDrop>,
 }
 
 impl
@@ -144,15 +130,19 @@ impl
 			.on_builtin(&rpc_url)
 			.await?;
 
-		Client::build_with_provider(
+		let mut client = Client::build_with_provider(
 			rpc_provider,
 			ws_url,
 			signer_address,
 			contract_address,
 			config.gas_limit,
-			config.number_transaction_send_retries,
+			config.transaction_send_retries,
 		)
-		.await
+		.await?;
+		if let Some(pid) = config.anvil_process_pid {
+			client.kill_anvil_process = Some(AnvilKillAtDrop { pid })
+		}
+		Ok(client)
 	}
 }
 
@@ -163,7 +153,7 @@ impl<P> Client<P> {
 		signer_address: Address,
 		contract_address: Address,
 		gas_limit: u64,
-		number_transaction_send_retries: u32,
+		send_transaction_retries: u32,
 	) -> Result<Self, anyhow::Error>
 	where
 		P: Provider + Clone,
@@ -185,7 +175,8 @@ impl<P> Client<P> {
 			contract_address,
 			send_transaction_error_rules,
 			gas_limit,
-			number_transaction_send_retries,
+			send_transaction_retries,
+			kill_anvil_process: None,
 		})
 	}
 }
@@ -202,7 +193,7 @@ where
 		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
 		let eth_block_commitment = MCR::BlockCommitment {
-			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 			height: U256::from(block_commitment.height),
 			commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 			blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
@@ -213,7 +204,7 @@ where
 		crate::send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
-			self.number_transaction_send_retries,
+			self.send_transaction_retries,
 			self.gas_limit as u128,
 		)
 		.await
@@ -229,7 +220,7 @@ where
 			.into_iter()
 			.map(|block_commitment| {
 				Ok(MCR::BlockCommitment {
-					// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+					// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 					height: U256::from(block_commitment.height),
 					commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 					blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
@@ -242,14 +233,14 @@ where
 		crate::send_eth_transaction::send_transaction(
 			call_builder,
 			&self.send_transaction_error_rules,
-			self.number_transaction_send_retries,
+			self.send_transaction_retries,
 			self.gas_limit as u128,
 		)
 		.await
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
-		//register to contract BlockCommitmentSubmitted event
+		// Register to contract BlockCommitmentSubmitted event
 
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
@@ -300,183 +291,65 @@ where
 	}
 }
 
+pub struct AnvilAddressEntry {
+	pub address: String,
+	pub private_key: String,
+}
+
+/// Read the Anvil config file keys and return all address/private keys.
+pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
+	anvil_conf_path: P,
+) -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
+	let file_content = fs::read_to_string(anvil_conf_path)?;
+
+	let json_value: JsonValue = serde_json::from_str(&file_content)?;
+
+	// Extract the available_accounts and private_keys fields.
+	let available_accounts_iter = json_value["available_accounts"]
+		.as_array()
+		.expect("Available_accounts should be an array")
+		.iter()
+		.map(|v| {
+			let s = v.as_str().expect("Available_accounts elements should be strings");
+			s.to_owned()
+		});
+
+	let private_keys_iter = json_value["private_keys"]
+		.as_array()
+		.expect("Private_keys should be an array")
+		.iter()
+		.map(|v| {
+			let s = v.as_str().expect("Private_keys elements should be strings");
+			s.to_owned()
+		});
+
+	let res = available_accounts_iter
+		.zip(private_keys_iter)
+		.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
+		.collect::<Vec<_>>();
+	Ok(res)
+}
+
 #[cfg(test)]
-pub mod test {
-	use crate::eth::mcr;
+#[cfg(feature = "integration-tests")]
+mod tests {
+	use super::*;
+	use alloy_primitives::Bytes;
+	use alloy_provider::ProviderBuilder;
+	use alloy_rpc_types::TransactionRequest;
+	use alloy_signer_wallet::LocalWallet;
+	use alloy_transport::Transport;
 
 	use super::*;
 	use alloy_provider::ProviderBuilder;
 	use alloy_signer_wallet::LocalWallet;
 	use movement_types::Commitment;
 
-	// Define 2 validators (alice and bob) with each a little more than 50% of stake.
-	// After genesis ceremony, 2 validator send the commitment for height 1.
-	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
-	// Wait the commitment accepted event.
-	//#[ignore]
-	#[tokio::test]
-	async fn test_send_commitment() -> Result<(), anyhow::Error> {
-		//Activate to debug the test.
-		// use tracing_subscriber::EnvFilter;
-
-		// tracing_subscriber::fmt()
-		// 	.with_env_filter(
-		// 		EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		// 	)
-		// 	.init();
-
-		// Inititalize Test variables
-		let rpc_port = env::var("MCR_ANVIL_PORT").unwrap();
-		let rpc_url = format!("http://localhost:{rpc_port}");
-		let ws_url = format!("ws://localhost:{rpc_port}");
-
-		let anvil_address = read_anvil_json_file_address()?;
-
-		//Do SC ceremony init stake calls.
-		run_genesis_ceremony(&anvil_address, &rpc_url).await?;
-
-		let mcr_address = read_mcr_smart_contract_address()?;
-		//Define Signers. Ceremony define 2 signers with half stake each.
-		let alice: LocalWallet = anvil_address[1].1.parse()?;
-		let alice_address = alice.address();
-
-		//Build client 1 and send first commitment.
-		let provider_client1 = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.signer(EthereumSigner::from(alice))
-			.on_http(rpc_url.parse().unwrap());
-
-		let config = McrEthSettlementConfig {
-			mrc_contract_address: mcr_address.to_string(),
-			gas_limit: DEFAULT_TRANSACTION_GAS_LIMIT,
-			transaction_send_number_retry: MAX_TRANSACTION_SEND_RETRY,
-		};
-
-		let client1 = McrEthSettlementClient::build_with_provider(
-			provider_client1,
-			alice_address,
-			ws_url.clone(),
-			config.clone(),
-		)
-		.await
-		.unwrap();
-
-		let mut client1_stream = client1.stream_block_commitments().await.unwrap();
-
-		//client post a new commitment
-		let commitment =
-			BlockCommitment { height: 1, block_id: Id([2; 32]), commitment: Commitment([3; 32]) };
-
-		let res = client1.post_block_commitment(commitment.clone()).await;
-		assert!(res.is_ok());
-
-		//no notification quorum is not reach
-		let res =
-			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next()).await;
-		assert!(res.is_err());
-
-		//Build client 2 and send the second commitment.
-		let client2 =
-			McrEthSettlementClient::build_with_urls(&rpc_url, ws_url, &anvil_address[2].1, config)
-				.await
-				.unwrap();
-
-		let mut client2_stream = client2.stream_block_commitments().await.unwrap();
-
-		//client post a new commitment
-		let res = client2.post_block_commitment(commitment).await;
-		assert!(res.is_ok());
-
-		// now we move to block 2 and make some commitment just to trigger the epochRollover
-		let commitment2 =
-			BlockCommitment { height: 2, block_id: Id([4; 32]), commitment: Commitment([5; 32]) };
-
-		let res = client2.post_block_commitment(commitment2.clone()).await;
-		assert!(res.is_ok());
-
-		//validate that the accept commitment stream get the event.
-		let event =
-			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
-				.await
-				.unwrap()
-				.unwrap()
-				.unwrap();
-		assert_eq!(event.commitment.0[0], 3);
-		assert_eq!(event.block_id.0[0], 2);
-		let event =
-			tokio::time::timeout(tokio::time::Duration::from_secs(5), client2_stream.next())
-				.await
-				.unwrap()
-				.unwrap()
-				.unwrap();
-		assert_eq!(event.commitment.0[0], 3);
-		assert_eq!(event.block_id.0[0], 2);
-
-		//test post batch commitment
-		// post the complementary batch on height 2 and one on height 3
-		let commitment3 =
-			BlockCommitment { height: 3, block_id: Id([6; 32]), commitment: Commitment([7; 32]) };
-		let res = client1.post_block_commitment_batch(vec![commitment2, commitment3]).await;
-		assert!(res.is_ok());
-		//validate that the accept commitment stream get the event.
-		let event =
-			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
-				.await
-				.unwrap()
-				.unwrap()
-				.unwrap();
-		assert_eq!(event.commitment.0[0], 5);
-		assert_eq!(event.block_id.0[0], 4);
-		let event =
-			tokio::time::timeout(tokio::time::Duration::from_secs(5), client2_stream.next())
-				.await
-				.unwrap()
-				.unwrap()
-				.unwrap();
-		assert_eq!(event.commitment.0[0], 5);
-		assert_eq!(event.block_id.0[0], 4);
-
-		//test get_commitment_at_height
-		let commitment = client1.get_commitment_at_height(1).await?;
-		assert!(commitment.is_some());
-		let commitment = commitment.unwrap();
-		assert_eq!(commitment.commitment.0[0], 3);
-		assert_eq!(commitment.block_id.0[0], 2);
-		let commitment = client1.get_commitment_at_height(10).await?;
-		assert_eq!(commitment, None);
-
-		Ok(())
-	}
-
-	use serde_json::{from_str, Value};
+	use anyhow::Context;
+	use std::env;
 	use std::fs;
-	fn read_anvil_json_file_address() -> Result<Vec<(String, String)>, anyhow::Error> {
-		let anvil_conf_file = env::var("ANVIL_JSON_PATH")?;
-		let file_content = fs::read_to_string(anvil_conf_file)?;
 
-		let json_value: Value = from_str(&file_content)?;
-
-		// Extract the available_accounts and private_keys fields
-		let available_accounts_iter = json_value["available_accounts"]
-			.as_array()
-			.expect("available_accounts should be an array")
-			.iter()
-			.map(|v| v.as_str().map(|s| s.to_string()))
-			.flatten();
-
-		let private_keys_iter = json_value["private_keys"]
-			.as_array()
-			.expect("private_keys should be an array")
-			.iter()
-			.map(|v| v.as_str().map(|s| s.to_string()))
-			.flatten();
-
-		let res = available_accounts_iter
-			.zip(private_keys_iter)
-			.collect::<Vec<(String, String)>>();
-		Ok(res)
-	}
-
+	
 	fn read_mcr_smart_contract_address() -> Result<Address, anyhow::Error> {
 		let file_path = env::var("MCR_SMART_CONTRACT_ADDRESS_FILE")?;
 		let addr_str = fs::read_to_string(file_path)?;

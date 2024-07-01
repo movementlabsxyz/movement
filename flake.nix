@@ -48,6 +48,7 @@
           protobuf
           rustPlatform.bindgenHook
           lld
+          mold
           coreutils
           gcc
           rust
@@ -75,6 +76,7 @@
           celestia-app
           monza-aptos
           jq
+          docker
         ];
 
         # Specific version of toolchain
