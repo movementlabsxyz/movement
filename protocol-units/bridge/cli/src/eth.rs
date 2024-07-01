@@ -1,4 +1,4 @@
-use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
+use alloy_primitives::Address as EthAddress;
 use anyhow::Result;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,

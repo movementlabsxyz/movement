@@ -1,7 +1,8 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
-pub mod eth;
+mod eth;
+mod movement;
 
 #[derive(Parser)]
 #[command(name = "bridge-cli")]
