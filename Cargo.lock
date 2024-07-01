@@ -12127,6 +12127,7 @@ dependencies = [
  "suzuka-config",
  "thiserror",
  "tokio",
+ "tonic 0.11.0",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",

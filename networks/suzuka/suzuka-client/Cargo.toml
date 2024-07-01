@@ -42,6 +42,7 @@ reqwest = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+tonic = { workspace = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }
