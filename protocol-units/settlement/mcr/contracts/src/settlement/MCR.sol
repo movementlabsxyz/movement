@@ -143,6 +143,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return computeAllTotalStakeForEpoch(getCurrentEpoch());
     }
 
+    function getValidatorCommitmentAtBlockHeight(uint256 height, address attester) public view returns (BlockCommitment memory) {
+        return commitments[height][attester];
+    }
+
+    function getAcceptedCommitmentAtBlockHeight(uint256 height) public view returns (BlockCommitment memory) {
+        return acceptedBlocks[height];
+    }
+
     function getAttesters() public view returns (address[] memory) {
         return stakingContract.getAttestersByDomain(address(this));
     }

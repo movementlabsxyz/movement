@@ -54,7 +54,7 @@ sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	MCR,
-	"abis/MCRLegacy.json"
+	"abis/MCR.json"
 );
 
 // Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
@@ -92,7 +92,7 @@ impl Drop for AnvilKillAtDrop {
 pub struct Client<P> {
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
-	signer_address: Address,
+	pub signer_address: Address,
 	contract_address: Address,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u64,
@@ -269,8 +269,8 @@ where
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: commitment } = contract
-			.getValidatorCommitmentAtBlockHeight(U256::from(height), self.signer_address)
+		let MCR::getAcceptedCommitmentAtBlockHeightReturn { _0: commitment } = contract
+			.getAcceptedCommitmentAtBlockHeight(U256::from(height))
 			.call()
 			.await?;
 		let return_height: u64 = commitment.height.try_into()?;
