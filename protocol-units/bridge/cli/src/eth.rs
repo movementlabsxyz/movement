@@ -1,6 +1,12 @@
 use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
 use anyhow::Result;
-use bridge_shared::bridge_contracts::BridgeContractInitiator;
+use bridge_shared::{
+	bridge_contracts::BridgeContractInitiator,
+	types::{
+		Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
+		TimeLock,
+	},
+};
 use clap::{Parser, Subcommand};
 use ethereum_bridge::{Config, EthClient};
 
@@ -119,13 +125,16 @@ async fn initiate_transfer(
 ) -> Result<()> {
 	let mut client = EthClient::build_with_config(config, recipient_address).await?;
 	let chain_id = 42; //dummy value for now
+	let initiator_address = EthAddress::parse_checksummed(initiator_address, Some(chain_id))?;
+	let recipient_address = EthAddress::parse_checksummed(recipient_address, Some(chain_id))?;
+	let hash_lock = HashLock::parse(hash_lock)?;
 	client
 		.initiate_bridge_transfer(
-			EthAddress::parse_checksummed(initiator_address, Some(chain_id))?,
-			recipient_address,
-			hash_lock,
-			time_lock,
-			amounts,
+			InitiatorAddress(initiator_address),
+			RecipientAddress(recipient_address),
+			HashLock(hash_lock.0),
+			TimeLock(time_lock),
+			Amount(amount),
 		)
 		.await?;
 	Ok(())
@@ -136,20 +145,24 @@ async fn complete_transfer(
 	bridge_transfer_id: &str,
 	pre_image: &str,
 ) -> Result<()> {
+	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
 	let mut client = EthClient::build_with_config(config, "").await?;
-	client.complete_bridge_transfer(bridge_transfer_id, pre_image).await?;
+	client
+		.complete_bridge_transfer(bridge_transfer_id, HashLockPreImage(pre_image.into()))
+		.await?;
 	Ok(())
 }
 
 async fn refund_transfer(config: Config, bridge_transfer_id: &str) -> Result<()> {
 	let mut client = EthClient::build_with_config(config, "").await?;
+	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
 	client.refund_bridge_transfer(bridge_transfer_id).await?;
 	Ok(())
 }
 
 async fn get_transfer_details(config: Config, bridge_transfer_id: &str) -> Result<()> {
 	let mut client = EthClient::build_with_config(config, "").await?;
-	let details = client.get_bridge_transfer_details(bridge_transfer_id).await?;
-	println!("Transfer details: {:?}", details);
+	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
+	client.get_bridge_transfer_details(bridge_transfer_id).await?;
 	Ok(())
 }

@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use alloy::pubsub::PubSubFrontend;
 use alloy_network::{Ethereum, EthereumSigner};
 use alloy_primitives::private::serde::{Deserialize, Serialize};
@@ -298,12 +300,6 @@ fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 	} else {
 		Err("Vec<u8> does not have exactly 32 elements")
 	}
-}
-
-impl From<&str> for EthAddress {
-		fn from(s:&str) -> Self {
-				EthAddress:parse_checksummed(s, None).expect("Failed to parse EthAddress")
-		}
 }
 
 mod tests {}
