@@ -4,15 +4,15 @@ set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
     echo "Usage: $0 <service> <runtime> <flags> [docker-compose flags...]"
-    echo "Example: $0 suzuka-full-node native setup.local.test"
+    echo "Example: $0 suzuka-full-node docker-compose setup.local.test"
     exit 1
 fi
 
 SERVICE=$1
-RUNTIME=$2
-FLAGS=$3
+RUNTIME=$2 # runtime is already known, but we reuse
+FEATURES=$3
 
-IFS='.' read -r -a split <<< "$FLAGS"
+IFS='.' read -r -a split <<< "$FEATURES"
 
 override_files=()
 for element in "${split[@]}"; do
