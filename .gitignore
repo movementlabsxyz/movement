@@ -3,6 +3,8 @@ proc-compose.temp.log
 methods/guest/Cargo.lock
 protocol-units/bridge/move-modules/.aptos/*
 protocol-units/bridge/move-modules/build/*
+protocol-units/bridge/contracts/cache/*
+protocol-units/bridge/contracts/out/*
 .idea/
 target/
 ledger_db/
