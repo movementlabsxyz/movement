@@ -3,7 +3,10 @@ use aptos_api::{
 	get_api_service,
 	runtime::{get_apis, Apis},
 };
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use movement_rest::{health, state_root_hash};
+use poem::{
+	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
 use tracing::info;
 
 impl Executor {
@@ -22,7 +25,15 @@ impl Executor {
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
+
+		// If you add the `at` method after the nest we get a runtime error
+		let app = Route::new()
+			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.nest("/movement/v1/health", health)
+			.data(self.context())
+			.with(cors);
 
 		Server::new(TcpListener::bind(self.listen_url.clone()))
 			.run(app)
@@ -77,7 +88,8 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let user_transaction = create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let user_transaction =
+			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();

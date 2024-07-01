@@ -12,17 +12,18 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mcr-settlement-config = { workspace = true }
-mcr-settlement-client = { workspace = true }
-movement-types = { workspace = true }
-
-anyhow = { workspace = true }
-async-stream = { workspace = true }
 async-trait = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
 tokio-stream = { workspace = true }
+movement-types = { workspace = true }
 serde_json = { workspace = true }
+async-stream = { workspace = true }
+mcr-settlement-config = { workspace = true }
+mcr-settlement-client = { workspace = true }
+
 
 [dev-dependencies]
 mcr-settlement-client = { workspace = true, features = ["mock"] }

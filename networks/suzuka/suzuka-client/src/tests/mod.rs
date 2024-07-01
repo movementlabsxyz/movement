@@ -29,6 +29,9 @@ use std::{fs, sync::Arc};
 use std::{thread, time};
 use url::Url;
 
+mod reststate;
+mod settlement_state;
+
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
 	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>().unwrap();

@@ -23,15 +23,15 @@ impl MovementRest {
 	pub const MOVEMENT_REST_ENV_VAR: &'static str = "MOVEMENT_REST_URL";
 
 	pub fn try_from_env(context: Option<Arc<Context>>) -> Result<Self, Error> {
-		let url = env::var(Self::MOVEMENT_REST_ENV_VAR)
-			.unwrap_or_else(|_| "http://0.0.0.0:30832".to_string());
+		let url =
+			env::var(Self::MOVEMENT_REST_ENV_VAR).unwrap_or_else(|_| "0.0.0.0:30832".to_string());
 		Ok(Self { url, context })
 	}
 
 	pub async fn run_service(&self) -> Result<(), Error> {
 		info!("Starting movement rest service at {}", self.url);
 		let movement_rest = self.create_routes();
-		Server::new(TcpListener::bind(&self.url)).run(movement_rest).await?;
+		Server::new(TcpListener::bind(&self.url)).run(movement_rest).await.unwrap();
 		Ok(())
 	}
 
@@ -60,15 +60,33 @@ pub async fn state_root_hash(
 	Path(blockheight): Path<u64>,
 	context: Data<&Arc<Context>>,
 ) -> Result<Response, anyhow::Error> {
+	println!("state_root_hash rest call blockheight:{blockheight}");
 	let latest_ledger_info = context.db.get_latest_ledger_info()?;
-	let (_, end_version, _) = context.db.get_block_info_by_height(blockheight)?;
-	tracing::info!("end_version: {}", end_version);
+	let (start_version, end_version, block) = context.db.get_block_info_by_height(blockheight)?;
+	tracing::info!("BLOCK:{block:#?}");
+	tracing::info!("start_version:{start_version} end_version: {}", end_version);
+	for version in start_version..=end_version {
+		tracing::info!("");
+		tracing::info!("#######################");
+		let state_proof = context.db.get_state_proof(version)?;
+		tracing::info!("version:{version} state_proof: {:#?}", state_proof);
+		let commitment = movement_types::Commitment::digest_state_proof(&state_proof);
+		tracing::info!("XXXXXX version:{version} commitment: {:?}", hex::encode(&commitment.0));
+		let txn_with_proof = context.db.get_transaction_by_version(
+			version,
+			latest_ledger_info.ledger_info().version(),
+			false,
+		)?;
+		tracing::info!("txn_with_proof: {:#?}", txn_with_proof);
+		tracing::info!("#######################");
+	}
+
 	let txn_with_proof = context.db.get_transaction_by_version(
 		end_version,
 		latest_ledger_info.ledger_info().version(),
 		false,
 	)?;
-	tracing::info!("txn_with_proof: {:?}", txn_with_proof);
+	tracing::info!("txn_with_proof: {:#?}", txn_with_proof);
 	let state_root_hash = txn_with_proof
 		.proof
 		.transaction_info

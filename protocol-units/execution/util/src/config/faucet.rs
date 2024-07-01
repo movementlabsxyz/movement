@@ -3,6 +3,8 @@ use super::common::{
 	default_maptos_rest_connection_hostname, default_maptos_rest_connection_port,
 };
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
+use url::Url;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Config {

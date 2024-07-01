@@ -16,6 +16,16 @@ name = "suzuka-client-e2e-simple-interaction"
 path = "src/bin/e2e/simple_interaction.rs"
 
 [dependencies]
+async-channel = { workspace = true }
+alloy-sol-types = { workspace = true  }
+alloy-provider = { workspace = true }
+alloy-signer-wallet = { workspace = true }
+alloy-network = { workspace = true }
+alloy-primitives = { workspace = true  }
+alloy-contract = { workspace = true }
+alloy-transport = { workspace = true }
+alloy-rpc-types = { workspace = true }
+
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
 anyhow = { workspace = true }
@@ -23,6 +33,7 @@ async-trait = { workspace = true }
 futures = { workspace = true }
 itertools = { workspace = true, default-features = true }
 maptos-execution-util = { workspace = true }
+mcr-settlement-config = { workspace = true }
 once_cell = { workspace = true }
 tokio = { workspace = true }
 rand = { workspace = true }
@@ -51,6 +62,8 @@ maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+
+dotenv = "0.15.0"
 
 [lints]
 workspace = true
