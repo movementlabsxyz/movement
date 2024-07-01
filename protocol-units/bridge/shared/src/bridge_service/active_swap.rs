@@ -11,7 +11,7 @@ use thiserror::Error;
 
 use crate::{
 	blockchain_service::BlockchainService,
-	bridge_contracts::BridgeContractError,
+	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
 	types::{
 		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, CompletedDetails,
 		HashLock,
@@ -312,8 +312,8 @@ where
 pub enum LockBridgeTransferAssetsError {
 	#[error("Failed to lock assets")]
 	LockingError,
-	#[error("Failed to call lock_bridge_transfer_assets")]
-	LockBridgeTransferContractCallError(String), // TODO; addd contact call errors
+	#[error(transparent)]
+	ContractCallError(#[from] BridgeContractCounterpartyError),
 }
 
 async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: BlockchainService>(
@@ -348,7 +348,7 @@ where
 			recipient_address,
 			amount,
 		)
-		.await;
+		.await?;
 
 	Ok(())
 }
@@ -358,7 +358,7 @@ pub enum CompleteBridgeTransferError {
 	#[error("Failed to complete bridge transfer")]
 	CompletingError,
 	#[error(transparent)]
-	ContractCallError(#[from] BridgeContractError), // TODO; addd contact call errors
+	ContractCallError(#[from] BridgeContractInitiatorError), // TODO; addd contact call errors
 }
 
 async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(

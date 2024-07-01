@@ -1,21 +1,13 @@
 #![allow(dead_code)] // TODO: Remove this line once the code is complete
 
-use async_trait::async_trait;
 use bridge_shared::{
 	blockchain_service::AbstractBlockchainService,
-	bridge_contracts::{
-		BridgeContractCounterparty, BridgeContractError, BridgeContractInitiator,
-		BridgeContractResult,
-	},
 	bridge_monitoring::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
 	bridge_service::BridgeService,
-	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, Convert, GenUniqueHash, HashLock,
-		HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
-	},
+	types::{Convert, GenUniqueHash, HashLockPreImage},
 };
 
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -31,8 +23,8 @@ use std::{
 pub mod testing;
 
 use testing::{
+	blockchain::AbstractBlockchainEvent,
 	blockchain::{AbstractBlockchain, AbstractBlockchainClient},
-	blockchain::{AbstractBlockchainEvent, CounterpartyCall, InitiatorCall, Transaction},
 	rng::{RngSeededClone, TestRng},
 };
 
@@ -250,243 +242,23 @@ impl<A: Debug, H: Debug> Stream for CounterpartyContractMonitoring<A, H> {
 	}
 }
 
-#[derive(Clone)]
-pub struct B1Client {
-	client: AbstractBlockchainClient<BC1Address, BC1Hash, TestRng>,
-}
-
-impl B1Client {
-	pub fn build(client: AbstractBlockchainClient<BC1Address, BC1Hash, TestRng>) -> Self {
-		Self { client }
-	}
-}
-
-#[async_trait]
-impl BridgeContractInitiator for B1Client {
-	type Address = BC1Address;
-	type Hash = BC1Hash;
-
-	async fn initiate_bridge_transfer(
-		&mut self,
-		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
-		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		amount: Amount,
-	) -> BridgeContractResult<()> {
-		let transaction = Transaction::Initiator(InitiatorCall::InitiateBridgeTransfer(
-			initiator_address,
-			recipient_address,
-			amount,
-			time_lock,
-			hash_lock,
-		));
-		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
-	}
-
-	async fn complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
-		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
-			bridge_transfer_id,
-			secret,
-		));
-
-		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
-	}
-
-	async fn refund_bridge_transfer(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
-		unimplemented!()
-	}
-
-	async fn get_bridge_transfer_details(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		unimplemented!()
-	}
-}
-
-#[async_trait]
-impl BridgeContractCounterparty for B1Client {
-	type Address = BC1Address;
-	type Hash = BC1Hash;
-
-	async fn lock_bridge_transfer_assets(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		recipient: RecipientAddress<Self::Address>,
-		amount: Amount,
-	) -> bool {
-		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
-			bridge_transfer_id,
-			hash_lock,
-			time_lock,
-			recipient,
-			amount,
-		));
-		self.client.send_transaction(transaction).is_ok()
-	}
-
-	async fn complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
-		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
-			bridge_transfer_id,
-			secret,
-		));
-		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
-	}
-
-	async fn abort_bridge_transfer(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
-		unimplemented!()
-	}
-
-	async fn get_bridge_transfer_details(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		unimplemented!()
-	}
-}
-
-#[derive(Clone)]
-pub struct B2Client {
-	client: AbstractBlockchainClient<BC2Address, BC2Hash, TestRng>,
-}
-
-impl B2Client {
-	pub fn build(client: AbstractBlockchainClient<BC2Address, BC2Hash, TestRng>) -> Self {
-		Self { client }
-	}
-}
-
-#[async_trait]
-impl BridgeContractInitiator for B2Client {
-	type Address = BC2Address;
-	type Hash = BC2Hash;
-
-	async fn initiate_bridge_transfer(
-		&mut self,
-		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
-		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		amount: Amount,
-	) -> BridgeContractResult<()> {
-		let transaction = Transaction::Initiator(InitiatorCall::InitiateBridgeTransfer(
-			initiator_address,
-			recipient_address,
-			amount,
-			time_lock,
-			hash_lock,
-		));
-		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
-	}
-
-	async fn complete_bridge_transfer(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
-		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
-			bridge_transfer_id,
-			secret,
-		));
-		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
-	}
-
-	async fn refund_bridge_transfer(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
-		Ok(())
-	}
-
-	async fn get_bridge_transfer_details(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		Ok(None)
-	}
-}
-
-#[async_trait]
-impl BridgeContractCounterparty for B2Client {
-	type Address = BC2Address;
-	type Hash = BC2Hash;
-
-	async fn lock_bridge_transfer_assets(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		recipient: RecipientAddress<Self::Address>,
-		amount: Amount,
-	) -> bool {
-		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
-			bridge_transfer_id,
-			hash_lock,
-			time_lock,
-			recipient,
-			amount,
-		));
-		self.client.send_transaction(transaction).is_ok()
-	}
-
-	async fn complete_bridge_transfer(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		_secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
-		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
-			_bridge_transfer_id,
-			_secret,
-		));
-		self.client.send_transaction(transaction).map_err(BridgeContractError::generic)
-	}
-
-	async fn abort_bridge_transfer(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
-		unimplemented!()
-	}
-
-	async fn get_bridge_transfer_details(
-		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
-		unimplemented!()
-	}
-}
+pub type B1Client = AbstractBlockchainClient<BC1Address, BC1Hash, TestRng>;
+pub type B2Client = AbstractBlockchainClient<BC2Address, BC2Hash, TestRng>;
 
 // Setup the BlockchainService
 pub type B1Service = AbstractBlockchainService<
-	B1Client,
+	AbstractBlockchainClient<BC1Address, BC1Hash, TestRng>,
 	InitiatorContractMonitoring<BC1Address, BC1Hash>,
-	B1Client,
+	AbstractBlockchainClient<BC1Address, BC1Hash, TestRng>,
 	CounterpartyContractMonitoring<BC1Address, BC1Hash>,
 	BC1Address,
 	BC1Hash,
 >;
 
 pub type B2Service = AbstractBlockchainService<
-	B2Client,
+	AbstractBlockchainClient<BC2Address, BC2Hash, TestRng>,
 	InitiatorContractMonitoring<BC2Address, BC2Hash>,
-	B2Client,
+	AbstractBlockchainClient<BC2Address, BC2Hash, TestRng>,
 	CounterpartyContractMonitoring<BC2Address, BC2Hash>,
 	BC2Address,
 	BC2Hash,
@@ -494,8 +266,8 @@ pub type B2Service = AbstractBlockchainService<
 
 pub struct SetupBridgeServiceResult(
 	pub BridgeService<B1Service, B2Service>,
-	pub B1Client,
-	pub B2Client,
+	pub AbstractBlockchainClient<BC1Address, BC1Hash, TestRng>,
+	pub AbstractBlockchainClient<BC2Address, BC2Hash, TestRng>,
 	pub AbstractBlockchain<BC1Address, BC1Hash, TestRng>,
 	pub AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
 );
@@ -522,7 +294,7 @@ pub fn setup_bridge_service() -> SetupBridgeServiceResult {
 	let monitor_2_counterparty =
 		CounterpartyContractMonitoring::build(blockchain_2.add_event_listener());
 
-	let blockchain_1_client = B1Client::build(client_1.clone());
+	let blockchain_1_client = client_1.clone();
 	let blockchain_1_service = AbstractBlockchainService {
 		initiator_contract: blockchain_1_client.clone(),
 		initiator_monitoring: monitor_1_initiator,
@@ -531,7 +303,7 @@ pub fn setup_bridge_service() -> SetupBridgeServiceResult {
 		_phantom: Default::default(),
 	};
 
-	let blockchain_2_client = B2Client::build(client_2.clone());
+	let blockchain_2_client = client_2.clone();
 	let blockchain_2_service = AbstractBlockchainService {
 		initiator_contract: blockchain_2_client.clone(),
 		initiator_monitoring: monitor_2_initiator,

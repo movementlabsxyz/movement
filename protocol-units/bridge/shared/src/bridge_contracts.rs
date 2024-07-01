@@ -6,24 +6,41 @@ use crate::types::{
 };
 
 #[derive(Error, Debug)]
-pub enum BridgeContractError {
+pub enum BridgeContractInitiatorError {
 	#[error("Failed to initiate bridge transfer")]
 	InitiateTransferError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
-	#[error("Event monitoring error")]
-	EventMonitorError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
 
-impl BridgeContractError {
+impl BridgeContractInitiatorError {
 	pub fn generic<E: std::error::Error>(e: E) -> Self {
 		Self::GenericError(e.to_string())
 	}
 }
 
-pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
+#[derive(Error, Debug)]
+pub enum BridgeContractCounterpartyError {
+	#[error("Failed to lock bridge transfer assets")]
+	LockTransferAssetsError,
+	#[error("Failed to complete bridge transfer")]
+	CompleteTransferError,
+	#[error("Failed to abort bridge transfer")]
+	AbortTransferError,
+	#[error("Generic error: {0}")]
+	GenericError(String),
+}
+
+impl BridgeContractCounterpartyError {
+	pub fn generic<E: std::error::Error>(e: E) -> Self {
+		Self::GenericError(e.to_string())
+	}
+}
+
+pub type BridgeContractInitiatorResult<T> = Result<T, BridgeContractInitiatorError>;
+pub type BridgeContractCounterpartyResult<T> = Result<T, BridgeContractCounterpartyError>;
 
 #[async_trait::async_trait]
 pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
@@ -37,23 +54,23 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractInitiatorResult<()>;
 
 	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractInitiatorResult<()>;
 
 	async fn refund_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractInitiatorResult<()>;
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }
 
 #[async_trait::async_trait]
@@ -68,21 +85,21 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		time_lock: TimeLock,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
-	) -> bool;
+	) -> BridgeContractCounterpartyResult<()>;
 
 	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractCounterpartyResult<()>;
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()>;
+	) -> BridgeContractCounterpartyResult<()>;
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
 }

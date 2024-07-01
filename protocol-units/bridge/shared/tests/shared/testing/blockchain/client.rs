@@ -1,8 +1,20 @@
+use async_trait::async_trait;
+use bridge_shared::{
+	bridge_contracts::{
+		BridgeContractCounterparty, BridgeContractCounterpartyError,
+		BridgeContractCounterpartyResult, BridgeContractInitiator, BridgeContractInitiatorError,
+		BridgeContractInitiatorResult,
+	},
+	types::{
+		Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+		HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+	},
+};
 use futures::channel::mpsc;
 
 use crate::shared::testing::rng::RngSeededClone;
 
-use super::Transaction;
+use super::{CounterpartyCall, InitiatorCall, Transaction};
 
 use thiserror::Error;
 
@@ -57,5 +69,121 @@ where
 		self.transaction_sender
 			.unbounded_send(transaction)
 			.map_err(|_| AbstractBlockchainClientError::SendError)
+	}
+}
+
+#[async_trait]
+impl<A, H, R> BridgeContractInitiator for AbstractBlockchainClient<A, H, R>
+where
+	A: BridgeAddressType,
+	H: BridgeHashType,
+	R: RngSeededClone + Send + Sync + Unpin + Clone,
+{
+	type Address = A;
+	type Hash = H;
+
+	async fn initiate_bridge_transfer(
+		&mut self,
+		initiator_address: InitiatorAddress<Self::Address>,
+		recipient_address: RecipientAddress<Self::Address>,
+		hash_lock: HashLock<Self::Hash>,
+		time_lock: TimeLock,
+		amount: Amount,
+	) -> BridgeContractInitiatorResult<()> {
+		let transaction = Transaction::Initiator(InitiatorCall::InitiateBridgeTransfer(
+			initiator_address,
+			recipient_address,
+			amount,
+			time_lock,
+			hash_lock,
+		));
+		self.send_transaction(transaction)
+			.map_err(BridgeContractInitiatorError::generic)
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		secret: HashLockPreImage,
+	) -> BridgeContractInitiatorResult<()> {
+		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
+
+		self.send_transaction(transaction)
+			.map_err(BridgeContractInitiatorError::generic)
+	}
+
+	async fn refund_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<()> {
+		unimplemented!()
+	}
+
+	async fn get_bridge_transfer_details(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+		unimplemented!()
+	}
+}
+
+#[async_trait]
+impl<A, H, R> BridgeContractCounterparty for AbstractBlockchainClient<A, H, R>
+where
+	A: BridgeAddressType,
+	H: BridgeHashType,
+	R: RngSeededClone + Send + Sync + Unpin + Clone,
+{
+	type Address = A;
+	type Hash = H;
+
+	async fn lock_bridge_transfer_assets(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		hash_lock: HashLock<Self::Hash>,
+		time_lock: TimeLock,
+		recipient: RecipientAddress<Self::Address>,
+		amount: Amount,
+	) -> BridgeContractCounterpartyResult<()> {
+		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
+			bridge_transfer_id,
+			hash_lock,
+			time_lock,
+			recipient,
+			amount,
+		));
+		self.send_transaction(transaction)
+			.map_err(BridgeContractCounterpartyError::generic)
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		secret: HashLockPreImage,
+	) -> BridgeContractCounterpartyResult<()> {
+		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
+		self.send_transaction(transaction)
+			.map_err(BridgeContractCounterpartyError::generic)
+	}
+
+	async fn abort_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<()> {
+		unimplemented!()
+	}
+
+	async fn get_bridge_transfer_details(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
+	{
+		unimplemented!()
 	}
 }
