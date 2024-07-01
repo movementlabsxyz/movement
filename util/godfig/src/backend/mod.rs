@@ -1,7 +1,7 @@
 pub mod config_file;
 
 use thiserror::Error;
-use flocks::tfrwlock::TfrwLockError;
+use flocks::tfrwlock::FileRwLockError;
 use futures::Stream;
 
 #[derive(Debug, Error)]
@@ -20,8 +20,8 @@ impl From<serde_json::Error> for GodfigBackendError {
     }
 }
 
-impl From<TfrwLockError> for GodfigBackendError {
-    fn from(error: TfrwLockError) -> Self {
+impl From<FileRwLockError> for GodfigBackendError {
+    fn from(error: FileRwLockError) -> Self {
         GodfigBackendError::BackendError(error.into())
     }
 }

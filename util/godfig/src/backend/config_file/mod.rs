@@ -1,4 +1,4 @@
-use flocks::tfrwlock::{TfrwLock, TfrwLockWriteGuard};
+use flocks::tfrwlock::{FileRwLock, FileRwLockWriteGuard};
 use std::sync::Arc;
 use tokio::{
     fs::File,
@@ -11,7 +11,7 @@ use futures::Stream;
 
 #[derive(Clone)]
 pub struct ConfigFile {
-    pub (crate) lock: Arc<TfrwLock<File>>,
+    pub (crate) lock: Arc<FileRwLock<File>>,
     pub (crate) polling_interval: std::time::Duration,
 }
 
@@ -19,7 +19,7 @@ impl ConfigFile {
     
     pub fn new(file: File) -> Self {
         Self {
-            lock: Arc::new(TfrwLock::new(file)),
+            lock: Arc::new(FileRwLock::new(file)),
             polling_interval: std::time::Duration::from_millis(20),
         }
     }
@@ -29,7 +29,7 @@ impl ConfigFile {
         self
     }
 
-    async fn try_get_with_guard<K, T>(mut write_guard : TfrwLockWriteGuard<'_, File>, key: K) -> Result<(Option<T>, TfrwLockWriteGuard<'_, File>), GodfigBackendError>
+    async fn try_get_with_guard<K, T>(mut write_guard : FileRwLockWriteGuard<'_, File>, key: K) -> Result<(Option<T>, FileRwLockWriteGuard<'_, File>), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned,
@@ -58,7 +58,7 @@ impl ConfigFile {
 
     }
 
-    async fn try_set_with_guard<K, T>(mut write_guard : TfrwLockWriteGuard<'_, File>, key: K, value: Option<T>) -> Result<TfrwLockWriteGuard<'_, File>, GodfigBackendError>
+    async fn try_set_with_guard<K, T>(mut write_guard : FileRwLockWriteGuard<'_, File>, key: K, value: Option<T>) -> Result<FileRwLockWriteGuard<'_, File>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
         T: serde::Serialize,

@@ -23,30 +23,30 @@ mod test {
 
 	#[test]
 	fn test_env_default_with_env() {
-		std::env::set_var("TEST_ENV_DEFAULT", "42");
+		std::env::set_var("TEST_ENV_DEFAULT_1", "42");
 
 		// without default value
-		env_default!(my_env, "TEST_ENV_DEFAULT", i32);
+		env_default!(my_env, "TEST_ENV_DEFAULT_1", i32);
 		let result = my_env();
 		assert_eq!(result, Some(42));
 
 		// with default value
-		env_default!(my_env_with_default, "TEST_ENV_DEFAULT", i32, 0);
+		env_default!(my_env_with_default, "TEST_ENV_DEFAULT_1", i32, 0);
 		let result = my_env_with_default();
 		assert_eq!(result, 42);
 	}
 
 	#[test]
 	fn test_env_default_without_env() {
-		std::env::remove_var("TEST_ENV_DEFAULT");
+		std::env::remove_var("TEST_ENV_DEFAULT_2");
 
 		// without default value
-		env_default!(my_env, "TEST_ENV_DEFAULT", i32);
+		env_default!(my_env, "TEST_ENV_DEFAULT_2", i32);
 		let result = my_env();
 		assert_eq!(result, None);
 
 		// with default value
-		env_default!(my_env_with_default, "TEST_ENV_DEFAULT", i32, 0);
+		env_default!(my_env_with_default, "TEST_ENV_DEFAULT_2", i32, 0);
 		let result = my_env_with_default();
 		assert_eq!(result, 0);
 	}
