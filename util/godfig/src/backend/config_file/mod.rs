@@ -73,33 +73,43 @@ impl ConfigFile {
         };
 
         let keys = key.into();
-        let mut current = &mut json;
-        for k in &keys[..keys.len() - 1] {
-            if current.get_mut(k).is_none() {
-                current[k] = serde_json::Value::Object(serde_json::Map::new());
+
+        if keys.is_empty() {
+            // handle the case with 0 keys, setting the top-level JSON
+            json = match value {
+                Some(v) => serde_json::to_value(v)?,
+                None => serde_json::Value::Null,
+            };
+        } else {
+            // handle the case with keys
+            let mut current = &mut json;
+            for k in &keys[..keys.len() - 1] {
+                if current.get_mut(k).is_none() {
+                    current[k] = serde_json::Value::Object(serde_json::Map::new());
+                }
+                current = current.get_mut(k).unwrap();
             }
-            current = current.get_mut(k).unwrap();
+            let last_key = keys[keys.len() - 1].clone();
+    
+            // set or unset the value
+            match value {
+                Some(v) => {
+                    current[last_key] = serde_json::to_value(v)?;
+                },
+                None => {
+                    current.as_object_mut().ok_or(
+                        anyhow::anyhow!("Cannot set a value on a non-object")
+                    )?.remove(&last_key);
+                },
+            }
         }
-        let last_key = keys[keys.len() - 1].clone();
-
-        // set or unset the value
-        match value {
-            Some(v) => {
-                current[last_key] = serde_json::to_value(v)?;
-            },
-            None => {
-                current.as_object_mut().ok_or(
-                    anyhow::anyhow!("Cannot set a value on a non-object")
-                )?.remove(&last_key);
-            },
-        }
-
+    
         // serialize the contents and write to the file
         contents = serde_json::to_string_pretty(&json)?;
         write_guard.seek(std::io::SeekFrom::Start(0)).await?;
         write_guard.write_all(contents.as_bytes()).await?;
         write_guard.flush().await?;
-
+    
         Ok(write_guard)
     }
 

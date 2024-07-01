@@ -4708,6 +4708,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -7005,6 +7006,7 @@ dependencies = [
  "celestia-types",
  "commander",
  "dot-movement",
+ "godfig",
  "hex",
  "m1-da-light-node-util",
  "rand 0.7.3",
