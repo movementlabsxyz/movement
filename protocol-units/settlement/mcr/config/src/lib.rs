@@ -83,6 +83,7 @@ mod tests {
 			gas_limit,
 			batch_timeout,
 			tx_send_retries,
+			anvil_process_pid: _,
 		} = toml::from_str(EXAMPLE_CONFIG_TOML)?;
 		assert_eq!(rpc_url.unwrap(), "http://localhost:8545");
 		assert_eq!(ws_url.unwrap(), "http://localhost:8546");
