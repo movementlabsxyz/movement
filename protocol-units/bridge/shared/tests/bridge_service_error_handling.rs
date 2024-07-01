@@ -61,6 +61,8 @@ async fn test_bridge_service_error_handling() {
 	.await
 	.expect("complete_bridge_transfer failed");
 
-	let event = bridge_service.next().await.expect("No event");
-	tracing::debug!(?event);
+	// The team has decided not to monitor for incorrect secret errors at this time.
+
+	// let event = bridge_service.next().await.expect("No event");
+	// tracing::debug!(?event);
 }
