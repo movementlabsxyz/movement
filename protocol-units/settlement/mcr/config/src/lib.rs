@@ -4,6 +4,7 @@
 use serde::{Deserialize, Serialize};
 
 const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
+const DEFAULT_BATCH_TIMEOUT_MILLIS: u64 = 2000;
 const DEFAULT_TX_SEND_RETRIES: u32 = 10;
 const DEFAULT_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 
@@ -23,6 +24,9 @@ pub struct Config {
 	pub mcr_contract_address: String,
 	#[serde(default = "default_gas_limit")]
 	pub gas_limit: u128,
+	/// Timeout for batching blocks, in milliseconds
+	#[serde(default = "default_batch_timeout")]
+	pub batch_timeout: u64,
 	#[serde(default = "default_tx_send_retries")]
 	pub tx_send_retries: u32,
 }
@@ -39,6 +43,10 @@ const fn default_tx_send_retries() -> u32 {
 	DEFAULT_TX_SEND_RETRIES
 }
 
+const fn default_batch_timeout() -> u64 {
+	DEFAULT_BATCH_TIMEOUT_MILLIS
+}
+
 impl Default for Config {
 	fn default() -> Self {
 		Config {
@@ -47,6 +55,7 @@ impl Default for Config {
 			signer_private_key: None,
 			mcr_contract_address: default_mcr_contract_address(),
 			gas_limit: default_gas_limit(),
+			batch_timeout: default_batch_timeout(),
 			tx_send_retries: default_tx_send_retries(),
 		}
 	}
@@ -70,6 +79,7 @@ mod tests {
 			signer_private_key,
 			mcr_contract_address,
 			gas_limit,
+			batch_timeout,
 			tx_send_retries,
 		} = toml::from_str(EXAMPLE_CONFIG_TOML)?;
 		assert_eq!(rpc_url.unwrap(), "http://localhost:8545");
@@ -80,6 +90,7 @@ mod tests {
 		);
 		assert_eq!(mcr_contract_address, MCR_CONTRACT_ADDRESS);
 		assert_eq!(gas_limit, DEFAULT_GAS_LIMIT);
+		assert_eq!(batch_timeout, DEFAULT_BATCH_TIMEOUT_MILLIS);
 		assert_eq!(tx_send_retries, DEFAULT_TX_SEND_RETRIES);
 		Ok(())
 	}

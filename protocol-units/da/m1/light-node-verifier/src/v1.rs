@@ -77,8 +77,8 @@ impl Verifier for V1Verifier {
 	}
 }
 
-#[cfg(test)]
-pub mod test {
+#[cfg(all(test, feature = "integration-tests"))]
+mod tests {
 	use super::*;
 	use celestia_types::blob::GasPrice;
 
@@ -87,11 +87,6 @@ pub mod test {
 	pub async fn test_valid_verifies() -> Result<(), anyhow::Error> {
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
 		let config = dot_movement.try_get_config_from_json::<m1_da_light_node_util::M1DaLightNodeConfig>()?;
-		let client = Arc::new(config.connect_celestia().await?);
-		let celestia_namespace = config.celestia_namespace();
-
-		let verifier =
-			V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
@@ -112,8 +107,7 @@ pub mod test {
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_namespace = config.celestia_namespace();
 
-		let verifier =
-			V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
+		let verifier = V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
@@ -145,8 +139,7 @@ pub mod test {
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_namespace = config.celestia_namespace();
 
-		let verifier =
-			V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
+		let verifier = V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
