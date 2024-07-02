@@ -436,34 +436,15 @@ mod tests {
 		Ok(())
 	}
 
-	async fn stake_genesis<P: Provider<T, Ethereum>, T: Transport + Clone>(
-		provider: &P,
-		contract: &MCR::MCRInstance<T, &P, Ethereum>,
-		contract_address: Address,
-		signer: Address,
-		amount: u128,
-	) -> Result<(), anyhow::Error> {
-		let stake_genesis_call = contract.stakeGenesis();
-		let calldata = stake_genesis_call.calldata().to_owned();
-		send_transaction_function(provider, calldata, contract_address, signer, amount).await
-	}
-	async fn send_transaction_function<P: Provider<T, Ethereum>, T: Transport + Clone>(
-		provider: &P,
-		call_data: Bytes,
-		contract_address: Address,
-		signer: Address,
-		amount: u128,
-	) -> Result<(), anyhow::Error> {
-		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
-		let transaction = TransactionRequest::default()
-			.from(signer)
-			.to(contract_address)
-			.value(U256::from(amount))
-			.input(call_data.into())
-			.max_fee_per_gas(eip1559_fees.max_fee_per_gas)
-			.max_priority_fee_per_gas(eip1559_fees.max_priority_fee_per_gas);
-
-		provider.send_transaction(transaction).await?.get_receipt().await?;
+	#[tokio::test]
+	pub fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
+		let anvil_address = read_anvil_json_file_addresses("anvil.json")?;
+		let rpc_url = env::var("RPC_URL")?;
+		tokio::runtime::Builder::new_current_thread()
+			.enable_all()
+			.build()?
+			.block_on(run_genesis_ceremony(&anvil_address, &rpc_url))?;
 		Ok(())
 	}
+
 }
