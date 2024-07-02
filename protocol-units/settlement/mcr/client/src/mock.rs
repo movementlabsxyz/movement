@@ -69,6 +69,7 @@ impl McrSettlementClientOperations for MockMcrSettlementClient {
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
+		tracing::debug!("post_block_commitment MOCK block height: {:?}", block_commitment.height);
 		let height = block_commitment.height;
 
 		let settled = {

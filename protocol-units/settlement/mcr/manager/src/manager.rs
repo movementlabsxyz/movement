@@ -64,10 +64,13 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 		loop {
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
+					tracing::info!("Settlement manager post commitment height:{}", block_commitment.height);
+
 					commitments_to_settle.insert(
 						block_commitment.height,
 						block_commitment.commitment.clone(),
 					);
+
 					if block_commitment.height > max_height {
 						// Can't post this commitment to the contract yet.
 						// Post the previously accumulated commitments as a batch
@@ -132,6 +135,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 							}
 						};
 						if new_max_height > max_height {
+							tracing::info!("Settlement manager notify commitment new_max_height:{new_max_height} > max_height:{max_height}");
 							max_height = new_max_height;
 							ahead_of_settlement = false;
 						}

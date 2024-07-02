@@ -1,0 +1,22 @@
+version: "3"
+
+environment:
+
+processes:
+
+  build-mcr-client:
+    command: |
+      cargo build -p mcr-settlement-client
+
+  build-suzuka-full-node-setup:
+    command: |
+      cargo build -p suzuka-full-node-setup
+
+  build:
+    command: |
+      exit 0
+    depends_on: 
+      build-mcr-client:
+        condition: process_completed_successfully
+      build-suzuka-full-node-setup:
+        condition: process_completed_successfully

@@ -7,11 +7,11 @@ processes:
   mcr-client-tests:
     command: |
       set -e
-      cargo test -p mcr-settlement-client
+      RUST_BACKTRACE=1 cargo test -p mcr-settlement-client --features integration-tests test_send_commitment -- --test-threads=1
     depends_on:
-      eth: 
-        condition: process_healthy
-      deploy-mcr:
+      build: 
+        condition: process_completed_successfully
+      setup:
         condition: process_completed_successfully
     availability:
       # NOTE: `restart: exit_on_failure` is not needed since

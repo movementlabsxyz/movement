@@ -1,73 +1,26 @@
-use anyhow::Context;
-use once_cell::sync::Lazy;
-use std::str::FromStr;
-use suzuka_client::{
+use crate::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
-use url::Url;
+use anyhow::{Context, Result};
+use tokio::time::{sleep, Duration};
 
-static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
-	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>().unwrap();
-	config
-});
+#[tokio::test]
+async fn test_rest_state_root_hash() -> Result<()> {
+	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+	let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
-// :!:>section_1c
-static NODE_URL: Lazy<Url> = Lazy::new(|| {
-	let node_connection_address = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_hostname
-		.clone();
-	let node_connection_port = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_rest_connection_port
-		.clone();
+	let node_url = suzuka_config.execution_config.maptos_config.client.get_rest_url()?;
+	let faucet_url = suzuka_config.execution_config.maptos_config.client.get_faucet_url()?;
 
-	let node_connection_url =
-		format!("http://{}:{}", node_connection_address, node_connection_port);
+	let rest_client = Client::new(node_url.clone());
+	let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone());
 
-	Url::from_str(node_connection_url.as_str()).unwrap()
-});
-
-static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-	let faucet_listen_address = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_hostname
-		.clone();
-	let faucet_listen_port = SUZUKA_CONFIG
-		.execution_config
-		.maptos_config
-		.client
-		.maptos_faucet_rest_connection_port
-		.clone();
-
-	let faucet_listen_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-
-	Url::from_str(faucet_listen_url.as_str()).unwrap()
-});
-// <:!:section_1c
-
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	// :!:>section_1a
-	let rest_client = Client::new(NODE_URL.clone());
-	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone()); // <:!:section_1a
-
-	// :!:>section_1b
-	let coin_client = CoinClient::new(&rest_client); // <:!:section_1b
-
+	let coin_client = CoinClient::new(&rest_client);
 	// Create two accounts locally, Alice and Bob.
-	// :!:>section_2
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); // <:!:section_2
+	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
 	// Print account addresses.
 	println!("\n=== Addresses ===");
@@ -75,13 +28,12 @@ async fn main() -> Result<(), anyhow::Error> {
 	println!("Bob: {}", bob.address().to_hex_literal());
 
 	// Create the accounts on chain, but only fund Alice.
-	// :!:>section_3
 	faucet_client
 		.fund(alice.address(), 100_000_000)
 		.await
 		.context("Failed to fund Alice's account")?;
 	faucet_client
-		.create_account(bob.address())
+		.fund(bob.address(), 100_000_000)
 		.await
 		.context("Failed to fund Bob's account")?; // <:!:section_3
 
@@ -131,7 +83,6 @@ async fn main() -> Result<(), anyhow::Error> {
 	); // <:!:section_4
 
 	// Have Alice send Bob some more coins.
-	// :!:>section_5
 	let txn_hash = coin_client
 		.transfer(&mut alice, bob.address(), 1_000, None)
 		.await
@@ -158,6 +109,26 @@ async fn main() -> Result<(), anyhow::Error> {
 			.await
 			.context("Failed to get Bob's account balance the second time")?
 	);
+
+	sleep(Duration::from_secs(10)).await;
+
+	let cur_blockheight = rest_client.get_ledger_information().await?.state().block_height;
+	let state_root_hash_query = format!("movement/v1/state-root-hash/{}", cur_blockheight);
+	let state_root_hash_url = format!("{}{}", node_url, state_root_hash_query);
+	println!("State root hash url: {}", state_root_hash_url);
+
+	let client = reqwest::Client::new();
+	let health_url = format!("{}movement/v1/health", node_url);
+	let response = client.get(&health_url).send().await?;
+	println!("response:{response:?}",);
+	assert!(response.status().is_success());
+
+	println!("Health check passed");
+
+	let response = client.get(&state_root_hash_url).send().await?;
+	println!("response:{response:?}",);
+	let state_key = response.text().await?;
+	println!("State key: {}", state_key);
 
 	Ok(())
 }
