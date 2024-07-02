@@ -38,7 +38,7 @@ async fn test_bridge_service_integration_a_to_b() {
 	blockchain_1_client
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC1Address("initiator")),
-			RecipientAddress(BC1Address("recipient")),
+			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
 			Amount(1000),
@@ -56,7 +56,7 @@ async fn test_bridge_service_integration_a_to_b() {
 		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
 			bridge_transfer_id: transfer_initiated_event.bridge_transfer_id().clone(),
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
-			recipient_address: RecipientAddress(BC1Address("recipient")),
+			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
 			amount: Amount(1000)
@@ -79,8 +79,9 @@ async fn test_bridge_service_integration_a_to_b() {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			recipient_address: RecipientAddress(BC2Address("recipient")),
-			amount: Amount(1000)
+			recipient_address: RecipientAddress::from(BC2Address("recipient")),
+			amount: Amount(1000),
+			_phantom: std::marker::PhantomData
 		})
 	);
 
@@ -108,10 +109,11 @@ async fn test_bridge_service_integration_a_to_b() {
 		completed_event_counterparty,
 		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
-			recipient_address: RecipientAddress(BC2Address("recipient")),
+			recipient_address: RecipientAddress::from(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
-			amount: Amount(1000)
+			amount: Amount(1000),
+			_phantom: std::marker::PhantomData
 		})
 	);
 
@@ -155,7 +157,7 @@ async fn test_bridge_service_integration_b_to_a() {
 	blockchain_2_client
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC2Address("initiator")),
-			RecipientAddress(BC2Address("recipient")),
+			RecipientAddress::from(BC2Address("recipient")),
 			HashLock(BC2Hash::from("hash_lock")),
 			TimeLock(100),
 			Amount(1000),
@@ -173,7 +175,7 @@ async fn test_bridge_service_integration_b_to_a() {
 		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
 			bridge_transfer_id: transfer_initiated_event.bridge_transfer_id().clone(),
 			initiator_address: InitiatorAddress(BC2Address("initiator")),
-			recipient_address: RecipientAddress(BC2Address("recipient")),
+			recipient_address: RecipientAddress::from(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
 			amount: Amount(1000)
@@ -196,8 +198,9 @@ async fn test_bridge_service_integration_b_to_a() {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			recipient_address: RecipientAddress(BC1Address("recipient")),
-			amount: Amount(1000)
+			recipient_address: RecipientAddress::from(BC1Address("recipient")),
+			amount: Amount(1000),
+			_phantom: std::marker::PhantomData
 		})
 	);
 
@@ -225,10 +228,11 @@ async fn test_bridge_service_integration_b_to_a() {
 		completed_event_counterparty,
 		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
-			recipient_address: RecipientAddress(BC1Address("recipient")),
+			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
-			amount: Amount(1000)
+			amount: Amount(1000),
+			_phantom: std::marker::PhantomData
 		})
 	);
 

@@ -34,7 +34,7 @@ async fn test_bridge_service_error_handling() {
 	blockchain_1_client
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC1Address("initiator")),
-			RecipientAddress(BC1Address("recipient")),
+			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("invalid_hash_lock")),
 			TimeLock(100),
 			Amount(1000),

@@ -85,7 +85,7 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
+		recipient_address: RecipientAddress,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
@@ -145,7 +145,7 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddress<Self::Address>,
+		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
 		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(

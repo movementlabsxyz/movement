@@ -40,7 +40,13 @@ where
 pub struct InitiatorAddress<A>(pub A);
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RecipientAddress<A>(pub A);
+pub struct RecipientAddress(pub Vec<u8>);
+
+impl From<&str> for RecipientAddress {
+	fn from(value: &str) -> Self {
+		RecipientAddress(value.as_bytes().to_vec())
+	}
+}
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
@@ -62,7 +68,7 @@ pub struct Amount(pub u64);
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<A>,
-	pub recipient_address: RecipientAddress<A>,
+	pub recipient_address: RecipientAddress,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
@@ -71,19 +77,21 @@ pub struct BridgeTransferDetails<A, H> {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LockDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
-	pub recipient_address: RecipientAddress<A>,
+	pub recipient_address: RecipientAddress,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
+	pub _phantom: std::marker::PhantomData<A>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct CompletedDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
-	pub recipient_address: RecipientAddress<A>,
+	pub recipient_address: RecipientAddress,
 	pub hash_lock: HashLock<H>,
 	pub secret: HashLockPreImage,
 	pub amount: Amount,
+	pub _phantom: std::marker::PhantomData<A>,
 }
 
 impl<A, H> CompletedDetails<A, H> {
@@ -97,6 +105,7 @@ impl<A, H> CompletedDetails<A, H> {
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,
+			_phantom: std::marker::PhantomData,
 		}
 	}
 
@@ -107,6 +116,7 @@ impl<A, H> CompletedDetails<A, H> {
 			hash_lock: lock_details.hash_lock,
 			secret,
 			amount: lock_details.amount,
+			_phantom: std::marker::PhantomData,
 		}
 	}
 }

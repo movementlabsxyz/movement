@@ -7,7 +7,7 @@ use bridge_shared::{
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
 	bridge_service::BridgeService,
-	types::{Convert, GenUniqueHash, HashLockPreImage},
+	types::{Convert, GenUniqueHash, HashLockPreImage, RecipientAddress},
 };
 
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -100,8 +100,20 @@ impl Debug for BC2Hash {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Address(pub &'static str);
 
+impl From<BC1Address> for RecipientAddress {
+	fn from(value: BC1Address) -> Self {
+		RecipientAddress(value.0.as_bytes().to_vec())
+	}
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC2Address(pub &'static str);
+
+impl From<BC2Address> for RecipientAddress {
+	fn from(value: BC2Address) -> Self {
+		RecipientAddress(value.0.as_bytes().to_vec())
+	}
+}
 
 impl From<BC1Address> for BC2Address {
 	fn from(address: BC1Address) -> Self {
