@@ -56,6 +56,7 @@ sol!(
 	"abis/MCR.json"
 );
 
+
 // Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
 sol!(
 	#[allow(missing_docs)]
@@ -64,6 +65,7 @@ sol!(
 	"abis/MovementStaking.json"
 );
 
+
 // Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
 sol!(
 	#[allow(missing_docs)]
@@ -71,6 +73,7 @@ sol!(
 	MOVEToken,
 	"abis/MOVEToken.json"
 );
+
 // When created, kill the pid when dropped.
 // Use to kill Anvil process when Suzuka Node ends.
 // TODO should be removed by the new config.
@@ -326,128 +329,4 @@ pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
 		.map(|(address, private_key)| AnvilAddressEntry { address, private_key })
 		.collect::<Vec<_>>();
 	Ok(res)
-}
-
-#[cfg(test)]
-#[cfg(feature = "integration-tests")]
-mod tests {
-	use super::*;
-	use alloy_primitives::Bytes;
-	use alloy_provider::ProviderBuilder;
-	use alloy_rpc_types::TransactionRequest;
-	use alloy_signer_wallet::LocalWallet;
-	use alloy_transport::Transport;
-
-	use super::*;
-	use alloy_provider::ProviderBuilder;
-	use alloy_signer_wallet::LocalWallet;
-	use movement_types::Commitment;
-
-	use anyhow::Context;
-	use std::env;
-	use std::fs;
-
-	
-	fn read_mcr_smart_contract_address() -> Result<Address, anyhow::Error> {
-		let file_path = env::var("MCR_SMART_CONTRACT_ADDRESS_FILE")?;
-		let addr_str = fs::read_to_string(file_path)?;
-		let address: Address = addr_str.trim().parse()?;
-		Ok(address)
-	}
-
-	fn read_staking_smart_contract_address() -> Result<Address, anyhow::Error> {
-		let file_path = env::var("STAKING_SMART_CONTRACT_ADDRESS_FILE")?;
-		let addr_str = fs::read_to_string(file_path)?;
-		let address: Address = addr_str.trim().parse()?;
-		Ok(address)
-	}
-
-	fn read_move_token_smart_contract_address() -> Result<Address, anyhow::Error> {
-		let file_path = env::var("MOVE_TOKEN_SMART_CONTRACT_ADDRESS_FILE")?;
-		let addr_str = fs::read_to_string(file_path)?;
-		let address: Address = addr_str.trim().parse()?;
-		Ok(address)
-	}
-
-	// Do the Genesis ceremony in Rust because if node by forge script,
-	// it's never done from Rust call.
-	use alloy_primitives::Bytes;
-	use alloy_rpc_types::TransactionRequest;
-
-	async fn run_genesis_ceremony(
-		governor: LocalWallet,
-		rpc_url: &str,
-	) -> Result<(), anyhow::Error> {
-		// Get the MCR and Staking contract address
-		let mcr_address = read_mcr_smart_contract_address()?;
-		let staking_address = read_staking_smart_contract_address()?;
-		let move_token_address = read_move_token_smart_contract_address()?;
-
-		// Build alice client for MOVEToken, MCR, and staking
-		let alice = LocalWallet::random();
-		let alice_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.signer(EthereumSigner::from(alice))
-			.on_http(rpc_url.parse()?);
-		let alice_mcr = MCR::new(mcr_address, &alice_rpc_provider);
-		let alice_staking = MovementStaking::new(staking_address, &alice_rpc_provider);
-		let alice_move_token = MOVEToken::new(move_token_address, &alice_rpc_provider);
-
-		// Build bob client for MOVEToken, MCR, and staking
-		let bob: LocalWallet = LocalWallet::random();
-		let bob_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.signer(EthereumSigner::from(bob))
-			.on_http(rpc_url.parse()?);
-		let bob_mcr = MCR::new(mcr_address, &bob_rpc_provider);
-		let bob_staking = MovementStaking::new(staking_address, &bob_rpc_provider);
-		let bob_move_token = MOVEToken::new(move_token_address, &bob_rpc_provider);
-
-		// Build the MCR client for staking
-		let governor_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.signer(EthereumSigner::from(governor_signer))
-			.on_http(rpc_url.parse()?);
-		let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
-		let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
-
-		// alice stakes for mcr
-		governor_token
-			.mint(alice.address(), U256::from(100))
-			.call()
-			.await?;
-		alice_move_token.approve(mcr_address, U256::from(100)).call().await?;
-		alice_staking
-			.stake(mcr_address, move_token_address, U256::from(100))
-			.call()
-			.await?;
-
-		// bob stakes for mcr
-		governor_token
-			.mint(bob.address(), U256::from(100))
-			.call()
-			.await?;
-		bob_move_token.approve(mcr_address, U256::from(100)).call().await?;
-		bob_staking
-			.stake(mcr_address, move_token_address, U256::from(100))
-			.call()
-			.await?;
-
-		// mcr accepts the genesis
-		governor_staking.acceptGenesisCeremony().call().await?;
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	pub fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
-		let anvil_address = read_anvil_json_file_addresses("anvil.json")?;
-		let rpc_url = env::var("RPC_URL")?;
-		tokio::runtime::Builder::new_current_thread()
-			.enable_all()
-			.build()?
-			.block_on(run_genesis_ceremony(&anvil_address, &rpc_url))?;
-		Ok(())
-	}
-
 }

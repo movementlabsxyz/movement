@@ -1,6 +1,9 @@
 use movement_types::BlockCommitment;
 use tokio_stream::Stream;
 
+#[cfg(test)]
+pub mod tests;
+
 #[cfg(feature = "mock")]
 pub mod mock;
 

@@ -36,13 +36,17 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 
+godfig = { workspace = true }
+
+dot-movement = { workspace = true }
+
 [dev-dependencies]
 alloy-rpc-types = { workspace = true }
 futures = { workspace = true }
 
 [features]
-default = ["eth"]
-integration-tests = ["eth"]
+default = ["eth", "e2e"]
+e2e = ["eth"]
 eth = []
 mock = []
 
