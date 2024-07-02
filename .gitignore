@@ -1,6 +1,8 @@
 .DS_Store
 proc-compose.temp.log
 methods/guest/Cargo.lock
+protocol-units/bridge/contracts/out/*
+protocol-units/bridge/contracts/cache/*
 protocol-units/bridge/move-modules/build/*
 .idea/
 target/

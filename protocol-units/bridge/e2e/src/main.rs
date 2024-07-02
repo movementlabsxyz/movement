@@ -11,7 +11,12 @@ async fn main() -> Result<()> {
 	let config_path = "path/to/config.json";
 	// 1st Anvil test address
 	let initiator_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+	let initiator_priv_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 	let recipient_address = "0x123"; // dummy val, this should be a movement address
+	let rpc_url = "http://localhost:8545";
+	let weth_path = "protocol-units/bridge/contracts/src/WETH9.sol:WETH9";
+	let initiator_path =
+		"protocol-units/bridge/contracts/src/AtomicBridgeInitiator.sol:AtomicBridgeInitiator";
 
 	let hash_lock = "forty-two".as_bytes();
 	let hash_lock_bytes = keccak_hash::keccak(hash_lock);
@@ -25,6 +30,7 @@ async fn main() -> Result<()> {
 	let current_dir = env::current_dir()?;
 	println!("Current dir: {:?}", current_dir);
 
+	// Build contracts
 	let build_output = TokioCommand::new("forge")
 		.args(&["build"])
 		.current_dir("protocol-units/bridge/contracts") //navigate to contracts dir
@@ -38,15 +44,23 @@ async fn main() -> Result<()> {
 		println!("{}", String::from_utf8_lossy(&build_output.stdout));
 	}
 
+	//Start Anvil
 	let _ = TokioCommand::new("anvil").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
 	sleep(Duration::from_secs(5)).await;
 
-	// let deploy_status = TokioCommand::new("forge")
-	// 	.args(&["-c", "anvil", "-p", "anvil"])
-	// 	.status()
-	// 	.await?;
-	// assert!(deploy_status.success(), "Deployment failed");
-	//
+	//Deploy WETH9
+	let weth_deploy_output = TokioCommand::new("forge")
+		.args(&["create", "--rpc-url", rpc_url, "--private-key", initiator_priv_key, weth_path])
+		.output()
+		.await?;
+	if !weth_deploy_output.status.success() {
+		eprint!("Failed to deploy WETH: {}", String::from_utf8_lossy(&weth_deploy_output.stderr));
+		return Err(anyhow::anyhow!("Failed to deploy WETH"));
+	} else {
+		println!("WETH deploy output:");
+		println!("{}", String::from_utf8_lossy(&weth_deploy_output.stdout));
+	}
+
 	sleep(Duration::from_secs(5)).await;
 
 	// Step 1: Deploy
