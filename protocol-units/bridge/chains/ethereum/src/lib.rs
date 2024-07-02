@@ -1,8 +1,11 @@
 use std::ops::Deref;
 
-use alloy::pubsub::PubSubFrontend;
+use alloy::{hex::decode, pubsub::PubSubFrontend};
 use alloy_network::{Ethereum, EthereumSigner};
-use alloy_primitives::private::serde::{Deserialize, Serialize};
+use alloy_primitives::{
+	private::serde::{Deserialize, Serialize},
+	Bytes,
+};
 use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, SignerFiller},
@@ -12,10 +15,8 @@ use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
-use alloy_transport_ws::WsConnect;
-use bridge_shared::bridge_contracts::{
-	BridgeContractError, BridgeContractInitiator, BridgeContractResult,
-};
+//use alloy_transport_ws::WsConnect;
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
 	RecipientAddress, TimeLock,
@@ -191,16 +192,16 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		_initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
+		recipient_address: RecipientAddress,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
-
+		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
-			recipient_address.0.into_word(),
+			FixedBytes(recipient_bytes),
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 		);
@@ -218,7 +219,7 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		pre_image: HashLockPreImage,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractInitiatorResult<()> {
 		let pre_image: [u8; 32] =
 			vec_to_array(pre_image.0).unwrap_or_else(|_| panic!("Failed to convert pre_image"));
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
@@ -237,7 +238,7 @@ where
 	async fn refund_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		let _ = send_tx(
@@ -253,7 +254,7 @@ where
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
 		let key = bridge_transfer_id.0;
 		let storage_slot = self.calculate_storage_slot(key, mapping_slot);
@@ -269,9 +270,7 @@ where
 		let details = BridgeTransferDetails {
 			bridge_transfer_id,
 			initiator_address: InitiatorAddress(eth_details.originator),
-			recipient_address: RecipientAddress(EthAddress::from_word(FixedBytes(
-				eth_details.recipient,
-			))),
+			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
@@ -283,9 +282,7 @@ where
 			},
 		};
 
-		println!("Details: {:?}", details);
-		//Not returning as we need two types of address in BridgeTransferDetails
-		Ok(None)
+		Ok(Some(details))
 	}
 }
 

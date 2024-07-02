@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
 		println!("{}", String::from_utf8_lossy(&weth_deploy_output.stdout));
 	}
 
-	let current_dir = env::current_dir()?;
+	let _ = env::current_dir()?;
 	let initiator_path = "src/AtomicBridgeInitiator.sol:AtomicBridgeInitiator";
 
 	sleep(Duration::from_secs(5)).await;

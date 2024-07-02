@@ -69,7 +69,8 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
 }
 
 #[async_trait::async_trait]

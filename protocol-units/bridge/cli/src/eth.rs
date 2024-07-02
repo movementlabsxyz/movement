@@ -1,4 +1,4 @@
-use alloy_primitives::Address as EthAddress;
+use alloy_primitives::{hex::decode, Address as EthAddress};
 use anyhow::Result;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
@@ -133,7 +133,7 @@ async fn initiate_transfer(
 	let mut client = EthClient::build_with_config(config, recipient_address).await?;
 	//let chain_id = 42; //dummy value for now
 	let initiator_address = EthAddress::parse_checksummed(initiator_address, None)?;
-	let recipient_address = EthAddress::parse_checksummed(recipient_address, None)?;
+	let recipient_address = Vec::from(parse_recipient_address(recipient_address).unwrap());
 	let hash_lock = HashLock::parse(hash_lock)?;
 	println!("initiator_address: {:?}", initiator_address);
 	println!("recipient_address: {:?}", recipient_address);
@@ -175,4 +175,23 @@ async fn get_transfer_details(config: Config, bridge_transfer_id: &str) -> Resul
 	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
 	client.get_bridge_transfer_details(bridge_transfer_id).await?;
 	Ok(())
+}
+
+///Safetly parse the recipient address from a hex string into a 32 byte array
+fn parse_recipient_address(address: &str) -> Result<[u8; 32], &'static str> {
+	// Remove the '0x' prefix if present
+	let address = address.trim_start_matches("0x");
+
+	// Decode the hex string to bytes
+	let mut bytes = decode(address).map_err(|_| "Invalid hex string")?;
+	if bytes.len() > 32 {
+		return Err("Recipient address length is more than 32 bytes");
+	}
+
+	// Pad with zeros if necessary
+	bytes.resize(32, 0);
+
+	// Convert the Vec<u8> to [u8; 32]
+	let array: [u8; 32] = bytes.try_into().map_err(|_| "slice with incorrect length")?;
+	Ok(array)
 }
