@@ -20,7 +20,6 @@ use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
-use anyhow::Context;
 use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use movement_types::{Commitment, Id};
@@ -117,13 +116,12 @@ impl
 	>
 {
 	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key =
-			config.signer_private_key.context("Signer private key is not set")?;
+		let signer_private_key = config.signer_private_key.clone();
 		let signer: LocalWallet = signer_private_key.parse()?;
 		let signer_address = signer.address();
 		let contract_address = config.mcr_contract_address.parse()?;
-		let rpc_url = config.rpc_url.context("Ethereum RPC URL is not set")?;
-		let ws_url = config.ws_url.context("Ethereum WebSocket URL is not set")?;
+		let rpc_url = config.eth_rpc_connection_url();
+		let ws_url = config.eth_ws_connection_url();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(signer))
