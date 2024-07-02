@@ -27,19 +27,28 @@ use mcr_settlement_client::send_eth_tx::{
 use anyhow::Context;
 use keccak_hash::{keccak, H256};
 
-const INITIATOR_ADDRESS: &str = "0xinitiator";
-const COUNTERPARTY_ADDRESS: &str = "0xcounter";
+const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
+const RECIPIENT_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
 const MAX_RETRIES: u32 = 5;
+
+#[derive(Clone, Hash, Debug, PartialEq, Eq)]
+pub enum AddressKind {
+	Solidity(EthAddress),
+	Movement(FixedBytes<32>),
+}
 
 ///Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
+	pub chain_id: String,
 	pub signer_private_key: String,
 	pub initiator_address: String,
-	pub counterparty_address: Option<String>,
+	pub counterparty_address: String,
+	pub recipient_address: String,
 	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,
 }
@@ -48,10 +57,12 @@ impl Default for Config {
 	fn default() -> Self {
 		Config {
 			rpc_url: Some("http://localhost:8545".to_string()),
-			ws_url: Some("ws://localhost:8546".to_string()),
+			ws_url: Some("ws://localhost:8545".to_string()),
+			chain_id: "31337".to_string(),
 			signer_private_key: LocalWallet::random().to_bytes().to_string(),
 			initiator_address: INITIATOR_ADDRESS.to_string(),
-			counterparty_address: Some(COUNTERPARTY_ADDRESS.to_string()),
+			counterparty_address: COUNTERPARTY_ADDRESS.to_string(),
+			recipient_address: RECIPIENT_ADDRESS.to_string(),
 			gas_limit: DEFAULT_GAS_LIMIT,
 			num_tx_send_retries: MAX_RETRIES,
 		}
@@ -91,7 +102,8 @@ struct EthBridgeTransferDetails {
 
 pub struct EthClient<P> {
 	rpc_provider: P,
-	ws_provider: RootProvider<PubSubFrontend>,
+	chain_id: String,
+	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_address: EthAddress,
 	counterparty_address: EthAddress,
 	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
@@ -125,32 +137,32 @@ impl EthClient<AlloyProvider> {
 			counterparty_address.parse()?,
 			config.gas_limit,
 			config.num_tx_send_retries,
+			config.chain_id,
 		)
 		.await
 	}
 
 	async fn build_with_provider<S>(
 		rpc_provider: AlloyProvider,
-		ws_provider: S,
-		signer_address: EthAddress,
+		_ws_provider: S,
+		_signer_address: EthAddress,
 		initiator_address: EthAddress,
 		counterparty_address: EthAddress,
 		gas_limit: u64,
 		num_tx_send_retries: u32,
+		chain_id: String,
 	) -> Result<Self, anyhow::Error>
 	where
 		S: Into<String>,
 	{
-		let ws = WsConnect::new(ws_provider);
-		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
-
 		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
 		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
 		let send_tx_error_rules = vec![rule1, rule2];
 
 		Ok(EthClient {
 			rpc_provider,
-			ws_provider,
+			chain_id,
+			ws_provider: None, //for now no ws
 			initiator_address,
 			counterparty_address,
 			send_tx_error_rules,
@@ -185,6 +197,7 @@ where
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
+
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
 			recipient_address.0.into_word(),
@@ -270,7 +283,9 @@ where
 			},
 		};
 
-		Ok(Some(details))
+		println!("Details: {:?}", details);
+		//Not returning as we need two types of address in BridgeTransferDetails
+		Ok(None)
 	}
 }
 

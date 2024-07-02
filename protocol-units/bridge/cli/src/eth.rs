@@ -129,6 +129,7 @@ async fn initiate_transfer(
 	time_lock: u64,
 	amount: u64,
 ) -> Result<()> {
+	println!("config {:?}", config);
 	let mut client = EthClient::build_with_config(config, recipient_address).await?;
 	//let chain_id = 42; //dummy value for now
 	let initiator_address = EthAddress::parse_checksummed(initiator_address, None)?;

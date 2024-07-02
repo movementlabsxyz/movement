@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
 	// 1st Anvil test address
 	let initiator_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 	let initiator_priv_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
-	let recipient_address = "0x123"; // dummy val, this should be a movement address
+	let recipient_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92267"; // dummy val, this should be a movement address
 	let rpc_url = "http://localhost:8545";
 	let weth_path = "protocol-units/bridge/contracts/src/WETH9.sol:WETH9";
 
@@ -114,7 +114,7 @@ async fn main() -> Result<()> {
 		])
 		.status()
 		.await?;
-	assert!(initiate_status.success(), "Initiation failed");
+	assert!(initiate_status.success(), "initiateTransfer call failed");
 
 	// Step 3: Complete
 	println!("Completing transfer...");
