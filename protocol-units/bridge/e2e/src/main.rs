@@ -15,8 +15,6 @@ async fn main() -> Result<()> {
 	let recipient_address = "0x123"; // dummy val, this should be a movement address
 	let rpc_url = "http://localhost:8545";
 	let weth_path = "protocol-units/bridge/contracts/src/WETH9.sol:WETH9";
-	let initiator_path =
-		"protocol-units/bridge/contracts/src/AtomicBridgeInitiator.sol:AtomicBridgeInitiator";
 
 	let hash_lock = "forty-two".as_bytes();
 	let hash_lock_bytes = keccak_hash::keccak(hash_lock);
@@ -61,24 +59,35 @@ async fn main() -> Result<()> {
 		println!("{}", String::from_utf8_lossy(&weth_deploy_output.stdout));
 	}
 
+	let current_dir = env::current_dir()?;
+	let initiator_path = "src/AtomicBridgeInitiator.sol:AtomicBridgeInitiator";
+
 	sleep(Duration::from_secs(5)).await;
 
-	// Step 1: Deploy
-	println!("Deploying contract...");
-	let deploy_status = TokioCommand::new("cargo")
+	//Deploy Initiator Contract
+	let initiator_deploy_output = TokioCommand::new("forge")
 		.args(&[
-			"run",
-			"--package",
-			"bridge-cli",
-			"--",
-			"eth",
-			"deploy",
-			"--config-path",
-			config_path,
+			"create",
+			"--rpc-url",
+			rpc_url,
+			"--private-key",
+			initiator_priv_key,
+			initiator_path,
 		])
-		.status()
+		.current_dir("protocol-units/bridge/contracts") // we have to navigate here, so that lib sol
+		// files can be found
+		.output()
 		.await?;
-	assert!(deploy_status.success(), "Deployment failed");
+	if !initiator_deploy_output.status.success() {
+		eprint!(
+			"Failed to deploy AtomicBridgeInitiator: {}",
+			String::from_utf8_lossy(&initiator_deploy_output.stderr)
+		);
+		return Err(anyhow::anyhow!("Failed to deploy AtomicBridgeInitiator"));
+	} else {
+		println!("AtomicBridgeInitiator deploy output:");
+		println!("{}", String::from_utf8_lossy(&initiator_deploy_output.stdout));
+	}
 
 	// Step 2: Initiate
 	println!("Initiating transfer...");
