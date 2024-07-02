@@ -5,7 +5,7 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractResult},
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractCounterpartyResult},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
 		RecipientAddress, TimeLock,
@@ -72,9 +72,9 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddress<Self::Address>,
+		recipient: RecipientAddress,
 		amount: Amount,
-	) -> bool {
+	) -> BridgeContractCounterpartyResult<()> {
 		todo!()
 	}
 
@@ -82,21 +82,22 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractCounterpartyResult<()> {
 		todo!()
 	}
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractCounterpartyResult<()> {
 		todo!()
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
+	{
 		todo!()
 	}
 }
