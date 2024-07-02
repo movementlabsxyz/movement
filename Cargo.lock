@@ -7228,7 +7228,9 @@ dependencies = [
 name = "mcr-settlement-config"
 version = "0.3.0"
 dependencies = [
+ "alloy-signer-wallet",
  "anyhow",
+ "godfig",
  "serde",
  "toml 0.8.14",
 ]
