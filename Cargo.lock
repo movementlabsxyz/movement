@@ -8255,6 +8255,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-bridge"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "aptos-api",
+ "aptos-sdk",
+ "aptos-types",
+ "async-trait",
+ "bridge-shared",
+ "dot-movement",
+ "keccak-hash",
+ "mcr-settlement-client",
+ "once_cell",
+ "poem",
+ "serde",
+ "suzuka-config",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
+]
+
+[[package]]
 name = "movement-rest"
 version = "0.3.0"
 dependencies = [
