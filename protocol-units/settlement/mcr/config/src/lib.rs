@@ -9,7 +9,7 @@ use godfig::env_default;
 const DEFAULT_ETH_RPC_CONNECTION_HOSTNAME: &str = "0.0.0.0";
 const DEFAULT_ETH_RPC_CONNECTION_PORT: u16 = 8545;
 const DEFAULT_ETH_WS_CONNECTION_HOSTNAME: &str = "0.0.0.0";
-const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8546;
+const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8545; // same as RPC
 const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const DEFAULT_MOVE_TOKEN_CONTRACT_ADDRESS: &str = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
 const DEFAULT_MOVEMENT_STAKING_CONTRACT_ADDRESS: &str = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
@@ -41,6 +41,12 @@ pub struct Config {
 	// TODO: this should be managed in a secrets vault
 	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
+	#[serde(default = "default_governor_private_key")]
+	pub governor_private_key: String,
+	#[serde(default = "default_move_token_contract_address")]
+	pub move_token_contract_address: String,
+	#[serde(default = "default_movement_staking_contract_address")]
+	pub movement_staking_contract_address: String,
 	#[serde(default = "default_mcr_contract_address")]
 	pub mcr_contract_address: String,
 	#[serde(default = "default_gas_limit")]
@@ -166,6 +172,12 @@ pub fn default_signer_private_key() -> String {
 	env::var("SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
 
+pub fn default_governor_private_key() -> String {
+	let random_wallet = LocalWallet::random();
+	let random_wallet_string = random_wallet.to_bytes().to_string();
+	env::var("GOVERNOR_PRIVATE_KEY").unwrap_or(random_wallet_string)
+}
+
 impl Default for Config {
 	fn default() -> Self {
 		Config {
@@ -176,7 +188,10 @@ impl Default for Config {
 			eth_ws_connection_hostname: default_eth_ws_connection_hostname(),
 			eth_ws_connection_port: default_eth_ws_connection_port(),
 			signer_private_key: default_signer_private_key(),
+			governor_private_key: default_governor_private_key(),
 			mcr_contract_address: default_mcr_contract_address(),
+			move_token_contract_address: default_move_token_contract_address(),
+			movement_staking_contract_address: default_movement_staking_contract_address(),
 			gas_limit: default_gas_limit(),
 			batch_timeout: default_batch_timeout(),
 			transaction_send_retries: default_transaction_send_retries(),
