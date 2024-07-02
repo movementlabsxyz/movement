@@ -28,7 +28,7 @@ impl Executor {
 		transaction_channel: Sender<SignedTransaction>,
 		config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let executor = OptExecutor::try_from_config(config.clone())?;
+		let executor = OptExecutor::try_from_config(&config.clone())?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),
@@ -272,9 +272,8 @@ mod tests {
 
 		#[derive(Debug)]
 		struct Commit {
-			hash: HashValue,
 			info: LedgerInfoWithSignatures,
-			cur_ver: Version,
+			current_version: Version,
 		}
 
 		let config = Config::default();
@@ -297,7 +296,7 @@ mod tests {
 		// set range of min and max blocks to 5 to always gen 5 blocks
 		let (blocks, _) = val_generator.generate(arb_blocks_to_commit_with_block_nums(5, 5));
 		let mut blockheight = 0;
-		let mut cur_ver: Version = 0;
+		let mut current_version: Version = 0;
 		let mut commit_versions = vec![];
 
 		for (txns_to_commit, ledger_info_with_sigs) in &blocks {
@@ -335,17 +334,13 @@ mod tests {
 			executor.execute_block_opt(block).await?;
 
 			blockheight += 1;
+			current_version += txns_to_commit.len() as u64;
 			committed_blocks.insert(
 				blockheight,
-				Commit {
-					hash: ledger_info_with_sigs.commit_info().executed_state_id(),
-					info: ledger_info_with_sigs.clone(),
-					cur_ver,
-				},
+				Commit { info: ledger_info_with_sigs.clone(), current_version },
 			);
-			commit_versions.push(cur_ver);
-			cur_ver += txns_to_commit.len() as u64;
-			blockheight += 1;
+			commit_versions.push(current_version);
+			//blockheight += 1;
 		}
 
 		// Get the 3rd block back from the latest block
@@ -353,25 +348,18 @@ mod tests {
 		let revert = committed_blocks.get(&revert_block_num).unwrap();
 
 		// Get the version to revert to
-		let version_to_revert = revert.cur_ver - 1;
+		let version_to_revert_to = revert.current_version;
 
-		if let Some((_max_blockheight, last_commit)) =
-			committed_blocks.iter().max_by_key(|(&k, _)| k)
 		{
 			let db_writer = executor.executor.db.writer.clone();
-			db_writer.revert_commit(
-				version_to_revert,
-				last_commit.cur_ver,
-				revert.hash,
-				revert.info.clone(),
-			)?;
-		} else {
-			panic!("No blocks to revert");
+			db_writer.revert_commit(&revert.info)?;
 		}
 
-		let db_reader = executor.executor.db.reader.clone();
-		let latest_version = db_reader.get_latest_version()?;
-		assert_eq!(latest_version, version_to_revert - 1);
+		let latest_version = {
+			let db_reader = executor.executor.db.reader.clone();
+			db_reader.get_latest_version()?
+		};
+		assert_eq!(latest_version, version_to_revert_to);
 
 		services_handle.abort();
 		background_handle.abort();
@@ -383,13 +371,13 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
 		let config = Config::default();
-		let aptos_config = config.try_aptos_config()?;
+		let chain_config = config.chain.clone();
 		let executor = Executor::try_from_config(tx, config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
+			AccountKey::from_private_key(chain_config.maptos_private_key),
 			0,
 		);
 
@@ -398,7 +386,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
+		let tx_factory = TransactionFactory::new(chain_config.maptos_chain_id);
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
@@ -452,13 +440,13 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let (tx, _rx) = async_channel::unbounded::<SignedTransaction>();
 		let config = Config::default();
-		let aptos_config = config.try_aptos_config()?;
+		let chain_config = config.chain.clone();
 		let executor = Executor::try_from_config(tx, config)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(aptos_config.try_aptos_private_key()?),
+			AccountKey::from_private_key(chain_config.maptos_private_key),
 			0,
 		);
 
@@ -467,7 +455,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(aptos_config.try_chain_id()?);
+		let tx_factory = TransactionFactory::new(chain_config.maptos_chain_id);
 		let mut transaction_hashes = Vec::new();
 
 		// Simulate the execution of multiple blocks.

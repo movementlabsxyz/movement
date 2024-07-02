@@ -70,14 +70,14 @@ impl ExecutionConfig {
 			TestKind::Load { number_scenarios } => {
 				assert!(
 					number_scenarios >= self.number_scenario_per_client,
-					"Number of running scenario less than the number if scenario per client."
+					"Number of running scenarios is less than the number of scenarios per client."
 				);
 			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.number_scenario_per_client,
-					"Number of min running scenario less than the number if scenario per client."
+					"Number of min running scenarios is less than the number of scenarios per client."
 				);
 			}
 		}
@@ -167,16 +167,20 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 		.into_iter()
 		.filter_map(|res| (res.average_execution_time_milli > 0).then_some(res))
 		.collect();
-
-	let average_exec_time = no_zero_exec_time
-		.iter()
-		.map(|res| res.average_execution_time_milli)
-		.sum::<u128>()
-		/ no_zero_exec_time.len() as u128;
-	let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
-		.unwrap_or("Metric  execution result serialization error.".to_string());
-	tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
-	tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
+	if no_zero_exec_time.len() > 0 {
+		let average_exec_time = no_zero_exec_time
+			.iter()
+			.map(|res| res.average_execution_time_milli)
+			.sum::<u128>()
+			/ no_zero_exec_time.len() as u128;
+		let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
+			.unwrap_or("Metric  execution result serialization error.".to_string());
+		tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
+		tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
+	} else {
+		tracing::info!(target:EXEC_LOG_FILTER, "No scenario has been executed");
+		tracing::info!("Scenarios execution: No scenario has been executed");
+	};
 
 	tracing::info!("End test scenario execution.");
 }

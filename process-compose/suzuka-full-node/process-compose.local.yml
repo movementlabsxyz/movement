@@ -13,7 +13,6 @@ processes:
         command: echo "true"
     liveness_probe:
       initial_delay_seconds: 3
-      initial_delay_seconds: 5
       exec:
         command: echo "true"
     depends_on:
@@ -24,7 +23,11 @@ processes:
     command: |
       m1-da-light-node-celestia-bridge
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 3
+      exec:
+        command: echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
       exec:
         command: echo "true"
     depends_on:
@@ -36,7 +39,12 @@ processes:
       sleep 999999999d
       echo "started"
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 3
+      exec:
+        command: |
+          echo "true"
+    liveness_probe:
+      initial_delay_seconds: 3
       exec:
         command: |
           echo "true"

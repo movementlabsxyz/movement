@@ -94,3 +94,6 @@ rustflags = [
   "-C",
   "target-feature=+neon",
 ]
+
+[http]
+check-revoke = false

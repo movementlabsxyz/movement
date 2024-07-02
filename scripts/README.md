@@ -8,11 +8,14 @@ These scripts are used for general utility purposes. They are not specific to an
 Are part of a standard movement flow. They are called from the `justfile` in the root of the repository. They are placed in the `movement` directory.
 
 ### `run`
-This should be called with as `./scripts/movement/run <target> <'.' separated features> additional <process-compose:>`. This will run the `run` script for the target. 
+The main entry point for running services in this repository.
 
-The `run` script will:
+This should be called with as `./scripts/movement/run <service> <runtime> <'.' separated features> <*additional-flags-for-the-underlying-runtime>`. This will run the `run` script for the target. 
 
-1. First calls a `. ./scripts/prelude/$1`. It provides to this script the parsed '.' separated features.
-2. Then it calls `./scripts/process-compose/$1` with the parsed features as overrides. Thus, the order of the features can change the behavior of the script.
+Run will then call the respective `./scripts/movement/<runtime>` script with all of the arguments passed to `run`.
 
-This is the standard flow for running and testing components in the Movement Network.
+### `docker-compose`
+A `runtime` script that runs the service in a docker-compose environment. This script will call `docker-compose` with the appropriate arguments to run the service.
+
+### `native` 
+A `runtime` script that runs the service natively. This script will orchestrate the service with `process-compose` to run in the native environment.

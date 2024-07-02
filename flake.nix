@@ -52,6 +52,7 @@
           coreutils
           gcc
           rust
+          mold
         ];
         
         sysDependencies = with pkgs; [] 
@@ -75,6 +76,7 @@
           celestia-app
           monza-aptos
           jq
+          docker
         ];
 
         # Specific version of toolchain
