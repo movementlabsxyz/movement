@@ -1,0 +1,28 @@
+[package]
+name = "bridge-modules"
+version = "1.0.0"
+authors = []
+
+[addresses]
+atomic_bridge = "_"
+moveth = "_"
+master_minter = "_"
+minter = "_"
+pauser = "_"
+denylister = "_"
+
+[dev-addresses]
+moveth = "0xbeef"
+atomic_bridge = "0xfeef"
+master_minter = "0xbab"
+minter = "0xface"
+pauser = "0xdafe"
+denylister = "0xcade"
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "devnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+[dev-dependencies]
+
