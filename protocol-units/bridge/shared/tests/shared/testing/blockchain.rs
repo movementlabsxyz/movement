@@ -23,21 +23,22 @@ pub mod counterparty_contract;
 pub mod hasher;
 pub mod initiator_contract;
 
-pub enum SmartContractCall<A, H> {
+pub enum SmartContractCall<H> {
 	Initiator(),
-	Counterparty(CounterpartyCall<A, H>),
+	Counterparty(CounterpartyCall<H>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockchainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
 	CounterpartyContractEvent(SCCResult<A, H>),
+	Noop,
 }
 
 #[derive(Debug)]
 pub enum Transaction<A, H> {
 	Initiator(InitiatorCall<A, H>),
-	Counterparty(CounterpartyCall<A, H>),
+	Counterparty(CounterpartyCall<H>),
 }
 
 #[derive(Debug)]
@@ -48,7 +49,7 @@ pub struct AbstractBlockchain<A, H, R> {
 	pub events: Vec<AbstractBlockchainEvent<A, H>>,
 	pub rng: R,
 
-	pub initiater_contract: SmartContractInitiator<A, H, R>,
+	pub initiator_contract: SmartContractInitiator<A, H, R>,
 	pub counterparty_contract: SmartContractCounterparty<A, H>,
 
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
@@ -79,7 +80,7 @@ where
 			time: 0,
 			accounts,
 			events,
-			initiater_contract: SmartContractInitiator::new(rng.seeded_clone()),
+			initiator_contract: SmartContractInitiator::new(rng.seeded_clone()),
 			rng,
 			counterparty_contract: SmartContractCounterparty::new(),
 			transaction_sender: event_sender,
@@ -163,72 +164,81 @@ where
 		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
 		let this = self.get_mut();
 
-		if let Poll::Ready(Some(transaction)) = this.transaction_receiver.poll_next_unpin(cx) {
-			tracing::trace!(
-				"AbstractBlockchain[{}]: Received transaction: {:?}",
-				this.name,
-				transaction
-			);
-			match transaction {
-				Transaction::Initiator(call) => match call {
-					InitiatorCall::InitiateBridgeTransfer(
-						initiator_address,
-						recipient_address,
-						amount,
-						time_lock,
-						hash_lock,
-					) => {
-						this.events.push(AbstractBlockchainEvent::InitiatorContractEvent(
-							this.initiater_contract.initiate_bridge_transfer(
-								initiator_address.clone(),
-								recipient_address.clone(),
-								amount,
-								time_lock.clone(),
-								hash_lock.clone(),
-							),
-						));
-					}
-					InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-						this.initiater_contract
-							.complete_bridge_transfer(
-								&mut this.accounts,
-								bridge_transfer_id.clone(),
-								secret.clone(),
-							)
-							.expect("Failed to call complete_bridge_transfer");
-					}
-				},
-				Transaction::Counterparty(call) => match call {
-					CounterpartyCall::LockBridgeTransfer(
-						bridge_transfer_id,
-						hash_lock,
-						time_lock,
-						recipient_address,
-						amount,
-					) => {
-						this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
-							this.counterparty_contract.lock_bridge_transfer(
-								bridge_transfer_id.clone(),
-								hash_lock.clone(),
-								time_lock.clone(),
-								recipient_address.clone(),
-								amount,
-							),
-						));
-					}
-					CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-						this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
-							this.counterparty_contract.complete_bridge_transfer(
-								&mut this.accounts,
-								&bridge_transfer_id,
-								pre_image,
-							),
-						));
-					}
-				},
+		match this.transaction_receiver.poll_next_unpin(cx) {
+			Poll::Ready(Some(transaction)) => {
+				tracing::trace!(
+					"AbstractBlockchain[{}]: Received transaction: {:?}",
+					this.name,
+					transaction
+				);
+				match transaction {
+					Transaction::Initiator(call) => match call {
+						InitiatorCall::InitiateBridgeTransfer(
+							initiator_address,
+							recipient_address,
+							amount,
+							time_lock,
+							hash_lock,
+						) => {
+							this.events.push(AbstractBlockchainEvent::InitiatorContractEvent(
+								this.initiator_contract.initiate_bridge_transfer(
+									initiator_address.clone(),
+									recipient_address.clone(),
+									amount,
+									time_lock.clone(),
+									hash_lock.clone(),
+								),
+							));
+						}
+						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
+							this.events.push(AbstractBlockchainEvent::InitiatorContractEvent(
+								this.initiator_contract.complete_bridge_transfer(
+									&mut this.accounts,
+									bridge_transfer_id.clone(),
+									secret.clone(),
+								),
+							));
+						}
+					},
+					Transaction::Counterparty(call) => match call {
+						CounterpartyCall::LockBridgeTransfer(
+							bridge_transfer_id,
+							hash_lock,
+							time_lock,
+							recipient_address,
+							amount,
+						) => {
+							this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
+								this.counterparty_contract.lock_bridge_transfer(
+									bridge_transfer_id.clone(),
+									hash_lock.clone(),
+									time_lock.clone(),
+									recipient_address.clone(),
+									amount,
+								),
+							));
+						}
+						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
+							this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
+								this.counterparty_contract.complete_bridge_transfer(
+									&mut this.accounts,
+									&bridge_transfer_id,
+									pre_image,
+								),
+							));
+						}
+					},
+				}
 			}
-		} else {
-			tracing::trace!("AbstractBlockchain[{}]: No events in transaction_receiver", this.name);
+			Poll::Ready(None) => {
+				tracing::warn!("AbstractBlockchain[{}]: Transaction receiver dropped", this.name);
+			}
+			Poll::Pending => {
+				tracing::trace!(
+					"AbstractBlockchain[{}]: No events in transaction_receiver",
+					this.name
+				);
+			}
 		}
 
 		if let Some(event) = this.events.pop() {
@@ -242,7 +252,6 @@ where
 		}
 
 		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
-
 		Poll::Pending
 	}
 }

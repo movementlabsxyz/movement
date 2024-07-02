@@ -20,7 +20,7 @@ async fn test_bridge_transfer_initiated() {
 		.with_next_bridge_transfer_id("transfer_id")
 		.initiate_bridge_transfer(
 			InitiatorAddress("initiator"),
-			RecipientAddress("recipient"),
+			RecipientAddress::from("recipient"),
 			HashLock("hash_lock"),
 			TimeLock(100),
 			Amount(1000),
@@ -37,7 +37,7 @@ async fn test_bridge_transfer_initiated() {
 			BridgeTransferDetails {
 				bridge_transfer_id: BridgeTransferId("transfer_id"),
 				initiator_address: InitiatorAddress("initiator"),
-				recipient_address: RecipientAddress("recipient"),
+				recipient_address: RecipientAddress::from("recipient"),
 				hash_lock: HashLock("hash_lock"),
 				time_lock: TimeLock(100),
 				amount: Amount(1000),

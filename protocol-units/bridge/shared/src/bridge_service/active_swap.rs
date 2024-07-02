@@ -5,13 +5,13 @@ use std::{
 	task::{Context, Poll},
 };
 
-use futures::{Future, FutureExt, Stream};
+use futures::{task::AtomicWaker, Future, FutureExt, Stream};
 use futures_timer::Delay;
 use thiserror::Error;
 
 use crate::{
 	blockchain_service::BlockchainService,
-	bridge_contracts::BridgeContractError,
+	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
 	types::{
 		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, CompletedDetails,
 		HashLock,
@@ -70,6 +70,7 @@ where
 	pub initiator_contract: BFrom::InitiatorContract,
 	pub counterparty_contract: BTo::CounterpartyContract,
 	swaps: HashMap<BridgeTransferId<BFrom::Hash>, ActiveSwap<BFrom, BTo>>,
+	waker: AtomicWaker,
 }
 
 #[derive(Debug, Error)]
@@ -92,6 +93,7 @@ where
 			counterparty_contract,
 			swaps: HashMap::new(),
 			config: ActiveSwapConfig::default(),
+			waker: AtomicWaker::new(),
 		}
 	}
 
@@ -135,6 +137,8 @@ where
 				),
 			},
 		);
+
+		self.waker.wake();
 	}
 
 	pub fn complete_bridge_transfer(
@@ -166,6 +170,8 @@ where
 			details.clone(),
 			self.config.error_attempts,
 		);
+
+		self.waker.wake();
 
 		Ok(())
 	}
@@ -294,6 +300,8 @@ where
 			this.swaps.remove(&bridge_transfer_id);
 		}
 
+		this.waker.register(cx.waker());
+
 		Poll::Pending
 	}
 }
@@ -304,8 +312,8 @@ where
 pub enum LockBridgeTransferAssetsError {
 	#[error("Failed to lock assets")]
 	LockingError,
-	#[error("Failed to call lock_bridge_transfer_assets")]
-	LockBridgeTransferContractCallError(String), // TODO; addd contact call errors
+	#[error(transparent)]
+	ContractCallError(#[from] BridgeContractCounterpartyError),
 }
 
 async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: BlockchainService>(
@@ -340,7 +348,7 @@ where
 			recipient_address,
 			amount,
 		)
-		.await;
+		.await?;
 
 	Ok(())
 }
@@ -350,7 +358,7 @@ pub enum CompleteBridgeTransferError {
 	#[error("Failed to complete bridge transfer")]
 	CompletingError,
 	#[error(transparent)]
-	ContractCallError(#[from] BridgeContractError), // TODO; addd contact call errors
+	ContractCallError(#[from] BridgeContractInitiatorError), // TODO; addd contact call errors
 }
 
 async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
@@ -362,7 +370,7 @@ where
 		std::convert::From<<BTo as BlockchainService>::Hash>,
 {
 	tracing::trace!(
-		"Calling complete bridge transfer on counterparty contract for bridge transfer {:?}",
+		"Calling complete bridge transfer on initiator contract for bridge transfer {:?}",
 		bridge_transfer_id
 	);
 

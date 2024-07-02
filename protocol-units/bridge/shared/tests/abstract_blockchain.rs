@@ -26,6 +26,12 @@ struct TestAddress(pub &'static str);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestHash(pub &'static str);
 
+impl From<TestAddress> for RecipientAddress {
+	fn from(value: TestAddress) -> Self {
+		RecipientAddress(value.0.as_bytes().to_vec())
+	}
+}
+
 impl From<HashLockPreImage> for TestHash {
 	fn from(value: HashLockPreImage) -> Self {
 		todo!()
@@ -46,7 +52,7 @@ async fn test_initiate_bridge_transfer() {
 	let mut monitor = blockchain.add_event_listener();
 
 	let initiator_address = InitiatorAddress(TestAddress("initiator"));
-	let recipient_address = RecipientAddress(TestAddress("recipient"));
+	let recipient_address = RecipientAddress::from(TestAddress("recipient"));
 	let amount = Amount(1000);
 	let time_lock = TimeLock(100);
 	let hash_lock = HashLock(TestHash("hash_lock"));
@@ -83,7 +89,7 @@ async fn test_initiate_bridge_transfer() {
 	);
 
 	let details = blockchain
-		.initiater_contract
+		.initiator_contract
 		.initiated_transfers
 		.get(&BridgeTransferId(TestHash("unique_hash")));
 	assert!(details.is_some());
@@ -106,7 +112,7 @@ async fn test_lock_bridge_transfer() {
 	let bridge_transfer_id = BridgeTransferId(TestHash("unique_hash"));
 	let hash_lock = HashLock(TestHash("hash_lock"));
 	let time_lock = TimeLock(100);
-	let recipient_address = RecipientAddress(TestAddress("recipient"));
+	let recipient_address = RecipientAddress::from(TestAddress("recipient"));
 	let amount = Amount(1000);
 
 	let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
@@ -135,6 +141,7 @@ async fn test_lock_bridge_transfer() {
 				time_lock: time_lock.clone(),
 				recipient_address: recipient_address.clone(),
 				amount,
+				_phantom: std::marker::PhantomData,
 			})
 		))
 	);

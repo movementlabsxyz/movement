@@ -6,15 +6,17 @@ use std::{
 	task::{Context, Poll},
 };
 
-use bridge_shared::types::{
-	BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-};
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
+	bridge_contracts::BridgeContractCounterpartyResult,
 	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator, BridgeContractResult},
+	bridge_contracts::BridgeContractInitiatorResult,
+	types::{BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId},
+};
+use bridge_shared::{
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	types::Amount,
 };
 use bridge_shared::{
@@ -247,11 +249,11 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
+		recipient_address: RecipientAddress,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractInitiatorResult<()> {
 		let mut state = self.state.lock().expect("lock poisoned");
 		let next_bridge_transfer_id =
 			state.mock_next_bridge_transfer_id.take().expect("no next bridge transfer id");
@@ -272,21 +274,21 @@ where
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractInitiatorResult<()> {
 		Ok(())
 	}
 
 	async fn refund_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractInitiatorResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
 		Ok(None)
 	}
 }
@@ -316,31 +318,32 @@ where
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_hash_lock: HashLock<Self::Hash>,
 		_time_lock: TimeLock,
-		_recipient: RecipientAddress<Self::Address>,
+		_recipient: RecipientAddress,
 		_amount: Amount,
-	) -> bool {
-		true
+	) -> BridgeContractCounterpartyResult<()> {
+		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_secret: HashLockPreImage,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractCounterpartyResult<()> {
 		Ok(())
 	}
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<()> {
+	) -> BridgeContractCounterpartyResult<()> {
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
+	{
 		Ok(None)
 	}
 }

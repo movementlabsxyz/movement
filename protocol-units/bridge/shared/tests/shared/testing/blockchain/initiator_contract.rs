@@ -16,7 +16,7 @@ pub enum SmartContractInitiatorEvent<A, H> {
 
 #[derive(Debug)]
 pub enum InitiatorCall<A, H> {
-	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress<A>, Amount, TimeLock, HashLock<H>),
+	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress, Amount, TimeLock, HashLock<H>),
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
@@ -52,7 +52,7 @@ where
 	pub fn initiate_bridge_transfer(
 		&mut self,
 		initiator: InitiatorAddress<A>,
-		recipient: RecipientAddress<A>,
+		recipient: RecipientAddress,
 		amount: Amount,
 		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
@@ -91,7 +91,7 @@ where
 		&mut self,
 		accounts: &mut HashMap<A, Amount>,
 		transfer_id: BridgeTransferId<H>,
-		secret: HashLockPreImage,
+		pre_image: HashLockPreImage,
 	) -> SCIResult<A, H> {
 		tracing::trace!("SmartContractInitiator: Completing bridge transfer: {:?}", transfer_id);
 
@@ -102,10 +102,15 @@ where
 			.ok_or(SmartContractInitiatorError::TransferNotFound)?;
 
 		// check if the secret is correct
-		if transfer.hash_lock.0 != From::from(secret.clone()) {
+		let secret_hash = H::from(pre_image.clone());
+		if transfer.hash_lock.0 != secret_hash {
+			tracing::warn!(
+				"Invalid hash lock pre image {pre_image:?} hash {secret_hash:?} != hash_lock {:?}",
+				transfer.hash_lock.0
+			);
 			return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
 		}
 
-		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id, secret))
+		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id, pre_image))
 	}
 }
