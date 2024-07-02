@@ -375,7 +375,7 @@ mod tests {
 	use alloy_rpc_types::TransactionRequest;
 
 	async fn run_genesis_ceremony(
-		anvil_address: &[(String, String)],
+		governor: LocalWallet,
 		rpc_url: &str,
 	) -> Result<(), anyhow::Error> {
 		// Get the MCR and Staking contract address
@@ -384,8 +384,7 @@ mod tests {
 		let move_token_address = read_move_token_smart_contract_address()?;
 
 		// Build alice client for MOVEToken, MCR, and staking
-		let alice: LocalWallet = anvil_address[1].1.parse()?;
-		let alice_address: Address = anvil_address[1].0.parse()?;
+		let alice = LocalWallet::random();
 		let alice_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(alice))
@@ -395,8 +394,7 @@ mod tests {
 		let alice_move_token = MOVEToken::new(move_token_address, &alice_rpc_provider);
 
 		// Build bob client for MOVEToken, MCR, and staking
-		let bob: LocalWallet = anvil_address[2].1.parse()?;
-		let bob_address: Address = anvil_address[2].0.parse()?;
+		let bob: LocalWallet = LocalWallet::random();
 		let bob_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.signer(EthereumSigner::from(bob))
@@ -406,15 +404,18 @@ mod tests {
 		let bob_move_token = MOVEToken::new(move_token_address, &bob_rpc_provider);
 
 		// Build the MCR client for staking
-		let mcr_signer: LocalWallet = mcr_address.to_string().parse()?;
-		let mcr_signer_address = mcr_address;
-		let mcr_rpc_provider = ProviderBuilder::new()
+		let governor_rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
-			.signer(EthereumSigner::from(mcr_signer))
+			.signer(EthereumSigner::from(governor_signer))
 			.on_http(rpc_url.parse()?);
-		let mcr_staking = MovementStaking::new(staking_address, &mcr_rpc_provider);
+		let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
+		let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
 
 		// alice stakes for mcr
+		governor_token
+			.mint(alice.address(), U256::from(100))
+			.call()
+			.await?;
 		alice_move_token.approve(mcr_address, U256::from(100)).call().await?;
 		alice_staking
 			.stake(mcr_address, move_token_address, U256::from(100))
@@ -422,6 +423,10 @@ mod tests {
 			.await?;
 
 		// bob stakes for mcr
+		governor_token
+			.mint(bob.address(), U256::from(100))
+			.call()
+			.await?;
 		bob_move_token.approve(mcr_address, U256::from(100)).call().await?;
 		bob_staking
 			.stake(mcr_address, move_token_address, U256::from(100))
@@ -429,7 +434,7 @@ mod tests {
 			.await?;
 
 		// mcr accepts the genesis
-		mcr_staking.acceptGenesisCeremony().call().await?;
+		governor_staking.acceptGenesisCeremony().call().await?;
 
 		Ok(())
 	}
