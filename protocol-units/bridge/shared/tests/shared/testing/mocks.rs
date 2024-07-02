@@ -249,7 +249,7 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
+		recipient_address: RecipientAddress,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
@@ -318,7 +318,7 @@ where
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_hash_lock: HashLock<Self::Hash>,
 		_time_lock: TimeLock,
-		_recipient: RecipientAddress<Self::Address>,
+		_recipient: RecipientAddress,
 		_amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
 		Ok(())

@@ -23,9 +23,9 @@ pub mod counterparty_contract;
 pub mod hasher;
 pub mod initiator_contract;
 
-pub enum SmartContractCall<A, H> {
+pub enum SmartContractCall<H> {
 	Initiator(),
-	Counterparty(CounterpartyCall<A, H>),
+	Counterparty(CounterpartyCall<H>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -38,7 +38,7 @@ pub enum AbstractBlockchainEvent<A, H> {
 #[derive(Debug)]
 pub enum Transaction<A, H> {
 	Initiator(InitiatorCall<A, H>),
-	Counterparty(CounterpartyCall<A, H>),
+	Counterparty(CounterpartyCall<H>),
 }
 
 #[derive(Debug)]

@@ -50,7 +50,7 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress<Self::Address>,
+		recipient_address: RecipientAddress,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
@@ -83,7 +83,7 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddress<Self::Address>,
+		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()>;
 
