@@ -1,14 +1,14 @@
-m1-da-light-node FEATURES *ARGS:
-    ./scripts/movement/run m1-da-light-node {{ FEATURES }} {{ ARGS }}
-monza-full-node FEATURES *ARGS:
-    ./scripts/movement/run monza-full-node {{ FEATURES }} {{ ARGS }}
-suzuka-full-node FEATURES *ARGS:
-    ./scripts/movement/run suzuka-full-node {{ FEATURES }} {{ ARGS }}
+m1-da-light-node RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run m1-da-light-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
+monza-full-node RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run monza-full-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
+suzuka-full-node RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run suzuka-full-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 mcr-contract-tests: 
     cd ./protocol-units/settlement/mcr/contracts && forge test
 build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}
-mcr FEATURES *ARGS:
-    ./scripts/movement/run mcr {{ FEATURES }} {{ ARGS }}
+mcr RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run mcr {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 container-test:
     ./scripts/tests/container-test
