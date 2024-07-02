@@ -31,7 +31,7 @@ pub enum EthCommands {
 		initiator_address: String,
 		#[arg(short, long)]
 		recipient_address: String,
-		#[arg(short, long)]
+		#[arg(long)] // Don't use short as it clashes with help -h
 		hash_lock: String,
 		#[arg(short, long)]
 		time_lock: u64,
@@ -103,10 +103,16 @@ pub async fn run(command: &EthCommands) -> Result<()> {
 }
 
 fn load_config(path: &str) -> Result<Config> {
-	// Load the config from the provided path
-	let config_str = std::fs::read_to_string(path)?;
-	let config: Config = serde_json::from_str(&config_str)?;
-	Ok(config)
+	match std::fs::read_to_string(path) {
+		Ok(config_str) => {
+			let config: Config = serde_json::from_str(&config_str)?;
+			Ok(config)
+		}
+		Err(_) => {
+			println!("Config file not found, Using default config values");
+			Ok(Config::default())
+		}
+	}
 }
 
 async fn deploy(config: Config) -> Result<()> {
@@ -124,10 +130,13 @@ async fn initiate_transfer(
 	amount: u64,
 ) -> Result<()> {
 	let mut client = EthClient::build_with_config(config, recipient_address).await?;
-	let chain_id = 42; //dummy value for now
-	let initiator_address = EthAddress::parse_checksummed(initiator_address, Some(chain_id))?;
-	let recipient_address = EthAddress::parse_checksummed(recipient_address, Some(chain_id))?;
+	//let chain_id = 42; //dummy value for now
+	let initiator_address = EthAddress::parse_checksummed(initiator_address, None)?;
+	let recipient_address = EthAddress::parse_checksummed(recipient_address, None)?;
 	let hash_lock = HashLock::parse(hash_lock)?;
+	println!("initiator_address: {:?}", initiator_address);
+	println!("recipient_address: {:?}", recipient_address);
+	println!("hash_lock: {:?}", hash_lock);
 	client
 		.initiate_bridge_transfer(
 			InitiatorAddress(initiator_address),

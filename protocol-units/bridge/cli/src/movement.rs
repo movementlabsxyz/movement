@@ -53,6 +53,7 @@ pub enum MovementCommands {
 	},
 }
 
+#[allow(unused)]
 pub async fn run(command: &MovementCommands) -> Result<()> {
 	match command {
 		MovementCommands::Deploy { config_path } => {

@@ -3379,6 +3379,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-e2e-tests"
+version = "0.3.0"
+dependencies = [
+ "alloy-primitives",
+ "anyhow",
+ "bridge-shared",
+ "clap 4.5.7",
+ "ethereum-bridge",
+ "hex",
+ "keccak-hash",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "bridge-shared"
 version = "0.3.0"
 dependencies = [

@@ -23,6 +23,7 @@ members = [
     "protocol-units/bridge/shared",
     "protocol-units/bridge/cli",
     "protocol-units/bridge/chains/ethereum",
+    "protocol-units/bridge/e2e",
 ]
 
 [workspace.package]

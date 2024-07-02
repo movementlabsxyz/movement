@@ -106,7 +106,9 @@ impl EthClient<AlloyProvider> {
 	) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.signer_private_key;
 		let signer: LocalWallet = signer_private_key.parse()?;
+		println!("Signerrrr: {:?}", signer);
 		let initiator_address = config.initiator_address.parse()?;
+		println!("Initiator Address: {:?}", initiator_address);
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
 		let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()
