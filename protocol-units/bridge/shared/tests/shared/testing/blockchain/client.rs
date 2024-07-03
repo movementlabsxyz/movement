@@ -17,6 +17,16 @@ use thiserror::Error;
 
 use crate::shared::testing::rng::RngSeededClone;
 
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum MethodName {
+	InitiateBridgeTransfer,
+	CompleteBridgeTransfer,
+	RefundBridgeTransfer,
+	GetBridgeTransferDetails,
+	LockBridgeTransferAssets,
+	AbortBridgeTransfer,
+}
+
 use super::{CounterpartyCall, InitiatorCall, Transaction};
 
 #[derive(Debug, Error, Clone)]
@@ -53,23 +63,20 @@ where
 	H: std::fmt::Debug,
 	R: RngSeededClone,
 {
-	pub fn set_call_config(&mut self, method: &str, call_index: usize, config: CallConfig) {
+	pub fn set_call_config(&mut self, method: MethodName, call_index: usize, config: CallConfig) {
 		assert!(call_index > 0, "call_index must be greater than 0");
-		if let Some(mut call_list) = self.call_configs.get_mut(method) {
+		if let Some(mut call_list) = self.call_configs.get_mut(&method) {
 			if call_list.iter().any(|(idx, _)| *idx == call_index) {
 				// Handle the case of duplicate entry here if needed
 				panic!(
-					"Duplicate entry found for method '{}' and call_index {}",
+					"Duplicate entry found for method '{:?}' and call_index {}",
 					method, call_index
 				);
 			} else {
 				call_list.push((call_index, config));
 			}
 		} else {
-			self.call_configs
-				.entry(method.to_string())
-				.or_default()
-				.push((call_index, config));
+			self.call_configs.entry(method).or_default().push((call_index, config));
 		}
 	}
 
@@ -77,8 +84,8 @@ where
 		self.call_configs.clear();
 	}
 
-	fn register_call(&mut self, method: &str) {
-		if let Some(mut call_list) = self.call_configs.get_mut(method) {
+	fn register_call(&mut self, method: MethodName) {
+		if let Some(mut call_list) = self.call_configs.get_mut(&method) {
 			call_list.retain_mut(|(call_index, _)| {
 				*call_index -= 1;
 				*call_index > 0
@@ -86,8 +93,8 @@ where
 		}
 	}
 
-	fn have_call_config(&self, method: &str) -> Option<CallConfig> {
-		self.call_configs.get(method).and_then(|configs| {
+	fn have_call_config(&self, method: MethodName) -> Option<CallConfig> {
+		self.call_configs.get(&method).and_then(|configs| {
 			configs
 				.iter()
 				.find(|config| config.0 == 0)
@@ -103,7 +110,7 @@ pub struct AbstractBlockchainClient<A, H, R> {
 	pub rng: R,
 	pub failure_rate: f64,
 	pub false_positive_rate: f64,
-	pub call_configs: Arc<DashMap<String, Vec<(usize, CallConfig)>>>,
+	pub call_configs: Arc<DashMap<MethodName, Vec<(usize, CallConfig)>>>,
 }
 
 impl<A, H, R> AbstractBlockchainClient<A, H, R>
@@ -175,6 +182,22 @@ where
 			time_lock,
 			hash_lock,
 		));
+		self.register_call(MethodName::InitiateBridgeTransfer);
+		if let Some(config) = self.have_call_config(MethodName::InitiateBridgeTransfer) {
+			if let Some(delay) = config.delay {
+				tokio::time::sleep(delay).await;
+			}
+			match config.error {
+				ErrorConfig::None => {}
+				ErrorConfig::InitiatorError(e) => return Err(e),
+				ErrorConfig::CounterpartyError(_) => {
+					panic!("Unexpected CounterpartyError for Initiator method")
+				}
+				ErrorConfig::CustomError(e) => {
+					return Err(BridgeContractInitiatorError::GenericError(e.to_string()))
+				}
+			}
+		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractInitiatorError::generic)
 	}
@@ -189,6 +212,22 @@ where
 			secret,
 		));
 
+		self.register_call(MethodName::CompleteBridgeTransfer);
+		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
+			if let Some(delay) = config.delay {
+				tokio::time::sleep(delay).await;
+			}
+			match config.error {
+				ErrorConfig::None => {}
+				ErrorConfig::InitiatorError(e) => return Err(e),
+				ErrorConfig::CounterpartyError(_) => {
+					panic!("Unexpected CounterpartyError for Initiator method")
+				}
+				ErrorConfig::CustomError(e) => {
+					return Err(BridgeContractInitiatorError::GenericError(e.to_string()))
+				}
+			}
+		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractInitiatorError::generic)
 	}
@@ -233,6 +272,22 @@ where
 			recipient,
 			amount,
 		));
+		self.register_call(MethodName::LockBridgeTransferAssets);
+		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransferAssets) {
+			if let Some(delay) = config.delay {
+				tokio::time::sleep(delay).await;
+			}
+			match config.error {
+				ErrorConfig::None => {}
+				ErrorConfig::CounterpartyError(e) => return Err(e),
+				ErrorConfig::InitiatorError(_) => {
+					panic!("Unexpected InitiatorError for Counterparty method")
+				}
+				ErrorConfig::CustomError(e) => {
+					return Err(BridgeContractCounterpartyError::GenericError(e.to_string()))
+				}
+			}
+		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractCounterpartyError::generic)
 	}
@@ -246,6 +301,22 @@ where
 			bridge_transfer_id,
 			secret,
 		));
+		self.register_call(MethodName::CompleteBridgeTransfer);
+		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
+			if let Some(delay) = config.delay {
+				tokio::time::sleep(delay).await;
+			}
+			match config.error {
+				ErrorConfig::None => {}
+				ErrorConfig::CounterpartyError(e) => return Err(e),
+				ErrorConfig::InitiatorError(_) => {
+					panic!("Unexpected InitiatorError for Counterparty method")
+				}
+				ErrorConfig::CustomError(e) => {
+					return Err(BridgeContractCounterpartyError::GenericError(e.to_string()))
+				}
+			}
+		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractCounterpartyError::generic)
 	}
