@@ -12,7 +12,6 @@ module moveth::moveth {
     use std::string::{Self, utf8};
     use std::vector;
     use aptos_framework::chain_id;
-    use moveth::moveth_resource_account;
 
     friend moveth::moveth_tests;
 
