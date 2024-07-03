@@ -55,8 +55,8 @@ sol!(
 );
 
 // When created, kill the pid when dropped.
-// Use to kill Anvil process when Suzuka Node end.
-// TODO should be removed by new config.
+// Use to kill Anvil process when Suzuka Node ends.
+// TODO should be removed by the new config.
 struct AnvilKillAtDrop {
 	pid: u32,
 }
@@ -177,7 +177,7 @@ where
 		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
 		let eth_block_commitment = MCR::BlockCommitment {
-			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+			// Currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
 			height: U256::from(block_commitment.height),
 			commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 			blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
@@ -228,7 +228,7 @@ where
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
-		//register to contract BlockCommitmentSubmitted event
+		// Register to contract BlockCommitmentSubmitted event
 
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
@@ -288,13 +288,13 @@ mod tests {
 	use super::*;
 	use movement_types::Commitment;
 
-	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
-	// After genesis ceremony, 2 validator send the commitment for height 1.
-	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
-	// Wait the commitment accepted event.
+	// Define 2 validators (signer1 and signer2) with each a little more than 50% of the stake.
+	// After the genesis ceremony, 2 validators send the commitment for height 1.
+	// Validator2 sends a commitment for height 2 to trigger the next epoch and fire event.
+	// Wait for the commitment accepted event.
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
-		//Activate to debug the test.
+		// Activate to debug the test.
 		// tracing_subscriber::fmt()
 		// 	.with_env_filter(
 		// 		tracing_subscriber::EnvFilter::try_from_default_env()
@@ -302,7 +302,7 @@ mod tests {
 		// 	)
 		// 	.init();
 
-		//load local env.
+		// Load local env.
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
 		let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
@@ -330,7 +330,7 @@ mod tests {
 			..Default::default()
 		};
 
-		//Build client 1 and send first commitment.
+		// Build client 1 and send the first commitment.
 		let config1 = Config {
 			signer_private_key: Some(anvil_config.anvil_keys[0].private_key.clone()),
 			..config.clone()
@@ -339,19 +339,19 @@ mod tests {
 
 		let mut client1_stream = client1.stream_block_commitments().await.unwrap();
 
-		//client post a new commitment
+		// Client post a new commitment
 		let commitment =
 			BlockCommitment { height: 1, block_id: Id([2; 32]), commitment: Commitment([3; 32]) };
 
 		let res = client1.post_block_commitment(commitment.clone()).await;
 		assert!(res.is_ok());
 
-		//no notification quorum is not reach
+		// No notification, quorum is not reached
 		let res =
 			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next()).await;
 		assert!(res.is_err());
 
-		//Build client 2 and send the second commitment.
+		// Build client 2 and send the second commitment.
 		let config2 = Config {
 			signer_private_key: Some(anvil_config.anvil_keys[1].private_key.clone()),
 			..config.clone()
@@ -360,18 +360,18 @@ mod tests {
 
 		let mut client2_stream = client2.stream_block_commitments().await.unwrap();
 
-		//client post a new commitment
+		// Client post a new commitment
 		let res = client2.post_block_commitment(commitment).await;
 		assert!(res.is_ok());
 
-		// now we move to block 2 and make some commitment just to trigger the epochRollover
+		// Now we move to block 2 and make some commitment just to trigger the epochRollover
 		let commitment2 =
 			BlockCommitment { height: 2, block_id: Id([4; 32]), commitment: Commitment([5; 32]) };
 
 		let res = client2.post_block_commitment(commitment2.clone()).await;
 		assert!(res.is_ok());
 
-		//validate that the accept commitment stream get the event.
+		// Validate that the accepted commitment stream gets the event.
 		let event =
 			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
 				.await
@@ -389,13 +389,13 @@ mod tests {
 		assert_eq!(event.commitment.0[0], 3);
 		assert_eq!(event.block_id.0[0], 2);
 
-		//test post batch commitment
-		// post the complementary batch on height 2 and one on height 3
+		// Test post batch commitment
+		// Post the complementary batch on height 2 and one on height 3
 		let commitment3 =
 			BlockCommitment { height: 3, block_id: Id([6; 32]), commitment: Commitment([7; 32]) };
 		let res = client1.post_block_commitment_batch(vec![commitment2, commitment3]).await;
 		assert!(res.is_ok());
-		//validate that the accept commitment stream get the event.
+		// Validate that the commitments stream gets the event.
 		let event =
 			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
 				.await
@@ -413,7 +413,7 @@ mod tests {
 		assert_eq!(event.commitment.0[0], 5);
 		assert_eq!(event.block_id.0[0], 4);
 
-		//test get_commitment_at_height
+		// Test get_commitment_at_height
 		let commitment = client1.get_commitment_at_height(1).await?;
 		assert!(commitment.is_some());
 		let commitment = commitment.unwrap();

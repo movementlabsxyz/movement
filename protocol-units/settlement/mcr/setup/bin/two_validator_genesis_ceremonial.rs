@@ -7,12 +7,12 @@ use mcr_settlement_setup::MCR;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	//load local env.
+	// Load local env.
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
 
 	let mcr_address: Address = suzuka_config.mcr.mcr_contract_address.parse()?;
-	do_genesis_ceremonial_one_validator(
+	do_genesis_ceremonial_two_validator(
 		mcr_address,
 		&suzuka_config.mcr.test_local.as_ref().unwrap().anvil_keys,
 		&suzuka_config.mcr.rpc_url.as_ref().unwrap(),
@@ -21,12 +21,12 @@ async fn main() -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-async fn do_genesis_ceremonial_one_validator(
+async fn do_genesis_ceremonial_two_validator(
 	mcr_address: Address,
 	anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
 	rpc_url: &str,
 ) -> Result<(), anyhow::Error> {
-	//Define Signer. Signer1 is the MCRSettelement client
+	// Define Signer. Signer1 is the MCRSettelement client
 	let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
 	let signer1_addr: Address = anvil_address[0].address.parse()?;
 	let signer1_rpc_provider = ProviderBuilder::new()
@@ -52,7 +52,7 @@ async fn do_genesis_ceremonial_one_validator(
 		.on_http(rpc_url.parse()?);
 	let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
 
-	//init staking
+	// Init staking
 	// Build a transaction to set the values.
 	stake_genesis(
 		&signer2_rpc_provider,

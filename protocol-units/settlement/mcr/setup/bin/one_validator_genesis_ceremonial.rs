@@ -27,7 +27,7 @@ async fn do_genesis_ceremonial_one_validator(
 	anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
 	rpc_url: &str,
 ) -> Result<(), anyhow::Error> {
-	//Define Signer. Signer1 is the MCRSettelement client
+	//Define Signer. Signer1 is the MCRSettlement client
 	let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
 	let signer1_addr: Address = anvil_address[0].address.parse()?;
 	tracing::info!("Genesis Main staking signer1_addr:{signer1_addr}");
@@ -54,7 +54,7 @@ async fn do_genesis_ceremonial_one_validator(
 		.on_http(rpc_url.parse()?);
 	let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
 
-	//init staking
+	// Init staking
 	// Build a transaction to set the values.
 	stake_genesis(
 		&signer2_rpc_provider,
@@ -68,10 +68,9 @@ async fn do_genesis_ceremonial_one_validator(
 	let MCR::hasGenesisCeremonyEndedReturn { _0: has_genesis_ceremony_ended } =
 		signer2_contract.hasGenesisCeremonyEnded().call().await?;
 	let ceremony: bool = has_genesis_ceremony_ended.try_into().unwrap();
-	tracing::info!("Genesis ceremony done.");
 	assert!(ceremony);
 
-	// TO TEST
+	// Post commitment at height 1 because node commitment starts at height 2.
 	let call_builder = signer1_contract.createBlockCommitment(
 		U256::from(1),
 		alloy_primitives::FixedBytes([1; 32].try_into()?),
@@ -82,9 +81,7 @@ async fn do_genesis_ceremonial_one_validator(
 	let call_builder = signer1_contract.submitBlockCommitment(eth_block_commitment);
 	let call_builder = call_builder.clone().gas(3_000_000);
 	let pending_tx = call_builder.send().await?;
-	println!("commitment sent pending_tx:{pending_tx:?}");
 	let receipt = pending_tx.get_receipt().await?;
-	println!("commitment sent receipt:{receipt:?}");
 
 	Ok(())
 }

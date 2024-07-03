@@ -39,7 +39,7 @@ impl Setup for Local {
 		dot_movement: &DotMovement,
 		mut config: Config,
 	) -> impl Future<Output = Result<Config, anyhow::Error>> + Send {
-		//define a temporary chain Id for Anvil
+		// Define a temporary chain Id for Anvil
 		let mut rng = thread_rng(); // rng is not send.
 		let id: u16 = rng.gen_range(100, 32768);
 		let chain_id = id.to_string();
@@ -56,8 +56,8 @@ impl Setup for Local {
 
 			tracing::info!("Run Settlement local conf: {:?}", config.signer_private_key);
 			if config.signer_private_key.is_none() {
-				//start local process and deploy smart contract.
-				//define working directory of Anvil
+				// Start the local process and deploy the smart contract.
+				// Define the working directory of Anvil
 				let mut path = dot_movement.get_path().to_path_buf();
 				path.push("anvil/mcr");
 				path.push(chain_id.clone());
@@ -78,7 +78,7 @@ impl Setup for Local {
 					],
 				)
 				.await?;
-				//wait Anvil to start
+				// Wait Anvil to start
 				let mut counter = 0;
 				loop {
 					if counter > 10 {
@@ -91,7 +91,7 @@ impl Setup for Local {
 					let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 				}
 
-				//load Anvil Conf
+				// Load Anvil Conf
 				let mut anvil_conf = mcr_settlement_config::anvil::TestLocal::new(&path)?;
 
 				// Deploy MCR smart contract.
@@ -127,7 +127,7 @@ impl Setup for Local {
 				.trim()
 				.to_string();
 
-				//get the summary execution file path from output;
+				// Get the summary execution file path from the output;
 				let line = output_exec
 					.lines()
 					.find(|line| line.contains("Transactions saved to:"))
@@ -141,9 +141,9 @@ impl Setup for Local {
 					"No path after 'Transactions saved to:' in smart contract deployement result output."
 				))?
 					.trim();
-				//read the summary to get the contract address
+				// Read the summary to get the contract address
 				let json_text = std::fs::read_to_string(path)?;
-				//Get the value of the field contractAddress under transactions array
+				// Get the value of the field contractAddress under the transactions array
 				let json_value: Value =
 					serde_json::from_str(&json_text).expect("Error parsing JSON");
 
@@ -162,7 +162,7 @@ impl Setup for Local {
 					})?;
 
 				info!("setting up MCR Ethereum client mcr_address:{mcr_address}");
-				// The First address in key list is the one use by the settlement client and genesis ceremonial.
+				// The First address in the key list is the one used by the settlement client and genesis ceremonial.
 				config.signer_private_key = Some(anvil_conf.anvil_keys[0].private_key.clone());
 				config.mcr_contract_address = mcr_address;
 				config.anvil_process_pid = anvil_cmd_id;

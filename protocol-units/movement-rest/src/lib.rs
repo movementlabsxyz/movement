@@ -27,8 +27,10 @@ pub async fn get_current_commitment(
 pub async fn get_finalized_block_info(
 	context: Data<&Arc<Context>>,
 ) -> Result<Response, anyhow::Error> {
+	println!("XXXXXXX get_finalized_block_info",);
 	let latest_ledger_info = context.db.get_latest_ledger_info()?;
 	let latest_block_info = latest_ledger_info.ledger_info().commit_info();
+	println!("latest_block_info: {:?}", latest_block_info);
 	Ok(serde_json::to_string(&latest_block_info)?.into_response())
 }
 

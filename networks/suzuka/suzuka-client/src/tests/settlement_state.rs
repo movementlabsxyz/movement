@@ -28,8 +28,8 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let node_url = suzuka_config.execution_config.maptos_config.client.get_rest_url()?;
 	let faucet_url = suzuka_config.execution_config.maptos_config.client.get_faucet_url()?;
 
-	//1) start Alice an Bod transfer transactions.
-	// loop on Alice abd Bod transfer to produce Tx and block
+	//1) Start Alice an Bod transfer transactions.
+	// Loop on Alice and Bod transfer to produce Tx and block
 	tokio::spawn({
 		let node_url = node_url.clone();
 		let faucet_url = faucet_url.clone();
@@ -43,6 +43,9 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 			}
 		}
 	});
+
+	// Wait for some block to be executed.
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
 	let client = reqwest::Client::new();
 
@@ -65,7 +68,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		.test_local
 		.ok_or_else(|| anyhow::anyhow!("Test local anvil configuration not intialized?"))?;
 
-	// Define Signers. Ceremony define 2 signers (index 0 and 1). The first has 95% of the stakes.
+	// Define Signers. Ceremony defines 2 signers (index 0 and 1). The first has 95% of the stakes.
 	let signer: LocalWallet = anvil_config.anvil_keys[0].private_key.parse()?;
 	let signer_address = signer.address();
 	let provider_client = ProviderBuilder::new()
@@ -74,7 +77,7 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		.on_http(rpc_url.parse().unwrap());
 	let contract = MCR::new(mcr_address, &provider_client);
 
-	// Get the height for this commitment using onchain commitment.
+	// Get the height for this commitment using on-chain commitment.
 	let mut commitment_height = 0;
 	for index in (cur_blockheight.saturating_sub(5)..=cur_blockheight).rev() {
 		let MCR::getValidatorCommitmentAtBlockHeightReturn { _0: onchain_commitment_at_height } =
@@ -100,15 +103,16 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let fin_state_root_hash_query = "/movement/v1/get-finalized-block-info";
 	let fin_state_root_hash_url =
 		format!("http://{}{}", finview_node_url, fin_state_root_hash_query);
+	println!("block fin_state_root_hash_url:{fin_state_root_hash_url:?}");
 	let response = client.get(&fin_state_root_hash_url).send().await?;
+	println!("block response:{response:?}");
 	let fin_block_info: BlockInfo = response.json().await?;
 
-	//get block for this height
+	// Get block for this height
 	let rest_client = AptosClient::new(node_url.clone());
 	let block = rest_client.get_block_by_height(commitment_height, false).await?;
 
 	// Compare the block hash with fin_block_info id.
-	//	let block: Block = serde_json::from_str(block.inner())?;
 	assert_eq!(
 		block.inner().block_hash,
 		aptos_sdk::rest_client::aptos_api_types::HashValue(fin_block_info.id()),
@@ -119,14 +123,14 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let mut accepted_block_commitment = None;
 	let mut nb_try = 0;
 	while accepted_block_commitment.is_none() && nb_try < 20 {
-		//try to get an accepted commitment at height 2
+		// Try to get an accepted commitment
 		let MCR::getAcceptedCommitmentAtBlockHeightReturn {
 			_0: get_accepted_commitment_at_block_height,
 		} = contract
 			.getAcceptedCommitmentAtBlockHeight(U256::from(commitment_height))
 			.call()
 			.await?;
-		//0 height mean None.
+		//0 height means None.
 		if get_accepted_commitment_at_block_height.height != U256::from(0) {
 			accepted_block_commitment = Some(get_accepted_commitment_at_block_height);
 			break;
