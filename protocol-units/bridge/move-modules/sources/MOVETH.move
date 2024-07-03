@@ -226,17 +226,12 @@ module moveth::moveth {
 
     /// Mint new tokens to the specified account. This checks that the caller is a minter, the moveth is not paused,
     /// and the account is not denylisted.
-    public entry fun mint(minter: &signer, to: address, amount: u64) acquires ModuleData, Management, Roles, State {
+    public entry fun mint(minter: &signer, to: address, amount: u64) acquires Management, Roles, State {
         assert_not_paused();
         assert_is_minter(minter);
         assert_not_denylisted(to);
         if (amount == 0) { return };
-
-        let module_data = borrow_global<ModuleData>(moveth_address());
         let management = borrow_global<Management>(moveth_address());
-        //let resource_account_cap = resource_account::retrieve_resource_account_cap(minter, moveth_address());
-        //let resource_signer = account::create_signer_with_capability(&resource_account_cap);
-        let resource_signer = account::create_signer_with_capability(&module_data.signer_cap);
         let tokens = fungible_asset::mint(&management.mint_ref, amount);
         
         // Ensure not to call pfs::deposit or dfa::deposit directly in the module.
