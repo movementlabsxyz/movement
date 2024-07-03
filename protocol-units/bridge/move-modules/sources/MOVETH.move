@@ -120,7 +120,7 @@ module moveth::moveth {
             utf8(b"http://example.com"), /* project */
         );
 
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_account, @source_addr);
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_account, @0xcccc);
         let resource_signer = account::create_signer_with_capability(&resource_signer_cap);
 
         // Set ALL stores for the fungible asset to untransferable.
@@ -364,19 +364,15 @@ module moveth::moveth {
     }
 
     #[test_only]
-    public fun set_up_test(origin_account: signer, collection_token_minter: &signer, aptos_framework: signer, nft_receiver: &signer, timestamp: u64) {
+    public fun set_up_test(origin_account: signer, minter: &signer, aptos_framework: signer, nft_receiver: &signer, timestamp: u64) {
         // set up global time for testing purpose
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(timestamp);
 
         account::create_account_for_test(signer::address_of(&origin_account));
-
-        // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(&origin_account, vector::empty<u8>(), vector::empty<u8>());
 
-        init_module(collection_token_minter);
-
-        account::create_account_for_test(signer::address_of(nft_receiver));
+        init_module(minter);
     }
 
     #[test (origin_account = @0xcafe, collection_token_minter = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, nft_receiver = @0x123, nft_receiver2 = @0x234, aptos_framework = @aptos_framework)]
