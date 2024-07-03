@@ -1,8 +1,10 @@
 use crate::{
 	blockchain_service::BlockchainService,
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{BridgeTransferDetails, CompletedDetails},
+	types::{BridgeTransferDetails, BridgeTransferId, CompletedDetails},
 };
+
+use super::active_swap::LockBridgeTransferAssetsError;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum IWarn<A, H> {
@@ -26,11 +28,13 @@ impl<A, H> IEvent<A, H> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CWarn<A, H> {
+	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
 	CannotCompleteUnexistingSwap(CompletedDetails<A, H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CEvent<A, H> {
+	RetryLockingAssets(BridgeTransferId<H>),
 	ContractEvent(BridgeContractCounterpartyEvent<A, H>),
 	Warn(CWarn<A, H>),
 }
@@ -39,6 +43,13 @@ impl<A, H> CEvent<A, H> {
 	pub fn contract_event(&self) -> Option<&BridgeContractCounterpartyEvent<A, H>> {
 		match self {
 			CEvent::ContractEvent(event) => Some(event),
+			_ => None,
+		}
+	}
+
+	pub fn warn(&self) -> Option<&CWarn<A, H>> {
+		match self {
+			CEvent::Warn(warn) => Some(warn),
 			_ => None,
 		}
 	}

@@ -5,6 +5,8 @@ use bridge_shared::{
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractInitiator,
 	},
+	bridge_monitoring::BridgeContractCounterpartyEvent,
+	bridge_service::events::{CEvent, CWarn, Event},
 	types::{
 		Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
 		TimeLock,
@@ -63,12 +65,31 @@ async fn test_bridge_service_error_handling() {
 	let event = bridge_service.next().await.expect("No event");
 	tracing::debug!(?event);
 
-	// B2C Locked
+	// B2C Locking call failed due to mock above
 	let event = bridge_service.next().await.expect("No event");
 	tracing::debug!(?event);
+	assert!(matches!(
+		event.B2C().and_then(CEvent::warn).expect("not a b2c warn event"),
+		CWarn::BridgeAssetsLockingError(_)
+	));
+
+	// dbg!(&bridge_service.active_swaps_b1_to_b2);
+
+	// The Bridge is expected to retry the operation after the configured delay in case of an error.
+	let event = bridge_service.next().await.expect("No event");
+	tracing::debug!(?event);
+	assert!(matches!(event, Event::B2C(CEvent::RetryLockingAssets(_))));
+
+	// Post-retry, the client is expected to successfully invoke the contract and return a Locked
+	// event.
+	let event = bridge_service.next().await.expect("No event");
+	let event = event.B2C_ContractEvent().expect("Not a B2C event");
+	tracing::debug!(?event);
+	assert!(matches!(event, BridgeContractCounterpartyEvent::Locked(_)));
+
+	// Bridge gracefully recovered from an error
 
 	// Step 2: Attempting to complete the swap on Blockchain 2 with an invalid secret
-
 	tracing::debug!("Attempting to complete bridge transfer with invalid secret");
 	<B2Client as BridgeContractCounterparty>::complete_bridge_transfer(
 		&mut blockchain_2_client,

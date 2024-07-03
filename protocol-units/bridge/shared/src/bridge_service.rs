@@ -11,7 +11,7 @@ use crate::{
 		active_swap::ActiveSwapEvent,
 		events::{CEvent, CWarn, IEvent, IWarn},
 	},
-	types::Convert,
+	types::{BridgeTransferId, Convert},
 };
 
 pub mod active_swap;
@@ -154,7 +154,13 @@ where
 						);
 					}
 					BridgeAssetsLockingError(error) => {
+						// The error in locking bridge assets occurs when transitioning from blockchain 1 to blockchain 2.
+						// This issue arises during the attempt to communicate with blockchain 2 for accessing the locked funds.
+						// Hence the Event::B2C
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
+						return Poll::Ready(Some(Event::B2C(CEvent::Warn(
+							CWarn::BridgeAssetsLockingError(error),
+						))));
 					}
 					BridgeAssetsCompleted(bridge_transfer_id) => {
 						trace!(
@@ -164,6 +170,15 @@ where
 					}
 					BridgeAssetsCompletingError(error) => {
 						warn!("BridgeService: Error completing bridge assets: {:?}", error);
+					}
+					BridgeAssetsRetryLocking(bridge_transfer_id) => {
+						warn!(
+							"BridgeService: Retrying to lock bridge assets for transfer {:?}",
+							bridge_transfer_id
+						);
+						return Poll::Ready(Some(Event::B2C(CEvent::RetryLockingAssets(
+							BridgeTransferId(From::from(bridge_transfer_id.0)),
+						))));
 					}
 				}
 			}
@@ -187,7 +202,13 @@ where
 						);
 					}
 					BridgeAssetsLockingError(error) => {
+						// The error in locking bridge assets occurs when transitioning from blockchain 2 to blockchain 1.
+						// This issue arises during the attempt to communicate with blockchain 1 for accessing the locked funds.
+						// Hence the Event::B1C
 						warn!("BridgeService: Error locking bridge assets: {:?}", error);
+						return Poll::Ready(Some(Event::B1C(CEvent::Warn(
+							CWarn::BridgeAssetsLockingError(error),
+						))));
 					}
 					BridgeAssetsCompleted(bridge_transfer_id) => {
 						trace!(
@@ -197,6 +218,12 @@ where
 					}
 					BridgeAssetsCompletingError(error) => {
 						warn!("BridgeService: Error completing bridge assets: {:?}", error);
+					}
+					BridgeAssetsRetryLocking(bridge_transfer_id) => {
+						warn!(
+							"BridgeService: Retrying to lock bridge assets for transfer {:?}",
+							bridge_transfer_id
+						);
 					}
 				}
 			}

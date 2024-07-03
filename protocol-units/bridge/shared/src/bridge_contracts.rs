@@ -21,7 +21,7 @@ impl BridgeContractInitiatorError {
 	}
 }
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyError {
 	#[error("Failed to lock bridge transfer assets")]
 	LockTransferAssetsError,

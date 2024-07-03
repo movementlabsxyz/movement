@@ -30,6 +30,19 @@ where
 	pub state: ActiveSwapState<BTo>,
 }
 
+impl<BFrom, BTo> std::fmt::Debug for ActiveSwap<BFrom, BTo>
+where
+	BFrom: BlockchainService,
+	BTo: BlockchainService,
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("ActiveSwap")
+			.field("details", &self.details)
+			.field("state", &self.state)
+			.finish()
+	}
+}
+
 type Attempts = usize;
 
 pub enum ActiveSwapState<BTo>
@@ -48,6 +61,33 @@ where
 	Completed,
 }
 
+impl<BTo> std::fmt::Debug for ActiveSwapState<BTo>
+where
+	BTo: BlockchainService,
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			ActiveSwapState::LockingTokens(_, attempts) => {
+				f.debug_struct("LockingTokens").field("attempts", attempts).finish()
+			}
+			ActiveSwapState::LockingTokensError(_, attempts) => {
+				f.debug_struct("LockingTokensError").field("attempts", attempts).finish()
+			}
+			ActiveSwapState::WaitingForUnlockedEvent => {
+				f.debug_tuple("WaitingForUnlockedEvent").finish()
+			}
+			ActiveSwapState::CompletingBridging(_, _, attempts) => {
+				f.debug_struct("CompletingBridging").field("attempts", attempts).finish()
+			}
+			ActiveSwapState::CompletingBridgingError(_, _, attempts) => {
+				f.debug_struct("CompletingBridgingError").field("attempts", attempts).finish()
+			}
+			ActiveSwapState::Completed => f.debug_tuple("Completed").finish(),
+		}
+	}
+}
+
+#[derive(Debug)]
 pub struct ActiveSwapConfig {
 	error_attempts: usize,
 	error_delay: std::time::Duration,
@@ -68,6 +108,19 @@ where
 	pub counterparty_contract: BTo::CounterpartyContract,
 	swaps: HashMap<BridgeTransferId<BFrom::Hash>, ActiveSwap<BFrom, BTo>>,
 	waker: AtomicWaker,
+}
+
+impl<BFrom, BTo> std::fmt::Debug for ActiveSwapMap<BFrom, BTo>
+where
+	BFrom: BlockchainService,
+	BTo: BlockchainService,
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("ActiveSwapMap")
+			.field("swaps", &self.swaps)
+			.field("config", &self.config)
+			.finish()
+	}
 }
 
 #[derive(Debug, Error)]
@@ -178,6 +231,7 @@ where
 pub enum ActiveSwapEvent<H> {
 	BridgeAssetsLocked(BridgeTransferId<H>),
 	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
+	BridgeAssetsRetryLocking(BridgeTransferId<H>),
 	BridgeAssetsCompleted(BridgeTransferId<H>),
 	BridgeAssetsCompletingError(CompleteBridgeTransferError),
 }
@@ -201,6 +255,8 @@ where
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> where {
 		let this = self.get_mut();
 
+		tracing::trace!("Polling active swap map");
+
 		let mut cleanup: Vec<BridgeTransferId<BFrom::Hash>> = Vec::new();
 		for (bridge_transfer_id, ActiveSwap { details: bridge_transfer, state, .. }) in
 			this.swaps.iter_mut()
@@ -208,6 +264,7 @@ where
 			use ActiveSwapState::*;
 			match state {
 				LockingTokens(future, attempts) => {
+					tracing::trace!("Polling locking_tokens {:?}", bridge_transfer_id);
 					match future.poll_unpin(cx) {
 						Poll::Ready(Ok(())) => {
 							*state = ActiveSwapState::WaitingForUnlockedEvent;
@@ -234,6 +291,10 @@ where
 					// test if the delay has expired
 					// if it has, retry the lock
 					if let Poll::Ready(()) = delay.poll_unpin(cx) {
+						tracing::trace!(
+							"Retrying lock for bridge transfer {:?}",
+							bridge_transfer_id
+						);
 						*state = ActiveSwapState::LockingTokens(
 							call_lock_bridge_transfer_assets::<BFrom, BTo>(
 								this.counterparty_contract.clone(),
@@ -242,6 +303,9 @@ where
 							.boxed(),
 							*attempts + 1,
 						);
+						return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsRetryLocking(
+							bridge_transfer_id.clone(),
+						)));
 					}
 				}
 				WaitingForUnlockedEvent => {
@@ -305,7 +369,7 @@ where
 
 // Lock assets
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub enum LockBridgeTransferAssetsError {
 	#[error("Failed to lock assets")]
 	LockingError,
