@@ -37,6 +37,8 @@ pub enum SmartContractInitiatorError {
 }
 
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+pub type SCCResult<A, H> =
+	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 impl<A, H, R> SmartContractInitiator<A, H, R>
 where

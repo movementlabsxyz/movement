@@ -1,11 +1,6 @@
-use std::ops::Deref;
-
-use alloy::{hex::decode, pubsub::PubSubFrontend};
+use alloy::pubsub::PubSubFrontend;
 use alloy_network::{Ethereum, EthereumSigner};
-use alloy_primitives::{
-	private::serde::{Deserialize, Serialize},
-	Bytes,
-};
+use alloy_primitives::private::serde::{Deserialize, Serialize};
 use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, SignerFiller},
@@ -15,18 +10,30 @@ use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
-//use alloy_transport_ws::WsConnect;
-use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
-use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+use alloy_transport_ws::WsConnect;
+use anyhow::Context;
+use bridge_shared::{
+	bridge_contracts::{
+		BridgeContractCounterpartyError, BridgeContractInitiator, BridgeContractInitiatorError,
+		BridgeContractInitiatorResult,
+	},
+	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
+	types::{CompletedDetails, LockDetails},
 };
+use bridge_shared::{
+	bridge_monitoring::BridgeContractInitiatorMonitoring,
+	types::{
+		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+		InitiatorAddress, RecipientAddress, TimeLock,
+	},
+};
+use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_tx::{
 	send_tx, InsufficentFunds, SendTxErrorRule, UnderPriced, VerifyRule,
 };
-
-use anyhow::Context;
-use keccak_hash::{keccak, H256};
+use std::{fmt::Debug, pin::Pin, task::Poll};
+use thiserror::Error;
 
 const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
@@ -34,10 +41,47 @@ const RECIPIENT_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
 const MAX_RETRIES: u32 = 5;
 
-#[derive(Clone, Hash, Debug, PartialEq, Eq)]
-pub enum AddressKind {
-	Solidity(EthAddress),
-	Movement(FixedBytes<32>),
+type EthHash = [u8; 32];
+
+pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
+pub type SCCResult<A, H> =
+	Result<BridgeContractCounterpartyEvent<A, H>, BridgeContractCounterpartyError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MoveCounterpartyEvent<A, H> {
+	LockedBridgeTransfer(LockDetails<A, H>),
+	CompletedBridgeTransfer(CompletedDetails<A, H>),
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum MoveCounterpartyError {
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EthInitiatorEvent<A, H> {
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
+	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum EthInitiatorError {
+	#[error("Failed to initiate bridge transfer")]
+	InitiateTransferError,
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AbstractBlockainEvent<A, H> {
+	InitiatorContractEvent(SCIResult<A, H>),
+	CounterpartyContractEvent(SCCResult<A, H>),
+	Noop,
 }
 
 ///Configuration for the Ethereum Bridge Client
@@ -104,7 +148,7 @@ struct EthBridgeTransferDetails {
 pub struct EthClient<P> {
 	rpc_provider: P,
 	chain_id: String,
-	ws_provider: Option<RootProvider<PubSubFrontend>>,
+	ws_provider: RootProvider<PubSubFrontend>,
 	initiator_address: EthAddress,
 	counterparty_address: EthAddress,
 	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
@@ -129,10 +173,12 @@ impl EthClient<AlloyProvider> {
 			.signer(EthereumSigner::from(signer))
 			.on_builtin(&rpc_url)
 			.await?;
+		let ws = WsConnect::new(ws_url);
+		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 
 		EthClient::build_with_provider(
 			rpc_provider,
-			ws_url,
+			ws_provider,
 			initiator_address,
 			counterparty_address.parse()?,
 			counterparty_address.parse()?,
@@ -143,27 +189,23 @@ impl EthClient<AlloyProvider> {
 		.await
 	}
 
-	async fn build_with_provider<S>(
+	async fn build_with_provider(
 		rpc_provider: AlloyProvider,
-		_ws_provider: S,
+		ws_provider: RootProvider<PubSubFrontend>,
 		_signer_address: EthAddress,
 		initiator_address: EthAddress,
 		counterparty_address: EthAddress,
 		gas_limit: u64,
 		num_tx_send_retries: u32,
 		chain_id: String,
-	) -> Result<Self, anyhow::Error>
-	where
-		S: Into<String>,
-	{
+	) -> Result<Self, anyhow::Error> {
 		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
 		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
 		let send_tx_error_rules = vec![rule1, rule2];
-
 		Ok(EthClient {
 			rpc_provider,
 			chain_id,
-			ws_provider: None, //for now no ws
+			ws_provider,
 			initiator_address,
 			counterparty_address,
 			send_tx_error_rules,
@@ -178,8 +220,6 @@ impl<P> Clone for EthClient<P> {
 		todo!()
 	}
 }
-
-type EthHash = [u8; 32];
 
 #[async_trait::async_trait]
 impl<P> BridgeContractInitiator for EthClient<P>
@@ -301,6 +341,57 @@ impl<P> EthClient<P> {
 
 		let hash = keccak(buffer);
 		U256::from_be_slice(&hash.0)
+	}
+}
+
+pub struct EthInitiatorMonitoring<A, H> {
+	listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
+}
+
+impl<A, H> EthInitiatorMonitoring<A, H> {
+	pub fn build(listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>) -> Self {
+		Self { listener }
+	}
+}
+
+impl<A: Debug, H: Debug> BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<A, H> {
+	type Address = A;
+	type Hash = H;
+}
+
+impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
+	type Item = BridgeContractInitiatorEvent<
+		<Self as BridgeContractInitiatorMonitoring>::Address,
+		<Self as BridgeContractInitiatorMonitoring>::Hash,
+	>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		if let Poll::Ready(Some(AbstractBlockainEvent::InitiatorContractEvent(contract_result))) =
+			this.listener.poll_next_unpin(cx)
+		{
+			tracing::trace!(
+				"InitiatorContractMonitoring: Received contract event: {:?}",
+				contract_result
+			);
+			match contract_result {
+				Ok(contract_event) => match contract_event {
+					BridgeContractInitiatorEvent::Initiated(details) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)));
+					}
+					BridgeContractInitiatorEvent::Completed(id) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(id)))
+					}
+					BridgeContractInitiatorEvent::Refunded(id) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Refunded(id)))
+					}
+				},
+				Err(e) => {
+					tracing::error!("Error in contract event: {:?}", e);
+				}
+			}
+		}
+		Poll::Pending
 	}
 }
 

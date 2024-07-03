@@ -186,7 +186,8 @@ impl<A: Debug, H: Debug> Stream for InitiatorContractMonitoring<A, H> {
 			match contract_result {
 				Ok(contract_event) => match contract_event {
 					InitiatedBridgeTransfer(details) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
+						// Here we return the Bridge Anstract Type from the Cotntract Type
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)));
 					}
 					CompletedBridgeTransfer(bridge_transfer_id, _) => {
 						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
