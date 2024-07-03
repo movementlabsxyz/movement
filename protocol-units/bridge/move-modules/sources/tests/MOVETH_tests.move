@@ -9,16 +9,16 @@ module moveth::moveth_tests{
     use aptos_framework::object;
     use aptos_framework::resource_account;
     
+  
+}
 
+    /*
     #[test(creator = @moveth, minter = @0xface, master_minter = @0xbab, denylister = @0xcade)]
     fun test_basic_flow(creator: &signer, minter: &signer, master_minter: &signer, denylister: &signer) {
         let test = b"hello";
         resource_account::create_resource_account(creator, test, vector::empty<u8>());
         moveth::init_for_test(creator);
         assert!(100 == 100, 0);
-    }
-}
-    /*
         let receiver_address = @0xcafe1;
         let minter_address = signer::address_of(minter);
 

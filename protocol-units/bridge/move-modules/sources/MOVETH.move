@@ -14,6 +14,7 @@ module moveth::moveth {
     use aptos_framework::chain_id;
     use aptos_framework::resource_account;
     use aptos_framework::account::SignerCapability;
+    use aptos_framework::timestamp;
 
     /// Caller is not authorized to make this call
     const EUNAUTHORIZED: u64 = 1;
@@ -106,9 +107,9 @@ module moveth::moveth {
     /// Ensure any stores for the stablecoin are untransferable.
     /// Store Roles, Management and State resources in the Metadata object.
     /// Override deposit and withdraw functions of the newly created asset/token to add custom denylist logic.
-    fun init_module(resource_signer: &signer) {
+    fun init_module(resource_account: &signer) {
         // Create the stablecoin with primary store support.
-        let constructor_ref = &object::create_named_object(resource_signer, ASSET_SYMBOL);
+        let constructor_ref = &object::create_named_object(resource_account, ASSET_SYMBOL);
         primary_fungible_store::create_primary_store_enabled_fungible_asset(
             constructor_ref,
             option::none(),
@@ -119,14 +120,15 @@ module moveth::moveth {
             utf8(b"http://example.com"), /* project */
         );
 
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_account, @source_addr);
+        let resource_signer = account::create_signer_with_capability(&resource_signer_cap);
 
         // Set ALL stores for the fungible asset to untransferable.
         fungible_asset::set_untransferable(constructor_ref);
 
         // All resources created will be kept in the asset metadata object.
         // let metadata_object_signer = &object::generate_signer(constructor_ref);
-        move_to(resource_signer, Roles {
+        move_to(&resource_signer, Roles {
             master_minter: @master_minter,
             minters: vector[],
             pauser: @pauser,
@@ -134,18 +136,18 @@ module moveth::moveth {
         });
 
         // Create mint/burn/transfer refs to allow creator to manage the stablecoin.
-        move_to(resource_signer, Management {
+        move_to(&resource_signer, Management {
             extend_ref: object::generate_extend_ref(constructor_ref),
             mint_ref: fungible_asset::generate_mint_ref(constructor_ref),
             burn_ref: fungible_asset::generate_burn_ref(constructor_ref),
             transfer_ref: fungible_asset::generate_transfer_ref(constructor_ref),
         });
 
-        move_to(resource_signer, State {
+        move_to(&resource_signer, State {
             paused: false,
         });
 
-        move_to(resource_signer, ModuleData {
+        move_to(&resource_signer, ModuleData {
             signer_cap: resource_signer_cap,
         });
 
@@ -153,12 +155,12 @@ module moveth::moveth {
         // This ensures all transfer will call withdraw and deposit functions in this module and perform the necessary
         // checks.
         let deposit = function_info::new_function_info(
-            resource_signer,
+            resource_account,
             string::utf8(b"moveth"),
             string::utf8(b"deposit"),
         );
         let withdraw = function_info::new_function_info(
-            resource_signer,
+            resource_account,
             string::utf8(b"moveth"),
             string::utf8(b"withdraw"),
         );
@@ -362,7 +364,23 @@ module moveth::moveth {
     }
 
     #[test_only]
-    public fun init_for_test(resource_signer: &signer) {
-        init_module(resource_signer);
+    public fun set_up_test(origin_account: signer, collection_token_minter: &signer, aptos_framework: signer, nft_receiver: &signer, timestamp: u64) {
+        // set up global time for testing purpose
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        timestamp::update_global_time_for_test_secs(timestamp);
+
+        account::create_account_for_test(signer::address_of(&origin_account));
+
+        // create a resource account from the origin account, mocking the module publishing process
+        resource_account::create_resource_account(&origin_account, vector::empty<u8>(), vector::empty<u8>());
+
+        init_module(collection_token_minter);
+
+        account::create_account_for_test(signer::address_of(nft_receiver));
+    }
+
+    #[test (origin_account = @0xcafe, collection_token_minter = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, nft_receiver = @0x123, nft_receiver2 = @0x234, aptos_framework = @aptos_framework)]
+    public entry fun test_flow(origin_account: signer, collection_token_minter: signer, nft_receiver: signer, nft_receiver2: signer, aptos_framework: signer) {
+        set_up_test(origin_account, &collection_token_minter, aptos_framework, &nft_receiver, 10);
     }
 }
