@@ -56,13 +56,19 @@ impl Setup for Local {
 
 			tracing::info!("Run Settlement local conf: {:?}", config.signer_private_key);
 			if config.signer_private_key.is_none() {
+				println!("Start MCR setup");
+
 				//start local process and deploy smart contract.
 				//define working directory of Anvil
 				let mut path = dot_movement.get_path().to_path_buf();
 				path.push("anvil/mcr");
 				path.push(chain_id.clone());
-				tokio::fs::create_dir_all(&path).await?;
+				tokio::fs::create_dir_all(&path)
+					.await
+					.expect(&format!("create_dir_all failed fpr path:{path:?}"));
 				path.push("anvil.json");
+
+				println!("anvil_path: {path:?}",);
 
 				let anvil_path = path.to_string_lossy().to_string();
 
@@ -99,10 +105,13 @@ impl Setup for Local {
 				let smart_contract_private_key = &anvil_addresses[1].private_key;
 				let smart_contract_address = &anvil_addresses[1].address;
 
-				let mut solidity_path = std::env::current_dir()?;
+				let mut solidity_path = std::env::current_dir().expect("get current dir failed");
 				solidity_path.push("protocol-units/settlement/mcr/contracts");
 
 				let solidity_path = solidity_path.to_string_lossy();
+
+				println!("solidity_path: {solidity_path:?}",);
+
 				tracing::info!("solidity_path: {:?}", solidity_path);
 				let output_exec = run_command(
 					"forge",
@@ -133,6 +142,9 @@ impl Setup for Local {
 					.ok_or(anyhow!(
 						"Can't file exec file path in smart contract deployement result output."
 					))?;
+
+				println!("line: {line:?}",);
+
 				let path = line
 					.splitn(2, ':')
 					.nth(1)
@@ -140,9 +152,13 @@ impl Setup for Local {
 					"No path after 'Transactions saved to:' in smart contract deployement result output."
 				))?
 					.trim();
+
+				println!("line_path: {path:?}",);
+
 				//read the summary to get the contract address
-				let json_text = std::fs::read_to_string(path)?;
-				//Get the value of the field contractAddress under transactions array
+				let json_text = std::fs::read_to_string(path)
+					.expect(&format!("exec file path not found:{path}")); //?;
+													  //Get the value of the field contractAddress under transactions array
 				let json_value: Value =
 					serde_json::from_str(&json_text).expect("Error parsing JSON");
 
