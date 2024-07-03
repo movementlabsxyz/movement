@@ -1,24 +1,28 @@
+/// moveth FA 
 module moveth::moveth {
     use aptos_framework::account;
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::event;
     use aptos_framework::function_info;
+    // use aptos_framework::table;
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset, FungibleStore};
     use aptos_framework::object::{Self, Object, ExtendRef};
     use aptos_framework::primary_fungible_store;
-    use aptos_framework::resource_account;
     use std::option;
     use std::signer;
     use std::string::{Self, utf8};
     use std::vector;
     use aptos_framework::chain_id;
 
-    friend moveth::moveth_tests;
-
+    /// Caller is not authorized to make this call
     const EUNAUTHORIZED: u64 = 1;
+    /// No operations are allowed when contract is paused
     const EPAUSED: u64 = 2;
+    /// The account is already a minter
     const EALREADY_MINTER: u64 = 3;
+    /// The account is not a minter
     const ENOT_MINTER: u64 = 4;
+    /// The account is denylisted
     const EDENYLISTED: u64 = 5;
 
     const ASSET_SYMBOL: vector<u8> = b"moveth";
@@ -90,28 +94,38 @@ module moveth::moveth {
         object::address_to_object(moveth_address())
     }
 
-    fun init_module(resource_signer: &signer) {
-        let constructor_ref = &object::create_named_object(resource_signer, ASSET_SYMBOL);
+    /// Called as part of deployment to initialize moveth.
+    /// Note: The signer has to be the account where the module is published.
+    /// Create a moveth token (a new Fungible Asset)
+    /// Ensure any stores for the stablecoin are untransferable.
+    /// Store Roles, Management and State resources in the Metadata object.
+    /// Override deposit and withdraw functions of the newly created asset/token to add custom denylist logic.
+    fun init_module(moveth_signer: &signer) {
+        // Create the stablecoin with primary store support.
+        let constructor_ref = &object::create_named_object(moveth_signer, ASSET_SYMBOL);
         primary_fungible_store::create_primary_store_enabled_fungible_asset(
             constructor_ref,
             option::none(),
-            utf8(ASSET_SYMBOL),
-            utf8(ASSET_SYMBOL),
-            8,
-            utf8(b"http://example.com/favicon.ico"),
-            utf8(b"http://example.com"),
+            utf8(ASSET_SYMBOL), /* name */
+            utf8(ASSET_SYMBOL), /* symbol */
+            8, /* decimals */
+            utf8(b"http://example.com/favicon.ico"), /* icon */
+            utf8(b"http://example.com"), /* project */
         );
 
+        // Set ALL stores for the fungible asset to untransferable.
         fungible_asset::set_untransferable(constructor_ref);
 
+        // All resources created will be kept in the asset metadata object.
         let metadata_object_signer = &object::generate_signer(constructor_ref);
         move_to(metadata_object_signer, Roles {
-            master_minter: signer::address_of(resource_signer),
-            minters: vector::empty(),
-            pauser: signer::address_of(resource_signer),
-            denylister: signer::address_of(resource_signer),
+            master_minter: @master_minter,
+            minters: vector[],
+            pauser: @pauser,
+            denylister: @denylister,
         });
 
+        // Create mint/burn/transfer refs to allow creator to manage the stablecoin.
         move_to(metadata_object_signer, Management {
             extend_ref: object::generate_extend_ref(constructor_ref),
             mint_ref: fungible_asset::generate_mint_ref(constructor_ref),
@@ -123,15 +137,18 @@ module moveth::moveth {
             paused: false,
         });
 
+        // Override the deposit and withdraw functions which mean overriding transfer.
+        // This ensures all transfer will call withdraw and deposit functions in this module and perform the necessary
+        // checks.
         let deposit = function_info::new_function_info(
-            resource_signer,
-            utf8(b"moveth"),
-            utf8(b"deposit"),
+            moveth_signer,
+            string::utf8(b"moveth"),
+            string::utf8(b"deposit"),
         );
         let withdraw = function_info::new_function_info(
-            resource_signer,
-            utf8(b"moveth"),
-            utf8(b"withdraw"),
+            moveth_signer,
+            string::utf8(b"moveth"),
+            string::utf8(b"withdraw"),
         );
         dispatchable_fungible_asset::register_dispatch_functions(
             constructor_ref,
@@ -141,6 +158,8 @@ module moveth::moveth {
         );
     }
 
+    /// Allow a spender to transfer tokens from the owner's account given their signed approval.
+    /// Caller needs to provide the from account's scheme and public key which can be gotten via the Aptos SDK.
     public fun transfer_from(
         spender: &signer,
         proof: vector<u8>,
@@ -165,9 +184,11 @@ module moveth::moveth {
         account::verify_signed_message(from, from_account_scheme, from_public_key, proof, expected_message);
 
         let transfer_ref = &borrow_global<Management>(moveth_address()).transfer_ref;
+        // Only use with_ref API for primary_fungible_store (PFS) transfers in this module.
         primary_fungible_store::transfer_with_ref(transfer_ref, from, to, amount);
     }
 
+    /// Deposit function override to ensure that the account is not denylisted and the moveth is not paused.
     public fun deposit<T: key>(
         store: Object<T>,
         fa: FungibleAsset,
@@ -178,6 +199,7 @@ module moveth::moveth {
         fungible_asset::deposit_with_ref(transfer_ref, store, fa);
     }
 
+    /// Withdraw function override to ensure that the account is not denylisted and the moveth is not paused.
     public fun withdraw<T: key>(
         store: Object<T>,
         amount: u64,
@@ -188,17 +210,17 @@ module moveth::moveth {
         fungible_asset::withdraw_with_ref(transfer_ref, store, amount)
     }
 
-    public entry fun mint(minter: &signer, to: address, amount: u64) acquires Management, State, Roles {
+    /// Mint new tokens to the specified account. This checks that the caller is a minter, the moveth is not paused,
+    /// and the account is not denylisted.
+    public entry fun mint(minter: &signer, to: address, amount: u64) acquires Management, Roles, State {
         assert_not_paused();
         assert_is_minter(minter);
         assert_not_denylisted(to);
         if (amount == 0) { return };
 
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(minter, @0xcafe);
-        let resource_signer = account::create_signer_with_capability(&resource_signer_cap);
-
         let management = borrow_global<Management>(moveth_address());
         let tokens = fungible_asset::mint(&management.mint_ref, amount);
+        // Ensure not to call pfs::deposit or dfa::deposit directly in the module.
         deposit(primary_fungible_store::ensure_primary_store_exists(to, metadata()), tokens, &management.transfer_ref);
 
         event::emit(Mint {
@@ -208,15 +230,18 @@ module moveth::moveth {
         });
     }
 
-    public entry fun burn(minter: &signer, from: address, amount: u64) acquires Management, State, Roles {
+    /// Burn tokens from the specified account. This checks that the caller is a minter and the stablecoin is not paused.
+    public entry fun burn(minter: &signer, from: address, amount: u64) acquires Management, Roles, State {
         burn_from(minter, primary_fungible_store::ensure_primary_store_exists(from, metadata()), amount);
     }
 
+    /// Burn tokens from the specified account's store. This checks that the caller is a minter and the stablecoin is
+    /// not paused.
     public entry fun burn_from(
         minter: &signer,
         store: Object<FungibleStore>,
         amount: u64,
-    ) acquires Management, State, Roles {
+    ) acquires Management, Roles, State {
         assert_not_paused();
         assert_is_minter(minter);
         if (amount == 0) { return };
@@ -237,6 +262,7 @@ module moveth::moveth {
         });
     }
 
+    /// Pause or unpause the stablecoin. This checks that the caller is the pauser.
     public entry fun set_pause(pauser: &signer, paused: bool) acquires Roles, State {
         let roles = borrow_global<Roles>(moveth_address());
         assert!(signer::address_of(pauser) == roles.pauser, EUNAUTHORIZED);
@@ -250,6 +276,7 @@ module moveth::moveth {
         });
     }
 
+    /// Add an account to the denylist. This checks that the caller is the denylister.
     public entry fun denylist(denylister: &signer, account: address) acquires Management, Roles, State {
         assert_not_paused();
         let roles = borrow_global<Roles>(moveth_address());
@@ -264,6 +291,7 @@ module moveth::moveth {
         });
     }
 
+    /// Remove an account from the denylist. This checks that the caller is the denylister.
     public entry fun undenylist(denylister: &signer, account: address) acquires Management, Roles, State {
         assert_not_paused();
         let roles = borrow_global<Roles>(moveth_address());
@@ -278,6 +306,7 @@ module moveth::moveth {
         });
     }
 
+    /// Add a new minter. This checks that the caller is the master minter and the account is not already a minter.
     public entry fun add_minter(admin: &signer, minter: address) acquires Roles, State {
         assert_not_paused();
         let roles = borrow_global_mut<Roles>(moveth_address());
@@ -287,18 +316,29 @@ module moveth::moveth {
     }
 
     fun assert_is_minter(minter: &signer) acquires Roles {
+        if (exists<Roles>(moveth_address())) {
         let roles = borrow_global<Roles>(moveth_address());
         let minter_addr = signer::address_of(minter);
         assert!(minter_addr == roles.master_minter || vector::contains(&roles.minters, &minter_addr), EUNAUTHORIZED);
+        } else {
+            assert!(false, ENOT_MINTER);
+        }
     }
 
     fun assert_not_paused() acquires State {
-        let state = borrow_global<State>(moveth_address());
-        assert!(!state.paused, EPAUSED);
+        if (exists<State>(moveth_address())) {
+            let state = borrow_global<State>(moveth_address());
+            assert!(!state.paused, EPAUSED);
+        } else {
+            assert!(false, EPAUSED);
+        }
     }
 
+    // Check that the account is not denylisted by checking the frozen flag on the primary store
     fun assert_not_denylisted(account: address) {
         let metadata = metadata();
+        // CANNOT call into pfs::store_exists in our withdraw/deposit hooks as it creates possibility of a circular dependency.
+        // Instead, we will call the inlined version of the function.
         if (primary_fungible_store::primary_store_exists_inlined(account, metadata)) {
             assert!(!fungible_asset::is_frozen(primary_fungible_store::primary_store_inlined(account, metadata)), EDENYLISTED);
         }

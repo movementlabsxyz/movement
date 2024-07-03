@@ -1,70 +1,64 @@
-module moveth::moveth_tests {
-    use aptos_framework::account;
-    use aptos_framework::aptos_account;
+module moveth::moveth_tests{
     use std::signer;
-    use aptos_framework::fungible_asset;
+    use aptos_framework::primary_fungible_store;
+    use aptos_framework::dispatchable_fungible_asset;
+    use aptos_framework::fungible_asset::{Self, FungibleStore};
     use moveth::moveth;
+    use aptos_framework::object;
 
-    #[test]
-    fun test_init_module() {
-        let root_address = 0xA550C18;
-        let root_signer = signer::address_of(root_address);
-        moveth::init_for_test(&root_signer);
-        assert!(moveth::moveth_address() != account::zero_address(), 100);
+    #[test(creator = @moveth, minter = @0xface, master_minter = @0xbab, denylister = @0xcade)]
+    fun test_basic_flow(creator: &signer, minter: &signer, master_minter: &signer, denylister: &signer) {
+        moveth::init_for_test(creator);
+        let receiver_address = @0xcafe1;
+        let minter_address = signer::address_of(minter);
+
+        // set minter and have minter call mint, check balance
+        moveth::add_minter(master_minter, minter_address);
+        moveth::mint(minter, minter_address, 100);
+        let asset = moveth::metadata();
+        assert!(primary_fungible_store::balance(minter_address, asset) == 100, 0);
+
+        // transfer from minter to receiver, check balance
+        let minter_store = primary_fungible_store::ensure_primary_store_exists(minter_address, asset);
+        let receiver_store = primary_fungible_store::ensure_primary_store_exists(receiver_address, asset);
+        dispatchable_fungible_asset::transfer(minter, minter_store, receiver_store, 10);
+
+        // denylist account, check if account is denylisted
+        moveth::denylist(denylister, receiver_address);
+        assert!(primary_fungible_store::is_frozen(receiver_address, asset), 0);
+        moveth::undenylist(denylister, receiver_address);
+        assert!(!primary_fungible_store::is_frozen(receiver_address, asset), 0);
+
+        // burn tokens, check balance
+        moveth::burn(minter, minter_address, 90);
+        assert!(primary_fungible_store::balance(minter_address, asset) == 0, 0);
     }
 
-    #[test]
-    fun test_mint() {
-        let root_address = 0xA550C18;
-        let root_signer = signer::address_of(root_address);
-        moveth::init_for_test(&root_signer);
 
-        let receiver_address = 0x1;
-        let receiver_store = moveth::primary_store(receiver_address, moveth::metadata());
-        let balance = moveth::balance(receiver_store);
-        assert!(balance == 0, 101);
-
-        moveth::mint(&root_signer, receiver_address, 100);
-
-        let balance = moveth::balance(receiver_store);
-        assert!(balance == 100, 102);
+    #[test(creator = @moveth, pauser = @0xdafe, minter = @0xface, master_minter = @0xbab)]
+    #[expected_failure(abort_code = 2, location = moveth::moveth)]
+    fun test_pause(creator: &signer, pauser: &signer, minter: &signer, master_minter: &signer) {
+        moveth::init_for_test(creator);
+        let minter_address = signer::address_of(minter);
+        moveth::set_pause(pauser, true);
+        moveth::add_minter(master_minter, minter_address);
     }
 
-    #[test]
-    fun test_pause() {
-        let root_address = 0xA550C18;
-        let root_signer = signer::address_of(root_address);
-        moveth::init_for_test(&root_signer);
+    //test the ability of a denylisted account to transfer out newly created store
+    #[test(creator = @moveth, denylister = @0xcade, receiver = @0xdead)]
+    #[expected_failure(abort_code = 327683, location = aptos_framework::object)]
+    fun test_untransferrable_store(creator: &signer, denylister: &signer, receiver: &signer) {
+        moveth::init_for_test(creator);
+        let receiver_address = signer::address_of(receiver);
+        let asset = moveth::metadata();
 
-        let pauser_address = 0x2;
-        let pauser_signer = signer::address_of(pauser_address);
-        moveth::set_pause(&pauser_signer, true);
+        moveth::denylist(denylister, receiver_address);
+        assert!(primary_fungible_store::is_frozen(receiver_address, asset), 0);
 
-        let state = borrow_global<moveth::State>(moveth::moveth_address());
-        assert!(state.paused, 102);
+        let constructor_ref = object::create_object(receiver_address);
+        fungible_asset::create_store(&constructor_ref, asset);
+        let store = object::object_from_constructor_ref<FungibleStore>(&constructor_ref);
 
-        moveth::set_pause(&pauser_signer, false);
-        let state_unpaused = borrow_global<moveth::State>(moveth::moveth_address());
-        assert!(!state_unpaused.paused, 103);
-    }
-
-    #[test]
-    fun test_denylist() {
-        let root_address = 0xA550C18;
-        let root_signer = signer::address_to_signer(root_address);
-        moveth::init_for_test(&root_signer);
-
-        let denylister_address = 0x3;
-        let denylister_signer = signer::address_of(denylister_address);
-        let account_to_denylist = 0x4;
-        moveth::denylist(&denylister_signer, account_to_denylist);
-
-        let freeze_ref = &borrow_global<moveth::Management>(moveth::moveth_address()).transfer_ref;
-        let is_frozen: bool = fungible_asset::is_frozen(freeze_ref, account_to_denylist);
-        assert!(is_frozen, 104);
-
-        moveth::undenylist(&denylister_signer, account_to_denylist);
-        let is_unfrozen: bool = !fungible_asset::is_frozen(freeze_ref, account_to_denylist);
-        assert!(is_unfrozen, 105);
+        object::transfer(receiver, store, @0xdeadbeef);
     }
 }
