@@ -359,7 +359,7 @@ module moveth::moveth {
     }
 
     #[test_only]
-    public fun set_up_test(origin_account: signer, minter: &signer, aptos_framework: signer, nft_receiver: &signer, timestamp: u64) {
+    public fun set_up_test(origin_account: signer, minter: &signer, aptos_framework: signer, timestamp: u64) {
         // set up global time for testing purpose
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         timestamp::update_global_time_for_test_secs(timestamp);
@@ -370,8 +370,8 @@ module moveth::moveth {
         init_module(minter);
     }
 
-    #[test (origin_account = @0xcafe, collection_token_minter = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, nft_receiver = @0x123, nft_receiver2 = @0x234, aptos_framework = @aptos_framework)]
-    public entry fun test_flow(origin_account: signer, collection_token_minter: signer, nft_receiver: signer, nft_receiver2: signer, aptos_framework: signer) {
-        set_up_test(origin_account, &collection_token_minter, aptos_framework, &nft_receiver, 10);
+    #[test (origin_account = @0xcafe, aptos_framework = @aptos_framework)]
+    public entry fun test_flow(origin_account: signer, collection_token_minter: signer, aptos_framework: signer) {
+        set_up_test(origin_account, &collection_token_minter, aptos_framework, 10);
     }
 }
