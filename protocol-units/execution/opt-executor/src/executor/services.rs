@@ -3,7 +3,7 @@ use aptos_api::{
 	get_api_service,
 	runtime::{get_apis, Apis},
 };
-use movement_rest::{health, state_root_hash};
+use movement_rest::{get_current_commitment, health};
 use poem::{
 	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
 };
@@ -28,7 +28,7 @@ impl Executor {
 
 		// If you add the `at` method after the nest we get a runtime error
 		let app = Route::new()
-			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
+			.at("/movement/v1/current_commitment", get(get_current_commitment))
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
 			.nest("/movement/v1/health", health)

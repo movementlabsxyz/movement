@@ -6,11 +6,13 @@ use aptos_config::config::NodeConfig;
 use aptos_mempool::MempoolClientSender;
 use aptos_storage_interface::{finality_view::FinalityView as AptosFinalityView, DbReader};
 use maptos_execution_util::config::Config;
-
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use movement_rest::get_finalized_block_info;
+use poem::{
+	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
 use tracing::info;
 
-use std::{fmt::format, sync::Arc};
+use std::sync::Arc;
 
 #[derive(Clone)]
 /// The API view into the finalized state of the chain.
@@ -72,7 +74,12 @@ impl FinalityView {
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
+		let app = Route::new()
+			.at("/movement/v1/get-finalized-block-info", get(get_finalized_block_info))
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.data(self.context.clone())
+			.with(cors);
 
 		Server::new(TcpListener::bind(self.listen_url.clone()))
 			.run(app)
@@ -101,11 +108,11 @@ mod tests {
 	async fn test_set_finalized_block_height_get_api() -> Result<(), anyhow::Error> {
 		// Create an Executor and a FinalityView instance from the environment configuration.
 		let config = Config::default();
-		let executor = Executor::try_from_config(config.clone())?;
+		let executor = Executor::try_from_config(&config.clone())?;
 		let finality_view = FinalityView::try_from_config(
 			executor.db.reader.clone(),
 			executor.mempool_client_sender.clone(),
-			config,
+			config.clone(),
 		)?;
 
 		// Initialize a root account using a predefined keypair and the test root address.

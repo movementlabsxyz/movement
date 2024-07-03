@@ -7,6 +7,7 @@ processes:
   setup:
     command: |
       cargo run --bin suzuka-full-node-setup
+      cargo run -p mcr-settlement-setup --bin two_validator_ceremonial
     depends_on:
       build:
         condition: process_completed_successfully

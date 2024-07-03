@@ -10,11 +10,20 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
+[[bin]]
+name = "one_validator_ceremonial"
+path = "bin/one_validator_genesis_ceremonial.rs"
+
+[[bin]]
+name = "two_validator_ceremonial"
+path = "bin/two_validator_genesis_ceremonial.rs"
+
 [dependencies]
 mcr-settlement-config = { workspace = true }
 mcr-settlement-client = { workspace = true }
 dot-movement = { workspace = true }
 commander = { workspace = true }
+suzuka-config = { workspace = true }
 
 alloy = { workspace = true }
 alloy-contract = { workspace = true }

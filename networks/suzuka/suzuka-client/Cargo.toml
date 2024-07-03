@@ -49,14 +49,16 @@ thiserror = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 tracing = { workspace = true }
 url = { workspace = true }
-reqwest = { workspace = true }
+reqwest = { workspace = true, features=["json"] }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
 
 [dev-dependencies]
+aptos-api-types = { workspace = true }
 reqwest = { workspace = true }
 serde_json = { workspace = true }
+hex = { workspace = true }
 
 maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
@@ -64,6 +66,11 @@ suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
 
 dotenv = "0.15.0"
+
+[features]
+default = []
+integration-tests = []
+
 
 [lints]
 workspace = true

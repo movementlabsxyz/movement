@@ -115,7 +115,7 @@ pub async fn send_tx<
 				);
 				if tx_receipt.gas_used == estimate_gas {
 					tracing::warn!("Send commitment Tx  fail because of insufficient gas");
-					estimate_gas += (estimate_gas * 20) / 100;
+					estimate_gas += (estimate_gas * 25) / 100;
 					continue;
 				} else {
 					return Err(McrEthConnectorError::RpcTxExecution(format!(

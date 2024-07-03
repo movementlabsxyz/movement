@@ -13,7 +13,6 @@ use mcr_settlement_client::{
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use mcr_settlement_manager::McrSettlementManagerOperations;
-use movement_rest::MovementRest;
 use movement_types::BlockCommitmentEvent;
 use movement_types::{Block /*BlockCommitmentEvent*/};
 
@@ -34,7 +33,6 @@ pub struct SuzukaPartialNode<T> {
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
-	movement_rest: MovementRest,
 }
 
 impl<T> SuzukaPartialNode<T>
@@ -45,7 +43,6 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
-		movement_rest: MovementRest,
 		config: &suzuka_config::Config,
 	) -> (Self, impl Future<Output = Result<(), anyhow::Error>> + Send)
 	where
@@ -62,7 +59,6 @@ where
 				transaction_receiver,
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
-				movement_rest,
 			},
 			read_commitment_events(commitment_events, bg_executor),
 		)
@@ -76,14 +72,13 @@ where
 		executor: T,
 		light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		settlement_client: C,
-		movement_rest: MovementRest,
 		config: &suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
 		let (mut node, background_task) =
-			Self::new(executor, light_node_client, settlement_client, movement_rest, config);
+			Self::new(executor, light_node_client, settlement_client, config);
 		node.bind_transaction_channel();
 		Ok((node, background_task))
 	}
@@ -267,12 +262,6 @@ where
 
 		Ok(())
 	}
-
-	/// Runs the maptos rest api service until crash or shutdown.
-	async fn run_movement_rest(&self) -> Result<(), anyhow::Error> {
-		self.movement_rest.run_service().await?;
-		Ok(())
-	}
 }
 
 impl SuzukaPartialNode<Executor> {
@@ -307,7 +296,6 @@ impl SuzukaPartialNode<Executor> {
 			.context("Failed to get executor from environment")?;
 		let settlement_client =
 			McrEthSettlementClient::build_with_config(config.mcr.clone()).await?;
-		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
-		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config)
+		Self::bound(executor, light_node_client, settlement_client, &config)
 	}
 }

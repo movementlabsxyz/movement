@@ -29,7 +29,6 @@ use std::{fs, sync::Arc};
 use std::{thread, time};
 use url::Url;
 
-mod reststate;
 mod settlement_state;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {

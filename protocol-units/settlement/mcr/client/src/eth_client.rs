@@ -286,11 +286,6 @@ where
 #[cfg(feature = "integration-tests")]
 mod tests {
 	use super::*;
-	use alloy_primitives::Bytes;
-	use alloy_provider::ProviderBuilder;
-	use alloy_rpc_types::TransactionRequest;
-	use alloy_signer_wallet::LocalWallet;
-	use alloy_transport::Transport;
 	use movement_types::Commitment;
 
 	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
@@ -300,12 +295,12 @@ mod tests {
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
 		//Activate to debug the test.
-		tracing_subscriber::fmt()
-			.with_env_filter(
-				tracing_subscriber::EnvFilter::try_from_default_env()
-					.unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-			)
-			.init();
+		// tracing_subscriber::fmt()
+		// 	.with_env_filter(
+		// 		tracing_subscriber::EnvFilter::try_from_default_env()
+		// 			.unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+		// 	)
+		// 	.init();
 
 		//load local env.
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
@@ -327,9 +322,6 @@ mod tests {
 		println!("test anvil_address");
 
 		let mcr_address: Address = suzuka_config.mcr.mcr_contract_address.trim().parse()?;
-
-		//Do SC ceremony init stake calls.
-		do_genesis_ceremonial(mcr_address, &anvil_config.anvil_keys, &rpc_url).await?;
 
 		let config = Config {
 			mcr_contract_address: mcr_address.to_string(),
@@ -430,89 +422,6 @@ mod tests {
 		let commitment = client1.get_commitment_at_height(10).await?;
 		assert_eq!(commitment, None);
 
-		Ok(())
-	}
-
-	// Do the Genesis ceremony in Rust because if node by forge script,
-	// it's never done from Rust call.
-	async fn do_genesis_ceremonial(
-		mcr_address: Address,
-		anvil_address: &[mcr_settlement_config::anvil::AnvilAddressEntry],
-		rpc_url: &str,
-	) -> Result<(), anyhow::Error> {
-		//Define Signer. Signer1 is the MCRSettelement client
-		let signer1: LocalWallet = anvil_address[0].private_key.parse()?;
-		let signer1_addr: Address = anvil_address[0].address.parse()?;
-		let signer1_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer1))
-			.on_http(rpc_url.parse()?);
-		let signer1_contract = MCR::new(mcr_address, &signer1_rpc_provider);
-
-		stake_genesis(
-			&signer1_rpc_provider,
-			&signer1_contract,
-			mcr_address,
-			signer1_addr,
-			55_000_000_000_000_000_000,
-		)
-		.await?;
-
-		let signer2: LocalWallet = anvil_address[1].private_key.parse()?;
-		let signer2_addr: Address = anvil_address[1].address.parse()?;
-		let signer2_rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer2))
-			.on_http(rpc_url.parse()?);
-		let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
-
-		//init staking
-		// Build a transaction to set the values.
-		stake_genesis(
-			&signer2_rpc_provider,
-			&signer2_contract,
-			mcr_address,
-			signer2_addr,
-			54_000_000_000_000_000_000,
-		)
-		.await?;
-
-		let MCR::hasGenesisCeremonyEndedReturn { _0: has_genesis_ceremony_ended } =
-			signer2_contract.hasGenesisCeremonyEnded().call().await?;
-		let ceremony: bool = has_genesis_ceremony_ended.try_into().unwrap();
-		assert!(ceremony);
-		Ok(())
-	}
-
-	async fn stake_genesis<P: Provider<T, Ethereum>, T: Transport + Clone>(
-		provider: &P,
-		contract: &MCR::MCRInstance<T, &P, Ethereum>,
-		contract_address: Address,
-		signer: Address,
-		amount: u128,
-	) -> Result<(), anyhow::Error> {
-		let stake_genesis_call = contract.stakeGenesis();
-		let calldata = stake_genesis_call.calldata().to_owned();
-		send_tx(provider, calldata, contract_address, signer, amount).await
-	}
-
-	async fn send_tx<P: Provider<T, Ethereum>, T: Transport + Clone>(
-		provider: &P,
-		call_data: Bytes,
-		contract_address: Address,
-		signer: Address,
-		amount: u128,
-	) -> Result<(), anyhow::Error> {
-		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
-		let tx = TransactionRequest::default()
-			.from(signer)
-			.to(contract_address)
-			.value(U256::from(amount))
-			.input(call_data.into())
-			.max_fee_per_gas(eip1559_fees.max_fee_per_gas)
-			.max_priority_fee_per_gas(eip1559_fees.max_priority_fee_per_gas);
-
-		provider.send_transaction(tx).await?.get_receipt().await?;
 		Ok(())
 	}
 }

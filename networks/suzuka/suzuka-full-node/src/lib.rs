@@ -13,9 +13,6 @@ pub trait SuzukaFullNode {
 	/// Runs the executor until crash or shutdown.
 	async fn run_executor(&self) -> Result<(), anyhow::Error>;
 
-	/// Runs the maptos rest api service until crash or shutdown.
-	async fn run_movement_rest(&self) -> Result<(), anyhow::Error>;
-
 	/// Runs the full node until crash or shutdown.
 	async fn run(&self) -> Result<(), anyhow::Error> {
 		// run services and executor concurrently

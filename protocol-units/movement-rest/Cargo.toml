@@ -20,8 +20,10 @@ anyhow = { workspace = true }
 poem = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+serde_json = { workspace = true }
 
 aptos-api = { workspace = true }
+aptos-types = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [dev-dependencies]

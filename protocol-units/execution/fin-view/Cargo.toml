@@ -24,6 +24,8 @@ anyhow = { workspace = true }
 poem = { workspace = true }
 tracing = { workspace = true }
 
+movement-rest = { workspace = true }
+
 [dev-dependencies]
 aptos-sdk = { workspace = true }
 maptos-opt-executor = { workspace = true }
