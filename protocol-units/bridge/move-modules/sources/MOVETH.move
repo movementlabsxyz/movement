@@ -128,7 +128,7 @@ module moveth::moveth {
 
         // All resources created will be kept in the asset metadata object.
         // let metadata_object_signer = &object::generate_signer(constructor_ref);
-        move_to(&resource_signer, Roles {
+        move_to(resource_account, Roles {
             master_minter: @master_minter,
             minters: vector[],
             pauser: @pauser,
@@ -136,18 +136,18 @@ module moveth::moveth {
         });
 
         // Create mint/burn/transfer refs to allow creator to manage the stablecoin.
-        move_to(&resource_signer, Management {
+        move_to(resource_account, Management {
             extend_ref: object::generate_extend_ref(constructor_ref),
             mint_ref: fungible_asset::generate_mint_ref(constructor_ref),
             burn_ref: fungible_asset::generate_burn_ref(constructor_ref),
             transfer_ref: fungible_asset::generate_transfer_ref(constructor_ref),
         });
 
-        move_to(&resource_signer, State {
+        move_to(resource_account, State {
             paused: false,
         });
 
-        move_to(&resource_signer, ModuleData {
+        move_to(resource_account, ModuleData {
             signer_cap: resource_signer_cap,
         });
 
