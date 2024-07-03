@@ -27,13 +27,41 @@ pub enum MethodName {
 	AbortBridgeTransfer,
 }
 
+impl CallConfig {
+	pub fn get_initiator_error(&self) -> Result<(), BridgeContractInitiatorError> {
+		match &self.error {
+			ErrorConfig::None => Ok(()),
+			ErrorConfig::InitiatorError(e) => Err(e.clone()),
+			ErrorConfig::CounterpartyError(_) => {
+				panic!("Unexpected CounterpartyError for Initiator method")
+			}
+			ErrorConfig::CustomError(e) => {
+				Err(BridgeContractInitiatorError::GenericError(format!("Custom error: {}", e)))
+			}
+		}
+	}
+
+	pub fn get_counterparty_error(&self) -> Result<(), BridgeContractCounterpartyError> {
+		match &self.error {
+			ErrorConfig::None => Ok(()),
+			ErrorConfig::CounterpartyError(e) => Err(e.clone()),
+			ErrorConfig::InitiatorError(_) => {
+				panic!("Unexpected InitiatorError for Counterparty method")
+			}
+			ErrorConfig::CustomError(e) => {
+				Err(BridgeContractCounterpartyError::GenericError(format!("Custom error: {}", e)))
+			}
+		}
+	}
+}
+
 use super::{CounterpartyCall, InitiatorCall, Transaction};
 
 #[derive(Debug, Error, Clone)]
 pub enum AbstractBlockchainClientError {
-	#[error("Send error")]
+	#[error("Failed to send transaction")]
 	SendError,
-	#[error("Random failure")]
+	#[error("Random failure occurred")]
 	RandomFailure,
 }
 
@@ -187,16 +215,7 @@ where
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
-			match config.error {
-				ErrorConfig::None => {}
-				ErrorConfig::InitiatorError(e) => return Err(e),
-				ErrorConfig::CounterpartyError(_) => {
-					panic!("Unexpected CounterpartyError for Initiator method")
-				}
-				ErrorConfig::CustomError(e) => {
-					return Err(BridgeContractInitiatorError::GenericError(e.to_string()))
-				}
-			}
+			config.get_initiator_error()?;
 		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractInitiatorError::generic)
@@ -217,16 +236,7 @@ where
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
-			match config.error {
-				ErrorConfig::None => {}
-				ErrorConfig::InitiatorError(e) => return Err(e),
-				ErrorConfig::CounterpartyError(_) => {
-					panic!("Unexpected CounterpartyError for Initiator method")
-				}
-				ErrorConfig::CustomError(e) => {
-					return Err(BridgeContractInitiatorError::GenericError(e.to_string()))
-				}
-			}
+			config.get_initiator_error()?;
 		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractInitiatorError::generic)
@@ -277,16 +287,7 @@ where
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
-			match config.error {
-				ErrorConfig::None => {}
-				ErrorConfig::CounterpartyError(e) => return Err(e),
-				ErrorConfig::InitiatorError(_) => {
-					panic!("Unexpected InitiatorError for Counterparty method")
-				}
-				ErrorConfig::CustomError(e) => {
-					return Err(BridgeContractCounterpartyError::GenericError(e.to_string()))
-				}
-			}
+			config.get_counterparty_error()?;
 		}
 		self.send_transaction(transaction)
 			.map_err(BridgeContractCounterpartyError::generic)
@@ -306,17 +307,9 @@ where
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
-			match config.error {
-				ErrorConfig::None => {}
-				ErrorConfig::CounterpartyError(e) => return Err(e),
-				ErrorConfig::InitiatorError(_) => {
-					panic!("Unexpected InitiatorError for Counterparty method")
-				}
-				ErrorConfig::CustomError(e) => {
-					return Err(BridgeContractCounterpartyError::GenericError(e.to_string()))
-				}
-			}
+			config.get_counterparty_error()?;
 		}
+
 		self.send_transaction(transaction)
 			.map_err(BridgeContractCounterpartyError::generic)
 	}
