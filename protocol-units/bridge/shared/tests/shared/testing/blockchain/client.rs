@@ -226,11 +226,6 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
-		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
-			bridge_transfer_id,
-			secret,
-		));
-
 		self.register_call(MethodName::CompleteBridgeTransfer);
 		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
 			if let Some(delay) = config.delay {
@@ -238,6 +233,11 @@ where
 			}
 			config.get_initiator_error()?;
 		}
+
+		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
 		self.send_transaction(transaction)
 			.map_err(BridgeContractInitiatorError::generic)
 	}
@@ -275,13 +275,6 @@ where
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
-			bridge_transfer_id,
-			hash_lock,
-			time_lock,
-			recipient,
-			amount,
-		));
 		self.register_call(MethodName::LockBridgeTransferAssets);
 		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransferAssets) {
 			if let Some(delay) = config.delay {
@@ -289,6 +282,14 @@ where
 			}
 			config.get_counterparty_error()?;
 		}
+
+		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
+			bridge_transfer_id,
+			hash_lock,
+			time_lock,
+			recipient,
+			amount,
+		));
 		self.send_transaction(transaction)
 			.map_err(BridgeContractCounterpartyError::generic)
 	}
@@ -298,10 +299,6 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
-			bridge_transfer_id,
-			secret,
-		));
 		self.register_call(MethodName::CompleteBridgeTransfer);
 		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
 			if let Some(delay) = config.delay {
@@ -310,6 +307,10 @@ where
 			config.get_counterparty_error()?;
 		}
 
+		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
+			bridge_transfer_id,
+			secret,
+		));
 		self.send_transaction(transaction)
 			.map_err(BridgeContractCounterpartyError::generic)
 	}
