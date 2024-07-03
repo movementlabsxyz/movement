@@ -114,7 +114,7 @@ pub async fn send_tx<
 					tx_receipt.gas_used
 				);
 				if tx_receipt.gas_used == estimate_gas {
-					tracing::warn!("Send commitment Tx  fail because of insufficient gas");
+					tracing::debug!("Send commitment Tx  fail because of insufficient gas");
 					estimate_gas += (estimate_gas * 25) / 100;
 					continue;
 				} else {
