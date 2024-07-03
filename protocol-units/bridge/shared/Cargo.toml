@@ -23,6 +23,7 @@ rand.workspace = true
 rand_chacha = "0.2.2"
 
 [dev-dependencies]
+dashmap = "6.0.1"
 test-log = { version = "0.2.16", features = ["trace"] }
 tokio.workspace = true
 

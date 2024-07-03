@@ -10,20 +10,91 @@ use bridge_shared::{
 		HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
+use dashmap::DashMap;
 use futures::channel::mpsc;
+use std::sync::Arc;
+use thiserror::Error;
 
 use crate::shared::testing::rng::RngSeededClone;
 
 use super::{CounterpartyCall, InitiatorCall, Transaction};
 
-use thiserror::Error;
-
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum AbstractBlockchainClientError {
 	#[error("Send error")]
 	SendError,
 	#[error("Random failure")]
 	RandomFailure,
+}
+
+#[derive(Clone, Debug)]
+pub enum ErrorConfig {
+	None,
+	InitiatorError(BridgeContractInitiatorError),
+	CounterpartyError(BridgeContractCounterpartyError),
+	CustomError(AbstractBlockchainClientError),
+}
+
+#[derive(Debug, Clone)]
+pub struct CallConfig {
+	pub error: ErrorConfig,
+	pub delay: Option<std::time::Duration>,
+}
+
+impl Default for CallConfig {
+	fn default() -> Self {
+		Self { error: ErrorConfig::None, delay: None }
+	}
+}
+
+impl<A, H, R> AbstractBlockchainClient<A, H, R>
+where
+	A: std::fmt::Debug,
+	H: std::fmt::Debug,
+	R: RngSeededClone,
+{
+	pub fn set_call_config(&mut self, method: &str, call_index: usize, config: CallConfig) {
+		assert!(call_index > 0, "call_index must be greater than 0");
+		if let Some(mut call_list) = self.call_configs.get_mut(method) {
+			if call_list.iter().any(|(idx, _)| *idx == call_index) {
+				// Handle the case of duplicate entry here if needed
+				panic!(
+					"Duplicate entry found for method '{}' and call_index {}",
+					method, call_index
+				);
+			} else {
+				call_list.push((call_index, config));
+			}
+		} else {
+			self.call_configs
+				.entry(method.to_string())
+				.or_default()
+				.push((call_index, config));
+		}
+	}
+
+	pub fn clear_call_configs(&mut self) {
+		self.call_configs.clear();
+	}
+
+	fn register_call(&mut self, method: &str) {
+		if let Some(mut call_list) = self.call_configs.get_mut(method) {
+			call_list.retain_mut(|(call_index, _)| {
+				*call_index -= 1;
+				*call_index > 0
+			});
+		}
+	}
+
+	fn have_call_config(&self, method: &str) -> Option<CallConfig> {
+		self.call_configs.get(method).and_then(|configs| {
+			configs
+				.iter()
+				.find(|config| config.0 == 0)
+				.map(|found_config| &found_config.1)
+				.cloned()
+		})
+	}
 }
 
 #[derive(Clone)]
@@ -32,6 +103,7 @@ pub struct AbstractBlockchainClient<A, H, R> {
 	pub rng: R,
 	pub failure_rate: f64,
 	pub false_positive_rate: f64,
+	pub call_configs: Arc<DashMap<String, Vec<(usize, CallConfig)>>>,
 }
 
 impl<A, H, R> AbstractBlockchainClient<A, H, R>
@@ -46,7 +118,13 @@ where
 		failure_rate: f64,
 		false_positive_rate: f64,
 	) -> Self {
-		Self { transaction_sender, rng, failure_rate, false_positive_rate }
+		Self {
+			transaction_sender,
+			rng,
+			failure_rate,
+			false_positive_rate,
+			call_configs: Default::default(),
+		}
 	}
 
 	pub fn send_transaction(

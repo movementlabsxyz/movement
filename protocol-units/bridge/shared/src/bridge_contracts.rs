@@ -5,7 +5,7 @@ use crate::types::{
 	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum BridgeContractInitiatorError {
 	#[error("Failed to initiate bridge transfer")]
 	InitiateTransferError,
@@ -21,7 +21,7 @@ impl BridgeContractInitiatorError {
 	}
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum BridgeContractCounterpartyError {
 	#[error("Failed to lock bridge transfer assets")]
 	LockTransferAssetsError,

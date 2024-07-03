@@ -334,7 +334,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "auto_impl",
- "dashmap",
+ "dashmap 5.5.3",
  "futures",
  "futures-utils-wasm",
  "lru 0.12.3",
@@ -860,7 +860,7 @@ dependencies = [
  "claims",
  "concurrent-queue",
  "crossbeam",
- "dashmap",
+ "dashmap 5.5.3",
  "derivative",
  "fail 0.5.1",
  "move-binary-format",
@@ -1087,7 +1087,7 @@ dependencies = [
  "aptos-types",
  "arc-swap",
  "async-trait",
- "dashmap",
+ "dashmap 5.5.3",
  "futures",
  "itertools 0.10.5",
  "maplit",
@@ -1128,7 +1128,7 @@ dependencies = [
  "bcs 0.1.4",
  "byteorder",
  "claims",
- "dashmap",
+ "dashmap 5.5.3",
  "either",
  "itertools 0.10.5",
  "lru 0.7.8",
@@ -1166,7 +1166,7 @@ dependencies = [
  "bcs 0.1.4",
  "byteorder",
  "bytes 1.6.0",
- "dashmap",
+ "dashmap 5.5.3",
  "move-core-types",
  "move-resource-viewer",
  "num-derive",
@@ -1258,7 +1258,7 @@ dependencies = [
  "arr_macro",
  "bcs 0.1.4",
  "bytes 1.6.0",
- "dashmap",
+ "dashmap 5.5.3",
  "fail 0.5.1",
  "itertools 0.10.5",
  "move-core-types",
@@ -1293,7 +1293,7 @@ dependencies = [
  "clap 4.5.9",
  "crossbeam-channel",
  "ctrlc",
- "dashmap",
+ "dashmap 5.5.3",
  "itertools 0.10.5",
  "num_cpus",
  "once_cell",
@@ -1343,7 +1343,7 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.4",
  "criterion",
- "dashmap",
+ "dashmap 5.5.3",
  "itertools 0.10.5",
  "once_cell",
  "serde",
@@ -1849,7 +1849,7 @@ dependencies = [
  "bytes 1.6.0",
  "claims",
  "crossbeam",
- "dashmap",
+ "dashmap 5.5.3",
  "derivative",
  "move-binary-format",
  "move-core-types",
@@ -2272,7 +2272,7 @@ dependencies = [
  "bcs 0.1.4",
  "bytes 1.6.0",
  "crossbeam-channel",
- "dashmap",
+ "dashmap 5.5.3",
  "itertools 0.10.5",
  "move-core-types",
  "once_cell",
@@ -2465,7 +2465,7 @@ dependencies = [
  "bytes 1.6.0",
  "claims",
  "crossbeam-channel",
- "dashmap",
+ "dashmap 5.5.3",
  "derive_more",
  "fail 0.5.1",
  "hex",
@@ -3324,7 +3324,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "358358b19add120a5afc3dd1c8e9161d6d06c44dfec2ef8da58b7fe5c369c90d"
 dependencies = [
  "cid",
- "dashmap",
+ "dashmap 5.5.3",
  "multihash",
  "thiserror",
 ]
@@ -3439,6 +3439,7 @@ name = "bridge-shared"
 version = "0.3.0"
 dependencies = [
  "async-trait",
+ "dashmap 6.0.1",
  "delegate",
  "derive_more",
  "futures",
@@ -4586,6 +4587,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
 dependencies = [
  "cfg-if",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core 0.9.10",
+]
+
+[[package]]
+name = "dashmap"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
@@ -6249,7 +6264,7 @@ dependencies = [
  "clap 4.5.9",
  "crossbeam-channel",
  "crossbeam-utils",
- "dashmap",
+ "dashmap 5.5.3",
  "env_logger 0.10.2",
  "indexmap 2.2.6",
  "is-terminal",
@@ -6288,7 +6303,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ab388864246d58a276e60e7569a833d9cc4cd75c66e5ca77c177dad38e59996"
 dependencies = [
  "ahash 0.7.8",
- "dashmap",
+ "dashmap 5.5.3",
  "hashbrown 0.12.3",
  "once_cell",
  "parking_lot 0.12.3",
@@ -7404,7 +7419,7 @@ checksum = "c325dfab65f261f386debee8b0969da215b3fa0037e74c8a1234db7ba986d803"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
- "dashmap",
+ "dashmap 5.5.3",
  "skeptic",
  "smallvec",
  "tagptr",
