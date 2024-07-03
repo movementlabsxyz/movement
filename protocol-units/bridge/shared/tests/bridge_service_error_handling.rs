@@ -2,7 +2,9 @@ use futures::StreamExt;
 use test_log::test;
 
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	bridge_contracts::{
+		BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractInitiator,
+	},
 	types::{
 		Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
 		TimeLock,
@@ -12,8 +14,11 @@ use bridge_shared::{
 mod shared;
 
 use crate::shared::{
-	setup_bridge_service, B2Client, BC1Address, BC1Hash, BC2Hash, SetupBridgeServiceResult,
+	setup_bridge_service, testing::blockchain::client::MethodName, B2Client, BC1Address, BC1Hash,
+	BC2Hash, SetupBridgeServiceResult,
 };
+
+use self::shared::testing::blockchain::client::{CallConfig, ErrorConfig};
 
 #[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
 async fn test_bridge_service_error_handling() {
@@ -27,6 +32,18 @@ async fn test_bridge_service_error_handling() {
 
 	tokio::spawn(blockchain_1);
 	tokio::spawn(blockchain_2);
+
+	// Lets make the blockchain_2_client fail on the locking of assets
+	blockchain_2_client.set_call_config(
+		MethodName::LockBridgeTransferAssets,
+		1,
+		CallConfig {
+			error: ErrorConfig::CounterpartyError(
+				BridgeContractCounterpartyError::LockTransferAssetsError,
+			),
+			delay: None,
+		},
+	);
 
 	// Step 1: Initiating the swap on Blockchain 1 with an invalid hash lock
 

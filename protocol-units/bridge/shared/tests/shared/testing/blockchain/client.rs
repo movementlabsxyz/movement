@@ -125,7 +125,7 @@ where
 		self.call_configs.get(&method).and_then(|configs| {
 			configs
 				.iter()
-				.find(|config| config.0 == 0)
+				.find(|config| config.0 == 1)
 				.map(|found_config| &found_config.1)
 				.cloned()
 		})
@@ -210,13 +210,14 @@ where
 			time_lock,
 			hash_lock,
 		));
-		self.register_call(MethodName::InitiateBridgeTransfer);
 		if let Some(config) = self.have_call_config(MethodName::InitiateBridgeTransfer) {
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
 			config.get_initiator_error()?;
 		}
+		self.register_call(MethodName::InitiateBridgeTransfer);
+
 		self.send_transaction(transaction)
 			.map_err(BridgeContractInitiatorError::generic)
 	}
@@ -226,13 +227,13 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
-		self.register_call(MethodName::CompleteBridgeTransfer);
 		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
 			config.get_initiator_error()?;
 		}
+		self.register_call(MethodName::CompleteBridgeTransfer);
 
 		let transaction = Transaction::Initiator(InitiatorCall::CompleteBridgeTransfer(
 			bridge_transfer_id,
@@ -275,13 +276,14 @@ where
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		self.register_call(MethodName::LockBridgeTransferAssets);
 		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransferAssets) {
+			tracing::error!("lock_bridge_transfer_assets {:?}", config);
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
 			config.get_counterparty_error()?;
 		}
+		self.register_call(MethodName::LockBridgeTransferAssets);
 
 		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
 			bridge_transfer_id,
@@ -299,13 +301,14 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		self.register_call(MethodName::CompleteBridgeTransfer);
 		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
+			tracing::error!("complete_bridge_transfer {:?}", config);
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
 			config.get_counterparty_error()?;
 		}
+		self.register_call(MethodName::CompleteBridgeTransfer);
 
 		let transaction = Transaction::Counterparty(CounterpartyCall::CompleteBridgeTransfer(
 			bridge_transfer_id,

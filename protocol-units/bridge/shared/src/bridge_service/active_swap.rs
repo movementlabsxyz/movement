@@ -9,6 +9,7 @@ use futures::{task::AtomicWaker, Future, FutureExt, Stream};
 use futures_timer::Delay;
 use thiserror::Error;
 
+use crate::bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator};
 use crate::{
 	blockchain_service::BlockchainService,
 	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
@@ -16,10 +17,6 @@ use crate::{
 		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, CompletedDetails,
 		HashLock,
 	},
-};
-use crate::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
-	types::RecipientAddress,
 };
 
 pub type BoxedFuture<R, E> = Pin<Box<dyn Future<Output = Result<R, E>> + Send>>;
@@ -333,7 +330,6 @@ where
 {
 	let bridge_transfer_id = BridgeTransferId(From::from(bridge_transfer_id.0));
 	let hash_lock = HashLock(From::from(hash_lock.0));
-	let recipient_address = RecipientAddress(From::from(recipient_address.0));
 
 	tracing::trace!(
 		"Calling lock_bridge_transfer_assets on counterparty contract for bridge transfer {:?}",
