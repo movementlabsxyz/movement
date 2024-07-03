@@ -13,6 +13,7 @@ module moveth::moveth {
     use std::vector;
     use aptos_framework::chain_id;
     use aptos_framework::resource_account;
+    use aptos_framework::account::SignerCapability;
 
     /// Caller is not authorized to make this call
     const EUNAUTHORIZED: u64 = 1;
@@ -26,6 +27,11 @@ module moveth::moveth {
     const EDENYLISTED: u64 = 5;
 
     const ASSET_SYMBOL: vector<u8> = b"moveth";
+
+    struct ModuleData has key {
+        // Storing the signer capability here, so the module can programmatically sign for transactions
+        signer_cap: SignerCapability,
+    }
 
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Roles has key {
@@ -119,8 +125,8 @@ module moveth::moveth {
         fungible_asset::set_untransferable(constructor_ref);
 
         // All resources created will be kept in the asset metadata object.
-        let metadata_object_signer = &object::generate_signer(constructor_ref);
-        move_to(metadata_object_signer, Roles {
+        // let metadata_object_signer = &object::generate_signer(constructor_ref);
+        move_to(resource_signer, Roles {
             master_minter: @master_minter,
             minters: vector[],
             pauser: @pauser,
@@ -128,15 +134,19 @@ module moveth::moveth {
         });
 
         // Create mint/burn/transfer refs to allow creator to manage the stablecoin.
-        move_to(metadata_object_signer, Management {
+        move_to(resource_signer, Management {
             extend_ref: object::generate_extend_ref(constructor_ref),
             mint_ref: fungible_asset::generate_mint_ref(constructor_ref),
             burn_ref: fungible_asset::generate_burn_ref(constructor_ref),
             transfer_ref: fungible_asset::generate_transfer_ref(constructor_ref),
         });
 
-        move_to(metadata_object_signer, State {
+        move_to(resource_signer, State {
             paused: false,
+        });
+
+        move_to(resource_signer, ModuleData {
+            signer_cap: resource_signer_cap,
         });
 
         // Override the deposit and withdraw functions which mean overriding transfer.
@@ -214,16 +224,17 @@ module moveth::moveth {
 
     /// Mint new tokens to the specified account. This checks that the caller is a minter, the moveth is not paused,
     /// and the account is not denylisted.
-    public entry fun mint(minter: &signer, to: address, amount: u64) acquires Management, Roles, State {
+    public entry fun mint(minter: &signer, to: address, amount: u64) acquires ModuleData, Management, Roles, State {
         assert_not_paused();
         assert_is_minter(minter);
         assert_not_denylisted(to);
         if (amount == 0) { return };
 
+        let module_data = borrow_global<ModuleData>(moveth_address());
         let management = borrow_global<Management>(moveth_address());
         //let resource_account_cap = resource_account::retrieve_resource_account_cap(minter, moveth_address());
         //let resource_signer = account::create_signer_with_capability(&resource_account_cap);
-        
+        let resource_signer = account::create_signer_with_capability(&module_data.signer_cap);
         let tokens = fungible_asset::mint(&management.mint_ref, amount);
         
         // Ensure not to call pfs::deposit or dfa::deposit directly in the module.
