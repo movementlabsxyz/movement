@@ -15,6 +15,8 @@ use std::str::FromStr;
 use std::sync::Arc;
 use url::Url;
 
+mod utils;
+
 pub struct MovementClient {
 	rest_client: Client,
 	faucet_client: FaucetClient,
@@ -32,6 +34,7 @@ impl MovementClient {
 			.maptos_rest_connection_hostname;
 		let node_connection_port =
 			suzuka_config.execution_config.maptos_config.client.maptos_rest_connection_port;
+
 		let node_connection_url =
 			format!("http://{}:{}", node_connection_address, node_connection_port);
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();

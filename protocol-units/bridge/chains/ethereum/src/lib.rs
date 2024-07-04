@@ -359,7 +359,7 @@ where
 	A: Debug + Default + Send + 'static,
 	H: Debug + Default + Send + From<[u8; 32]> + 'static,
 {
-	async fn build(
+	async fn run(
 		rpc_url: &str,
 		listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
 	) -> Result<Self, anyhow::Error> {
