@@ -7148,6 +7148,7 @@ dependencies = [
  "anyhow",
  "commander",
  "dot-movement",
+ "godfig",
  "k256",
  "mcr-settlement-client",
  "mcr-settlement-config",
@@ -7155,6 +7156,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

@@ -69,7 +69,7 @@ pub mod test {
         let backend = ConfigFile::new(tempfile.into());
         let godfig : Godfig<Test, ConfigFile> = Godfig::new(backend, vec!["test".to_string()]);
 
-        godfig.try_transaction(|data| async move {
+        godfig.try_transaction(|_data| async move {
             Ok(Some(Test {
                 test: "test".to_string()
             }))

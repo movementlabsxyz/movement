@@ -1,0 +1,9 @@
+version: "3"
+
+environment:
+
+processes:
+
+  build-m1-da-light-node:
+    command: |
+      ./scripts/services/mcr/build

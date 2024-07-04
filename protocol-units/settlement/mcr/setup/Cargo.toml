@@ -24,6 +24,8 @@ rand = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+godfig = { workspace = true }
 
 [lints]
 workspace = true

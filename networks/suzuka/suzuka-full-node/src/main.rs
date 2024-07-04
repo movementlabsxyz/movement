@@ -1,12 +1,11 @@
 use suzuka_full_node::{
 	manager::Manager,
-	partial::SuzukaPartialNode
+	partial::SuzukaPartialNode,
+	SuzukaFullNode
 };
 use maptos_dof_execution::v1::Executor;
-use tracing_subscriber::EnvFilter;
 use anyhow::Context;
 use std::process::ExitCode;
-use suzuka_full_node::{partial::SuzukaPartialNode, SuzukaFullNode};
 use tokio::select;
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;

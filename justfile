@@ -6,6 +6,8 @@ suzuka-full-node RUNTIME FEATURES *ARGS:
     ./scripts/movement/run suzuka-full-node {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 mcr-contract-tests: 
     cd ./protocol-units/settlement/mcr/contracts && forge test
+mcr-client RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run mcr-client {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}
 mcr RUNTIME FEATURES *ARGS:

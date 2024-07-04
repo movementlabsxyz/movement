@@ -30,7 +30,7 @@ impl DotMovement {
 
 		match res {
 			Ok(file) => Ok(file),
-			Err(e) => {
+			Err(_e) => {
 
 				// create parent directories
 				tokio::fs::DirBuilder::new()

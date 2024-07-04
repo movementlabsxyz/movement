@@ -101,7 +101,7 @@ impl Setup for Local {
 				"forge",
 				&[
 					"script",
-					"DeployMCRLegacy",
+					"DeployMCRDev",
 					"--root",
 					&solidity_path,
 					"--broadcast",
