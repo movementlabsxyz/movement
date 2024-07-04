@@ -13,8 +13,5 @@ processes:
       suzuka-faucet:
         condition: process_healthy
     availability:
-<<<<<<< HEAD
-      exit_on_end: false
-=======
       exit_on_end: true
->>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
+
