@@ -32,8 +32,17 @@ impl From<TestAddress> for RecipientAddress {
 	}
 }
 
+impl From<RecipientAddress> for TestAddress {
+	fn from(value: RecipientAddress) -> Self {
+		let string = String::from_utf8(value.0).expect("Invalid UTF-8");
+		// NOTE: Using static strings in tests for clarity and efficiency. A bit of memory leakage is
+		// acceptable for the rare conversions in this context.
+		Self(Box::leak(string.into_boxed_str()))
+	}
+}
+
 impl From<HashLockPreImage> for TestHash {
-	fn from(value: HashLockPreImage) -> Self {
+	fn from(_value: HashLockPreImage) -> Self {
 		todo!()
 	}
 }
@@ -60,7 +69,7 @@ async fn test_initiate_bridge_transfer() {
 	let transaction = Transaction::Initiator(InitiatorCall::InitiateBridgeTransfer(
 		initiator_address.clone(),
 		recipient_address.clone(),
-		amount.clone(),
+		amount,
 		time_lock.clone(),
 		hash_lock.clone(),
 	));

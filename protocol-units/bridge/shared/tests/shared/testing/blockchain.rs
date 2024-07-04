@@ -15,7 +15,7 @@ use self::{counterparty_contract::SCCResult, initiator_contract::SCIResult};
 
 use super::rng::RngSeededClone;
 use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
+	Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage, RecipientAddress,
 };
 
 pub mod client;
@@ -64,7 +64,7 @@ pub struct AbstractBlockchain<A, H, R> {
 
 impl<A, H, R> AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType,
+	A: BridgeAddressType + From<RecipientAddress>,
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
 	H: From<HashLockPreImage>,
@@ -129,7 +129,7 @@ where
 
 impl<A, H, R> Future for AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType,
+	A: BridgeAddressType + From<RecipientAddress>,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
 	H: From<HashLockPreImage>,
@@ -153,7 +153,7 @@ where
 
 impl<A, H, R> Stream for AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType,
+	A: BridgeAddressType + From<RecipientAddress>,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
 	H: From<HashLockPreImage>,

@@ -100,6 +100,15 @@ impl Debug for BC2Hash {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Address(pub &'static str);
 
+impl From<RecipientAddress> for BC1Address {
+	fn from(value: RecipientAddress) -> Self {
+		let string = String::from_utf8(value.0).expect("Invalid UTF-8");
+		// NOTE: Using static strings in tests for clarity and efficiency. A bit of memory leakage is
+		// acceptable for the rare conversions in this context.
+		Self(Box::leak(string.into_boxed_str()))
+	}
+}
+
 impl From<BC1Address> for RecipientAddress {
 	fn from(value: BC1Address) -> Self {
 		RecipientAddress(value.0.as_bytes().to_vec())
@@ -108,6 +117,15 @@ impl From<BC1Address> for RecipientAddress {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC2Address(pub &'static str);
+
+impl From<RecipientAddress> for BC2Address {
+	fn from(value: RecipientAddress) -> Self {
+		let string = String::from_utf8(value.0).expect("Invalid UTF-8");
+		// NOTE: Using static strings in tests for clarity and efficiency. A bit of memory leakage is
+		// acceptable for the rare conversions in this context.
+		Self(Box::leak(string.into_boxed_str()))
+	}
+}
 
 impl From<BC2Address> for RecipientAddress {
 	fn from(value: BC2Address) -> Self {

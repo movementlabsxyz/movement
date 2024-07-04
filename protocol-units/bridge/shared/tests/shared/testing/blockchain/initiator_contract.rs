@@ -23,6 +23,7 @@ pub enum InitiatorCall<A, H> {
 #[derive(Debug)]
 pub struct SmartContractInitiator<A, H, R> {
 	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
+	pub accounts: HashMap<A, Amount>,
 	pub rng: R,
 }
 
@@ -46,7 +47,7 @@ where
 	H: From<HashLockPreImage>,
 {
 	pub fn new(rng: R) -> Self {
-		Self { initiated_transfers: HashMap::new(), rng }
+		Self { initiated_transfers: HashMap::new(), accounts: HashMap::default(), rng }
 	}
 
 	pub fn initiate_bridge_transfer(
@@ -63,6 +64,10 @@ where
 			"SmartContractInitiator: Initiating bridge transfer: {:?}",
 			bridge_transfer_id
 		);
+
+		// // TODO: fix this
+		// let balance = self.accounts.entry(initiator.0.clone()).or_insert(Amount(0));
+		// **balance -= amount.0;
 
 		// initiate bridge transfer
 		self.initiated_transfers.insert(

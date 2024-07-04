@@ -36,7 +36,7 @@ pub type SCCResult<H> = Result<SmartContractCounterpartyEvent<H>, SmartContractC
 
 impl<A, H> SmartContractCounterparty<A, H>
 where
-	A: BridgeAddressType,
+	A: BridgeAddressType + From<RecipientAddress>,
 	H: BridgeHashType + GenUniqueHash,
 	H: From<HashLockPreImage>,
 {
@@ -101,8 +101,9 @@ where
 		}
 
 		// TODO: fix this
-		// let balance = accounts.entry((*transfer.recipient_address).clone()).or_insert(Amount(0));
-		// **balance += *transfer.amount;
+		let account = A::from(transfer.recipient_address.clone());
+		let balance = accounts.entry(account).or_insert(Amount(0));
+		**balance += *transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
 			CompletedDetails::from_lock_details(transfer, pre_image),

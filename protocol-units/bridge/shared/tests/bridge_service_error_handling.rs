@@ -158,7 +158,8 @@ async fn test_bridge_service_error_handling() {
 	tracing::debug!(?event);
 	assert!(matches!(event, Event::B1I(IEvent::RetryCompletingTransfer(_))));
 
-	// Bridge service completes the swap, using the secret to claim the funds on Blockchain 1
+	// Bridge service completes the swap using the secret to claim the funds on Blockchain 1
+	// Since the mock passes.
 
 	tracing::debug!("Bridge service completing bridge transfer on Blockchain 1");
 
