@@ -11114,6 +11114,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-sdk",
+<<<<<<< HEAD
  "aptos-types",
  "async-trait",
  "bcs 0.1.4",
@@ -11123,17 +11124,40 @@ dependencies = [
  "dot-movement",
  "futures",
  "itertools 0.12.1",
+=======
+<<<<<<< HEAD
+ "dot-movement",
+=======
+ "async-trait",
+ "futures",
+ "itertools 0.12.1",
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
+>>>>>>> 94307694 (recreate the PR to remove unknown modifications)
  "maptos-execution-util",
  "mcr-settlement-client",
  "once_cell",
  "rand 0.7.3",
+<<<<<<< HEAD
  "rayon",
  "reqwest 0.12.5",
  "serde",
+=======
+<<<<<<< HEAD
+ "reqwest 0.12.4",
+>>>>>>> 94307694 (recreate the PR to remove unknown modifications)
  "serde_json",
  "serde_yaml 0.9.34+deprecated",
  "suzuka-config",
+<<<<<<< HEAD
  "thiserror",
+=======
+=======
+ "rayon",
+ "serde",
+ "serde_json",
+ "thiserror",
+>>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
+>>>>>>> 94307694 (recreate the PR to remove unknown modifications)
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
