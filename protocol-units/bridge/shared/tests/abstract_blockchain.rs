@@ -141,7 +141,6 @@ async fn test_lock_bridge_transfer() {
 				time_lock: time_lock.clone(),
 				recipient_address: recipient_address.clone(),
 				amount,
-				_phantom: std::marker::PhantomData,
 			})
 		))
 	);

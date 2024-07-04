@@ -20,7 +20,8 @@ use crate::shared::testing::rng::RngSeededClone;
 #[derive(Debug, Hash, Eq, PartialEq, Clone)]
 pub enum MethodName {
 	InitiateBridgeTransfer,
-	CompleteBridgeTransfer,
+	CompleteBridgeTransferInitiator,
+	CompleteBridgeTransferCounterparty,
 	RefundBridgeTransfer,
 	GetBridgeTransferDetails,
 	LockBridgeTransferAssets,
@@ -231,8 +232,13 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
-		self.register_call(MethodName::CompleteBridgeTransfer);
-		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
+		tracing::error!(
+			"Intitiator complete_bridge_transfer {:?} {:?}",
+			bridge_transfer_id,
+			secret
+		);
+		self.register_call(MethodName::CompleteBridgeTransferInitiator);
+		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransferInitiator) {
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
@@ -305,8 +311,9 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		self.register_call(MethodName::CompleteBridgeTransfer);
-		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransfer) {
+		self.register_call(MethodName::CompleteBridgeTransferCounterparty);
+		if let Some(config) = self.have_call_config(MethodName::CompleteBridgeTransferCounterparty)
+		{
 			tracing::error!("complete_bridge_transfer {:?}", config);
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;

@@ -54,10 +54,10 @@ where
 	WaitingForUnlockedEvent,
 	CompletingBridging(
 		BoxedFuture<(), CompleteBridgeTransferError>,
-		CompletedDetails<BTo::Address, BTo::Hash>,
+		CompletedDetails<BTo::Hash>,
 		Attempts,
 	),
-	CompletingBridgingError(Delay, CompletedDetails<BTo::Address, BTo::Hash>, Attempts),
+	CompletingBridgingError(Delay, CompletedDetails<BTo::Hash>, Attempts),
 	Completed,
 }
 
@@ -193,7 +193,7 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		details: CompletedDetails<BTo::Address, BTo::Hash>,
+		details: CompletedDetails<BTo::Hash>,
 	) -> Result<(), ActiveSwapMapError>
 	where
 		<BFrom as BlockchainService>::Hash: From<<BTo as BlockchainService>::Hash>,
@@ -233,7 +233,8 @@ pub enum ActiveSwapEvent<H> {
 	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
 	BridgeAssetsRetryLocking(BridgeTransferId<H>),
 	BridgeAssetsCompleted(BridgeTransferId<H>),
-	BridgeAssetsCompletingError(CompleteBridgeTransferError),
+	BridgeAssetsCompletingError(BridgeTransferId<H>, CompleteBridgeTransferError),
+	BridgeAssetsRetryCompleting(BridgeTransferId<H>),
 }
 
 impl<BFrom, BTo> Stream for ActiveSwapMap<BFrom, BTo>
@@ -329,13 +330,21 @@ where
 								*attempts + 1,
 							);
 							return Poll::Ready(Some(
-								ActiveSwapEvent::BridgeAssetsCompletingError(error),
+								ActiveSwapEvent::BridgeAssetsCompletingError(
+									bridge_transfer_id.clone(),
+									error,
+								),
 							));
 						}
 						Poll::Pending => {}
 					}
 				}
 				CompletingBridgingError(delay, details, attempts) => {
+					tracing::trace!(
+						"Retrying completing of bridge transfer {:?}",
+						bridge_transfer_id
+					);
+
 					// test if the delay has expired
 					// if it has, retry the lock
 					if let Poll::Ready(()) = delay.poll_unpin(cx) {
@@ -348,6 +357,9 @@ where
 							details.clone(),
 							*attempts + 1,
 						);
+						return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsRetryCompleting(
+							bridge_transfer_id.clone(),
+						)));
 					}
 				}
 				Completed => {
@@ -423,7 +435,7 @@ pub enum CompleteBridgeTransferError {
 
 async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
 	mut initiator_contract: BFrom::InitiatorContract,
-	CompletedDetails { bridge_transfer_id, secret, .. }: CompletedDetails<BTo::Address, BTo::Hash>,
+	CompletedDetails { bridge_transfer_id, secret, .. }: CompletedDetails<BTo::Hash>,
 ) -> Result<(), CompleteBridgeTransferError>
 where
 	<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:

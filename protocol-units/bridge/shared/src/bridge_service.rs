@@ -79,9 +79,9 @@ where
 }
 
 fn handle_counterparty_event<BFrom, BTo>(
-	event: BridgeContractCounterpartyEvent<BTo::Address, BTo::Hash>,
+	event: BridgeContractCounterpartyEvent<BTo::Hash>,
 	active_swaps: &mut ActiveSwapMap<BFrom, BTo>,
-) -> Option<CEvent<BTo::Address, BTo::Hash>>
+) -> Option<CEvent<BTo::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
@@ -168,8 +168,11 @@ where
 							bridge_transfer_id
 						);
 					}
-					BridgeAssetsCompletingError(error) => {
+					BridgeAssetsCompletingError(bridge_transfer_id, error) => {
 						warn!("BridgeService: Error completing bridge assets: {:?}", error);
+						return Poll::Ready(Some(Event::B1I(IEvent::Warn(
+							IWarn::CompleteTransferError(bridge_transfer_id.clone()),
+						))));
 					}
 					BridgeAssetsRetryLocking(bridge_transfer_id) => {
 						warn!(
@@ -178,6 +181,15 @@ where
 						);
 						return Poll::Ready(Some(Event::B2C(CEvent::RetryLockingAssets(
 							BridgeTransferId(From::from(bridge_transfer_id.0)),
+						))));
+					}
+					BridgeAssetsRetryCompleting(bridge_transfer_id) => {
+						warn!(
+							"BridgeService: Retrying to complete bridge assets for transfer {:?}",
+							bridge_transfer_id
+						);
+						return Poll::Ready(Some(Event::B1I(IEvent::RetryCompletingTransfer(
+							bridge_transfer_id,
 						))));
 					}
 				}
@@ -210,18 +222,24 @@ where
 							CWarn::BridgeAssetsLockingError(error),
 						))));
 					}
+					BridgeAssetsRetryLocking(bridge_transfer_id) => {
+						warn!(
+							"BridgeService: Retrying to lock bridge assets for transfer {:?}",
+							bridge_transfer_id
+						);
+					}
 					BridgeAssetsCompleted(bridge_transfer_id) => {
 						trace!(
 							"BridgeService: Bridge assets completed for transfer {:?}",
 							bridge_transfer_id
 						);
 					}
-					BridgeAssetsCompletingError(error) => {
+					BridgeAssetsCompletingError(details, error) => {
 						warn!("BridgeService: Error completing bridge assets: {:?}", error);
 					}
-					BridgeAssetsRetryLocking(bridge_transfer_id) => {
+					BridgeAssetsRetryCompleting(bridge_transfer_id) => {
 						warn!(
-							"BridgeService: Retrying to lock bridge assets for transfer {:?}",
+							"BridgeService: Retrying to complete bridge assets for transfer {:?}",
 							bridge_transfer_id
 						);
 					}

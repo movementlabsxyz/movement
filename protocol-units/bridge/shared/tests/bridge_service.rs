@@ -81,7 +81,6 @@ async fn test_bridge_service_integration_a_to_b() {
 			time_lock: TimeLock(100),
 			recipient_address: RecipientAddress::from(BC2Address("recipient")),
 			amount: Amount(1000),
-			_phantom: std::marker::PhantomData
 		})
 	);
 
@@ -113,7 +112,6 @@ async fn test_bridge_service_integration_a_to_b() {
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
 			amount: Amount(1000),
-			_phantom: std::marker::PhantomData
 		})
 	);
 
@@ -200,7 +198,6 @@ async fn test_bridge_service_integration_b_to_a() {
 			time_lock: TimeLock(100),
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			amount: Amount(1000),
-			_phantom: std::marker::PhantomData
 		})
 	);
 
@@ -232,7 +229,6 @@ async fn test_bridge_service_integration_b_to_a() {
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
 			amount: Amount(1000),
-			_phantom: std::marker::PhantomData
 		})
 	);
 

@@ -4,12 +4,13 @@ use test_log::test;
 use bridge_shared::{
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractInitiator,
+		BridgeContractInitiatorError,
 	},
-	bridge_monitoring::BridgeContractCounterpartyEvent,
-	bridge_service::events::{CEvent, CWarn, Event},
+	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
+	bridge_service::events::{CEvent, CWarn, Event, IEvent, IWarn},
 	types::{
-		Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
-		TimeLock,
+		Amount, BridgeTransferDetails, CompletedDetails, Convert, HashLock, HashLockPreImage,
+		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
 
@@ -17,7 +18,7 @@ mod shared;
 
 use crate::shared::{
 	setup_bridge_service, testing::blockchain::client::MethodName, B2Client, BC1Address, BC1Hash,
-	BC2Hash, SetupBridgeServiceResult,
+	BC2Address, BC2Hash, SetupBridgeServiceResult,
 };
 
 use self::shared::testing::blockchain::client::{CallConfig, ErrorConfig};
@@ -54,7 +55,7 @@ async fn test_bridge_service_error_handling() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress::from(BC1Address("recipient")),
-			HashLock(BC1Hash::from("invalid_hash_lock")),
+			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
 			Amount(1000),
 		)
@@ -62,8 +63,21 @@ async fn test_bridge_service_error_handling() {
 		.expect("initiate_bridge_transfer failed");
 
 	// B1I Initiated
-	let event = bridge_service.next().await.expect("No event");
-	tracing::debug!(?event);
+	let transfer_initiated_event = bridge_service.next().await.expect("No event");
+	let transfer_initiated_event =
+		transfer_initiated_event.B1I_ContractEvent().expect("Not a B1I event");
+	tracing::debug!(?transfer_initiated_event);
+	assert_eq!(
+		transfer_initiated_event,
+		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
+			bridge_transfer_id: transfer_initiated_event.bridge_transfer_id().clone(),
+			initiator_address: InitiatorAddress(BC1Address("initiator")),
+			recipient_address: RecipientAddress::from(BC1Address("recipient")),
+			hash_lock: HashLock(BC1Hash::from("hash_lock")),
+			time_lock: TimeLock(100),
+			amount: Amount(1000)
+		})
+	);
 
 	// B2C Locking call failed due to mock above
 	let event = bridge_service.next().await.expect("No event");
@@ -89,18 +103,73 @@ async fn test_bridge_service_error_handling() {
 
 	// Bridge gracefully recovered from an error
 
-	// Step 2: Attempting to complete the swap on Blockchain 2 with an invalid secret
+	// Step 2: Attempting to complete the swap on Blockchain 2
 	tracing::debug!("Attempting to complete bridge transfer with invalid secret");
+
 	<B2Client as BridgeContractCounterparty>::complete_bridge_transfer(
 		&mut blockchain_2_client,
-		BridgeTransferId(BC2Hash::from("non_existent_transfer_id")),
-		HashLockPreImage(b"invalid_secret".to_vec()),
+		Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+		HashLockPreImage(b"hash_lock".to_vec()),
 	)
 	.await
 	.expect("complete_bridge_transfer failed");
 
-	// The team has decided not to monitor for incorrect secret errors at this time.
+	// Expecting the bridge to detect the initiator's completion of the swap and reveal the secret
+	let completed_event_counterparty = bridge_service.next().await.expect("No event");
+	let completed_event_counterparty =
+		completed_event_counterparty.B2C_ContractEvent().expect("Not a B2C event");
+	tracing::debug!(?completed_event_counterparty);
+	assert_eq!(
+		completed_event_counterparty,
+		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
+			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+			recipient_address: RecipientAddress::from(BC2Address("recipient")),
+			hash_lock: HashLock(BC2Hash::from("hash_lock")),
+			secret: HashLockPreImage(b"hash_lock".to_vec()),
+			amount: Amount(1000),
+		})
+	);
 
-	// let event = bridge_service.next().await.expect("No event");
-	// tracing::debug!(?event);
+	// Subsequently, the bridge service has successfully detected the secret and is now attempting to finalize
+	// the swap on blockchain 1. It is imperative for this process to succeed; otherwise, funds may be irretrievably
+	// lost, necessitating manual intervention to resolve the issue.
+
+	// Intentionally causing the blockchain_1_client to fail during the asset locking process to
+	// simulate various failure scenarios.
+	blockchain_1_client.set_call_config(
+		MethodName::CompleteBridgeTransferInitiator,
+		1,
+		CallConfig {
+			error: ErrorConfig::InitiatorError(BridgeContractInitiatorError::CompleteTransferError),
+			delay: None,
+		},
+	);
+
+	// B1C Locking call failed due to mock above
+	let event = bridge_service.next().await.expect("No event");
+	tracing::debug!(?event);
+	assert!(matches!(
+		event.B1I().and_then(IEvent::warn).expect("not a b2c warn event"),
+		IWarn::CompleteTransferError(_)
+	));
+
+	// The Bridge is expected to retry the operation after the configured delay in case of an error.
+	let event = bridge_service.next().await.expect("No event");
+	tracing::debug!(?event);
+	assert!(matches!(event, Event::B1I(IEvent::RetryCompletingTransfer(_))));
+
+	// Bridge service completes the swap, using the secret to claim the funds on Blockchain 1
+
+	tracing::debug!("Bridge service completing bridge transfer on Blockchain 1");
+
+	let completed_event_initiator = bridge_service.next().await.expect("No event");
+	let completed_event_initiator =
+		completed_event_initiator.B1I_ContractEvent().expect("Not a B1I event");
+	tracing::debug!(?completed_event_initiator);
+	assert_eq!(
+		completed_event_initiator,
+		&BridgeContractInitiatorEvent::Completed(
+			transfer_initiated_event.bridge_transfer_id().clone()
+		)
+	);
 }

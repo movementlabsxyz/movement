@@ -31,7 +31,7 @@ pub enum SmartContractCall<H> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockchainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<A, H>),
+	CounterpartyContractEvent(SCCResult<H>),
 	Noop,
 }
 

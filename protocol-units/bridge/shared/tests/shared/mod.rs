@@ -221,7 +221,7 @@ impl<A: Debug, H: Debug> BridgeContractCounterpartyMonitoring
 }
 
 impl<A: Debug, H: Debug> Stream for CounterpartyContractMonitoring<A, H> {
-	type Item = BridgeContractCounterpartyEvent<A, H>;
+	type Item = BridgeContractCounterpartyEvent<H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();

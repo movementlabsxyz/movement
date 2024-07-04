@@ -137,12 +137,13 @@ where
 }
 
 pub struct MockCounterpartyMonitoring<A, H> {
-	pub events: Vec<BridgeContractCounterpartyEvent<A, H>>,
+	pub events: Vec<BridgeContractCounterpartyEvent<H>>,
+	pub _phantom: std::marker::PhantomData<A>,
 }
 
 impl<A, H> MockCounterpartyMonitoring<A, H> {
 	pub fn build() -> Self {
-		Self { events: Default::default() }
+		Self { events: Default::default(), _phantom: Default::default() }
 	}
 }
 
@@ -160,7 +161,7 @@ where
 	A: std::fmt::Debug + Unpin,
 	H: std::fmt::Debug + Unpin,
 {
-	type Item = BridgeContractCounterpartyEvent<A, H>;
+	type Item = BridgeContractCounterpartyEvent<H>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();

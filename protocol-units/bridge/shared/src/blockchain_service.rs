@@ -17,7 +17,7 @@ use crate::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum ContractEvent<A, H> {
 	InitiatorEvent(BridgeContractInitiatorEvent<A, H>),
-	CounterpartyEvent(BridgeContractCounterpartyEvent<A, H>),
+	CounterpartyEvent(BridgeContractCounterpartyEvent<H>),
 }
 
 pub trait BlockchainService:

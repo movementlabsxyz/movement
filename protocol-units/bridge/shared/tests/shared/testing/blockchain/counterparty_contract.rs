@@ -7,9 +7,9 @@ use bridge_shared::types::{
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmartContractCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CompletedDetails<A, H>),
+pub enum SmartContractCounterpartyEvent<H> {
+	LockedBridgeTransfer(LockDetails<H>),
+	CompletedBridgeTransfer(CompletedDetails<H>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -28,11 +28,11 @@ pub enum CounterpartyCall<H> {
 
 #[derive(Debug)]
 pub struct SmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
+	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<H>>,
+	pub _phantom: std::marker::PhantomData<A>,
 }
 
-pub type SCCResult<A, H> =
-	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
+pub type SCCResult<H> = Result<SmartContractCounterpartyEvent<H>, SmartContractCounterpartyError>;
 
 impl<A, H> SmartContractCounterparty<A, H>
 where
@@ -41,7 +41,7 @@ where
 	H: From<HashLockPreImage>,
 {
 	pub fn new() -> Self {
-		Self { locked_transfers: HashMap::new() }
+		Self { locked_transfers: HashMap::new(), _phantom: std::marker::PhantomData }
 	}
 
 	pub fn lock_bridge_transfer(
@@ -52,7 +52,7 @@ where
 		time_lock: TimeLock,
 		recipient_address: RecipientAddress,
 		amount: Amount,
-	) -> SCCResult<A, H> {
+	) -> SCCResult<H> {
 		tracing::trace!(
 			"SmartContractCounterparty: Locking bridge transfer: {:?}",
 			bridge_transfer_id
@@ -65,7 +65,6 @@ where
 				hash_lock: hash_lock.clone(),
 				time_lock: time_lock.clone(),
 				amount,
-				_phantom: std::marker::PhantomData,
 			},
 		);
 
@@ -75,7 +74,6 @@ where
 			hash_lock,
 			time_lock,
 			amount,
-			_phantom: std::marker::PhantomData,
 		}))
 	}
 
@@ -84,7 +82,7 @@ where
 		accounts: &mut HashMap<A, Amount>,
 		bridge_transfer_id: &BridgeTransferId<H>,
 		pre_image: HashLockPreImage,
-	) -> SCCResult<A, H> {
+	) -> SCCResult<H> {
 		let transfer = self
 			.locked_transfers
 			.remove(bridge_transfer_id)

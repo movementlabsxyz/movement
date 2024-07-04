@@ -19,9 +19,9 @@ impl<A, H> BridgeContractInitiatorEvent<A, H> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum BridgeContractCounterpartyEvent<A, H> {
-	Locked(LockDetails<A, H>),
-	Completed(CompletedDetails<A, H>),
+pub enum BridgeContractCounterpartyEvent<H> {
+	Locked(LockDetails<H>),
+	Completed(CompletedDetails<H>),
 }
 
 pub trait BridgeContractInitiatorMonitoring:
@@ -32,7 +32,7 @@ pub trait BridgeContractInitiatorMonitoring:
 }
 
 pub trait BridgeContractCounterpartyMonitoring:
-	Stream<Item = BridgeContractCounterpartyEvent<Self::Address, Self::Hash>> + Unpin
+	Stream<Item = BridgeContractCounterpartyEvent<Self::Hash>> + Unpin
 {
 	type Address;
 	type Hash;
