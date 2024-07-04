@@ -354,7 +354,11 @@ pub struct EthInitiatorMonitoring<A, H> {
 	ws: RootProvider<PubSubFrontend>,
 }
 
-impl<A, H> EthInitiatorMonitoring<A, H> {
+impl<A, H> EthInitiatorMonitoring<A, H>
+where
+	A: Debug + Default + Send + 'static,
+	H: Debug + Default + Send + From<[u8; 32]> + 'static,
+{
 	async fn build(
 		rpc_url: &str,
 		listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
@@ -373,50 +377,20 @@ impl<A, H> EthInitiatorMonitoring<A, H> {
 		let mut sub_stream = sub.into_stream();
 
 		// Spawn a task to forward events to the listener channel
-		let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+		let (sender, _) = tokio::sync::mpsc::unbounded_channel::<AbstractBlockainEvent<A, H>>();
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
-				let event = match log {
-					Ok(log) => AbstractBlockainEvent::InitiatorContractEvent(Ok(
-						BridgeContractInitiatorEvent::Initiated(EventDetails {
-							address: log.address,
-							hash: log.topics[0].into(), // Example, actual conversion may vary
-						}),
-					)),
-					Err(e) => AbstractBlockainEvent::InitiatorContractEvent(Err(e.into())),
-				};
+				let event =
+					AbstractBlockainEvent::InitiatorContractEvent(Ok(convert_log_to_event(log)));
 				if sender.send(event).is_err() {
-					tracing::error!("Failed to send event to listener");
+					tracing::error!("Failed to send event to listener channel");
 					break;
 				}
 			}
 		});
 
 		Ok(Self { listener, ws })
-	}
-
-	fn convert_log_to_event(log: Log) -> BridgeContractInitiatorEvent<RecipientAddress, [u8; 32]> {
-		// Extract details from the log and map to event type
-		let address = log.address();
-		let topics = log.topics();
-		let data = log.data();
-
-		// Assuming the first topic is the event type identifier and the second is the hash
-		let event_type = topics.get(0).expect("Expected event type in topics");
-		let hash: [u8; 32] = topics.get(1).expect("Expected hash in topics").0;
-
-		// Map the log data to the appropriate event type
-		if *event_type == B256::from([0u8; 32]) {
-			// Replace with actual event identifier bytes
-			BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails::default())
-		} else if *event_type == B256::from([1u8; 32]) {
-			BridgeContractInitiatorEvent::Completed(BridgeTransferId(hash))
-		} else if *event_type == B256::from([2u8; 32]) {
-			BridgeContractInitiatorEvent::Refunded(BridgeTransferId(hash))
-		} else {
-			unimplemented!("Unexpected event type");
-		}
 	}
 }
 
@@ -460,6 +434,35 @@ impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
 			}
 		}
 		Poll::Pending
+	}
+}
+
+// Utility functions
+
+fn convert_log_to_event<A, H>(log: Log) -> BridgeContractInitiatorEvent<A, H>
+where
+	A: Default,
+	H: Default + From<[u8; 32]>,
+{
+	// Extract details from the log and map to event type
+	let address = log.address();
+	let topics = log.topics();
+	let data = log.data();
+
+	// Assuming the first topic is the event type identifier and the second is the hash
+	let event_type = topics.get(0).expect("Expected event type in topics");
+	let hash: [u8; 32] = topics.get(1).expect("Expected hash in topics").0;
+
+	// Map the log data to the appropriate event type
+	if *event_type == B256::from([0u8; 32]) {
+		// Replace with actual event identifier bytes
+		BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails::default())
+	} else if *event_type == B256::from([1u8; 32]) {
+		BridgeContractInitiatorEvent::Completed(BridgeTransferId(H::from(hash)))
+	} else if *event_type == B256::from([2u8; 32]) {
+		BridgeContractInitiatorEvent::Refunded(BridgeTransferId(H::from(hash)))
+	} else {
+		unimplemented!("Unexpected event type");
 	}
 }
 

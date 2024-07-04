@@ -107,13 +107,17 @@ pub struct BridgeTransferDetails<A, H> {
 }
 
 /// Defailt for testing purposes only
-impl Default for BridgeTransferDetails<RecipientAddress, [u8; 32]> {
+impl<A, H> Default for BridgeTransferDetails<A, H>
+where
+	A: Default,
+	H: Default + From<[u8; 32]>,
+{
 	fn default() -> Self {
 		BridgeTransferDetails {
-			bridge_transfer_id: BridgeTransferId([0; 32]),
-			initiator_address: InitiatorAddress(RecipientAddress(vec![])),
+			bridge_transfer_id: BridgeTransferId(H::default()),
+			initiator_address: InitiatorAddress(A::default()),
 			recipient_address: RecipientAddress(vec![]),
-			hash_lock: HashLock([0; 32]),
+			hash_lock: HashLock(H::default()),
 			time_lock: TimeLock(0),
 			amount: Amount(0),
 			state: BridgeTransferState::Initialized,
