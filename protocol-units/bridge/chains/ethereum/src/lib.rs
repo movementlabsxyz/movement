@@ -1,12 +1,17 @@
 use alloy::pubsub::PubSubFrontend;
+use alloy_eips::BlockNumberOrTag;
 use alloy_network::{Ethereum, EthereumSigner};
-use alloy_primitives::private::serde::{Deserialize, Serialize};
-use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
+use alloy_primitives::{address, Address as EthAddress, FixedBytes, B256, U256};
+use alloy_primitives::{
+	private::serde::{Deserialize, Serialize},
+	BlockNumber,
+};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, SignerFiller},
 	Provider, ProviderBuilder, RootProvider,
 };
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
+use alloy_rpc_types::{Filter, Log, RawLog};
 use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
@@ -18,7 +23,7 @@ use bridge_shared::{
 		BridgeContractInitiatorResult,
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{CompletedDetails, LockDetails},
+	types::{BridgeTransferState, CompletedDetails, LockDetails},
 };
 use bridge_shared::{
 	bridge_monitoring::BridgeContractInitiatorMonitoring,
@@ -346,11 +351,72 @@ impl<P> EthClient<P> {
 
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
+	ws: RootProvider<PubSubFrontend>,
 }
 
 impl<A, H> EthInitiatorMonitoring<A, H> {
-	pub fn build(listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>) -> Self {
-		Self { listener }
+	async fn build(
+		rpc_url: &str,
+		listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
+	) -> Result<Self, anyhow::Error> {
+		let ws = WsConnect::new(rpc_url);
+		let ws = ProviderBuilder::new().on_ws(ws).await?;
+
+		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+		let filter = Filter::new()
+			.address(initiator_address)
+			.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
+			.event("BridgeTransferCompleted(bytes32,bytes32)")
+			.from_block(BlockNumberOrTag::Latest);
+
+		let sub = ws.subscribe_logs(&filter).await?;
+		let mut sub_stream = sub.into_stream();
+
+		// Spawn a task to forward events to the listener channel
+		let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel();
+
+		tokio::spawn(async move {
+			while let Some(log) = sub_stream.next().await {
+				let event = match log {
+					Ok(log) => AbstractBlockainEvent::InitiatorContractEvent(Ok(
+						BridgeContractInitiatorEvent::Initiated(EventDetails {
+							address: log.address,
+							hash: log.topics[0].into(), // Example, actual conversion may vary
+						}),
+					)),
+					Err(e) => AbstractBlockainEvent::InitiatorContractEvent(Err(e.into())),
+				};
+				if sender.send(event).is_err() {
+					tracing::error!("Failed to send event to listener");
+					break;
+				}
+			}
+		});
+
+		Ok(Self { listener, ws })
+	}
+
+	fn convert_log_to_event(log: Log) -> BridgeContractInitiatorEvent<RecipientAddress, [u8; 32]> {
+		// Extract details from the log and map to event type
+		let address = log.address();
+		let topics = log.topics();
+		let data = log.data();
+
+		// Assuming the first topic is the event type identifier and the second is the hash
+		let event_type = topics.get(0).expect("Expected event type in topics");
+		let hash: [u8; 32] = topics.get(1).expect("Expected hash in topics").0;
+
+		// Map the log data to the appropriate event type
+		if *event_type == B256::from([0u8; 32]) {
+			// Replace with actual event identifier bytes
+			BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails::default())
+		} else if *event_type == B256::from([1u8; 32]) {
+			BridgeContractInitiatorEvent::Completed(BridgeTransferId(hash))
+		} else if *event_type == B256::from([2u8; 32]) {
+			BridgeContractInitiatorEvent::Refunded(BridgeTransferId(hash))
+		} else {
+			unimplemented!("Unexpected event type");
+		}
 	}
 }
 
@@ -374,6 +440,8 @@ impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
 				"InitiatorContractMonitoring: Received contract event: {:?}",
 				contract_result
 			);
+
+			// Only listen to the initiator contract events
 			match contract_result {
 				Ok(contract_event) => match contract_event {
 					BridgeContractInitiatorEvent::Initiated(details) => {

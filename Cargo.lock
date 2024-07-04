@@ -4995,10 +4995,12 @@ version = "0.3.0"
 dependencies = [
  "alloy",
  "alloy-contract",
+ "alloy-eips",
  "alloy-network",
  "alloy-primitives",
  "alloy-provider",
  "alloy-rlp",
+ "alloy-rpc-types",
  "alloy-signer-wallet",
  "alloy-sol-types",
  "alloy-transport",

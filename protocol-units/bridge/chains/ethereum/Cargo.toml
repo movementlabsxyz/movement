@@ -26,6 +26,8 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 
 alloy = { workspace = true }
+alloy-eips = { workspace = true }
+alloy-rpc-types = { workspace = true }
 alloy-contract = { workspace = true }
 alloy-network = { workspace = true }
 alloy-primitives = { workspace = true }
