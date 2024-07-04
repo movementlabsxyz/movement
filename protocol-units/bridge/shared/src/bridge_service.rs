@@ -1,17 +1,16 @@
 use futures::{Stream, StreamExt};
-use std::pin::Pin;
 use std::task::{Context, Poll};
+use std::{convert::From, pin::Pin};
 use tracing::{trace, warn};
 
 use crate::{
 	blockchain_service::{BlockchainService, ContractEvent},
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::{
 		active_swap::ActiveSwapEvent,
 		events::{CEvent, CWarn, IEvent, IWarn},
 	},
-	types::{BridgeTransferId, Convert},
+	types::BridgeTransferId,
 };
 
 pub mod active_swap;
@@ -59,10 +58,7 @@ fn handle_initiator_event<BFrom, BTo>(
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
-	<<BTo as BlockchainService>::CounterpartyContract as BridgeContractCounterparty>::Address:
-		From<<BFrom as BlockchainService>::Address>,
-	<<BTo as BlockchainService>::CounterpartyContract as BridgeContractCounterparty>::Hash:
-		From<<BFrom as BlockchainService>::Hash>,
+	BTo::Hash: From<BFrom::Hash>,
 {
 	match initiator_event {
 		BridgeContractInitiatorEvent::Initiated(ref details) => {
@@ -85,9 +81,7 @@ fn handle_counterparty_event<BFrom, BTo>(
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
-	<BFrom as BlockchainService>::Hash: std::convert::From<<BTo as BlockchainService>::Hash>,
-	<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
-		std::convert::From<<BTo as BlockchainService>::Hash>,
+	BFrom::Hash: From<BTo::Hash>,
 {
 	use BridgeContractCounterpartyEvent::*;
 	match event {
@@ -114,26 +108,8 @@ where
 	B1: BlockchainService + 'static,
 	B2: BlockchainService + 'static,
 
-	<B1::InitiatorContract as BridgeContractInitiator>::Hash: From<B2::Hash>,
-	<B1::InitiatorContract as BridgeContractInitiator>::Address: From<B2::Address>,
-
-	<B1::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B2::Hash>,
-	<B1::CounterpartyContract as BridgeContractCounterparty>::Address: From<B2::Address>,
-
-	<B2::InitiatorContract as BridgeContractInitiator>::Hash: From<B1::Hash>,
-	<B2::InitiatorContract as BridgeContractInitiator>::Address: From<B1::Address>,
-
-	<B2::CounterpartyContract as BridgeContractCounterparty>::Hash: From<B1::Hash>,
-	<B2::CounterpartyContract as BridgeContractCounterparty>::Address: From<B1::Address>,
-
-	<B1 as BlockchainService>::Hash: Convert<B2::Hash>,
-	<B2 as BlockchainService>::Hash: Convert<B1::Hash>,
-
-	<B1 as BlockchainService>::Hash: From<<B2 as BlockchainService>::Hash>,
-	<<B1 as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
-		From<<B2 as BlockchainService>::Hash>,
-
-	<B2 as BlockchainService>::Hash: From<<B1 as BlockchainService>::Hash>,
+	B1::Hash: From<B2::Hash>,
+	B2::Hash: From<B1::Hash>,
 {
 	type Item = Event<B1, B2>;
 
@@ -242,12 +218,12 @@ enum HandleActiveSwapEvent<A, H, H2> {
 }
 
 fn handle_active_swap_event<BFrom, BTo>(
-	active_swap_event: Poll<Option<ActiveSwapEvent<<BFrom as BlockchainService>::Hash>>>,
+	active_swap_event: Poll<Option<ActiveSwapEvent<BFrom::Hash>>>,
 ) -> Option<HandleActiveSwapEvent<BFrom::Address, BFrom::Hash, BTo::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
-	<BTo as BlockchainService>::Hash: std::convert::From<<BFrom as BlockchainService>::Hash>,
+	BTo::Hash: From<BFrom::Hash>,
 {
 	use ActiveSwapEvent::*;
 	match active_swap_event {

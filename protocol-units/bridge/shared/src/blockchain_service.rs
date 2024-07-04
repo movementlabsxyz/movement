@@ -26,11 +26,14 @@ pub trait BlockchainService:
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
 
-	type InitiatorContract: BridgeContractInitiator;
+	type InitiatorContract: BridgeContractInitiator<Address = Self::Address, Hash = Self::Hash>;
 	type InitiatorMonitoring: BridgeContractInitiatorMonitoring<Address = Self::Address, Hash = Self::Hash>
 		+ Unpin;
 
-	type CounterpartyContract: BridgeContractCounterparty;
+	type CounterpartyContract: BridgeContractCounterparty<
+		Address = Self::Address,
+		Hash = Self::Hash,
+	>;
 	type CounterpartyMonitoring: BridgeContractCounterpartyMonitoring<Address = Self::Address, Hash = Self::Hash>
 		+ Unpin;
 

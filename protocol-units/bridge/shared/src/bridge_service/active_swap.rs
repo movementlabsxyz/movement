@@ -166,8 +166,7 @@ where
 		&mut self,
 		details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 	) where
-		<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
-		<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
+		BTo::Hash: From<BFrom::Hash>,
 	{
 		assert!(self.swaps.get(&details.bridge_transfer_id).is_none());
 
@@ -196,9 +195,7 @@ where
 		details: CompletedDetails<BTo::Hash>,
 	) -> Result<(), ActiveSwapMapError>
 	where
-		<BFrom as BlockchainService>::Hash: From<<BTo as BlockchainService>::Hash>,
-		<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
-			From<<BTo as BlockchainService>::Hash>,
+		BFrom::Hash: From<BTo::Hash>,
 	{
 		let active_swap = self
 			.swaps
@@ -239,17 +236,11 @@ pub enum ActiveSwapEvent<H> {
 
 impl<BFrom, BTo> Stream for ActiveSwapMap<BFrom, BTo>
 where
-	BFrom: BlockchainService + Unpin + 'static,
+	BFrom: BlockchainService + 'static,
+	BTo: BlockchainService + 'static,
 
-	<BFrom::InitiatorContract as BridgeContractInitiator>::Hash:
-		From<<BTo as BlockchainService>::Hash>,
-	<BFrom::InitiatorContract as BridgeContractInitiator>::Address:
-		From<<BTo as BlockchainService>::Address>,
-
-	BTo: BlockchainService + Unpin + 'static,
-
-	<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
-	<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
+	BFrom::Hash: From<BTo::Hash>,
+	BTo::Hash: From<BFrom::Hash>,
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
 
@@ -401,8 +392,7 @@ async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: Blockch
 	}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 ) -> Result<(), LockBridgeTransferAssetsError>
 where
-	<BTo::CounterpartyContract as BridgeContractCounterparty>::Hash: From<BFrom::Hash>,
-	<BTo::CounterpartyContract as BridgeContractCounterparty>::Address: From<BFrom::Address>,
+	BTo::Hash: From<BFrom::Hash>,
 {
 	let bridge_transfer_id = BridgeTransferId(From::from(bridge_transfer_id.0));
 	let hash_lock = HashLock(From::from(hash_lock.0));
@@ -438,8 +428,7 @@ async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: Blockchain
 	CompletedDetails { bridge_transfer_id, secret, .. }: CompletedDetails<BTo::Hash>,
 ) -> Result<(), CompleteBridgeTransferError>
 where
-	<<BFrom as BlockchainService>::InitiatorContract as BridgeContractInitiator>::Hash:
-		std::convert::From<<BTo as BlockchainService>::Hash>,
+	BFrom::Hash: From<BTo::Hash>,
 {
 	tracing::trace!(
 		"Calling complete bridge transfer on initiator contract for bridge transfer {:?}",
