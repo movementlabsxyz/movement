@@ -7255,9 +7255,14 @@ version = "0.3.0"
 dependencies = [
  "alloy-primitives",
  "anyhow",
+ "commander",
  "dot-movement",
  "k256",
+ "mcr-settlement-client",
  "mcr-settlement-config",
+ "rand 0.7.3",
+ "serde_json",
+ "tokio",
  "tracing",
 ]
 
@@ -11233,6 +11238,7 @@ dependencies = [
  "hex",
  "m1-da-light-node-setup",
  "m1-da-light-node-util",
+ "mcr-settlement-config",
  "mcr-settlement-setup",
  "rand 0.7.3",
  "serde",
