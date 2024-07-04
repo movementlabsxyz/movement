@@ -20,7 +20,7 @@ use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::{debug, info};
 
-use std::future::Future;
+use std::future::{self, Future};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -225,8 +225,7 @@ pub async fn read_commitment_events(/*mut stream: CommitmentEventStream,
 			}
 		}
 	}*/
-	loop {}
-	Ok(())
+	Ok(future::pending().await)
 }
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
