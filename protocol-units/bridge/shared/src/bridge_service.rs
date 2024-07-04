@@ -140,119 +140,28 @@ where
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 
-		use ActiveSwapEvent::*;
+		// Poll the active swaps in both directions and return the appropriate events
+		{
+			use HandleActiveSwapEvent::*;
 
-		// Handle active swaps initiated from blockchain 1
-		match this.active_swaps_b1_to_b2.poll_next_unpin(cx) {
-			Poll::Ready(Some(event)) => {
-				trace!("BridgeService: Received event from active swaps B1 -> B2: {:?}", event);
-				match event {
-					BridgeAssetsLocked(bridge_transfer_id) => {
-						trace!(
-							"BridgeService: Bridge assets locked for transfer {:?}",
-							bridge_transfer_id
-						);
-					}
-					BridgeAssetsLockingError(error) => {
-						// The error in locking bridge assets occurs when transitioning from blockchain 1 to blockchain 2.
-						// This issue arises during the attempt to communicate with blockchain 2 for accessing the locked funds.
-						// Hence the Event::B2C
-						warn!("BridgeService: Error locking bridge assets: {:?}", error);
-						return Poll::Ready(Some(Event::B2C(CEvent::Warn(
-							CWarn::BridgeAssetsLockingError(error),
-						))));
-					}
-					BridgeAssetsCompleted(bridge_transfer_id) => {
-						trace!(
-							"BridgeService: Bridge assets completed for transfer {:?}",
-							bridge_transfer_id
-						);
-					}
-					BridgeAssetsCompletingError(bridge_transfer_id, error) => {
-						warn!("BridgeService: Error completing bridge assets: {:?}", error);
-						return Poll::Ready(Some(Event::B1I(IEvent::Warn(
-							IWarn::CompleteTransferError(bridge_transfer_id.clone()),
-						))));
-					}
-					BridgeAssetsRetryLocking(bridge_transfer_id) => {
-						warn!(
-							"BridgeService: Retrying to lock bridge assets for transfer {:?}",
-							bridge_transfer_id
-						);
-						return Poll::Ready(Some(Event::B2C(CEvent::RetryLockingAssets(
-							BridgeTransferId(From::from(bridge_transfer_id.0)),
-						))));
-					}
-					BridgeAssetsRetryCompleting(bridge_transfer_id) => {
-						warn!(
-							"BridgeService: Retrying to complete bridge assets for transfer {:?}",
-							bridge_transfer_id
-						);
-						return Poll::Ready(Some(Event::B1I(IEvent::RetryCompletingTransfer(
-							bridge_transfer_id,
-						))));
-					}
+			let active_swap_event = this.active_swaps_b1_to_b2.poll_next_unpin(cx);
+			if let Some(value) = handle_active_swap_event::<B1, B2>(active_swap_event) {
+				match value {
+					InitiatorEvent(event) => return Poll::Ready(Some(Event::B1I(event))),
+					CounterpartyEvent(event) => return Poll::Ready(Some(Event::B2C(event))),
 				}
 			}
-			Poll::Ready(None) => {
-				trace!("BridgeService: Active swaps B1 -> B2 has no more events");
-			}
-			Poll::Pending => {
-				trace!("BridgeService: Active swaps B1 -> B2 has no events at this time");
+
+			let active_swap_event = this.active_swaps_b2_to_b1.poll_next_unpin(cx);
+			if let Some(value) = handle_active_swap_event::<B2, B1>(active_swap_event) {
+				match value {
+					InitiatorEvent(event) => return Poll::Ready(Some(Event::B2I(event))),
+					CounterpartyEvent(event) => return Poll::Ready(Some(Event::B1C(event))),
+				}
 			}
 		}
 
-		// Handle active swaps initiated from blockchain 2
-		match this.active_swaps_b2_to_b1.poll_next_unpin(cx) {
-			Poll::Ready(Some(event)) => {
-				trace!("BridgeService: Received event from active swaps B2 -> B1: {:?}", event);
-				match event {
-					BridgeAssetsLocked(bridge_transfer_id) => {
-						trace!(
-							"BridgeService: Bridge assets locked for transfer {:?}",
-							bridge_transfer_id
-						);
-					}
-					BridgeAssetsLockingError(error) => {
-						// The error in locking bridge assets occurs when transitioning from blockchain 2 to blockchain 1.
-						// This issue arises during the attempt to communicate with blockchain 1 for accessing the locked funds.
-						// Hence the Event::B1C
-						warn!("BridgeService: Error locking bridge assets: {:?}", error);
-						return Poll::Ready(Some(Event::B1C(CEvent::Warn(
-							CWarn::BridgeAssetsLockingError(error),
-						))));
-					}
-					BridgeAssetsRetryLocking(bridge_transfer_id) => {
-						warn!(
-							"BridgeService: Retrying to lock bridge assets for transfer {:?}",
-							bridge_transfer_id
-						);
-					}
-					BridgeAssetsCompleted(bridge_transfer_id) => {
-						trace!(
-							"BridgeService: Bridge assets completed for transfer {:?}",
-							bridge_transfer_id
-						);
-					}
-					BridgeAssetsCompletingError(details, error) => {
-						warn!("BridgeService: Error completing bridge assets: {:?}", error);
-					}
-					BridgeAssetsRetryCompleting(bridge_transfer_id) => {
-						warn!(
-							"BridgeService: Retrying to complete bridge assets for transfer {:?}",
-							bridge_transfer_id
-						);
-					}
-				}
-			}
-			Poll::Ready(None) => {
-				trace!("BridgeService: Active swaps B2 -> B1 has no more events");
-			}
-			Poll::Pending => {
-				trace!("BridgeService: Active swaps B2 -> B1 has no events at this time");
-			}
-		}
-
+		// Poll the bridge services, handle the appropriate events, and return
 		match this.blockchain_1.poll_next_unpin(cx) {
 			Poll::Ready(Some(blockchain_event)) => {
 				trace!(
@@ -325,4 +234,81 @@ where
 
 		Poll::Pending
 	}
+}
+
+enum HandleActiveSwapEvent<A, H, H2> {
+	InitiatorEvent(IEvent<A, H>),
+	CounterpartyEvent(CEvent<H2>),
+}
+
+fn handle_active_swap_event<BFrom, BTo>(
+	active_swap_event: Poll<Option<ActiveSwapEvent<<BFrom as BlockchainService>::Hash>>>,
+) -> Option<HandleActiveSwapEvent<BFrom::Address, BFrom::Hash, BTo::Hash>>
+where
+	BFrom: BlockchainService + 'static,
+	BTo: BlockchainService + 'static,
+	<BTo as BlockchainService>::Hash: std::convert::From<<BFrom as BlockchainService>::Hash>,
+{
+	use ActiveSwapEvent::*;
+	match active_swap_event {
+		Poll::Ready(Some(event)) => {
+			trace!("BridgeService: Received event from active swaps: {:?}", event);
+			match event {
+				BridgeAssetsLocked(bridge_transfer_id) => {
+					trace!(
+						"BridgeService: Bridge assets locked for transfer {:?}",
+						bridge_transfer_id
+					);
+				}
+				BridgeAssetsLockingError(error) => {
+					// The error in locking bridge assets occurs when transitioning from blockchain 1 to blockchain 2.
+					// This issue arises during the attempt to communicate with blockchain 2 for accessing the locked funds.
+					// Hence the Event::B2C
+					warn!("BridgeService: Error locking bridge assets: {:?}", error);
+					return Some(HandleActiveSwapEvent::CounterpartyEvent(CEvent::Warn(
+						CWarn::BridgeAssetsLockingError(error),
+					)));
+				}
+				BridgeAssetsCompleted(bridge_transfer_id) => {
+					trace!(
+						"BridgeService: Bridge assets completed for transfer {:?}",
+						bridge_transfer_id
+					);
+				}
+				BridgeAssetsCompletingError(bridge_transfer_id, error) => {
+					warn!("BridgeService: Error completing bridge assets: {:?}", error);
+					return Some(HandleActiveSwapEvent::InitiatorEvent(IEvent::Warn(
+						IWarn::CompleteTransferError(bridge_transfer_id.clone()),
+					)));
+				}
+				BridgeAssetsRetryLocking(bridge_transfer_id) => {
+					warn!(
+						"BridgeService: Retrying to lock bridge assets for transfer {:?}",
+						bridge_transfer_id
+					);
+					return Some(HandleActiveSwapEvent::CounterpartyEvent(
+						CEvent::RetryLockingAssets(BridgeTransferId(From::from(
+							bridge_transfer_id.0,
+						))),
+					));
+				}
+				BridgeAssetsRetryCompleting(bridge_transfer_id) => {
+					warn!(
+						"BridgeService: Retrying to complete bridge assets for transfer {:?}",
+						bridge_transfer_id
+					);
+					return Some(HandleActiveSwapEvent::InitiatorEvent(
+						IEvent::RetryCompletingTransfer(bridge_transfer_id),
+					));
+				}
+			}
+		}
+		Poll::Ready(None) => {
+			trace!("BridgeService: Active swaps has no more events");
+		}
+		Poll::Pending => {
+			trace!("BridgeService: Active swaps has no events at this time");
+		}
+	}
+	None
 }
