@@ -1,16 +1,14 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
 use aptos_sdk::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
-use std::str::FromStr;
 use std::sync::Arc;
 use suzuka_client::load_soak_testing::execute_test;
 use suzuka_client::load_soak_testing::init_test;
 use suzuka_client::load_soak_testing::ExecutionConfig;
 use suzuka_client::load_soak_testing::Scenario;
-use url::Url;
 
 fn main() {
 	// Define the Test config. Use the default parameters.
@@ -44,61 +42,18 @@ impl BasicScenario {
 // Scenario trait implementation.
 #[async_trait::async_trait]
 impl Scenario for BasicScenario {
-	async fn run(self: Box<Self>) -> Result<()> {
+	async fn run(self: Box<Self>) -> Result<(), anyhow::Error> {
 		// let _ =
 		// 	tokio::time::sleep(tokio::time::Duration::from_millis(1000 * (self.id as u64))).await;
 
-<<<<<<< HEAD
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
 		let suzuka_config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
-
-		//		let suzuka_config = maptos_execution_util::config::Config::default();
-		let node_url = Url::from_str(
-			format!(
-				"http://{}",
-				suzuka_config
-					.aptos_config
-					.as_ref()
-					.and_then(|conf| conf.aptos_rest_listen_url.as_ref())
-					.expect("Rest url not defined in Config")
-					.as_str()
-			)
-			.as_str(),
-		)
-		.expect("Rest url in Config is badly formated");
-
-		let faucet_url = Url::from_str(
-			format!(
-				"http://{}",
-				suzuka_config
-					.aptos_config
-					.as_ref()
-					.and_then(|conf| conf.aptos_faucet_listen_url.as_ref())
-					.expect("Faucet url not defined in Config")
-					.as_str()
-			)
-			.as_str(),
-		)
-		.expect("Faucet url in Config is badly formated");
-=======
-		let suzuka_config = maptos_execution_util::config::Config::try_from_env()
-			.context("Failed to create the suzuka_config")?;
-		let node_url = Url::from_str(
-			format!("http://{}", suzuka_config.aptos_config.aptos_rest_listen_url.as_str())
-				.as_str(),
-		)
-		.unwrap();
-
-		let faucet_url = Url::from_str(
-			format!("http://{}", suzuka_config.aptos_config.aptos_faucet_listen_url.as_str())
-				.as_str(),
-		)
-		.unwrap();
->>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
+		let rpc_url = suzuka_config.execution_config.maptos_config.client.get_rest_url()?;
+		let faucet_url = suzuka_config.execution_config.maptos_config.client.get_faucet_url()?;
 
 		// :!:>section_1a
-		let rest_client = Client::new(node_url.clone());
-		let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone()); // <:!:section_1a
+		let rest_client = Client::new(rpc_url.clone());
+		let faucet_client = FaucetClient::new(faucet_url.clone(), rpc_url.clone()); // <:!:section_1a
 
 		// :!:>section_1b
 		let coin_client = CoinClient::new(&rest_client); // <:!:section_1b

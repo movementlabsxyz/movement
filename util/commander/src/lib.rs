@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::Stdio;
 use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
+use tokio::task::JoinHandle;
 
 async fn pipe_output<R: tokio::io::AsyncRead + Unpin + Send + 'static>(
     reader: R,

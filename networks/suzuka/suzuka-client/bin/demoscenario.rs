@@ -1,15 +1,6 @@
-use anyhow::Result;
-use std::sync::Arc;
 /// A simple demo scenario that sleep a few milli second and log some messages.
-<<<<<<< HEAD
-<<<<<<< HEAD
-/// To run it use: cargo run --release --bin demo_scenario
-=======
 /// To run it use: cargo run --release --bin demoscenario
->>>>>>> 186a4994 (recreate the PR to remove unknown modifications)
-=======
-/// To run it use: cargo run --release --bin demo_scenario
->>>>>>> 48a6a25e (implement move fct call in rust. Raw version)
+use std::sync::Arc;
 use suzuka_client::load_soak_testing::execute_test;
 use suzuka_client::load_soak_testing::init_test;
 use suzuka_client::load_soak_testing::ExecutionConfig;
@@ -56,7 +47,7 @@ impl ScenarioDemo {
 // Scenario trait implementation.
 #[async_trait::async_trait]
 impl Scenario for ScenarioDemo {
-	async fn run(self: Box<Self>) -> Result<()> {
+	async fn run(self: Box<Self>) -> Result<(), anyhow::Error> {
 		// Trace in the log file and stdout.
 		tracing::info!("Scenarios:{} start", self.id);
 		let _ = tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
