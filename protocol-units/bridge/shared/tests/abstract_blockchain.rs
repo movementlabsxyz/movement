@@ -34,10 +34,7 @@ impl From<TestAddress> for RecipientAddress {
 
 impl From<RecipientAddress> for TestAddress {
 	fn from(value: RecipientAddress) -> Self {
-		let string = String::from_utf8(value.0).expect("Invalid UTF-8");
-		// NOTE: Using static strings in tests for clarity and efficiency. A bit of memory leakage is
-		// acceptable for the rare conversions in this context.
-		Self(Box::leak(string.into_boxed_str()))
+		Self(static_str_ops::staticize(&String::from_utf8(value.0).expect("Invalid UTF-8")))
 	}
 }
 

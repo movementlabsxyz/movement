@@ -3446,6 +3446,7 @@ dependencies = [
  "futures-timer",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
+ "static_str_ops",
  "test-log",
  "thiserror",
  "tokio",
@@ -5423,6 +5424,18 @@ dependencies = [
  "typenum",
  "version_check",
  "zeroize",
+]
+
+[[package]]
+name = "gensym"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "913dce4c5f06c2ea40fc178c06f777ac89fc6b1383e90c254fafb1abe4ba3c82"
+dependencies = [
+ "proc-macro2 1.0.85",
+ "quote 1.0.36",
+ "syn 2.0.66",
+ "uuid",
 ]
 
 [[package]]
@@ -11098,6 +11111,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "static_str_ops"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eef2389280bc4d03836302f127e5e784c63cd183e24fe35cf73dc7f3b13a47d4"
+dependencies = [
+ "gensym",
+ "lazy_static",
+]
+
+[[package]]
 name = "status-line"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12519,6 +12542,7 @@ version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 dependencies = [
+ "getrandom 0.2.15",
  "serde",
 ]
 
