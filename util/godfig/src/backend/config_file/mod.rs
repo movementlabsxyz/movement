@@ -8,11 +8,17 @@ use tokio::{
 use crate::backend::{BackendOperations, GodfigBackendError};
 use async_stream::stream;
 use futures::Stream;
+use std::future::Future;
+use serde::{
+    Serialize,
+    de::DeserializeOwned
+};
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct ConfigFile {
     pub (crate) lock: Arc<FileRwLock<File>>,
-    pub (crate) polling_interval: std::time::Duration,
+    pub (crate) polling_interval: Duration,
 }
 
 impl ConfigFile {
@@ -20,11 +26,11 @@ impl ConfigFile {
     pub fn new(file: File) -> Self {
         Self {
             lock: Arc::new(FileRwLock::new(file)),
-            polling_interval: std::time::Duration::from_millis(20),
+            polling_interval: Duration::from_millis(20),
         }
     }
 
-    pub fn with_polling_interval(mut self, interval: std::time::Duration) -> Self {
+    pub fn with_polling_interval(mut self, interval: Duration) -> Self {
         self.polling_interval = interval;
         self
     }
@@ -178,7 +184,7 @@ impl BackendOperations for ConfigFile {
         K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned + serde::Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
+        Fut: Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
 
         let key = key.into();
     
@@ -202,7 +208,7 @@ impl BackendOperations for ConfigFile {
         K: Into<Vec<String>> + Send,
         T: serde::de::DeserializeOwned + serde::Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send {
+        Fut: Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send {
 
 
         let key = key.into();
@@ -244,7 +250,7 @@ pub mod test {
         // cannot read and write at the same time
         let _write_guard = config_file.lock.write().await?;
         // trying to acquire a read guard should now fail
-        let read_result = tokio::time::timeout(std::time::Duration::from_millis(100), config_file.lock.read()).await;
+        let read_result = tokio::time::timeout(Duration::from_millis(100), config_file.lock.read()).await;
 
         assert!(read_result.is_err(), "Read lock should not be acquired while holding write lock");
 
@@ -282,7 +288,7 @@ pub mod test {
         // start another thread that will set the value
         let config_file_clone = config_file.clone();
         let set_task = tokio::spawn(async move {
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(Duration::from_millis(100)).await;
             config_file_clone.try_set(vec!["key".to_string()], Some(42)).await?;
             Ok::<(), GodfigBackendError>(())
         });

@@ -6,6 +6,7 @@ use crate::backend::{
 use std::marker::PhantomData;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use std::future::Future;
 
 #[derive(Debug, Clone)]
 pub struct Godfig<Contract, Backend>
@@ -35,7 +36,7 @@ where
     pub async fn try_transaction<F, Fut>(&self, callback: F) -> Result<(), GodfigBackendError>
     where
         F: FnOnce(Option<Contract>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<Option<Contract>, GodfigBackendError>> + Send
+        Fut: Future<Output = Result<Option<Contract>, GodfigBackendError>> + Send
     {
         let key = self.key.clone();
         let res = self.backend.try_transaction::<Vec<String>, Contract, F, Fut>(key, callback).await;
@@ -45,7 +46,7 @@ where
     pub async fn try_transaction_with_result<R, F, Fut>(&self, callback: F) -> Result<R, GodfigBackendError>
     where
         F: FnOnce(Option<Contract>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<(Option<Contract>, R), GodfigBackendError>> + Send
+        Fut: Future<Output = Result<(Option<Contract>, R), GodfigBackendError>> + Send
     {
         let key = self.key.clone();
         let res = self.backend.try_transaction_with_result::<Vec<String>, Contract, R, F, Fut>(key, callback).await;
@@ -79,7 +80,8 @@ pub mod test {
         let backend = ConfigFile::new(tempfile.into());
         let godfig : Godfig<Test, ConfigFile> = Godfig::new(backend, vec!["test".to_string()]);
 
-        godfig.try_transaction(|_data| async move {
+        godfig.try_transaction(|data| async move {
+            assert!(data.is_none());
             Ok(Some(Test {
                 test: "test".to_string()
             }))

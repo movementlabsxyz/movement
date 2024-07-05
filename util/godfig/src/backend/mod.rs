@@ -3,6 +3,11 @@ pub mod config_file;
 use thiserror::Error;
 use flocks::tfrwlock::FileRwLockError;
 use futures::Stream;
+use std::future::Future;
+use serde::{
+    Serialize,
+    de::DeserializeOwned
+};
 
 #[derive(Debug, Error)]
 pub enum GodfigBackendError {
@@ -33,34 +38,34 @@ pub trait BackendOperations {
     async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned;
+        T: DeserializeOwned;
 
     async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::Serialize;
+        T: Serialize;
 
     async fn try_wait_for<K, T>(&self, key: K) -> Result<T, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned;
+        T: DeserializeOwned;
 
     async fn try_stream<K, T>(&self, key: K) -> Result<impl Stream<Item = Result<Option<T>, GodfigBackendError>>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize;
+        T: DeserializeOwned + Serialize;
 
     async fn try_transaction<K, T, F, Fut>(&self, key: K, callback: F) -> Result<(), GodfigBackendError>
         where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        T: DeserializeOwned + Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send;
+        Fut: Future<Output = Result<Option<T>, GodfigBackendError>> + Send;
 
     async fn try_transaction_with_result<K, T, R, F, Fut>(&self, key: K, callback: F) -> Result<R, GodfigBackendError>
         where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        T: DeserializeOwned + Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send;
+        Fut: Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send;
 }
