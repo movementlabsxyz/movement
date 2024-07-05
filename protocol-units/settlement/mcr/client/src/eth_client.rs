@@ -1,4 +1,4 @@
-use crate::send_eth_tx::InsufficentFunds;
+use crate::send_eth_tx::InsufficientFunds;
 use crate::send_eth_tx::SendTxErrorRule;
 use crate::send_eth_tx::UnderPriced;
 use crate::send_eth_tx::VerifyRule;
@@ -34,14 +34,14 @@ use tokio_stream::StreamExt;
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Tx fail because gaz estimation is to high. Estimated gaz:{0} gaz limit:{1}"
+		"MCR Settlement Tx fails because gas estimation is too high. Estimated gas:{0} gas limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
-	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]
+	#[error("MCR Settlement Tx fails because account funds are insufficient. error:{0}")]
 	InsufficientFunds(String),
-	#[error("MCR Settlement Tx send fail because :{0}")]
+	#[error("MCR Settlement Tx send failed because :{0}")]
 	SendTxError(#[from] alloy_contract::Error),
-	#[error("MCR Settlement Tx send fail during its execution :{0}")]
+	#[error("MCR Settlement Tx send failed during its execution :{0}")]
 	RpcTxExecution(String),
 	#[error("MCR Settlement BlockAccepted event notification error :{0}")]
 	EventNotificationError(#[from] alloy_sol_types::Error),
@@ -58,15 +58,15 @@ sol!(
 );
 
 // When created, kill the pid when dropped.
-// Use to kill Anvil process when Suzuka Node end.
-// TODO should be removed by new config.
+// Use to kill Anvil process when Suzuka Node ends.
+// TODO should be removed by the new config.
 struct AnvilKillAtDrop {
 	pid: u32,
 }
 
 impl Drop for AnvilKillAtDrop {
 	fn drop(&mut self) {
-		tracing::info!("Killing Anvil process");
+		tracing::info!("Killing Anvil process pid:{}", self.pid);
 		if let Err(err) = std::process::Command::new("kill").args(&[&self.pid.to_string()]).spawn()
 		{
 			tracing::info!("warn, an error occurs during Anvil process kill : {err}");
@@ -80,7 +80,7 @@ pub struct Client<P> {
 	signer_address: Address,
 	contract_address: Address,
 	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
-	gas_limit: u128,
+	gas_limit: u64,
 	num_tx_send_retries: u32,
 	kill_anvil_process: Option<AnvilKillAtDrop>,
 }
@@ -120,7 +120,7 @@ impl
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit as u128,
+			config.gas_limit,
 			config.tx_send_retries,
 		)
 		.await?;
@@ -137,7 +137,7 @@ impl<P> Client<P> {
 		ws_url: S,
 		signer_address: Address,
 		contract_address: Address,
-		gas_limit: u128,
+		gas_limit: u64,
 		num_tx_send_retries: u32,
 	) -> Result<Self, anyhow::Error>
 	where
@@ -149,7 +149,7 @@ impl<P> Client<P> {
 		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 
 		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
-		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
+		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficientFunds>::new());
 		let send_tx_error_rules = vec![rule1, rule2];
 
 		Ok(Client {
@@ -177,7 +177,7 @@ where
 		let contract = MCR::new(self.contract_address, &self.rpc_provider);
 
 		let eth_block_commitment = MCR::BlockCommitment {
-			// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 			height: U256::from(block_commitment.height),
 			commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 			blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
@@ -189,7 +189,7 @@ where
 			call_builder,
 			&self.send_tx_error_rules,
 			self.num_tx_send_retries,
-			self.gas_limit,
+			self.gas_limit as u128,
 		)
 		.await
 	}
@@ -204,7 +204,7 @@ where
 			.into_iter()
 			.map(|block_commitment| {
 				Ok(MCR::BlockCommitment {
-					// currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
+					// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 					height: U256::from(block_commitment.height),
 					commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
 					blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
@@ -218,13 +218,13 @@ where
 			call_builder,
 			&self.send_tx_error_rules,
 			self.num_tx_send_retries,
-			self.gas_limit,
+			self.gas_limit as u128,
 		)
 		.await
 	}
 
 	async fn stream_block_commitments(&self) -> Result<CommitmentStream, anyhow::Error> {
-		//register to contract BlockCommitmentSubmitted event
+		// Register to contract BlockCommitmentSubmitted event
 
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let event_filter = contract.BlockAccepted_filter().watch().await?;
@@ -280,7 +280,7 @@ pub struct AnvilAddressEntry {
 	pub private_key: String,
 }
 
-/// Read the Anvil config file keys and return all address/private key.
+/// Read the Anvil config file keys and return all address/private keys.
 pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
 	anvil_conf_path: P,
 ) -> Result<Vec<AnvilAddressEntry>, anyhow::Error> {
@@ -288,22 +288,22 @@ pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
 
 	let json_value: JsonValue = serde_json::from_str(&file_content)?;
 
-	// Extract the available_accounts and private_keys fields
+	// Extract the available_accounts and private_keys fields.
 	let available_accounts_iter = json_value["available_accounts"]
 		.as_array()
-		.expect("available_accounts should be an array")
+		.expect("Available_accounts should be an array")
 		.iter()
 		.map(|v| {
-			let s = v.as_str().expect("available_accounts elements should be strings");
+			let s = v.as_str().expect("Available_accounts elements should be strings");
 			s.to_owned()
 		});
 
 	let private_keys_iter = json_value["private_keys"]
 		.as_array()
-		.expect("private_keys should be an array")
+		.expect("Private_keys should be an array")
 		.iter()
 		.map(|v| {
-			let s = v.as_str().expect("private_keys elements should be strings");
+			let s = v.as_str().expect("Private_keys elements should be strings");
 			s.to_owned()
 		});
 
@@ -330,14 +330,14 @@ mod tests {
 	use std::env;
 	use std::fs;
 
-	// Define 2 validators (signer1 and signer2) with each a little more than 50% of stake.
-	// After genesis ceremony, 2 validator send the commitment for height 1.
-	// Validator2 send a commitment for height 2 to trigger next epoch and fire event.
-	// Wait the commitment accepted event.
+	// Define 2 validators (signer1 and signer2) with each a little more than 50% of the stake.
+	// After the genesis ceremony, 2 validators send the commitment for height 1.
+	// Validator2 sends a commitment for height 2 to trigger the next epoch and fire event.
+	// Wait for the commitment accepted event.
 	#[tokio::test]
 	async fn test_send_commitment() -> Result<(), anyhow::Error> {
-		//Activate to debug the test.
-		// use tracing_subscriber::EnvFilter;
+		// Activate to debug the test.
+		// Use tracing_subscriber::EnvFilter;
 
 		// tracing_subscriber::fmt()
 		// 	.with_env_filter(
@@ -345,21 +345,21 @@ mod tests {
 		// 	)
 		// 	.init();
 
-		// Inititalize Test variables
+		// Initialize Test variables
 		let rpc_port = env::var("MCR_ANVIL_PORT").unwrap();
 		let rpc_url = format!("http://localhost:{rpc_port}");
 		let ws_url = format!("ws://localhost:{rpc_port}");
 
 		let anvil_conf_file = env::var("ANVIL_JSON_PATH").context(
-			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil json file",
+			"ANVIL_JSON_PATH env var is not defined. It should point to the anvil JSON file",
 		)?;
 		let anvil_addresses = crate::eth::utils::read_anvil_json_file_addresses(&anvil_conf_file)?;
 
-		//Do SC ceremony init stake calls.
+		// Do SC ceremony init stake calls.
 		do_genesis_ceremonial(&anvil_addresses, &rpc_url).await?;
 
 		let mcr_address = read_mcr_sc_adress()?;
-		//Define Signers. Ceremony define 2 signers with half stake each.
+		// Define Signers. The ceremony defines 2 signers with half stake each.
 		let signer1: LocalWallet = anvil_addresses[1].private_key.parse()?;
 		let signer1_addr = signer1.address();
 
@@ -370,26 +370,26 @@ mod tests {
 			..Default::default()
 		};
 
-		//Build client 1 and send first commitment.
+		// Build client 1 and send the first commitment.
 		let config1 =
 			Config { signer_private_key: Some(signer1_addr.to_string()), ..config.clone() };
 		let client1 = Client::build_with_config(config1).await.unwrap();
 
 		let mut client1_stream = client1.stream_block_commitments().await.unwrap();
 
-		//client post a new commitment
+		// Client posts a new commitment
 		let commitment =
 			BlockCommitment { height: 1, block_id: Id([2; 32]), commitment: Commitment([3; 32]) };
 
 		let res = client1.post_block_commitment(commitment.clone()).await;
 		assert!(res.is_ok());
 
-		//no notification quorum is not reach
+		// No notification quorum is not reached
 		let res =
 			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next()).await;
 		assert!(res.is_err());
 
-		//Build client 2 and send the second commitment.
+		// Build client 2 and send the second commitment.
 		let config2 = Config {
 			signer_private_key: Some(anvil_addresses[2].private_key.clone()),
 			..config.clone()
@@ -398,18 +398,18 @@ mod tests {
 
 		let mut client2_stream = client2.stream_block_commitments().await.unwrap();
 
-		//client post a new commitment
+		// Client posts a new commitment
 		let res = client2.post_block_commitment(commitment).await;
 		assert!(res.is_ok());
 
-		// now we move to block 2 and make some commitment just to trigger the epochRollover
+		// Now we move to block 2 and make some commitments just to trigger the epochRollover
 		let commitment2 =
 			BlockCommitment { height: 2, block_id: Id([4; 32]), commitment: Commitment([5; 32]) };
 
 		let res = client2.post_block_commitment(commitment2.clone()).await;
 		assert!(res.is_ok());
 
-		//validate that the accept commitment stream get the event.
+		// Validate that the accept commitment stream gets the event.
 		let event =
 			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
 				.await
@@ -427,13 +427,13 @@ mod tests {
 		assert_eq!(event.commitment.0[0], 3);
 		assert_eq!(event.block_id.0[0], 2);
 
-		//test post batch commitment
-		// post the complementary batch on height 2 and one on height 3
+		// Test post batch commitment
+		// Post the complementary batch on height 2 and one on height 3
 		let commitment3 =
 			BlockCommitment { height: 3, block_id: Id([6; 32]), commitment: Commitment([7; 32]) };
 		let res = client1.post_block_commitment_batch(vec![commitment2, commitment3]).await;
 		assert!(res.is_ok());
-		//validate that the accept commitment stream get the event.
+		// Validate that the accepted commitment stream gets the event.
 		let event =
 			tokio::time::timeout(tokio::time::Duration::from_secs(5), client1_stream.next())
 				.await
@@ -451,7 +451,7 @@ mod tests {
 		assert_eq!(event.commitment.0[0], 5);
 		assert_eq!(event.block_id.0[0], 4);
 
-		//test get_commitment_at_height
+		// Test get_commitment_at_height
 		let commitment = client1.get_commitment_at_height(1).await?;
 		assert!(commitment.is_some());
 		let commitment = commitment.unwrap();
@@ -471,13 +471,13 @@ mod tests {
 	}
 
 	// Do the Genesis ceremony in Rust because if node by forge script,
-	// it's never done from Rust call.
+	// It's never done from Rust's call.
 	async fn do_genesis_ceremonial(
 		anvil_addresses: &[AnvilAddressEntry],
 		rpc_url: &str,
 	) -> Result<(), anyhow::Error> {
 		let mcr_address = read_mcr_sc_adress()?;
-		//Define Signer. Signer1 is the MCRSettelement client
+		// Define Signer. Signer1 is the MCRSettelement client
 		let signer1: LocalWallet = anvil_addresses[1].private_key.parse()?;
 		let signer1_addr: Address = anvil_addresses[1].address.parse()?;
 		let signer1_rpc_provider = ProviderBuilder::new()
@@ -503,7 +503,7 @@ mod tests {
 			.on_http(rpc_url.parse()?);
 		let signer2_contract = MCR::new(mcr_address, &signer2_rpc_provider);
 
-		//init staking
+		// Init staking.
 		// Build a transaction to set the values.
 		stake_genesis(
 			&signer2_rpc_provider,
@@ -526,7 +526,7 @@ mod tests {
 		contract: &MCR::MCRInstance<T, &P, Ethereum>,
 		contract_address: Address,
 		signer: Address,
-		amount: u128,
+		amount: u64,
 	) -> Result<(), anyhow::Error> {
 		let stake_genesis_call = contract.stakeGenesis();
 		let calldata = stake_genesis_call.calldata().to_owned();
@@ -538,7 +538,7 @@ mod tests {
 		call_data: Bytes,
 		contract_address: Address,
 		signer: Address,
-		amount: u128,
+		amount: u64,
 	) -> Result<(), anyhow::Error> {
 		let eip1559_fees = provider.estimate_eip1559_fees(None).await?;
 		let tx = TransactionRequest::default()
