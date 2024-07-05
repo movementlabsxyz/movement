@@ -55,6 +55,12 @@ pub trait BackendOperations {
         K: Into<Vec<String>> + Send,
         T: DeserializeOwned + Serialize;
 
+    /// This function is used to perform a transaction on the backend. The callback function is called with the current value of the key.
+    /// The callback function should return a future that resolves to the new value of the key.
+    /// `K` is the key.
+    /// `T` is the type of the data that will be stored in the backend.
+    /// `F` is the callback function that will be called with the current value of the key.
+    /// `Fut` is the future that the callback function should return.
     async fn try_transaction<K, T, F, Fut>(&self, key: K, callback: F) -> Result<(), GodfigBackendError>
         where
         K: Into<Vec<String>> + Send,
@@ -62,6 +68,13 @@ pub trait BackendOperations {
         F: FnOnce(Option<T>) -> Fut + Send,
         Fut: Future<Output = Result<Option<T>, GodfigBackendError>> + Send;
 
+    /// This function is used to perform a transaction on the backend. The callback function is called with the current value of the key.
+    /// The callback function should return a future that resolves to a tuple of the new value and the result of the transaction.
+    /// `K` is the key.
+    /// `T` is the type of the data that will be stored in the backend.
+    /// `R` is the result of the transaction.
+    /// `F` is the callback function that will be called with the current value of the key.
+    /// `Fut` is the future that the callback function should return.
     async fn try_transaction_with_result<K, T, R, F, Fut>(&self, key: K, callback: F) -> Result<R, GodfigBackendError>
         where
         K: Into<Vec<String>> + Send,

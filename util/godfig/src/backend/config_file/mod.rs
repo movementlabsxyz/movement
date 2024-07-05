@@ -38,7 +38,7 @@ impl ConfigFile {
     async fn try_get_with_guard<K, T>(mut write_guard : FileRwLockWriteGuard<'_, File>, key: K) -> Result<(Option<T>, FileRwLockWriteGuard<'_, File>), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let mut contents = String::new();
         write_guard.seek(std::io::SeekFrom::Start(0)).await?;
@@ -67,7 +67,7 @@ impl ConfigFile {
     async fn try_set_with_guard<K, T>(mut write_guard : FileRwLockWriteGuard<'_, File>, key: K, value: Option<T>) -> Result<FileRwLockWriteGuard<'_, File>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::Serialize,
+        T: Serialize,
     {
         let mut contents = String::new();
         // write_guard.seek(std::io::SeekFrom::Start(0)).await?;
@@ -125,7 +125,7 @@ impl BackendOperations for ConfigFile {
     async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let write_guard = self.lock.write().await?;
         let (value, guard) = Self::try_get_with_guard(write_guard, key).await?;
@@ -135,7 +135,7 @@ impl BackendOperations for ConfigFile {
     async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::Serialize,
+        T: Serialize,
     {
         let write_guard = self.lock.write().await?;
         Self::try_set_with_guard(write_guard, key, value).await?;
@@ -146,7 +146,7 @@ impl BackendOperations for ConfigFile {
     async fn try_wait_for<K, T>(&self, key: K) -> Result<T, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let key_clone = key.into();
         loop {
@@ -160,7 +160,7 @@ impl BackendOperations for ConfigFile {
     async fn try_stream<K, T>(&self, key: K) -> Result<impl Stream<Item = Result<Option<T>, GodfigBackendError>>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize,
+        T: DeserializeOwned + Serialize,
     {
         let key_clone = key.into();
         let mut last: Option<Vec<u8>> = None;
@@ -182,7 +182,7 @@ impl BackendOperations for ConfigFile {
     async fn try_transaction<K, T, F, Fut>(&self, key: K, callback: F) -> Result<(), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        T: DeserializeOwned + Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
         Fut: Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
 
@@ -206,7 +206,7 @@ impl BackendOperations for ConfigFile {
     async fn try_transaction_with_result<K, T, R, F, Fut>(&self, key: K, callback: F) -> Result<R, GodfigBackendError>
         where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        T: DeserializeOwned + Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
         Fut: Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send {
 
