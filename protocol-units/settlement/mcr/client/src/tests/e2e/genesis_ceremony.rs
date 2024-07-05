@@ -17,6 +17,7 @@ use godfig::{
     backend::config_file::ConfigFile
 };
 use tracing::info;
+use anyhow::Context;
 
 
 async fn run_genesis_ceremony(
@@ -59,7 +60,7 @@ async fn run_genesis_ceremony(
     let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
 
     // alice stakes for mcr
-    info!("Alice stakes for MCR")
+    info!("Alice stakes for MCR");
     governor_token
         .mint(alice.address(), U256::from(100))
         .call()
@@ -74,7 +75,7 @@ async fn run_genesis_ceremony(
         .await.context("Alice failed to stake for MCR")?;
 
     // bob stakes for mcr
-    info!("Bob stakes for MCR")
+    info!("Bob stakes for MCR");
     governor_token
         .mint(bob.address(), U256::from(100))
         .call()
@@ -89,7 +90,7 @@ async fn run_genesis_ceremony(
         .await.context("Bob failed to stake for MCR")?;
 
     // mcr accepts the genesis
-    info!("MCR accepts the genesis")
+    info!("MCR accepts the genesis");
     governor_staking
         .acceptGenesisCeremony()
         .call()

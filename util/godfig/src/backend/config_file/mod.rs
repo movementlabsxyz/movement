@@ -180,22 +180,47 @@ impl BackendOperations for ConfigFile {
         F: FnOnce(Option<T>) -> Fut + Send,
         Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
 
-            let key = key.into();
-       
-            // obtain the write_guard which will be held for the duration of the function
-            let mut write_guard = self.lock.write().await?;
-      
-            // get the current value
-            let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
+        let key = key.into();
+    
+        // obtain the write_guard which will be held for the duration of the function
+        let mut write_guard = self.lock.write().await?;
+    
+        // get the current value
+        let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
 
-            let new_value = callback(current_value).await?;
+        let new_value = callback(current_value).await?;
 
-            // set the new value
-            write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+        // set the new value
+        write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
 
-            Ok(())
+        Ok(())
 
-        }
+    }
+
+    async fn try_transaction_with_result<K, T, R, F, Fut>(&self, key: K, callback: F) -> Result<R, GodfigBackendError>
+        where
+        K: Into<Vec<String>> + Send,
+        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        F: FnOnce(Option<T>) -> Fut + Send,
+        Fut: std::future::Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send {
+
+
+        let key = key.into();
+    
+        // obtain the write_guard which will be held for the duration of the function
+        let mut write_guard = self.lock.write().await?;
+    
+        // get the current value
+        let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
+
+        let (new_value, result) = callback(current_value).await?;
+
+        // set the new value
+        write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+
+        Ok(result)
+
+    }
 
 }
 
@@ -290,6 +315,27 @@ pub mod test {
         // check the value
         let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
         assert_eq!(result, Some(44));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_transaction_with_result() -> Result<(), anyhow::Error> {
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file.into());
+
+        // set a value
+        config_file.try_set(vec!["key".to_string()], Some(42)).await?;
+
+        // increment the value
+        let result = config_file.try_transaction_with_result(vec!["key".to_string()], |value| async move {
+            Ok((value.map(|v : i32| v + 1), "result".to_string()))
+        }).await?;
+
+        assert_eq!(result, "result");
+
+        let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
+        assert_eq!(result, Some(43));
 
         Ok(())
     }

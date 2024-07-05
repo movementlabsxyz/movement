@@ -9,8 +9,8 @@ processes:
       set -e
       cargo test -p mcr-settlement-client test_genesis_ceremony -- --nocapture
     depends_on:
-      setup:
-        condition: process_completed_successfully
+      eth:
+        condition: process_healthy
     availability:
       # NOTE: `restart: exit_on_failure` is not needed since
       # exit_on_end implies it.

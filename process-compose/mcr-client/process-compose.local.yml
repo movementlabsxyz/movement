@@ -1,0 +1,15 @@
+version: "3"
+
+environment:
+
+processes:
+
+  eth:
+    command: |
+      mcr-settlement-anvil
+    depends_on:
+      build:
+        condition: process_completed_successfully
+      readiness_probe:
+        exec:
+          command: echo "true"

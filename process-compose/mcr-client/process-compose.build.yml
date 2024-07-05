@@ -4,6 +4,6 @@ environment:
 
 processes:
 
-  build-m1-da-light-node:
+  build:
     command: |
       ./scripts/services/mcr/build

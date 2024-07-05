@@ -4,6 +4,6 @@ environment:
 
 processes:
 
-  setup:
+  eth:
     command: |
       exit 1

@@ -32,7 +32,7 @@ impl Setup for Local {
 		&self,
 		dot_movement: &DotMovement,
 		mut config: Config,
-	) -> impl Future<Output = Result<Config, anyhow::Error>> + Send {
+	) -> impl Future<Output = Result<(Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>), anyhow::Error>> + Send {
 		//define a temporary chain Id for Anvil
 		let mut rng = thread_rng(); // rng is not send.
 		let id: u16 = rng.gen_range(100, 32768);
@@ -54,7 +54,7 @@ impl Setup for Local {
 
 			let anvil_path = path.to_string_lossy().to_string();
 
-			let (anvil_cmd_id, _jh) = spawn_command(
+			let (anvil_cmd_id, anvil_join_handle) = spawn_command(
 				"anvil".to_string(),
 				vec![
 					"--chain-id".to_string(),
@@ -192,7 +192,7 @@ impl Setup for Local {
 
 			info!("MCR config:{config:?}");
 
-			Ok(config)
+			Ok((config, anvil_join_handle))
 		}
 	}
 }

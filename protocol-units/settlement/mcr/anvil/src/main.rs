@@ -1,9 +1,9 @@
-use mcr_settlement_setup::{Setup, Local};
 use mcr_settlement_config::Config;
 use godfig::{
 	Godfig,
 	backend::config_file::ConfigFile
 };
+use mcr_settlement_setup::{Setup, Local};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -17,29 +17,28 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
+	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 
 	// get a matching godfig object
 	let godfig : Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![
         "mcr_settlement".to_string(),
     ]);
 
-	// run a godfig transaction to update the file
-	godfig.try_transaction(|config| async move {
-		println!("Config: {:?}", config);
-        let local = Local::default();
-		match config {
-			Some(config) => {
-				let (config, _) = local.setup(&dot_movement, config).await?;
-				Ok(Some(config))
-			},
-			None => {
-				let config = Config::default();
-				let (config, _ ) = local.setup(&dot_movement, config).await?;
-				Ok(Some(config))
-			}
-		}
+	// Apply all of the setup steps
+	let anvil_join_handle = godfig.try_transaction_with_result(|config| async move {
+
+		tracing::info!("Config: {:?}", config);
+		let config = config.unwrap_or_default();
+		tracing::info!("Config: {:?}", config);
+
+		let (config, anvil_join_handle) = Local::default().setup(&dot_movement, config).await?;
+	
+		Ok((Some(config), anvil_join_handle))
+
 	}).await?;
+
+	// wait for anvil to finish
+	let _ = anvil_join_handle.await?;
 
 	Ok(())
 }
