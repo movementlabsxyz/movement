@@ -77,6 +77,7 @@
           celestia-app
           monza-aptos
           jq
+          docker
         ];
 
         # Specific version of toolchain
