@@ -105,17 +105,13 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		let function = EntryFunctionId {
-			module: self.counterparty_module_id(),
-			name: IdentifierWrapper::from_str("lock_bridge_transfer_assets").unwrap(),
-		};
 		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
-			function,
+			function: self.counterparty_function(Call::Lock),
 			arguments: self.counterparty_args(Call::Lock),
 			type_arguments: self.counterparty_type_tag(Call::Lock),
 		});
-		let response = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload);
-		todo!()
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
@@ -123,14 +119,26 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		todo!()
+		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
+			function: self.counterparty_function(Call::Complete),
+			arguments: self.counterparty_args(Call::Complete),
+			type_arguments: self.counterparty_type_tag(Call::Complete),
+		});
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		Ok(())
 	}
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
-		todo!()
+		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
+			function: self.counterparty_function(Call::Abort),
+			arguments: self.counterparty_args(Call::Abort),
+			type_arguments: self.counterparty_type_tag(Call::Abort),
+		});
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
@@ -138,7 +146,13 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
 	{
-		todo!()
+		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
+			function: self.counterparty_function(Call::GetDetails),
+			arguments: self.counterparty_args(Call::GetDetails),
+			type_arguments: self.counterparty_type_tag(Call::GetDetails),
+		});
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		Ok(None)
 	}
 }
 
@@ -172,9 +186,21 @@ impl MovementClient {
 				MoveType::U64,     //time_lock
 				MoveType::Address, //recipient
 			],
-			Call::Complete => vec![MoveType::Address, MoveType::U64, MoveType::U8],
-			Call::Abort => vec![MoveType::Address, MoveType::U64],
+			Call::Complete => vec![MoveType::Signer, self.move_bytes(), self.move_bytes()],
+			Call::Abort => vec![MoveType::Signer, self.move_bytes()],
 			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
+		}
+	}
+
+	fn counterparty_function(&self, call: Call) -> EntryFunctionId {
+		EntryFunctionId {
+			module: self.counterparty_module_id(),
+			name: IdentifierWrapper::from_str(match call {
+				Call::Lock => "lock_bridge_transfer_assets",
+				Call::Complete => "complete_bridge_transfer",
+				Call::Abort => "abort_bridge_transfer",
+				Call::GetDetails => "get_bridge_transfer_details",
+			}),
 		}
 	}
 
