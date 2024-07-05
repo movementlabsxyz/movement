@@ -74,23 +74,6 @@ sol!(
 	"abis/MOVEToken.json"
 );
 
-// When created, kill the pid when dropped.
-// Use to kill Anvil process when Suzuka Node ends.
-// TODO should be removed by the new config.
-struct AnvilKillAtDrop {
-	pid: u32,
-}
-
-impl Drop for AnvilKillAtDrop {
-	fn drop(&mut self) {
-		tracing::info!("Killing Anvil process pid:{}", self.pid);
-		if let Err(err) = std::process::Command::new("kill").args(&[&self.pid.to_string()]).spawn()
-		{
-			tracing::info!("warn, an error occurs during Anvil process kill : {err}");
-		}
-	}
-}
-
 pub struct Client<P> {
 	rpc_provider: P,
 	ws_provider: RootProvider<PubSubFrontend>,
@@ -99,7 +82,6 @@ pub struct Client<P> {
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u64,
 	send_transaction_retries: u32,
-	kill_anvil_process: Option<AnvilKillAtDrop>,
 }
 
 impl
@@ -140,9 +122,6 @@ impl
 			config.transaction_send_retries,
 		)
 		.await?;
-		if let Some(pid) = config.anvil_process_pid {
-			client.kill_anvil_process = Some(AnvilKillAtDrop { pid })
-		}
 		Ok(client)
 	}
 }
@@ -177,7 +156,6 @@ impl<P> Client<P> {
 			send_transaction_error_rules,
 			gas_limit,
 			send_transaction_retries,
-			kill_anvil_process: None,
 		})
 	}
 }

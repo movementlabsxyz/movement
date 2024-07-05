@@ -56,7 +56,10 @@ pub struct Config {
 	pub batch_timeout: u64,
 	#[serde(default = "default_transaction_send_retries")]
 	pub transaction_send_retries: u32,
-	pub anvil_process_pid: Option<u32>,
+	#[serde(default = "Vec::new")]
+	pub well_known_accounts: Vec<String>,
+	#[serde(default = "Vec::new")]
+	pub well_known_addresses: Vec<String>,
 }
 
 impl Config {
@@ -195,7 +198,8 @@ impl Default for Config {
 			gas_limit: default_gas_limit(),
 			batch_timeout: default_batch_timeout(),
 			transaction_send_retries: default_transaction_send_retries(),
-			anvil_process_pid: None
+			well_known_accounts: Vec::new(),
+			well_known_addresses: Vec::new(),
 		}
 	}
 }

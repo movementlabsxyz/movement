@@ -6,7 +6,7 @@ use crate::eth_client::{
     MovementStaking
 };
 use mcr_settlement_config::Config;
-use alloy_provider::ProviderBuilder;
+use alloy::providers::{ProviderBuilder, Provider};
 use alloy_signer_wallet::LocalWallet;
 use alloy_primitives::Address;
 use alloy_primitives::U256;
@@ -18,9 +18,12 @@ use godfig::{
 };
 use tracing::info;
 use anyhow::Context;
+use alloy::rpc::types::trace::parity::TraceType;
+use alloy_rpc_types::TransactionRequest;
 
 
 async fn run_genesis_ceremony(
+    config : &Config,
     governor: LocalWallet,
     rpc_url: &str,
     move_token_address: Address,
@@ -30,7 +33,8 @@ async fn run_genesis_ceremony(
 
     // Build alice client for MOVEToken, MCR, and staking
     info!("Creating alice client");
-    let alice = LocalWallet::random();
+    let alice : LocalWallet = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
+    let alice_address : Address = config.well_known_addresses.get(1).context("No well known address")?.parse()?;
     let alice_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .signer(EthereumSigner::from(alice.clone()))
@@ -41,7 +45,7 @@ async fn run_genesis_ceremony(
 
     // Build bob client for MOVEToken, MCR, and staking
     info!("Creating bob client");
-    let bob: LocalWallet = LocalWallet::random();
+    let bob: LocalWallet = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
     let bob_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .signer(EthereumSigner::from(bob.clone()))
@@ -54,17 +58,28 @@ async fn run_genesis_ceremony(
     info!("Creating governor client");
     let governor_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
-        .signer(EthereumSigner::from(governor))
+        .signer(EthereumSigner::from(governor.clone()))
         .on_http(rpc_url.parse()?);
     let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
     let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
 
     // alice stakes for mcr
     info!("Alice stakes for MCR");
-    governor_token
-        .mint(alice.address(), U256::from(100))
-        .call()
-        .await.context("Governor failed to mint for alice")?;
+    let token_name = governor_token.
+        name().call().await.context("Failed to get token name")?;
+
+
+    let calldata = governor_token
+        .mint(alice_address, U256::from(100))
+        .calldata().clone();
+
+    let transaction = TransactionRequest::default()
+        .from(governor.address())
+        .to(move_token_address)
+        .input(calldata.into());
+    let trace_type = [TraceType::Trace];
+    let result = governor_rpc_provider.trace_call(&transaction, &trace_type).await?;
+
     alice_move_token
         .approve(mcr_address, U256::from(100))
         .call()
@@ -101,6 +116,14 @@ async fn run_genesis_ceremony(
 
 #[tokio::test]
 pub async fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
+
+    use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
     
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
@@ -112,6 +135,7 @@ pub async fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
     let config : Config = godfig.try_wait_for_ready().await?;
 
     run_genesis_ceremony(
+        &config,
         LocalWallet::from_str(&config.governor_private_key)?,
         &config.eth_rpc_connection_url(),
         Address::from_str(&config.move_token_contract_address)?,

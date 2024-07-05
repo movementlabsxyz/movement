@@ -151,11 +151,16 @@ celestia-types = { git = "https://github.com/eigerco/lumina" }
 
 ## Alloy Dependencies
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
-    "pubsub",
+    "node-bindings",
+    "rpc-types-trace",
+    "json-rpc",
+    "rpc-client",
     "signers",
     "signer-wallet",
     "signer-yubihsm",
-] }
+    "pubsub",
+    "providers"
+]}
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
 alloy-primitives = { version = "0.7.2", default-features = false }

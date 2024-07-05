@@ -14,11 +14,23 @@ rust-version = { workspace = true }
 [dependencies]
 mcr-settlement-config = { workspace = true }
 
-alloy = { workspace = true }
+alloy = { workspace = true, features = [
+    "node-bindings",
+    "rpc-types-trace",
+    "json-rpc",
+    "rpc-client",
+    "signers",
+    "signer-wallet",
+    "signer-yubihsm",
+    "pubsub",
+    "providers"
+]}
 alloy-contract = { workspace = true }
 alloy-network = { workspace = true }
 alloy-primitives = { workspace = true }
-alloy-provider = { workspace = true }
+alloy-provider = { workspace = true, features = [
+
+] }
 alloy-signer-wallet = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-transport = { workspace = true }

@@ -63,6 +63,7 @@ impl Setup for Local {
 					anvil_path.clone(),
 					"--port".to_string(),
 					config.eth_rpc_connection_port.to_string(),
+					"--steps-tracing".to_string()
 				],
 			)
 			.await?;
@@ -187,10 +188,16 @@ impl Setup for Local {
 			info!("setting up MCR Ethereum client mcr_address:{mcr_address}");
 			config.mcr_contract_address = mcr_address.to_string();
 
-			// Extract the PID.
-			config.anvil_process_pid = anvil_cmd_id;
-
+			config.well_known_accounts = anvil_addresses
+				.iter()
+				.map(|account| account.private_key.clone())
+				.collect();
 			info!("MCR config:{config:?}");
+
+			config.well_known_addresses = anvil_addresses
+				.iter()
+				.map(|account| account.address.clone())
+				.collect();
 
 			Ok((config, anvil_join_handle))
 		}
