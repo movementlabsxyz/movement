@@ -1,7 +1,10 @@
 use aptos_sdk::{
 	rest_client::{
-		aptos_api_types::EntryFunctionPayload, aptos_api_types::TransactionPayload, Client,
-		FaucetClient,
+		aptos_api_types::{
+			EntryFunctionId, EntryFunctionPayload, IdentifierWrapper, MoveModuleId, MoveType,
+			TransactionPayload,
+		},
+		Client, FaucetClient,
 	},
 	types::{AccountKey, LocalAccount},
 };
@@ -21,6 +24,14 @@ mod event_monitoring;
 mod utils;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
+const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+
+enum Call {
+	Lock,
+	Complete,
+	Abort,
+	GetDetails,
+}
 
 pub struct MovementClient {
 	counterparty_address: AccountAddress,
@@ -94,11 +105,14 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		let fn_id
+		let function = EntryFunctionId {
+			module: self.counterparty_module_id(),
+			name: IdentifierWrapper::from_str("lock_bridge_transfer_assets").unwrap(),
+		};
 		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
-			EntryFunc,
-			type_arguments: (),
-			arguments: (),
+			function,
+			arguments: self.counterparty_args(Call::Lock),
+			type_arguments: self.counterparty_type_tag(Call::Lock),
 		});
 		let response = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload);
 		todo!()
@@ -125,5 +139,46 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
 	{
 		todo!()
+	}
+}
+
+impl MovementClient {
+	fn counterparty_module_id(&self) -> MoveModuleId {
+		MoveModuleId {
+			address: self.counterparty_address,
+			name: IdentifierWrapper::from_str(COUNTERPARTY_MODULE_NAME).unwrap(),
+		}
+	}
+
+	fn initiator_module_id(&self) -> MoveModuleId {
+		todo!()
+	}
+
+	fn counterparty_type_tag(&self, call: Call) -> Vec<MoveType> {
+		match call {
+			Call::Lock => vec![MoveType::Address, MoveType::U64, MoveType::U64, MoveType::U8],
+			Call::Complete => vec![MoveType::Address, MoveType::U64, MoveType::U8],
+			Call::Abort => vec![MoveType::Address, MoveType::U64],
+			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
+		}
+	}
+
+	fn counterparty_args(&self, call: Call) -> Vec<MoveType> {
+		match call {
+			Call::Lock => vec![
+				MoveType::Signer,
+				self.move_bytes(), //initiator
+				self.move_bytes(), //hash_lock
+				MoveType::U64,     //time_lock
+				MoveType::Address, //recipient
+			],
+			Call::Complete => vec![MoveType::Address, MoveType::U64, MoveType::U8],
+			Call::Abort => vec![MoveType::Address, MoveType::U64],
+			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
+		}
+	}
+
+	fn move_bytes() -> MoveType {
+		MoveType::Vector { items: vec![MoveType::U8(0)] }
 	}
 }
