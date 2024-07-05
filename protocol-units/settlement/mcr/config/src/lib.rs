@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 const MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
 const DEFAULT_BATCH_TIMEOUT_MILLIS: u64 = 2000;
 const DEFAULT_TX_SEND_RETRIES: u32 = 10;
-const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000_000_000;
+const DEFAULT_GAS_LIMIT: u128 = 10_000_000_000_000_000;
 
 /// Configuration of the MCR settlement client.
 ///
@@ -36,7 +36,7 @@ fn default_mcr_contract_address() -> String {
 }
 
 const fn default_gas_limit() -> u128 {
-	DEFAULT_GAS_LIMIT as u128
+	DEFAULT_GAS_LIMIT
 }
 
 const fn default_tx_send_retries() -> u32 {
@@ -54,7 +54,7 @@ impl Default for Config {
 			ws_url: None,
 			signer_private_key: None,
 			mcr_contract_address: default_mcr_contract_address(),
-			gas_limit: default_gas_limit() as u128,
+			gas_limit: default_gas_limit(),
 			batch_timeout: default_batch_timeout(),
 			tx_send_retries: default_tx_send_retries(),
 		}
