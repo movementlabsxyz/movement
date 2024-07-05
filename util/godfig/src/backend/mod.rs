@@ -12,6 +12,9 @@ pub enum GodfigBackendError {
     BackendError(#[from] anyhow::Error),
     #[error("IO Error: {0}")]
     IOError(#[from] std::io::Error),
+    // any other error
+    #[error("Error: {0}")]
+    Error(String),
 }
 
 impl From<serde_json::Error> for GodfigBackendError {
@@ -53,4 +56,11 @@ pub trait BackendOperations {
         T: serde::de::DeserializeOwned + serde::Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
         Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send;
+
+    async fn try_transaction_with_result<K, T, R, F, Fut>(&self, key: K, callback: F) -> Result<R, GodfigBackendError>
+        where
+        K: Into<Vec<String>> + Send,
+        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        F: FnOnce(Option<T>) -> Fut + Send,
+        Fut: std::future::Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send;
 }
