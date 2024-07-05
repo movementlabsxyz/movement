@@ -1,7 +1,6 @@
 use aptos_sdk::{
-	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
-	types::LocalAccount,
+	types::{AccountKey, LocalAccount},
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
@@ -11,15 +10,20 @@ use bridge_shared::{
 		RecipientAddress, TimeLock,
 	},
 };
+use rand::prelude::*;
 use std::str::FromStr;
-use std::sync::Arc;
 use url::Url;
 
+mod event_monitoring;
 mod utils;
 
+const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
+
 pub struct MovementClient {
+	counterparty_address: AccountAddress,
 	rest_client: Client,
 	faucet_client: FaucetClient,
+	signer: LocalAccount,
 }
 
 impl MovementClient {
@@ -55,7 +59,16 @@ impl MovementClient {
 		let rest_client = Client::new(node_connection_url.clone());
 		let faucet_client = FaucetClient::new(faucet_url, node_connection_url.clone());
 
-		Ok(MovementClient { rest_client, faucet_client })
+		let seed = [3u8; 32];
+		let mut rng = rand::rngs::StdRng::from_seed(seed);
+		let mut signer = LocalAccount::generate(&mut rng);
+
+		Ok(MovementClient {
+			rest_client,
+			faucet_client,
+			counterparty_address: DUMMY_ADDRESS,
+			signer,
+		})
 	}
 }
 
@@ -78,6 +91,8 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
+		//let pauyload =
+		let response = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload);
 		todo!()
 	}
 

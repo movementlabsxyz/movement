@@ -192,6 +192,7 @@ chrono = "0.4.37"
 clap = { version = "4.4.10", features = ["derive"] }
 derivative = "2.2.0"
 derive_more = { version = "0.99.11", default-features = false }
+derive-new = "0.6.0"
 digest = "0.10"
 dirs = "3.0.2"
 fail = "0.5.1"

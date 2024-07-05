@@ -4663,6 +4663,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "derive-new"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d150dea618e920167e5973d70ae6ece4385b7164e0d799fe7c122dd0a5d912ad"
+dependencies = [
+ "proc-macro2 1.0.85",
+ "quote 1.0.36",
+ "syn 2.0.66",
+]
+
+[[package]]
 name = "derive_arbitrary"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8268,12 +8279,14 @@ dependencies = [
  "aptos-types",
  "async-trait",
  "bridge-shared",
+ "derive-new",
  "dot-movement",
  "keccak-hash",
  "mcr-settlement-client",
  "once_cell",
  "poem",
  "serde",
+ "serde_json",
  "suzuka-config",
  "tokio",
  "tracing",

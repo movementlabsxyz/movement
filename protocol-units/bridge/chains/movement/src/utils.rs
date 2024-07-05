@@ -1,4 +1,4 @@
-use crate::{AptosClient, TxSpecificData};
+use crate::MovementClient;
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::{Ed25519PrivateKey, Ed25519PublicKey, Ed25519Signature},
@@ -8,6 +8,7 @@ use aptos_sdk::{
 		EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 		VersionedEvent, ViewRequest,
 	},
+	rest_client::Client as RestClient,
 	transaction_builder::TransactionFactory,
 	types::{
 		account_address::AccountAddress,
@@ -18,8 +19,8 @@ use aptos_sdk::{
 		AccountKey, LocalAccount,
 	},
 };
-use hyperlane_core::{ChainCommunicationError, ChainResult, Indexed, LogMeta, H256, H512, U256};
-use solana_sdk::signature::Keypair;
+use derive_new::new;
+use keccak_hash::H256;
 use std::{ops::RangeInclusive, str::FromStr};
 
 /// limit of gas unit
@@ -27,13 +28,22 @@ const GAS_UNIT_LIMIT: u64 = 100000;
 /// minimum price of gas unit of aptos chains
 pub const GAS_UNIT_PRICE: u64 = 100;
 
+/// Wrapper struct that adds indexing information to a type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, new)]
+pub struct Indexed<T> {
+	inner: T,
+	#[new(default)]
+	/// Optional sequence data that is useful during indexing
+	pub sequence: Option<u32>,
+}
+
 /// Send Aptos Transaction
 pub async fn send_aptos_transaction(
-	aptos_client: &AptosClient,
+	rest_client: &RestClient,
 	signer: &mut LocalAccount,
 	payload: TransactionPayload,
 ) -> Result<AptosTransaction> {
-	let state = aptos_client
+	let state = rest_client
 		.get_ledger_information()
 		.await
 		.context("Failed in getting chain id")?
@@ -45,7 +55,7 @@ pub async fn send_aptos_transaction(
 
 	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
 
-	let response = aptos_client
+	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
 		.map_err(|e| anyhow::anyhow!(e.to_string()))?
@@ -55,7 +65,7 @@ pub async fn send_aptos_transaction(
 
 /// Send Aptos Transaction
 pub async fn simulate_aptos_transaction(
-	aptos_client: &AptosClient,
+	aptos_client: &MovementClient,
 	signer: &mut LocalAccount,
 	payload: TransactionPayload,
 ) -> Result<TransactionInfo> {
@@ -105,13 +115,13 @@ pub fn make_aptos_payload(
 
 /// Send View Request
 pub async fn send_view_request(
-	aptos_client: &AptosClient,
+	aptos_client: &MovementClient,
 	package_address: String,
 	module_name: String,
 	function_name: String,
 	type_arguments: Vec<MoveType>,
 	arguments: Vec<serde_json::Value>,
-) -> ChainResult<Vec<serde_json::Value>> {
+) -> Result<Vec<serde_json::Value>, anyhow::Error> {
 	let view_response = aptos_client
 		.view(
 			&ViewRequest {
@@ -124,9 +134,7 @@ pub async fn send_view_request(
 			},
 			Option::None,
 		)
-		.await
-		.map_err(ChainCommunicationError::from_other)?
-		.into_inner();
+		.await?;
 	Ok(view_response)
 }
 
@@ -137,60 +145,42 @@ pub fn convert_hex_string_to_h256(addr: &str) -> Result<H256, String> {
 }
 
 /// Convert payer(Keypair) into Aptos LocalAccount
-pub async fn convert_keypair_to_aptos_account(
-	aptos_client: &AptosClient,
-	payer: &Keypair,
-) -> LocalAccount {
-	let signer_priv_key = Ed25519PrivateKey::try_from(payer.secret().to_bytes().as_ref()).unwrap();
-	let signer_address =
-		AuthenticationKey::ed25519(&Ed25519PublicKey::from(&signer_priv_key)).account_address();
-	let signer_account = LocalAccount::new(
-		signer_address,
-		AccountKey::from_private_key(signer_priv_key),
-		aptos_client
-			.get_account(signer_address)
-			.await
-			.map_err(ChainCommunicationError::from_other)
-			.unwrap()
-			.into_inner()
-			.sequence_number,
-	);
-	signer_account
-}
+// pub async fn convert_keypair_to_aptos_account(
+// 	aptos_client: &MovementClient,
+// 	payer: &Keypair,
+// ) -> Result<LocalAccount, anyhow::Error> {
+// 	let signer_priv_key = Ed25519PrivateKey::try_from(payer.secret().to_bytes().as_ref()).unwrap();
+// 	let signer_address =
+// 		AuthenticationKey::ed25519(&Ed25519PublicKey::from(&signer_priv_key)).account_address();
+// 	let signer_account = LocalAccount::new(
+// 		signer_address,
+// 		AccountKey::from_private_key(signer_priv_key),
+// 		aptos_client.get_account(signer_address).await?.sequence_number,
+// 	);
+// 	signer_account
+// }
 
 /// Filter events based on range
 pub async fn get_filtered_events<T, S>(
-	aptos_client: &AptosClient,
+	aptos_client: &MovementClient,
 	account_address: AccountAddress,
 	struct_tag: &str,
 	field_name: &str,
 	range: RangeInclusive<u32>,
-) -> ChainResult<Vec<(Indexed<T>, LogMeta)>>
+) -> Result<Vec<(Indexed<T>, LogMeta)>, anyhow::Error>
 where
 	S: TryFrom<VersionedEvent> + TxSpecificData + TryInto<T> + Clone,
-	ChainCommunicationError:
-		From<<S as TryFrom<VersionedEvent>>::Error> + From<<S as TryInto<T>>::Error>,
 {
 	// fetch events from global storage
 	let events: Vec<VersionedEvent> = aptos_client
 		.get_account_events(account_address, struct_tag, field_name, None, Some(10000))
-		.await
-		.map_err(ChainCommunicationError::from_other)?
-		.into_inner();
+		.await?;
 
 	// get start block and end block
 	let blk_start_no: u32 = *range.start();
 	let blk_end_no = *range.end();
-	let start_block = aptos_client
-		.get_block_by_height(blk_start_no as u64, false)
-		.await
-		.map_err(ChainCommunicationError::from_other)?
-		.into_inner();
-	let end_block = aptos_client
-		.get_block_by_height(blk_end_no as u64, false)
-		.await
-		.map_err(ChainCommunicationError::from_other)?
-		.into_inner();
+	let start_block = aptos_client.get_block_by_height(blk_start_no as u64, false).await?;
+	let end_block = aptos_client.get_block_by_height(blk_end_no as u64, false).await?;
 	let start_tx_version = start_block.first_version;
 	let end_tx_version = end_block.last_version;
 
@@ -206,11 +196,7 @@ where
 	for filtered_event in filtered_events {
 		let evt_data: S = filtered_event.clone().try_into()?;
 		let block_height = evt_data.block_height().parse().unwrap();
-		let block = aptos_client
-			.get_block_by_height(block_height as u64, false)
-			.await
-			.map_err(ChainCommunicationError::from_other)?
-			.into_inner();
+		let block = aptos_client.get_block_by_height(block_height as u64, false).await?;
 		messages.push((
 			Indexed::new(evt_data.clone().try_into()?),
 			LogMeta {
