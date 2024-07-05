@@ -1,5 +1,8 @@
 use aptos_sdk::{
-	rest_client::{Client, FaucetClient},
+	rest_client::{
+		aptos_api_types::EntryFunctionPayload, aptos_api_types::TransactionPayload, Client,
+		FaucetClient,
+	},
 	types::{AccountKey, LocalAccount},
 };
 use aptos_types::account_address::AccountAddress;
@@ -91,7 +94,12 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		//let pauyload =
+		let fn_id
+		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
+			EntryFunc,
+			type_arguments: (),
+			arguments: (),
+		});
 		let response = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload);
 		todo!()
 	}
