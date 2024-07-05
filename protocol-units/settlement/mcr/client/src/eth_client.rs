@@ -66,7 +66,7 @@ impl Default for Config {
 #[derive(Error, Debug)]
 pub enum McrEthConnectorError {
 	#[error(
-		"MCR Settlement Tx fail because gas estimation is to high. Estimated gas:{0} gas limit:{1}"
+		"MCR Settlement Tx fail because gas estimation is too high. Estimated gas:{0} gas limit:{1}"
 	)]
 	GasLimitExceed(u128, u128),
 	#[error("MCR Settlement Tx fail because account funds are insufficient. error:{0}")]

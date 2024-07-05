@@ -79,7 +79,7 @@ pub async fn send_tx<
 	for _ in 0..nb_retry {
 		let call_builder = base_call_builder.clone().gas(estimate_gas);
 
-		//detect if the gas price doesn't execeed the limit.
+		//detect if the gas price doesn't exceed the limit.
 		let gas_price = call_builder.provider.get_gas_price().await?;
 		let tx_fee_wei = estimate_gas * gas_price;
 		if tx_fee_wei > gas_limit {
