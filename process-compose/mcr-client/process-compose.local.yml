@@ -10,6 +10,6 @@ processes:
     depends_on:
       build:
         condition: process_completed_successfully
-      readiness_probe:
-        exec:
-          command: echo "true"
+    readiness_probe:
+      exec:
+        command: echo "true"
