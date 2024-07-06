@@ -6,9 +6,9 @@ use alloy_provider::Provider;
 use alloy_transport::{Transport, TransportError};
 use std::marker::PhantomData;
 
-// Define a rule to verify the error generated when a tx is send to determine if:
-// * the Tx must me resend with more gas: return Ok(true)
-// * a specific error must be return: return Err(McrEthConnectorError::xxx);
+// Define a rule to verify the error generated when a tx is sent to determine if:
+// * the Tx must be resend with more gas: return Ok(true)
+// * a specific error must be returned: return Err(McrEthConnectorError::xxx);
 // * the rule doesn't apply: return Ok(false)
 pub trait VerifyRule: Sync + Send {
 	fn verify(&self, error: &alloy_contract::Error) -> Result<bool, McrEthConnectorError>;
@@ -26,7 +26,7 @@ impl<Kind> SendTxErrorRule<Kind> {
 
 // Define the current 2 errors managed.
 pub struct UnderPriced;
-pub struct InsufficentFunds;
+pub struct InsufficientFunds;
 
 impl VerifyRule for SendTxErrorRule<UnderPriced> {
 	fn verify(&self, error: &alloy_contract::Error) -> Result<bool, McrEthConnectorError> {
@@ -35,7 +35,7 @@ impl VerifyRule for SendTxErrorRule<UnderPriced> {
 			return Ok(false);
 		};
 
-		if payload.code == -32000 && payload.message.contains("transaction underpriced") {
+		if payload.code == -32000 && payload.message.contains("transaction under priced") {
 			Ok(true)
 		} else {
 			Ok(false)
@@ -43,7 +43,7 @@ impl VerifyRule for SendTxErrorRule<UnderPriced> {
 	}
 }
 
-impl VerifyRule for SendTxErrorRule<InsufficentFunds> {
+impl VerifyRule for SendTxErrorRule<InsufficientFunds> {
 	fn verify(&self, error: &alloy_contract::Error) -> Result<bool, McrEthConnectorError> {
 		let alloy_contract::Error::TransportError(TransportError::ErrorResp(payload)) = error
 		else {
@@ -68,34 +68,34 @@ pub async fn send_tx<
 	nb_retry: u32,
 	gas_limit: u128,
 ) -> Result<(), anyhow::Error> {
-	//validate gaz price.
+	// Validate gas price.
 	let mut estimate_gas = base_call_builder.estimate_gas().await?;
-	// Add 20% because initial gas estimate are too low.
+	// Add 20% because initial gas estimates are too low.
 	estimate_gas += (estimate_gas * 20) / 100;
 
 	// Sending Tx automatically can lead to errors that depend on the state for Eth.
-	// It's convenient to manage some of them automatically to avoid to fail commitment Tx.
-	// I define a first one but other should be added depending on the test with mainnet.
+	// It's convenient to manage some of them automatically to avoid failing commitment Tx.
+	// I define a first one but another should be added depending on the test with mainnet.
 	for _ in 0..nb_retry {
 		let call_builder = base_call_builder.clone().gas(estimate_gas);
 
-		//detect if the gas price doesn't execeed the limit.
+		// Detect if the gas price doesn't exceed the limit.
 		let gas_price = call_builder.provider.get_gas_price().await?;
 		let tx_fee_wei = estimate_gas * gas_price;
 		if tx_fee_wei > gas_limit {
 			return Err(McrEthConnectorError::GasLimitExceed(tx_fee_wei, gas_limit as u128).into());
 		}
 
-		//send the Tx and detect send error.
+		// Send the Tx and detect send error.
 		let pending_tx = match call_builder.send().await {
 			Ok(pending_tx) => pending_tx,
 			Err(err) => {
-				//apply defined rules.
+				// Apply defined rules.
 				for rule in send_tx_error_rules {
-					// Verify all rules. If one rule return true or an error stop verification.
+					// Verify all rules. If one rule returns true or an error stop verification.
 					// If true retry with more gas else return the error.
 					if rule.verify(&err)? {
-						//increase gas of 10% and retry
+						// Increase gas by 10% and retry
 						estimate_gas += (estimate_gas * 10) / 100;
 						tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 						continue;
@@ -107,7 +107,7 @@ pub async fn send_tx<
 		};
 
 		match pending_tx.get_receipt().await {
-			// Tx execution fail
+			// Tx execution fails
 			Ok(tx_receipt) if !tx_receipt.status() => {
 				tracing::debug!(
 					"tx_receipt.gas_used: {} / estimate_gas: {estimate_gas}",
