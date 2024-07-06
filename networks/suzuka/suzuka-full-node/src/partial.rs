@@ -235,9 +235,9 @@ where
 				// TODO: block reversion
 			}
 		}
+	}
 
 	Ok(future::pending().await)
-
 }
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
