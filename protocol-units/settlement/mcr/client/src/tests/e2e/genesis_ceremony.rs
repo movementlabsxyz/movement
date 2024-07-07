@@ -1,5 +1,4 @@
 use std::str::FromStr;
-
 use crate::eth_client::{
     MCR,
     MOVEToken,
@@ -67,6 +66,18 @@ async fn run_genesis_ceremony(
     info!("Alice stakes for MCR");
     let token_name = governor_token.
         name().call().await.context("Failed to get token name")?;
+    info!("Token name: {}", token_name._0);
+    let calldata = governor_token.approve(
+        alice_address,
+        U256::from(100)
+    ).calldata().clone();
+
+    let transaction = TransactionRequest::default()
+        .from(governor.address())
+        .to(move_token_address)
+        .input(calldata.into());
+    let trace_type = [TraceType::Trace];
+    let result = governor_rpc_provider.trace_call(&transaction, &trace_type).await.context("Failed to approve alice")?;
 
 
     let calldata = governor_token
@@ -78,7 +89,7 @@ async fn run_genesis_ceremony(
         .to(move_token_address)
         .input(calldata.into());
     let trace_type = [TraceType::Trace];
-    let result = governor_rpc_provider.trace_call(&transaction, &trace_type).await?;
+    let result = governor_rpc_provider.trace_call(&transaction, &trace_type).await.context("Failed to fund alice")?;
 
     alice_move_token
         .approve(mcr_address, U256::from(100))

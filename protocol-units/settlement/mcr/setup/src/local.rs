@@ -139,11 +139,12 @@ impl Setup for Local {
 			//Get the value of the field contractAddress under transactions array
 			let json_value: Value =
 				serde_json::from_str(&json_text).expect("Error parsing JSON");
+			info!("Deployment JSON value: {json_value:#?}");
 
 			// Extract the move token contract address
 			let move_token_address = json_value["transactions"]
 				.as_array()
-				.and_then(|transactions| transactions.get(0))
+				.and_then(|transactions| transactions.get(4))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
@@ -153,13 +154,13 @@ impl Setup for Local {
 					let s = v.as_str().expect("Contract address elements should be strings");
 					s.to_owned()
 				})?;
-			info!("setting up MCR Ethereum client move_token_address:{move_token_address}");
+			info!("setting up MCR Ethereum client move_token_address: {move_token_address}");
 			config.move_token_contract_address = move_token_address.to_string();
 			
 			// Extract the movement staking contract address
 			let movement_staking_address = json_value["transactions"]
 				.as_array()
-				.and_then(|transactions| transactions.get(1))
+				.and_then(|transactions| transactions.get(5))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
@@ -169,13 +170,13 @@ impl Setup for Local {
 					let s = v.as_str().expect("Contract address elements should be strings");
 					s.to_owned()
 				})?;
-			info!("setting up MCR Ethereum client movement_staking_address:{movement_staking_address}");
+			info!("setting up MCR Ethereum client movement_staking_address: {movement_staking_address}");
 			config.movement_staking_contract_address = movement_staking_address.to_string();
 
 			// Extract the contract address
 			let mcr_address = json_value["transactions"]
 				.as_array()
-				.and_then(|transactions| transactions.get(2))
+				.and_then(|transactions| transactions.get(6))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
@@ -185,7 +186,7 @@ impl Setup for Local {
 					let s = v.as_str().expect("Contract address elements should be strings");
 					s.to_owned()
 				})?;
-			info!("setting up MCR Ethereum client mcr_address:{mcr_address}");
+			info!("setting up MCR Ethereum client mcr_address: {mcr_address}");
 			config.mcr_contract_address = mcr_address.to_string();
 
 			config.well_known_accounts = anvil_addresses
