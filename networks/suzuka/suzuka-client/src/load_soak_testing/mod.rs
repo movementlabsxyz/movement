@@ -388,7 +388,8 @@ impl ClientExecResult {
 				.into_iter()
 				.filter_map(|s| if s.is_ok() { Some(s.elapse_millli) } else { None })
 				.collect();
-			ok_scenario.iter().sum::<u128>() / ok_scenario.len() as u128
+			ok_scenario.iter().sum::<u128>()
+			// / ok_scenario.len() as u128
 		} else {
 			tracing::warn!("No result available average exec time is 0");
 			0

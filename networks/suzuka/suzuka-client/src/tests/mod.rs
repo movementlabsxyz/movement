@@ -536,3 +536,64 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 
 	Ok(())
 }
+
+
+#[test]
+fn hey_partners_load() {
+	let config = ExecutionConfig::default();
+	if let Err(err) = init_test(&config) {
+		println!("Hey Partners Load Test init fail {err}",);
+	}
+
+	let result = execute_test(config, Arc::new(create_hey_partners_scenario));
+	tracing::info!("Hey Partners Load Test result: {:?}", result);
+}
+
+#[test]
+fn hey_partners_soak() {
+	let mut config = ExecutionConfig::default();
+	config.kind = TestKind::Soak {
+		min_scenarios: 1,
+		max_scenarios: 1,
+		duration: std::time::Duration::from_secs(60),
+		number_cycle: 1,
+	};
+	if let Err(err) = init_test(&config) {
+		println!("Hey Partners Soak Test init fail {err}",);
+	}
+
+	let result = execute_test(config, Arc::new(create_hey_partners_scenario));
+	tracing::info!("Hey Partners Soak Test result: {:?}", result);
+}
+
+
+fn create_hey_partners_scenario(_id: usize) -> Box<dyn Scenario> {
+	Box::new(HeyPartnersScenario)
+}
+struct HeyPartnersScenario;
+
+#[async_trait::async_trait]
+impl Scenario for HeyPartnersScenario {
+	async fn run(self: Box<Self>) -> Result<(), anyhow::Error> {
+		test_hey_partners_internal().await
+	}
+}
+
+#[tokio::test]
+pub async fn test_hey_partners() -> Result<(), anyhow::Error> {
+	test_hey_partners_internal().await
+}
+
+async fn test_hey_partners_internal() -> Result<(), anyhow::Error> {
+    let root: PathBuf = cargo_workspace()?;
+	let additional_path = "networks/suzuka/suzuka-client/src/tests/hey-partners/";
+	let combined_path = root.join(additional_path);
+
+	let test = combined_path.to_string_lossy();
+	println!("{}", test);
+
+    let output =
+		run_command("/bin/bash", &[format!("{}{}", test, "test.sh").as_str()]).await?;
+    println!("Output: {}", output);
+    Ok(())
+}
