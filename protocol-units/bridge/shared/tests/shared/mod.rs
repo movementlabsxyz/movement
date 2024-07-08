@@ -6,7 +6,7 @@ use bridge_shared::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
-	bridge_service::BridgeService,
+	bridge_service::{BridgeService, BridgeServiceConfig},
 	types::{Convert, GenUniqueHash, HashLockPreImage, RecipientAddress},
 };
 
@@ -296,7 +296,7 @@ pub struct SetupBridgeServiceResult(
 	pub AbstractBlockchain<BC2Address, BC2Hash, TestRng>,
 );
 
-pub fn setup_bridge_service() -> SetupBridgeServiceResult {
+pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceResult {
 	let mut rng = TestRng::from_seed([0u8; 32]);
 
 	let mut blockchain_1 =
@@ -336,7 +336,7 @@ pub fn setup_bridge_service() -> SetupBridgeServiceResult {
 		_phantom: Default::default(),
 	};
 
-	let bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service);
+	let bridge_service = BridgeService::new(blockchain_1_service, blockchain_2_service, config);
 
 	SetupBridgeServiceResult(
 		bridge_service,

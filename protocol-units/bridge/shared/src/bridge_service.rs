@@ -16,7 +16,14 @@ use crate::{
 pub mod active_swap;
 pub mod events;
 
-use self::{active_swap::ActiveSwapMap, events::Event};
+use self::{
+	active_swap::{ActiveSwapConfig, ActiveSwapMap},
+	events::Event,
+};
+
+pub struct BridgeServiceConfig {
+	pub active_swap: ActiveSwapConfig,
+}
 
 pub struct BridgeService<B1, B2>
 where
@@ -35,15 +42,17 @@ where
 	B1: BlockchainService + 'static,
 	B2: BlockchainService + 'static,
 {
-	pub fn new(blockchain_1: B1, blockchain_2: B2) -> Self {
+	pub fn new(blockchain_1: B1, blockchain_2: B2, config: BridgeServiceConfig) -> Self {
 		Self {
 			active_swaps_b1_to_b2: ActiveSwapMap::build(
 				blockchain_1.initiator_contract().clone(),
 				blockchain_2.counterparty_contract().clone(),
+				config.active_swap.clone(),
 			),
 			active_swaps_b2_to_b1: ActiveSwapMap::build(
 				blockchain_2.initiator_contract().clone(),
 				blockchain_1.counterparty_contract().clone(),
+				config.active_swap.clone(),
 			),
 			blockchain_1,
 			blockchain_2,

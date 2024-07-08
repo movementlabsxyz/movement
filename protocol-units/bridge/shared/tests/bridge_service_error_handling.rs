@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use futures::StreamExt;
 use test_log::test;
 
@@ -7,7 +9,11 @@ use bridge_shared::{
 		BridgeContractInitiatorError,
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	bridge_service::events::{CEvent, CWarn, Event, IEvent, IWarn},
+	bridge_service::{
+		active_swap::ActiveSwapConfig,
+		events::{CEvent, CWarn, Event, IEvent, IWarn},
+		BridgeServiceConfig,
+	},
 	types::{
 		Amount, BridgeTransferDetails, CompletedDetails, Convert, HashLock, HashLockPreImage,
 		InitiatorAddress, RecipientAddress, TimeLock,
@@ -31,7 +37,13 @@ async fn test_bridge_service_error_handling() {
 		mut blockchain_2_client,
 		blockchain_1,
 		blockchain_2,
-	) = setup_bridge_service();
+	) = setup_bridge_service(BridgeServiceConfig {
+		active_swap: ActiveSwapConfig {
+			error_attempts: 3,
+			error_delay: Duration::from_secs(1),
+			contract_call_timeout: Duration::from_secs(5),
+		},
+	});
 
 	tokio::spawn(blockchain_1);
 	tokio::spawn(blockchain_2);

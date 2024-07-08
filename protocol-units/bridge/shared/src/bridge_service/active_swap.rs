@@ -89,11 +89,11 @@ where
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ActiveSwapConfig {
-	error_attempts: usize,
-	error_delay: Duration,
-	contract_call_timeout: Duration,
+	pub error_attempts: usize,
+	pub error_delay: Duration,
+	pub contract_call_timeout: Duration,
 }
 impl Default for ActiveSwapConfig {
 	fn default() -> Self {
@@ -144,12 +144,13 @@ where
 	pub fn build(
 		initiator_contract: BFrom::InitiatorContract,
 		counterparty_contract: BTo::CounterpartyContract,
+		config: ActiveSwapConfig,
 	) -> Self {
 		Self {
 			initiator_contract,
 			counterparty_contract,
 			swaps: HashMap::new(),
-			config: ActiveSwapConfig::default(),
+			config,
 			waker: AtomicWaker::new(),
 		}
 	}
