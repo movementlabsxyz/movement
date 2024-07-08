@@ -3,9 +3,11 @@ use std::{
 	convert::From,
 	pin::Pin,
 	task::{Context, Poll},
+	time::Duration,
 };
 
 use futures::{task::AtomicWaker, Future, FutureExt, Stream};
+use futures_time::future::{FutureExt as TimeoutFutureExt, Timeout};
 use futures_timer::Delay;
 use thiserror::Error;
 
@@ -19,7 +21,7 @@ use crate::{
 	},
 };
 
-pub type BoxedFuture<R, E> = Pin<Box<dyn Future<Output = Result<R, E>> + Send>>;
+pub type BoxedFuture<R, E> = Timeout<Pin<Box<dyn Future<Output = Result<R, E>> + Send>>, Delay>;
 
 pub struct ActiveSwap<BFrom, BTo>
 where
@@ -90,11 +92,16 @@ where
 #[derive(Debug)]
 pub struct ActiveSwapConfig {
 	error_attempts: usize,
-	error_delay: std::time::Duration,
+	error_delay: Duration,
+	contract_call_timeout: Duration,
 }
 impl Default for ActiveSwapConfig {
 	fn default() -> Self {
-		Self { error_attempts: 3, error_delay: std::time::Duration::from_secs(5) }
+		Self {
+			error_attempts: 3,
+			error_delay: Duration::from_secs(5),
+			contract_call_timeout: Duration::from_secs(30),
+		}
 	}
 }
 
@@ -181,7 +188,8 @@ where
 				details: details.clone(),
 				state: ActiveSwapState::LockingTokens(
 					call_lock_bridge_transfer_assets::<BFrom, BTo>(counterparty_contract, details)
-						.boxed(),
+						.boxed()
+						.timeout(Delay::new(self.config.contract_call_timeout)),
 					0,
 				),
 			},
@@ -213,7 +221,8 @@ where
 
 		active_swap.state = ActiveSwapState::CompletingBridging(
 			call_complete_bridge_transfer::<BFrom, BTo>(initiator_contract, details.clone())
-				.boxed(),
+				.boxed()
+				.timeout(Delay::new(self.config.contract_call_timeout)),
 			details.clone(),
 			self.config.error_attempts,
 		);
@@ -234,6 +243,16 @@ pub enum ActiveSwapEvent<H> {
 	BridgeAssetsRetryCompleting(BridgeTransferId<H>),
 }
 
+fn catch_timeout_error<T, E: HasTimeoutError>(
+	result: Poll<Result<Result<T, E>, std::io::Error>>,
+) -> Poll<Result<T, E>> {
+	match result {
+		Poll::Ready(Ok(result)) => Poll::Ready(result),
+		Poll::Ready(Err(_)) => Poll::Ready(Err(E::timeout_error())),
+		Poll::Pending => Poll::Pending,
+	}
+}
+
 impl<BFrom, BTo> Stream for ActiveSwapMap<BFrom, BTo>
 where
 	BFrom: BlockchainService + 'static,
@@ -244,7 +263,7 @@ where
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
 
-	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> where {
+	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
 
 		tracing::trace!("Polling active swap map");
@@ -257,7 +276,7 @@ where
 			match state {
 				LockingTokens(future, attempts) => {
 					tracing::trace!("Polling locking_tokens {:?}", bridge_transfer_id);
-					match future.poll_unpin(cx) {
+					match catch_timeout_error(future.poll_unpin(cx)) {
 						Poll::Ready(Ok(())) => {
 							*state = ActiveSwapState::WaitingForUnlockedEvent;
 
@@ -292,7 +311,8 @@ where
 								this.counterparty_contract.clone(),
 								bridge_transfer.clone(),
 							)
-							.boxed(),
+							.boxed()
+							.timeout(Delay::new(this.config.contract_call_timeout)),
 							*attempts + 1,
 						);
 						return Poll::Ready(Some(ActiveSwapEvent::BridgeAssetsRetryLocking(
@@ -304,7 +324,7 @@ where
 					continue;
 				}
 				CompletingBridging(future, details, attempts) => {
-					match future.poll_unpin(cx) {
+					match catch_timeout_error(future.poll_unpin(cx)) {
 						Poll::Ready(Ok(())) => {
 							*state = ActiveSwapState::Completed;
 
@@ -344,7 +364,8 @@ where
 								this.initiator_contract.clone(),
 								details.clone(),
 							)
-							.boxed(),
+							.boxed()
+							.timeout(Delay::new(this.config.contract_call_timeout)),
 							details.clone(),
 							*attempts + 1,
 						);
@@ -371,13 +392,24 @@ where
 }
 
 // Lock assets
+trait HasTimeoutError {
+	fn timeout_error() -> Self;
+}
 
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum LockBridgeTransferAssetsError {
 	#[error("Failed to lock assets")]
 	LockingError,
+	#[error("Timeout while performing contract call")]
+	ContractCallTimeoutError,
 	#[error(transparent)]
 	ContractCallError(#[from] BridgeContractCounterpartyError),
+}
+
+impl HasTimeoutError for LockBridgeTransferAssetsError {
+	fn timeout_error() -> Self {
+		LockBridgeTransferAssetsError::ContractCallTimeoutError
+	}
 }
 
 async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: BlockchainService>(
@@ -419,8 +451,16 @@ where
 pub enum CompleteBridgeTransferError {
 	#[error("Failed to complete bridge transfer")]
 	CompletingError,
+	#[error("Timeout while performing contract call")]
+	ContractCallTimeoutError,
 	#[error(transparent)]
 	ContractCallError(#[from] BridgeContractInitiatorError), // TODO; addd contact call errors
+}
+
+impl HasTimeoutError for CompleteBridgeTransferError {
+	fn timeout_error() -> Self {
+		CompleteBridgeTransferError::ContractCallTimeoutError
+	}
 }
 
 async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
