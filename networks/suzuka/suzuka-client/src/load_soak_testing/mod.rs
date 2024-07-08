@@ -70,14 +70,14 @@ impl ExecutionConfig {
 			TestKind::Load { number_scenarios } => {
 				assert!(
 					number_scenarios >= self.number_scenario_per_client,
-					"Number of running scenario less than the number if scenario per client."
+					"Number of running scenarios is less than the number of scenarios per client."
 				);
 			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.number_scenario_per_client,
-					"Number of min running scenario less than the number if scenario per client."
+					"Number of min running scenarios is less than the number of scenarios per client."
 				);
 			}
 		}

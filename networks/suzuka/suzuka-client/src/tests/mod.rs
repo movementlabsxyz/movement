@@ -494,7 +494,7 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 		module_address,
 		"resource_roulette",
 		"spin",
-		empty_type_tag.clone(),
+		vec![],
 		vec![],
 	)
 	.await
@@ -504,6 +504,35 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 			println!("Transaction failed: {:?}", e);
 		}
 	}
+
+	// let multisig_account = send_tx(
+	// 	&rest_client,
+	// 	chain_id,
+	// 	&alice,
+	// 	"0x1",
+	// 	"multisig_account",
+	// 	"create_with_owners",
+	// 	empty_type_tag.clone(),
+	// 	vec![
+	// 		bcs::to_bytes(&vec![bob.address()]).unwrap(),
+	// 		bcs::to_bytes(&(2 as u8)).unwrap(),
+	// 		vec![],
+	// 		vec![],
+	// 	],)
+	// .await?;
+
+	// send_tx(
+	// 	&rest_client,
+	// 	chain_id,
+	// 	&alice,
+	// 	"0x1",
+	// 	"aptos_account",
+	// 	"transfer",
+	// 	empty_type_tag.clone(),
+	// 	&vec![MoveValue::Address(multisig_account.clone()), MoveValue::U64(1)]
+	// 	).await?;
+
+	
 
 	Ok(())
 }
