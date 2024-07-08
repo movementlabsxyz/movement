@@ -22,6 +22,12 @@ impl Id {
 	}
 }
 
+impl AsRef<[u8]> for Id {
+	fn as_ref(&self) -> &[u8] {
+		&self.0
+	}
+}
+
 impl fmt::Display for Id {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "{:?}", &self.0)
@@ -29,27 +35,31 @@ impl fmt::Display for Id {
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Transaction(pub Vec<u8>);
+pub struct Transaction {
+	pub data: Vec<u8>,
+	pub sequence_number: u64,
+}
 
 impl From<Vec<u8>> for Transaction {
 	fn from(data: Vec<u8>) -> Self {
-		Self(data)
+		Self { data, sequence_number: 0 }
 	}
 }
 
 impl Transaction {
-	pub fn new(data: Vec<u8>) -> Self {
-		Self(data)
+	pub fn new(data: Vec<u8>, sequence_number: u64) -> Self {
+		Self { data, sequence_number }
 	}
 
 	pub fn id(&self) -> Id {
 		let mut hasher = sha2::Sha256::new();
-		hasher.update(&self.0);
+		hasher.update(&self.data);
+		hasher.update(&self.sequence_number.to_le_bytes());
 		Id(hasher.finalize().into())
 	}
 
 	pub fn test() -> Self {
-		Self(vec![0])
+		Self { data: vec![0], sequence_number: 0 }
 	}
 }
 
@@ -108,7 +118,7 @@ impl Block {
 		let mut hasher = sha2::Sha256::new();
 		hasher.update(&self.parent);
 		for transaction in &self.transactions {
-			hasher.update(&transaction.0);
+			hasher.update(&transaction.id());
 		}
 		Id(hasher.finalize().into())
 	}
