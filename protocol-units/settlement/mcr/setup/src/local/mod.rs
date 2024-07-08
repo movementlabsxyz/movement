@@ -126,13 +126,13 @@ impl Setup for Local {
 				.lines()
 				.find(|line| line.contains("Transactions saved to:"))
 				.ok_or(anyhow!(
-					"Can't file exec file path in smart contract deployement result output."
+					"Can't file exec file path in smart contract deployment result output."
 				))?;
 			let path = line
 				.splitn(2, ':')
 				.nth(1)
 				.ok_or(anyhow!(
-				"No path after 'Transactions saved to:' in smart contract deployement result output."
+				"No path after 'Transactions saved to:' in smart contract deployment result output."
 			))?
 				.trim();
 			//read the summary to get the contract address
@@ -149,7 +149,7 @@ impl Setup for Local {
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
-					"No contract address in forge script exec deployement result file."
+					"No contract address in forge script exec deployment result file."
 				))
 				.map(|v| {
 					let s = v.as_str().expect("Contract address elements should be strings");
@@ -165,7 +165,7 @@ impl Setup for Local {
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
-					"No contract address in forge script exec deployement result file."
+					"No contract address in forge script exec deployment result file."
 				))
 				.map(|v| {
 					let s = v.as_str().expect("Contract address elements should be strings");
@@ -181,7 +181,7 @@ impl Setup for Local {
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
-					"No contract address in forge script exec deployement result file."
+					"No contract address in forge script exec deployment result file."
 				))
 				.map(|v| {
 					let s = v.as_str().expect("Contract address elements should be strings");

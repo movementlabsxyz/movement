@@ -3,7 +3,7 @@ use godfig::{
 	Godfig,
 	backend::config_file::ConfigFile
 };
-use mcr_settlement_setup::{Setup, Local};
+use mcr_settlement_setup::{Setup, Local, deploy_remote::DeployRemote};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -31,7 +31,18 @@ async fn main() -> Result<(), anyhow::Error> {
 		let config = config.unwrap_or_default();
 		tracing::info!("Config: {:?}", config);
 
-		let (config, anvil_join_handle) = Local::default().setup(&dot_movement, config).await?;
+		let (config, anvil_join_handle) = match config {
+			Config::Local(config) => {
+				let local = Local::default();
+				let (config, anvil_join_handle) = local.setup(&dot_movement, Config::Local(config)).await?;
+				(config, anvil_join_handle)
+			},
+			Config::DeployRemote(config) => {
+				let remote_deploy = DeployRemote::default();
+				let (config, anvil_join_handle) = remote_deploy.setup(&dot_movement, Config::Local(config)).await?;
+				(config, anvil_join_handle)
+			},
+		};
 	
 		Ok((Some(config), anvil_join_handle))
 

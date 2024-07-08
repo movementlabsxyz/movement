@@ -3,7 +3,8 @@ use mcr_settlement_config::Config;
 
 use std::future::Future;
 
-mod local;
+pub mod local;
+pub mod deploy_remote;
 
 pub use local::Local;
 

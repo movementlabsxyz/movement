@@ -3,16 +3,18 @@
 
 use std::env;
 use alloy_signer_wallet::LocalWallet;
+use alloy::primitives::Address;
 use serde::{Deserialize, Serialize};
 use godfig::env_default;
+use std::ops::{Deref, DerefMut};
 
-const DEFAULT_ETH_RPC_CONNECTION_HOSTNAME: &str = "0.0.0.0";
-const DEFAULT_ETH_RPC_CONNECTION_PORT: u16 = 8545;
-const DEFAULT_ETH_WS_CONNECTION_HOSTNAME: &str = "0.0.0.0";
-const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8545; // same as RPC
-const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0xBf7c7AE15E23B2E19C7a1e3c36e245A71500e181";
-const DEFAULT_MOVE_TOKEN_CONTRACT_ADDRESS: &str = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
-const DEFAULT_MOVEMENT_STAKING_CONTRACT_ADDRESS: &str = "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984";
+const DEFAULT_ETH_RPC_CONNECTION_HOSTNAME: &str = "ethereum-holesky-rpc.publicnode.com";
+const DEFAULT_ETH_RPC_CONNECTION_PORT: u16 = 443;
+const DEFAULT_ETH_WS_CONNECTION_HOSTNAME: &str = "ethereum-holesky-rpc.publicnode.com";
+const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 443; // same as RPC
+const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0x0";
+const DEFAULT_MOVE_TOKEN_CONTRACT_ADDRESS: &str = "0x0";
+const DEFAULT_MOVEMENT_STAKING_CONTRACT_ADDRESS: &str = "0x0";
 const DEFAULT_BATCH_TIMEOUT_MILLIS: u64 = 2000;
 const DEFAULT_TX_SEND_RETRIES: u32 = 10;
 const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000_000_000;
@@ -24,7 +26,7 @@ const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000_000_000;
 /// Validation is done when constructing a client instance; see the
 /// mcr-settlement-client crate for details.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Config {
+pub struct InnerConfig {
 	#[serde(default = "default_eth_rpc_connection_protocol")]
 	pub eth_rpc_connection_protocol: String,
 	#[serde(default = "default_eth_rpc_connection_hostname")]
@@ -64,7 +66,7 @@ pub struct Config {
 	pub eth_chain_id: u64,
 }
 
-impl Config {
+impl InnerConfig {
 
 
 	pub fn eth_rpc_connection_url(&self) -> String {
@@ -85,13 +87,18 @@ impl Config {
 		)
 	}
 
+	pub fn try_governor_address (&self) -> Result<Address, anyhow::Error> {
+		let governor_wallet : LocalWallet = self.governor_private_key.parse()?;
+		Ok(governor_wallet.address())
+	}
+
 }
 
 env_default!(
 	default_eth_rpc_connection_protocol,
 	"ETH_RPC_CONNECTION_PROTOCOL",
 	String,
-	"http".to_string()
+	"https".to_string()
 );
 
 env_default!(
@@ -190,9 +197,9 @@ env_default!(
 	1
 );
 
-impl Default for Config {
+impl Default for InnerConfig {
 	fn default() -> Self {
-		Config {
+		InnerConfig {
 			eth_rpc_connection_protocol: default_eth_rpc_connection_protocol(),
 			eth_rpc_connection_hostname: default_eth_rpc_connection_hostname(),
 			eth_rpc_connection_port: default_eth_rpc_connection_port(),
@@ -210,6 +217,38 @@ impl Default for Config {
 			well_known_accounts: Vec::new(),
 			well_known_addresses: Vec::new(),
 			eth_chain_id: default_eth_chain_id(),
+		}
+	}
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Config {
+	Local(InnerConfig),
+	DeployRemote(InnerConfig),
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Config::DeployRemote(InnerConfig::default())
+	}
+}
+
+impl Deref for Config {
+	type Target = InnerConfig;
+
+	fn deref(&self) -> &Self::Target {
+		match self {
+			Config::Local(inner) => inner,
+			Config::DeployRemote(inner) => inner,
+		}
+	}
+}
+
+impl DerefMut for Config {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		match self {
+			Config::Local(inner) => inner,
+			Config::DeployRemote(inner) => inner,
 		}
 	}
 }

@@ -7103,26 +7103,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
-name = "mcr-settlement-anvil"
-version = "0.3.0"
-dependencies = [
- "alloy-primitives",
- "anyhow",
- "commander",
- "dot-movement",
- "godfig",
- "k256",
- "mcr-settlement-client",
- "mcr-settlement-config",
- "mcr-settlement-setup",
- "rand 0.7.3",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
 name = "mcr-settlement-client"
 version = "0.3.0"
 dependencies = [
@@ -7157,11 +7137,11 @@ dependencies = [
 name = "mcr-settlement-config"
 version = "0.3.0"
 dependencies = [
+ "alloy",
  "alloy-signer-wallet",
  "anyhow",
  "godfig",
  "serde",
- "toml 0.8.14",
 ]
 
 [[package]]
@@ -7181,10 +7161,32 @@ dependencies = [
 ]
 
 [[package]]
-name = "mcr-settlement-setup"
+name = "mcr-settlement-runner"
 version = "0.3.0"
 dependencies = [
  "alloy-primitives",
+ "anyhow",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "k256",
+ "mcr-settlement-client",
+ "mcr-settlement-config",
+ "mcr-settlement-setup",
+ "rand 0.7.3",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "mcr-settlement-setup"
+version = "0.3.0"
+dependencies = [
+ "alloy",
+ "alloy-primitives",
+ "alloy-signer-wallet",
  "anyhow",
  "commander",
  "dot-movement",

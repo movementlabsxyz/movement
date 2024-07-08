@@ -274,7 +274,8 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_batch_timeout() -> Result<(), anyhow::Error> {
-		let config = Config { batch_timeout: 1000, ..Config::default() };
+		let mut config = Config::default();
+		config.batch_timeout = 100;
 		let client = MockMcrSettlementClient::new();
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 

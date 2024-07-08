@@ -4,6 +4,7 @@ use crate::eth_client::{
     MOVEToken,
     MovementStaking
 };
+use alloy::signers::Signer;
 use mcr_settlement_config::Config;
 use alloy::providers::ProviderBuilder;
 use alloy_signer_wallet::LocalWallet;
@@ -35,7 +36,7 @@ async fn run_genesis_ceremony(
     let alice : LocalWallet = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
     let alice_address : Address = config.well_known_addresses.get(1).context("No well known address")?.parse()?;
     let alice_rpc_provider = ProviderBuilder::new()
-        .with_recommended_fillers()
+        .with_chain_id(17000)
         .signer(EthereumSigner::from(alice.clone()))
         .on_builtin(&rpc_url)
         .await?;
@@ -47,7 +48,7 @@ async fn run_genesis_ceremony(
     info!("Creating bob client");
     let bob: LocalWallet = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
     let bob_rpc_provider = ProviderBuilder::new()
-        .with_recommended_fillers()
+        .with_chain_id(17000)   
         .signer(EthereumSigner::from(bob.clone()))
         .on_builtin(&rpc_url)
         .await?;
@@ -58,7 +59,7 @@ async fn run_genesis_ceremony(
     // Build the MCR client for staking
     info!("Creating governor client");
     let governor_rpc_provider = ProviderBuilder::new()
-        .with_recommended_fillers()
+        .with_chain_id(17000)   
         .signer(EthereumSigner::from(governor.clone()))
         .on_builtin(&rpc_url)
         .await?;
@@ -88,7 +89,6 @@ async fn run_genesis_ceremony(
     // debug: fails here
     governor_token
         .mint(alice_address, U256::from(100))
-        .chain_id(config.eth_chain_id)
         .call()
         .await.context("Governor failed to mint for alice")?;
 
@@ -149,7 +149,7 @@ pub async fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
 
     run_genesis_ceremony(
         &config,
-        LocalWallet::from_str(&config.governor_private_key)?,
+        LocalWallet::from_str(&config.governor_private_key)?.with_chain_id(Some(17000)),
         &config.eth_rpc_connection_url(),
         Address::from_str(&config.move_token_contract_address)?,
         Address::from_str(&config.movement_staking_contract_address)?,
