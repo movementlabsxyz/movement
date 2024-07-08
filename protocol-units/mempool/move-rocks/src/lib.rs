@@ -35,14 +35,17 @@ impl RocksdbMempool {
 	}
 
 	pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
-		// pad to 32 characters
+		// pad to 32 characters for slot_seconds
 		let slot_seconds_str = format!("{:032}", transaction.timestamp);
+
+		// pad to 32 characters for sequence number
+		let sequence_number_str = format!("{:032}", transaction.transaction.sequence_number);
 
 		// Assuming transaction.transaction.id() returns a hex string of length 32
 		let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
 
-		// Concatenate the two parts to form a 48-character hex string key
-		let key = format!("{}:{}", slot_seconds_str, transaction_id_hex);
+		// Concatenate the two parts to form a 80-character hex string key
+		let key = format!("{}:{}:{}", slot_seconds_str, sequence_number_str, transaction_id_hex);
 
 		key
 	}
