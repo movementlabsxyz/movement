@@ -60,6 +60,8 @@ pub struct Config {
 	pub well_known_accounts: Vec<String>,
 	#[serde(default = "Vec::new")]
 	pub well_known_addresses: Vec<String>,
+	#[serde(default = "default_eth_chain_id")]
+	pub eth_chain_id: u64,
 }
 
 impl Config {
@@ -181,6 +183,13 @@ pub fn default_governor_private_key() -> String {
 	env::var("GOVERNOR_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
 
+env_default!(
+	default_eth_chain_id,
+	"ETH_CHAIN_ID",
+	u64,
+	1
+);
+
 impl Default for Config {
 	fn default() -> Self {
 		Config {
@@ -200,6 +209,7 @@ impl Default for Config {
 			transaction_send_retries: default_transaction_send_retries(),
 			well_known_accounts: Vec::new(),
 			well_known_addresses: Vec::new(),
+			eth_chain_id: default_eth_chain_id(),
 		}
 	}
 }

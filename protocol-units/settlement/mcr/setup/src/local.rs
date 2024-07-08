@@ -37,6 +37,7 @@ impl Setup for Local {
 		let mut rng = thread_rng(); // rng is not send.
 		let id: u16 = rng.gen_range(100, 32768);
 		let chain_id = id.to_string();
+		config.eth_chain_id = id as u64;
 
 		tracing::info!("Init Settlement local conf");
 
@@ -58,7 +59,7 @@ impl Setup for Local {
 				"anvil".to_string(),
 				vec![
 					"--chain-id".to_string(),
-					chain_id.clone(),
+					config.eth_chain_id.to_string(),
 					"--config-out".to_string(),
 					anvil_path.clone(),
 					"--port".to_string(),
@@ -107,7 +108,7 @@ impl Setup for Local {
 					&solidity_path,
 					"--broadcast",
 					"--chain-id",
-					&chain_id,
+					&config.eth_chain_id.to_string(),
 					"--sender",
 					&governor_address,
 					"--rpc-url",
@@ -144,7 +145,7 @@ impl Setup for Local {
 			// Extract the move token contract address
 			let move_token_address = json_value["transactions"]
 				.as_array()
-				.and_then(|transactions| transactions.get(4))
+				.and_then(|transactions| transactions.get(3))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
@@ -160,7 +161,7 @@ impl Setup for Local {
 			// Extract the movement staking contract address
 			let movement_staking_address = json_value["transactions"]
 				.as_array()
-				.and_then(|transactions| transactions.get(5))
+				.and_then(|transactions| transactions.get(4))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(
@@ -176,7 +177,7 @@ impl Setup for Local {
 			// Extract the contract address
 			let mcr_address = json_value["transactions"]
 				.as_array()
-				.and_then(|transactions| transactions.get(6))
+				.and_then(|transactions| transactions.get(5))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
 				.ok_or(anyhow!(

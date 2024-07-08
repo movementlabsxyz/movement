@@ -8,12 +8,9 @@ import {IMintableToken, MintableToken} from "../src/token/base/MintableToken.sol
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployMCRDev is Script {
-
-    string public moveTokenSignature = "initialize(string,string)";
-    string public stakingSignature = "initialize(address)";
-    string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
 
     function run() external {
         vm.startBroadcast();
@@ -22,37 +19,26 @@ contract DeployMCRDev is Script {
         MovementStaking stakingImplementation = new MovementStaking();
         MCR mcrImplementation = new MCR();
 
-        ProxyAdmin admin = new ProxyAdmin(vm.addr(1));
+        // Deploy the Move Token
+        bytes memory moveTokenData = abi.encodeCall(MintableToken.initialize, ("Move Token", "MOVE"));
+        address moveTokenProxy = address(new ERC1967Proxy(address(moveTokenImplementation), moveTokenData));
 
-        TransparentUpgradeableProxy moveTokenProxy = new TransparentUpgradeableProxy(
-            address(moveTokenImplementation),
-            address(admin),
-            abi.encodeWithSignature(moveTokenSignature, "Move Token", "MOVE")
-        );
+        // Deploy the Movement Staking
+        bytes memory movementStakingData = abi.encodeCall(MovementStaking.initialize, IMintableToken(address(moveTokenProxy)));
+        address movementStakingProxy = address(new ERC1967Proxy(address(stakingImplementation), movementStakingData));
 
-        TransparentUpgradeableProxy stakingProxy = new TransparentUpgradeableProxy(
-            address(stakingImplementation),
-            address(admin),
-            abi.encodeWithSignature(
-                stakingSignature, 
-                IMintableToken(address(moveTokenProxy))
-            )
-        );
-
+        // Deploy the MCR
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveTokenProxy);
-        TransparentUpgradeableProxy mcrProxy = new TransparentUpgradeableProxy(
-            address(mcrImplementation),
-            address(admin),
-            abi.encodeWithSignature(
-                mcrSignature,
-                address(stakingProxy),
-                5,
-                100 ether,
-                100 ether,
-                custodians
-            )
-        );
+        bytes memory mcrData = abi.encodeCall(MCR.initialize, (IMovementStaking(address(movementStakingProxy)), 5, 100 ether, 100 ether, custodians));
+        address mcrProxy = address(new ERC1967Proxy(address(mcrImplementation), mcrData));
+
+        console.log("Move Token Proxy: %s", moveTokenProxy);
+        MintableToken moveToken = MintableToken(moveTokenProxy);
+        moveToken.mint(msg.sender, 100000 ether);
+
+        moveToken.grantMinterRole(msg.sender);
+        moveToken.grantMinterRole(address(movementStakingProxy));
 
         vm.stopBroadcast();
 

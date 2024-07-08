@@ -5,7 +5,7 @@ use crate::eth_client::{
     MovementStaking
 };
 use mcr_settlement_config::Config;
-use alloy::providers::{ProviderBuilder, Provider};
+use alloy::providers::ProviderBuilder;
 use alloy_signer_wallet::LocalWallet;
 use alloy_primitives::Address;
 use alloy_primitives::U256;
@@ -17,8 +17,8 @@ use godfig::{
 };
 use tracing::info;
 use anyhow::Context;
-use alloy::rpc::types::trace::parity::TraceType;
-use alloy_rpc_types::TransactionRequest;
+// use alloy::rpc::types::trace::parity::TraceType;
+// use alloy_rpc_types::TransactionRequest;
 
 
 async fn run_genesis_ceremony(
@@ -67,32 +67,26 @@ async fn run_genesis_ceremony(
     let token_name = governor_token.
         name().call().await.context("Failed to get token name")?;
     info!("Token name: {}", token_name._0);
-    let calldata = governor_token.approve(
-        alice_address,
-        U256::from(100)
-    ).calldata().clone();
 
-    let transaction = TransactionRequest::default()
-        .from(governor.address())
-        .to(move_token_address)
-        .input(calldata.into());
-    let trace_type = [TraceType::Trace];
-    let result = governor_rpc_provider.trace_call(&transaction, &trace_type).await.context("Failed to approve alice")?;
+    let hasMinterRole = governor_token
+        .hasMinterRole(governor.address()) 
+        .call().await
+        .context("Failed to check if governor has minter role")?;
+    info!("Has minter role: {}", hasMinterRole._0);
 
+    let aliceHashMinterRole = governor_token
+        .hasMinterRole(alice.address()) 
+        .call().await
+        .context("Failed to check if alice has minter role")?;
+    info!("Alice has minter role: {}", aliceHashMinterRole._0);
 
-    let calldata = governor_token
+    governor_token
         .mint(alice_address, U256::from(100))
-        .calldata().clone();
-
-    let transaction = TransactionRequest::default()
-        .from(governor.address())
-        .to(move_token_address)
-        .input(calldata.into());
-    let trace_type = [TraceType::Trace];
-    let result = governor_rpc_provider.trace_call(&transaction, &trace_type).await.context("Failed to fund alice")?;
+        .call()
+        .await.context("Governor failed to mint for alice")?;
 
     alice_move_token
-        .approve(mcr_address, U256::from(100))
+        .approve(staking_address, U256::from(100))
         .call()
         .await.context("Alice failed to approve MCR")?;
     alice_staking
@@ -107,7 +101,7 @@ async fn run_genesis_ceremony(
         .call()
         .await.context("Governor failed to mint for bob")?;
     bob_move_token
-        .approve(mcr_address, U256::from(100))
+        .approve(staking_address, U256::from(100))
         .call()
         .await.context("Bob failed to approve MCR")?;
     bob_staking
