@@ -6,7 +6,7 @@ use crate::eth_client::{
 };
 use mcr_settlement_config::Config;
 use alloy::providers::ProviderBuilder;
-use alloy_signer_wallet::LocalWallet;
+use alloy::signers::{local::PrivateKeySigner};
 use alloy_primitives::Address;
 use alloy_primitives::U256;
 use alloy_network::EthereumSigner;
@@ -23,7 +23,7 @@ use anyhow::Context;
 
 async fn run_genesis_ceremony(
     config : &Config,
-    governor: LocalWallet,
+    governor: PrivateKeySigner,
     rpc_url: &str,
     move_token_address: Address,
     staking_address: Address,
@@ -32,7 +32,7 @@ async fn run_genesis_ceremony(
 
     // Build alice client for MOVEToken, MCR, and staking
     info!("Creating alice client");
-    let alice : LocalWallet = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
+    let alice : PrivateKeySigner = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
     let alice_address : Address = config.well_known_addresses.get(1).context("No well known address")?.parse()?;
     let alice_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
@@ -45,7 +45,7 @@ async fn run_genesis_ceremony(
 
     // Build bob client for MOVEToken, MCR, and staking
     info!("Creating bob client");
-    let bob: LocalWallet = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
+    let bob: PrivateKeySigner = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
     let bob_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .signer(EthereumSigner::from(bob.clone()))
@@ -73,10 +73,21 @@ async fn run_genesis_ceremony(
 
     // debug: this is showing up correctly
     let hasMinterRole = governor_token
-        .hasMinterRole(governor.address()) 
+        .hasMinterRole(governor.address())
+         
         .call().await
         .context("Failed to check if governor has minter role")?;
     info!("Has minter role: {}", hasMinterRole._0);
+
+    let hasMinterRoleFromAlice = alice_move_token
+        .hasMinterRole(governor.address()) 
+        .call().await
+        .context("Failed to check if governor has minter role")?;
+    info!("Has minter role from Alice: {}", hasMinterRoleFromAlice._0);
+
+
+    info!("config chain_id: {}",config.eth_chain_id.clone().to_string());
+    info!("governor chain_id: {}", governor_rpc_provider.get_chain_id().await.context("Failed to get chain id")?.to_string());
 
     // debug: this is showing up correctly
     let aliceHashMinterRole = governor_token
@@ -85,11 +96,12 @@ async fn run_genesis_ceremony(
         .context("Failed to check if alice has minter role")?;
     info!("Alice has minter role: {}", aliceHashMinterRole._0);
 
+    let governor_address = governor.address();
+    info!("Governor address: {}", governor_address.clone().to_string());
     // debug: fails here
-    governor_token
+    let receipt = governor_token
         .mint(alice_address, U256::from(100))
-        .chain_id(config.eth_chain_id)
-        .call()
+        .send()
         .await.context("Governor failed to mint for alice")?;
 
     // debug: also fails here if you lift the restriction above; then it fails as if msg.sender =  address(0)
@@ -149,7 +161,7 @@ pub async fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
 
     run_genesis_ceremony(
         &config,
-        LocalWallet::from_str(&config.governor_private_key)?,
+        PrivateKeySigner::from_str(&config.governor_private_key)?,
         &config.eth_rpc_connection_url(),
         Address::from_str(&config.move_token_contract_address)?,
         Address::from_str(&config.movement_staking_contract_address)?,

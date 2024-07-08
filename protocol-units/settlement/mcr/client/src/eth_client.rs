@@ -16,7 +16,7 @@ use alloy_provider::fillers::NonceFiller;
 use alloy_provider::fillers::SignerFiller;
 use alloy_provider::Provider;
 use alloy_provider::{ProviderBuilder, RootProvider};
-use alloy_signer_wallet::LocalWallet;
+use alloy::signers::{local::PrivateKeySigner};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
@@ -102,7 +102,7 @@ impl
 {
 	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.signer_private_key.clone();
-		let signer: LocalWallet = signer_private_key.parse()?;
+		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
 		let contract_address = config.mcr_contract_address.parse()?;
 		let rpc_url = config.eth_rpc_connection_url();

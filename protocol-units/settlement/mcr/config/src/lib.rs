@@ -2,7 +2,7 @@
 //! component of a Movement node.
 
 use std::env;
-use alloy_signer_wallet::LocalWallet;
+use alloy::signers::{local::PrivateKeySigner};
 use serde::{Deserialize, Serialize};
 use godfig::env_default;
 
@@ -172,13 +172,13 @@ env_default!(
 );
 
 pub fn default_signer_private_key() -> String {
-	let random_wallet = LocalWallet::random();
+	let random_wallet = PrivateKeySigner::random();
 	let random_wallet_string = random_wallet.to_bytes().to_string();
 	env::var("SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
 
 pub fn default_governor_private_key() -> String {
-	let random_wallet = LocalWallet::random();
+	let random_wallet = PrivateKeySigner::random();
 	let random_wallet_string = random_wallet.to_bytes().to_string();
 	env::var("GOVERNOR_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }
