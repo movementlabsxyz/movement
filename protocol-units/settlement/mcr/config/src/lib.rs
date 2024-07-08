@@ -7,6 +7,9 @@ use alloy::primitives::Address;
 use serde::{Deserialize, Serialize};
 use godfig::env_default;
 use std::ops::{Deref, DerefMut};
+pub mod local;
+pub mod deploy_remote;
+pub mod common;	
 
 const DEFAULT_ETH_RPC_CONNECTION_HOSTNAME: &str = "ethereum-holesky-rpc.publicnode.com";
 const DEFAULT_ETH_RPC_CONNECTION_PORT: u16 = 443;
@@ -40,17 +43,20 @@ pub struct InnerConfig {
 	pub eth_ws_connection_hostname: String,
 	#[serde(default = "default_eth_ws_connection_port")]
 	pub eth_ws_connection_port: u16,
+
 	// TODO: this should be managed in a secrets vault
 	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
 	#[serde(default = "default_governor_private_key")]
 	pub governor_private_key: String,
+	
 	#[serde(default = "default_move_token_contract_address")]
 	pub move_token_contract_address: String,
 	#[serde(default = "default_movement_staking_contract_address")]
 	pub movement_staking_contract_address: String,
 	#[serde(default = "default_mcr_contract_address")]
 	pub mcr_contract_address: String,
+
 	#[serde(default = "default_gas_limit")]
 	pub gas_limit: u64,
 	/// Timeout for batching blocks, in milliseconds
