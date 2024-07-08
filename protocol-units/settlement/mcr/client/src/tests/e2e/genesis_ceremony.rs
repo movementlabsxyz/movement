@@ -37,7 +37,8 @@ async fn run_genesis_ceremony(
     let alice_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .signer(EthereumSigner::from(alice.clone()))
-        .on_http(rpc_url.parse()?);
+        .on_builtin(&rpc_url)
+        .await?;
     let alice_mcr = MCR::new(mcr_address, &alice_rpc_provider);
     let alice_staking = MovementStaking::new(staking_address, &alice_rpc_provider);
     let alice_move_token = MOVEToken::new(move_token_address, &alice_rpc_provider);
@@ -48,7 +49,8 @@ async fn run_genesis_ceremony(
     let bob_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .signer(EthereumSigner::from(bob.clone()))
-        .on_http(rpc_url.parse()?);
+        .on_builtin(&rpc_url)
+        .await?;
     let bob_mcr = MCR::new(mcr_address, &bob_rpc_provider);
     let bob_staking = MovementStaking::new(staking_address, &bob_rpc_provider);
     let bob_move_token = MOVEToken::new(move_token_address, &bob_rpc_provider);
@@ -58,7 +60,8 @@ async fn run_genesis_ceremony(
     let governor_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .signer(EthereumSigner::from(governor.clone()))
-        .on_http(rpc_url.parse()?);
+        .on_builtin(&rpc_url)
+        .await?;
     let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
     let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
 
@@ -68,23 +71,28 @@ async fn run_genesis_ceremony(
         name().call().await.context("Failed to get token name")?;
     info!("Token name: {}", token_name._0);
 
+    // debug: this is showing up correctly
     let hasMinterRole = governor_token
         .hasMinterRole(governor.address()) 
         .call().await
         .context("Failed to check if governor has minter role")?;
     info!("Has minter role: {}", hasMinterRole._0);
 
+    // debug: this is showing up correctly
     let aliceHashMinterRole = governor_token
         .hasMinterRole(alice.address()) 
         .call().await
         .context("Failed to check if alice has minter role")?;
     info!("Alice has minter role: {}", aliceHashMinterRole._0);
 
+    // debug: fails here
     governor_token
         .mint(alice_address, U256::from(100))
+        .chain_id(config.eth_chain_id)
         .call()
         .await.context("Governor failed to mint for alice")?;
 
+    // debug: also fails here if you lift the restriction above; then it fails as if msg.sender =  address(0)
     alice_move_token
         .approve(staking_address, U256::from(100))
         .call()
