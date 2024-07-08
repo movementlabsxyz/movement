@@ -28,7 +28,7 @@ async fn test_light_node_submits_blob_over_stream() -> Result<(), anyhow::Error>
 					match blob.blob_type.ok_or(anyhow::anyhow!("No blob type in response"))? {
 						blob_response::BlobType::SequencedBlobBlock(blob) => {
 							let block = serde_json::from_slice::<Block>(&blob.data)?;
-							assert_eq!(block.transactions[0].0, data);
+							assert_eq!(block.transactions[0].data, data);
 							return Ok(());
 						}
 						_ => {
