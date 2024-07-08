@@ -254,9 +254,9 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1]), 2);
-		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2]), 64);
-		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3]), 128);
+		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
+		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 128);
 
 		mempool.add_mempool_transaction(tx2.clone()).await?;
 		mempool.add_mempool_transaction(tx1.clone()).await?;
