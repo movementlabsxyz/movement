@@ -36,7 +36,7 @@ processes:
 
   celestia-light-node:
     command: |
-      sleep 999999999d
+      sleep 999999999
       echo "started"
     readiness_probe:
       initial_delay_seconds: 3
