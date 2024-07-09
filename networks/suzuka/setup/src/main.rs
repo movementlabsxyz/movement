@@ -1,4 +1,9 @@
 use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
+use godfig::{
+	Godfig,
+	backend::config_file::ConfigFile
+};
+use suzuka_config::Config;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -10,16 +15,28 @@ async fn main() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
+	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement
-		.try_get_config_from_json::<suzuka_config::Config>()
-		.unwrap_or_default();
+	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 
-	let local = Local::new();
-	let config = local.setup(dot_movement.clone(), config).await?;
-	tracing::info!("SuzukaFullNodeSetup: Finished setup with config: {:#?}", config);
+	// get a matching godfig object
+	let godfig : Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
 
-	dot_movement.try_write_config_to_json(&config)?;
+	// Apply all of the setup steps
+	let anvil_join_handle = godfig.try_transaction_with_result(|config| async move {
+
+		tracing::info!("Config: {:?}", config);
+		let config = config.unwrap_or_default();
+		tracing::info!("Config: {:?}", config);
+
+		let (config, anvil_join_handle) = Local::default().setup(dot_movement, config).await?;
+	
+		Ok((Some(config), anvil_join_handle))
+
+	}).await?;
+
+	// wait for anvil to finish
+	let _ = anvil_join_handle.await?;
 
 	Ok(())
 }

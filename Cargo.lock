@@ -11264,6 +11264,7 @@ dependencies = [
  "celestia-types",
  "commander",
  "dot-movement",
+ "godfig",
  "hex",
  "m1-da-light-node-setup",
  "m1-da-light-node-util",
