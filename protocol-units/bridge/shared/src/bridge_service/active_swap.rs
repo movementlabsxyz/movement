@@ -61,6 +61,7 @@ where
 	),
 	CompletingBridgingError(Delay, CompletedDetails<BTo::Hash>, Attempts),
 	Completed,
+	Aborted,
 }
 
 impl<BTo> std::fmt::Debug for ActiveSwapState<BTo>
@@ -85,6 +86,7 @@ where
 				f.debug_struct("CompletingBridgingError").field("attempts", attempts).finish()
 			}
 			ActiveSwapState::Completed => f.debug_tuple("Completed").finish(),
+			ActiveSwapState::Aborted => f.debug_tuple("Aborted").finish(),
 		}
 	}
 }
@@ -225,7 +227,7 @@ where
 				.boxed()
 				.timeout(Delay::new(self.config.contract_call_timeout)),
 			details.clone(),
-			self.config.error_attempts,
+			0,
 		);
 
 		self.waker.wake();
@@ -242,6 +244,7 @@ pub enum ActiveSwapEvent<H> {
 	BridgeAssetsCompleted(BridgeTransferId<H>),
 	BridgeAssetsCompletingError(BridgeTransferId<H>, CompleteBridgeTransferError),
 	BridgeAssetsRetryCompleting(BridgeTransferId<H>),
+	BridgeAssetsAbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 fn catch_timeout_error<T, E: HasTimeoutError>(
@@ -269,7 +272,11 @@ where
 
 		tracing::trace!("Polling active swap map");
 
-		let mut cleanup: Vec<BridgeTransferId<BFrom::Hash>> = Vec::new();
+		// remove all swaps that are completed or aborted
+		this.swaps.retain(|_, swap| {
+			!matches!(swap.state, ActiveSwapState::Completed | ActiveSwapState::Aborted)
+		});
+
 		for (bridge_transfer_id, ActiveSwap { details: bridge_transfer, state, .. }) in
 			this.swaps.iter_mut()
 		{
@@ -286,6 +293,20 @@ where
 							)));
 						}
 						Poll::Ready(Err(error)) => {
+							tracing::trace!(
+								"Locking brige_transfer {:?} failed, error: {:?} attempts: {}",
+								bridge_transfer_id,
+								error,
+								attempts
+							);
+							if *attempts >= this.config.error_attempts {
+								*state = ActiveSwapState::Aborted;
+								return Poll::Ready(Some(
+									ActiveSwapEvent::BridgeAssetsAbortedTooManyAttempts(
+										bridge_transfer_id.clone(),
+									),
+								));
+							}
 							// Locking tokens failed
 							// Transition to the next state
 							*state = ActiveSwapState::LockingTokensError(
@@ -334,6 +355,21 @@ where
 							)));
 						}
 						Poll::Ready(Err(error)) => {
+							tracing::trace!(
+								"Completing bridge transfer {:?} failed: {:?} attemtps: {}",
+								bridge_transfer_id,
+								error,
+								attempts
+							);
+							if *attempts >= this.config.error_attempts {
+								*state = ActiveSwapState::Aborted;
+								return Poll::Ready(Some(
+									ActiveSwapEvent::BridgeAssetsAbortedTooManyAttempts(
+										bridge_transfer_id.clone(),
+									),
+								));
+							}
+
 							// Completing bridging failed
 							// Transition to the next state
 							*state = ActiveSwapState::CompletingBridgingError(
@@ -341,6 +377,7 @@ where
 								details.clone(),
 								*attempts + 1,
 							);
+
 							return Poll::Ready(Some(
 								ActiveSwapEvent::BridgeAssetsCompletingError(
 									bridge_transfer_id.clone(),
@@ -376,14 +413,18 @@ where
 					}
 				}
 				Completed => {
-					cleanup.push(bridge_transfer_id.clone());
+					tracing::trace!(
+						"Bridge transfer {:?} completed, marked for cleanup",
+						bridge_transfer_id
+					);
+				}
+				Aborted => {
+					tracing::trace!(
+						"Bridge transfer {:?} aborted, marked for cleanup",
+						bridge_transfer_id
+					);
 				}
 			}
-		}
-
-		// cleanup completed swaps
-		for bridge_transfer_id in cleanup {
-			this.swaps.remove(&bridge_transfer_id);
 		}
 
 		this.waker.register(cx.waker());
@@ -455,7 +496,7 @@ pub enum CompleteBridgeTransferError {
 	#[error("Timeout while performing contract call")]
 	ContractCallTimeoutError,
 	#[error(transparent)]
-	ContractCallError(#[from] BridgeContractInitiatorError), // TODO; addd contact call errors
+	ContractCallError(#[from] BridgeContractInitiatorError),
 }
 
 impl HasTimeoutError for CompleteBridgeTransferError {

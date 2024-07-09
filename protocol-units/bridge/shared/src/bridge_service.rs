@@ -239,6 +239,7 @@ where
 		Poll::Ready(Some(event)) => {
 			trace!("BridgeService: Received event from active swaps: {:?}", event);
 			match event {
+				// Locking
 				BridgeAssetsLocked(bridge_transfer_id) => {
 					trace!(
 						"BridgeService: Bridge assets locked for transfer {:?}",
@@ -254,6 +255,19 @@ where
 						CWarn::BridgeAssetsLockingError(error),
 					)));
 				}
+				BridgeAssetsRetryLocking(bridge_transfer_id) => {
+					warn!(
+						"BridgeService: Retrying to lock bridge assets for transfer {:?}",
+						bridge_transfer_id
+					);
+					return Some(HandleActiveSwapEvent::CounterpartyEvent(
+						CEvent::RetryLockingAssets(BridgeTransferId(From::from(
+							bridge_transfer_id.0,
+						))),
+					));
+				}
+
+				// Completing
 				BridgeAssetsCompleted(bridge_transfer_id) => {
 					trace!(
 						"BridgeService: Bridge assets completed for transfer {:?}",
@@ -266,17 +280,7 @@ where
 						IWarn::CompleteTransferError(bridge_transfer_id.clone()),
 					)));
 				}
-				BridgeAssetsRetryLocking(bridge_transfer_id) => {
-					warn!(
-						"BridgeService: Retrying to lock bridge assets for transfer {:?}",
-						bridge_transfer_id
-					);
-					return Some(HandleActiveSwapEvent::CounterpartyEvent(
-						CEvent::RetryLockingAssets(BridgeTransferId(From::from(
-							bridge_transfer_id.0,
-						))),
-					));
-				}
+
 				BridgeAssetsRetryCompleting(bridge_transfer_id) => {
 					warn!(
 						"BridgeService: Retrying to complete bridge assets for transfer {:?}",
@@ -285,6 +289,18 @@ where
 					return Some(HandleActiveSwapEvent::InitiatorEvent(
 						IEvent::RetryCompletingTransfer(bridge_transfer_id),
 					));
+				}
+
+				BridgeAssetsAbortedTooManyAttempts(bride_transfer_id) => {
+					warn!(
+						"BridgeService: Aborted bridge transfer due to too many attempts: {:?}",
+						bride_transfer_id
+					);
+					return Some(HandleActiveSwapEvent::CounterpartyEvent(CEvent::Warn(
+						CWarn::AbortedTooManyAttempts(BridgeTransferId(From::from(
+							bride_transfer_id.0,
+						))),
+					)));
 				}
 			}
 		}

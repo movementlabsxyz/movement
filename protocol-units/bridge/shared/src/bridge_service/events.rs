@@ -38,6 +38,7 @@ impl<A, H> IEvent<A, H> {
 pub enum CWarn<H> {
 	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
 	CannotCompleteUnexistingSwap(CompletedDetails<H>),
+	AbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
