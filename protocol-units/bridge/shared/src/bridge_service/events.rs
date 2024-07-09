@@ -10,7 +10,7 @@ use super::active_swap::LockBridgeTransferAssetsError;
 pub enum IWarn<A, H> {
 	AlreadyPresent(BridgeTransferDetails<A, H>),
 	CompleteTransferError(BridgeTransferId<H>),
-	AbortedTooManyAttempts(BridgeTransferId<H>),
+	CompletionAbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -39,7 +39,7 @@ impl<A, H> IEvent<A, H> {
 pub enum CWarn<H> {
 	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
 	CannotCompleteUnexistingSwap(CompletedDetails<H>),
-	AbortedTooManyAttempts(BridgeTransferId<H>),
+	LockingAbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]

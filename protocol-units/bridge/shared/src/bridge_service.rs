@@ -268,6 +268,17 @@ where
 						))),
 					));
 				}
+				BridgeAssetsLockingAbortedTooManyAttempts(bride_transfer_id) => {
+					warn!(
+						"BridgeService: Aborted bridge transfer due to too many attempts: {:?}",
+						bride_transfer_id
+					);
+					return Some(HandleActiveSwapEvent::CounterpartyEvent(CEvent::Warn(
+						CWarn::LockingAbortedTooManyAttempts(BridgeTransferId(From::from(
+							bride_transfer_id.0,
+						))),
+					)));
+				}
 
 				// Completing
 				BridgeAssetsCompleted(bridge_transfer_id) => {
@@ -293,24 +304,13 @@ where
 					));
 				}
 
-				BridgeAssetsLockingAbortedTooManyAttempts(bride_transfer_id) => {
-					warn!(
-						"BridgeService: Aborted bridge transfer due to too many attempts: {:?}",
-						bride_transfer_id
-					);
-					return Some(HandleActiveSwapEvent::CounterpartyEvent(CEvent::Warn(
-						CWarn::AbortedTooManyAttempts(BridgeTransferId(From::from(
-							bride_transfer_id.0,
-						))),
-					)));
-				}
 				BridgeAssetsCompletingAbortedTooManyAttempts(bridge_transfer_id) => {
 					warn!(
 						"BridgeService: Aborted bridge transfer completion due to too many errors: {:?}",
 						bridge_transfer_id
 					);
 					return Some(HandleActiveSwapEvent::InitiatorEvent(IEvent::Warn(
-						IWarn::AbortedTooManyAttempts(bridge_transfer_id),
+						IWarn::CompletionAbortedTooManyAttempts(bridge_transfer_id),
 					)));
 				}
 			}

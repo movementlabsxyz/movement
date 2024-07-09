@@ -188,7 +188,7 @@ async fn test_bridge_service_error_handling() {
 }
 
 #[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
-async fn test_bridge_service_termination_after_errors() {
+async fn test_bridge_service_locking_termination_after_errors() {
 	let SetupBridgeServiceResult(
 		mut bridge_service,
 		mut blockchain_1_client,
@@ -269,10 +269,137 @@ async fn test_bridge_service_termination_after_errors() {
 	// The Bridge is expected to retry the operation after the configured delay in case of an error.
 	let event = bridge_service.next().await.expect("No event");
 	tracing::debug!(?event);
-	assert!(matches!(event, Event::B2C(CEvent::Warn(CWarn::AbortedTooManyAttempts(_)))));
+	assert!(matches!(event, Event::B2C(CEvent::Warn(CWarn::LockingAbortedTooManyAttempts(_)))));
 
 	// Call the poll method on the active_swaps_b1_to_b2 to ensure that
 	// the swap will be removed form he active swaps list
+	let cx = &mut std::task::Context::from_waker(futures::task::noop_waker_ref());
+	let _ = bridge_service.active_swaps_b1_to_b2.poll_next_unpin(cx);
+
+	assert!(bridge_service
+		.active_swaps_b1_to_b2
+		.get(transfer_initiated_event.bridge_transfer_id())
+		.is_none());
+}
+
+#[test(tokio::test(flavor = "multi_thread", worker_threads = 4))]
+async fn test_bridge_service_completion_abort_after_errors() {
+	let SetupBridgeServiceResult(
+		mut bridge_service,
+		mut blockchain_1_client,
+		mut blockchain_2_client,
+		blockchain_1,
+		blockchain_2,
+	) = setup_bridge_service(BridgeServiceConfig {
+		active_swap: ActiveSwapConfig {
+			error_attempts: 3,
+			error_delay: Duration::from_secs(1),
+			contract_call_timeout: Duration::from_secs(5),
+		},
+	});
+
+	tokio::spawn(blockchain_1);
+	tokio::spawn(blockchain_2);
+
+	// Step 1: Initiating the swap on Blockchain 1
+	tracing::debug!("Initiating bridge transfer with error configuration");
+	blockchain_1_client
+		.initiate_bridge_transfer(
+			InitiatorAddress(BC1Address("initiator")),
+			RecipientAddress::from(BC1Address("recipient")),
+			HashLock(BC1Hash::from("hash_lock")),
+			TimeLock(100),
+			Amount(1000),
+		)
+		.await
+		.expect("initiate_bridge_transfer failed");
+
+	// B1I Initiated
+	let transfer_initiated_event = bridge_service.next().await.expect("No event");
+	let transfer_initiated_event =
+		transfer_initiated_event.B1I_ContractEvent().expect("Not a B1I event");
+	tracing::debug!(?transfer_initiated_event);
+	assert_eq!(
+		transfer_initiated_event,
+		&BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails {
+			bridge_transfer_id: transfer_initiated_event.bridge_transfer_id().clone(),
+			initiator_address: InitiatorAddress(BC1Address("initiator")),
+			recipient_address: RecipientAddress::from(BC1Address("recipient")),
+			hash_lock: HashLock(BC1Hash::from("hash_lock")),
+			time_lock: TimeLock(100),
+			amount: Amount(1000)
+		})
+	);
+
+	// Simulate successful locking on Blockchain 2
+	let event = bridge_service.next().await.expect("No event");
+	let event = event.B2C_ContractEvent().expect("Not a B2C event");
+	tracing::debug!(?event);
+	assert!(matches!(event, BridgeContractCounterpartyEvent::Locked(_)));
+
+	// Step 2: Attempting to complete the swap on Blockchain 2
+	tracing::debug!("Attempting to complete bridge transfer with valid secret");
+
+	// Configure blockchain_1_client to fail 3 times on completing the transfer
+	for n in 1..5 {
+		blockchain_1_client.set_call_config(
+			MethodName::CompleteBridgeTransferInitiator,
+			n,
+			CallConfig {
+				error: ErrorConfig::InitiatorError(
+					BridgeContractInitiatorError::CompleteTransferError,
+				),
+				delay: None,
+			},
+		);
+	}
+
+	<B2Client as BridgeContractCounterparty>::complete_bridge_transfer(
+		&mut blockchain_2_client,
+		Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+		HashLockPreImage(b"hash_lock".to_vec()),
+	)
+	.await
+	.expect("complete_bridge_transfer failed");
+
+	// Frist we get a completed event from the counterparty
+	let completed_event_counterparty = bridge_service.next().await.expect("No event");
+	let completed_event_counterparty =
+		completed_event_counterparty.B2C_ContractEvent().expect("Not a B2C event");
+	tracing::debug!(?completed_event_counterparty);
+	assert_eq!(
+		completed_event_counterparty,
+		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
+			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
+			recipient_address: RecipientAddress::from(BC2Address("recipient")),
+			hash_lock: HashLock(BC2Hash::from("hash_lock")),
+			secret: HashLockPreImage(b"hash_lock".to_vec()),
+			amount: Amount(1000),
+		})
+	);
+
+	// B1C Completing call failed due to mock above
+	for _ in 0..2 {
+		let event = bridge_service.next().await.expect("No event");
+		tracing::debug!(?event);
+		assert!(matches!(
+			event.B1I().and_then(IEvent::warn).expect("not a b1i warn event"),
+			IWarn::CompleteTransferError(_)
+		));
+
+		// The Bridge is expected to retry the operation after the configured delay in case of an error.
+		let event = bridge_service.next().await.expect("No event");
+		tracing::debug!(?event);
+		assert!(matches!(event, Event::B1I(IEvent::RetryCompletingTransfer(_))));
+	}
+
+	// After 3 errors, the active swap should be terminated
+	let event = bridge_service.next().await.expect("No event");
+	tracing::debug!(?event);
+	assert!(matches!(event, Event::B1I(IEvent::Warn(IWarn::CompletionAbortedTooManyAttempts(_)))));
+
+	// Call the poll method on the active_swaps_b1_to_b2 to ensure that
+	// the swap will be removed from the active swaps list
 	let cx = &mut std::task::Context::from_waker(futures::task::noop_waker_ref());
 	let _ = bridge_service.active_swaps_b1_to_b2.poll_next_unpin(cx);
 
