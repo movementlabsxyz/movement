@@ -56,10 +56,11 @@ async fn start_suzuka() -> Result<(), anyhow::Error> {
 		}
 	});
 
-	//Start suzuka node process
+	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config_path = dot_movement.get_config_json_path();
-	let config_file = tokio::fs::File::open(config_path).await?;
+	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
+
+	//Start suzuka node process
 	let manager = Manager::<SuzukaPartialNode<Executor>>::new(config_file).await?;
 	manager.try_run().await?;
 	

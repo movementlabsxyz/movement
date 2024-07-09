@@ -6941,6 +6941,7 @@ dependencies = [
  "anyhow",
  "commander",
  "dot-movement",
+ "godfig",
  "hex",
  "m1-da-light-node-util",
  "rand 0.7.3",
