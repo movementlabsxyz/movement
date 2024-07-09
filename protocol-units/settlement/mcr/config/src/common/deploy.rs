@@ -32,3 +32,12 @@ env_or_none!(
 	default_mcr_deployment_account_private_key,
 	default_mcr_deployment_working_directory
 );
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            mcr_deployment_working_directory: default_mcr_deployment_working_directory(),
+            mcr_deployment_account_private_key: default_mcr_deployment_account_private_key(),
+        }
+    }
+}

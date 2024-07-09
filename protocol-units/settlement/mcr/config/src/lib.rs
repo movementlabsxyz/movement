@@ -7,7 +7,7 @@ pub mod common;
 
 use godfig::env_short_default;
 use common::deploy::default_maybe_deploy;
-use common::settlement::default_maybe_settle;
+use common::testing::default_maybe_testing;
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -18,8 +18,8 @@ pub struct Config {
 	#[serde(default)]
 	pub eth_connection : common::eth_connection::Config,
 
-	#[serde(default = "default_maybe_settle")]
-	pub settle : Option<common::settlement::Config>,
+	#[serde(default)]
+	pub settle : common::settlement::Config,
 
 	/// Whether or not to attempt to run locally.
 	#[serde(default = "default_maybe_run_local")]
@@ -27,8 +27,12 @@ pub struct Config {
 
 	/// Optional deployment of contracts config
 	#[serde(default = "default_maybe_deploy")]
-	pub maybe_deploy : Option<common::deploy::Config>,
+	pub deploy : Option<common::deploy::Config>,
 	
+	/// Optional testing config
+	#[serde(default = "default_maybe_testing")]
+	pub testing : Option<common::testing::Config>
+
 }
 
 env_short_default!(
