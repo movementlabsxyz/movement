@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
-use godfig::env_default;
+use godfig::{
+	env_default,
+	env_or_none
+};
 use alloy_signer_wallet::LocalWallet;
 use std::env;
 
@@ -25,3 +28,19 @@ env_default!(
 	String,
 	DEFAULT_MCR_CONTRACT_ADDRESS.to_string()
 );
+
+env_or_none!(
+	default_maybe_settle,
+	Config,
+	default_signer_private_key,
+	default_mcr_contract_address
+);
+
+impl Default for Config {
+	fn default() -> Self {
+		Config {
+			signer_private_key: default_signer_private_key(),
+			mcr_contract_address: default_mcr_contract_address(),
+		}
+	}
+}

@@ -249,6 +249,7 @@ zstd-sys = "2.0.9"
 rayon = "1.10.0"
 inotify = "0.10.2"
 rustix = "0.38.34" 
+paste = "1.0.15"
 
 
 [workspace.lints.rust]

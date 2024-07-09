@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
-use godfig::env_default;
-
-const DEFAULT_MCR_DEPLOYMENT_ACCOUNT_WORKING_DIRECTORY: &str = "protocol-units/settlement/mcr/contracts";
-const DEFAULT_MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: &str = "0x0";
+use godfig::{
+    env_short_default,
+    env_or_none
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -14,16 +14,21 @@ pub struct Config {
     pub mcr_deployment_account_private_key : String, 
 }
 
-env_default!(
+env_short_default!(
     default_mcr_deployment_working_directory,
-    "MCR_DEPLOYMENT_WORKING_DIRECTORY",
     String,
-    DEFAULT_MCR_DEPLOYMENT_ACCOUNT_WORKING_DIRECTORY.to_string()
+    "protocol-units/settlement/mcr/contracts"
 );
 
-env_default!(
+env_short_default!(
     default_mcr_deployment_account_private_key,
-	"MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY",
 	String,
-	DEFAULT_MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY.to_string()
+	"0x0"
+);
+
+env_or_none!(
+	default_maybe_deploy,
+	Config,
+	default_mcr_deployment_account_private_key,
+	default_mcr_deployment_working_directory
 );

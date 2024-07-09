@@ -3,8 +3,11 @@
 use serde::{Deserialize, Serialize};
 pub mod run_local;
 pub mod deploy_remote;
-pub mod common;	
-use godfig::env_default;
+pub mod common;
+
+use godfig::env_short_default;
+use common::deploy::default_maybe_deploy;
+use common::settlement::default_maybe_settle;
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -15,17 +18,21 @@ pub struct Config {
 	#[serde(default)]
 	pub eth_connection : common::eth_connection::Config,
 
+	#[serde(default = "default_maybe_settle")]
+	pub settle : Option<common::settlement::Config>,
+
 	/// Whether or not to attempt to run locally.
 	#[serde(default = "default_maybe_run_local")]
 	pub maybe_run_local : bool,
 
 	/// Optional deployment of contracts config
+	#[serde(default = "default_maybe_deploy")]
+	pub maybe_deploy : Option<common::deploy::Config>,
 	
 }
 
-env_default!(
+env_short_default!(
 	default_maybe_run_local,
-	"MAYBE_RUN_LOCAL",
 	bool,
 	false
 );

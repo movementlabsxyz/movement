@@ -1,8 +1,5 @@
 use serde::{Deserialize, Serialize};
-use godfig::env_default;
-
-const DEFAULT_MOVE_TOKEN_CONTRACT_ADDRESS: &str = "0x0";
-const DEFAULT_MOVEMENT_STAKING_CONTRACT_ADDRESS: &str = "0x0";
+use godfig::env_short_default;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -12,16 +9,14 @@ pub struct Config {
 	pub movement_staking_contract_address: String,
 }
 
-env_default!(
+env_short_default!(
 	default_move_token_contract_address,
-	"MOVE_TOKEN_CONTRACT_ADDRESS",
 	String,
-	DEFAULT_MOVE_TOKEN_CONTRACT_ADDRESS.to_string()
+	"0x0"
 );
 
-env_default!(
+env_short_default!(
 	default_movement_staking_contract_address,
-	"MOVEMENT_STAKING_CONTRACT_ADDRESS",
 	String, 
-	DEFAULT_MOVEMENT_STAKING_CONTRACT_ADDRESS.to_string()
+	"0x0"
 );
