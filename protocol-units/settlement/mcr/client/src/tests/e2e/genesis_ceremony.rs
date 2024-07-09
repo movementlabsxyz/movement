@@ -86,8 +86,8 @@ async fn run_genesis_ceremony(
     info!("Has minter role from Alice: {}", hasMinterRoleFromAlice._0);
 
 
-    info!("config chain_id: {}",config.eth_chain_id.clone().to_string());
-    info!("governor chain_id: {}", governor_rpc_provider.get_chain_id().await.context("Failed to get chain id")?.to_string());
+    //info!("config chain_id: {}",config.eth_chain_id.clone().to_string());
+    //info!("governor chain_id: {}", governor_rpc_provider.get_chain_id().await.context("Failed to get chain id")?.to_string());
 
     // debug: this is showing up correctly
     let aliceHashMinterRole = governor_token
