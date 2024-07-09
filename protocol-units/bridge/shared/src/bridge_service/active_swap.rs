@@ -244,7 +244,8 @@ pub enum ActiveSwapEvent<H> {
 	BridgeAssetsCompleted(BridgeTransferId<H>),
 	BridgeAssetsCompletingError(BridgeTransferId<H>, CompleteBridgeTransferError),
 	BridgeAssetsRetryCompleting(BridgeTransferId<H>),
-	BridgeAssetsAbortedTooManyAttempts(BridgeTransferId<H>),
+	BridgeAssetsLockingAbortedTooManyAttempts(BridgeTransferId<H>),
+	BridgeAssetsCompletingAbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 fn catch_timeout_error<T, E: HasTimeoutError>(
@@ -302,7 +303,7 @@ where
 							if *attempts >= this.config.error_attempts {
 								*state = ActiveSwapState::Aborted;
 								return Poll::Ready(Some(
-									ActiveSwapEvent::BridgeAssetsAbortedTooManyAttempts(
+									ActiveSwapEvent::BridgeAssetsLockingAbortedTooManyAttempts(
 										bridge_transfer_id.clone(),
 									),
 								));
@@ -364,7 +365,7 @@ where
 							if *attempts >= this.config.error_attempts {
 								*state = ActiveSwapState::Aborted;
 								return Poll::Ready(Some(
-									ActiveSwapEvent::BridgeAssetsAbortedTooManyAttempts(
+									ActiveSwapEvent::BridgeAssetsCompletingAbortedTooManyAttempts(
 										bridge_transfer_id.clone(),
 									),
 								));

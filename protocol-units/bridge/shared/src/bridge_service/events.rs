@@ -10,6 +10,7 @@ use super::active_swap::LockBridgeTransferAssetsError;
 pub enum IWarn<A, H> {
 	AlreadyPresent(BridgeTransferDetails<A, H>),
 	CompleteTransferError(BridgeTransferId<H>),
+	AbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]

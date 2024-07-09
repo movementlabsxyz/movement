@@ -221,6 +221,8 @@ where
 	}
 }
 
+// Initiator events pertain to the initiator contract, while counterparty events are associated
+// with the counterparty contract.
 enum HandleActiveSwapEvent<A, H, H2> {
 	InitiatorEvent(IEvent<A, H>),
 	CounterpartyEvent(CEvent<H2>),
@@ -291,7 +293,7 @@ where
 					));
 				}
 
-				BridgeAssetsAbortedTooManyAttempts(bride_transfer_id) => {
+				BridgeAssetsLockingAbortedTooManyAttempts(bride_transfer_id) => {
 					warn!(
 						"BridgeService: Aborted bridge transfer due to too many attempts: {:?}",
 						bride_transfer_id
@@ -300,6 +302,15 @@ where
 						CWarn::AbortedTooManyAttempts(BridgeTransferId(From::from(
 							bride_transfer_id.0,
 						))),
+					)));
+				}
+				BridgeAssetsCompletingAbortedTooManyAttempts(bridge_transfer_id) => {
+					warn!(
+						"BridgeService: Aborted bridge transfer completion due to too many errors: {:?}",
+						bridge_transfer_id
+					);
+					return Some(HandleActiveSwapEvent::InitiatorEvent(IEvent::Warn(
+						IWarn::AbortedTooManyAttempts(bridge_transfer_id),
 					)));
 				}
 			}
