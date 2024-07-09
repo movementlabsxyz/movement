@@ -52,5 +52,8 @@ COPY --from=builder /tmp/executables/forge /usr/local/bin/forge
 # Copy over the context so we have the contracts
 COPY . /app
 
+# Set the working directory to /app
+WORKDIR /app
+
 # Set the binary as the entrypoint
 ENTRYPOINT ["/app/suzuka-full-node-setup"]
