@@ -104,36 +104,38 @@ async fn run_genesis_ceremony(
         .send()
         .await.context("Governor failed to mint for alice")?;
 
+    info!("staking_address: {}", staking_address.clone().to_string());
+
     // debug: also fails here if you lift the restriction above; then it fails as if msg.sender =  address(0)
     alice_move_token
         .approve(staking_address, U256::from(100))
-        .call()
+        .send()
         .await.context("Alice failed to approve MCR")?;
     alice_staking
         .stake(mcr_address, move_token_address, U256::from(100))
-        .call()
+        .send()
         .await.context("Alice failed to stake for MCR")?;
 
     // bob stakes for mcr
     info!("Bob stakes for MCR");
     governor_token
         .mint(bob.address(), U256::from(100))
-        .call()
+        .send()
         .await.context("Governor failed to mint for bob")?;
     bob_move_token
         .approve(staking_address, U256::from(100))
-        .call()
+        .send()
         .await.context("Bob failed to approve MCR")?;
     bob_staking
         .stake(mcr_address, move_token_address, U256::from(100))
-        .call()
+        .send()
         .await.context("Bob failed to stake for MCR")?;
 
     // mcr accepts the genesis
     info!("MCR accepts the genesis");
     governor_staking
         .acceptGenesisCeremony()
-        .call()
+        .send()
         .await.context("Governor failed to accept genesis ceremony")?;
 
     Ok(())
