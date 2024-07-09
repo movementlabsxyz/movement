@@ -1,11 +1,5 @@
 //! This crate provides configuration parameters for the MCR settlement
 //! component of a Movement node.
-<<<<<<< HEAD
-=======
-
-use std::env;
-use alloy::signers::{local::PrivateKeySigner};
->>>>>>> l-monninger/msg-sender-is-zero
 use serde::{Deserialize, Serialize};
 pub mod run_local;
 pub mod deploy_remote;

@@ -1,0 +1,9 @@
+[package]
+name = "Faucet"
+version = "0.3.0"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", subdir = "aptos-move/framework/aptos-framework/", rev = "bbce0f188d7bef08218f1fc1f46bbd3676b5c74b" }
+
+[addresses]
+SwapDeployer = "_"
