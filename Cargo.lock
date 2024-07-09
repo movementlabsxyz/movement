@@ -886,8 +886,9 @@ dependencies = [
  "aptos-metrics-core",
  "aptos-types",
  "bcs 0.1.4",
- "clap 4.5.9",
  "dashmap",
+ "clap 4.5.8",
+ "dashmap 5.5.3",
  "itertools 0.10.5",
  "jemallocator",
  "move-core-types",
@@ -5515,9 +5516,9 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "913dce4c5f06c2ea40fc178c06f777ac89fc6b1383e90c254fafb1abe4ba3c82"
 dependencies = [
- "proc-macro2 1.0.85",
+ "proc-macro2 1.0.86",
  "quote 1.0.36",
- "syn 2.0.66",
+ "syn 2.0.69",
  "uuid",
 ]
 
