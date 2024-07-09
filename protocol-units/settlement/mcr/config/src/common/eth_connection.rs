@@ -64,3 +64,17 @@ env_default!(
 	u16,
 	DEFAULT_ETH_WS_CONNECTION_PORT
 );
+
+impl Default for Config {
+	fn default() -> Self {
+		Config {
+			eth_rpc_connection_protocol: default_eth_rpc_connection_protocol(),
+			eth_rpc_connection_hostname: default_eth_rpc_connection_hostname(),
+			eth_rpc_connection_port: default_eth_rpc_connection_port(),
+
+			eth_ws_connection_protocol: default_eth_ws_connection_protocol(),
+			eth_ws_connection_hostname: default_eth_ws_connection_hostname(),
+			eth_ws_connection_port: default_eth_ws_connection_port(),
+		}
+	}
+}
