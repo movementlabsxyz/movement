@@ -14,7 +14,7 @@ use alloy::providers::fillers::GasFiller;
 use alloy::providers::fillers::JoinFill;
 use alloy::providers::fillers::NonceFiller;
 use alloy::providers::fillers::WalletFiller;
-use alloy::providers::{ProviderBuilder, Provider};
+use alloy::providers::{ProviderBuilder, Provider, RootProvider};
 use alloy::signers::{local::PrivateKeySigner};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
@@ -75,7 +75,7 @@ sol!(
 
 pub struct Client<P> {
 	rpc_provider: P,
-	ws_provider: Provider<PubSubFrontend>,
+	ws_provider: RootProvider<PubSubFrontend>,
 	pub signer_address: Address,
 	contract_address: Address,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
@@ -93,7 +93,7 @@ impl
 				>,
 				WalletFiller<EthereumWallet>,
 			>,
-			Provider<BoxTransport>,
+			RootProvider<BoxTransport>,
 			BoxTransport,
 			Ethereum,
 		>,
