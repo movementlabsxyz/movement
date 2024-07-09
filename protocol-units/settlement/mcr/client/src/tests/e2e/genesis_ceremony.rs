@@ -131,6 +131,11 @@ async fn run_genesis_ceremony(
         .send()
         .await.context("Bob failed to stake for MCR")?;
 
+    let domain_time = governor_staking
+    .epochDurationByDomain(mcr_address.clone())
+    .call()
+    .await.context("Failed to get domain registration time")?;
+    info!("Domain registration time in MCR {}", domain_time._0);
     // mcr accepts the genesis
     info!("MCR accepts the genesis");
     governor_staking
