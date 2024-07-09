@@ -24,7 +24,7 @@ use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::{debug, info};
 
-use std::future::Future;
+use std::future::{self, Future};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -236,7 +236,8 @@ where
 			}
 		}
 	}
-	Ok(())
+
+	Ok(future::pending().await)
 }
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>

@@ -774,7 +774,7 @@ dependencies = [
  "fail 0.5.1",
  "futures",
  "hex",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "itertools 0.10.5",
  "mime",
  "mini-moka",
@@ -886,7 +886,7 @@ dependencies = [
  "aptos-metrics-core",
  "aptos-types",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "dashmap",
  "itertools 0.10.5",
  "jemallocator",
@@ -1290,7 +1290,7 @@ dependencies = [
  "aptos-types",
  "aptos-vm",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "crossbeam-channel",
  "ctrlc",
  "dashmap",
@@ -1376,7 +1376,7 @@ dependencies = [
  "aptos-sdk",
  "async-trait",
  "captcha",
- "clap 4.5.8",
+ "clap 4.5.9",
  "deadpool-redis",
  "enum_dispatch",
  "futures",
@@ -1441,7 +1441,7 @@ dependencies = [
  "blst",
  "bulletproofs",
  "byteorder",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
@@ -2179,7 +2179,7 @@ dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "heck 0.4.1",
  "move-core-types",
  "once_cell",
@@ -2990,7 +2990,7 @@ dependencies = [
  "futures-util",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "itoa",
  "matchit",
  "memchr",
@@ -3648,9 +3648,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.106"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "066fce287b1d4eafef758e89e09d724a24808a9196fe9756b8ca90e86d0719a2"
+checksum = "eaff6f8ce506b9773fa786672d63fc7a191ffea1be33f72bbd4aeacefca9ffc8"
 dependencies = [
  "jobserver",
  "libc",
@@ -3660,7 +3660,7 @@ dependencies = [
 [[package]]
 name = "celestia-proto"
 version = "0.2.0"
-source = "git+https://github.com/eigerco/lumina#c02904c68e5499863092404635d47b08f1e17d2b"
+source = "git+https://github.com/eigerco/lumina#1fa1bbf752a7754b6d5276ee72c4bab654003f48"
 dependencies = [
  "anyhow",
  "celestia-tendermint-proto",
@@ -3673,7 +3673,7 @@ dependencies = [
 [[package]]
 name = "celestia-rpc"
 version = "0.2.0"
-source = "git+https://github.com/eigerco/lumina#c02904c68e5499863092404635d47b08f1e17d2b"
+source = "git+https://github.com/eigerco/lumina#1fa1bbf752a7754b6d5276ee72c4bab654003f48"
 dependencies = [
  "async-trait",
  "celestia-types",
@@ -3734,7 +3734,7 @@ dependencies = [
 [[package]]
 name = "celestia-types"
 version = "0.2.0"
-source = "git+https://github.com/eigerco/lumina#c02904c68e5499863092404635d47b08f1e17d2b"
+source = "git+https://github.com/eigerco/lumina#1fa1bbf752a7754b6d5276ee72c4bab654003f48"
 dependencies = [
  "base64 0.22.1",
  "bech32",
@@ -3927,9 +3927,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.8"
+version = "4.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84b3edb18336f4df585bc9aa31dd99c036dfa5dc5e9a2939a722a188f3a8970d"
+checksum = "64acc1846d54c1fe936a78dc189c34e28d3f5afc348403f28ecf53660b9b8462"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -3937,9 +3937,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.8"
+version = "4.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1c09dd5ada6c6c78075d6fd0da3f90d8080651e2d6cc8eb2f1aaa4034ced708"
+checksum = "6fb8393d67ba2e7bfaf28a23458e4e2b543cc73a99595511eb207fdb8aede942"
 dependencies = [
  "anstream",
  "anstyle",
@@ -4496,12 +4496,12 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.20.9"
+version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83b2eb4d90d12bdda5ed17de686c2acb4c57914f8f921b8da7e112b5a36f3fe1"
+checksum = "6f63b86c8a8826a49b8c21f08a2d07338eec8d900540f8630dc76284be802989"
 dependencies = [
- "darling_core 0.20.9",
- "darling_macro 0.20.9",
+ "darling_core 0.20.10",
+ "darling_macro 0.20.10",
 ]
 
 [[package]]
@@ -4520,9 +4520,9 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.20.9"
+version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "622687fe0bac72a04e5599029151f5796111b90f1baaa9b544d807a5e31cd120"
+checksum = "95133861a8032aaea082871032f5815eb9e98cef03fa916ab4500513994df9e5"
 dependencies = [
  "fnv",
  "ident_case",
@@ -4545,11 +4545,11 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.20.9"
+version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "733cabb43482b1a1b53eee8583c2b9e8684d592215ea83efd305dd31bc2f0178"
+checksum = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806"
 dependencies = [
- "darling_core 0.20.9",
+ "darling_core 0.20.10",
  "quote 1.0.36",
  "syn 2.0.70",
 ]
@@ -5853,9 +5853,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.29"
+version = "0.14.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f361cde2f109281a220d4307746cdfd5ee3f410da58a70377762396775634b33"
+checksum = "a152ddd61dfaec7273fe8419ab357f33aee0d914c5f4efbf0d96fa749eea5ec9"
 dependencies = [
  "bytes 1.6.0",
  "futures-channel",
@@ -5877,9 +5877,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4fe55fb7a772d59a5ff1dfbff4fe0258d19b89fec4b233e75d35d5d2316badc"
+checksum = "50dfd22e0e76d0f662d429a5f80fcaf3855009297eab6a0a9f8543834744ba05"
 dependencies = [
  "bytes 1.6.0",
  "futures-channel",
@@ -5903,7 +5903,7 @@ checksum = "5ee4be2c948921a1a5320b629c4193916ed787a7f7f293fd3f7f5a6c9de74155"
 dependencies = [
  "futures-util",
  "http 1.1.0",
- "hyper 1.4.0",
+ "hyper 1.4.1",
  "hyper-util",
  "log",
  "rustls 0.23.11",
@@ -5919,7 +5919,7 @@ version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbb958482e8c7be4bc3cf272a766a2b0bf1a6755e7a6ae777f017a31d11b13b1"
 dependencies = [
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "pin-project-lite",
  "tokio",
  "tokio-io-timeout",
@@ -5932,7 +5932,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6183ddfa99b85da61a140bea0efc93fdf56ceaa041b37d553518030827f9905"
 dependencies = [
  "bytes 1.6.0",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "native-tls",
  "tokio",
  "tokio-native-tls",
@@ -5946,7 +5946,7 @@ checksum = "70206fc6890eaca9fde8a0bf71caa2ddfc9fe045ac9e5c70df101a7dbde866e0"
 dependencies = [
  "bytes 1.6.0",
  "http-body-util",
- "hyper 1.4.0",
+ "hyper 1.4.1",
  "hyper-util",
  "native-tls",
  "tokio",
@@ -5965,7 +5965,7 @@ dependencies = [
  "futures-util",
  "http 1.1.0",
  "http-body 1.0.0",
- "hyper 1.4.0",
+ "hyper 1.4.1",
  "pin-project-lite",
  "socket2",
  "tokio",
@@ -6189,7 +6189,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "321f0f839cd44a4686e9504b0a62b4d69a50b62072144c71c68f5873c167b8d9"
 dependencies = [
  "ahash 0.8.11",
- "clap 4.5.8",
+ "clap 4.5.9",
  "crossbeam-channel",
  "crossbeam-utils",
  "dashmap",
@@ -6458,7 +6458,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "http-body 1.0.0",
- "hyper 1.4.0",
+ "hyper 1.4.1",
  "hyper-rustls",
  "hyper-util",
  "jsonrpsee-core",
@@ -7131,7 +7131,7 @@ dependencies = [
  "borsh 0.10.3",
  "bytes 1.6.0",
  "chrono",
- "clap 4.5.8",
+ "clap 4.5.9",
  "derive_more",
  "dirs",
  "fail 0.5.1",
@@ -7479,7 +7479,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 dependencies = [
  "anyhow",
- "clap 4.5.8",
+ "clap 4.5.9",
  "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -7498,7 +7498,7 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "bytes 1.6.0",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan-reporting",
  "colored",
  "difference",
@@ -7560,7 +7560,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan-reporting",
  "difference",
  "hex",
@@ -7590,7 +7590,7 @@ dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan",
  "codespan-reporting",
  "ethnum",
@@ -7647,7 +7647,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan",
  "colored",
  "move-binary-format",
@@ -7666,7 +7666,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
 dependencies = [
  "anyhow",
- "clap 4.5.8",
+ "clap 4.5.9",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -7718,7 +7718,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -7811,7 +7811,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.8",
+ "clap 4.5.9",
  "colored",
  "dirs-next",
  "itertools 0.10.5",
@@ -7849,7 +7849,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -7919,7 +7919,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "atty",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan",
  "codespan-reporting",
  "futures",
@@ -8054,7 +8054,7 @@ dependencies = [
  "anyhow",
  "better_any",
  "bytes 1.6.0",
- "clap 4.5.8",
+ "clap 4.5.9",
  "codespan-reporting",
  "colored",
  "itertools 0.10.5",
@@ -9130,7 +9130,7 @@ dependencies = [
  "futures-util",
  "headers",
  "http 0.2.12",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "mime",
  "multer",
  "nix 0.27.1",
@@ -9883,7 +9883,7 @@ dependencies = [
  "h2 0.3.26",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "hyper-tls 0.5.0",
  "ipnet",
  "js-sys",
@@ -9926,7 +9926,7 @@ dependencies = [
  "http 1.1.0",
  "http-body 1.0.0",
  "http-body-util",
- "hyper 1.4.0",
+ "hyper 1.4.1",
  "hyper-rustls",
  "hyper-tls 0.6.0",
  "hyper-util",
@@ -10635,7 +10635,7 @@ version = "3.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b80d3d6b56b64335c0180e5ffde23b3c5e08c14c585b51a15bd0e95393f46703"
 dependencies = [
- "darling 0.20.9",
+ "darling 0.20.10",
  "proc-macro2 1.0.86",
  "quote 1.0.36",
  "syn 2.0.70",
@@ -11223,7 +11223,7 @@ dependencies = [
  "aptos-faucet-core",
  "aptos-logger",
  "aptos-sdk",
- "clap 4.5.8",
+ "clap 4.5.9",
  "dot-movement",
  "suzuka-config",
  "tokio",
@@ -11835,7 +11835,7 @@ dependencies = [
  "h2 0.3.26",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "hyper-timeout",
  "percent-encoding",
  "pin-project 1.1.5",
@@ -11889,7 +11889,7 @@ dependencies = [
  "bytes 1.6.0",
  "http 0.2.12",
  "http-body 0.4.6",
- "hyper 0.14.29",
+ "hyper 0.14.30",
  "pin-project 1.1.5",
  "tokio-stream",
  "tonic",
@@ -12420,9 +12420,9 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.9.1"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5de17fd2f7da591098415cff336e12965a28061ddace43b59cb3c430179c9439"
+checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 dependencies = [
  "serde",
 ]
