@@ -10,7 +10,8 @@ processes:
 
   setup:
     command: |
-      exit 0
+      # sleep forever
+      sleep 999999999d
     depends_on:
       build:
         condition: process_completed_successfully
@@ -20,7 +21,7 @@ processes:
       exit 1
     depends_on:
       setup:
-        condition: process_completed_successfully
+        condition: process_healthy
 
   celestia-light-node-synced:
     command: |

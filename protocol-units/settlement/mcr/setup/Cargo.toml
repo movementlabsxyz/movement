@@ -17,7 +17,6 @@ dot-movement = { workspace = true }
 commander = { workspace = true }
 alloy = { workspace = true }
 alloy-primitives = { workspace = true }
-alloy-signer-wallet = { workspace = true }
 anyhow = { workspace = true }
 k256 = { workspace = true }
 rand = { workspace = true }

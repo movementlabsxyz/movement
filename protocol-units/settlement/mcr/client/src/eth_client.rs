@@ -5,18 +5,17 @@ use crate::send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use alloy::pubsub::PubSubFrontend;
 use alloy_network::Ethereum;
-use alloy_network::EthereumSigner;
+use alloy_network::EthereumWallet;
 use alloy_primitives::Address;
 use alloy_primitives::U256;
-use alloy_provider::fillers::ChainIdFiller;
-use alloy_provider::fillers::FillProvider;
-use alloy_provider::fillers::GasFiller;
-use alloy_provider::fillers::JoinFill;
-use alloy_provider::fillers::NonceFiller;
-use alloy_provider::fillers::SignerFiller;
-use alloy_provider::Provider;
-use alloy_provider::{ProviderBuilder, RootProvider};
-use alloy_signer_wallet::LocalWallet;
+use alloy::providers::fillers::ChainIdFiller;
+use alloy::providers::fillers::FillProvider;
+use alloy::providers::fillers::GasFiller;
+use alloy::providers::fillers::JoinFill;
+use alloy::providers::fillers::NonceFiller;
+use alloy::providers::fillers::WalletFiller;
+use alloy::providers::{ProviderBuilder, Provider, RootProvider};
+use alloy::signers::{local::PrivateKeySigner};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
@@ -89,10 +88,10 @@ impl
 		FillProvider<
 			JoinFill<
 				JoinFill<
-					JoinFill<JoinFill<alloy_provider::Identity, GasFiller>, NonceFiller>,
+					JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,
 					ChainIdFiller,
 				>,
-				SignerFiller<EthereumSigner>,
+				WalletFiller<EthereumWallet>,
 			>,
 			RootProvider<BoxTransport>,
 			BoxTransport,
@@ -102,14 +101,14 @@ impl
 {
 	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.signer_private_key.clone();
-		let signer: LocalWallet = signer_private_key.parse()?;
+		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
 		let contract_address = config.mcr_contract_address.parse()?;
 		let rpc_url = config.eth_rpc_connection_url();
 		let ws_url = config.eth_ws_connection_url();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer))
+			.wallet(EthereumWallet::from(signer))
 			.on_builtin(&rpc_url)
 			.await?;
 

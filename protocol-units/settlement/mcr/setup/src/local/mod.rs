@@ -42,8 +42,6 @@ impl Setup for Local {
 		tracing::info!("Init Settlement local conf");
 
 		async move {
-
-			tracing::info!("Run Settlement local conf: {:?}", config.signer_private_key);
 			
 			//start local process and deploy smart contract.
 			//define working directory of Anvil
@@ -89,6 +87,11 @@ impl Setup for Local {
 			config.governor_private_key = anvil_addresses.get(0).ok_or(
 				anyhow!("Governor private key not found in Anvil addresses"),
 			)?.private_key.clone();
+
+			// set the signer private key to the governor private key 
+			// so that it can mint for itself in future iterations of local mode testing
+			config.signer_private_key = config.governor_private_key.clone();
+
 			let governor_address = anvil_addresses.get(0).ok_or(
 				anyhow!("Governor address not found in Anvil addresses"),
 			)?.address.clone();

@@ -20,7 +20,6 @@ alloy = { workspace = true, features = [
     "json-rpc",
     "rpc-client",
     "signers",
-    "signer-wallet",
     "signer-yubihsm",
     "pubsub",
     "providers"
@@ -31,7 +30,7 @@ alloy-primitives = { workspace = true }
 alloy-provider = { workspace = true, features = [
 
 ] }
-alloy-signer-wallet = { workspace = true }
+alloy-signer = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-transport = { workspace = true }
 alloy-transport-ws = { workspace = true }

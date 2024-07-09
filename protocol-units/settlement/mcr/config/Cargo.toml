@@ -12,9 +12,8 @@ rust-version.workspace = true
 
 [dependencies]
 serde = { workspace = true , features = ["derive"] }
-alloy-signer-wallet = { workspace = true }
-godfig = { workspace = true }
 alloy = { workspace = true }
+godfig = { workspace = true }
 anyhow = { workspace = true }
 
 [lints]

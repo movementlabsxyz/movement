@@ -7,10 +7,10 @@ use crate::eth_client::{
 use alloy::signers::Signer;
 use mcr_settlement_config::Config;
 use alloy::providers::ProviderBuilder;
-use alloy_signer_wallet::LocalWallet;
+use alloy::signers::{local::PrivateKeySigner};
 use alloy_primitives::Address;
 use alloy_primitives::U256;
-use alloy_network::EthereumSigner;
+use alloy_network::EthereumWallet;
 
 use godfig::{
     Godfig,
@@ -24,7 +24,7 @@ use anyhow::Context;
 
 async fn run_genesis_ceremony(
     config : &Config,
-    governor: LocalWallet,
+    governor: PrivateKeySigner,
     rpc_url: &str,
     move_token_address: Address,
     staking_address: Address,
@@ -33,11 +33,11 @@ async fn run_genesis_ceremony(
 
     // Build alice client for MOVEToken, MCR, and staking
     info!("Creating alice client");
-    let alice : LocalWallet = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
+    let alice : PrivateKeySigner = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
     let alice_address : Address = config.well_known_addresses.get(1).context("No well known address")?.parse()?;
     let alice_rpc_provider = ProviderBuilder::new()
-        .with_chain_id(17000)
-        .signer(EthereumSigner::from(alice.clone()))
+        .with_recommended_fillers()
+        .wallet(EthereumWallet::from(alice.clone()))
         .on_builtin(&rpc_url)
         .await?;
     let alice_mcr = MCR::new(mcr_address, &alice_rpc_provider);
@@ -46,10 +46,10 @@ async fn run_genesis_ceremony(
 
     // Build bob client for MOVEToken, MCR, and staking
     info!("Creating bob client");
-    let bob: LocalWallet = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
+    let bob: PrivateKeySigner = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
     let bob_rpc_provider = ProviderBuilder::new()
-        .with_chain_id(17000)   
-        .signer(EthereumSigner::from(bob.clone()))
+        .with_recommended_fillers()
+        .wallet(EthereumWallet::from(bob.clone()))
         .on_builtin(&rpc_url)
         .await?;
     let bob_mcr = MCR::new(mcr_address, &bob_rpc_provider);
@@ -59,12 +59,13 @@ async fn run_genesis_ceremony(
     // Build the MCR client for staking
     info!("Creating governor client");
     let governor_rpc_provider = ProviderBuilder::new()
-        .with_chain_id(17000)   
-        .signer(EthereumSigner::from(governor.clone()))
+        .with_recommended_fillers()
+        .wallet(EthereumWallet::from(governor.clone()))
         .on_builtin(&rpc_url)
         .await?;
     let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
     let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
+    let governor_mcr = MCR::new(mcr_address, &governor_rpc_provider);
 
     // alice stakes for mcr
     info!("Alice stakes for MCR");
@@ -74,10 +75,21 @@ async fn run_genesis_ceremony(
 
     // debug: this is showing up correctly
     let hasMinterRole = governor_token
-        .hasMinterRole(governor.address()) 
+        .hasMinterRole(governor.address())
+         
         .call().await
         .context("Failed to check if governor has minter role")?;
     info!("Has minter role: {}", hasMinterRole._0);
+
+    let hasMinterRoleFromAlice = alice_move_token
+        .hasMinterRole(governor.address()) 
+        .call().await
+        .context("Failed to check if governor has minter role")?;
+    info!("Has minter role from Alice: {}", hasMinterRoleFromAlice._0);
+
+
+    //info!("config chain_id: {}",config.eth_chain_id.clone().to_string());
+    //info!("governor chain_id: {}", governor_rpc_provider.get_chain_id().await.context("Failed to get chain id")?.to_string());
 
     // debug: this is showing up correctly
     let aliceHashMinterRole = governor_token
@@ -86,43 +98,50 @@ async fn run_genesis_ceremony(
         .context("Failed to check if alice has minter role")?;
     info!("Alice has minter role: {}", aliceHashMinterRole._0);
 
+    let governor_address = governor.address();
+    info!("Governor address: {}", governor_address.clone().to_string());
     // debug: fails here
-    governor_token
+    let receipt = governor_token
         .mint(alice_address, U256::from(100))
-        .call()
-        .await.context("Governor failed to mint for alice")?;
+        .send().await?.watch().await.context("Governor failed to mint for alice")?;
+
+    info!("staking_address: {}", staking_address.clone().to_string());
 
     // debug: also fails here if you lift the restriction above; then it fails as if msg.sender =  address(0)
     alice_move_token
         .approve(staking_address, U256::from(100))
-        .call()
-        .await.context("Alice failed to approve MCR")?;
+        .send().await?.watch().await.context("Alice failed to approve MCR")?;
     alice_staking
         .stake(mcr_address, move_token_address, U256::from(100))
-        .call()
-        .await.context("Alice failed to stake for MCR")?;
+        .send().await?.watch().await.context("Alice failed to stake for MCR")?;
 
     // bob stakes for mcr
     info!("Bob stakes for MCR");
     governor_token
         .mint(bob.address(), U256::from(100))
-        .call()
-        .await.context("Governor failed to mint for bob")?;
+        .send().await?.watch().await.context("Governor failed to mint for bob")?;
+
+    let bob_balance = bob_move_token
+        .balanceOf(bob.address())
+        .call().await.context("Failed to get bob balance")?;
+    info!("Bob balance: {}", bob_balance._0);
     bob_move_token
         .approve(staking_address, U256::from(100))
-        .call()
-        .await.context("Bob failed to approve MCR")?;
+        .send().await?.watch().await.context("Bob failed to approve MCR")?;
     bob_staking
         .stake(mcr_address, move_token_address, U256::from(100))
-        .call()
-        .await.context("Bob failed to stake for MCR")?;
+        .send().await?.watch().await.context("Bob failed to stake for MCR")?;
 
+    let domain_time = governor_staking
+    .epochDurationByDomain(mcr_address.clone())
+    .call()
+    .await.context("Failed to get domain registration time")?;
+    // info!("Domain registration time in MCR {}", domain_time);
     // mcr accepts the genesis
     info!("MCR accepts the genesis");
-    governor_staking
+    governor_mcr
         .acceptGenesisCeremony()
-        .call()
-        .await.context("Governor failed to accept genesis ceremony")?;
+        .send().await?.watch().await.context("Governor failed to accept genesis ceremony")?;
 
     Ok(())
 }
@@ -149,7 +168,7 @@ pub async fn test_genesis_ceremony() -> Result<(), anyhow::Error> {
 
     run_genesis_ceremony(
         &config,
-        LocalWallet::from_str(&config.governor_private_key)?.with_chain_id(Some(17000)),
+        PrivateKeySigner::from_str(&config.governor_private_key)?,
         &config.eth_rpc_connection_url(),
         Address::from_str(&config.move_token_contract_address)?,
         Address::from_str(&config.movement_staking_contract_address)?,
