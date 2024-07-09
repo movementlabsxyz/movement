@@ -8,11 +8,17 @@ use tokio::{
 use crate::backend::{BackendOperations, GodfigBackendError};
 use async_stream::stream;
 use futures::Stream;
+use std::future::Future;
+use serde::{
+    Serialize,
+    de::DeserializeOwned
+};
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct ConfigFile {
     pub (crate) lock: Arc<FileRwLock<File>>,
-    pub (crate) polling_interval: std::time::Duration,
+    pub (crate) polling_interval: Duration,
 }
 
 impl ConfigFile {
@@ -20,11 +26,11 @@ impl ConfigFile {
     pub fn new(file: File) -> Self {
         Self {
             lock: Arc::new(FileRwLock::new(file)),
-            polling_interval: std::time::Duration::from_millis(20),
+            polling_interval: Duration::from_millis(20),
         }
     }
 
-    pub fn with_polling_interval(mut self, interval: std::time::Duration) -> Self {
+    pub fn with_polling_interval(mut self, interval: Duration) -> Self {
         self.polling_interval = interval;
         self
     }
@@ -32,7 +38,7 @@ impl ConfigFile {
     async fn try_get_with_guard<K, T>(mut write_guard : FileRwLockWriteGuard<'_, File>, key: K) -> Result<(Option<T>, FileRwLockWriteGuard<'_, File>), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let mut contents = String::new();
         write_guard.seek(std::io::SeekFrom::Start(0)).await?;
@@ -61,7 +67,7 @@ impl ConfigFile {
     async fn try_set_with_guard<K, T>(mut write_guard : FileRwLockWriteGuard<'_, File>, key: K, value: Option<T>) -> Result<FileRwLockWriteGuard<'_, File>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::Serialize,
+        T: Serialize,
     {
         let mut contents = String::new();
         // write_guard.seek(std::io::SeekFrom::Start(0)).await?;
@@ -119,7 +125,7 @@ impl BackendOperations for ConfigFile {
     async fn try_get<K, T>(&self, key: K) -> Result<Option<T>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let write_guard = self.lock.write().await?;
         let (value, guard) = Self::try_get_with_guard(write_guard, key).await?;
@@ -129,7 +135,7 @@ impl BackendOperations for ConfigFile {
     async fn try_set<K, T>(&self, key: K, value: Option<T>) -> Result<(), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::Serialize,
+        T: Serialize,
     {
         let write_guard = self.lock.write().await?;
         Self::try_set_with_guard(write_guard, key, value).await?;
@@ -140,7 +146,7 @@ impl BackendOperations for ConfigFile {
     async fn try_wait_for<K, T>(&self, key: K) -> Result<T, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned,
+        T: DeserializeOwned,
     {
         let key_clone = key.into();
         loop {
@@ -154,7 +160,7 @@ impl BackendOperations for ConfigFile {
     async fn try_stream<K, T>(&self, key: K) -> Result<impl Stream<Item = Result<Option<T>, GodfigBackendError>>, GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize,
+        T: DeserializeOwned + Serialize,
     {
         let key_clone = key.into();
         let mut last: Option<Vec<u8>> = None;
@@ -176,26 +182,51 @@ impl BackendOperations for ConfigFile {
     async fn try_transaction<K, T, F, Fut>(&self, key: K, callback: F) -> Result<(), GodfigBackendError>
     where
         K: Into<Vec<String>> + Send,
-        T: serde::de::DeserializeOwned + serde::Serialize + Send,
+        T: DeserializeOwned + Serialize + Send,
         F: FnOnce(Option<T>) -> Fut + Send,
-        Fut: std::future::Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
+        Fut: Future<Output = Result<Option<T>, GodfigBackendError>> + Send {
 
-            let key = key.into();
-       
-            // obtain the write_guard which will be held for the duration of the function
-            let mut write_guard = self.lock.write().await?;
-      
-            // get the current value
-            let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
+        let key = key.into();
+    
+        // obtain the write_guard which will be held for the duration of the function
+        let mut write_guard = self.lock.write().await?;
+    
+        // get the current value
+        let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
 
-            let new_value = callback(current_value).await?;
+        let new_value = callback(current_value).await?;
 
-            // set the new value
-            write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+        // set the new value
+        write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
 
-            Ok(())
+        Ok(())
 
-        }
+    }
+
+    async fn try_transaction_with_result<K, T, R, F, Fut>(&self, key: K, callback: F) -> Result<R, GodfigBackendError>
+        where
+        K: Into<Vec<String>> + Send,
+        T: DeserializeOwned + Serialize + Send,
+        F: FnOnce(Option<T>) -> Fut + Send,
+        Fut: Future<Output = Result<(Option<T>, R), GodfigBackendError>> + Send {
+
+
+        let key = key.into();
+    
+        // obtain the write_guard which will be held for the duration of the function
+        let mut write_guard = self.lock.write().await?;
+    
+        // get the current value
+        let (current_value, mut write_guard) = Self::try_get_with_guard(write_guard, key.clone()).await?;
+
+        let (new_value, result) = callback(current_value).await?;
+
+        // set the new value
+        write_guard = Self::try_set_with_guard(write_guard, key, new_value).await?;
+
+        Ok(result)
+
+    }
 
 }
 
@@ -219,7 +250,7 @@ pub mod test {
         // cannot read and write at the same time
         let _write_guard = config_file.lock.write().await?;
         // trying to acquire a read guard should now fail
-        let read_result = tokio::time::timeout(std::time::Duration::from_millis(100), config_file.lock.read()).await;
+        let read_result = tokio::time::timeout(Duration::from_millis(100), config_file.lock.read()).await;
 
         assert!(read_result.is_err(), "Read lock should not be acquired while holding write lock");
 
@@ -257,7 +288,7 @@ pub mod test {
         // start another thread that will set the value
         let config_file_clone = config_file.clone();
         let set_task = tokio::spawn(async move {
-            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+            tokio::time::sleep(Duration::from_millis(100)).await;
             config_file_clone.try_set(vec!["key".to_string()], Some(42)).await?;
             Ok::<(), GodfigBackendError>(())
         });
@@ -290,6 +321,27 @@ pub mod test {
         // check the value
         let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
         assert_eq!(result, Some(44));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_transaction_with_result() -> Result<(), anyhow::Error> {
+        let file = tempfile::tempfile()?;
+        let config_file = ConfigFile::new(file.into());
+
+        // set a value
+        config_file.try_set(vec!["key".to_string()], Some(42)).await?;
+
+        // increment the value
+        let result = config_file.try_transaction_with_result(vec!["key".to_string()], |value| async move {
+            Ok((value.map(|v : i32| v + 1), "result".to_string()))
+        }).await?;
+
+        assert_eq!(result, "result");
+
+        let result = config_file.try_get::<_, i32>(vec!["key".to_string()]).await?;
+        assert_eq!(result, Some(43));
 
         Ok(())
     }
