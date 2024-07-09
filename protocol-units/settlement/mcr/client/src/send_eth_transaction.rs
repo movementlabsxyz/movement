@@ -2,7 +2,7 @@ use crate::eth_client::McrEthConnectorError;
 use alloy_contract::CallBuilder;
 use alloy_contract::CallDecoder;
 use alloy_network::Ethereum;
-use alloy_provider::Provider;
+use alloy::providers::Provider;
 use alloy_transport::{Transport, TransportError};
 use std::marker::PhantomData;
 
