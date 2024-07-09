@@ -64,6 +64,7 @@ async fn run_genesis_ceremony(
         .await?;
     let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
     let governor_staking = MovementStaking::new(staking_address, &governor_rpc_provider);
+    let governor_mcr = MCR::new(mcr_address, &governor_rpc_provider);
 
     // alice stakes for mcr
     info!("Alice stakes for MCR");
@@ -137,7 +138,7 @@ async fn run_genesis_ceremony(
     // info!("Domain registration time in MCR {}", domain_time);
     // mcr accepts the genesis
     info!("MCR accepts the genesis");
-    governor_staking
+    governor_mcr
         .acceptGenesisCeremony()
         .send().await?.watch().await.context("Governor failed to accept genesis ceremony")?;
 
