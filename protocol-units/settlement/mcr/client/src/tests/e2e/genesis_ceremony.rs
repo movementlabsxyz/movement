@@ -101,47 +101,45 @@ async fn run_genesis_ceremony(
     // debug: fails here
     let receipt = governor_token
         .mint(alice_address, U256::from(100))
-        .send()
-        .await.context("Governor failed to mint for alice")?;
+        .send().await?.watch().await.context("Governor failed to mint for alice")?;
 
     info!("staking_address: {}", staking_address.clone().to_string());
 
     // debug: also fails here if you lift the restriction above; then it fails as if msg.sender =  address(0)
     alice_move_token
         .approve(staking_address, U256::from(100))
-        .send()
-        .await.context("Alice failed to approve MCR")?;
+        .send().await?.watch().await.context("Alice failed to approve MCR")?;
     alice_staking
         .stake(mcr_address, move_token_address, U256::from(100))
-        .send()
-        .await.context("Alice failed to stake for MCR")?;
+        .send().await?.watch().await.context("Alice failed to stake for MCR")?;
 
     // bob stakes for mcr
     info!("Bob stakes for MCR");
     governor_token
         .mint(bob.address(), U256::from(100))
-        .send()
-        .await.context("Governor failed to mint for bob")?;
+        .send().await?.watch().await.context("Governor failed to mint for bob")?;
+
+    let bob_balance = bob_move_token
+        .balanceOf(bob.address())
+        .call().await.context("Failed to get bob balance")?;
+    info!("Bob balance: {}", bob_balance._0);
     bob_move_token
         .approve(staking_address, U256::from(100))
-        .send()
-        .await.context("Bob failed to approve MCR")?;
+        .send().await?.watch().await.context("Bob failed to approve MCR")?;
     bob_staking
         .stake(mcr_address, move_token_address, U256::from(100))
-        .send()
-        .await.context("Bob failed to stake for MCR")?;
+        .send().await?.watch().await.context("Bob failed to stake for MCR")?;
 
     let domain_time = governor_staking
     .epochDurationByDomain(mcr_address.clone())
     .call()
     .await.context("Failed to get domain registration time")?;
-    info!("Domain registration time in MCR {}", domain_time._0);
+    // info!("Domain registration time in MCR {}", domain_time);
     // mcr accepts the genesis
     info!("MCR accepts the genesis");
     governor_staking
         .acceptGenesisCeremony()
-        .send()
-        .await.context("Governor failed to accept genesis ceremony")?;
+        .send().await?.watch().await.context("Governor failed to accept genesis ceremony")?;
 
     Ok(())
 }
