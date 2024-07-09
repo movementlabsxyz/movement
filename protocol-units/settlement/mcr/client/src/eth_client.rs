@@ -5,7 +5,7 @@ use crate::send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use alloy::pubsub::PubSubFrontend;
 use alloy_network::Ethereum;
-use alloy_network::EthereumSigner;
+use alloy_network::EthereumWallet;
 use alloy_primitives::Address;
 use alloy_primitives::U256;
 use alloy_provider::fillers::ChainIdFiller;
@@ -13,9 +13,9 @@ use alloy_provider::fillers::FillProvider;
 use alloy_provider::fillers::GasFiller;
 use alloy_provider::fillers::JoinFill;
 use alloy_provider::fillers::NonceFiller;
-use alloy_provider::fillers::SignerFiller;
-use alloy_provider::Provider;
-use alloy_provider::{ProviderBuilder, RootProvider};
+use alloy::fillers::SignerFiller;
+// use alloy_provider::Provider;
+use alloy::providers::{ProviderBuilder, Provider};
 use alloy::signers::{local::PrivateKeySigner};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
@@ -76,7 +76,7 @@ sol!(
 
 pub struct Client<P> {
 	rpc_provider: P,
-	ws_provider: RootProvider<PubSubFrontend>,
+	ws_provider: dyn Provider<PubSubFrontend>,
 	pub signer_address: Address,
 	contract_address: Address,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
@@ -92,9 +92,9 @@ impl
 					JoinFill<JoinFill<alloy_provider::Identity, GasFiller>, NonceFiller>,
 					ChainIdFiller,
 				>,
-				SignerFiller<EthereumSigner>,
+				SignerFiller<EthereumWallet>,
 			>,
-			RootProvider<BoxTransport>,
+			dyn Provider<BoxTransport>,
 			BoxTransport,
 			Ethereum,
 		>,
@@ -109,7 +109,7 @@ impl
 		let ws_url = config.eth_ws_connection_url();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer))
+			.signer(EthereumWallet::from(signer))
 			.on_builtin(&rpc_url)
 			.await?;
 

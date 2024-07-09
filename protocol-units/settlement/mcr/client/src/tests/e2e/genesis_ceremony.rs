@@ -9,7 +9,7 @@ use alloy::providers::ProviderBuilder;
 use alloy::signers::{local::PrivateKeySigner};
 use alloy_primitives::Address;
 use alloy_primitives::U256;
-use alloy_network::EthereumSigner;
+use alloy_network::EthereumWallet;
 
 use godfig::{
     Godfig,
@@ -36,7 +36,7 @@ async fn run_genesis_ceremony(
     let alice_address : Address = config.well_known_addresses.get(1).context("No well known address")?.parse()?;
     let alice_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
-        .signer(EthereumSigner::from(alice.clone()))
+        .signer(EthereumWallet::from(alice.clone()))
         .on_builtin(&rpc_url)
         .await?;
     let alice_mcr = MCR::new(mcr_address, &alice_rpc_provider);
@@ -48,7 +48,7 @@ async fn run_genesis_ceremony(
     let bob: PrivateKeySigner = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
     let bob_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
-        .signer(EthereumSigner::from(bob.clone()))
+        .signer(EthereumWallet::from(bob.clone()))
         .on_builtin(&rpc_url)
         .await?;
     let bob_mcr = MCR::new(mcr_address, &bob_rpc_provider);
@@ -59,7 +59,7 @@ async fn run_genesis_ceremony(
     info!("Creating governor client");
     let governor_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
-        .signer(EthereumSigner::from(governor.clone()))
+        .signer(EthereumWallet::from(governor.clone()))
         .on_builtin(&rpc_url)
         .await?;
     let governor_token = MOVEToken::new(move_token_address, &governor_rpc_provider);
