@@ -11,7 +11,6 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployMCRDev is Script {
-
     function run() external {
         vm.startBroadcast();
 
@@ -24,16 +23,21 @@ contract DeployMCRDev is Script {
         address moveTokenProxy = address(new ERC1967Proxy(address(moveTokenImplementation), moveTokenData));
 
         // Deploy the Movement Staking
-        bytes memory movementStakingData = abi.encodeCall(MovementStaking.initialize, IMintableToken(address(moveTokenProxy)));
+        bytes memory movementStakingData =
+            abi.encodeCall(MovementStaking.initialize, IMintableToken(address(moveTokenProxy)));
         address movementStakingProxy = address(new ERC1967Proxy(address(stakingImplementation), movementStakingData));
 
         // Deploy the MCR
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveTokenProxy);
-        bytes memory mcrData = abi.encodeCall(MCR.initialize, (IMovementStaking(address(movementStakingProxy)), 5, 100 ether, 100 ether, custodians));
+        bytes memory mcrData = abi.encodeCall(
+            MCR.initialize, (IMovementStaking(address(movementStakingProxy)), 5, 100 ether, 100 ether, custodians)
+        );
         address mcrProxy = address(new ERC1967Proxy(address(mcrImplementation), mcrData));
 
         console.log("Move Token Proxy: %s", moveTokenProxy);
+        console.log("MCR Proxy: %s", mcrProxy);
+        console.log("MCR custodian: %s", MovementStaking(movementStakingProxy).epochDurationByDomain(mcrProxy));
         MintableToken moveToken = MintableToken(moveTokenProxy);
         moveToken.mint(msg.sender, 100000 ether);
 
@@ -41,6 +45,5 @@ contract DeployMCRDev is Script {
         moveToken.grantMinterRole(address(movementStakingProxy));
 
         vm.stopBroadcast();
-
     }
 }
