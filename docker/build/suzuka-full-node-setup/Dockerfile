@@ -43,6 +43,12 @@ RUN rust_binary="/tmp/executables/anvil"; dest_dir="/tmp/runtime"; \
     grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
 
+RUN rust_binary="/tmp/executables/solc"; dest_dir="/tmp/runtime"; \
+    mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
+    grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
+    bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
+
+
 # use ghrc.io to avoid dockerhub rate limits
 FROM alpine:latest
 
