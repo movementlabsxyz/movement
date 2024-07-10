@@ -65,7 +65,7 @@ impl Setup for Local {
 			).await.context("Anvil not installed. Please install Anvil")?;
 			info!("Anvil version: {anvil_version}");
 
-			let (anvil_cmd_id, anvil_join_handle) = spawn_command(
+			let (_, anvil_join_handle) = spawn_command(
 				"anvil".to_string(),
 				vec![
 					"--chain-id".to_string(),
@@ -112,9 +112,19 @@ impl Setup for Local {
 			// todo: make sure this shows up in the docker container as well
 			let mut solidity_path = std::env::current_dir().context("Failed to get current directory")?;
 			solidity_path.push("protocol-units/settlement/mcr/contracts");
-
 			let solidity_path = solidity_path.to_string_lossy();
 			tracing::info!("solidity_path: {:?}", solidity_path);
+
+			run_command(
+				"forge",
+				&[
+					"compile",
+					"--root",
+					&solidity_path
+				],
+			)
+			.await.context("Failed to compile with MCR workspace")?;
+
 			let output_exec = run_command(
 				"forge",
 				&[
