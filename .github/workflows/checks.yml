@@ -50,6 +50,8 @@ jobs:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
         nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
+        # kill the process on port 8090
+        lsof -ti:8090 | xargs kill -9
         sleep 10
         # see if restarts are graceful
         nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
