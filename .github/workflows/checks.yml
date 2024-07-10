@@ -2,6 +2,8 @@ name: Checks
 
 on:
   push:
+    branches:
+      - none
 
 jobs:
   cargo-check:
