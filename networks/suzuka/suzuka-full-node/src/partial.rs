@@ -14,8 +14,7 @@ use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use mcr_settlement_manager::McrSettlementManagerOperations;
 use movement_rest::MovementRest;
-use movement_types::BlockCommitmentEvent;
-use movement_types::{Block /*BlockCommitmentEvent*/};
+use movement_types::{Block, BlockCommitmentEvent};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
@@ -24,7 +23,7 @@ use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::{debug, info};
 
-use std::future::{self, Future};
+use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -237,7 +236,7 @@ where
 		}
 	}
 
-	Ok(future::pending().await)
+	Ok(())
 }
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>
