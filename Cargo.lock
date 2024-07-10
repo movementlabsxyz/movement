@@ -886,8 +886,7 @@ dependencies = [
  "aptos-metrics-core",
  "aptos-types",
  "bcs 0.1.4",
- "dashmap",
- "clap 4.5.8",
+ "clap 4.5.9",
  "dashmap 5.5.3",
  "itertools 0.10.5",
  "jemallocator",
@@ -4725,7 +4724,7 @@ checksum = "4e018fccbeeb50ff26562ece792ed06659b9c2dae79ece77c4456bb10d9bf79b"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
- "syn 2.0.69",
+ "syn 2.0.70",
 ]
 
 [[package]]
@@ -5518,7 +5517,7 @@ checksum = "913dce4c5f06c2ea40fc178c06f777ac89fc6b1383e90c254fafb1abe4ba3c82"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
- "syn 2.0.69",
+ "syn 2.0.70",
  "uuid",
 ]
 
@@ -11687,7 +11686,7 @@ checksum = "5999e24eaa32083191ba4e425deb75cdf25efefabe5aaccb7446dd0d4122a3f5"
 dependencies = [
  "proc-macro2 1.0.86",
  "quote 1.0.36",
- "syn 2.0.69",
+ "syn 2.0.70",
 ]
 
 [[package]]
