@@ -5,8 +5,27 @@ use suzuka_full_node::{
 use maptos_dof_execution::v1::Executor;
 use std::process::ExitCode;
 
-#[tokio::main]
-async fn main() -> Result<ExitCode, anyhow::Error> {
+fn main() -> Result<ExitCode, anyhow::Error> {
+	let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
+
+	use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
+	if let Err(err) = runtime.block_on(run_suzuka()) {
+		tracing::error!("Suzuka node main task exit with an error : {err}",);
+	}
+
+	// Terminate all running task.
+	runtime.shutdown_background();
+	Ok(ExitCode::SUCCESS)
+}
+
+async fn run_suzuka() -> Result<ExitCode, anyhow::Error> {
 	// let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
 
 	use tracing_subscriber::EnvFilter;
