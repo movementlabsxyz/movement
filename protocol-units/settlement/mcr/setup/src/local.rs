@@ -1,5 +1,5 @@
 use super::Setup;
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use commander::{run_command, spawn_command};
 use dot_movement::DotMovement;
 use mcr_settlement_config::Config;
@@ -45,10 +45,11 @@ impl Setup for Local {
 			
 			//start local process and deploy smart contract.
 			//define working directory of Anvil
+			info!("Starting Anvil");
 			let mut path = dot_movement.get_path().to_path_buf();
 			path.push("anvil/mcr");
 			path.push(chain_id.clone());
-			tokio::fs::create_dir_all(&path).await?;
+			tokio::fs::create_dir_all(&path).await.context("Failed to create Anvil directory").context("Failed to create Anvil directory")?;
 			path.push("anvil.json");
 
 			let anvil_path = path.to_string_lossy().to_string();
@@ -65,7 +66,7 @@ impl Setup for Local {
 					"--steps-tracing".to_string()
 				],
 			)
-			.await?;
+			.await.context("Failed to start Anvil")?;
 			//wait Anvil to start
 			let mut counter = 0;
 			loop {
@@ -80,10 +81,11 @@ impl Setup for Local {
 			}
 
 			// Deploy MCR smart contract.
+			info!("Deploying MCR smart contract");
 			let anvil_addresses =
 				mcr_settlement_client::eth_client::read_anvil_json_file_addresses(
 					&*anvil_path,
-				)?;
+				).context("Failed to read Anvil addresses")?;
 			config.governor_private_key = anvil_addresses.get(0).ok_or(
 				anyhow!("Governor private key not found in Anvil addresses"),
 			)?.private_key.clone();
@@ -97,7 +99,7 @@ impl Setup for Local {
 			)?.address.clone();
 
 			// todo: make sure this shows up in the docker container as well
-			let mut solidity_path = std::env::current_dir()?;
+			let mut solidity_path = std::env::current_dir().context("Failed to get current directory")?;
 			solidity_path.push("protocol-units/settlement/mcr/contracts");
 
 			let solidity_path = solidity_path.to_string_lossy();
@@ -120,11 +122,12 @@ impl Setup for Local {
 					&config.governor_private_key,
 				],
 			)
-			.await?
+			.await.context("Failed to deploy MCR smart contract")?
 			.trim()
 			.to_string();
 
 			//get the summary execution file path from output;
+			info!("Deployment output: {output_exec}");
 			let line = output_exec
 				.lines()
 				.find(|line| line.contains("Transactions saved to:"))
@@ -138,8 +141,10 @@ impl Setup for Local {
 				"No path after 'Transactions saved to:' in smart contract deployement result output."
 			))?
 				.trim();
+			info!("Deployment summary file path: {path}");
 			//read the summary to get the contract address
-			let json_text = std::fs::read_to_string(path)?;
+			let json_text = std::fs::read_to_string(path)
+				.context("Failed to read forge script exec deployement result file")?;
 			//Get the value of the field contractAddress under transactions array
 			let json_value: Value =
 				serde_json::from_str(&json_text).expect("Error parsing JSON");
