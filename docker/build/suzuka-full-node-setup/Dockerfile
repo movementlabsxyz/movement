@@ -17,14 +17,6 @@ RUN nix --extra-experimental-features "nix-command flakes" \
 RUN nix --extra-experimental-features "nix-command flakes" \
         develop --command bash -c "cp \$(which celestia) /tmp/executables/celestia"
 
-# Copy anvil to /tmp/executables
-RUN nix --extra-experimental-features "nix-command flakes" \
-        develop --command bash -c "cp \$(which anvil) /tmp/executables/anvil"
-
-# Copy forge to /tmp/executables
-RUN nix --extra-experimental-features "nix-command flakes" \
-        develop --command bash -c "cp \$(which forge) /tmp/executables/forge"
-
 # Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
         develop .#docker-build --command bash -c "cargo build --release -p suzuka-full-node-setup"
@@ -46,8 +38,11 @@ COPY --from=builder /tmp/executables/celestia-appd /usr/local/bin/celestia-appd
 COPY --from=builder /tmp/executables/celestia /usr/local/bin/celestia
 
 # Copy anvil and forge to a location on the alpine path
-COPY --from=builder /tmp/executables/anvil /usr/local/bin/anvil
-COPY --from=builder /tmp/executables/forge /usr/local/bin/forge
+# Note: you look this up by running `which anvil` and then `cat $(which anvil)`
+COPY --from=builder /nix/store/93haq4cas597hmsmvq3g59rjf02c5frw-bash-5.2p26/bin/bash /nix/store/93haq4cas597hmsmvq3g59rjf02c5frw-bash-5.2p26/bin/bash
+COPY --from=builder /nix/store/5ihxx11dj3diyi7n7xy463r34ks5s1q1-git-2.44.0/bin /nix/store/5ihxx11dj3diyi7n7xy463r34ks5s1q1-git-2.44.0/bin
+COPY --from=builder /nix/store/w0sbla9hmbrnf8qr6ca7b6f3wfaqxxij-foundry-0.0.0/bin /nix/store/w0sbla9hmbrnf8qr6ca7b6f3wfaqxxij-foundry-0.0.0/bin
+ENV PATH="/nix/store/w0sbla9hmbrnf8qr6ca7b6f3wfaqxxij-foundry-0.0.0/bin:${PATH}"
 
 # Copy over the context so we have the contracts
 COPY . /app
