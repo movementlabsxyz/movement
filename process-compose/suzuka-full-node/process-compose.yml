@@ -66,7 +66,7 @@ processes:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 30
       exec:
         command: echo "true"
 

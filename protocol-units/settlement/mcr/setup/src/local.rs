@@ -70,7 +70,7 @@ impl Setup for Local {
 			//wait Anvil to start
 			let mut counter = 0;
 			loop {
-				if counter > 10 {
+				if counter > 100 {
 					return Err(anyhow!("Anvil didn't start in time"));
 				}
 				counter += 1;

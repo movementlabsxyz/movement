@@ -200,14 +200,13 @@ impl LightNodeService for LightNodeV1 {
 			.collect::<Result<Vec<BlobResponse>, tonic::Status>>()?;
 
 		// make transactions from the blobs
-		let transactions: Vec<Transaction> = blobs_for_submission
-			.into_iter()
-			.map(|blob| {
-				let transaction = Transaction::from(blob.data);
-				transaction
-			})
-			.collect();
-
+		let mut transactions = Vec::new();
+		for blob in blobs_for_submission {
+			let transaction : Transaction = serde_json::from_slice(&blob.data)
+				.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			transactions.push(transaction);
+		}
+		
 		// publish the transactions
 		for transaction in transactions {
 			debug!("Publishing transaction: {:?}", transaction.id());

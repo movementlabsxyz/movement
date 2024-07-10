@@ -8,11 +8,11 @@ processes:
     command: |
       m1-da-light-node-celestia-appd
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
     liveness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
     depends_on:
@@ -23,11 +23,11 @@ processes:
     command: |
       m1-da-light-node-celestia-bridge
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
     liveness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
     depends_on:

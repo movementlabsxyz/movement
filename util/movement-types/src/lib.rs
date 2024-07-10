@@ -40,12 +40,6 @@ pub struct Transaction {
 	pub sequence_number: u64,
 }
 
-impl From<Vec<u8>> for Transaction {
-	fn from(data: Vec<u8>) -> Self {
-		Self { data, sequence_number: 0 }
-	}
-}
-
 impl Transaction {
 	pub fn new(data: Vec<u8>, sequence_number: u64) -> Self {
 		Self { data, sequence_number }

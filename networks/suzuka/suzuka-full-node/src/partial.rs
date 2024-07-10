@@ -103,6 +103,7 @@ where
 					debug!("Got transaction: {:?}", transaction);
 
 					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
+					debug!("Serialized transaction: {:?}", serialized_aptos_transaction);
 					let movement_transaction = movement_types::Transaction {
 						data : serialized_aptos_transaction,
 						sequence_number : transaction.sequence_number()
@@ -185,7 +186,7 @@ where
 			block_transactions.push(block_metadata_transaction);
 
 			for transaction in block.transactions {
-				let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.data)?;
+				let signed_transaction = serde_json::from_slice(&transaction.data)?;
 				let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 					Transaction::UserTransaction(signed_transaction),
 				);
