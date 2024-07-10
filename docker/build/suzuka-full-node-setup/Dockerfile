@@ -19,7 +19,7 @@ RUN nix --extra-experimental-features "nix-command flakes" \
 
 # Copy .anvil-wrapped as anvil
 RUN nix --extra-experimental-features "nix-command flakes" \
-        develop --command bash -c "cp \$(which .anvil-wrapped) /tmp/executables/anvil"
+        develop --command bash -c 'cp $(which .anvil-wrapped) /tmp/executables/anvil'
 
 # Copy .forge-wrapped as forge
 RUN nix --extra-experimental-features "nix-command flakes" \
