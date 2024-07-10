@@ -34,9 +34,26 @@ impl Manager<SuzukaPartialNode<Executor>> {
 		.await
 		.context("Failed to create the executor")?;
 
-	    tokio::spawn(background_task);
+	    let background_join_handle = tokio::spawn(background_task);
 
 	    executor.run().await.context("Failed to run suzuka")?;
+
+        let (tx, rx) = tokio::sync::oneshot::channel::<u8>();
+
+        // Use tokio::select! to wait for either the handle or a cancellation signal
+        tokio::select! {
+            _ = background_join_handle => {
+                tracing::info!("Anvil task finished.");
+            }
+            _ = rx => {
+                tracing::info!("Cancellation received, killing anvil task.");
+                // Do any necessary cleanup here
+            }
+        }
+
+        // Ensure the cancellation sender is dropped to clean up properly
+        drop(tx);
+
 
         Ok(())
     }
