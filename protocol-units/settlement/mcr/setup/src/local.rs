@@ -59,6 +59,12 @@ impl Setup for Local {
 
 			let anvil_path = path.to_string_lossy().to_string();
 
+			let anvil_version = run_command(
+				"anvil",
+				&["--version"],
+			).await.context("Anvil not installed. Please install Anvil")?;
+			info!("Anvil version: {anvil_version}");
+
 			let (anvil_cmd_id, anvil_join_handle) = spawn_command(
 				"anvil".to_string(),
 				vec![
