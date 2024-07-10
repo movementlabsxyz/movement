@@ -14,4 +14,7 @@ processes:
       initial_delay_seconds: 3
       exec:
         command: echo "true"
+    availability:
+      exit_failure: true
+      restart: exit_on_failure
     
