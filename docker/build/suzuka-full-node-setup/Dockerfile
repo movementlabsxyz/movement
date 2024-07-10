@@ -55,5 +55,8 @@ COPY . /app
 # Set the working directory to /app
 WORKDIR /app
 
+RUN forge --version
+RUN anvil --version
+
 # Set the binary as the entrypoint
 ENTRYPOINT ["/app/suzuka-full-node-setup"]

@@ -2,8 +2,6 @@ name: Build Push Containers
 
 on:
   push:
-    branches:
-      - none
 
 jobs:
 

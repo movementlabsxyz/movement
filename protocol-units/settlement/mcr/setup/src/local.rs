@@ -52,6 +52,11 @@ impl Setup for Local {
 			tokio::fs::create_dir_all(&path).await.context("Failed to create Anvil directory").context("Failed to create Anvil directory")?;
 			path.push("anvil.json");
 
+			let exists = tokio::fs::try_exists(&path).await.context("Failed to check if Anvil file exists")?;
+
+			info!("Anvil path: {:?}", path);
+			info!{"Anvil exists: {:?}", exists};
+
 			let anvil_path = path.to_string_lossy().to_string();
 
 			let (anvil_cmd_id, anvil_join_handle) = spawn_command(
