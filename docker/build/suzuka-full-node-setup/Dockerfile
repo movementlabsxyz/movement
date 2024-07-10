@@ -38,7 +38,7 @@ RUN rust_binary="./target/release/suzuka-full-node-setup"; dest_dir="/tmp/runtim
     grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
 
-RUN rust_binary="/tmp/executables/anvil"; dest_dir="/tmp/anvil-runtime"; \
+RUN rust_binary="/tmp/executables/anvil"; dest_dir="/tmp/runtime"; \
     mkdir -p "$dest_dir"; ldd "$rust_binary" | awk '{print $3}' | \
     grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
@@ -49,7 +49,7 @@ FROM alpine:latest
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/suzuka-full-node-setup /app/suzuka-full-node-setup
 COPY --from=builder /tmp/runtime/nix/store /nix/store
-COPY --from=builder /tmp/anvil-runtime/nix/store /nix/store
+COPY --from=builder /tmp/runtime/nix/store /nix/store
 
 # Copy celestia-appd and celestia to a location on the alpine path
 COPY --from=builder /tmp/executables/celestia-appd /usr/local/bin/celestia-appd
