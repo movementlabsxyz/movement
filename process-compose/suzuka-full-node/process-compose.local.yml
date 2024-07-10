@@ -17,7 +17,7 @@ processes:
         command: echo "true"
     depends_on:
       setup:
-        condition: process_completed_successfully
+        condition: process_healthy
 
   celestia-bridge:
     command: |
@@ -36,15 +36,15 @@ processes:
 
   celestia-light-node:
     command: |
-      sleep 999999999d
+      sleep 999999999
       echo "started"
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: |
           echo "true"
     liveness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
         command: |
           echo "true"

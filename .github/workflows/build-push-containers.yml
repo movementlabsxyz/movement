@@ -3,7 +3,7 @@ name: Build Push Containers
 on:
   push:
     branches:
-      - none # don't run this workflow on push
+      - none
 
 jobs:
 
