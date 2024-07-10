@@ -115,12 +115,21 @@ impl Setup for Local {
 			let solidity_path = solidity_path.to_string_lossy();
 			tracing::info!("solidity_path: {:?}", solidity_path);
 
+			let solc_path = run_command(
+				"which",
+				&[
+					"solc"
+				]
+			).await.context("Failed to get solc path")?;
+
 			run_command(
 				"forge",
 				&[
 					"compile",
 					"--root",
-					&solidity_path
+					&solidity_path,
+					"--use",
+					&solc_path,
 				],
 			)
 			.await.context("Failed to compile with MCR workspace")?;
@@ -141,6 +150,8 @@ impl Setup for Local {
 					&config.eth_rpc_connection_url(),
 					"--private-key",
 					&config.governor_private_key,
+					"--use",
+					&solc_path
 				],
 			)
 			.await.context("Failed to deploy MCR smart contract")?
