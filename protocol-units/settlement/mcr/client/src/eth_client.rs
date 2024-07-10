@@ -19,6 +19,7 @@ use alloy::signers::{local::PrivateKeySigner};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
+use anyhow::Context;
 use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use movement_types::{Commitment, Id};
@@ -251,10 +252,15 @@ where
 			.getAcceptedCommitmentAtBlockHeight(U256::from(height))
 			.call()
 			.await?;
-		let return_height: u64 = commitment.height.try_into()?;
+		
+		let return_height: u64 = commitment.height.try_into().context(
+			"Failed to convert the commitment height from U256 to u64",
+		)?;
 		// Commitment with height 0 mean not found
 		Ok((return_height != 0).then_some(BlockCommitment {
-			height: commitment.height.try_into()?,
+			height: commitment.height.try_into().context(
+				"Failed to convert the commitment height from U256 to u64",
+			)?,
 			block_id: Id(commitment.blockId.into()),
 			commitment: Commitment(commitment.commitment.into()),
 		}))
@@ -264,8 +270,9 @@ where
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
 			contract.getMaxTolerableBlockHeight().call().await?;
-		let return_height: u64 = block_height.try_into()?;
-		Ok(return_height)
+		Ok(block_height.try_into().context(
+			"Failed to convert the max tolerable block height from U256 to u64",
+		)?)
 	}
 }
 

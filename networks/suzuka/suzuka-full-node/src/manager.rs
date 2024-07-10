@@ -7,6 +7,8 @@ use godfig::{
 };
 use suzuka_config::Config;
 use maptos_dof_execution::v1::Executor;
+use tokio::signal::unix::signal;
+use tokio::signal::unix::SignalKind;
 
 #[derive(Clone)]
 pub struct Manager<Dof>
@@ -27,6 +29,27 @@ impl Manager<SuzukaPartialNode<Executor>> {
     }
 
     pub async fn try_run(&self) -> Result<(), anyhow::Error> {
+
+        let (stop_tx, mut stop_rx) = tokio::sync::watch::channel(());
+        tokio::spawn({
+            let mut sigterm = signal(SignalKind::terminate()).context("Can't register to SIGTERM.")?;
+            let mut sigint = signal(SignalKind::interrupt()).context("Can't register to SIGKILL.")?;
+            let mut sigquit = signal(SignalKind::quit()).context("Can't register to SIGKILL.")?;
+            async move {
+                loop {
+                    tokio::select! {
+                        _ = sigterm.recv() => (),
+                        _ = sigint.recv() => (),
+                        _ = sigquit.recv() => (),
+                    };
+                    tracing::info!("Receive Terminate Signal");
+                    if let Err(err) = stop_tx.send(()) {
+                        tracing::warn!("Can't update stop watch channel because :{err}");
+                        return Err::<(), anyhow::Error>(anyhow::anyhow!(err));
+                    }
+                }
+            }
+        });
         
         let config = self.godfig.try_wait_for_ready().await?;
         
@@ -36,24 +59,19 @@ impl Manager<SuzukaPartialNode<Executor>> {
 
 	    let background_join_handle = tokio::spawn(background_task);
 
-	    executor.run().await.context("Failed to run suzuka")?;
-
-        let (tx, rx) = tokio::sync::oneshot::channel::<u8>();
+	    let executor_join_handle = tokio::spawn(async move { executor.run().await });
 
         // Use tokio::select! to wait for either the handle or a cancellation signal
         tokio::select! {
-            _ = background_join_handle => {
-                tracing::info!("Anvil task finished.");
-            }
-            _ = rx => {
-                tracing::info!("Cancellation received, killing anvil task.");
-                // Do any necessary cleanup here
-            }
-        }
-
-        // Ensure the cancellation sender is dropped to clean up properly
-        drop(tx);
-
+            _ = stop_rx.changed() =>(),
+            // manage Suzuka node execution return.
+            res = background_join_handle => {
+                res??;
+            },
+            res = executor_join_handle => {
+                res??;
+            },
+        };
 
         Ok(())
     }

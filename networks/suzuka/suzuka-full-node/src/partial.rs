@@ -22,12 +22,11 @@ use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
-use tracing::{debug, info};
+use tracing::{debug, info, error};
 
 use std::future::{self, Future};
 use std::sync::Arc;
 use std::time::Duration;
-
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
@@ -213,7 +212,7 @@ where
 			match self.settlement_manager.post_block_commitment(commitment).await {
 				Ok(_) => {}
 				Err(e) => {
-					debug!("Failed to post block commitment: {:?}", e);
+					error!("Failed to post block commitment: {:?}", e);
 				}
 			}
 		}
@@ -230,11 +229,22 @@ where
 	T: DynOptFinExecutor + Send + Sync,
 {
 	while let Some(res) = stream.next().await {
-		let event = res?;
+		let event = match res {
+			Ok(event) => event,
+			Err(e) => {
+				error!("Failed to get commitment event: {:?}", e);
+				continue;
+			}
+		};
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
-				executor.set_finalized_block_height(commitment.height)?;
+				match executor.set_finalized_block_height(commitment.height) {
+					Ok(_) => {}
+					Err(e) => {
+						error!("Failed to set finalized block height: {:?}", e);
+					}
+				}
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
