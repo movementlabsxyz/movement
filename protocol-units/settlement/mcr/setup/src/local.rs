@@ -59,13 +59,6 @@ impl Setup for Local {
 
 			let anvil_path = path.to_string_lossy().to_string();
 
-			let solc_path = run_command(
-				"which",
-				&[
-					"solc"
-				]
-			).await.context("Failed to get solc path")?.trim().to_string();
-
 			let (_, anvil_join_handle) = spawn_command(
 				"anvil".to_string(),
 				vec![
@@ -77,9 +70,7 @@ impl Setup for Local {
 					config.eth_rpc_connection_port.to_string(),
 					"--host".to_string(),
 					"0.0.0.0".to_string(),
-					"--steps-tracing".to_string(),
-					"--use".to_string(),
-					solc_path
+					"--steps-tracing".to_string()
 				],
 			)
 			.await.context("Failed to start Anvil")?;
