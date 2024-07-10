@@ -25,6 +25,10 @@ RUN nix --extra-experimental-features "nix-command flakes" \
 RUN nix --extra-experimental-features "nix-command flakes" \
         develop --command bash -c "cp \$(which .forge-wrapped) /tmp/executables/forge"
 
+# Copy solc
+RUN nix --extra-experimental-features "nix-command flakes" \
+        develop --command bash -c "cp \$(which solc) /tmp/executables/solc"
+
 # Build the Rust application
 RUN nix --extra-experimental-features "nix-command flakes" \
         develop .#docker-build --command bash -c "cargo build --release -p suzuka-full-node-setup"
@@ -51,10 +55,11 @@ COPY --from=builder /tmp/anvil-runtime/nix/store /nix/store
 COPY --from=builder /tmp/executables/celestia-appd /usr/local/bin/celestia-appd
 COPY --from=builder /tmp/executables/celestia /usr/local/bin/celestia
 
-# Copy anvil and forge to a location on the alpine path
+# Copy anvil, forge, and solc to a location on the alpine path
 # Note: you look this up by running `which anvil` and then `cat $(which anvil)`
 COPY --from=builder /tmp/executables/anvil /usr/local/bin/anvil
 COPY --from=builder /tmp/executables/forge /usr/local/bin/forge
+COPY --from=builder /tmp/executables/solc /usr/local/bin/solc
 
 # Copy over the context so we have the contracts
 COPY . /app

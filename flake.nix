@@ -78,6 +78,7 @@
           monza-aptos
           jq
           docker
+          solc
         ];
 
         # Specific version of toolchain
