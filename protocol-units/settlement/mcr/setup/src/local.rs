@@ -120,7 +120,7 @@ impl Setup for Local {
 				&[
 					"solc"
 				]
-			).await.context("Failed to get solc path")?;
+			).await.context("Failed to get solc path")?.trim().to_string();
 
 			run_command(
 				"forge",
