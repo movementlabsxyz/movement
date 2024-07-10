@@ -26,15 +26,6 @@ fn main() -> Result<ExitCode, anyhow::Error> {
 }
 
 async fn run_suzuka() -> Result<ExitCode, anyhow::Error> {
-	// let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
-
-	use tracing_subscriber::EnvFilter;
-
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
 
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
