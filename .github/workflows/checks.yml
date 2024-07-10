@@ -46,7 +46,6 @@ jobs:
 
     - name: Run Suzuka Full Node tests in nix environment
       env:
-        RUST_BACKTRACE: 1
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
         nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
