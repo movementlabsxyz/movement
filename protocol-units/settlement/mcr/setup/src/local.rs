@@ -1,6 +1,6 @@
 use super::Setup;
 use anyhow::{anyhow, Context};
-use commander::{run_command, spawn_command};
+use commander::run_command;
 use dot_movement::DotMovement;
 use mcr_settlement_config::Config;
 use rand::{thread_rng, Rng};
@@ -59,21 +59,28 @@ impl Setup for Local {
 
 			let anvil_path = path.to_string_lossy().to_string();
 
-			let (_, anvil_join_handle) = spawn_command(
-				"anvil".to_string(),
-				vec![
-					"--chain-id".to_string(),
-					config.eth_chain_id.to_string(),
-					"--config-out".to_string(),
-					anvil_path.clone(),
-					"--port".to_string(),
-					config.eth_rpc_connection_port.to_string(),
-					"--host".to_string(),
-					"0.0.0.0".to_string(),
-					"--steps-tracing".to_string()
-				],
-			)
-			.await.context("Failed to start Anvil")?;
+			let config_clone = config.clone();
+			let anvil_path_clone = anvil_path.clone();
+			let anvil_join_handle = tokio::task::spawn(async move {
+
+				run_command(
+					"anvil",
+					&vec![
+						"--chain-id",
+						&config_clone.eth_chain_id.to_string(),
+						"--config-out",
+						&anvil_path_clone,
+						"--port",
+						&config_clone.eth_rpc_connection_port.to_string(),
+						"--host",
+						"0.0.0.0",
+						"--steps-tracing"
+					],
+				)
+				.await.context("Failed to start Anvil")
+
+			});
+
 			//wait Anvil to start
 			let mut counter = 0;
 			loop {

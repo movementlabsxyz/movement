@@ -48,9 +48,7 @@ jobs:
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
-        # this needs to wait some time because even though we shut down the tasks as gracefully as we can, it seems the anvil port lingers
-        sleep 20
+        nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"
         nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
 
   m1-da-light-node:
