@@ -1,0 +1,19 @@
+{"timestamp":"2024-07-10T10:02:39.173458Z","level":"INFO","fields":{"msg":"3 Before alice fund"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.173454Z","level":"INFO","fields":{"msg":"1 Before alice fund"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.174548Z","level":"INFO","fields":{"msg":"2 Before alice fund"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.174558Z","level":"INFO","fields":{"msg":"4 Before alice fund"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.176710Z","level":"INFO","fields":{"log":"Scenario:4 execution failed because: FaucetClientError { inner: Inner { kind: HttpStatus(503), source: None } }"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.176710Z","level":"INFO","fields":{"log":"Scenario:2 execution failed because: FaucetClientError { inner: Inner { kind: HttpStatus(503), source: None } }"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.176794Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":4,\"elapse_millli\":8,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.176803Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":2,\"elapse_millli\":8,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.176961Z","level":"INFO","fields":{"log":"Scenario:1 execution failed because: FaucetClientError { inner: Inner { kind: HttpStatus(503), source: None } }"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:39.176991Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":1,\"elapse_millli\":9,\"result\":\"Fail\"}"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:41.203329Z","level":"INFO","fields":{"msg":"3 Before Bod create_account"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:43.227046Z","level":"INFO","fields":{"msg":"3 After Bod create_account"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:43.234505Z","level":"INFO","fields":{"message":"Scenario:3\n=== Initial Balances ===\nAlice: 100000000\nBob: 0"},"target":"basicalicebob"}
+{"timestamp":"2024-07-10T10:02:45.265321Z","level":"INFO","fields":{"message":"Scenario:3\n=== Intermediate Balances ===\nAlice: 99998400\nBob: 1000"},"target":"basicalicebob"}
+{"timestamp":"2024-07-10T10:02:45.265343Z","level":"INFO","fields":{"msg":"Scenario:3 ended"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:47.298938Z","level":"INFO","fields":{"message":"Scenario:3\n=== Intermediate Balances ===\n Alice: 99996800\n Bob: 2000"},"target":"basicalicebob"}
+{"timestamp":"2024-07-10T10:02:49.329546Z","level":"INFO","fields":{"message":"Scenario:3\n=== Final Balances ===\n Alice: 99995200\n Bob: 3000"},"target":"basicalicebob"}
+{"timestamp":"2024-07-10T10:02:49.329724Z","level":"INFO","fields":{"metrics_scenario":"{\"scenario_id\":3,\"elapse_millli\":10161,\"result\":\"Ok\"}"},"target":"exec"}
+{"timestamp":"2024-07-10T10:02:49.329751Z","level":"INFO","fields":{"metrics_client_execution":"{\"average_execution_time_milli\":10161}"},"target":"exec"}

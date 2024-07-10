@@ -1,0 +1,19 @@
+[2m2024-07-10T10:02:39.176760Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:4 execution failed because: FaucetClientError { inner: Inner { kind: HttpStatus(503), source: None } }"
+[2m2024-07-10T10:02:39.176787Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:2 execution failed because: FaucetClientError { inner: Inner { kind: HttpStatus(503), source: None } }"
+[2m2024-07-10T10:02:39.176981Z[0m [33m WARN[0m [2msuzuka_client::load_soak_testing[0m[2m:[0m [3mlog[0m[2m=[0m"Scenario:1 execution failed because: FaucetClientError { inner: Inner { kind: HttpStatus(503), source: None } }"
+[2m2024-07-10T10:02:43.234491Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:3
+=== Initial Balances ===
+Alice: 100000000
+Bob: 0
+[2m2024-07-10T10:02:45.265295Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:3
+=== Intermediate Balances ===
+Alice: 99998400
+Bob: 1000
+[2m2024-07-10T10:02:47.298912Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:3
+=== Intermediate Balances ===
+ Alice: 99996800
+ Bob: 2000
+[2m2024-07-10T10:02:49.329522Z[0m [32m INFO[0m [2mbasicalicebob[0m[2m:[0m Scenario:3
+=== Final Balances ===
+ Alice: 99995200
+ Bob: 3000
