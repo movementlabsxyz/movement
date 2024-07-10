@@ -14,8 +14,7 @@ use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
 use mcr_settlement_manager::McrSettlementManagerOperations;
 use movement_rest::MovementRest;
-use movement_types::BlockCommitmentEvent;
-use movement_types::{Block /*BlockCommitmentEvent*/};
+use movement_types::{Block, BlockCommitmentEvent};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
