@@ -44,8 +44,7 @@ FROM alpine:latest
 
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/suzuka-full-node-setup /app/suzuka-full-node-setup
-COPY --from=builder /tmp/runtime/nix/store /nix/store
-COPY --from=builder /tmp/anvil-runtime/nix/store /nix/store
+COPY --from=builder /nix/store /nix/store
 
 # Copy celestia-appd and celestia to a location on the alpine path
 COPY --from=builder /tmp/executables/celestia-appd /usr/local/bin/celestia-appd
