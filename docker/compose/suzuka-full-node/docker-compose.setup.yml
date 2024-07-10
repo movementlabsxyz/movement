@@ -14,3 +14,6 @@ services:
       FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
