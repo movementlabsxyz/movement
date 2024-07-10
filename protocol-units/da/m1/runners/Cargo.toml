@@ -33,6 +33,7 @@ rand = { workspace = true }
 hex = { workspace = true }
 reqwest = { workspace = true }
 tracing-subscriber = { workspace = true }
+godfig = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

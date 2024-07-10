@@ -1,4 +1,5 @@
 pub mod partial;
+pub mod manager;
 
 #[cfg(test)]
 pub mod tests;

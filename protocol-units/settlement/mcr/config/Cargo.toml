@@ -12,6 +12,8 @@ rust-version.workspace = true
 
 [dependencies]
 serde = { workspace = true , features = ["derive"] }
+alloy = { workspace = true }
+godfig = { workspace = true }
 
 [dev-dependencies]
 anyhow = { workspace = true }

@@ -21,6 +21,7 @@ members = [
     "util/commander",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
+    "protocol-units/settlement/mcr/anvil",
 ]
 
 [workspace.package]
@@ -73,6 +74,7 @@ commander = { path = "util/commander" }
 suzuka-config = { path = "networks/suzuka/suzuka-config" }
 monza-config = { path = "networks/monza/monza-config" }
 # util
+flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 
 # Serialization and Deserialization
@@ -149,23 +151,27 @@ celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
 ## Alloy Dependencies
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
-    "pubsub",
+alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
+    "node-bindings",
+    "rpc-types-trace",
+    "json-rpc",
+    "rpc-client",
     "signers",
-    "signer-wallet",
     "signer-yubihsm",
-] }
-alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+    "pubsub",
+    "providers"
+]}
+alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-primitives = { version = "0.7.2", default-features = false }
-alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
+alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "ws",
 ] }
-alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
-alloy-signer-wallet = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
+alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
+alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
 anyhow = "1.0"
 async-channel = "2.2.1"
@@ -241,6 +247,8 @@ trie-db = "0.28.0"
 url = "2.2.2"
 x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
+inotify = "0.10.2"
+rustix = "0.38.34" 
 
 
 [workspace.lints.rust]

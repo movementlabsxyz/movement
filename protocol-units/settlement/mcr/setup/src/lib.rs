@@ -16,5 +16,5 @@ pub trait Setup {
 		&self,
 		dot_movement: &DotMovement,
 		config: Config,
-	) -> impl Future<Output = Result<Config, anyhow::Error>> + Send;
+	) -> impl Future<Output = Result<(Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>), anyhow::Error>> + Send;
 }

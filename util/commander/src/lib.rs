@@ -91,7 +91,7 @@ pub async fn spawn_command(command: String, args: Vec<String>) -> Result<(Option
         .spawn()?;
 
         let process_id = child.id();
-        let jh = tokio::spawn({
+        let join_handle = tokio::spawn({
             async move {
                 let stdout = child.stdout.take().ok_or_else(|| {
                     anyhow::anyhow!("Failed to capture standard output from command {}", command)
@@ -125,6 +125,6 @@ pub async fn spawn_command(command: String, args: Vec<String>) -> Result<(Option
             }
         });
 
-        Ok((process_id,jh))
+        Ok((process_id,join_handle))
 }
 
