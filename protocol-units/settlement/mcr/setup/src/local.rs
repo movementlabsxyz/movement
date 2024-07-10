@@ -54,7 +54,7 @@ impl Setup for Local {
 
 			let anvil_path = path.to_string_lossy().to_string();
 
-			let (anvil_cmd_id, anvil_join_handle) = spawn_command(
+			let (_, anvil_join_handle) = spawn_command(
 				"anvil".to_string(),
 				vec![
 					"--chain-id".to_string(),
@@ -63,6 +63,8 @@ impl Setup for Local {
 					anvil_path.clone(),
 					"--port".to_string(),
 					config.eth_rpc_connection_port.to_string(),
+					"--host".to_string(),
+					"0.0.0.0".to_string(),
 					"--steps-tracing".to_string()
 				],
 			)
@@ -70,7 +72,7 @@ impl Setup for Local {
 			//wait Anvil to start
 			let mut counter = 0;
 			loop {
-				if counter > 10 {
+				if counter > 100 {
 					return Err(anyhow!("Anvil didn't start in time"));
 				}
 				counter += 1;
