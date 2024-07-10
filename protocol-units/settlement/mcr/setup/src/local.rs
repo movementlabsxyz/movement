@@ -59,12 +59,6 @@ impl Setup for Local {
 
 			let anvil_path = path.to_string_lossy().to_string();
 
-			let anvil_version = run_command(
-				"anvil",
-				&["--version"],
-			).await.context("Anvil not installed. Please install Anvil")?;
-			info!("Anvil version: {anvil_version}");
-
 			let (_, anvil_join_handle) = spawn_command(
 				"anvil".to_string(),
 				vec![
@@ -74,6 +68,8 @@ impl Setup for Local {
 					anvil_path.clone(),
 					"--port".to_string(),
 					config.eth_rpc_connection_port.to_string(),
+					"--host".to_string(),
+					"0.0.0.0".to_string(),
 					"--steps-tracing".to_string()
 				],
 			)
