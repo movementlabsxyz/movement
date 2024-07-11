@@ -120,7 +120,7 @@ module moveth::moveth {
             utf8(b"http://example.com"), /* project */
         );
 
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_account, @0xcccc);
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_account, @0xface);
         let resource_signer = account::create_signer_with_capability(&resource_signer_cap);
 
         // Set ALL stores for the fungible asset to untransferable.
@@ -367,10 +367,10 @@ module moveth::moveth {
         account::create_account_for_test(signer::address_of(&origin_account));
         resource_account::create_resource_account(&origin_account, vector::empty<u8>(), vector::empty<u8>());
 
-        init_module(minter);
+        init_module(&origin_account);
     }
 
-    #[test (origin_account = @0xcafe, aptos_framework = @aptos_framework)]
+    #[test (origin_account = @0xcafe, collection_token_minter = @0xface, aptos_framework = @aptos_framework)]
     public entry fun test_flow(origin_account: signer, collection_token_minter: signer, aptos_framework: signer) {
         set_up_test(origin_account, &collection_token_minter, aptos_framework, 10);
     }

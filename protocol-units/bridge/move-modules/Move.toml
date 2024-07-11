@@ -22,8 +22,8 @@ denylister = "0xcade"
 source_addr = "0xacef"
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "devnet"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "monza"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
