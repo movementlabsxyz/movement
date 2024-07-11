@@ -1,12 +1,14 @@
+use std::future;
+
 use crate::SuzukaFullNodeSetupOperations;
 use dot_movement::DotMovement;
-use mcr_settlement_setup::Setup as _;
+// use mcr_settlement_setup::Setup as _;
 
 // use tracing::debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Local {
-	mcr_settlement_strategy: mcr_settlement_setup::Local,
+	pub mcr_settlement_strategy: mcr_settlement_setup::Local,
 }
 
 impl Local {
@@ -29,10 +31,15 @@ impl Local {
 		// Update the config with the new m1_da_light_node_config
 		config.m1_da_light_node = new_m1_da_light_node_config;
 
-		tracing::info!("Running mcr_settlement_setup");
+		/*tracing::info!("Running mcr_settlement_setup");
 		let mcr_settlement_config: mcr_settlement_config::Config = config.mcr.clone();
 		let (mcr_config, join_handle) = self.mcr_settlement_strategy.setup(&dot_movement, mcr_settlement_config).await?;
-		config.mcr = mcr_config;
+		config.mcr = mcr_config;*/
+
+		let join_handle = tokio::task::spawn(async move {
+			future::pending::<u64>().await;
+			Ok(("yes".to_string()))
+		});
 
 		Ok((config, join_handle))
 	}

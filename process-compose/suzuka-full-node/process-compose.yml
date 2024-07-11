@@ -54,9 +54,13 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:30731
+    liveness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30731
 
   suzuka-faucet:
   
@@ -66,7 +70,11 @@ processes:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:30732
+    liveness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:30732
 

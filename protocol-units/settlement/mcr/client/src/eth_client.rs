@@ -111,7 +111,9 @@ impl
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(signer))
 			.on_builtin(&rpc_url)
-			.await?;
+			.await.context(
+				"Failed to create the RPC provider for the MCR settlement client",
+			)?;
 
 		let mut client = Client::build_with_provider(
 			rpc_provider,

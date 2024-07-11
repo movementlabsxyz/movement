@@ -12,9 +12,8 @@ use mcr_settlement_client::{
 };
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
-use mcr_settlement_manager::McrSettlementManagerOperations;
 use movement_rest::MovementRest;
-use movement_types::BlockCommitmentEvent;
+// use movement_types::BlockCommitmentEvent;
 use movement_types::{Block /*BlockCommitmentEvent*/};
 
 use anyhow::Context;
@@ -22,7 +21,7 @@ use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
-use tracing::{debug, info, error};
+use tracing::{debug, info};
 
 use std::future::{self, Future};
 use std::sync::Arc;
@@ -32,7 +31,7 @@ pub struct SuzukaPartialNode<T> {
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
-	settlement_manager: McrSettlementManager,
+	pub settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
 }
 
@@ -209,12 +208,12 @@ where
 			debug!("Executed block: {:?}", block_id);
 
 			// todo: this needs defaults
-			match self.settlement_manager.post_block_commitment(commitment).await {
+			/*match self.settlement_manager.post_block_commitment(commitment).await {
 				Ok(_) => {}
 				Err(e) => {
 					error!("Failed to post block commitment: {:?}", e);
 				}
-			}
+			}*/
 		}
 
 		Ok(())
@@ -222,13 +221,13 @@ where
 }
 
 pub async fn read_commitment_events<T>(
-	mut stream: CommitmentEventStream,
+	mut _stream: CommitmentEventStream,
 	executor: T,
 ) -> anyhow::Result<()>
 where
 	T: DynOptFinExecutor + Send + Sync,
 {
-	while let Some(res) = stream.next().await {
+	/*while let Some(res) = stream.next().await {
 		let event = match res {
 			Ok(event) => event,
 			Err(e) => {
@@ -251,7 +250,7 @@ where
 				// TODO: block reversion
 			}
 		}
-	}
+	}*/
 
 	Ok(future::pending().await)
 }
@@ -323,7 +322,9 @@ impl SuzukaPartialNode<Executor> {
 		let executor = Executor::try_from_config(tx, config.execution_config.maptos_config.clone())
 			.context("Failed to get executor from environment")?;
 		let settlement_client =
-			McrEthSettlementClient::build_with_config(config.mcr.clone()).await?;
+			McrEthSettlementClient::build_with_config(config.mcr.clone()).await.context(
+				"Failed to build MCR settlement client with config",
+			)?;
 		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
 		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config)
 	}

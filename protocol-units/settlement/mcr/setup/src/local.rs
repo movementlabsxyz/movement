@@ -73,8 +73,7 @@ impl Setup for Local {
 						"--port",
 						&config_clone.eth_rpc_connection_port.to_string(),
 						"--host",
-						"0.0.0.0",
-						"--steps-tracing"
+						&config_clone.eth_rpc_connection_hostname.to_string(),
 					],
 				)
 				.await.context("Failed to start Anvil")
