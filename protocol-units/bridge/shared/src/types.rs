@@ -1,10 +1,19 @@
-use std::{fmt::Debug, hash::Hash};
-
 use derive_more::{Deref, DerefMut};
+use hex::{self, FromHexError};
 use rand::Rng;
+use std::{fmt::Debug, hash::Hash};
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
+
+impl BridgeTransferId<[u8; 32]> {
+	pub fn parse(s: &str) -> Result<Self, FromHexError> {
+		let bytes = hex::decode(s)?;
+		let array: [u8; 32] =
+			bytes.as_slice().try_into().map_err(|_| FromHexError::InvalidStringLength)?;
+		Ok(BridgeTransferId(array))
+	}
+}
 
 impl<H, O> Convert<BridgeTransferId<O>> for BridgeTransferId<H>
 where
@@ -50,6 +59,15 @@ impl From<&str> for RecipientAddress {
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
+
+impl HashLock<[u8; 32]> {
+	pub fn parse(s: &str) -> Result<Self, FromHexError> {
+		let bytes = hex::decode(s)?;
+		let array: [u8; 32] =
+			bytes.as_slice().try_into().map_err(|_| FromHexError::InvalidStringLength)?;
+		Ok(HashLock(array))
+	}
+}
 
 pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
 	HashLock(From::from(other.0))

@@ -3510,6 +3510,7 @@ dependencies = [
  "futures",
  "futures-time",
  "futures-timer",
+ "hex",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
  "static_str_ops",
