@@ -15,6 +15,5 @@ processes:
       exec:
         command: echo "true"
     availability:
-      exit_failure: true
       restart: exit_on_failure
     

@@ -41,11 +41,11 @@ processes:
     readiness_probe:
       initial_delay_seconds: 3
       exec:
-        command: echo "true"
+        command: grpcurl -plaintext 0.0.0.0:30730 list
     liveness_probe:
       initial_delay_seconds: 3
       exec:
-        command: echo "true"
+        command: grpcurl -plaintext 0.0.0.0:30730 list
 
   suzuka-full-node:
     command: |
@@ -54,11 +54,11 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 3
       exec:
         command: curl http://0.0.0.0:30731
     liveness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 3
       exec:
         command: curl http://0.0.0.0:30731
 
@@ -71,10 +71,12 @@ processes:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
+      failure_threshold: 10
       exec:
         command: curl http://0.0.0.0:30732
     liveness_probe:
       initial_delay_seconds: 10
+      failure_threshold: 10
       exec:
         command: curl http://0.0.0.0:30732
 

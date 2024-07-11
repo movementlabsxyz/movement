@@ -79,6 +79,7 @@
           jq
           docker
           solc
+          grpcurl
         ];
 
         # Specific version of toolchain

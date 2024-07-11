@@ -146,13 +146,13 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use mcr_settlement_client::mock::MockMcrSettlementClient;
+	use mcr_settlement_client::mock::McrSettlementClient;
 	use movement_types::{BlockCommitment, Commitment};
 
 	#[tokio::test]
 	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let mut client = MockMcrSettlementClient::new();
+		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 		let commitment = BlockCommitment {
@@ -177,7 +177,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_block_commitment_rejected() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let mut client = MockMcrSettlementClient::new();
+		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 		let commitment = BlockCommitment {
@@ -215,7 +215,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_back_pressure() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let mut client = MockMcrSettlementClient::new();
+		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 2;
 		client.pause_after(2).await;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
@@ -275,7 +275,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_batch_timeout() -> Result<(), anyhow::Error> {
 		let config = Config { batch_timeout: 1000, ..Config::default() };
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
 		let commitment1 = BlockCommitment {
