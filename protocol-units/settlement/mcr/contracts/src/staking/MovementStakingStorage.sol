@@ -35,4 +35,6 @@ contract MovementStakingStorage {
         mapping(uint256 epoch =>
             mapping(address attester => uint256 stake))) public epochTotalStakeByDomain;
 
+    // track whitelisted addresses for staking
+    mapping(address => bool) public whitelisted;
 }

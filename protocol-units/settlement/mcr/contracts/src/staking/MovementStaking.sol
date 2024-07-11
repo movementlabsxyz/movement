@@ -268,7 +268,7 @@ contract MovementStaking is
     }
 
     // stakes for the next epoch
-    function stake(address domain, IERC20 custodian, uint256 amount) external {
+    function stake(address domain, IERC20 custodian, uint256 amount) external onlyWhitelisted {
         // add the attester to the list of attesters
         attestersByDomain[domain].add(msg.sender);
 
@@ -312,7 +312,7 @@ contract MovementStaking is
         address domain,
         address custodian,
         uint256 amount
-    ) external {
+    ) external onlyWhitelisted {
         // indicate that we are going to unstake this amount in the next epoch
         // ! this doesn't actually happen until we roll over the epoch
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
@@ -547,4 +547,21 @@ contract MovementStaking is
             _payAttester(attesters[i], custodians[i], amounts[i]);
         }
     }
+
+    modifier onlyWhitelisted() {
+        if (!whitelisted[msg.sender])
+            revert AddressNotWhitelisted();
+        _;
+    }
+
+    function whitelistAddress(address addr) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        whitelisted[addr] = true;
+        emit AddressWhitelisted(addr);
+    }
+
+    function removeAddressFromWhitelist(address addr) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        whitelisted[addr] = false;
+        emit AddressRemovedFromWhitelist(addr);
+    }
+
 }
