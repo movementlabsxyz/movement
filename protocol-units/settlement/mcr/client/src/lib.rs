@@ -12,7 +12,7 @@ pub mod mock;
 #[cfg(feature = "eth")]
 pub mod eth_client;
 #[cfg(feature = "eth")]
-mod send_eth_transaction;
+pub mod send_eth_transaction;
 
 type CommitmentStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitment, anyhow::Error>> + Send>>;

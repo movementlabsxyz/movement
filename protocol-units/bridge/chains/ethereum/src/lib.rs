@@ -1,18 +1,15 @@
 use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_eips::BlockNumberOrTag;
-use alloy_network::{Ethereum, EthereumSigner};
+use alloy_network::{Ethereum, EthereumWallet};
+use alloy_primitives::private::serde::{Deserialize, Serialize};
 use alloy_primitives::{address, Address as EthAddress, FixedBytes, B256, U256};
-use alloy_primitives::{
-	private::serde::{Deserialize, Serialize},
-	BlockNumber,
-};
 use alloy_provider::{
-	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, SignerFiller},
+	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
 	Provider, ProviderBuilder, RootProvider,
 };
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
-use alloy_rpc_types::{Filter, Log, RawLog};
+use alloy_rpc_types::{Filter, Log};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
@@ -23,7 +20,7 @@ use bridge_shared::{
 		BridgeContractInitiatorResult,
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{BridgeTransferState, CompletedDetails, LockDetails},
+	types::{CompletedDetails, LockDetails},
 };
 use bridge_shared::{
 	bridge_monitoring::BridgeContractInitiatorMonitoring,
@@ -34,8 +31,8 @@ use bridge_shared::{
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use keccak_hash::keccak;
-use mcr_settlement_client::send_eth_tx::{
-	send_tx, InsufficentFunds, SendTxErrorRule, UnderPriced, VerifyRule,
+use mcr_settlement_client::send_eth_transaction::{
+	send_transaction, InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
 use std::{fmt::Debug, pin::Pin, task::Poll};
 use thiserror::Error;
@@ -49,13 +46,12 @@ const MAX_RETRIES: u32 = 5;
 type EthHash = [u8; 32];
 
 pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
-pub type SCCResult<A, H> =
-	Result<BridgeContractCounterpartyEvent<A, H>, BridgeContractCounterpartyError>;
+pub type SCCResult<H> = Result<BridgeContractCounterpartyEvent<H>, BridgeContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CompletedDetails<A, H>),
+pub enum MoveCounterpartyEvent<H> {
+	LockedBridgeTransfer(LockDetails<H>),
+	CompletedBridgeTransfer(CompletedDetails<H>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -85,18 +81,8 @@ pub enum EthInitiatorError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<A, H>),
+	CounterpartyContractEvent(SCCResult<H>),
 	Noop,
-}
-
-pub type SignerPrivateKey = String;
-
-impl Default for SignerPrivateKey {
-	fn default() -> Self {
-		let random_wallet = PrivateKeySigner::random();
-		let wallet_string = random_wallet.to_bytes().to_string();
-		Self(wallet_string)
-	}
 }
 
 ///Configuration for the Ethereum Bridge Client
@@ -119,13 +105,20 @@ impl Default for Config {
 			rpc_url: Some("http://localhost:8545".to_string()),
 			ws_url: Some("ws://localhost:8545".to_string()),
 			chain_id: "31337".to_string(),
-			signer_private_key: SignerPrivateKey::default().to_string(),
+			signer_private_key: Self::default_for_private_key(),
 			initiator_address: INITIATOR_ADDRESS.to_string(),
 			counterparty_address: COUNTERPARTY_ADDRESS.to_string(),
 			recipient_address: RECIPIENT_ADDRESS.to_string(),
 			gas_limit: DEFAULT_GAS_LIMIT,
 			num_tx_send_retries: MAX_RETRIES,
 		}
+	}
+}
+
+impl Config {
+	fn default_for_private_key() -> String {
+		let random_wallet = PrivateKeySigner::random();
+		random_wallet.to_bytes().to_string()
 	}
 }
 
@@ -140,10 +133,10 @@ sol!(
 type AlloyProvider = FillProvider<
 	JoinFill<
 		JoinFill<
-			JoinFill<JoinFill<alloy_provider::Identity, GasFiller>, NonceFiller>,
+			JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,
 			ChainIdFiller,
 		>,
-		SignerFiller<EthereumSigner>,
+		WalletFiller<EthereumWallet>,
 	>,
 	RootProvider<BoxTransport>,
 	BoxTransport,
@@ -166,7 +159,7 @@ pub struct EthClient<P> {
 	ws_provider: RootProvider<PubSubFrontend>,
 	initiator_address: EthAddress,
 	counterparty_address: EthAddress,
-	send_tx_error_rules: Vec<Box<dyn VerifyRule>>,
+	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u64,
 	num_tx_send_retries: u32,
 }
@@ -177,7 +170,7 @@ impl EthClient<AlloyProvider> {
 		counterparty_address: &str,
 	) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.signer_private_key;
-		let signer: LocalWallet = signer_private_key.parse()?;
+		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		println!("Signerrrr: {:?}", signer);
 		let initiator_address = config.initiator_address.parse()?;
 		println!("Initiator Address: {:?}", initiator_address);
@@ -185,7 +178,7 @@ impl EthClient<AlloyProvider> {
 		let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
-			.signer(EthereumSigner::from(signer))
+			.wallet(EthereumWallet::from(signer.clone()))
 			.on_builtin(&rpc_url)
 			.await?;
 		let ws = WsConnect::new(ws_url);
@@ -214,16 +207,17 @@ impl EthClient<AlloyProvider> {
 		num_tx_send_retries: u32,
 		chain_id: String,
 	) -> Result<Self, anyhow::Error> {
-		let rule1: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<UnderPriced>::new());
-		let rule2: Box<dyn VerifyRule> = Box::new(SendTxErrorRule::<InsufficentFunds>::new());
-		let send_tx_error_rules = vec![rule1, rule2];
+		let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
+		let rule2: Box<dyn VerifyRule> =
+			Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
+		let send_transaction_error_rules = vec![rule1, rule2];
 		Ok(EthClient {
 			rpc_provider,
 			chain_id,
 			ws_provider,
 			initiator_address,
 			counterparty_address,
-			send_tx_error_rules,
+			send_transaction_error_rules,
 			gas_limit,
 			num_tx_send_retries,
 		})
@@ -260,9 +254,9 @@ where
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 		);
-		let _ = send_tx(
+		let _ = send_transaction(
 			call,
-			&self.send_tx_error_rules,
+			&self.send_transaction_error_rules,
 			self.num_tx_send_retries,
 			self.gas_limit as u128,
 		)
@@ -280,9 +274,9 @@ where
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-		let _ = send_tx(
+		let _ = send_transaction(
 			call,
-			&self.send_tx_error_rules,
+			&self.send_transaction_error_rules,
 			self.num_tx_send_retries,
 			self.gas_limit as u128,
 		)
@@ -296,9 +290,9 @@ where
 	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		let _ = send_tx(
+		let _ = send_transaction(
 			call,
-			&self.send_tx_error_rules,
+			&self.send_transaction_error_rules,
 			self.num_tx_send_retries,
 			self.gas_limit as u128,
 		)
@@ -329,12 +323,6 @@ where
 			hash_lock: HashLock(eth_details.hash_lock),
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
-			state: match eth_details.state {
-				0 => bridge_shared::types::BridgeTransferState::Initialized,
-				1 => bridge_shared::types::BridgeTransferState::Completed,
-				2 => bridge_shared::types::BridgeTransferState::Refunded,
-				_ => panic!("Invalid state"),
-			},
 		};
 
 		Ok(Some(details))

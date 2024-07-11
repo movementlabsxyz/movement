@@ -74,6 +74,12 @@ pub struct BridgeTransferDetails<A, H> {
 	pub amount: Amount,
 }
 
+impl<A, H> Default for BridgeTransferDetails<A, H> {
+	fn default() -> Self {
+		todo!()
+	}
+}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LockDetails<H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,

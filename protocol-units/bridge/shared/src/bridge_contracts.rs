@@ -5,7 +5,7 @@ use crate::types::{
 	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
-#[derive(Error, Debug, Clone)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractInitiatorError {
 	#[error("Failed to initiate bridge transfer")]
 	InitiateTransferError,
@@ -70,7 +70,7 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
 }
 
 #[async_trait::async_trait]

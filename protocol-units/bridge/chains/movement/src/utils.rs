@@ -161,56 +161,56 @@ pub fn convert_hex_string_to_h256(addr: &str) -> Result<H256, String> {
 // }
 
 /// Filter events based on range
-pub async fn get_filtered_events<T, S>(
-	aptos_client: &MovementClient,
-	account_address: AccountAddress,
-	struct_tag: &str,
-	field_name: &str,
-	range: RangeInclusive<u32>,
-) -> Result<Vec<(Indexed<T>, LogMeta)>, anyhow::Error>
-where
-	S: TryFrom<VersionedEvent> + TxSpecificData + TryInto<T> + Clone,
-{
-	// fetch events from global storage
-	let events: Vec<VersionedEvent> = aptos_client
-		.get_account_events(account_address, struct_tag, field_name, None, Some(10000))
-		.await?;
-
-	// get start block and end block
-	let blk_start_no: u32 = *range.start();
-	let blk_end_no = *range.end();
-	let start_block = aptos_client.get_block_by_height(blk_start_no as u64, false).await?;
-	let end_block = aptos_client.get_block_by_height(blk_end_no as u64, false).await?;
-	let start_tx_version = start_block.first_version;
-	let end_tx_version = end_block.last_version;
-
-	// filter events which are from `start_tx_version` to `end_tx_version`
-	let filtered_events: Vec<VersionedEvent> = events
-		.into_iter()
-		.filter(|e| e.version.0 > start_tx_version.0 && e.version.0 <= end_tx_version.0)
-		.collect();
-
-	// prepare result
-	let mut messages: Vec<(Indexed<T>, LogMeta)> =
-		Vec::with_capacity((range.end() - range.start()) as usize);
-	for filtered_event in filtered_events {
-		let evt_data: S = filtered_event.clone().try_into()?;
-		let block_height = evt_data.block_height().parse().unwrap();
-		let block = aptos_client.get_block_by_height(block_height as u64, false).await?;
-		messages.push((
-			Indexed::new(evt_data.clone().try_into()?),
-			LogMeta {
-				address: account_address.into_bytes().into(),
-				block_number: block_height,
-				block_hash: convert_hex_string_to_h256(&block.block_hash.to_string()).unwrap(),
-				transaction_id: H512::from(
-					convert_hex_string_to_h256(&evt_data.transaction_hash()).unwrap(),
-				),
-				transaction_index: *filtered_event.version.inner(),
-				log_index: U256::from(*filtered_event.sequence_number.inner()),
-			},
-		));
-	}
-
-	Ok(messages)
-}
+// pub async fn get_filtered_events<T, S>(
+// 	aptos_client: &MovementClient,
+// 	account_address: AccountAddress,
+// 	struct_tag: &str,
+// 	field_name: &str,
+// 	range: RangeInclusive<u32>,
+// ) -> Result<Vec<(Indexed<T>, LogMeta)>, anyhow::Error>
+// where
+// 	S: TryFrom<VersionedEvent> + TxSpecificData + TryInto<T> + Clone,
+// {
+// 	// fetch events from global storage
+// 	let events: Vec<VersionedEvent> = aptos_client
+// 		.get_account_events(account_address, struct_tag, field_name, None, Some(10000))
+// 		.await?;
+//
+// 	// get start block and end block
+// 	let blk_start_no: u32 = *range.start();
+// 	let blk_end_no = *range.end();
+// 	let start_block = aptos_client.get_block_by_height(blk_start_no as u64, false).await?;
+// 	let end_block = aptos_client.get_block_by_height(blk_end_no as u64, false).await?;
+// 	let start_tx_version = start_block.first_version;
+// 	let end_tx_version = end_block.last_version;
+//
+// 	// filter events which are from `start_tx_version` to `end_tx_version`
+// 	let filtered_events: Vec<VersionedEvent> = events
+// 		.into_iter()
+// 		.filter(|e| e.version.0 > start_tx_version.0 && e.version.0 <= end_tx_version.0)
+// 		.collect();
+//
+// 	// prepare result
+// 	let mut messages: Vec<(Indexed<T>, LogMeta)> =
+// 		Vec::with_capacity((range.end() - range.start()) as usize);
+// 	for filtered_event in filtered_events {
+// 		let evt_data: S = filtered_event.clone().try_into()?;
+// 		let block_height = evt_data.block_height().parse().unwrap();
+// 		let block = aptos_client.get_block_by_height(block_height as u64, false).await?;
+// 		messages.push((
+// 			Indexed::new(evt_data.clone().try_into()?),
+// 			LogMeta {
+// 				address: account_address.into_bytes().into(),
+// 				block_number: block_height,
+// 				block_hash: convert_hex_string_to_h256(&block.block_hash.to_string()).unwrap(),
+// 				transaction_id: H512::from(
+// 					convert_hex_string_to_h256(&evt_data.transaction_hash()).unwrap(),
+// 				),
+// 				transaction_index: *filtered_event.version.inner(),
+// 				log_index: U256::from(*filtered_event.sequence_number.inner()),
+// 			},
+// 		));
+// 	}
+//
+// 	Ok(messages)
+// }
