@@ -1,4 +1,5 @@
 use alloy::pubsub::PubSubFrontend;
+use alloy::signers::local::PrivateKeySigner;
 use alloy_eips::BlockNumberOrTag;
 use alloy_network::{Ethereum, EthereumSigner};
 use alloy_primitives::{address, Address as EthAddress, FixedBytes, B256, U256};
@@ -12,7 +13,6 @@ use alloy_provider::{
 };
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use alloy_rpc_types::{Filter, Log, RawLog};
-use alloy_signer_wallet::LocalWallet;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
@@ -89,6 +89,16 @@ pub enum AbstractBlockainEvent<A, H> {
 	Noop,
 }
 
+pub type SignerPrivateKey = String;
+
+impl Default for SignerPrivateKey {
+	fn default() -> Self {
+		let random_wallet = PrivateKeySigner::random();
+		let wallet_string = random_wallet.to_bytes().to_string();
+		Self(wallet_string)
+	}
+}
+
 ///Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -109,7 +119,7 @@ impl Default for Config {
 			rpc_url: Some("http://localhost:8545".to_string()),
 			ws_url: Some("ws://localhost:8545".to_string()),
 			chain_id: "31337".to_string(),
-			signer_private_key: LocalWallet::random().to_bytes().to_string(),
+			signer_private_key: SignerPrivateKey::default().to_string(),
 			initiator_address: INITIATOR_ADDRESS.to_string(),
 			counterparty_address: COUNTERPARTY_ADDRESS.to_string(),
 			recipient_address: RECIPIENT_ADDRESS.to_string(),

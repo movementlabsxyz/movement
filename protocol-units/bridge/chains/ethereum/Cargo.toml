@@ -32,7 +32,6 @@ alloy-contract = { workspace = true }
 alloy-network = { workspace = true }
 alloy-primitives = { workspace = true }
 alloy-provider = { workspace = true }
-alloy-signer-wallet = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-rlp = { workspace = true }
 alloy-transport = { workspace = true }

@@ -161,42 +161,26 @@ celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
 
-<<<<<<< HEAD
-alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f", features = [
-    "node-bindings",
-    "rpc-client",
-    "pubsub",
-=======
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "node-bindings",
     "rpc-types-trace",
     "json-rpc",
     "rpc-client",
->>>>>>> main
     "signers",
     "signer-yubihsm",
     "pubsub",
     "providers",
 ] }
-<<<<<<< HEAD
 alloy-rpc-types-eth = "0.1.3"
-alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-=======
+alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
->>>>>>> main
 alloy-primitives = { version = "0.7.2", default-features = false }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "ws",
 ] }
-<<<<<<< HEAD
 alloy-rlp = "0.3.5"
-alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "607359a8d7ba7543d702da5d406b7bc78eff3d9f" }
-=======
 alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
->>>>>>> main
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
@@ -283,7 +267,7 @@ rustix = "0.38.34"
 
 
 [workspace.lints.rust]
-dead_code = "deny"## Alloy Dependencies
+dead_code = "deny"        ## Alloy Dependencies
 unused_imports = "deny"
 non_ascii_idents = "deny" # Bad for readability and it can also be a security vulnerability
 
