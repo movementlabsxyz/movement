@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
