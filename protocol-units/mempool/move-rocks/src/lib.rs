@@ -35,14 +35,17 @@ impl RocksdbMempool {
 	}
 
 	pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
-		// pad to 32 characters
+		// pad to 32 characters for slot_seconds
 		let slot_seconds_str = format!("{:032}", transaction.timestamp);
+
+		// pad to 32 characters for sequence number
+		let sequence_number_str = format!("{:032}", transaction.transaction.sequence_number);
 
 		// Assuming transaction.transaction.id() returns a hex string of length 32
 		let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
 
-		// Concatenate the two parts to form a 48-character hex string key
-		let key = format!("{}:{}", slot_seconds_str, transaction_id_hex);
+		// Concatenate the two parts to form a 80-character hex string key
+		let key = format!("{}:{}:{}", slot_seconds_str, sequence_number_str, transaction_id_hex);
 
 		key
 	}
@@ -254,9 +257,9 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1]), 2);
-		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2]), 64);
-		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3]), 128);
+		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
+		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 128);
 
 		mempool.add_mempool_transaction(tx2.clone()).await?;
 		mempool.add_mempool_transaction(tx1.clone()).await?;
@@ -269,4 +272,49 @@ pub mod test {
 
 		Ok(())
 	}
+
+	#[tokio::test]
+	async fn test_transaction_sequence_number_based_ordering() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 2);
+		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 64);
+
+		mempool.add_mempool_transaction(tx2.clone()).await?;
+		mempool.add_mempool_transaction(tx1.clone()).await?;
+		mempool.add_mempool_transaction(tx3.clone()).await?;
+
+		let txs = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(txs[0], tx1);
+		assert_eq!(txs[1], tx2);
+		assert_eq!(txs[2], tx3);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_slot_and_transaction_based_ordering() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 0);
+		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 0);
+		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2), 0);
+
+		mempool.add_mempool_transaction(tx2.clone()).await?;
+		mempool.add_mempool_transaction(tx1.clone()).await?;
+		mempool.add_mempool_transaction(tx3.clone()).await?;
+
+		let txs = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(txs[0], tx1);
+		assert_eq!(txs[1], tx2);
+		assert_eq!(txs[2], tx3);
+
+		Ok(())
+	}
+
 }

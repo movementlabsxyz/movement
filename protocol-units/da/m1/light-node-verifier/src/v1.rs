@@ -81,18 +81,12 @@ impl Verifier for V1Verifier {
 mod tests {
 	use super::*;
 	use celestia_types::blob::GasPrice;
-	use m1_da_light_node_util::config::M1DaLightNodeConfig;
 
 	/// todo: Investigate why this test sporadically fails.
 	#[tokio::test]
 	pub async fn test_valid_verifies() -> Result<(), anyhow::Error> {
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
-		let config =
-			m1_da_light_node_setup::setup(dot_movement, M1DaLightNodeConfig::default()).await?;
-		let client = Arc::new(config.connect_celestia().await?);
-		let celestia_namespace = config.celestia_namespace();
-
-		let verifier = V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
+		let config = dot_movement.try_get_config_from_json::<m1_da_light_node_util::M1DaLightNodeConfig>()?;
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
@@ -109,8 +103,7 @@ mod tests {
 	#[tokio::test]
 	pub async fn test_absent_does_not_verify() -> Result<(), anyhow::Error> {
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
-		let config =
-			m1_da_light_node_setup::setup(dot_movement, M1DaLightNodeConfig::default()).await?;
+		let config = dot_movement.try_get_config_from_json::<m1_da_light_node_util::M1DaLightNodeConfig>()?;
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_namespace = config.celestia_namespace();
 
@@ -142,8 +135,7 @@ mod tests {
 	#[tokio::test]
 	pub async fn test_wrong_height_does_not_verify() -> Result<(), anyhow::Error> {
 		let dot_movement = dot_movement::DotMovement::try_from_env()?;
-		let config =
-			m1_da_light_node_setup::setup(dot_movement, M1DaLightNodeConfig::default()).await?;
+		let config = dot_movement.try_get_config_from_json::<m1_da_light_node_util::M1DaLightNodeConfig>()?;
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_namespace = config.celestia_namespace();
 

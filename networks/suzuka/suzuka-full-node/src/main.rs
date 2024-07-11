@@ -1,28 +1,28 @@
-use anyhow::Context;
-use suzuka_full_node::{partial::SuzukaPartialNode, SuzukaFullNode};
+use suzuka_full_node::{
+	manager::Manager,
+	partial::SuzukaPartialNode,
+};
+use maptos_dof_execution::v1::Executor;
+use std::process::ExitCode;
 
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	#[cfg(feature = "logging")]
-	{
-		use tracing_subscriber::EnvFilter;
+async fn main() -> Result<ExitCode, anyhow::Error> {
+	// let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
 
-		tracing_subscriber::fmt()
-			.with_env_filter(
-				EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-			)
-			.init();
-	}
+	use tracing_subscriber::EnvFilter;
 
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
+	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
-	let (executor, background_task) = SuzukaPartialNode::try_from_config(config)
-		.await
-		.context("Failed to create the executor")?;
+	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 
-	tokio::spawn(background_task);
+	let manager = Manager::<SuzukaPartialNode<Executor>>::new(config_file).await?;
+	manager.try_run().await?;
 
-	executor.run().await.context("Failed to run suzuka")?;
-
-	Ok(())
+	Ok(ExitCode::SUCCESS)
 }

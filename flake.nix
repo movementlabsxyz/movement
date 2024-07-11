@@ -6,6 +6,7 @@
     foundry.url = "github:shazow/foundry.nix/monthly"; 
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
+    
   };
 
   outputs = {
@@ -174,6 +175,11 @@
 
             shellHook = ''
               #!/bin/bash -e
+
+              // # Movement Swap Core
+              DOT_MOVEMENT_PATH=$(pwd)/.movement
+              mkdir -p $DOT_MOVEMENT_PATH
+
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
                  _  _   __   _  _  ____  _  _  ____  __ _  ____
@@ -188,3 +194,5 @@
         }
     );
 }
+
+
