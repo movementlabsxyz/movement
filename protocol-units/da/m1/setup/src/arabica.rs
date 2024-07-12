@@ -2,6 +2,8 @@ use anyhow::Context;
 use commander::run_command;
 use m1_da_light_node_util::config::local::Config;
 use crate::common;
+use tracing::info;
+use dot_movement::DotMovement;
 
 #[derive(Debug, Clone)]
 pub struct Arabica;
@@ -30,10 +32,14 @@ impl Arabica {
                 "json",
             ],
         ).await?;
+        
+        let json_string = json_string.lines().last().context("Failed to get the last line of the json string.")?;
+
+        info!("Arabica 11 address json: {}", json_string);
 
         // use serde to convert to json
         let json: serde_json::Value = serde_json::from_str(&json_string)
-            .context("Failed to convert json string to json value.")?;
+            .context("Failed to convert json string to json value for celestia address.")?;
 
         // q -r '.[0].address'
         let address = json
@@ -89,6 +95,7 @@ impl Arabica {
     }
 
     pub async fn setup_celestia(
+        &self,
         dot_movement: DotMovement,
         mut config: Config,
     ) -> Result<Config, anyhow::Error> {
@@ -103,10 +110,6 @@ impl Arabica {
         // get the arabica 11 address
         let address = self.get_arabica_11_address().await?;
         config.appd.celestia_validator_address.replace(address.clone());
-
-        // get the block height
-        let block_height = self.get_da_block_height().await?;
-        config.appd.da_block_height.replace(block_height);
 
         // get the auth token
         let auth_token = self.get_auth_token().await?;

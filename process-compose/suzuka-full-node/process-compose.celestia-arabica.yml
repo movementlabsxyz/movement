@@ -1,0 +1,21 @@
+version: "3"
+
+environment:
+
+processes:
+
+  celestia-light-node:
+    command: |
+      sleep 10
+      celestia light start --core.ip validator-1.celestia-arabica-11.com --p2p.network arabica
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:26658
+    liveness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: curl http://0.0.0.0:26658
+    depends_on:
+      setup:
+        condition: process_healthy

@@ -11,6 +11,10 @@ pub struct Local;
 
 impl Local {
 
+	pub fn new() -> Self {
+		Self
+	}
+
 	async fn setup_celestia(
 		&self,
 		dot_movement: DotMovement,
