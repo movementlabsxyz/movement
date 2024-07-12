@@ -1,4 +1,6 @@
 pub mod local;
+pub mod arabica;
+pub mod common;
 use m1_da_light_node_util::config::M1DaLightNodeConfig;
 
 pub async fn setup(

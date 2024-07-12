@@ -6969,6 +6969,7 @@ dependencies = [
  "hex",
  "m1-da-light-node-util",
  "rand 0.7.3",
+ "reqwest 0.12.5",
  "serde",
  "serde_json",
  "tempfile",
