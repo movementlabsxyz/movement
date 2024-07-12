@@ -13,6 +13,8 @@ module moveth::moveth {
     use std::string::{Self, utf8};
     use std::vector;
     use aptos_framework::chain_id;
+    use aptos_framework::resource_account;
+    
 
     /// Caller is not authorized to make this call
     const EUNAUTHORIZED: u64 = 1;
@@ -100,9 +102,10 @@ module moveth::moveth {
     /// Ensure any stores for the stablecoin are untransferable.
     /// Store Roles, Management and State resources in the Metadata object.
     /// Override deposit and withdraw functions of the newly created asset/token to add custom denylist logic.
-    fun init_module(moveth_signer: &signer) {
+    fun init_module(resource_signer: &signer) {
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
         // Create the stablecoin with primary store support.
-        let constructor_ref = &object::create_named_object(moveth_signer, ASSET_SYMBOL);
+        let constructor_ref = &object::create_named_object(resource_signer, ASSET_SYMBOL);
         primary_fungible_store::create_primary_store_enabled_fungible_asset(
             constructor_ref,
             option::none(),
@@ -116,6 +119,7 @@ module moveth::moveth {
         // Set ALL stores for the fungible asset to untransferable.
         fungible_asset::set_untransferable(constructor_ref);
 
+
         // All resources created will be kept in the asset metadata object.
         let metadata_object_signer = &object::generate_signer(constructor_ref);
         move_to(metadata_object_signer, Roles {
@@ -126,7 +130,7 @@ module moveth::moveth {
         });
 
         // Create mint/burn/transfer refs to allow creator to manage the stablecoin.
-        move_to(metadata_object_signer, Management {
+        move_to(resource_signer, Management {
             extend_ref: object::generate_extend_ref(constructor_ref),
             mint_ref: fungible_asset::generate_mint_ref(constructor_ref),
             burn_ref: fungible_asset::generate_burn_ref(constructor_ref),
@@ -141,12 +145,12 @@ module moveth::moveth {
         // This ensures all transfer will call withdraw and deposit functions in this module and perform the necessary
         // checks.
         let deposit = function_info::new_function_info(
-            moveth_signer,
+            resource_signer,
             string::utf8(b"moveth"),
             string::utf8(b"deposit"),
         );
         let withdraw = function_info::new_function_info(
-            moveth_signer,
+            resource_signer,
             string::utf8(b"moveth"),
             string::utf8(b"withdraw"),
         );

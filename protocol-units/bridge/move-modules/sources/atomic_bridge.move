@@ -50,14 +50,14 @@ module atomic_bridge::atomic_bridge_counterparty {
         bridge_transfer_id: vector<u8>,
     }
 
-    entry fun init_module(deployer: &signer, moveth_minter: &signer) {
+    entry fun init_module(deployer: &signer) {
         let bridge_transfer_store = BridgeTransferStore {
             pending_transfers: smart_table::new(),
             completed_transfers: smart_table::new(),
             aborted_transfers: smart_table::new(),
         };
         let bridge_config = BridgeConfig {
-            moveth_minter: signer::address_of(moveth_minter),
+            moveth_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
         };
         move_to(deployer, bridge_transfer_store);
