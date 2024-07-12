@@ -20,8 +20,11 @@ pub struct Config {
 	#[serde(default)]
 	pub settle : common::settlement::Config,
 
+	#[serde(default)]
+	pub transactions : common::transactions::Config,
+
 	/// Whether or not to attempt to run locally.
-	#[serde(default = "default_maybe_run_local")]
+	#[serde(default = "maybe_run_local")]
 	pub maybe_run_local : bool,
 
 	/// Optional deployment of contracts config
@@ -35,7 +38,23 @@ pub struct Config {
 }
 
 env_short_default!(
-	default_maybe_run_local,
+	maybe_run_local,
 	bool,
 	false
 );
+
+impl Config {
+
+	pub fn eth_rpc_connection_url(&self) -> String {
+		self.eth_connection.eth_rpc_connection_url()
+	}
+
+	pub fn eth_ws_connection_url(&self) -> String {
+		self.eth_connection.eth_ws_connection_url()
+	}
+
+	pub fn should_settle(&self) -> bool {
+		self.settle.should_settle
+	}
+
+}

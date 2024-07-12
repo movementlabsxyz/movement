@@ -78,3 +78,25 @@ impl Default for Config {
 		}
 	}
 }
+
+impl Config {
+
+	pub fn eth_rpc_connection_url(&self) -> String {
+		format!(
+			"{}://{}:{}",
+			self.eth_rpc_connection_protocol,
+			self.eth_rpc_connection_hostname,
+			self.eth_rpc_connection_port
+		)
+	}
+
+	pub fn eth_ws_connection_url(&self) -> String {
+		format!(
+			"{}://{}:{}",
+			self.eth_ws_connection_protocol,
+			self.eth_ws_connection_hostname,
+			self.eth_ws_connection_port
+		)
+	}
+
+}
