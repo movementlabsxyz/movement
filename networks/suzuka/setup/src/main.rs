@@ -25,17 +25,31 @@ async fn main() -> Result<(), anyhow::Error> {
 	// Apply all of the setup steps
 	let anvil_join_handle = godfig.try_transaction_with_result(|config| async move {
 
-		tracing::info!("Config: {:?}", config);
-		let config = config.unwrap_or_default();
-		tracing::info!("Config: {:?}", config);
+			tracing::info!("Config: {:?}", config);
+			let config = config.unwrap_or_default();
+			tracing::info!("Config: {:?}", config);
 
-		let (config, anvil_join_handle) = Local::default().setup(dot_movement, config).await?;
-	
-		Ok((Some(config), anvil_join_handle))
+			let (config, anvil_join_handle) = Local::default().setup(dot_movement, config).await?;
+		
+			Ok((Some(config), anvil_join_handle))
 
-	}).await?;
+		}).await?;
 
-	anvil_join_handle.await??;
+	let (tx, rx) = tokio::sync::oneshot::channel::<u8>();
+
+	// Use tokio::select! to wait for either the handle or a cancellation signal
+	tokio::select! {
+		_ = anvil_join_handle => {
+			tracing::info!("Anvil task finished.");
+		}
+		_ = rx => {
+			tracing::info!("Cancellation received, killing anvil task.");
+			anvil_join_handle.abort();
+		}
+	}
+
+	// Ensure the cancellation sender is dropped to clean up properly
+	drop(tx);
 
 	Ok(())
 }

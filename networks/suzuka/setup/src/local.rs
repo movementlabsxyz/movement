@@ -1,3 +1,5 @@
+use std::future::pending;
+
 use crate::SuzukaFullNodeSetupOperations;
 use dot_movement::DotMovement;
 // use mcr_settlement_setup::Setup as _;
@@ -35,7 +37,7 @@ impl Local {
 		config.mcr = mcr_config;*/
 
 		let join_handle = tokio::task::spawn(async move {
-			Ok(("yes".to_string()))
+			pending().await
 		});
 
 		Ok((config, join_handle))
