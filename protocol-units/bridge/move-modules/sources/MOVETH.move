@@ -122,9 +122,9 @@ module moveth::moveth {
 
         // All resources created will be kept in the asset metadata object.
         let metadata_object_signer = &object::generate_signer(constructor_ref);
-        move_to(metadata_object_signer, Roles {
+        move_to(resource_signer, Roles {
             master_minter: @master_minter,
-            minters: vector[],
+            minters: vector[@minter],
             pauser: @pauser,
             denylister: @denylister,
         });
@@ -137,7 +137,7 @@ module moveth::moveth {
             transfer_ref: fungible_asset::generate_transfer_ref(constructor_ref),
         });
 
-        move_to(metadata_object_signer, State {
+        move_to(resource_signer, State {
             paused: false,
         });
 
@@ -187,7 +187,7 @@ module moveth::moveth {
         };
         account::verify_signed_message(from, from_account_scheme, from_public_key, proof, expected_message);
 
-        let transfer_ref = &borrow_global<Management>(moveth_address()).transfer_ref;
+        let transfer_ref = &borrow_global<Management>(@resource_addr).transfer_ref;
         // Only use with_ref API for primary_fungible_store (PFS) transfers in this module.
         primary_fungible_store::transfer_with_ref(transfer_ref, from, to, amount);
     }
@@ -222,7 +222,7 @@ module moveth::moveth {
         assert_not_denylisted(to);
         if (amount == 0) { return };
 
-        let management = borrow_global<Management>(moveth_address());
+        let management = borrow_global<Management>(@resource_addr);
         let tokens = fungible_asset::mint(&management.mint_ref, amount);
         // Ensure not to call pfs::deposit or dfa::deposit directly in the module.
         deposit(primary_fungible_store::ensure_primary_store_exists(to, metadata()), tokens, &management.transfer_ref);
@@ -250,7 +250,7 @@ module moveth::moveth {
         assert_is_minter(minter);
         if (amount == 0) { return };
 
-        let management = borrow_global<Management>(moveth_address());
+        let management = borrow_global<Management>(@resource_addr);
         let tokens = fungible_asset::withdraw_with_ref(
             &management.transfer_ref,
             store,
@@ -320,8 +320,8 @@ module moveth::moveth {
     }
 
     fun assert_is_minter(minter: &signer) acquires Roles {
-        if (exists<Roles>(moveth_address())) {
-        let roles = borrow_global<Roles>(moveth_address());
+        if (exists<Roles>(@resource_addr)) {
+        let roles = borrow_global<Roles>(@resource_addr);
         let minter_addr = signer::address_of(minter);
         assert!(minter_addr == roles.master_minter || vector::contains(&roles.minters, &minter_addr), EUNAUTHORIZED);
         } else {
@@ -330,8 +330,8 @@ module moveth::moveth {
     }
 
     fun assert_not_paused() acquires State {
-        if (exists<State>(moveth_address())) {
-            let state = borrow_global<State>(moveth_address());
+        if (exists<State>(@resource_addr)) {
+            let state = borrow_global<State>(@resource_addr);
             assert!(!state.paused, EPAUSED);
         } else {
             assert!(false, EPAUSED);
