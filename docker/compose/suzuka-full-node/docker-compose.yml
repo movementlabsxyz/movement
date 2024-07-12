@@ -20,7 +20,7 @@ services:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
-        condition: service_healthy
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3

@@ -21,7 +21,7 @@ fn main() -> Result<ExitCode, anyhow::Error> {
 	}
 
 	// Terminate all running task.
-	// runtime.shutdown_background();
+	runtime.shutdown_background();
 	Ok(ExitCode::SUCCESS)
 }
 

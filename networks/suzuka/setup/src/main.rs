@@ -35,9 +35,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	}).await?;
 
-	// Wait for the join handle to finish
-	let anvil_result = anvil_join_handle.await?;
-	anvil_result?;
+	anvil_join_handle.await??;
 
 	Ok(())
 }

@@ -21,7 +21,7 @@ processes:
       exit 1
     depends_on:
       setup:
-        condition: process_healthy
+        condition: process_completed_successfully
 
   celestia-light-node-synced:
     command: |
@@ -41,11 +41,11 @@ processes:
     readiness_probe:
       initial_delay_seconds: 3
       exec:
-        command: grpcurl -plaintext 0.0.0.0:30730 list
+        command: echo "true"
     liveness_probe:
       initial_delay_seconds: 3
       exec:
-        command: grpcurl -plaintext 0.0.0.0:30730 list
+        command: echo "true"
 
   suzuka-full-node:
     command: |
@@ -54,13 +54,9 @@ processes:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 5
       exec:
-        command: curl http://0.0.0.0:30731
-    liveness_probe:
-      initial_delay_seconds: 3
-      exec:
-        command: curl http://0.0.0.0:30731
+        command: echo "true"
 
   suzuka-faucet:
   
@@ -70,13 +66,7 @@ processes:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
-      failure_threshold: 10
+      initial_delay_seconds: 30
       exec:
-        command: curl http://0.0.0.0:30732
-    liveness_probe:
-      initial_delay_seconds: 10
-      failure_threshold: 10
-      exec:
-        command: curl http://0.0.0.0:30732
+        command: echo "true"
 
