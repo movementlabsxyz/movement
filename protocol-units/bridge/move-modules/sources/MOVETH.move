@@ -1,10 +1,6 @@
 /// moveth FA 
 module moveth::moveth {
-    use aptos_framework::account;
-    use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::event;
-    use aptos_framework::function_info;
-    // use aptos_framework::table;
+
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset, FungibleStore};
     use aptos_framework::object::{Self, Object, ExtendRef};
     use aptos_framework::primary_fungible_store;
@@ -14,6 +10,10 @@ module moveth::moveth {
     use std::vector;
     use aptos_framework::chain_id;
     use aptos_framework::resource_account;
+    use aptos_framework::account;
+    use aptos_framework::dispatchable_fungible_asset;
+    use aptos_framework::event;
+    use aptos_framework::function_info;
     
 
     /// Caller is not authorized to make this call
@@ -103,7 +103,6 @@ module moveth::moveth {
     /// Store Roles, Management and State resources in the Metadata object.
     /// Override deposit and withdraw functions of the newly created asset/token to add custom denylist logic.
     fun init_module(resource_signer: &signer) {
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource_signer, @source_addr);
         // Create the stablecoin with primary store support.
         let constructor_ref = &object::create_named_object(resource_signer, ASSET_SYMBOL);
         primary_fungible_store::create_primary_store_enabled_fungible_asset(
@@ -118,11 +117,10 @@ module moveth::moveth {
 
         // Set ALL stores for the fungible asset to untransferable.
         fungible_asset::set_untransferable(constructor_ref);
-
-
+        
         // All resources created will be kept in the asset metadata object.
-        let metadata_object_signer = &object::generate_signer(constructor_ref);
-        move_to(resource_signer, Roles {
+        let metadata_object_signer = object::generate_signer(constructor_ref);
+        move_to(&metadata_object_signer, Roles {
             master_minter: @master_minter,
             minters: vector[@minter],
             pauser: @pauser,
@@ -130,14 +128,14 @@ module moveth::moveth {
         });
 
         // Create mint/burn/transfer refs to allow creator to manage the stablecoin.
-        move_to(resource_signer, Management {
+        move_to(&metadata_object_signer, Management {
             extend_ref: object::generate_extend_ref(constructor_ref),
             mint_ref: fungible_asset::generate_mint_ref(constructor_ref),
             burn_ref: fungible_asset::generate_burn_ref(constructor_ref),
             transfer_ref: fungible_asset::generate_transfer_ref(constructor_ref),
         });
 
-        move_to(resource_signer, State {
+        move_to(&metadata_object_signer, State {
             paused: false,
         });
 
@@ -348,7 +346,7 @@ module moveth::moveth {
         }
     }
 
-    #[test_only]
+    #[test_only(moveth_signer = @moveth)]
     public fun init_for_test(moveth_signer: &signer) {
         init_module(moveth_signer);
     }
