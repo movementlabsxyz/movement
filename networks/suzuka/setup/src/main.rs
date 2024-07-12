@@ -35,18 +35,9 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	}).await?;
 
-	let (tx, rx) = tokio::sync::oneshot::channel::<u8>();
-
-	// Use tokio::select! to wait for either the handle or a cancellation signal
-	tokio::select! {
-		_ = anvil_join_handle => {
-			tracing::info!("Anvil task finished.");
-		}
-		_ = rx => {
-			tracing::info!("Cancellation received, killing anvil task.");
-			// Do any necessary cleanup here
-		}
-	}
+	// Wait for the join handle to finish
+	let anvil_result = anvil_join_handle.await?;
+	anvil_result?;
 
 	Ok(())
 }
