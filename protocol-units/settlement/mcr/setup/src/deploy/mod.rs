@@ -7,7 +7,7 @@ use mcr_settlement_config::{
 };
 use serde_json::Value;
 use alloy::signers::local::PrivateKeySigner;
-
+use anyhow::Context;
 use tracing::info;
 
 /// The local setup strategy for MCR settlement
@@ -65,7 +65,7 @@ impl Deploy {
 			],
 		)
 		.await.context("Failed to compile with MCR workspace")?;
-	
+
 		let output_exec = run_command(
 			"forge",
 			&[
