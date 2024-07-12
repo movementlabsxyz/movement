@@ -2,8 +2,6 @@ name: Build Push Containers
 
 on:
   push:
-    branches:
-      - none # don't run this workflow on push
 
 jobs:
 
@@ -194,6 +192,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        submodules: true
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3

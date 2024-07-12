@@ -9,7 +9,6 @@ use godfig::env_short_default;
 use common::deploy::default_maybe_deploy;
 use common::testing::default_maybe_testing;
 
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
 

@@ -6,7 +6,7 @@ use mcr_settlement_setup::Setup as _;
 
 #[derive(Debug, Clone, Default)]
 pub struct Local {
-	mcr_settlement_strategy: mcr_settlement_setup::Local,
+	pub mcr_settlement_strategy: mcr_settlement_setup::Local,
 }
 
 impl Local {

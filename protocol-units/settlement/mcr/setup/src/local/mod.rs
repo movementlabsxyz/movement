@@ -1,6 +1,6 @@
 use super::Setup;
-use anyhow::anyhow;
-use commander::{run_command, spawn_command};
+use anyhow::{anyhow, Context};
+use commander::run_command;
 use dot_movement::DotMovement;
 use mcr_settlement_config::Config;
 use rand::{thread_rng, Rng};
@@ -45,31 +45,45 @@ impl Setup for Local {
 			
 			//start local process and deploy smart contract.
 			//define working directory of Anvil
+			info!("Starting Anvil");
 			let mut path = dot_movement.get_path().to_path_buf();
 			path.push("anvil/mcr");
 			path.push(chain_id.clone());
-			tokio::fs::create_dir_all(&path).await?;
+			tokio::fs::create_dir_all(&path).await.context("Failed to create Anvil directory").context("Failed to create Anvil directory")?;
 			path.push("anvil.json");
+
+			let exists = tokio::fs::try_exists(&path).await.context("Failed to check if Anvil file exists")?;
+
+			info!("Anvil path: {:?}", path);
+			info!{"Anvil exists: {:?}", exists};
 
 			let anvil_path = path.to_string_lossy().to_string();
 
-			let (anvil_cmd_id, anvil_join_handle) = spawn_command(
-				"anvil".to_string(),
-				vec![
-					"--chain-id".to_string(),
-					config.eth_chain_id.to_string(),
-					"--config-out".to_string(),
-					anvil_path.clone(),
-					"--port".to_string(),
-					config.eth_rpc_connection_port.to_string(),
-					"--steps-tracing".to_string()
-				],
-			)
-			.await?;
+			let config_clone = config.clone();
+			let anvil_path_clone = anvil_path.clone();
+			let anvil_join_handle = tokio::task::spawn(async move {
+
+				run_command(
+					"anvil",
+					&vec![
+						"--chain-id",
+						&config_clone.eth_chain_id.to_string(),
+						"--config-out",
+						&anvil_path_clone,
+						"--port",
+						&config_clone.eth_rpc_connection_port.to_string(),
+						"--host",
+						&config_clone.eth_rpc_connection_hostname.to_string(),
+					],
+				)
+				.await.context("Failed to start Anvil")
+
+			});
+
 			//wait Anvil to start
 			let mut counter = 0;
 			loop {
-				if counter > 10 {
+				if counter > 100 {
 					return Err(anyhow!("Anvil didn't start in time"));
 				}
 				counter += 1;
@@ -80,10 +94,11 @@ impl Setup for Local {
 			}
 
 			// Deploy MCR smart contract.
+			info!("Deploying MCR smart contract");
 			let anvil_addresses =
 				mcr_settlement_client::eth_client::read_anvil_json_file_addresses(
 					&*anvil_path,
-				)?;
+				).context("Failed to read Anvil addresses")?;
 			config.governor_private_key = anvil_addresses.get(0).ok_or(
 				anyhow!("Governor private key not found in Anvil addresses"),
 			)?.private_key.clone();
@@ -97,11 +112,30 @@ impl Setup for Local {
 			)?.address.clone();
 
 			// todo: make sure this shows up in the docker container as well
-			let mut solidity_path = std::env::current_dir()?;
+			let mut solidity_path = std::env::current_dir().context("Failed to get current directory")?;
 			solidity_path.push("protocol-units/settlement/mcr/contracts");
-
 			let solidity_path = solidity_path.to_string_lossy();
 			tracing::info!("solidity_path: {:?}", solidity_path);
+
+			let solc_path = run_command(
+				"which",
+				&[
+					"solc"
+				]
+			).await.context("Failed to get solc path")?.trim().to_string();
+
+			run_command(
+				"forge",
+				&[
+					"compile",
+					"--root",
+					&solidity_path,
+					"--use",
+					&solc_path,
+				],
+			)
+			.await.context("Failed to compile with MCR workspace")?;
+
 			let output_exec = run_command(
 				"forge",
 				&[
@@ -118,13 +152,16 @@ impl Setup for Local {
 					&config.eth_rpc_connection_url(),
 					"--private-key",
 					&config.governor_private_key,
+					"--use",
+					&solc_path
 				],
 			)
-			.await?
+			.await.context("Failed to deploy MCR smart contract")?
 			.trim()
 			.to_string();
 
 			//get the summary execution file path from output;
+			info!("Deployment output: {output_exec}");
 			let line = output_exec
 				.lines()
 				.find(|line| line.contains("Transactions saved to:"))
@@ -138,8 +175,10 @@ impl Setup for Local {
 				"No path after 'Transactions saved to:' in smart contract deployment result output."
 			))?
 				.trim();
+			info!("Deployment summary file path: {path}");
 			//read the summary to get the contract address
-			let json_text = std::fs::read_to_string(path)?;
+			let json_text = std::fs::read_to_string(path)
+				.context("Failed to read forge script exec deployement result file")?;
 			//Get the value of the field contractAddress under transactions array
 			let json_value: Value =
 				serde_json::from_str(&json_text).expect("Error parsing JSON");

@@ -8,13 +8,13 @@ processes:
     command: |
       m1-da-light-node-celestia-appd
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:26657
     liveness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:26657
     depends_on:
       setup:
         condition: process_healthy
@@ -23,13 +23,13 @@ processes:
     command: |
       m1-da-light-node-celestia-bridge
     readiness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:26658
     liveness_probe:
-      initial_delay_seconds: 3
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:26658
     depends_on:
        celestia-node-appd:
         condition: process_healthy

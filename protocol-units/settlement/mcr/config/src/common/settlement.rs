@@ -3,7 +3,7 @@ use godfig::{
 	env_default,
 	env_or_none
 };
-use alloy_signer_wallet::LocalWallet;
+use alloy::signers::local::PrivateKeySigner;
 use std::env;
 
 const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0x0";
@@ -17,7 +17,7 @@ pub struct Config {
 }
 
 pub fn default_signer_private_key() -> String {
-	let random_wallet = LocalWallet::random();
+	let random_wallet = PrivateKeySigner::random();
 	let random_wallet_string = random_wallet.to_bytes().to_string();
 	env::var("SIGNER_PRIVATE_KEY").unwrap_or(random_wallet_string)
 }

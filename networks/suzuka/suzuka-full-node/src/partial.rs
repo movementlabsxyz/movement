@@ -8,32 +8,29 @@ use maptos_dof_execution::{
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_client::{
-	eth_client::Client as McrEthSettlementClient, McrSettlementClientOperations,
+ McrSettlementClient, McrSettlementClientOperations,
 };
 use mcr_settlement_manager::CommitmentEventStream;
-use mcr_settlement_manager::McrSettlementManager;
-use mcr_settlement_manager::McrSettlementManagerOperations;
+use mcr_settlement_manager::{McrSettlementManager, McrSettlementManagerOperations};
 use movement_rest::MovementRest;
-use movement_types::BlockCommitmentEvent;
-use movement_types::{Block /*BlockCommitmentEvent*/};
+use movement_types::{Block, BlockCommitmentEvent};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
-use tracing::{debug, info};
+use tracing::{debug, info, error};
 
 use std::future::{self, Future};
 use std::sync::Arc;
 use std::time::Duration;
-
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
-	settlement_manager: McrSettlementManager,
+	pub settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
 }
 
@@ -102,7 +99,13 @@ where
 				Ok(transaction) => {
 					debug!("Got transaction: {:?}", transaction);
 
-					let serialized_transaction = serde_json::to_vec(&transaction)?;
+					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
+					debug!("Serialized transaction: {:?}", serialized_aptos_transaction);
+					let movement_transaction = movement_types::Transaction {
+						data : serialized_aptos_transaction,
+						sequence_number : transaction.sequence_number()
+					};
+					let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
 					transactions.push(BlobWrite { data: serialized_transaction });
 				}
 				Err(_) => {
@@ -180,7 +183,7 @@ where
 			block_transactions.push(block_metadata_transaction);
 
 			for transaction in block.transactions {
-				let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.0)?;
+				let signed_transaction = serde_json::from_slice(&transaction.data)?;
 				let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 					Transaction::UserTransaction(signed_transaction),
 				);
@@ -200,14 +203,13 @@ where
 			let executable_block = ExecutableBlock::new(block_hash, block);
 			let block_id = executable_block.block_id;
 			let commitment = self.executor.execute_block_opt(executable_block).await?;
-
-			debug!("Executed block: {:?}", block_id);
+			info!("Executed block: {:?}", block_id);
 
 			// todo: this needs defaults
 			match self.settlement_manager.post_block_commitment(commitment).await {
 				Ok(_) => {}
 				Err(e) => {
-					debug!("Failed to post block commitment: {:?}", e);
+					error!("Failed to post block commitment: {:?}", e);
 				}
 			}
 		}
@@ -224,11 +226,22 @@ where
 	T: DynOptFinExecutor + Send + Sync,
 {
 	while let Some(res) = stream.next().await {
-		let event = res?;
+		let event = match res {
+			Ok(event) => event,
+			Err(e) => {
+				error!("Failed to get commitment event: {:?}", e);
+				continue;
+			}
+		};
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
-				executor.set_finalized_block_height(commitment.height)?;
+				match executor.set_finalized_block_height(commitment.height) {
+					Ok(_) => {}
+					Err(e) => {
+						error!("Failed to set finalized block height: {:?}", e);
+					}
+				}
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
@@ -298,17 +311,29 @@ impl SuzukaPartialNode<Executor> {
 		};
 
 		// todo: extract into getter
+		debug!("Connecting to light node at {}:{}", light_node_connection_hostname, light_node_connection_port);
 		let light_node_client = LightNodeServiceClient::connect(format!(
 			"http://{}:{}",
 			light_node_connection_hostname, light_node_connection_port
 		))
-		.await?;
+		.await.context("Failed to connect to light node")?;
 
+		debug!("Creating the executor");
 		let executor = Executor::try_from_config(tx, config.execution_config.maptos_config.clone())
-			.context("Failed to get executor from environment")?;
+			.context("Failed to create the inner executor")?;
+
+		debug!("Creating the settlement client");
 		let settlement_client =
-			McrEthSettlementClient::build_with_config(config.mcr.clone()).await?;
-		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))?;
-		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config)
+			McrSettlementClient::build_with_config(config.mcr.clone()).await.context(
+				"Failed to build MCR settlement client with config",
+			)?;
+
+		debug!("Creating the movement rest service");
+		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone())).context("Failed to create MovementRest")?;
+
+		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config).context(
+			"Failed to bind the executor, light node client, settlement client, and movement rest"
+		)
+		
 	}
 }
