@@ -146,7 +146,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     ) acquires BridgeTransferStore, BridgeConfig {
         let owner = signer::address_of(creator);
         let moveth_minter = @0x1; 
-        init_module(creator, creator);
+        init_module(creator);
 
         // Verify that the BridgeTransferStore and BridgeConfig have been init_moduled
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
@@ -185,7 +185,7 @@ module atomic_bridge::atomic_bridge_counterparty {
 
 
         // In this case the moveth_minter (2nd param) is also the creator.
-        init_module(creator, creator);
+        init_module(creator);
 
         let bridge_transfer_id = b"transfer1";
         let pre_image = b"secret";
