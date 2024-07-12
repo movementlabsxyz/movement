@@ -1,12 +1,10 @@
 //! This crate provides configuration parameters for the MCR settlement
 //! component of a Movement node.
 use serde::{Deserialize, Serialize};
-pub mod run_local;
-pub mod deploy_remote;
 pub mod common;
 
 use godfig::env_short_default;
-use common::deploy::default_maybe_deploy;
+use common::deploy::maybe_deploy;
 use common::testing::default_maybe_testing;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -28,7 +26,7 @@ pub struct Config {
 	pub maybe_run_local : bool,
 
 	/// Optional deployment of contracts config
-	#[serde(default = "default_maybe_deploy")]
+	#[serde(default = "maybe_deploy")]
 	pub deploy : Option<common::deploy::Config>,
 	
 	/// Optional testing config
@@ -57,4 +55,21 @@ impl Config {
 		self.settle.should_settle
 	}
 
+	pub fn should_run_local(&self) -> bool {
+		self.maybe_run_local
+	}
+
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Config {
+			eth_connection : common::eth_connection::Config::default(),
+			settle : common::settlement::Config::default(),
+			transactions : common::transactions::Config::default(),
+			maybe_run_local : maybe_run_local(),
+			deploy : maybe_deploy(),
+			testing : default_maybe_testing()
+		}
+	}
 }

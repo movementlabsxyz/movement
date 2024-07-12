@@ -30,7 +30,7 @@ impl Manager {
 		client: C,
 		config: &Config,
 	) -> (Self, CommitmentEventStream) {
-		let batch_timeout = Duration::from_millis(config.batch_timeout);
+		let batch_timeout = Duration::from_millis(config.transactions.batch_timeout);
 		let (sender, receiver) = mpsc::channel(16);
 		let event_stream = process_commitments(receiver, client, batch_timeout);
 		(Self { sender }, event_stream)

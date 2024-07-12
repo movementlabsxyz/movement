@@ -21,6 +21,9 @@ pub struct Config {
 	pub eth_ws_connection_hostname: String,
 	#[serde(default = "default_eth_ws_connection_port")]
 	pub eth_ws_connection_port: u16,
+
+	#[serde(default)]
+	pub eth_chain_id: u64,
 }
 
 env_default!(
@@ -65,6 +68,13 @@ env_default!(
 	DEFAULT_ETH_WS_CONNECTION_PORT
 );
 
+env_default!(
+	default_eth_chain_id,
+	"ETH_CHAIN_ID",
+	u64,
+	0
+);
+
 impl Default for Config {
 	fn default() -> Self {
 		Config {
@@ -75,6 +85,7 @@ impl Default for Config {
 			eth_ws_connection_protocol: default_eth_ws_connection_protocol(),
 			eth_ws_connection_hostname: default_eth_ws_connection_hostname(),
 			eth_ws_connection_port: default_eth_ws_connection_port(),
+			eth_chain_id: default_eth_chain_id(),
 		}
 	}
 }

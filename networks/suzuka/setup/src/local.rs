@@ -1,12 +1,11 @@
 use crate::SuzukaFullNodeSetupOperations;
 use dot_movement::DotMovement;
-use mcr_settlement_setup::Setup as _;
 
 // use tracing::debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Local {
-	pub mcr_settlement_strategy: mcr_settlement_setup::Local,
+	pub mcr_settlement_strategy: mcr_settlement_setup::Setup,
 }
 
 impl Local {
