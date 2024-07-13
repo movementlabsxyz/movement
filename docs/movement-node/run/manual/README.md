@@ -6,7 +6,7 @@ We recommend that you run a movement node using containers to leverage the porta
 1. Ubuntu 22.04 amd64
 2. [Docker](https://docs.docker.com/engine/install/ubuntu/)
 3. [Docker compose](https://docs.docker.com/compose/install/linux/)
-4. Make sure you are logged in as the user that wants to run the node
+4. Make sure you are logged in as the user who wants to run the node
 
 ## Run the movement node as an RPC provider
 
@@ -120,6 +120,7 @@ sudo systemctl status suzuka-full-node.service
 ```bash
 sudo journalctl -u suzuka-full-node.service -f
 ```
+
 ## Run the node as an Attester for the Movement Network
 
 To become an Attester, you must first be whitelisted in our staking contract. After being whitelisted, you will need to stake `$MOVE` tokens to be included as an Attester in the next epoch. To proceed, add the key `ETH_SIGNER_PRIVATE_KEY` to your environment, pointing to your private key for the stake, and launch the node.
