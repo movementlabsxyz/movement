@@ -1,6 +1,0 @@
-version: "3"
-
-processes:
-  setup:
-    environment:
-      - "MAYBE_RUN_LOCAL=true"

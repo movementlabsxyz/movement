@@ -115,7 +115,98 @@ impl Arabica {
         let auth_token = self.get_auth_token().await?;
         config.appd.celestia_auth_token.replace(auth_token.clone());
 
+        // create and fund the account
+        self.create_and_fund_account(dot_movement.clone(), config.clone()).await?;
+
         Ok(config)
+    }
+
+    pub async fn create_and_fund_account(
+        &self,
+		dot_movement: DotMovement,
+		config: Config,
+    ) -> Result<(), anyhow::Error> {
+        
+        /**
+         * #!/bin/bash
+        # Maximum number of retries
+        max_retries=10
+        # Delay in seconds between retries
+        retry_delay=5
+
+        retry_count=0
+        success=false
+
+        while [ $retry_count -lt $max_retries ]; do
+            # Run the curl command
+            response=$(curl -s -X POST 'https://faucet.celestia-arabica-11.com/api/v1/faucet/give_me' \
+                -H 'Content-Type: application/json' \
+                -d "{\"address\": \"$CELESTIA_ADDRESS\", \"chainId\": \"arabica-11\"}")
+            
+            # Process the response with jq
+            txHash=$(echo "$response" | jq -e '.txHash')
+            
+            # Check if jq found the txHash
+            if [ $? -eq 0 ]; then
+                echo "Transaction hash: $txHash"
+                success=true
+                break
+            else
+                echo "Error: txHash field not found in the response." >&2
+                # Increment the retry counter
+                retry_count=$((retry_count+1))
+                # Wait before retrying
+                sleep $retry_delay
+            fi
+        done
+
+        # Check if the operation was successful
+        if [ "$success" = false ]; then
+            echo "Failed to retrieve txHash after $max_retries attempts." >&2
+        fi
+         */
+
+        let celestia_address = config.appd.celestia_validator_address.context(
+            "Celestia validator address is not set in the config.",
+        )?.clone();
+
+        let max_retries = 10;
+        let retry_delay = 5;
+        let mut retry_count = 0;
+        let mut success = false;
+
+        while retry_count < max_retries {
+            let response = reqwest::Client::new()
+                .post("https://faucet.celestia-arabica-11.com/api/v1/faucet/give_me")
+                .header("Content-Type", "application/json")
+                .body(serde_json::json!({
+                    "address": celestia_address,
+                    "chainId": "arabica-11",
+                }).to_string())
+                .send()
+                .await?
+                .text()
+                .await?;
+
+            let res = serde_json::from_str::<serde_json::Value>(&response)
+                .context("Failed to parse the response to a json value.")?;
+            let tx_hash = res
+                .get("txHash")
+                .context("Failed to get the txHash field from the response.")?;
+
+            if tx_hash.is_string() {
+                let tx_hash = tx_hash.as_str().context("Failed to convert the txHash field to a string.")?;
+                info!("Transaction hash: {}", tx_hash);
+                success = true;
+                break;
+            } else {
+                info!("Error: txHash field not found in the response.");
+                retry_count += 1;
+                tokio::time::sleep(tokio::time::Duration::from_secs(retry_delay)).await;
+            }
+        }
+
+        Ok(())
     }
 
 	pub async fn setup(
