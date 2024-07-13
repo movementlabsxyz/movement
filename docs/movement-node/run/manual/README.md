@@ -122,6 +122,4 @@ sudo journalctl -u suzuka-full-node.service -f
 ```
 ## Run the node as an Attester for the Movement Network
 
-To become an Attester, you must first be whitelisted in our staking contract. After being whitelisted, you will need to stake `$MOVE` tokens to be included as an Attester in the next epoch. To proceed, create an `.env` file with the following line, including your private key for the stake and launch the node.
-
-`ETH_SIGNER_PRIVATE_KEY=0x0`
+To become an Attester, you must first be whitelisted in our staking contract. After being whitelisted, you will need to stake `$MOVE` tokens to be included as an Attester in the next epoch. To proceed, add the key `ETH_SIGNER_PRIVATE_KEY` to your environment, pointing to your private key for the stake, and launch the node.
