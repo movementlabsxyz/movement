@@ -100,8 +100,4 @@ interface IMovementStaking {
     event EpochRolledOver(address indexed domain, uint256 epoch);
     error StakeExceedsGenesisStake();
     error CustodianTransferAmountMismatch();
-    
-    event AddressWhitelisted(address indexed addr);
-    event AddressRemovedFromWhitelist(address indexed addr);
-    error AddressNotWhitelisted();
 }

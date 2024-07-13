@@ -60,10 +60,10 @@ contract MovementStakingTest is Test {
         address whitelister = vm.addr(1);
         // Whitelist them
         staking.whitelistAddress(whitelister);
-        assertEq(staking.whitelisted(whitelister), true);
+        assertEq(staking.hasRole(staking.WHITELIST_ROLE(), whitelister), true);
         // Remove them from the whitelist
         staking.removeAddressFromWhitelist(whitelister);
-        assertEq(staking.whitelisted(whitelister), false);
+        assertEq(staking.hasRole(staking.WHITELIST_ROLE(), whitelister), false);
         // As a whitelister let's see if I can whitelist myself
         vm.prank(whitelister);
         vm.expectRevert();
