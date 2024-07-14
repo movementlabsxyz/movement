@@ -28,7 +28,6 @@ hex = { workspace = true }
 async-stream = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-tempfile = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 dot-movement = { workspace = true }

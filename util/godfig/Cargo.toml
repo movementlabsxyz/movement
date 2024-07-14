@@ -19,8 +19,10 @@ futures = { workspace = true }
 flocks = { workspace = true }
 async-stream = { workspace = true }
 serde_json = { workspace = true }
-tempfile = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

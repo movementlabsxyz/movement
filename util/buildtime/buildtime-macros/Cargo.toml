@@ -16,10 +16,6 @@ proc-macro = true
 quote = { workspace = true }
 syn = { workspace = true }
 
-# tonic
-# todo: extra to feature flag
-tonic-build = { workspace = true }
-
 # buildtime
 buildtime-helpers = { workspace = true }
 
