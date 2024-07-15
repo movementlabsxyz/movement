@@ -5,12 +5,28 @@ use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
 use futures::StreamExt;
 
+use thiserror::Error;
+
+#[derive(Debug, Clone, Error)]
+pub enum TransactionPipeError {
+	#[error("Transaction Pipe InternalError: {0}")]
+	InternalError(String),
+	#[error("Transaction not accepted: {0}")]
+	TransactionNotAccepted(MempoolStatus),
+}
+
+impl From<anyhow::Error> for TransactionPipeError {
+	fn from(e: anyhow::Error) -> Self {
+		TransactionPipeError::InternalError(e.to_string())
+	}
+}
+
 impl Executor {
 	/// Ticks the transaction reader.
 	pub async fn tick_transaction_reader(
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), anyhow::Error> {
+	) -> Result<(), TransactionPipeError> {
 		let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
 		for _ in 0..256 {
 			// use select to safely timeout a request for a transaction without risking dropping the transaction
@@ -40,7 +56,7 @@ impl Executor {
 
 											},
 											_ => {
-												anyhow::bail!("Transaction not accepted: {:?}", status);
+												Err(TransactionPipeError::TransactionNotAccepted(status))?;
 											}
 										}
 
