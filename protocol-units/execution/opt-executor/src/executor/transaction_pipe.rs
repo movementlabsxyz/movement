@@ -3,7 +3,10 @@ use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
+use aptos_vm_validator::vm_validator::TransactionValidation;
+use aptos_vm_validator::vm_validator::VMValidator;
 use futures::StreamExt;
+use std::sync::Arc;
 
 impl Executor {
 	/// Ticks the transaction reader.
@@ -22,6 +25,20 @@ impl Executor {
 						Some(request) => {
 							match request {
 								MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+									//preexecute Tx to validate its content.
+									//re create the validator for each Tx because it use a frozen version.
+									let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
+									let tx_result = vm_validator.validate_transaction(transaction.clone())?;
+									//if the verification failed return the error status
+									if let Some(vm_status) = tx_result.status() {
+										let ms = MempoolStatus::new(MempoolStatusCode::VmError);
+										let status: SubmissionStatus = (ms, Some(vm_status));
+										callback.send(Ok(status)).map_err(
+											|e| anyhow::anyhow!("Error sending callback: {:?}", e)
+										)?;
+										continue;
+									}
+
 									// add to the mempool
 									{
 
@@ -132,10 +149,8 @@ mod tests {
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
 		let mut executor = Executor::try_test_default()?;
-		let user_transaction = create_signed_transaction(
-			0, 
-			executor.maptos_config.chain.maptos_chain_id.clone()
-		);
+		let user_transaction =
+			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -173,7 +188,8 @@ mod tests {
 		});
 
 		let api = executor.get_apis();
-		let user_transaction = create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let user_transaction =
+			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
@@ -204,7 +220,8 @@ mod tests {
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
-			let user_transaction = create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+			let user_transaction =
+				create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 

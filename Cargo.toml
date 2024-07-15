@@ -120,6 +120,7 @@ aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b5
 aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b54d443967ff4ce621a84f7c09f9a59a0b03e01c" }
 aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b54d443967ff4ce621a84f7c09f9a59a0b03e01c" }
 aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b54d443967ff4ce621a84f7c09f9a59a0b03e01c" }
+aptos-vm-validator = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b54d443967ff4ce621a84f7c09f9a59a0b03e01c" }
 aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b54d443967ff4ce621a84f7c09f9a59a0b03e01c" }
 aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b54d443967ff4ce621a84f7c09f9a59a0b03e01c" }
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }

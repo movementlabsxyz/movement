@@ -7145,6 +7145,7 @@ dependencies = [
  "aptos-vm-genesis",
  "aptos-vm-logging",
  "aptos-vm-types",
+ "aptos-vm-validator",
  "async-channel 2.3.1",
  "async-trait",
  "bcs 0.1.4",
