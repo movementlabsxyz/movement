@@ -368,7 +368,7 @@ mod tests {
 
 		let latest_version = {
 			let db_reader = executor.executor.db.reader.clone();
-			db_reader.get_latest_version()?
+			db_reader.get_synced_version()?
 		};
 		assert_eq!(latest_version, version_to_revert_to);
 
