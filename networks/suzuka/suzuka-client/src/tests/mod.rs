@@ -1,6 +1,6 @@
 use crate::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario, TestKind};
 use crate::{
-	coin_client::{CoinClient, /*TransferOptions*/},
+	coin_client::{CoinClient, TransferOptions},
 	rest_client::{
 		aptos_api_types::{TransactionOnChainData, ViewFunction},
 		Client, FaucetClient,
@@ -181,7 +181,7 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 	);
 
 	// malformed sequence number
-	/*let options = TransferOptions::default();
+	let options = TransferOptions::default();
 	let chain_id = rest_client
             .get_index()
             .await
@@ -244,7 +244,7 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 	rest_client
 		.wait_for_transaction(&txn_hash)
 		.await
-		.context("Failed when waiting for the transfer transaction")?;*/
+		.context("Failed when waiting for the transfer transaction")?;
 
 
 	Ok(())
