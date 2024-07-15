@@ -25,11 +25,11 @@ impl Executor {
 						Some(request) => {
 							match request {
 								MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-									//preexecute Tx to validate its content.
-									//re create the validator for each Tx because it use a frozen version.
+									// Pre-execute Tx to validate its content.
+									// Re-create the validator for each Tx because it uses a frozen version of the ledger.
 									let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
 									let tx_result = vm_validator.validate_transaction(transaction.clone())?;
-									//if the verification failed return the error status
+									// If the verification failed return the error status.
 									if let Some(vm_status) = tx_result.status() {
 										let ms = MempoolStatus::new(MempoolStatusCode::VmError);
 										let status: SubmissionStatus = (ms, Some(vm_status));
