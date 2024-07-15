@@ -181,6 +181,7 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 	);
 
 	// malformed sequence number
+	println!("\n=== Malformed Sequence Number ===");
 	let options = TransferOptions::default();
 	let chain_id = rest_client
             .get_index()
@@ -212,20 +213,22 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 	let signed_txn = alice.sign_with_transaction_builder(transaction_builder);
 
 	// first send should work
+	println!("First send should work");
 	let txn_hash = rest_client
 		.submit(&signed_txn)
 		.await
-		.context("Failed to submit transfer transaction")?
+		.context("Failed to submit transfer transaction with properly formed sequence number")?
 		.into_inner();
 	rest_client.wait_for_transaction(&txn_hash).await.context(
 		"Failed when waiting for the transfer transaction with a malformed sequence number",
 	)?;
 
 	// second send should fail...
+	println!("Second send should fail");
 	let txn_hash = rest_client
 		.submit(&signed_txn)
 		.await
-		.context("Failed to submit transfer transaction")?
+		.context("Failed to submit transfer transaction with improperly formed sequencer number")?
 		.into_inner();
 	match rest_client.wait_for_transaction(&txn_hash).await {
 		Ok(transaction) => {
