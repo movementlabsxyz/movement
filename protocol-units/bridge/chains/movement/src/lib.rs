@@ -2,13 +2,12 @@ use aptos_sdk::{
 	rest_client::{
 		aptos_api_types::{
 			EntryFunctionId, EntryFunctionPayload, IdentifierWrapper, MoveModuleId, MoveType,
-			TransactionPayload,
 		},
 		Client, FaucetClient,
 	},
-	types::LocalAccount,
+	types::{transaction::TransactionPayload, LocalAccount},
 };
-use aptos_types::account_address::AccountAddress;
+use aptos_types::{account_address::AccountAddress, transaction::EntryFunction};
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractCounterpartyResult},
 	types::{
@@ -36,6 +35,9 @@ enum Call {
 
 pub struct MovementClient {
 	counterparty_address: AccountAddress,
+	initiator_address: Vec<u8>,
+	//Added as a workaround before Address type problem is resolved
+	recipient_address: AccountAddress,
 	rest_client: Client,
 	faucet_client: FaucetClient,
 	signer: LocalAccount,
@@ -79,6 +81,8 @@ impl MovementClient {
 		let signer = LocalAccount::generate(&mut rng);
 
 		Ok(MovementClient {
+			initiator_address: Vec::new(), //dummy for now
+			recipient_address: DUMMY_ADDRESS,
 			rest_client,
 			faucet_client,
 			counterparty_address: DUMMY_ADDRESS,
@@ -100,25 +104,26 @@ impl BridgeContractCounterparty for MovementClient {
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,
-		initiator: InitiatorAddressCounterParty,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddressCounterparty<Self::Address>,
+		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
+		let payload = TransactionPayload::EntryFunction(EntryFunction {
 			function: self.counterparty_function(Call::Lock),
 			arguments: vec![
-				Value::Array(&initiator.0[..]),
-				Value::Array(&bridge_transfer_id.0),
-				Value::Array(&hash_lock.0),
-				Value::Number(time_limit.0.into()),
-				Value::String(recipient.0.to_string()),
+				Value::Array(bytes_to_json_array(self.initiator_address)),
+				Value::Array(hash_to_json_array(&bridge_transfer_id.0)),
+				Value::Array(hash_to_json_array(&hash_lock.0)),
+				Value::Number(time_lock.0.into()),
+				Value::String(self.recipient_address.to_string()),
 			],
 			type_arguments: self.counterparty_type_tag(Call::Lock),
 		});
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
+			.await
+			.map_err(|e| BridgeContractCounterpartyError::generic(e));
 		Ok(())
 	}
 
@@ -131,7 +136,7 @@ impl BridgeContractCounterparty for MovementClient {
 			function: self.counterparty_function(Call::Complete),
 			arguments: vec![
 				Value::String(self.signer.address().to_string()),
-				Value::Array(self.hash_to_json_array(&bridge_transfer_id.0)),
+				Value::Array(hash_to_json_array(&bridge_transfer_id.0)),
 				Value::Array(self.hash_to_json_array(&preimage.0[..])),
 			],
 			type_arguments: self.counterparty_type_tag(Call::Complete),
@@ -198,8 +203,12 @@ impl MovementClient {
 	fn move_bytes(&self) -> MoveType {
 		MoveType::Vector { items: Box::new(vec![MoveType::U8(0)]) }
 	}
+}
 
-	fn hash_to_json_array(&self, hash: &[u8]) -> Vec<Value> {
-		hash.iter().map(|&byte| Value::Number(byte.into())).collect()
-	}
+fn hash_to_json_array(hash: &[u8]) -> Vec<Value> {
+	hash.iter().map(|&byte| Value::Number(byte.into())).collect()
+}
+
+fn bytes_to_json_array(bytes: Vec<u8>) -> Vec<Value> {
+	bytes.iter().map(|&b| Value::Number(b.into())).collect()
 }

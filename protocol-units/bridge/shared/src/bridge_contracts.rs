@@ -2,8 +2,7 @@ use thiserror::Error;
 
 use crate::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, InitiatorAddress, InitiatorAddressCounterParty, RecipientAddress,
-	RecipientAddressCounterparty, TimeLock,
+	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -81,11 +80,10 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,
-		initiator: InitiatorAddressCounterParty,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddressCounterparty<Self::Address>,
+		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()>;
 

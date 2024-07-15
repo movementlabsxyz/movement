@@ -70,6 +70,7 @@ pub async fn simulate_aptos_transaction(
 	payload: TransactionPayload,
 ) -> Result<TransactionInfo> {
 	let state = aptos_client
+		.rest_client
 		.get_ledger_information()
 		.await
 		.context("Failed in getting chain id")?
@@ -91,7 +92,7 @@ pub async fn simulate_aptos_transaction(
 		Ed25519Signature::try_from([0u8; 64].as_ref()).unwrap(),
 	);
 
-	let response_txns = aptos_client.simulate(&signed_tx).await?.into_inner();
+	let response_txns = aptos_client.rest_client.simulate(&signed_tx).await?.into_inner();
 	let response = response_txns[0].clone();
 
 	Ok(response.info)
@@ -123,6 +124,7 @@ pub async fn send_view_request(
 	arguments: Vec<serde_json::Value>,
 ) -> Result<Vec<serde_json::Value>, anyhow::Error> {
 	let view_response = aptos_client
+		.rest_client
 		.view(
 			&ViewRequest {
 				function: EntryFunctionId::from_str(&format!(
@@ -135,16 +137,22 @@ pub async fn send_view_request(
 			Option::None,
 		)
 		.await?;
-	Ok(view_response)
+	Ok(view_response.inner().clone())
 }
 
 /// Convert address string to H256
 pub fn convert_hex_string_to_h256(addr: &str) -> Result<H256, String> {
-	let formated_addr = format!("{:0>64}", addr.to_string().trim_start_matches("0x"));
-	H256::from_str(&formated_addr).map_err(|e| e.to_string())
+	let formatted_addr = format!("{:0>64}", addr.trim_start_matches("0x"));
+	let mut bytes = [0u8; 32];
+	for (i, byte) in bytes.iter_mut().enumerate() {
+		let start = i * 2;
+		let end = start + 2;
+		*byte = u8::from_str_radix(&formatted_addr[start..end], 16).map_err(|e| e.to_string())?;
+	}
+	Ok(H256(bytes))
 }
 
-/// Convert payer(Keypair) into Aptos LocalAccount
+// Convert payer(Keypair) into Aptos LocalAccount
 // pub async fn convert_keypair_to_aptos_account(
 // 	aptos_client: &MovementClient,
 // 	payer: &Keypair,
@@ -160,7 +168,7 @@ pub fn convert_hex_string_to_h256(addr: &str) -> Result<H256, String> {
 // 	signer_account
 // }
 
-/// Filter events based on range
+// Filter events based on range
 // pub async fn get_filtered_events<T, S>(
 // 	aptos_client: &MovementClient,
 // 	account_address: AccountAddress,
