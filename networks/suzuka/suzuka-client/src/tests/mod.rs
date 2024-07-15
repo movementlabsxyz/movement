@@ -195,7 +195,7 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 			vec![TypeTag::from_str(options.coin_type).unwrap()],
 			vec![
 				bcs::to_bytes(&bob.address()).unwrap(),
-				bcs::to_bytes(&1_000).unwrap(),
+				bcs::to_bytes(&(1_000 as u64)).unwrap(),
 			],
 		)),
 		SystemTime::now()
