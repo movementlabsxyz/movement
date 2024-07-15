@@ -70,6 +70,9 @@ interface IMovementStaking {
         uint256[] calldata refundAmounts
     ) external;
 
+    function whitelistAddress(address addr) external;
+    function removeAddressFromWhitelist(address addr) external;
+
     event AttesterStaked(
         address indexed domain,
         uint256 indexed epoch,
