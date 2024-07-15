@@ -228,9 +228,12 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 		.context("Failed to submit transfer transaction")?
 		.into_inner();
 	match rest_client.wait_for_transaction(&txn_hash).await {
-		Ok(_) => panic!("Expected transaction to fail"),
+		Ok(transaction) => {
+			println!("Transaction succeeded unexpectedly {:?}", transaction.into_inner());
+			panic!("Expected transaction to fail");
+		},
 		Err(e) => {
-			println!("Expected transaction failed: {:?}", e);
+			println!("Transaction failed expectedly: {:?}", e);
 		}
 	}
 
