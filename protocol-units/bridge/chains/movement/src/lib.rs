@@ -6,17 +6,18 @@ use aptos_sdk::{
 		},
 		Client, FaucetClient,
 	},
-	types::{AccountKey, LocalAccount},
+	types::LocalAccount,
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractCounterpartyResult},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		RecipientAddress, TimeLock,
+		InitiatorAddressCounterParty, RecipientAddress, RecipientAddressCounterparty, TimeLock,
 	},
 };
 use rand::prelude::*;
+use serde_json::Value;
 use std::str::FromStr;
 use url::Url;
 
@@ -75,7 +76,7 @@ impl MovementClient {
 
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
-		let mut signer = LocalAccount::generate(&mut rng);
+		let signer = LocalAccount::generate(&mut rng);
 
 		Ok(MovementClient {
 			rest_client,
@@ -99,15 +100,22 @@ impl BridgeContractCounterparty for MovementClient {
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,
+		initiator: InitiatorAddressCounterParty,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddress,
+		recipient: RecipientAddressCounterparty<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
 		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
 			function: self.counterparty_function(Call::Lock),
-			arguments: self.counterparty_args(Call::Lock),
+			arguments: vec![
+				Value::Array(&initiator.0[..]),
+				Value::Array(&bridge_transfer_id.0),
+				Value::Array(&hash_lock.0),
+				Value::Number(time_limit.0.into()),
+				Value::String(recipient.0.to_string()),
+			],
 			type_arguments: self.counterparty_type_tag(Call::Lock),
 		});
 		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
@@ -117,11 +125,15 @@ impl BridgeContractCounterparty for MovementClient {
 	async fn complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-		secret: HashLockPreImage,
+		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
 			function: self.counterparty_function(Call::Complete),
-			arguments: self.counterparty_args(Call::Complete),
+			arguments: vec![
+				Value::String(self.signer.address().to_string()),
+				Value::Array(self.hash_to_json_array(&bridge_transfer_id.0)),
+				Value::Array(self.hash_to_json_array(&preimage.0[..])),
+			],
 			type_arguments: self.counterparty_type_tag(Call::Complete),
 		});
 		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
@@ -134,7 +146,7 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
 			function: self.counterparty_function(Call::Abort),
-			arguments: self.counterparty_args(Call::Abort),
+			arguments: vec![Value::Array(self.hash_to_json_array(&bridge_transfer_id.0))],
 			type_arguments: self.counterparty_type_tag(Call::Abort),
 		});
 		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
@@ -146,20 +158,14 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
 	{
-		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
-			function: self.counterparty_function(Call::GetDetails),
-			arguments: self.counterparty_args(Call::GetDetails),
-			type_arguments: self.counterparty_type_tag(Call::GetDetails),
-		});
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
-		Ok(None)
+		todo!()
 	}
 }
 
 impl MovementClient {
 	fn counterparty_module_id(&self) -> MoveModuleId {
 		MoveModuleId {
-			address: self.counterparty_address,
+			address: self.counterparty_address.into(),
 			name: IdentifierWrapper::from_str(COUNTERPARTY_MODULE_NAME).unwrap(),
 		}
 	}
@@ -177,21 +183,6 @@ impl MovementClient {
 		}
 	}
 
-	fn counterparty_args(&self, call: Call) -> Vec<MoveType> {
-		match call {
-			Call::Lock => vec![
-				MoveType::Signer,
-				self.move_bytes(), //initiator
-				self.move_bytes(), //hash_lock
-				MoveType::U64,     //time_lock
-				MoveType::Address, //recipient
-			],
-			Call::Complete => vec![MoveType::Signer, self.move_bytes(), self.move_bytes()],
-			Call::Abort => vec![MoveType::Signer, self.move_bytes()],
-			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
-		}
-	}
-
 	fn counterparty_function(&self, call: Call) -> EntryFunctionId {
 		EntryFunctionId {
 			module: self.counterparty_module_id(),
@@ -204,7 +195,11 @@ impl MovementClient {
 		}
 	}
 
-	fn move_bytes() -> MoveType {
-		MoveType::Vector { items: vec![MoveType::U8(0)] }
+	fn move_bytes(&self) -> MoveType {
+		MoveType::Vector { items: Box::new(vec![MoveType::U8(0)]) }
+	}
+
+	fn hash_to_json_array(&self, hash: &[u8]) -> Vec<Value> {
+		hash.iter().map(|&byte| Value::Number(byte.into())).collect()
 	}
 }
