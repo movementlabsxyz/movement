@@ -30,7 +30,7 @@ pub struct SuzukaPartialNode<T> {
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
-	pub settlement_manager: McrSettlementManager,
+	settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
 }
 
