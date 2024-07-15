@@ -57,7 +57,7 @@ impl DynOptFinExecutor for Executor {
 					TransactionPipeError::TransactionNotAccepted(e) => {
 						// allow the transaction not to be accepted by the mempool
 						// because the client may have sent a bad sequence number
-						tracing::error!("Transaction not accepted: {:?}", e);
+						tracing::warn!("Transaction not accepted: {:?}", e);
 					}
 					_ => anyhow::bail!("Server error: {:?}", e),
 				}, 
