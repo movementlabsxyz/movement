@@ -100,7 +100,7 @@ impl Executor {
 	pub async fn tick_transaction_pipe(
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), anyhow::Error> {
+	) -> Result<(), TransactionPipeError> {
 		self.tick_transaction_reader(transaction_channel.clone()).await?;
 
 		Ok(())
