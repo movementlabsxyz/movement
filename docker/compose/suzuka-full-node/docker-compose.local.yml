@@ -10,13 +10,15 @@ services:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
-        condition: service_healthy
+        condition: service_completed_successfully
     ports:
       - "26657:26657"
       - "9090:9090"
     healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 26657" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
 
   m1-da-light-node-celestia-bridge:
     image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${CONTAINER_REV}
@@ -29,7 +31,7 @@ services:
       - "26658:26658"
     depends_on:
       setup:
-        condition: service_healthy
+        condition: service_completed_successfully
       m1-da-light-node-celestia-appd:
         condition: service_healthy
     healthcheck:

@@ -20,7 +20,7 @@ services:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
-        condition: service_healthy
+        condition: service_completed_successfully
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
@@ -72,7 +72,7 @@ services:
       - -c
       - |
         echo "Waiting for suzuka-full-node to be ready..."
-        sleep 5
+        sleep 10
         echo "suzuka-full-node is ready"
 
   suzuka-faucet-service:

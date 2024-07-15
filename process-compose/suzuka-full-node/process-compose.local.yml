@@ -17,7 +17,7 @@ processes:
         command: echo "true"
     depends_on:
       setup:
-        condition: process_healthy
+        condition: process_completed_successfully
 
   celestia-bridge:
     command: |

@@ -12,8 +12,8 @@ services:
       M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
       MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-node
       FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
+      ETH_RPC_CONNECTION_HOSTNAME: setup
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
-    healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
+    ports:
+      - "8090:8090" # port for anvil, this should be moved out into runner
