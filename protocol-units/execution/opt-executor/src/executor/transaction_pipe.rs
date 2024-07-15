@@ -43,6 +43,7 @@ impl Executor {
 
 										let mut core_mempool = self.core_mempool.write().await;
 
+										tracing::debug!("Adding transaction to mempool: {:?} {:?}", transaction, transaction.sequence_number());
 										let status = core_mempool.add_txn(
 											transaction.clone(),
 											0,
@@ -53,9 +54,10 @@ impl Executor {
 
 										match status.code {
 											MempoolStatusCode::Accepted => {
-
+												tracing::debug!("Transaction accepted: {:?}", transaction);
 											},
 											_ => {
+												tracing::debug!("Transaction not accepted: {:?}", status);
 												Err(TransactionPipeError::TransactionNotAccepted(status))?;
 											}
 										}
@@ -168,6 +170,56 @@ mod tests {
 		callback.await??;
 
 		// receive the transaction
+		let received_transaction = rx.recv().await?;
+		assert_eq!(received_transaction, user_transaction);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_pipe_mempool_with_malformed_transaction() -> Result<(), anyhow::Error> {
+		// header
+		let mut executor = Executor::try_test_default()?;
+		let user_transaction = create_signed_transaction(
+			0, 
+			executor.maptos_config.chain.maptos_chain_id.clone()
+		);
+
+		// send transaction to mempool
+		let (req_sender, callback) = oneshot::channel();
+		executor
+			.mempool_client_sender
+			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
+			.await?;
+
+		// tick the transaction pipe
+		let (tx, rx) = async_channel::unbounded();
+		executor.tick_transaction_pipe(tx.clone()).await?;
+
+		// receive the callback
+		callback.await??;
+
+		// receive the transaction
+		let received_transaction = rx.recv().await?;
+		assert_eq!(received_transaction, user_transaction);
+
+		// send the same transaction again
+		let (req_sender, callback) = oneshot::channel();
+		executor
+			.mempool_client_sender
+			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
+			.await?;
+
+		// tick the transaction pipe
+		executor.tick_transaction_pipe(tx).await?;
+		/*match executor.tick_transaction_pipe(tx).await {
+			Err(TransactionPipeError::TransactionNotAccepted(_)) => {}
+			Err(e) => return Err(anyhow::anyhow!("Unexpected error: {:?}", e)),
+			Ok(_) => return Err(anyhow::anyhow!("Expected error")),
+		}*/
+
+		callback.await??;
+
 		let received_transaction = rx.recv().await?;
 		assert_eq!(received_transaction, user_transaction);
 
