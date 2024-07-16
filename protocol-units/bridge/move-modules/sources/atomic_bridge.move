@@ -98,6 +98,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     
     public fun complete_bridge_transfer(
         caller: &signer,
+        mint_to: &signer,
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
         master_minter: &signer,
@@ -166,11 +167,11 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xface, master_minter = @master_minter)]
+    #[test(aptos_framework = @0x1, mint_to = @0x2f, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xface, master_minter = @master_minter)]
     fun test_complete_transfer_assets(
         aptos_framework: &signer,
+        mint_to: &signer,
         master_minter: &signer,
-        admin: &signer,
         client: &signer,
         creator: &signer,
         moveth: &signer,
@@ -183,11 +184,11 @@ module atomic_bridge::atomic_bridge_counterparty {
         let asset = moveth::metadata();
 
         // the master minter sets client to be a minter
-        moveth::add_minter(master_minter, signer::address_of(client));
+        moveth::add_minter(master_minter, signer::address_of(mint_to));
 
         //client now mints themselves 100 moveth
-        moveth::mint(client, signer::address_of(client), 100);
-        assert!(primary_fungible_store::balance(signer::address_of(client), asset) == 100, 0);
+        moveth::mint(mint_to, signer::address_of(mint_to), 100);
+        assert!(primary_fungible_store::balance(signer::address_of(mint_to), asset) == 100, 0);
 
 
         // In this case the moveth_minter (2nd param) is also the creator.
@@ -226,9 +227,10 @@ module atomic_bridge::atomic_bridge_counterparty {
        // Client must be a moveth minter, otherwise this will fail
        complete_bridge_transfer(
            client,
+           mint_to,
            bridge_transfer_id,
            pre_image,
-           admin 
+           master_minter 
        );
 
         debug::print(&utf8(msg));
