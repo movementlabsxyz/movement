@@ -135,7 +135,10 @@ impl<A, H> CounterpartyCompletedDetails<A, H> {
 
 // Types
 pub trait BridgeHashType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
-pub trait BridgeAddressType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
+pub trait BridgeAddressType:
+	Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone + From<Vec<u8>>
+{
+}
 
 pub trait Convert<O> {
 	fn convert(other: &Self) -> O;

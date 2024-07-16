@@ -181,10 +181,9 @@ where
 		&mut self,
 		details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 	) where
-		BTo::Address: From<Vec<u8>>,
 		BTo::Hash: From<BFrom::Hash>,
 	{
-		assert!(self.swaps.get(&details.bridge_transfer_id).is_none());
+		assert!(!self.swaps.contains_key(&details.bridge_transfer_id));
 
 		let counterparty_contract = self.counterparty_contract.clone();
 		let bridge_transfer_id = details.bridge_transfer_id.clone();
@@ -272,9 +271,6 @@ where
 	BFrom::Hash: From<BTo::Hash>,
 	BTo::Hash: From<BFrom::Hash>,
 
-	BTo::Address: From<Vec<u8>>,
-
-	Vec<u8>: From<BTo::Address>,
 	Vec<u8>: From<BFrom::Address>,
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
@@ -479,9 +475,7 @@ async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: Blockch
 	}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 ) -> Result<(), LockBridgeTransferAssetsError>
 where
-	BTo::Address: From<Vec<u8>>,
 	BTo::Hash: From<BFrom::Hash>,
-	Vec<u8>: From<BTo::Address>,
 	Vec<u8>: From<BFrom::Address>,
 {
 	let bridge_transfer_id = BridgeTransferId(From::from(bridge_transfer_id.0));

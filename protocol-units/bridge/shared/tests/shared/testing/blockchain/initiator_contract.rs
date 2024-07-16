@@ -100,7 +100,7 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		accounts: &mut HashMap<A, Amount>,
+		_accounts: &mut HashMap<A, Amount>,
 		transfer_id: BridgeTransferId<H>,
 		pre_image: HashLockPreImage,
 	) -> SCIResult<A, H> {
