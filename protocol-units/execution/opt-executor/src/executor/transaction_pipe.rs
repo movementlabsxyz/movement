@@ -120,9 +120,7 @@ impl Executor {
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
-		self.tick_transaction_reader(transaction_channel.clone()).await?;
-
-		Ok(())
+		self.tick_transaction_reader(transaction_channel).await
 	}
 }
 
@@ -195,10 +193,8 @@ mod tests {
 	async fn test_pipe_mempool_with_malformed_transaction() -> Result<(), anyhow::Error> {
 		// header
 		let mut executor = Executor::try_test_default()?;
-		let user_transaction = create_signed_transaction(
-			0, 
-			executor.maptos_config.chain.maptos_chain_id.clone()
-		);
+		let user_transaction =
+			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
