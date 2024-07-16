@@ -7159,7 +7159,6 @@ dependencies = [
  "futures",
  "hex",
  "lazy_static",
- "log",
  "maptos-execution-util",
  "movement-rest",
  "movement-types",
@@ -7174,7 +7173,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
  "tracing-test",
 ]
 
