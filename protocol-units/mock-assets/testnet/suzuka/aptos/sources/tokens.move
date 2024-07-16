@@ -7,7 +7,8 @@ module mock::tokens {
 
     struct USDC {}
     struct USDT {}
-    struct BTC {}
+    struct WBTC {}
+    struct WETH {}
 
     struct Caps<phantom CoinType> has key {
         mint: MintCapability<CoinType>,
@@ -47,7 +48,8 @@ module mock::tokens {
         coin::deposit(admin_addr, btc_coins);
         faucet::create_faucet<USDC>(admin, max_value, 60_000_000_000_000, 3600);
         faucet::create_faucet<USDT>(admin, max_value, 60_000_000_000_000, 3600);
-        faucet::create_faucet<BTC>(admin, max_value, 100_000_000, 3600);
+        faucet::create_faucet<WBTC>(admin, max_value, 100_000_000, 3600);
+        faucet::create_faucet<WETH>(admin, max_value, 2000_000_000, 3600);
     }
 
     public entry fun register_coins_all(account: &signer) {
@@ -58,9 +60,13 @@ module mock::tokens {
         if (!coin::is_account_registered<USDT>(account_addr)) {
             coin::register<USDT>(account);
         };
-        if (!coin::is_account_registered<BTC>(account_addr)) {
-            coin::register<BTC>(account);
+        if (!coin::is_account_registered<WBTC>(account_addr)) {
+            coin::register<WBTC>(account);
         };
+        if (!coin::is_account_registered<WETH>(account_addr)) {
+            coin::register<WETH>(account);
+        };
+    }
     }
 
     #[test (admin = @mock)]

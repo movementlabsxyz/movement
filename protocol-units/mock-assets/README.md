@@ -37,7 +37,6 @@ The following tokens can be minted through their own contract once per hour by c
 - USDT
 - WBTC
 - WETH
-- MOVETH
 
 #### Wrapped Tokens
 
@@ -55,4 +54,3 @@ The following tokens can be minted through their own module once per hour by cal
 - USDT
 - WBTC
 - WETH
-- MOVETH
