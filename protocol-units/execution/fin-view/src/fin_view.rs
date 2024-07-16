@@ -15,18 +15,14 @@ use std::sync::Arc;
 #[derive(Clone)]
 /// The API view into the finalized state of the chain.
 pub struct FinalityView {
-	inner: Arc<AptosFinalityView<Arc<dyn DbReader>>>,
+	inner: Arc<AptosFinalityView>,
 	context: Arc<Context>,
 	listen_url: String,
 }
 
 impl FinalityView {
 	/// Create a new `FinalityView` instance.
-	pub fn new(
-		inner: Arc<AptosFinalityView<Arc<dyn DbReader>>>,
-		context: Arc<Context>,
-		listen_url: String,
-	) -> Self {
+	pub fn new(inner: Arc<AptosFinalityView>, context: Arc<Context>, listen_url: String) -> Self {
 		Self { inner, context, listen_url }
 	}
 
