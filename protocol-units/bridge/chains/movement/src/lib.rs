@@ -1,22 +1,27 @@
 use aptos_sdk::{
-	rest_client::{
-		aptos_api_types::{
-			EntryFunctionId, EntryFunctionPayload, IdentifierWrapper, MoveModuleId, MoveType,
-		},
-		Client, FaucetClient,
+	move_types::{
+		identifier::Identifier,
+		language_storage::{ModuleId, TypeTag},
 	},
-	types::{transaction::TransactionPayload, LocalAccount},
+	rest_client::{aptos_api_types::MoveModuleId, Client, FaucetClient},
+	types::LocalAccount,
 };
-use aptos_types::{account_address::AccountAddress, transaction::EntryFunction};
+use aptos_types::{
+	account_address::AccountAddress,
+	transaction::{EntryFunction, TransactionPayload},
+};
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractCounterpartyResult},
+	bridge_contracts::{
+		BridgeContractCounterparty, BridgeContractCounterpartyError,
+		BridgeContractCounterpartyResult,
+	},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddressCounterParty, RecipientAddress, RecipientAddressCounterparty, TimeLock,
+		RecipientAddress, TimeLock,
 	},
 };
 use rand::prelude::*;
-use serde_json::Value;
+use serde::Serialize;
 use std::str::FromStr;
 use url::Url;
 
@@ -110,20 +115,28 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		let payload = TransactionPayload::EntryFunction(EntryFunction {
-			function: self.counterparty_function(Call::Lock),
-			arguments: vec![
-				Value::Array(bytes_to_json_array(self.initiator_address)),
-				Value::Array(hash_to_json_array(&bridge_transfer_id.0)),
-				Value::Array(hash_to_json_array(&hash_lock.0)),
-				Value::Number(time_lock.0.into()),
-				Value::String(self.recipient_address.to_string()),
-			],
-			type_arguments: self.counterparty_type_tag(Call::Lock),
-		});
+		let fn_id = self
+			.counterparty_function(Call::Lock)
+			.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?;
+
+		//@TODO properly return an error instead of unwrapping
+		let args = vec![
+			self.to_bcs_bytes(&self.signer.address()).unwrap(),
+			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			self.to_bcs_bytes(&hash_lock.0).unwrap(),
+			self.to_bcs_bytes(&time_lock.0).unwrap(),
+			self.to_bcs_bytes(&recipient.0).unwrap(),
+			self.to_bcs_bytes(&amount.0).unwrap(),
+		];
+		let payload = TransactionPayload::EntryFunction(EntryFunction::new(
+			self.counterparty_module_id(),
+			fn_id,
+			self.counterparty_type_args(Call::Lock),
+			args,
+		));
 		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
 			.await
-			.map_err(|e| BridgeContractCounterpartyError::generic(e));
+			.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 		Ok(())
 	}
 
@@ -132,16 +145,23 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
-			function: self.counterparty_function(Call::Complete),
-			arguments: vec![
-				Value::String(self.signer.address().to_string()),
-				Value::Array(hash_to_json_array(&bridge_transfer_id.0)),
-				Value::Array(self.hash_to_json_array(&preimage.0[..])),
-			],
-			type_arguments: self.counterparty_type_tag(Call::Complete),
-		});
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		let fn_id = self
+			.counterparty_function(Call::Complete)
+			.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError)?;
+		let args = vec![
+			self.to_bcs_bytes(&self.signer.address()).unwrap(),
+			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			self.to_bcs_bytes(&preimage.0).unwrap(),
+		];
+		let payload = TransactionPayload::EntryFunction(EntryFunction::new(
+			self.counterparty_module_id(),
+			fn_id,
+			self.counterparty_type_args(Call::Complete),
+			args,
+		));
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
 		Ok(())
 	}
 
@@ -149,12 +169,22 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
-		let payload = TransactionPayload::EntryFunctionPayload(EntryFunctionPayload {
-			function: self.counterparty_function(Call::Abort),
-			arguments: vec![Value::Array(self.hash_to_json_array(&bridge_transfer_id.0))],
-			type_arguments: self.counterparty_type_tag(Call::Abort),
-		});
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)?;
+		let fn_id = self
+			.counterparty_function(Call::Abort)
+			.map_err(|_| BridgeContractCounterpartyError::AbortTransferError)?;
+		let args = vec![
+			self.to_bcs_bytes(&self.signer.address()).unwrap(),
+			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+		];
+		let payload = TransactionPayload::EntryFunction(EntryFunction::new(
+			self.counterparty_module_id(),
+			fn_id,
+			self.counterparty_type_args(Call::Abort),
+			args,
+		));
+		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 		Ok(())
 	}
 
@@ -168,10 +198,10 @@ impl BridgeContractCounterparty for MovementClient {
 }
 
 impl MovementClient {
-	fn counterparty_module_id(&self) -> MoveModuleId {
-		MoveModuleId {
+	fn counterparty_module_id(&self) -> ModuleId {
+		ModuleId {
 			address: self.counterparty_address.into(),
-			name: IdentifierWrapper::from_str(COUNTERPARTY_MODULE_NAME).unwrap(),
+			name: Identifier::from_str(COUNTERPARTY_MODULE_NAME).unwrap(),
 		}
 	}
 
@@ -179,36 +209,30 @@ impl MovementClient {
 		todo!()
 	}
 
-	fn counterparty_type_tag(&self, call: Call) -> Vec<MoveType> {
+	fn counterparty_type_args(&self, call: Call) -> Vec<TypeTag> {
 		match call {
-			Call::Lock => vec![MoveType::Address, MoveType::U64, MoveType::U64, MoveType::U8],
-			Call::Complete => vec![MoveType::Address, MoveType::U64, MoveType::U8],
-			Call::Abort => vec![MoveType::Address, MoveType::U64],
-			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
+			Call::Lock => vec![TypeTag::Address, TypeTag::U64, TypeTag::U64, TypeTag::U8],
+			Call::Complete => vec![TypeTag::Address, TypeTag::U64, TypeTag::U8],
+			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
+			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
 		}
 	}
 
-	fn counterparty_function(&self, call: Call) -> EntryFunctionId {
-		EntryFunctionId {
-			module: self.counterparty_module_id(),
-			name: IdentifierWrapper::from_str(match call {
-				Call::Lock => "lock_bridge_transfer_assets",
-				Call::Complete => "complete_bridge_transfer",
-				Call::Abort => "abort_bridge_transfer",
-				Call::GetDetails => "get_bridge_transfer_details",
-			}),
-		}
+	fn counterparty_function(&self, call: Call) -> Result<Identifier, anyhow::Error> {
+		let str = match call {
+			Call::Lock => "lock_bridge_transfer_assets",
+			Call::Complete => "complete_bridge_transfer",
+			Call::Abort => "abort_bridge_transfer",
+			Call::GetDetails => "get_bridge_transfer_details",
+		};
+		let id = Identifier::new(str)?;
+		Ok(id)
 	}
 
-	fn move_bytes(&self) -> MoveType {
-		MoveType::Vector { items: Box::new(vec![MoveType::U8(0)]) }
+	fn to_bcs_bytes<T>(&self, value: &T) -> Result<Vec<u8>, anyhow::Error>
+	where
+		T: Serialize,
+	{
+		Ok(bcs::to_bytes(value)?)
 	}
-}
-
-fn hash_to_json_array(hash: &[u8]) -> Vec<Value> {
-	hash.iter().map(|&byte| Value::Number(byte.into())).collect()
-}
-
-fn bytes_to_json_array(bytes: Vec<u8>) -> Vec<Value> {
-	bytes.iter().map(|&b| Value::Number(b.into())).collect()
 }

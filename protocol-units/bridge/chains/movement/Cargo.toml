@@ -18,6 +18,7 @@ aptos-types = { workspace = true }
 aptos-api = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
+bcs = { workspace = true }
 derive-new = { workspace = true }
 poem = { workspace = true }
 keccak-hash = { workspace = true }
