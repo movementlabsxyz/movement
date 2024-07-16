@@ -21,14 +21,10 @@ members = [
     "util/commander",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
-<<<<<<< HEAD
-    "protocol-units/settlement/mcr/anvil",
     "protocol-units/bridge/shared",
     "protocol-units/bridge/cli",
     "protocol-units/bridge/service",
-=======
     "protocol-units/settlement/mcr/runner",
->>>>>>> l-monninger/holesky
 ]
 
 [workspace.package]
