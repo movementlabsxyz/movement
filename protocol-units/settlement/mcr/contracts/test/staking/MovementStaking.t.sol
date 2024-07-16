@@ -49,6 +49,27 @@ contract MovementStakingTest is Test {
 
     }
 
+    function testWhitelist() public {
+        MOVEToken moveToken = new MOVEToken();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+        
+        // Our whitelister
+        address whitelister = vm.addr(1);
+        // Whitelist them
+        staking.whitelistAddress(whitelister);
+        assertEq(staking.hasRole(staking.WHITELIST_ROLE(), whitelister), true);
+        // Remove them from the whitelist
+        staking.removeAddressFromWhitelist(whitelister);
+        assertEq(staking.hasRole(staking.WHITELIST_ROLE(), whitelister), false);
+        // As a whitelister let's see if I can whitelist myself
+        vm.prank(whitelister);
+        vm.expectRevert();
+        staking.whitelistAddress(whitelister);
+    }
+
     function testSimpleStaker() public {
 
         MOVEToken moveToken = new MOVEToken();
@@ -66,6 +87,7 @@ contract MovementStakingTest is Test {
 
         // stake at the domain
         address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
         moveToken.mint(staker, 100);
         vm.prank(staker);
         moveToken.approve(address(staking), 100);
@@ -73,7 +95,6 @@ contract MovementStakingTest is Test {
         staking.stake(domain, moveToken, 100);
         assertEq(moveToken.balanceOf(staker), 0);
         assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), staker), 100);
-
     }
 
     function testSimpleGenesisCeremony() public {
@@ -93,6 +114,7 @@ contract MovementStakingTest is Test {
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
         moveToken.mint(staker, 100);
         vm.prank(staker);
         moveToken.approve(address(staking), 100);
@@ -122,7 +144,9 @@ contract MovementStakingTest is Test {
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
         moveToken.mint(staker, 100);
+        staking.whitelistAddress(staker);
         vm.prank(staker);
         moveToken.approve(address(staking), 100);
         vm.prank(staker);
@@ -160,6 +184,7 @@ contract MovementStakingTest is Test {
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
         moveToken.mint(staker, 100);
         vm.prank(staker);
         moveToken.approve(address(staking), 100);
@@ -206,6 +231,7 @@ contract MovementStakingTest is Test {
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
         moveToken.mint(staker, 150);
         vm.prank(staker);
         moveToken.approve(address(staking), 100);
@@ -266,6 +292,7 @@ contract MovementStakingTest is Test {
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
         moveToken.mint(staker, 150);
         vm.prank(staker);
         moveToken.approve(address(staking), 100);

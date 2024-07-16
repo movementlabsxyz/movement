@@ -38,6 +38,7 @@ futures = { workspace = true }
 async-channel = { workspace = true }
 
 aptos-vm = { workspace = true }
+aptos-vm-validator = { workspace = true }
 aptos-config = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-crypto = { workspace = true }

@@ -1,18 +1,18 @@
 use crate::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario, TestKind};
 use crate::{
-	coin_client::CoinClient,
+	coin_client::{CoinClient, TransferOptions},
 	rest_client::{
 		aptos_api_types::{TransactionOnChainData, ViewFunction},
 		Client, FaucetClient,
 	},
 	types::{chain_id::ChainId, LocalAccount},
+	transaction_builder::TransactionBuilder,
 };
 use anyhow::Context;
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
-use aptos_sdk::transaction_builder::TransactionBuilder;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::transaction::authenticator::AuthenticationKey;
 use aptos_sdk::types::transaction::EntryFunction;
@@ -179,6 +179,76 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 			.await
 			.context("Failed to get Bob's account balance the second time")?
 	);
+
+	// malformed sequence number
+	println!("\n=== Malformed Sequence Number ===");
+	let options = TransferOptions::default();
+	let chain_id = rest_client
+            .get_index()
+            .await
+            .context("Failed to get chain ID")?
+            .inner()
+            .chain_id;
+	let transaction_builder = TransactionBuilder::new(
+		TransactionPayload::EntryFunction(EntryFunction::new(
+			ModuleId::new(AccountAddress::ONE, Identifier::new("coin").unwrap()),
+			Identifier::new("transfer").unwrap(),
+			vec![TypeTag::from_str(options.coin_type).unwrap()],
+			vec![
+				bcs::to_bytes(&bob.address()).unwrap(),
+				bcs::to_bytes(&(1_000 as u64)).unwrap(),
+			],
+		)),
+		SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.unwrap()
+			.as_secs()
+			+ options.timeout_secs,
+		ChainId::new(chain_id),
+	)
+	.sender(alice.address())
+	.sequence_number(alice.sequence_number())
+	.max_gas_amount(options.max_gas_amount)
+	.gas_unit_price(options.gas_unit_price);
+	let signed_txn = alice.sign_with_transaction_builder(transaction_builder);
+
+	// first send should work
+	println!("First send should work");
+	let txn_hash = rest_client
+		.submit(&signed_txn)
+		.await
+		.context("Failed to submit transfer transaction with properly formed sequence number")?
+		.into_inner();
+	rest_client.wait_for_transaction(&txn_hash).await.context(
+		"Failed when waiting for the transfer transaction with a malformed sequence number",
+	)?;
+
+	// second send should fail...
+	println!("Second send should fail");
+	match rest_client
+		.submit(&signed_txn)
+		.await {
+		Ok(transaction) => {
+			println!("Transaction succeeded unexpectedly {:?}", transaction.into_inner());
+			panic!("Expected transaction to fail");
+		},	
+		Err(e) => {
+			println!("Transaction failed expectedly: {:?}", e);
+		}
+	}
+	
+	// ...but not crash the node.
+	// So, this should work.
+	let txn_hash = coin_client
+		.transfer(&mut alice, bob.address(), 1_000, None)
+		.await
+		.context("Failed to submit transaction to transfer coins")?; // <:!:section_5
+															 // :!:>section_6
+	rest_client
+		.wait_for_transaction(&txn_hash)
+		.await
+		.context("Failed when waiting for the transfer transaction")?;
+
 
 	Ok(())
 }

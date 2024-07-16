@@ -221,20 +221,18 @@ mod tests {
 		transaction_builder::TransactionFactory,
 		types::{AccountKey, LocalAccount},
 	};
-	use aptos_storage_interface::state_view::DbStateViewAtVersion;
-	use aptos_types::account_config::aptos_test_root_address;
-	use aptos_types::account_view::AccountView;
-	use aptos_types::state_store::account_with_state_view::AsAccountWithStateView;
-	use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
+	use aptos_storage_interface::state_view::{DbStateView, DbStateViewAtVersion};
 	use aptos_types::{
 		account_address::AccountAddress,
+		account_config::{aptos_test_root_address, AccountResource},
 		block_executor::partitioner::ExecutableTransactions,
 		block_metadata::BlockMetadata,
 		chain_id::ChainId,
-		transaction::{
-			signature_verified_transaction::SignatureVerifiedTransaction, RawTransaction, Script,
-			SignedTransaction, Transaction, TransactionPayload,
+		state_store::MoveResourceExt,
+		transaction::signature_verified_transaction::{
+			into_signature_verified_block, SignatureVerifiedTransaction,
 		},
+		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
 	};
 	use maptos_execution_util::config::Config;
 	use rand::SeedableRng;
@@ -294,9 +292,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(
-				executor.maptos_config.chain.maptos_private_key.clone(),
-			),
+			AccountKey::from_private_key(executor.maptos_config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -316,10 +312,11 @@ mod tests {
 			let current_time_microseconds = chrono::Utc::now().timestamp_micros() as u64;
 
 			// Create a transaction factory with the chain ID of the executor, used for creating transactions.
-			let tx_factory = TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone())
-				.with_transaction_expiration_time(
-					current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
-				);
+			let tx_factory =
+				TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone())
+					.with_transaction_expiration_time(
+						current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
+					);
 
 			// Create a block metadata transaction.
 			let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
@@ -363,7 +360,7 @@ mod tests {
 			// Access the database reader to verify state after execution.
 			let db_reader = executor.db.reader.clone();
 			// Get the latest version of the blockchain state from the database.
-			let latest_version = db_reader.get_latest_version()?;
+			let latest_version = db_reader.get_synced_version()?;
 			// Verify the transaction by its hash to ensure it was committed.
 			let transaction_result =
 				db_reader.get_transaction_by_hash(mint_tx_hash, latest_version, false)?;
@@ -372,11 +369,8 @@ mod tests {
 			// Create a state view at the latest version to inspect account states.
 			let state_view = db_reader.state_view_at_version(Some(latest_version))?;
 			// Access the state view of the new account to verify its state and existence.
-			let account_state_view = state_view.as_account_with_state_view(&new_account_address);
-			let queried_account_address = account_state_view.get_account_address()?;
-			assert!(queried_account_address.is_some());
-			let account_resource = account_state_view.get_account_resource()?;
-			assert!(account_resource.is_some());
+			let _account_resource =
+				AccountResource::fetch_move_resource(&state_view, &new_account_address)?.unwrap();
 
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
@@ -397,9 +391,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(
-				executor.maptos_config.chain.maptos_private_key.clone(),
-			),
+			AccountKey::from_private_key(executor.maptos_config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -408,7 +400,8 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone());
+		let tx_factory =
+			TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {

@@ -53,11 +53,14 @@ contract MCRTest is Test, IMCR {
 
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
+        staking.whitelistAddress(alice);
         moveToken.mint(alice, 100);
         address payable bob = payable(vm.addr(2));
+        staking.whitelistAddress(bob);
         moveToken.mint(bob, 100);
         address payable carol = payable(vm.addr(3));
         moveToken.mint(carol, 100);
+        staking.whitelistAddress(carol);
 
         // have them participate in the genesis ceremony
         vm.prank(alice);
@@ -118,11 +121,14 @@ contract MCRTest is Test, IMCR {
 
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
+        staking.whitelistAddress(alice);
         moveToken.mint(alice, 100);
         address payable bob = payable(vm.addr(2));
         moveToken.mint(bob, 100);
+        staking.whitelistAddress(bob);
         address payable carol = payable(vm.addr(3));
         moveToken.mint(carol, 100);
+        staking.whitelistAddress(carol);
 
         // have them participate in the genesis ceremony
         vm.prank(alice);
@@ -207,10 +213,13 @@ contract MCRTest is Test, IMCR {
 
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
+        staking.whitelistAddress(alice);
         moveToken.mint(alice, 100);
         address payable bob = payable(vm.addr(2));
+        staking.whitelistAddress(bob);
         moveToken.mint(bob, 100);
         address payable carol = payable(vm.addr(3));
+        staking.whitelistAddress(carol);
         moveToken.mint(carol, 100);
 
         // have them participate in the genesis ceremony
@@ -322,10 +331,15 @@ contract MCRTest is Test, IMCR {
 
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
+        staking.whitelistAddress(alice);
         moveToken.mint(alice, 100);
+
         address payable bob = payable(vm.addr(2));
+        staking.whitelistAddress(bob);
         moveToken.mint(bob, 100);
+
         address payable carol = payable(vm.addr(3));
+        staking.whitelistAddress(carol);
         moveToken.mint(carol, 100);
 
         // have them participate in the genesis ceremony
@@ -410,6 +424,7 @@ contract MCRTest is Test, IMCR {
 
             // add a new signer
             address payable newSigner = payable(vm.addr(4 + i));
+            staking.whitelistAddress(newSigner);
             moveToken.mint(newSigner, 100);
             vm.prank(newSigner);
             moveToken.approve(address(staking), 33);
