@@ -36,6 +36,7 @@ rand_core = { workspace = true }
 bcs = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
+tonic = { wrkspace = true }
 
 aptos-vm = { workspace = true }
 aptos-vm-validator = { workspace = true }
@@ -64,10 +65,10 @@ aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
-aptos-logger = { workspace = true }
-
-movement-rest = { workspace = true }
-
+aptos-indexer-grpc-fullnode = { workspace = true }
+aptos-indexer-grpc-table-info = { workspace = true }
+aptos-indexer = { workspace = true }
+aptos-protos = { workspace = true }
 dirs = { workspace = true }
 tempfile = { workspace = true }
 tracing-test = { workspace = true }

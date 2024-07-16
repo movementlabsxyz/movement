@@ -4,20 +4,9 @@ environment:
 
 processes:
 
-  build-m1-da-light-node:
-    command: |
-      ./scripts/services/m1-da-light-node/build
-
-  build-wait-for-celestia-light-node:
-    command: |
-      ./scripts/services/wait-for-celestia-light-node/build
-
-  build-suzuka-full-node:
-    command: |
-      ./scripts/services/suzuka-full-node/build
-
   build:
     command: |
+<<<<<<< HEAD
       exit 0
     depends_on: 
       build-m1-da-light-node:
@@ -30,3 +19,6 @@ processes:
       # NOTE: `restart: exit_on_failure` is not needed since
       # exit_on_end implies it.
       exit_failure: true
+=======
+      ./scripts/services/suzuka-full-node/build
+>>>>>>> l-monninger/indexer-integration
