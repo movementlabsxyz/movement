@@ -20,6 +20,7 @@ serde_json = { workspace = true }
 
 bridge-shared = { workspace = true }
 ethereum-bridge = { workspace = true }
+movement-bridge = { workspace = true }
 
 alloy-primitives = { workspace = true }
 

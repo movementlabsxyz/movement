@@ -51,17 +51,17 @@ pub struct InitiatorAddress<A>(pub A);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecipientAddress(pub Vec<u8>);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RecipientAddressCounterparty<A>(pub A);
-
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InitiatorAddressCounterParty(pub Vec<u8>);
-
 impl From<&str> for RecipientAddress {
 	fn from(value: &str) -> Self {
 		RecipientAddress(value.as_bytes().to_vec())
 	}
 }
+
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RecipientAddressCounterparty<A>(pub A);
+
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);

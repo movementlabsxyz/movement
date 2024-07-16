@@ -1,5 +1,10 @@
 use anyhow::Result;
+use bridge_shared::{
+	bridge_contracts::BridgeContractCounterparty,
+	types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, RecipientAddress, TimeLock},
+};
 use clap::{Parser, Subcommand};
+use movement_bridge::MovementClient;
 
 #[derive(Parser)]
 #[command(name = "movement-cli")]
@@ -57,7 +62,6 @@ pub enum MovementCommands {
 pub async fn run(command: &MovementCommands) -> Result<()> {
 	match command {
 		MovementCommands::Deploy { config_path } => {
-			//load_config()
 			todo!()
 		}
 		MovementCommands::LockAssets {
@@ -69,22 +73,65 @@ pub async fn run(command: &MovementCommands) -> Result<()> {
 			recipient,
 			amount,
 		} => {
-			//load_config()
-			todo!()
+			lock_assets(bridge_transfer_id, hash_lock, *time_lock, recipient, *amount).await?;
 		}
 		MovementCommands::Complete { config_path, bridge_transfer_id, pre_image } => {
-			//load_config()
-			todo!()
+			complete(bridge_transfer_id, pre_image).await?;
 		}
 		MovementCommands::Abort { config_path, bridge_transfer_id } => {
-			//load_config()
-			todo!()
+			abort(bridge_transfer_id).await?;
 		}
 		MovementCommands::Details { config_path, bridge_transfer_id } => {
-			//load_config()
-			todo!()
+			details(bridge_transfer_id).await?;
 		}
 	}
 
+	Ok(())
+}
+
+async fn lock_assets(
+	bridge_transfer_id: &str,
+	hash_lock: &str,
+	time_lock: u64,
+	recipient: &str,
+	amount: u64,
+) -> Result<()> {
+	let mut client = MovementClient::build_with_config().await?;
+	client
+		.lock_bridge_transfer_assets(
+			BridgeTransferId::parse(bridge_transfer_id)?,
+			HashLock::parse(hash_lock)?,
+			TimeLock(time_lock),
+			RecipientAddress::from(recipient),
+			Amount(amount),
+		)
+		.await?;
+	Ok(())
+}
+
+async fn complete(bridge_transfer_id: &str, preimage: &str) -> Result<()> {
+	let mut client = MovementClient::build_with_config().await?;
+	client
+		.complete_bridge_transfer(
+			BridgeTransferId::parse(bridge_transfer_id)?,
+			HashLockPreImage(preimage.into()),
+		)
+		.await?;
+	Ok(())
+}
+
+async fn abort(bridge_transfer_id: &str) -> Result<()> {
+	let mut client = MovementClient::build_with_config().await?;
+	client
+		.abort_bridge_transfer(BridgeTransferId::parse(bridge_transfer_id)?)
+		.await?;
+	Ok(())
+}
+
+async fn details(bridge_transfer_id: &str) -> Result<()> {
+	let mut client = MovementClient::build_with_config().await?;
+	client
+		.get_bridge_transfer_details(BridgeTransferId::parse(bridge_transfer_id)?)
+		.await?;
 	Ok(())
 }
