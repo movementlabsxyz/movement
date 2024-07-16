@@ -117,9 +117,9 @@ impl Executor {
 		maptos_config: Config,
 	) -> Result<Self, anyhow::Error> {
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
-			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
+			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&maptos_config.chain.maptos_private_key.clone().public_key(),
+			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
