@@ -1,19 +1,21 @@
 use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
-use alloy_eips::BlockNumberOrTag;
 use alloy_network::{Ethereum, EthereumWallet};
 use alloy_primitives::private::serde::{Deserialize, Serialize};
-use alloy_primitives::{address, Address as EthAddress, FixedBytes, B256, U256};
+use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
 	Provider, ProviderBuilder, RootProvider,
 };
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
-use alloy_rpc_types::{Filter, Log};
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
+use bridge_shared::types::{
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	RecipientAddress, TimeLock,
+};
 use bridge_shared::{
 	bridge_contracts::{
 		BridgeContractCounterpartyError, BridgeContractInitiator, BridgeContractInitiatorError,
@@ -22,20 +24,14 @@ use bridge_shared::{
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	types::{CompletedDetails, LockDetails},
 };
-use bridge_shared::{
-	bridge_monitoring::BridgeContractInitiatorMonitoring,
-	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
-	},
-};
-use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
 	send_transaction, InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
-use std::{fmt::Debug, pin::Pin, task::Poll};
+use std::fmt::Debug;
 use thiserror::Error;
+
+mod utils;
 
 const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
@@ -171,9 +167,7 @@ impl EthClient<AlloyProvider> {
 	) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.signer_private_key;
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
-		println!("Signerrrr: {:?}", signer);
 		let initiator_address = config.initiator_address.parse()?;
-		println!("Initiator Address: {:?}", initiator_address);
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
 		let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()
@@ -184,42 +178,33 @@ impl EthClient<AlloyProvider> {
 		let ws = WsConnect::new(ws_url);
 		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 
-		EthClient::build_with_provider(
+		EthClient::build_with_provider(utils::ProviderArgs {
 			rpc_provider,
 			ws_provider,
 			initiator_address,
-			counterparty_address.parse()?,
-			counterparty_address.parse()?,
-			config.gas_limit,
-			config.num_tx_send_retries,
-			config.chain_id,
-		)
+			signer_address: counterparty_address.parse()?,
+			counterparty_address: counterparty_address.parse()?,
+			gas_limit: config.gas_limit,
+			num_tx_send_retries: config.num_tx_send_retries,
+			chain_id: config.chain_id,
+		})
 		.await
 	}
 
-	async fn build_with_provider(
-		rpc_provider: AlloyProvider,
-		ws_provider: RootProvider<PubSubFrontend>,
-		_signer_address: EthAddress,
-		initiator_address: EthAddress,
-		counterparty_address: EthAddress,
-		gas_limit: u64,
-		num_tx_send_retries: u32,
-		chain_id: String,
-	) -> Result<Self, anyhow::Error> {
+	async fn build_with_provider(args: utils::ProviderArgs) -> Result<Self, anyhow::Error> {
 		let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
 		let rule2: Box<dyn VerifyRule> =
 			Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
 		let send_transaction_error_rules = vec![rule1, rule2];
 		Ok(EthClient {
-			rpc_provider,
-			chain_id,
-			ws_provider,
-			initiator_address,
-			counterparty_address,
+			rpc_provider: args.rpc_provider,
+			chain_id: args.chain_id,
+			ws_provider: args.ws_provider,
+			initiator_address: args.initiator_address,
+			counterparty_address: args.counterparty_address,
+			gas_limit: args.gas_limit,
+			num_tx_send_retries: args.num_tx_send_retries,
 			send_transaction_error_rules,
-			gas_limit,
-			num_tx_send_retries,
 		})
 	}
 }
@@ -269,8 +254,8 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
-		let pre_image: [u8; 32] =
-			vec_to_array(pre_image.0).unwrap_or_else(|_| panic!("Failed to convert pre_image"));
+		let pre_image: [u8; 32] = utils::vec_to_array(pre_image.0)
+			.unwrap_or_else(|_| panic!("Failed to convert pre_image"));
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
@@ -346,134 +331,3 @@ impl<P> EthClient<P> {
 		U256::from_be_slice(&hash.0)
 	}
 }
-
-pub struct EthInitiatorMonitoring<A, H> {
-	listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
-	ws: RootProvider<PubSubFrontend>,
-}
-
-impl<A, H> EthInitiatorMonitoring<A, H>
-where
-	A: Debug + Default + Send + 'static,
-	H: Debug + Default + Send + From<[u8; 32]> + 'static,
-{
-	async fn run(
-		rpc_url: &str,
-		listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
-	) -> Result<Self, anyhow::Error> {
-		let ws = WsConnect::new(rpc_url);
-		let ws = ProviderBuilder::new().on_ws(ws).await?;
-
-		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
-		let filter = Filter::new()
-			.address(initiator_address)
-			.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
-			.event("BridgeTransferCompleted(bytes32,bytes32)")
-			.from_block(BlockNumberOrTag::Latest);
-
-		let sub = ws.subscribe_logs(&filter).await?;
-		let mut sub_stream = sub.into_stream();
-
-		// Spawn a task to forward events to the listener channel
-		let (sender, _) = tokio::sync::mpsc::unbounded_channel::<AbstractBlockainEvent<A, H>>();
-
-		tokio::spawn(async move {
-			while let Some(log) = sub_stream.next().await {
-				let event =
-					AbstractBlockainEvent::InitiatorContractEvent(Ok(convert_log_to_event(log)));
-				if sender.send(event).is_err() {
-					tracing::error!("Failed to send event to listener channel");
-					break;
-				}
-			}
-		});
-
-		Ok(Self { listener, ws })
-	}
-}
-
-impl<A: Debug, H: Debug> BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<A, H> {
-	type Address = A;
-	type Hash = H;
-}
-
-impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
-	type Item = BridgeContractInitiatorEvent<
-		<Self as BridgeContractInitiatorMonitoring>::Address,
-		<Self as BridgeContractInitiatorMonitoring>::Hash,
-	>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		if let Poll::Ready(Some(AbstractBlockainEvent::InitiatorContractEvent(contract_result))) =
-			this.listener.poll_next_unpin(cx)
-		{
-			tracing::trace!(
-				"InitiatorContractMonitoring: Received contract event: {:?}",
-				contract_result
-			);
-
-			// Only listen to the initiator contract events
-			match contract_result {
-				Ok(contract_event) => match contract_event {
-					BridgeContractInitiatorEvent::Initiated(details) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)));
-					}
-					BridgeContractInitiatorEvent::Completed(id) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(id)))
-					}
-					BridgeContractInitiatorEvent::Refunded(id) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Refunded(id)))
-					}
-				},
-				Err(e) => {
-					tracing::error!("Error in contract event: {:?}", e);
-				}
-			}
-		}
-		Poll::Pending
-	}
-}
-
-// Utility functions
-
-fn convert_log_to_event<A, H>(log: Log) -> BridgeContractInitiatorEvent<A, H>
-where
-	A: Default,
-	H: Default + From<[u8; 32]>,
-{
-	// Extract details from the log and map to event type
-	let address = log.address();
-	let topics = log.topics();
-	let data = log.data();
-
-	// Assuming the first topic is the event type identifier and the second is the hash
-	let event_type = topics.get(0).expect("Expected event type in topics");
-	let hash: [u8; 32] = topics.get(1).expect("Expected hash in topics").0;
-
-	// Map the log data to the appropriate event type
-	if *event_type == B256::from([0u8; 32]) {
-		// Replace with actual event identifier bytes
-		BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails::default())
-	} else if *event_type == B256::from([1u8; 32]) {
-		BridgeContractInitiatorEvent::Completed(BridgeTransferId(H::from(hash)))
-	} else if *event_type == B256::from([2u8; 32]) {
-		BridgeContractInitiatorEvent::Refunded(BridgeTransferId(H::from(hash)))
-	} else {
-		unimplemented!("Unexpected event type");
-	}
-}
-
-fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
-	if vec.len() == 32 {
-		// Try to convert the Vec<u8> to [u8; 32]
-		match vec.try_into() {
-			Ok(array) => Ok(array),
-			Err(_) => Err("Failed to convert Vec<u8> to [u8; 32]"),
-		}
-	} else {
-		Err("Vec<u8> does not have exactly 32 elements")
-	}
-}
-
-mod tests {}

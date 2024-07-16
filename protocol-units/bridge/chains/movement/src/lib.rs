@@ -25,7 +25,6 @@ use serde::Serialize;
 use std::str::FromStr;
 use url::Url;
 
-mod event_monitoring;
 mod utils;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
@@ -193,7 +192,8 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
 	{
-		todo!()
+				let _ = utils::send_view_request(self.rest_client, )
+				todo!();
 	}
 }
 
