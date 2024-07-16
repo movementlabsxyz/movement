@@ -35,4 +35,6 @@ contract MovementStakingStorage {
         mapping(uint256 epoch =>
             mapping(address attester => uint256 stake))) public epochTotalStakeByDomain;
 
+    // the whitelist role needed to stake/unstake
+    bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
 }

@@ -34,7 +34,7 @@ classical semantic versioning.
 ## Prerequisites
 ### Prerequisites - Just command
 `just` is a handy way to save and run project-specific commands. Please install it
-[following just install instructioins](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
+[following just install instructions](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
 
 ### Just command - macOS
 ```bash 

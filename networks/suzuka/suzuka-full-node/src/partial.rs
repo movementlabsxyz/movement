@@ -22,7 +22,7 @@ use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::{debug, info, error};
 
-use std::future::{self, Future};
+use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 pub struct SuzukaPartialNode<T> {
@@ -30,7 +30,7 @@ pub struct SuzukaPartialNode<T> {
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
-	pub settlement_manager: McrSettlementManager,
+	settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
 	pub config: suzuka_config::Config,
 }
@@ -258,7 +258,7 @@ where
 		}
 	}
 
-	Ok(future::pending().await)
+	Ok(())
 }
 
 impl<T> SuzukaFullNode for SuzukaPartialNode<T>

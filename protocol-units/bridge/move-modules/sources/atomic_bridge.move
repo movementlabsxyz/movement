@@ -49,21 +49,21 @@ module atomic_bridge::atomic_bridge_counterparty {
     struct BridgeTransferCancelledEvent has store, drop {
         bridge_transfer_id: vector<u8>,
     }
-
-    entry fun init_module(deployer: &signer, moveth_minter: &signer) {
+    
+    entry fun init_module(deployer: &signer) {
         let bridge_transfer_store = BridgeTransferStore {
             pending_transfers: smart_table::new(),
             completed_transfers: smart_table::new(),
             aborted_transfers: smart_table::new(),
         };
         let bridge_config = BridgeConfig {
-            moveth_minter: signer::address_of(moveth_minter),
+            moveth_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
         };
         move_to(deployer, bridge_transfer_store);
         move_to(deployer, bridge_config);
     }
-
+    
     public fun lock_bridge_transfer_assets(
         caller: &signer,
         initiator: vector<u8>, //eth address
@@ -95,7 +95,7 @@ module atomic_bridge::atomic_bridge_counterparty {
 
         true
     }
-
+    
     public fun complete_bridge_transfer(
         caller: &signer,
         bridge_transfer_id: vector<u8>,
@@ -119,7 +119,7 @@ module atomic_bridge::atomic_bridge_counterparty {
             },
         );
     }
-
+    
     public fun abort_bridge_transfer(
         caller: &signer,
         bridge_transfer_id: vector<u8>
@@ -140,13 +140,14 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
     }
 
+    
     #[test(creator = @atomic_bridge)]
     fun test_init_module(
         creator: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         let owner = signer::address_of(creator);
         let moveth_minter = @0x1; 
-        init_module(creator, creator);
+        init_module(creator);
 
         // Verify that the BridgeTransferStore and BridgeConfig have been init_moduled
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
@@ -185,7 +186,7 @@ module atomic_bridge::atomic_bridge_counterparty {
 
 
         // In this case the moveth_minter (2nd param) is also the creator.
-        init_module(creator, creator);
+        init_module(creator);
 
         let bridge_transfer_id = b"transfer1";
         let pre_image = b"secret";
@@ -234,4 +235,5 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.hash_lock == hash_lock, 3);
         assert!(transfer_details.initiator == initiator, 4);
     }
+    
 }
