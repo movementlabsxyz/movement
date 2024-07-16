@@ -34,3 +34,9 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/murky"]
 	path = protocol-units/settlement/mcr/contracts/lib/murky
 	url = https://github.com/dmfxyz/murky
+[submodule "protocol-units/mock-assets/testnet/suzuka/mevm/lib/forge-std"]
+	path = protocol-units/mock-assets/testnet/suzuka/mevm/lib/forge-std
+	url = https://github.com/foundry-rs/forge-std
+[submodule "protocol-units/mock-assets/testnet/suzuka/mevm/lib/openzeppelin-contracts"]
+	path = protocol-units/mock-assets/testnet/suzuka/mevm/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
