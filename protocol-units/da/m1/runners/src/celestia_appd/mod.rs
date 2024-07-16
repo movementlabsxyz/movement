@@ -20,6 +20,9 @@ impl Runner for CelestiaAppd {
 			m1_da_light_node_util::config::Config::Arabica(config) => {
 				Err(anyhow::anyhow!("Arabica not implemented"))
 			},
+			m1_da_light_node_util::config::Config::Mocha(config) => {
+				Err(anyhow::anyhow!("Mocha not implemented"))
+			},
 		}
 	}
 }

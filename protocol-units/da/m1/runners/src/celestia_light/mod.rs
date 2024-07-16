@@ -1,4 +1,5 @@
 pub mod arabica;
+pub mod mocha;
 use m1_da_light_node_util::config::M1DaLightNodeConfig;
 
 use crate::Runner;
@@ -19,6 +20,10 @@ impl Runner for CelestiaLight {
 			m1_da_light_node_util::config::Config::Arabica(config) => {
 				let arabica = arabica::Arabica::new();
 				arabica.run(dot_movement, config).await?;
+			},
+			m1_da_light_node_util::config::Config::Mocha(config) => {
+				let mocha = mocha::Mocha::new();
+				mocha.run(dot_movement, config).await?;
 			},
 		}
 		Ok(())
