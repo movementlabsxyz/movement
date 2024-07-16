@@ -80,7 +80,6 @@ impl Executor {
 		chain_id: ChainId,
 		public_key: &Ed25519PublicKey,
 	) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
-
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
 		let (genesis, validators) =
 			Self::genesis_change_set_and_validators(chain_id, Some(1), public_key);
@@ -91,15 +90,12 @@ impl Executor {
 		);
 
 		// check for context
-		
+
 		match db_rw.reader.get_latest_ledger_info_option()? {
 			Some(ledger_info) => {
 				// context exists
-				tracing::info!(
-					"Ledger info found, not bootstrapping DB: {:?}",
-					ledger_info
-				);
-			},
+				tracing::info!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
+			}
 			None => {
 				// context does not exist
 				// simply continue
@@ -112,14 +108,13 @@ impl Executor {
 		}
 
 		Ok((db_rw, validator_signer))
-
 	}
 
 	pub fn bootstrap(
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		maptos_config: &Config,
+		maptos_config: Config,
 	) -> Result<Self, anyhow::Error> {
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
@@ -138,7 +133,7 @@ impl Executor {
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
 			context: Arc::new(Context::new(
-				maptos_config.chain.maptos_chain_id.clone(),	
+				maptos_config.chain.maptos_chain_id.clone(),
 				reader,
 				mempool_client_sender,
 				node_config,
@@ -149,7 +144,7 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_hostname,
 				maptos_config.chain.maptos_rest_listen_port
 			),
-			maptos_config : maptos_config.clone()
+			maptos_config,
 		})
 	}
 
@@ -158,7 +153,12 @@ impl Executor {
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
 		let node_config = NodeConfig::default();
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
+		Self::bootstrap(
+			mempool_client_sender,
+			mempool_client_receiver,
+			node_config,
+			maptos_config.clone(),
+		)
 	}
 
 	pub fn try_test_default() -> Result<Self, anyhow::Error> {
@@ -167,7 +167,7 @@ impl Executor {
 		// replace the db path with a temporary directory
 		let value = tempfile::tempdir()?.into_path(); // todo: this works because it's at the top level, but won't be cleaned up automatically
 		maptos_config.chain.maptos_db_path.replace(value);
+		dbg!(&maptos_config.chain.maptos_db_path);
 		Self::try_from_config(&maptos_config)
 	}
-
 }
