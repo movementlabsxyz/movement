@@ -225,21 +225,18 @@ async fn test_example_interaction() -> Result<(), anyhow::Error> {
 
 	// second send should fail...
 	println!("Second send should fail");
-	let txn_hash = rest_client
+	match rest_client
 		.submit(&signed_txn)
-		.await
-		.context("Failed to submit transfer transaction with improperly formed sequencer number")?
-		.into_inner();
-	match rest_client.wait_for_transaction(&txn_hash).await {
+		.await {
 		Ok(transaction) => {
 			println!("Transaction succeeded unexpectedly {:?}", transaction.into_inner());
 			panic!("Expected transaction to fail");
-		},
+		},	
 		Err(e) => {
 			println!("Transaction failed expectedly: {:?}", e);
 		}
 	}
-
+	
 	// ...but not crash the node.
 	// So, this should work.
 	let txn_hash = coin_client
