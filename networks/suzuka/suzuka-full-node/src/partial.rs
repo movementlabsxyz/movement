@@ -32,6 +32,7 @@ pub struct SuzukaPartialNode<T> {
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
+	pub config: suzuka_config::Config,
 }
 
 impl<T> SuzukaPartialNode<T>
@@ -60,6 +61,7 @@ where
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
 				movement_rest,
+				config: config.clone(),
 			},
 			read_commitment_events(commitment_events, bg_executor),
 		)
@@ -206,12 +208,18 @@ where
 			info!("Executed block: {:?}", block_id);
 
 			// todo: this needs defaults
-			match self.settlement_manager.post_block_commitment(commitment).await {
-				Ok(_) => {}
-				Err(e) => {
-					error!("Failed to post block commitment: {:?}", e);
+			if self.config.mcr.should_settle() {
+				info!("Posting block commitment via settlement manager");
+				match self.settlement_manager.post_block_commitment(commitment).await {
+					Ok(_) => {}
+					Err(e) => {
+						error!("Failed to post block commitment: {:?}", e);
+					}
 				}
+			} else {
+				info!("Skipping settlement");
 			}
+			
 		}
 
 		Ok(())

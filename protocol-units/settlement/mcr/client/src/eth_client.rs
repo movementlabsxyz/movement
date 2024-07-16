@@ -15,7 +15,7 @@ use alloy::providers::fillers::JoinFill;
 use alloy::providers::fillers::NonceFiller;
 use alloy::providers::fillers::WalletFiller;
 use alloy::providers::{ProviderBuilder, Provider, RootProvider};
-use alloy::signers::{local::PrivateKeySigner};
+use alloy::signers::local::PrivateKeySigner;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
@@ -101,10 +101,10 @@ impl
 	>
 {
 	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key = config.signer_private_key.clone();
+		let signer_private_key = config.settle.signer_private_key.clone();
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
-		let contract_address = config.mcr_contract_address.parse()?;
+		let contract_address = config.settle.mcr_contract_address.parse()?;
 		let rpc_url = config.eth_rpc_connection_url();
 		let ws_url = config.eth_ws_connection_url();
 		let rpc_provider = ProviderBuilder::new()
@@ -120,8 +120,8 @@ impl
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit,
-			config.transaction_send_retries,
+			config.transactions.gas_limit,
+			config.transactions.transaction_send_retries,
 		)
 		.await?;
 		Ok(client)
