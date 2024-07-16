@@ -6,7 +6,7 @@ module moveth::moveth_tests{
     use moveth::moveth;
     use aptos_framework::object;
 
-    #[test(creator = @moveth, minter = @0xface, master_minter = @0xbab, denylister = @0xcade)]
+    #[test(creator = @moveth, minter = @0xface, master_minter = @master_minter, denylister = @0xcade)]
     fun test_basic_flow(creator: &signer, minter: &signer, master_minter: &signer, denylister: &signer) {
         moveth::init_for_test(creator);
         let receiver_address = @0xcafe1;

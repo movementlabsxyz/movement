@@ -162,7 +162,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, client = @0xface, master_minter = @0xbab)]
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, client = @0xface, master_minter = @master_minter)]
     fun test_complete_transfer_assets(
         aptos_framework: &signer,
         master_minter: &signer,

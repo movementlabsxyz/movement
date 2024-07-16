@@ -118,9 +118,13 @@ module moveth::moveth {
 
         // All resources created will be kept in the asset metadata object.
         let metadata_object_signer = &object::generate_signer(constructor_ref);
+
+        let minters = vector::empty<address>();
+        vector::push_back(&mut minters, @minter);
+
         move_to(metadata_object_signer, Roles {
             master_minter: @master_minter,
-            minters: vector[],
+            minters,
             pauser: @pauser,
             denylister: @denylister,
         });
