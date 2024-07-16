@@ -30,7 +30,7 @@ impl Manager {
 		client: C,
 		config: &Config,
 	) -> (Self, CommitmentEventStream) {
-		let batch_timeout = Duration::from_millis(config.batch_timeout);
+		let batch_timeout = Duration::from_millis(config.transactions.batch_timeout);
 		let (sender, receiver) = mpsc::channel(16);
 		let event_stream = process_commitments(receiver, client, batch_timeout);
 		(Self { sender }, event_stream)
@@ -274,7 +274,8 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_batch_timeout() -> Result<(), anyhow::Error> {
-		let config = Config { batch_timeout: 1000, ..Config::default() };
+		let mut config = Config::default();
+		config.transactions.batch_timeout = 100;
 		let client = McrSettlementClient::new();
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 

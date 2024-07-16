@@ -22,5 +22,5 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
-      wait-for-suzuka-faucet-service:
-        condition: service_completed_successfully
+      suzuka-faucet-service:
+        condition: service_healthy

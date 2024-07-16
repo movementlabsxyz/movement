@@ -1,5 +1,5 @@
 [package]
-name = "mcr-settlement-anvil"
+name = "mcr-settlement-runner"
 description = "An Anvil runner for the MCR Settlement"
 version.workspace = true
 edition.workspace = true
