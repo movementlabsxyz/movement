@@ -222,7 +222,6 @@ module atomic_bridge::atomic_bridge_counterparty {
        let msg:vector<u8> = b"secret";
         debug::print(&utf8(msg));
 
-       // Client must be a moveth minter, otherwise this will fail
        complete_bridge_transfer(
            client,
            bridge_transfer_id,
