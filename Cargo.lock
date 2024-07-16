@@ -11,11 +11,22 @@ checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 [[package]]
 name = "abstract-domain-derive"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "syn 2.0.70",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "addchain"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b2e69442aa5628ea6951fa33e24efe8313f4321a91bd729fc2f75bdfc858570"
+dependencies = [
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits",
 ]
 
 [[package]]
@@ -334,7 +345,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "auto_impl",
- "dashmap",
+ "dashmap 5.5.3",
  "futures",
  "futures-utils-wasm",
  "lru 0.12.3",
@@ -382,8 +393,8 @@ version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d83524c1f6162fcb5b0decf775498a125066c86dda6066ed609531b0e912f85a"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -509,8 +520,8 @@ dependencies = [
  "alloy-sol-macro-expander",
  "alloy-sol-macro-input",
  "proc-macro-error",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -526,8 +537,8 @@ dependencies = [
  "heck 0.5.0",
  "indexmap 2.2.6",
  "proc-macro-error",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
  "syn-solidity",
  "tiny-keccak",
@@ -543,8 +554,8 @@ dependencies = [
  "const-hex",
  "dunce",
  "heck 0.5.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "serde_json",
  "syn 2.0.70",
  "syn-solidity",
@@ -710,7 +721,7 @@ checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
 [[package]]
 name = "aptos-abstract-gas-usage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-gas-algebra",
@@ -723,7 +734,7 @@ dependencies = [
 [[package]]
 name = "aptos-accumulator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -733,9 +744,8 @@ dependencies = [
 [[package]]
 name = "aptos-aggregator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-logger",
  "aptos-types",
  "bcs 0.1.4",
@@ -748,7 +758,7 @@ dependencies = [
 [[package]]
 name = "aptos-api"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -756,8 +766,6 @@ dependencies = [
  "aptos-build-info",
  "aptos-config",
  "aptos-crypto",
- "aptos-db-indexer",
- "aptos-framework",
  "aptos-gas-schedule",
  "aptos-global-constants",
  "aptos-logger",
@@ -766,16 +774,15 @@ dependencies = [
  "aptos-runtimes",
  "aptos-storage-interface",
  "aptos-types",
- "aptos-utils",
  "aptos-vm",
  "async-trait",
  "bcs 0.1.4",
  "bytes 1.6.0",
- "fail 0.5.1",
+ "fail",
  "futures",
  "hex",
  "hyper 0.14.30",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "mime",
  "mini-moka",
  "move-core-types",
@@ -788,31 +795,30 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "url",
 ]
 
 [[package]]
 name = "aptos-api-types"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-config",
  "aptos-crypto",
- "aptos-db-indexer",
  "aptos-framework",
  "aptos-logger",
  "aptos-openapi",
+ "aptos-resource-viewer",
  "aptos-storage-interface",
  "aptos-types",
  "aptos-vm",
  "async-trait",
  "bcs 0.1.4",
+ "bytes 1.6.0",
  "hex",
  "indoc",
  "move-binary-format",
  "move-core-types",
- "move-resource-viewer",
  "once_cell",
  "poem",
  "poem-openapi",
@@ -824,7 +830,7 @@ dependencies = [
 [[package]]
 name = "aptos-bcs-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "hex",
@@ -833,7 +839,7 @@ dependencies = [
 [[package]]
 name = "aptos-bitvec"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "serde",
  "serde_bytes",
@@ -842,7 +848,7 @@ dependencies = [
 [[package]]
 name = "aptos-block-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -860,35 +866,33 @@ dependencies = [
  "claims",
  "concurrent-queue",
  "crossbeam",
- "dashmap",
+ "dashmap 5.5.3",
  "derivative",
- "fail 0.5.1",
+ "fail",
  "move-binary-format",
  "move-core-types",
  "move-vm-types",
  "num_cpus",
  "once_cell",
- "parking_lot 0.12.3",
+ "parking_lot",
  "rand 0.7.3",
  "rayon",
  "scopeguard",
- "serde",
 ]
 
 [[package]]
 name = "aptos-block-partitioner"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-crypto",
  "aptos-logger",
  "aptos-metrics-core",
  "aptos-types",
  "bcs 0.1.4",
  "clap 4.5.9",
- "dashmap",
- "itertools 0.10.5",
+ "dashmap 5.5.3",
+ "itertools 0.12.1",
  "jemallocator",
  "move-core-types",
  "once_cell",
@@ -900,7 +904,7 @@ dependencies = [
 [[package]]
 name = "aptos-bounded-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "futures",
  "rustversion",
@@ -910,7 +914,7 @@ dependencies = [
 [[package]]
 name = "aptos-build-info"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "shadow-rs",
 ]
@@ -918,14 +922,13 @@ dependencies = [
 [[package]]
 name = "aptos-cached-packages"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-framework",
  "aptos-package-builder",
  "aptos-types",
  "bcs 0.1.4",
- "include_dir 0.7.4",
  "move-core-types",
  "once_cell",
 ]
@@ -933,11 +936,10 @@ dependencies = [
 [[package]]
 name = "aptos-channels"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-infallible",
- "aptos-logger",
  "aptos-metrics-core",
  "futures",
 ]
@@ -945,7 +947,7 @@ dependencies = [
 [[package]]
 name = "aptos-compression"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -957,11 +959,10 @@ dependencies = [
 [[package]]
 name = "aptos-config"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
- "aptos-crypto-derive",
  "aptos-global-constants",
  "aptos-logger",
  "aptos-secure-storage",
@@ -972,10 +973,8 @@ dependencies = [
  "bcs 0.1.4",
  "byteorder",
  "cfg-if",
- "cfg_block",
  "get_if_addrs",
  "maplit",
- "mirai-annotations",
  "num_cpus",
  "number_range",
  "poem-openapi",
@@ -991,7 +990,7 @@ dependencies = [
 [[package]]
 name = "aptos-consensus-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -1003,24 +1002,30 @@ dependencies = [
  "aptos-short-hex-str",
  "aptos-types",
  "bcs 0.1.4",
- "itertools 0.10.5",
+ "fail",
+ "futures",
+ "itertools 0.12.1",
+ "mini-moka",
  "mirai-annotations",
  "once_cell",
  "rand 0.7.3",
  "rayon",
  "serde",
+ "tokio",
 ]
 
 [[package]]
 name = "aptos-crypto"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
+ "aes-gcm",
  "anyhow",
  "aptos-crypto-derive",
  "ark-bn254",
  "ark-ec",
  "ark-ff 0.4.2",
+ "ark-groth16",
  "ark-std 0.4.0",
  "base64 0.13.1",
  "bcs 0.1.4",
@@ -1031,83 +1036,58 @@ dependencies = [
  "curve25519-dalek-ng",
  "digest 0.9.0",
  "ed25519-dalek",
+ "ff",
  "hex",
  "hkdf 0.10.0",
  "libsecp256k1",
  "merlin",
  "more-asserts",
+ "neptune",
  "num-bigint 0.3.3",
  "num-integer",
  "once_cell",
  "p256",
  "poseidon-ark",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
  "rand 0.7.3",
  "rand_core 0.5.1",
+ "ring 0.16.20",
  "serde",
  "serde-name",
  "serde_bytes",
  "sha2 0.10.8",
  "sha2 0.9.9",
+ "sha3",
  "signature 2.2.0",
  "static_assertions",
  "thiserror",
  "tiny-keccak",
+ "typenum",
  "x25519-dalek",
 ]
 
 [[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "aptos-data-client"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
-dependencies = [
- "aptos-config",
- "aptos-crypto",
- "aptos-id-generator",
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "aptos-netcore",
- "aptos-network",
- "aptos-storage-interface",
- "aptos-storage-service-client",
- "aptos-storage-service-types",
- "aptos-time-service",
- "aptos-types",
- "arc-swap",
- "async-trait",
- "dashmap",
- "futures",
- "itertools 0.10.5",
- "maplit",
- "ordered-float",
- "rand 0.8.5",
- "serde",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
 name = "aptos-db"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-accumulator",
  "aptos-config",
  "aptos-crypto",
  "aptos-db-indexer",
+ "aptos-db-indexer-schemas",
  "aptos-executor",
  "aptos-executor-types",
  "aptos-experimental-runtimes",
@@ -1116,78 +1096,82 @@ dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
  "aptos-proptest-helpers",
+ "aptos-resource-viewer",
  "aptos-rocksdb-options",
  "aptos-schemadb",
  "aptos-scratchpad",
  "aptos-storage-interface",
  "aptos-temppath",
  "aptos-types",
- "aptos-vm",
  "arc-swap",
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
  "claims",
- "dashmap",
+ "dashmap 5.5.3",
  "either",
- "itertools 0.10.5",
+ "hex",
+ "itertools 0.12.1",
  "lru 0.7.8",
  "move-core-types",
- "move-resource-viewer",
  "num-derive",
- "num_cpus",
  "once_cell",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
  "rayon",
  "serde",
  "static_assertions",
  "status-line",
- "thiserror",
 ]
 
 [[package]]
 name = "aptos-db-indexer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-config",
- "aptos-crypto",
- "aptos-infallible",
+ "aptos-db-indexer-schemas",
  "aptos-logger",
- "aptos-metrics-core",
+ "aptos-resource-viewer",
  "aptos-rocksdb-options",
  "aptos-schemadb",
- "aptos-scratchpad",
  "aptos-storage-interface",
  "aptos-types",
- "aptos-vm",
+ "bcs 0.1.4",
+ "bytes 1.6.0",
+ "dashmap 5.5.3",
+ "move-core-types",
+]
+
+[[package]]
+name = "aptos-db-indexer-schemas"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
+dependencies = [
+ "anyhow",
+ "aptos-schemadb",
+ "aptos-storage-interface",
+ "aptos-types",
  "bcs 0.1.4",
  "byteorder",
- "bytes 1.6.0",
- "dashmap",
- "move-core-types",
- "move-resource-viewer",
- "num-derive",
  "serde",
 ]
 
 [[package]]
 name = "aptos-dkg"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
  "aptos-crypto-derive",
  "bcs 0.1.4",
- "bellman",
  "blst",
  "blstrs",
  "criterion",
- "ff 0.13.0",
- "group 0.13.0",
+ "ff",
+ "group",
  "hex",
  "merlin",
  "more-asserts",
@@ -1208,9 +1192,8 @@ dependencies = [
 [[package]]
 name = "aptos-drop-helper"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "aptos-experimental-runtimes",
  "aptos-infallible",
  "aptos-metrics-core",
  "once_cell",
@@ -1220,7 +1203,7 @@ dependencies = [
 [[package]]
 name = "aptos-event-notifications"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-channels",
@@ -1228,7 +1211,6 @@ dependencies = [
  "aptos-infallible",
  "aptos-storage-interface",
  "aptos-types",
- "async-trait",
  "futures",
  "serde",
  "thiserror",
@@ -1237,10 +1219,9 @@ dependencies = [
 [[package]]
 name = "aptos-executor"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "aptos-block-partitioner",
  "aptos-consensus-types",
  "aptos-crypto",
  "aptos-drop-helper",
@@ -1251,18 +1232,17 @@ dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
  "aptos-scratchpad",
- "aptos-secure-net",
+ "aptos-sdk",
  "aptos-storage-interface",
  "aptos-types",
  "aptos-vm",
  "arr_macro",
  "bcs 0.1.4",
  "bytes 1.6.0",
- "dashmap",
- "fail 0.5.1",
- "itertools 0.10.5",
+ "dashmap 5.5.3",
+ "fail",
+ "itertools 0.12.1",
  "move-core-types",
- "num_cpus",
  "once_cell",
  "rayon",
  "serde",
@@ -1271,20 +1251,16 @@ dependencies = [
 [[package]]
 name = "aptos-executor-service"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-block-partitioner",
  "aptos-config",
- "aptos-crypto",
- "aptos-executor-types",
  "aptos-infallible",
  "aptos-language-e2e-tests",
  "aptos-logger",
  "aptos-metrics-core",
  "aptos-node-resource-metrics",
  "aptos-push-metrics",
- "aptos-retrier",
  "aptos-secure-net",
  "aptos-storage-interface",
  "aptos-types",
@@ -1293,22 +1269,19 @@ dependencies = [
  "clap 4.5.9",
  "crossbeam-channel",
  "ctrlc",
- "dashmap",
- "itertools 0.10.5",
+ "dashmap 5.5.3",
+ "itertools 0.12.1",
  "num_cpus",
  "once_cell",
- "rand 0.7.3",
  "rayon",
  "serde",
- "serde_json",
  "thiserror",
- "tokio",
 ]
 
 [[package]]
 name = "aptos-executor-test-helpers"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1318,7 +1291,6 @@ dependencies = [
  "aptos-db",
  "aptos-executor",
  "aptos-executor-types",
- "aptos-genesis",
  "aptos-sdk",
  "aptos-storage-interface",
  "aptos-temppath",
@@ -1331,10 +1303,9 @@ dependencies = [
 [[package]]
 name = "aptos-executor-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "aptos-block-partitioner",
  "aptos-crypto",
  "aptos-drop-helper",
  "aptos-scratchpad",
@@ -1343,8 +1314,7 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.4",
  "criterion",
- "dashmap",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "once_cell",
  "serde",
  "thiserror",
@@ -1353,7 +1323,7 @@ dependencies = [
 [[package]]
 name = "aptos-experimental-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-runtimes",
  "core_affinity",
@@ -1366,7 +1336,7 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-core"
 version = "2.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1400,7 +1370,7 @@ dependencies = [
 [[package]]
 name = "aptos-faucet-metrics-server"
 version = "2.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -1409,13 +1379,12 @@ dependencies = [
  "poem",
  "prometheus",
  "serde",
- "serde_json",
 ]
 
 [[package]]
 name = "aptos-framework"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1425,7 +1394,6 @@ dependencies = [
  "aptos-move-stdlib",
  "aptos-native-interface",
  "aptos-sdk-builder",
- "aptos-table-natives",
  "aptos-types",
  "aptos-vm-types",
  "ark-bls12-381",
@@ -1434,11 +1402,9 @@ dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
  "ark-std 0.4.0",
- "base64 0.13.1",
  "bcs 0.1.4",
  "better_any",
  "blake2-rfc",
- "blst",
  "bulletproofs",
  "byteorder",
  "clap 4.5.9",
@@ -1447,8 +1413,7 @@ dependencies = [
  "either",
  "flate2",
  "hex",
- "include_dir 0.7.4",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "libsecp256k1",
  "log",
  "lru 0.7.8",
@@ -1471,12 +1436,9 @@ dependencies = [
  "once_cell",
  "rand 0.7.3",
  "rand_core 0.5.1",
- "rayon",
  "ripemd",
  "serde",
  "serde_bytes",
- "serde_json",
- "serde_yaml 0.8.26",
  "sha2 0.10.8",
  "sha2 0.9.9",
  "sha3",
@@ -1490,7 +1452,7 @@ dependencies = [
 [[package]]
 name = "aptos-gas-algebra"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "either",
  "move-core-types",
@@ -1499,14 +1461,13 @@ dependencies = [
 [[package]]
 name = "aptos-gas-meter"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
  "aptos-logger",
  "aptos-types",
  "aptos-vm-types",
- "bcs 0.1.4",
  "move-binary-format",
  "move-core-types",
  "move-vm-types",
@@ -1515,16 +1476,13 @@ dependencies = [
 [[package]]
 name = "aptos-gas-profiling"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "aptos-framework",
  "aptos-gas-algebra",
  "aptos-gas-meter",
- "aptos-package-builder",
  "aptos-types",
  "aptos-vm-types",
- "bcs 0.1.4",
  "handlebars",
  "inferno",
  "move-binary-format",
@@ -1538,12 +1496,10 @@ dependencies = [
 [[package]]
 name = "aptos-gas-schedule"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-global-constants",
- "aptos-types",
- "either",
  "move-core-types",
  "move-vm-types",
  "paste",
@@ -1551,49 +1507,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "aptos-genesis"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
-dependencies = [
- "anyhow",
- "aptos-cached-packages",
- "aptos-config",
- "aptos-crypto",
- "aptos-db",
- "aptos-executor",
- "aptos-framework",
- "aptos-keygen",
- "aptos-logger",
- "aptos-storage-interface",
- "aptos-temppath",
- "aptos-types",
- "aptos-vm",
- "aptos-vm-genesis",
- "bcs 0.1.4",
- "rand 0.7.3",
- "serde",
- "serde_yaml 0.8.26",
-]
-
-[[package]]
 name = "aptos-global-constants"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 
 [[package]]
 name = "aptos-id-generator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 
 [[package]]
 name = "aptos-infallible"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 
 [[package]]
 name = "aptos-jellyfish-merkle"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1607,12 +1538,12 @@ dependencies = [
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "num-derive",
  "num-traits",
  "once_cell",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
  "rayon",
  "serde",
  "thiserror",
@@ -1621,7 +1552,7 @@ dependencies = [
 [[package]]
 name = "aptos-keygen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -1631,11 +1562,10 @@ dependencies = [
 [[package]]
 name = "aptos-language-e2e-tests"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
- "aptos-aggregator",
  "aptos-bitvec",
  "aptos-block-executor",
  "aptos-cached-packages",
@@ -1646,8 +1576,6 @@ dependencies = [
  "aptos-gas-profiling",
  "aptos-gas-schedule",
  "aptos-keygen",
- "aptos-memory-usage-tracker",
- "aptos-native-interface",
  "aptos-proptest-helpers",
  "aptos-temppath",
  "aptos-types",
@@ -1658,18 +1586,18 @@ dependencies = [
  "bcs 0.1.4",
  "bytes 1.6.0",
  "goldenfile",
- "hex",
  "move-binary-format",
  "move-command-line-common",
  "move-core-types",
  "move-ir-compiler",
  "move-model",
+ "move-vm-runtime",
  "move-vm-types",
  "num_cpus",
  "once_cell",
  "petgraph 0.5.1",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
  "rand 0.7.3",
  "rayon",
  "serde",
@@ -1678,37 +1606,38 @@ dependencies = [
 [[package]]
 name = "aptos-ledger"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-crypto",
  "aptos-types",
  "hex",
  "ledger-apdu",
  "ledger-transport-hid",
- "once_cell",
  "thiserror",
 ]
 
 [[package]]
 name = "aptos-log-derive"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
 [[package]]
 name = "aptos-logger"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-infallible",
  "aptos-log-derive",
+ "aptos-node-identity",
  "backtrace",
  "chrono",
  "erased-serde",
+ "futures",
  "hostname",
  "once_cell",
  "prometheus",
@@ -1716,6 +1645,7 @@ dependencies = [
  "serde_json",
  "strum 0.24.1",
  "strum_macros 0.24.3",
+ "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]
@@ -1723,12 +1653,11 @@ dependencies = [
 [[package]]
 name = "aptos-memory-usage-tracker"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-meter",
  "aptos-types",
- "aptos-vm-types",
  "move-binary-format",
  "move-core-types",
  "move-vm-types",
@@ -1737,7 +1666,7 @@ dependencies = [
 [[package]]
 name = "aptos-mempool"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-bounded-executor",
@@ -1745,7 +1674,6 @@ dependencies = [
  "aptos-config",
  "aptos-consensus-types",
  "aptos-crypto",
- "aptos-data-client",
  "aptos-event-notifications",
  "aptos-infallible",
  "aptos-logger",
@@ -1753,22 +1681,23 @@ dependencies = [
  "aptos-metrics-core",
  "aptos-netcore",
  "aptos-network",
+ "aptos-peer-monitoring-service-types",
  "aptos-runtimes",
  "aptos-short-hex-str",
  "aptos-storage-interface",
+ "aptos-time-service",
  "aptos-types",
  "aptos-vm-validator",
- "async-trait",
  "bcs 0.1.4",
- "fail 0.5.1",
+ "fail",
  "futures",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "maplit",
+ "num_cpus",
  "once_cell",
  "rand 0.7.3",
  "rayon",
  "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "tokio-stream",
@@ -1777,9 +1706,8 @@ dependencies = [
 [[package]]
 name = "aptos-mempool-notifications"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "aptos-runtimes",
  "aptos-types",
  "async-trait",
  "futures",
@@ -1791,7 +1719,7 @@ dependencies = [
 [[package]]
 name = "aptos-memsocket"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-infallible",
  "bytes 1.6.0",
@@ -1802,7 +1730,7 @@ dependencies = [
 [[package]]
 name = "aptos-metrics-core"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "prometheus",
@@ -1811,45 +1739,32 @@ dependencies = [
 [[package]]
 name = "aptos-move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-gas-schedule",
  "aptos-native-interface",
- "either",
- "hex",
- "log",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
  "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-prover",
  "move-vm-runtime",
  "move-vm-types",
  "sha2 0.9.9",
  "sha3",
  "smallvec",
- "walkdir",
 ]
 
 [[package]]
 name = "aptos-mvhashmap"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
  "aptos-crypto",
- "aptos-infallible",
  "aptos-types",
  "aptos-vm-types",
- "bcs 0.1.4",
  "bytes 1.6.0",
  "claims",
  "crossbeam",
- "dashmap",
+ "dashmap 5.5.3",
  "derivative",
  "move-binary-format",
  "move-core-types",
@@ -1860,7 +1775,7 @@ dependencies = [
 [[package]]
 name = "aptos-native-interface"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -1877,7 +1792,7 @@ dependencies = [
 [[package]]
 name = "aptos-netcore"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
@@ -1894,7 +1809,7 @@ dependencies = [
 [[package]]
 name = "aptos-network"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -1902,7 +1817,6 @@ dependencies = [
  "aptos-compression",
  "aptos-config",
  "aptos-crypto",
- "aptos-crypto-derive",
  "aptos-id-generator",
  "aptos-infallible",
  "aptos-logger",
@@ -1910,7 +1824,6 @@ dependencies = [
  "aptos-netcore",
  "aptos-num-variants",
  "aptos-peer-monitoring-service-types",
- "aptos-rate-limiter",
  "aptos-short-hex-str",
  "aptos-time-service",
  "aptos-types",
@@ -1921,28 +1834,38 @@ dependencies = [
  "futures",
  "futures-util",
  "hex",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "maplit",
  "once_cell",
  "ordered-float",
  "pin-project 1.1.5",
  "rand 0.7.3",
  "rand 0.8.5",
- "ring 0.16.20",
  "serde",
  "serde_bytes",
  "serde_json",
- "sha2 0.9.9",
  "thiserror",
  "tokio",
  "tokio-retry",
+ "tokio-stream",
  "tokio-util",
+]
+
+[[package]]
+name = "aptos-node-identity"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
+dependencies = [
+ "anyhow",
+ "aptos-types",
+ "claims",
+ "once_cell",
 ]
 
 [[package]]
 name = "aptos-node-resource-metrics"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-build-info",
  "aptos-infallible",
@@ -1958,17 +1881,17 @@ dependencies = [
 [[package]]
 name = "aptos-num-variants"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
 [[package]]
 name = "aptos-openapi"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -1981,11 +1904,11 @@ dependencies = [
 [[package]]
 name = "aptos-package-builder"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-framework",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "move-command-line-common",
  "move-package",
  "tempfile",
@@ -1994,12 +1917,11 @@ dependencies = [
 [[package]]
 name = "aptos-peer-monitoring-service-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-config",
  "aptos-types",
  "bcs 0.1.4",
- "cfg_block",
  "serde",
  "thiserror",
 ]
@@ -2007,22 +1929,21 @@ dependencies = [
 [[package]]
 name = "aptos-proptest-helpers"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "crossbeam",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
 ]
 
 [[package]]
 name = "aptos-protos"
 version = "1.3.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "futures-core",
  "pbjson",
  "prost",
- "prost-types",
  "serde",
  "tonic",
 ]
@@ -2030,7 +1951,7 @@ dependencies = [
 [[package]]
 name = "aptos-proxy"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "ipnet",
 ]
@@ -2038,7 +1959,7 @@ dependencies = [
 [[package]]
 name = "aptos-push-metrics"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -2047,23 +1968,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "aptos-rate-limiter"
+name = "aptos-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "aptos-infallible",
- "aptos-logger",
- "aptos-metrics-core",
- "futures",
- "pin-project 1.1.5",
- "tokio",
- "tokio-util",
+ "anyhow",
+ "aptos-types",
+ "aptos-vm",
+ "move-binary-format",
+ "move-bytecode-utils",
+ "move-core-types",
+ "move-resource-viewer",
 ]
 
 [[package]]
 name = "aptos-rest-client"
 version = "0.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -2073,11 +1994,8 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.4",
  "bytes 1.6.0",
- "futures",
  "hex",
- "move-binary-format",
  "move-core-types",
- "poem-openapi",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -2087,18 +2005,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "aptos-retrier"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
-dependencies = [
- "aptos-logger",
- "tokio",
-]
-
-[[package]]
 name = "aptos-rocksdb-options"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-config",
  "rocksdb",
@@ -2107,7 +2016,7 @@ dependencies = [
 [[package]]
 name = "aptos-runtimes"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "rayon",
  "tokio",
@@ -2116,7 +2025,7 @@ dependencies = [
 [[package]]
 name = "aptos-schemadb"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -2133,17 +2042,16 @@ dependencies = [
 [[package]]
 name = "aptos-scratchpad"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-crypto",
  "aptos-drop-helper",
  "aptos-experimental-runtimes",
  "aptos-infallible",
- "aptos-logger",
  "aptos-metrics-core",
  "aptos-types",
  "bitvec 1.0.1",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "once_cell",
  "proptest",
  "rayon",
@@ -2153,28 +2061,29 @@ dependencies = [
 [[package]]
 name = "aptos-sdk"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "aptos-api-types",
  "aptos-cached-packages",
  "aptos-crypto",
  "aptos-global-constants",
  "aptos-ledger",
  "aptos-rest-client",
  "aptos-types",
+ "base64 0.13.1",
  "bcs 0.1.4",
  "ed25519-dalek-bip32",
+ "hex",
  "move-core-types",
  "rand_core 0.5.1",
- "serde",
+ "serde_json",
  "tiny-bip39",
 ]
 
 [[package]]
 name = "aptos-sdk-builder"
 version = "0.2.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -2183,7 +2092,6 @@ dependencies = [
  "heck 0.4.1",
  "move-core-types",
  "once_cell",
- "regex",
  "serde-generate",
  "serde-reflection",
  "serde_yaml 0.8.26",
@@ -2193,12 +2101,11 @@ dependencies = [
 [[package]]
 name = "aptos-secure-net"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
  "aptos-protos",
- "aptos-retrier",
  "bcs 0.1.4",
  "crossbeam-channel",
  "once_cell",
@@ -2212,9 +2119,8 @@ dependencies = [
 [[package]]
 name = "aptos-secure-storage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-crypto",
  "aptos-infallible",
  "aptos-logger",
@@ -2234,7 +2140,7 @@ dependencies = [
 [[package]]
 name = "aptos-short-hex-str"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -2245,19 +2151,18 @@ dependencies = [
 [[package]]
 name = "aptos-speculative-state-helper"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-infallible",
  "crossbeam",
- "once_cell",
  "rayon",
 ]
 
 [[package]]
 name = "aptos-storage-interface"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2268,70 +2173,33 @@ dependencies = [
  "aptos-secure-net",
  "aptos-types",
  "aptos-vm",
- "arr_macro",
  "bcs 0.1.4",
- "bytes 1.6.0",
  "crossbeam-channel",
- "dashmap",
- "itertools 0.10.5",
+ "dashmap 5.5.3",
  "move-core-types",
  "once_cell",
- "parking_lot 0.12.3",
+ "parking_lot",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
  "rayon",
- "rocksdb",
  "serde",
  "thiserror",
  "threadpool",
 ]
 
 [[package]]
-name = "aptos-storage-service-client"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
-dependencies = [
- "aptos-channels",
- "aptos-config",
- "aptos-network",
- "aptos-storage-service-types",
- "aptos-types",
- "async-trait",
- "thiserror",
-]
-
-[[package]]
-name = "aptos-storage-service-types"
-version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
-dependencies = [
- "aptos-compression",
- "aptos-config",
- "aptos-crypto",
- "aptos-time-service",
- "aptos-types",
- "bcs 0.1.4",
- "num-traits",
- "serde",
- "thiserror",
-]
-
-[[package]]
 name = "aptos-table-natives"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-gas-schedule",
  "aptos-native-interface",
- "aptos-types",
  "better_any",
  "bytes 1.6.0",
  "move-binary-format",
  "move-core-types",
  "move-table-extension",
  "move-vm-runtime",
- "move-vm-test-utils",
  "move-vm-types",
  "sha3",
  "smallvec",
@@ -2340,7 +2208,7 @@ dependencies = [
 [[package]]
 name = "aptos-temppath"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -2349,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "aptos-time-service"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-infallible",
  "enum_dispatch",
@@ -2362,7 +2230,7 @@ dependencies = [
 [[package]]
 name = "aptos-types"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -2370,6 +2238,7 @@ dependencies = [
  "aptos-crypto-derive",
  "aptos-dkg",
  "aptos-experimental-runtimes",
+ "aptos-infallible",
  "ark-bn254",
  "ark-ff 0.4.2",
  "ark-groth16",
@@ -2378,25 +2247,31 @@ dependencies = [
  "base64 0.13.1",
  "bcs 0.1.4",
  "bytes 1.6.0",
- "chrono",
- "derivative",
  "fixed",
+ "fxhash",
+ "hashbrown 0.14.5",
  "hex",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "jsonwebtoken",
  "move-binary-format",
+ "move-bytecode-verifier",
  "move-core-types",
  "move-table-extension",
+ "move-vm-runtime",
  "move-vm-types",
  "num-bigint 0.3.3",
  "num-derive",
  "num-traits",
  "once_cell",
  "passkey-types",
+ "poem-openapi",
+ "poem-openapi-derive",
  "proptest",
- "proptest-derive 0.4.0",
+ "proptest-derive",
+ "quick_cache",
  "rand 0.7.3",
  "rayon",
+ "ring 0.16.20",
  "rsa",
  "serde",
  "serde-big-array",
@@ -2407,18 +2282,17 @@ dependencies = [
  "strum 0.24.1",
  "strum_macros 0.24.3",
  "thiserror",
- "tiny-keccak",
 ]
 
 [[package]]
 name = "aptos-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 
 [[package]]
 name = "aptos-vault-client"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-crypto",
  "base64 0.13.1",
@@ -2434,11 +2308,10 @@ dependencies = [
 [[package]]
 name = "aptos-vm"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
- "aptos-bitvec",
  "aptos-block-executor",
  "aptos-block-partitioner",
  "aptos-crypto",
@@ -2460,49 +2333,43 @@ dependencies = [
  "aptos-utils",
  "aptos-vm-logging",
  "aptos-vm-types",
- "base64-url",
+ "ark-bn254",
+ "ark-groth16",
  "bcs 0.1.4",
  "bytes 1.6.0",
  "claims",
  "crossbeam-channel",
- "dashmap",
  "derive_more",
- "fail 0.5.1",
+ "fail",
+ "futures",
  "hex",
- "jsonwebtoken",
  "move-binary-format",
- "move-bytecode-utils",
- "move-bytecode-verifier",
  "move-core-types",
  "move-vm-runtime",
  "move-vm-types",
  "num_cpus",
  "once_cell",
- "ouroboros 0.15.6",
+ "ouroboros",
  "rand 0.7.3",
  "rayon",
  "serde",
- "serde_json",
- "smallvec",
- "tracing",
 ]
 
 [[package]]
 name = "aptos-vm-genesis"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "aptos-cached-packages",
  "aptos-crypto",
  "aptos-framework",
  "aptos-gas-schedule",
  "aptos-types",
  "aptos-vm",
- "aptos-vm-types",
  "bcs 0.1.4",
  "bytes 1.6.0",
  "move-core-types",
+ "move-vm-runtime",
  "move-vm-types",
  "once_cell",
  "rand 0.7.3",
@@ -2512,7 +2379,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-logging"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "aptos-crypto",
  "aptos-logger",
@@ -2527,7 +2394,7 @@ dependencies = [
 [[package]]
 name = "aptos-vm-types"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2540,6 +2407,7 @@ dependencies = [
  "either",
  "move-binary-format",
  "move-core-types",
+ "move-vm-runtime",
  "move-vm-types",
  "rand 0.7.3",
  "serde",
@@ -2548,16 +2416,16 @@ dependencies = [
 [[package]]
 name = "aptos-vm-validator"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "aptos-event-notifications",
  "aptos-logger",
  "aptos-storage-interface",
  "aptos-types",
  "aptos-vm",
  "aptos-vm-logging",
- "fail 0.5.1",
+ "fail",
+ "rand 0.7.3",
 ]
 
 [[package]]
@@ -2680,7 +2548,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db02d390bf6643fb404d3d22d31aee1c4bc4459600aef9113833d17e786c6e44"
 dependencies = [
- "quote 1.0.36",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -2690,7 +2558,7 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ed4aa4fe255d0bc6d79373f7e31d2ea147bcf486cba1be5ba7ea85abdb92348"
 dependencies = [
- "quote 1.0.36",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -2702,7 +2570,7 @@ checksum = "db2fd794a08ccb318058009eefdf15bcaaaaf6f8161eb3345f907222bac38b20"
 dependencies = [
  "num-bigint 0.4.6",
  "num-traits",
- "quote 1.0.36",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -2714,8 +2582,8 @@ checksum = "7abe79b0e4288889c4574159ab790824d0033b9fdcb2a112a3182fac2e514565"
 dependencies = [
  "num-bigint 0.4.6",
  "num-traits",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -2789,8 +2657,8 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae3281bc6d0fd7e549af32b52511e1302185bd688fd3359fa36423346ff682ea"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -2845,7 +2713,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c6368f9ae5c6ec403ca910327ae0c9437b0a85255b6950c90d497e6177f6e5e"
 dependencies = [
  "proc-macro-hack",
- "quote 1.0.36",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -2878,6 +2746,17 @@ checksum = "96d30a06541fbafbc7f82ed10c06164cfbd2c401138f6addd8404629c4b16711"
 
 [[package]]
 name = "async-channel"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
+dependencies = [
+ "concurrent-queue",
+ "event-listener 2.5.3",
+ "futures-core",
+]
+
+[[package]]
+name = "async-channel"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89b47800b0be77592da0afd425cc03468052844aff33b84e33cc696f64e77b6a"
@@ -2889,13 +2768,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-io"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fc5b45d93ef0529756f812ca52e44c221b35341892d3dcc34132ac02f3dd2af"
+dependencies = [
+ "async-lock",
+ "autocfg",
+ "cfg-if",
+ "concurrent-queue",
+ "futures-lite",
+ "log",
+ "parking",
+ "polling",
+ "rustix 0.37.27",
+ "slab",
+ "socket2 0.4.10",
+ "waker-fn",
+]
+
+[[package]]
+name = "async-lock"
+version = "2.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "287272293e9d8c41773cec55e365490fe034813a2f172f502d6ddcf75b2f582b"
+dependencies = [
+ "event-listener 2.5.3",
+]
+
+[[package]]
 name = "async-recursion"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b43422f69d8ff38f95f1b2bb76517c91589a924d1559a0e935d7c8ce0274c11"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -2916,8 +2824,8 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "16e62a023e7c117e27523144c5d2459f4397fcc3cab0085af8e2224f643a0193"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -2927,8 +2835,8 @@ version = "0.1.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e0c28dcc82d7c8ead5cb13beb15405b57b8546e93215673ff8ca0349a028107"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -2966,8 +2874,8 @@ version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c87f3f15e7794432337fc718554eaa4dc8f04c9677a950ffe366f20a162ae42"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -3074,15 +2982,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
-name = "base64-url"
-version = "2.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb9fb9fb058cc3063b5fc88d9a21eefa2735871498a04e1650da76ed511c8569"
-dependencies = [
- "base64 0.21.7",
-]
-
-[[package]]
 name = "base64ct"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3123,18 +3022,27 @@ dependencies = [
 ]
 
 [[package]]
-name = "bellman"
-version = "0.13.1"
+name = "bellpepper"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4dd656ef4fdf7debb6d87d4dd92642fcbcdb78cbf6600c13e25c87e4d1a3807"
+checksum = "9ae286c2cb403324ab644c7cc68dceb25fe52ca9429908a726d7ed272c1edf7b"
 dependencies = [
- "bitvec 1.0.1",
+ "bellpepper-core",
+ "byteorder",
+ "ff",
+]
+
+[[package]]
+name = "bellpepper-core"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d8abb418570756396d722841b19edfec21d4e89e1cf8990610663040ecb1aea"
+dependencies = [
  "blake2s_simd",
  "byteorder",
- "ff 0.12.1",
- "group 0.12.1",
- "rand_core 0.6.4",
- "subtle",
+ "ff",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -3152,8 +3060,8 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3deeecb812ca5300b7d3f66f730cc2ebd3511c3d36c691dd79c165d5b19a26e3"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -3174,19 +3082,18 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.65.1"
+version = "0.69.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
+checksum = "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags 2.6.0",
  "cexpr",
  "clang-sys",
+ "itertools 0.12.1",
  "lazy_static",
  "lazycell",
- "peeking_take_while",
- "prettyplease",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "regex",
  "rustc-hash",
  "shlex",
@@ -3273,6 +3180,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake2b_simd"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23285ad32269793932e830392f2fe2f83e26488fd3ec778883a93c8323735780"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.4",
+ "constant_time_eq 0.3.0",
+]
+
+[[package]]
 name = "blake2s_simd"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3324,7 +3242,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "358358b19add120a5afc3dd1c8e9161d6d06c44dfec2ef8da58b7fe5c369c90d"
 dependencies = [
  "cid",
- "dashmap",
+ "dashmap 5.5.3",
  "multihash",
  "thiserror",
 ]
@@ -3349,8 +3267,8 @@ checksum = "7a8a8ed6fefbeef4a8c7b460e4110e12c5e22a5b7cf32621aae6ad650c4dcf29"
 dependencies = [
  "blst",
  "byte-slice-cast",
- "ff 0.13.0",
- "group 0.13.0",
+ "ff",
+ "group",
  "pairing",
  "rand_core 0.6.4",
  "serde",
@@ -3386,7 +3304,7 @@ dependencies = [
  "borsh-derive-internal",
  "borsh-schema-derive-internal",
  "proc-macro-crate 0.1.5",
- "proc-macro2 1.0.86",
+ "proc-macro2",
  "syn 1.0.109",
 ]
 
@@ -3398,8 +3316,8 @@ checksum = "c3ef8005764f53cd4dca619f5bf64cafd4664dada50ece25e4d81de54c80cc0b"
 dependencies = [
  "once_cell",
  "proc-macro-crate 3.1.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
  "syn_derive",
 ]
@@ -3410,8 +3328,8 @@ version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afb438156919598d2c7bad7e1c0adf3d26ed3840dbc010db1a882a65583ca2fb"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -3421,9 +3339,37 @@ version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "634205cc43f74a1b9046ef87c4540ebda95696ec0f315024860cad7c5b0f5ccd"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "bridge-cli"
+version = "0.3.0"
+
+[[package]]
+name = "bridge-service"
+version = "0.3.0"
+
+[[package]]
+name = "bridge-shared"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "dashmap 6.0.1",
+ "delegate",
+ "derive_more",
+ "futures",
+ "futures-time",
+ "futures-timer",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "static_str_ops",
+ "test-log",
+ "thiserror",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -3479,7 +3425,7 @@ name = "buildtime-macros"
 version = "0.3.0"
 dependencies = [
  "buildtime-helpers",
- "quote 1.0.36",
+ "quote",
  "syn 2.0.70",
  "tonic-build",
 ]
@@ -3793,12 +3739,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "613afe47fcd5fac7ccf1db93babcb082c5994d996f20b8b159f2ad1658eb5724"
 
 [[package]]
-name = "cfg_block"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18758054972164c3264f7c8386f5fc6da6114cb46b619fd365d4e3b2dc3ae487"
-
-[[package]]
 name = "chrono"
 version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3954,8 +3894,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bac35c6dafb060fd4d275d9a4ffae97917c13a6327903a8be2153cd964f7085"
 dependencies = [
  "heck 0.5.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -4113,9 +4053,9 @@ version = "0.2.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7f6ff08fd20f4f299298a28e2dfa8a8ba1036e6cd2460ac1de7b425d76f2500"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "unicode-xid 0.2.4",
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
 ]
 
 [[package]]
@@ -4337,7 +4277,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio",
- "parking_lot 0.12.3",
+ "parking_lot",
  "signal-hook",
  "signal-hook-mio",
  "winapi 0.3.9",
@@ -4353,7 +4293,7 @@ dependencies = [
  "crossterm_winapi",
  "libc",
  "mio",
- "parking_lot 0.12.3",
+ "parking_lot",
  "signal-hook",
  "signal-hook-mio",
  "winapi 0.3.9",
@@ -4512,8 +4452,8 @@ checksum = "109c1ca6e6b7f82cc233a97004ea8ed7ca123a9af07a8230878fcfda9b158bf0"
 dependencies = [
  "fnv",
  "ident_case",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "strsim 0.10.0",
  "syn 1.0.109",
 ]
@@ -4526,8 +4466,8 @@ checksum = "95133861a8032aaea082871032f5815eb9e98cef03fa916ab4500513994df9e5"
 dependencies = [
  "fnv",
  "ident_case",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "strsim 0.11.1",
  "syn 2.0.70",
 ]
@@ -4539,7 +4479,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4aab4dbc9f7611d8b55048a3a16d2d010c2c8334e46304b40ac1cc14bf3b48e"
 dependencies = [
  "darling_core 0.14.4",
- "quote 1.0.36",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -4550,7 +4490,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d336a2a514f6ccccaa3e09b02d41d35330c07ddf03a62165fcec10bb561c7806"
 dependencies = [
  "darling_core 0.20.10",
- "quote 1.0.36",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -4564,7 +4504,21 @@ dependencies = [
  "hashbrown 0.14.5",
  "lock_api",
  "once_cell",
- "parking_lot_core 0.9.10",
+ "parking_lot_core",
+]
+
+[[package]]
+name = "dashmap"
+version = "6.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "804c8821570c3f8b70230c2ba75ffa5c0f9a4189b9a432b6656c536712acae28"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -4635,6 +4589,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "delegate"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e018fccbeeb50ff26562ece792ed06659b9c2dae79ece77c4456bb10d9bf79b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.70",
+]
+
+[[package]]
 name = "der"
 version = "0.7.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4667,8 +4632,8 @@ version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -4678,8 +4643,8 @@ version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67e77553c4162a157adbf834ebae5b415acbecbeafc7a74b0e886657506a7611"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -4690,8 +4655,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f33878137e4dafd7fa914ad4e259e18a4e8e532b9617a2d0150262bf53abfce"
 dependencies = [
  "convert_case",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "rustc_version 0.4.0",
  "syn 2.0.70",
 ]
@@ -4887,9 +4852,9 @@ dependencies = [
  "base16ct",
  "crypto-bigint",
  "digest 0.10.7",
- "ff 0.13.0",
+ "ff",
  "generic-array",
- "group 0.13.0",
+ "group",
  "pem-rfc7468",
  "pkcs8",
  "rand_core 0.6.4",
@@ -4920,9 +4885,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa18ce2bc66555b3218614519ac839ddb759a7d6720732f979ef8d13be147ecd"
 dependencies = [
  "once_cell",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
+]
+
+[[package]]
+name = "env_filter"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a009aa4810eb158359dda09d0c87378e4bbb89b5a801f016885a4707ba24f7ea"
+dependencies = [
+ "log",
 ]
 
 [[package]]
@@ -4931,6 +4905,18 @@ version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
 dependencies = [
+ "log",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38b35839ba51819680ba087cd351788c9a3c476841207e0b8cee0b04722343b9"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "env_filter",
  "log",
 ]
 
@@ -4976,6 +4962,12 @@ checksum = "b90ca2580b73ab6a1f724b76ca11ab632df820fd6040c336200d2c1df7b3c82c"
 
 [[package]]
 name = "event-listener"
+version = "2.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
+
+[[package]]
+name = "event-listener"
 version = "5.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6032be9bd27023a771701cc49f9f053c751055f71efb2e0ae5c15809093675ba"
@@ -4991,7 +4983,7 @@ version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f214dc438f977e6d4e3500aaa277f5ad94ca83fbbd9b1a15713ce2344ccc5a1"
 dependencies = [
- "event-listener",
+ "event-listener 5.3.1",
  "pin-project-lite",
 ]
 
@@ -5003,17 +4995,6 @@ checksum = "7cd915d99f24784cdc19fd37ef22b97e3ff0ae756c7e492e9fbfe897d61e2aec"
 dependencies = [
  "indenter",
  "once_cell",
-]
-
-[[package]]
-name = "fail"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be3c61c59fdc91f5dbc3ea31ee8623122ce80057058be560654c5d410d181a6"
-dependencies = [
- "lazy_static",
- "log",
- "rand 0.7.3",
 ]
 
 [[package]]
@@ -5034,6 +5015,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a88c69768c0a15262df21899142bc6df9b9b823546d4b4b9a7bc2d6c448ec6fd"
 dependencies = [
  "hashbrown 0.13.2",
+]
+
+[[package]]
+name = "fastrand"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
+dependencies = [
+ "instant",
 ]
 
 [[package]]
@@ -5064,24 +5054,31 @@ dependencies = [
 
 [[package]]
 name = "ff"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d013fc25338cc558c5c2cfbad646908fb23591e2404481826742b651c9af7160"
-dependencies = [
- "bitvec 1.0.1",
- "rand_core 0.6.4",
- "subtle",
-]
-
-[[package]]
-name = "ff"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
  "bitvec 1.0.1",
+ "byteorder",
+ "ff_derive",
  "rand_core 0.6.4",
  "subtle",
+]
+
+[[package]]
+name = "ff_derive"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9f54704be45ed286151c5e11531316eaef5b8f5af7d597b806fdb8af108d84a"
+dependencies = [
+ "addchain",
+ "cfg-if",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -5272,13 +5269,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a44623e20b9681a318efdd71c299b6b222ed6f231972bfe2f224ebad6311f0c1"
 
 [[package]]
+name = "futures-lite"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49a9d51ce47660b1e808d3c990b4709f2f415d928835a17dfd16991515c46bce"
+dependencies = [
+ "fastrand 1.9.0",
+ "futures-core",
+ "futures-io",
+ "memchr",
+ "parking",
+ "pin-project-lite",
+ "waker-fn",
+]
+
+[[package]]
 name = "futures-macro"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "87750cf4b7a4c0625b1529e4c543c2182106e4dedc60a2a6455e00d212c489ac"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -5293,6 +5305,18 @@ name = "futures-task"
 version = "0.3.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38d84fa142264698cdce1a9f9172cf383a0c82de1bddcf3092901442c4097004"
+
+[[package]]
+name = "futures-time"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6404853a6824881fe5f7d662d147dc4e84ecd2259ba0378f272a71dab600758a"
+dependencies = [
+ "async-channel 1.9.0",
+ "async-io",
+ "futures-core",
+ "pin-project-lite",
+]
 
 [[package]]
 name = "futures-timer"
@@ -5337,6 +5361,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "gcc"
 version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5351,6 +5384,18 @@ dependencies = [
  "typenum",
  "version_check",
  "zeroize",
+]
+
+[[package]]
+name = "gensym"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "913dce4c5f06c2ea40fc178c06f777ac89fc6b1383e90c254fafb1abe4ba3c82"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.70",
+ "uuid",
 ]
 
 [[package]]
@@ -5487,22 +5532,11 @@ dependencies = [
 
 [[package]]
 name = "group"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dfbfb3a6cfbd390d5c9564ab283a0349b9b9fcd46a706c1eb10e0db70bfbac7"
-dependencies = [
- "ff 0.12.1",
- "rand_core 0.6.4",
- "subtle",
-]
-
-[[package]]
-name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0f9ef7462f7c099f518d754361858f86d8a07af53ba9af0fe635bbccb151a63"
 dependencies = [
- "ff 0.13.0",
+ "ff",
  "rand 0.8.5",
  "rand_core 0.6.4",
  "rand_xorshift",
@@ -5868,7 +5902,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2",
+ "socket2 0.5.7",
  "tokio",
  "tower-service",
  "tracing",
@@ -5967,7 +6001,7 @@ dependencies = [
  "http-body 1.0.0",
  "hyper 1.4.1",
  "pin-project-lite",
- "socket2",
+ "socket2 0.5.7",
  "tokio",
  "tower",
  "tower-service",
@@ -6099,8 +6133,8 @@ version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11d7a9f6330b71fea57921c9b61c47ee6e84f72d394754eff6163ae67e7395eb"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -6116,16 +6150,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "include_dir"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "923d117408f1e49d914f1a379a309cffe4f18c05cf4e3d12e613a15fc81bd0dd"
-dependencies = [
- "glob",
- "include_dir_macros",
-]
-
-[[package]]
 name = "include_dir_impl"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6133,19 +6157,9 @@ checksum = "0a0c890c85da4bab7bce4204c707396bbd3c6c8a681716a51c8814cfc2b682df"
 dependencies = [
  "anyhow",
  "proc-macro-hack",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "include_dir_macros"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cab85a7ed0bd5f0e76d93846e0147172bed2e2d3f859bcc33a8d9699cad1a75"
-dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
 ]
 
 [[package]]
@@ -6192,8 +6206,8 @@ dependencies = [
  "clap 4.5.9",
  "crossbeam-channel",
  "crossbeam-utils",
- "dashmap",
- "env_logger",
+ "dashmap 5.5.3",
+ "env_logger 0.10.2",
  "indexmap 2.2.6",
  "is-terminal",
  "itoa",
@@ -6231,10 +6245,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ab388864246d58a276e60e7569a833d9cc4cd75c66e5ca77c177dad38e59996"
 dependencies = [
  "ahash 0.7.8",
- "dashmap",
+ "dashmap 5.5.3",
  "hashbrown 0.12.3",
  "once_cell",
- "parking_lot 0.12.3",
+ "parking_lot",
 ]
 
 [[package]]
@@ -6482,8 +6496,8 @@ checksum = "7895f186d5921065d96e16bd795e5ca89ac8356ec423fafc6e3d7cf8ec11aee4"
 dependencies = [
  "heck 0.5.0",
  "proc-macro-crate 3.1.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -6698,9 +6712,9 @@ dependencies = [
 
 [[package]]
 name = "librocksdb-sys"
-version = "0.11.0+8.1.1"
+version = "0.16.0+8.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3386f101bcb4bd252d8e9d2fb41ec3b0862a15a62b478c355b2982efa469e3e"
+checksum = "ce3d60bc059831dc1c83903fb45c103f75db65c5a7bf22272764d9cc683e348c"
 dependencies = [
  "bindgen",
  "bzip2-sys",
@@ -6795,6 +6809,12 @@ name = "linux-raw-sys"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
+
+[[package]]
+name = "linux-raw-sys"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef53942eb7bf7ff43a617b3e2c1c4a5ecf5944a7c1bc12d7ee39bbb15e5c1519"
 
 [[package]]
 name = "linux-raw-sys"
@@ -7047,7 +7067,7 @@ dependencies = [
  "aptos-proptest-helpers",
  "aptos-sdk",
  "aptos-types",
- "async-channel",
+ "async-channel 2.3.1",
  "async-trait",
  "chrono",
  "maptos-execution-util",
@@ -7126,7 +7146,8 @@ dependencies = [
  "aptos-vm-genesis",
  "aptos-vm-logging",
  "aptos-vm-types",
- "async-channel",
+ "aptos-vm-validator",
+ "async-channel 2.3.1",
  "async-trait",
  "bcs 0.1.4",
  "borsh 0.10.3",
@@ -7135,7 +7156,7 @@ dependencies = [
  "clap 4.5.9",
  "derive_more",
  "dirs",
- "fail 0.5.1",
+ "fail",
  "futures",
  "hex",
  "lazy_static",
@@ -7348,7 +7369,7 @@ checksum = "c325dfab65f261f386debee8b0969da215b3fa0037e74c8a1234db7ba986d803"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-utils",
- "dashmap",
+ "dashmap 5.5.3",
  "skeptic",
  "smallvec",
  "tagptr",
@@ -7398,11 +7419,11 @@ checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 [[package]]
 name = "move-abigen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "heck 0.3.3",
+ "heck 0.4.1",
  "log",
  "move-binary-format",
  "move-bytecode-verifier",
@@ -7415,13 +7436,13 @@ dependencies = [
 [[package]]
 name = "move-binary-format"
 version = "0.0.3"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "backtrace",
  "indexmap 1.9.3",
+ "move-bytecode-spec",
  "move-core-types",
- "once_cell",
  "ref-cast",
  "serde",
  "variant_count",
@@ -7430,12 +7451,12 @@ dependencies = [
 [[package]]
 name = "move-borrow-graph"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 
 [[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7448,9 +7469,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-bytecode-spec"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
+dependencies = [
+ "once_cell",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -7462,10 +7493,9 @@ dependencies = [
 [[package]]
 name = "move-bytecode-verifier"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
- "fail 0.4.0",
+ "fail",
  "move-binary-format",
  "move-borrow-graph",
  "move-core-types",
@@ -7477,16 +7507,14 @@ dependencies = [
 [[package]]
 name = "move-bytecode-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
  "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
- "move-command-line-common",
  "move-disassembler",
- "move-ir-types",
  "regex",
  "tui",
 ]
@@ -7494,60 +7522,44 @@ dependencies = [
 [[package]]
 name = "move-cli"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
- "bytes 1.6.0",
  "clap 4.5.9",
  "codespan-reporting",
  "colored",
- "difference",
- "itertools 0.10.5",
  "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-utils",
- "move-bytecode-verifier",
  "move-bytecode-viewer",
  "move-command-line-common",
  "move-compiler",
+ "move-compiler-v2",
  "move-core-types",
  "move-coverage",
  "move-disassembler",
  "move-docgen",
  "move-errmapgen",
- "move-ir-types",
  "move-model",
  "move-package",
  "move-prover",
- "move-resource-viewer",
  "move-stdlib",
- "move-symbol-pool",
  "move-unit-test",
  "move-vm-runtime",
  "move-vm-test-utils",
- "move-vm-types",
  "once_cell",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "serde_yaml 0.8.26",
  "tempfile",
- "toml_edit 0.14.4",
- "walkdir",
 ]
 
 [[package]]
 name = "move-command-line-common"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "difference",
  "dirs-next",
  "hex",
  "move-core-types",
- "num-bigint 0.4.6",
+ "num-bigint 0.3.3",
  "once_cell",
  "serde",
  "sha2 0.9.9",
@@ -7557,13 +7569,12 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.9",
  "codespan-reporting",
- "difference",
  "hex",
  "move-binary-format",
  "move-borrow-graph",
@@ -7574,34 +7585,31 @@ dependencies = [
  "move-ir-to-bytecode",
  "move-ir-types",
  "move-symbol-pool",
- "num-bigint 0.4.6",
  "once_cell",
  "petgraph 0.5.1",
  "regex",
  "sha3",
  "tempfile",
- "walkdir",
 ]
 
 [[package]]
 name = "move-compiler-v2"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.9",
- "codespan",
  "codespan-reporting",
  "ethnum",
  "flexi_logger",
  "im",
- "itertools 0.10.5",
- "lazy_static",
+ "itertools 0.12.1",
  "log",
  "move-binary-format",
  "move-bytecode-source-map",
+ "move-bytecode-verifier",
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
@@ -7612,14 +7620,13 @@ dependencies = [
  "move-symbol-pool",
  "num",
  "once_cell",
- "petgraph 0.6.5",
- "serde",
+ "petgraph 0.5.1",
 ]
 
 [[package]]
 name = "move-core-types"
 version = "0.0.4"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -7632,7 +7639,7 @@ dependencies = [
  "once_cell",
  "primitive-types 0.10.1",
  "proptest",
- "proptest-derive 0.3.0",
+ "proptest-derive",
  "rand 0.8.5",
  "ref-cast",
  "serde",
@@ -7644,7 +7651,7 @@ dependencies = [
 [[package]]
 name = "move-coverage"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7656,7 +7663,6 @@ dependencies = [
  "move-command-line-common",
  "move-core-types",
  "move-ir-types",
- "once_cell",
  "petgraph 0.5.1",
  "serde",
 ]
@@ -7664,14 +7670,13 @@ dependencies = [
 [[package]]
 name = "move-disassembler"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "clap 4.5.9",
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
- "move-bytecode-verifier",
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
@@ -7682,17 +7687,17 @@ dependencies = [
 [[package]]
 name = "move-docgen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
+ "clap 4.5.9",
  "codespan",
  "codespan-reporting",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "move-compiler",
  "move-core-types",
  "move-model",
- "num",
  "once_cell",
  "regex",
  "serde",
@@ -7701,11 +7706,9 @@ dependencies = [
 [[package]]
 name = "move-errmapgen"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
- "log",
  "move-command-line-common",
  "move-core-types",
  "move-model",
@@ -7715,7 +7718,7 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -7724,17 +7727,14 @@ dependencies = [
  "move-bytecode-source-map",
  "move-bytecode-verifier",
  "move-command-line-common",
- "move-core-types",
  "move-ir-to-bytecode",
- "move-ir-types",
- "move-symbol-pool",
  "serde_json",
 ]
 
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -7746,14 +7746,13 @@ dependencies = [
  "move-ir-to-bytecode-syntax",
  "move-ir-types",
  "move-symbol-pool",
- "ouroboros 0.9.5",
- "thiserror",
+ "ouroboros",
 ]
 
 [[package]]
 name = "move-ir-to-bytecode-syntax"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "hex",
@@ -7766,9 +7765,8 @@ dependencies = [
 [[package]]
 name = "move-ir-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
  "hex",
  "move-command-line-common",
  "move-core-types",
@@ -7780,17 +7778,16 @@ dependencies = [
 [[package]]
 name = "move-model"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "codespan",
  "codespan-reporting",
  "internment",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "move-binary-format",
  "move-bytecode-source-map",
- "move-bytecode-verifier",
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
@@ -7802,20 +7799,17 @@ dependencies = [
  "once_cell",
  "regex",
  "serde",
- "trace",
 ]
 
 [[package]]
 name = "move-package"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
  "clap 4.5.9",
  "colored",
- "dirs-next",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "move-abigen",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -7831,13 +7825,12 @@ dependencies = [
  "once_cell",
  "petgraph 0.5.1",
  "regex",
- "reqwest 0.11.27",
  "serde",
  "serde_yaml 0.8.26",
  "sha2 0.9.9",
  "tempfile",
  "termcolor",
- "toml 0.5.11",
+ "toml 0.7.8",
  "walkdir",
  "whoami",
 ]
@@ -7845,53 +7838,41 @@ dependencies = [
 [[package]]
 name = "move-prover"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "async-trait",
  "atty",
  "clap 4.5.9",
- "codespan",
  "codespan-reporting",
- "futures",
- "hex",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "move-abigen",
- "move-binary-format",
  "move-command-line-common",
  "move-compiler",
  "move-compiler-v2",
- "move-core-types",
  "move-docgen",
  "move-errmapgen",
- "move-ir-types",
  "move-model",
  "move-prover-boogie-backend",
  "move-prover-bytecode-pipeline",
  "move-stackless-bytecode",
- "num",
  "once_cell",
- "pretty",
- "rand 0.8.5",
  "serde",
- "serde_json",
  "simplelog",
- "tokio",
- "toml 0.5.11",
+ "toml 0.7.8",
 ]
 
 [[package]]
 name = "move-prover-boogie-backend"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "async-trait",
  "codespan",
  "codespan-reporting",
  "futures",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "move-binary-format",
  "move-command-line-common",
@@ -7903,10 +7884,9 @@ dependencies = [
  "num",
  "once_cell",
  "pretty",
- "rand 0.8.5",
+ "rand 0.7.3",
  "regex",
  "serde",
- "serde_json",
  "tera",
  "tokio",
 ]
@@ -7914,46 +7894,30 @@ dependencies = [
 [[package]]
 name = "move-prover-bytecode-pipeline"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
- "async-trait",
- "atty",
- "clap 4.5.9",
- "codespan",
  "codespan-reporting",
- "futures",
- "hex",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "move-binary-format",
  "move-core-types",
  "move-model",
  "move-stackless-bytecode",
- "num",
- "once_cell",
- "pretty",
- "rand 0.8.5",
  "serde",
- "serde_json",
- "simplelog",
- "tokio",
- "toml 0.5.11",
 ]
 
 [[package]]
 name = "move-resource-viewer"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
- "bcs 0.1.4",
  "hex",
  "move-binary-format",
  "move-bytecode-utils",
  "move-core-types",
- "once_cell",
  "serde",
 ]
 
@@ -7973,34 +7937,26 @@ dependencies = [
 [[package]]
 name = "move-stackless-bytecode"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "abstract-domain-derive",
- "codespan",
  "codespan-reporting",
  "ethnum",
  "im",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "log",
  "move-binary-format",
- "move-borrow-graph",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-compiler",
  "move-core-types",
- "move-ir-to-bytecode",
  "move-model",
  "num",
- "once_cell",
  "paste",
  "petgraph 0.5.1",
- "serde",
 ]
 
 [[package]]
 name = "move-stdlib"
 version = "0.1.1"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "hex",
@@ -8023,7 +7979,7 @@ dependencies = [
 [[package]]
 name = "move-symbol-pool"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "once_cell",
  "serde",
@@ -8032,17 +7988,14 @@ dependencies = [
 [[package]]
 name = "move-table-extension"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
- "anyhow",
- "bcs 0.1.4",
  "better_any",
  "bytes 1.6.0",
  "move-binary-format",
  "move-core-types",
  "move-vm-runtime",
  "move-vm-types",
- "once_cell",
  "sha3",
  "smallvec",
 ]
@@ -8050,29 +8003,26 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "better_any",
- "bytes 1.6.0",
  "clap 4.5.9",
  "codespan-reporting",
  "colored",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "move-binary-format",
  "move-bytecode-utils",
  "move-command-line-common",
  "move-compiler",
  "move-core-types",
  "move-ir-types",
- "move-model",
  "move-resource-viewer",
  "move-stdlib",
  "move-symbol-pool",
  "move-table-extension",
  "move-vm-runtime",
  "move-vm-test-utils",
- "move-vm-types",
  "once_cell",
  "rayon",
  "regex",
@@ -8081,11 +8031,11 @@ dependencies = [
 [[package]]
 name = "move-vm-runtime"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "better_any",
  "bytes 1.6.0",
- "fail 0.4.0",
+ "fail",
  "hashbrown 0.14.5",
  "lazy_static",
  "lru 0.7.8",
@@ -8094,10 +8044,9 @@ dependencies = [
  "move-core-types",
  "move-vm-types",
  "once_cell",
- "parking_lot 0.11.2",
+ "parking_lot",
  "serde",
  "sha3",
- "smallbitvec",
  "tracing",
  "triomphe",
  "typed-arena",
@@ -8106,13 +8055,13 @@ dependencies = [
 [[package]]
 name = "move-vm-test-utils"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "anyhow",
  "bytes 1.6.0",
  "move-binary-format",
+ "move-bytecode-utils",
  "move-core-types",
- "move-table-extension",
  "move-vm-types",
  "once_cell",
  "serde",
@@ -8121,14 +8070,13 @@ dependencies = [
 [[package]]
 name = "move-vm-types"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d41e9c0c35ce563a3f3b070656abddeb994988e8#d41e9c0c35ce563a3f3b070656abddeb994988e8"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=b54d443967ff4ce621a84f7c09f9a59a0b03e01c#b54d443967ff4ce621a84f7c09f9a59a0b03e01c"
 dependencies = [
  "bcs 0.1.4",
  "derivative",
- "itertools 0.10.5",
+ "itertools 0.12.1",
  "move-binary-format",
  "move-core-types",
- "once_cell",
  "serde",
  "smallbitvec",
  "smallvec",
@@ -8232,7 +8180,7 @@ checksum = "40a3eb6b7c682b65d1f631ec3176829d72ab450b3aacdd3f719bf220822e59ac"
 dependencies = [
  "libc",
  "once_cell",
- "parking_lot 0.12.3",
+ "parking_lot",
  "thiserror",
  "widestring",
  "winapi 0.3.9",
@@ -8253,6 +8201,25 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "neptune"
+version = "13.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06626c9ac04c894e9a23d061ba1309f28506cdc5fe64156d28a15fb57fc8e438"
+dependencies = [
+ "bellpepper",
+ "bellpepper-core",
+ "blake2s_simd",
+ "blstrs",
+ "byteorder",
+ "ff",
+ "generic-array",
+ "log",
+ "pasta_curves",
+ "serde",
+ "trait-set",
 ]
 
 [[package]]
@@ -8414,8 +8381,8 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "876a53fff98e03a936a674b29568b0e605f06b29372c2489ff4de23f1949743d"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -8495,8 +8462,8 @@ version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "681030a937600a36906c185595136d26abfebb4aa9c65701cefcaf8578bb982b"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -8568,8 +8535,8 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -8602,35 +8569,12 @@ dependencies = [
 
 [[package]]
 name = "ouroboros"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbeff60e3e37407a80ead3e9458145b456e978c4068cddbfea6afb48572962ca"
-dependencies = [
- "ouroboros_macro 0.9.5",
- "stable_deref_trait",
-]
-
-[[package]]
-name = "ouroboros"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1358bd1558bd2a083fed428ffeda486fbfb323e698cdda7794259d592ca72db"
 dependencies = [
  "aliasable",
- "ouroboros_macro 0.15.6",
-]
-
-[[package]]
-name = "ouroboros_macro"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03f2cb802b5bdfdf52f1ffa0b54ce105e4d346e91990dd571f86c91321ad49e2"
-dependencies = [
- "Inflector",
- "proc-macro-error",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "syn 1.0.109",
+ "ouroboros_macro",
 ]
 
 [[package]]
@@ -8641,8 +8585,8 @@ checksum = "5f7d21ccd03305a674437ee1248f3ab5d4b1db095cf1caf49f1713ddf61956b7"
 dependencies = [
  "Inflector",
  "proc-macro-error",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -8682,7 +8626,7 @@ version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
 dependencies = [
- "group 0.13.0",
+ "group",
 ]
 
 [[package]]
@@ -8720,8 +8664,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1557010476e0595c9b568d16dcfb81b93cdeb157612726f5170d31aa707bed27"
 dependencies = [
  "proc-macro-crate 1.3.1",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -8732,8 +8676,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d830939c76d294956402033aee57a6da7b438f2294eb94864c37b0569053a42c"
 dependencies = [
  "proc-macro-crate 3.1.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -8745,37 +8689,12 @@ checksum = "bb813b8af86854136c6922af0598d719255ecb2179515e6e7730d468f05c9cae"
 
 [[package]]
 name = "parking_lot"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
-dependencies = [
- "instant",
- "lock_api",
- "parking_lot_core 0.8.6",
-]
-
-[[package]]
-name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.10",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a2cfe6f0ad2bfc16aefa463b497d5c7a5ecd44a23efa72aa342d90177356dc"
-dependencies = [
- "cfg-if",
- "instant",
- "libc",
- "redox_syscall 0.2.16",
- "smallvec",
- "winapi 0.3.9",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -8820,6 +8739,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pasta_curves"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3e57598f73cc7e1b2ac63c79c517b31a0877cd7c402cdcaa311b5208de7a095"
+dependencies = [
+ "blake2b_simd",
+ "ff",
+ "group",
+ "hex",
+ "lazy_static",
+ "rand 0.8.5",
+ "serde",
+ "static_assertions",
+ "subtle",
+]
+
+[[package]]
 name = "paste"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8853,12 +8789,6 @@ dependencies = [
  "digest 0.10.7",
  "hmac 0.12.1",
 ]
-
-[[package]]
-name = "peeking_take_while"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "pem"
@@ -8913,8 +8843,8 @@ checksum = "3c93a82e8d145725dcbaf44e5ea887c8a869efdcc28706df2d08c69e17077183"
 dependencies = [
  "pest",
  "pest_meta",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -9021,8 +8951,8 @@ version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "851c8d0ce9bebe43790dedfc86614c23494ac9f423dd618d3a61fc693eafe61e"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -9032,8 +8962,8 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f38a4412a78282e09a2cf38d195ea5420d15ba0602cb375210efbc877243965"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -9135,7 +9065,7 @@ dependencies = [
  "mime",
  "multer",
  "nix 0.27.1",
- "parking_lot 0.12.3",
+ "parking_lot",
  "percent-encoding",
  "pin-project-lite",
  "poem-derive",
@@ -9166,8 +9096,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42ddcf4680d8d867e1e375116203846acb088483fa2070244f90589f458bbb31"
 dependencies = [
  "proc-macro-crate 2.0.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -9207,11 +9137,27 @@ dependencies = [
  "indexmap 1.9.3",
  "mime",
  "proc-macro-crate 1.3.1",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "regex",
  "syn 1.0.109",
  "thiserror",
+]
+
+[[package]]
+name = "polling"
+version = "2.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b2d323e8ca7996b3e23126511a523f7e62924d93ecd5ae73b333815b0eb3dce"
+dependencies = [
+ "autocfg",
+ "bitflags 1.3.2",
+ "cfg-if",
+ "concurrent-queue",
+ "libc",
+ "log",
+ "pin-project-lite",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -9264,7 +9210,7 @@ version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f12335488a2f3b0a83b14edad48dca9879ce89b2edd10e80237e4e852dd645e"
 dependencies = [
- "proc-macro2 1.0.86",
+ "proc-macro2",
  "syn 2.0.70",
 ]
 
@@ -9344,8 +9290,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
 dependencies = [
  "proc-macro-error-attr",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
  "version_check",
 ]
@@ -9356,8 +9302,8 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "version_check",
 ]
 
@@ -9372,15 +9318,6 @@ name = "proc-macro-nested"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc881b2c22681370c6a780e47af9840ef841837bc98118431d4e1868bd0c1086"
-
-[[package]]
-name = "proc-macro2"
-version = "0.4.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf3d2011ab5c909338f7887f4fc896d35932e29146c12c8d01da6b22a80ba759"
-dependencies = [
- "unicode-xid 0.1.0",
-]
 
 [[package]]
 name = "proc-macro2"
@@ -9416,7 +9353,7 @@ dependencies = [
  "fnv",
  "lazy_static",
  "memchr",
- "parking_lot 0.12.3",
+ "parking_lot",
  "thiserror",
 ]
 
@@ -9442,23 +9379,12 @@ dependencies = [
 
 [[package]]
 name = "proptest-derive"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "90b46295382dc76166cb7cf2bb4a97952464e4b7ed5a43e6cd34e1fec3349ddc"
-dependencies = [
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
-]
-
-[[package]]
-name = "proptest-derive"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9cf16337405ca084e9c78985114633b6827711d22b9e6ef6c6c0d665eb3f0b6e"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -9501,8 +9427,8 @@ checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
  "anyhow",
  "itertools 0.12.1",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -9596,12 +9522,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "quote"
-version = "0.6.13"
+name = "quick_cache"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ce23b6b870e8f94f81fb0a363d65d86675884b34a09043c81e5562f11c1f8e1"
+checksum = "347e1a588d1de074eeb3c00eadff93db4db65aeb62aee852b1efd0949fe65b6c"
 dependencies = [
- "proc-macro2 0.4.30",
+ "ahash 0.8.11",
+ "equivalent",
+ "hashbrown 0.14.5",
+ "parking_lot",
 ]
 
 [[package]]
@@ -9610,7 +9539,7 @@ version = "1.0.36"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa76aaf39101c457836aec0ce2316dbdc3ab723cdda1c6bd4e6ad4208acaca7"
 dependencies = [
- "proc-macro2 1.0.86",
+ "proc-macro2",
 ]
 
 [[package]]
@@ -9768,15 +9697,6 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
-dependencies = [
- "bitflags 1.3.2",
-]
-
-[[package]]
-name = "redox_syscall"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4722d768eff46b75989dd134e5c353f0d6296e5aaa3132e776cbdb56be7731aa"
@@ -9819,8 +9739,8 @@ version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bcc303e793d3734489387d205e9b186fac9c6cfacedd98cbb2e8a5943595f3e6"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -10040,9 +9960,9 @@ dependencies = [
 
 [[package]]
 name = "rocksdb"
-version = "0.21.0"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb6f170a4041d50a0ce04b0d2e14916d6ca863ea2e422689a5b694395d299ffe"
+checksum = "6bd13e55d6d7b8cd0ea569161127567cd587676c99f4472f779a0279aa60a7a7"
 dependencies = [
  "libc",
  "librocksdb-sys",
@@ -10156,6 +10076,20 @@ dependencies = [
  "libc",
  "linux-raw-sys 0.1.4",
  "windows-sys 0.45.0",
+]
+
+[[package]]
+name = "rustix"
+version = "0.37.27"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fea8ca367a3a01fe35e6943c400addf443c0f57670e6ec51196f71a4b8762dd2"
+dependencies = [
+ "bitflags 1.3.2",
+ "errno",
+ "io-lifetimes",
+ "libc",
+ "linux-raw-sys 0.3.8",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -10358,8 +10292,8 @@ version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1eee588578aff73f856ab961cd2f79e36bc45d7ded33a7562adba4667aecc0e"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "serde_derive_internals",
  "syn 2.0.70",
 ]
@@ -10486,7 +10420,7 @@ dependencies = [
  "bcs 0.1.6",
  "bincode",
  "heck 0.3.3",
- "include_dir 0.6.2",
+ "include_dir",
  "maplit",
  "serde",
  "serde-reflection",
@@ -10541,8 +10475,8 @@ version = "1.0.204"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0cd7e117be63d3c3678776753929474f3b04a43a080c744d6b0ae2a8c28e222"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -10552,8 +10486,8 @@ version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -10586,8 +10520,8 @@ version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c64451ba24fc7a6a2d60fc75dd9c83c90903b19028d4eff35e88fc1e86564e9"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -10637,8 +10571,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b80d3d6b56b64335c0180e5ffde23b3c5e08c14c585b51a15bd0e95393f46703"
 dependencies = [
  "darling 0.20.10",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -10700,7 +10634,8 @@ dependencies = [
 [[package]]
 name = "sha2"
 version = "0.10.8"
-source = "git+https://github.com/risc0/RustCrypto-hashes?tag=sha2-v0.10.8-risczero.0#244dc3b08788f7a4ccce14c66896ae3b4f24c166"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "793db75ad2bcafc3ffa7c68b215fee268f537982cd901d132f89c6343f3a3dc8"
 dependencies = [
  "cfg-if",
  "cpufeatures",
@@ -10810,8 +10745,8 @@ version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab0381d1913eeaf4c7bc4094016c9a8de6c1120663afe32a90ff268ad7f80486"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -10949,9 +10884,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "990079665f075b699031e9c08fd3ab99be5029b96f3b78dc0709e8f77e4efebf"
 dependencies = [
  "heck 0.4.1",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "socket2"
+version = "0.4.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f7916fc008ca5542385b89a3d3ce689953c143e9304a9bf8beec1de48994c0d"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
 ]
 
 [[package]]
@@ -11026,6 +10971,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "static_str_ops"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eef2389280bc4d03836302f127e5e784c63cd183e24fe35cf73dc7f3b13a47d4"
+dependencies = [
+ "gensym",
+ "lazy_static",
+]
+
+[[package]]
 name = "status-line"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11078,8 +11033,8 @@ checksum = "dcb5ae327f9cc13b68763b5749770cb9e048a99bd9dfdfa58d0cf05d5f64afe0"
 dependencies = [
  "heck 0.3.3",
  "proc-macro-error",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -11114,8 +11069,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59"
 dependencies = [
  "heck 0.4.1",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "rustversion",
  "syn 1.0.109",
 ]
@@ -11127,8 +11082,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
 dependencies = [
  "heck 0.4.1",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "rustversion",
  "syn 2.0.70",
 ]
@@ -11140,8 +11095,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
 dependencies = [
  "heck 0.5.0",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "rustversion",
  "syn 2.0.70",
 ]
@@ -11236,7 +11191,7 @@ name = "suzuka-full-node"
 version = "0.3.0"
 dependencies = [
  "anyhow",
- "async-channel",
+ "async-channel 2.3.1",
  "dot-movement",
  "godfig",
  "m1-da-light-node-client",
@@ -11285,23 +11240,12 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "0.15.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ca4b3b69a77cbe1ffc9e198781b7acb0c7365a883670e8f1c1bc66fba79a5c5"
-dependencies = [
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "unicode-xid 0.1.0",
-]
-
-[[package]]
-name = "syn"
 version = "1.0.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b64191b275b66ffe2469e8af2c1cfe3bafa67b529ead792a6d0160888b4237"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "unicode-ident",
 ]
 
@@ -11311,8 +11255,8 @@ version = "2.0.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f0209b68b3613b093e0ec905354eccaedcfe83b8cb37cbdeae64026c3064c16"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "unicode-ident",
 ]
 
@@ -11323,8 +11267,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c837dc8852cb7074e46b444afb81783140dab12c58867b49fb3898fbafedf7ea"
 dependencies = [
  "paste",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -11335,8 +11279,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1329189c02ff984e9736652b1631330da25eaa6bc639089ed4915d25446cbe7b"
 dependencies = [
  "proc-macro-error",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -11407,7 +11351,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85b77fafb263dd9d05cbeac119526425676db3784113aa9295c88498cbf8bff1"
 dependencies = [
  "cfg-if",
- "fastrand",
+ "fastrand 2.1.0",
  "rustix 0.38.34",
  "windows-sys 0.52.0",
 ]
@@ -11441,6 +11385,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bab24d30b911b2376f3a13cc2cd443142f0c81dda04c118693e35b3835757755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-log"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3dffced63c2b5c7be278154d76b479f9f9920ed34e7574201407f0b14e2bbb93"
+dependencies = [
+ "env_logger 0.11.3",
+ "test-log-macros",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "test-log-macros"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5999e24eaa32083191ba4e425deb75cdf25efefabe5aaccb7446dd0d4122a3f5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.70",
 ]
 
 [[package]]
@@ -11488,8 +11454,8 @@ version = "1.0.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46c3384250002a6d5af4d114f2845d37b57521033f30d5c3f46c4d70e1197533"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -11609,10 +11575,10 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
- "parking_lot 0.12.3",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
- "socket2",
+ "socket2 0.5.7",
  "tokio-macros",
  "windows-sys 0.48.0",
 ]
@@ -11633,8 +11599,8 @@ version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5f5ae998a069d4b5aba8ee9dad856af7d520c3699e6159b185c2acd48155d39a"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -11744,6 +11710,18 @@ dependencies = [
 
 [[package]]
 name = "toml"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.19.15",
+]
+
+[[package]]
+name = "toml"
 version = "0.8.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f49eb2ab21d2f26bd6db7bf383edc527a7ebaee412d17af4d40fdccd442f335"
@@ -11765,23 +11743,13 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
-version = "0.14.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5376256e44f2443f8896ac012507c19a012df0fe8758b55246ae51a2279db51f"
-dependencies = [
- "combine",
- "indexmap 1.9.3",
- "itertools 0.10.5",
- "serde",
-]
-
-[[package]]
-name = "toml_edit"
 version = "0.19.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
 dependencies = [
  "indexmap 2.2.6",
+ "serde",
+ "serde_spanned",
  "toml_datetime",
  "winnow 0.5.40",
 ]
@@ -11861,9 +11829,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be4ef6dd70a610078cb4e338a0f79d06bc759ff1b22d2120c2ff02ae264ba9c2"
 dependencies = [
  "prettyplease",
- "proc-macro2 1.0.86",
+ "proc-macro2",
  "prost-build",
- "quote 1.0.36",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -11951,17 +11919,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6bc1c9ce2b5135ac7f93c72918fc37feb872bdc6a5533a8b85eb4b86bfdae52"
 
 [[package]]
-name = "trace"
-version = "0.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ad0c048e114d19d1140662762bfdb10682f3bc806d8be18af846600214dd9af"
-dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "tracing"
 version = "0.1.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11979,8 +11936,8 @@ version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -12062,8 +12019,19 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04659ddb06c87d233c566112c1c9c5b9e98256d9af50ec3bc9c8327f873a7568"
 dependencies = [
- "quote 1.0.36",
+ "quote",
  "syn 2.0.70",
+]
+
+[[package]]
+name = "trait-set"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b79e2e9c9ab44c6d7c20d5976961b47e8f49ac199154daa514b77cd1ab536625"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -12145,7 +12113,7 @@ version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a615d6c2764852a2e88a4f16e9ce1ea49bb776b5872956309e170d63a042a34f"
 dependencies = [
- "quote 1.0.36",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -12312,12 +12280,6 @@ checksum = "0336d538f7abc86d282a4189614dfaa90810dfc2c6f6427eaf88e16311dd225d"
 
 [[package]]
 name = "unicode-xid"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fc72304796d0818e357ead4e000d19c9c174ab23dc11093ac919054d20a6a7fc"
-
-[[package]]
-name = "unicode-xid"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f962df74c8c05a667b5ee8bcf162993134c104e96440b663c8daa176dc772d8c"
@@ -12425,6 +12387,7 @@ version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81dfa00651efa65069b0b6b651f4aaa31ba9e3c3ce0137aaad053604ee7e0314"
 dependencies = [
+ "getrandom 0.2.15",
  "serde",
 ]
 
@@ -12440,7 +12403,7 @@ version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aae2faf80ac463422992abf4de234731279c058aaf33171ca70277c98406b124"
 dependencies = [
- "quote 1.0.36",
+ "quote",
  "syn 1.0.109",
 ]
 
@@ -12470,6 +12433,12 @@ checksum = "9f200f5b12eb75f8c1ed65abd4b2db8a6e1b138a20de009dacee265a2498f3f6"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "waker-fn"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "317211a0dc0ceedd78fb2ca9a44aed3d7b9b26f81870d485c07122b4350673b7"
 
 [[package]]
 name = "walkdir"
@@ -12527,8 +12496,8 @@ dependencies = [
  "bumpalo",
  "log",
  "once_cell",
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
  "wasm-bindgen-shared",
 ]
@@ -12551,7 +12520,7 @@ version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1f8823de937b71b9460c0c34e25f3da88250760bec0ebac694b49997550d726"
 dependencies = [
- "quote 1.0.36",
+ "quote",
  "wasm-bindgen-macro-support",
 ]
 
@@ -12561,8 +12530,8 @@ version = "0.2.92"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e94f17b526d0a461a191c78ea52bbce64071ed5c04c9ffe424dcb38f74171bb7"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
@@ -13023,8 +12992,8 @@ version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa4f8080344d4671fb4e831a13ad1e68092748387dfc4f55e356242fae12ce3e"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -13043,8 +13012,8 @@ version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
 dependencies = [
- "proc-macro2 1.0.86",
- "quote 1.0.36",
+ "proc-macro2",
+ "quote",
  "syn 2.0.70",
 ]
 
@@ -13075,8 +13044,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "ed25519-dalek"
-version = "2.0.0"
-source = "git+https://github.com/risc0/curve25519-dalek?tag=curve25519-4.1.0-risczero.1#42c4faf7dc3f640a7e3f7e4cbf43e7d5d6d46b67"

@@ -5,7 +5,7 @@ use dot_movement::DotMovement;
 
 #[derive(Debug, Clone, Default)]
 pub struct Local {
-	pub mcr_settlement_strategy: mcr_settlement_setup::Setup,
+	mcr_settlement_strategy: mcr_settlement_setup::Setup
 }
 
 impl Local {
