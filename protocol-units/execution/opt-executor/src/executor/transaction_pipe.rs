@@ -131,31 +131,25 @@ mod tests {
 
 	use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
-	use aptos_crypto::{
-		ed25519::{Ed25519PrivateKey, Ed25519Signature},
-		PrivateKey, Uniform,
-	};
+	use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 	use aptos_types::{
 		account_address::AccountAddress,
-		transaction::{RawTransaction, Script, SignedTransaction, TransactionPayload},
+		test_helpers::transaction_test_helpers::get_test_txn_with_chain_id,
+		transaction::SignedTransaction,
 	};
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
 
-	fn create_signed_transaction(gas_unit_price: u64, maptos_config: &Config) -> SignedTransaction {
+	fn create_signed_transaction(maptos_config: &Config) -> SignedTransaction {
 		let public_key = maptos_config.chain.maptos_private_key.public_key();
-		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
-		let raw_transaction = RawTransaction::new(
-			AccountAddress::random(),
+		get_test_txn_with_chain_id(
+			AccountAddress::random(), // TODO: the address must be from genesis
 			0,
-			transaction_payload,
-			0,
-			gas_unit_price,
-			0,
+			&maptos_config.chain.maptos_private_key,
+			public_key,
 			maptos_config.chain.maptos_chain_id.clone(), // This is the value used in aptos testing code.
-		);
-		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
+		)
 	}
 
 	#[tokio::test]
@@ -163,7 +157,7 @@ mod tests {
 		// header
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (mut executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
-		let user_transaction = create_signed_transaction(0, &executor.maptos_config);
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -191,7 +185,7 @@ mod tests {
 		// header
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (mut executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
-		let user_transaction = create_signed_transaction(0, &executor.maptos_config);
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -251,7 +245,7 @@ mod tests {
 		});
 
 		let api = executor.get_apis();
-		let user_transaction = create_signed_transaction(0, &executor.maptos_config);
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
@@ -283,7 +277,7 @@ mod tests {
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
-			let user_transaction = create_signed_transaction(0, &executor.maptos_config);
+			let user_transaction = create_signed_transaction(&executor.maptos_config);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 
