@@ -162,10 +162,11 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, client = @0xface, master_minter = @master_minter)]
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xface, master_minter = @master_minter)]
     fun test_complete_transfer_assets(
         aptos_framework: &signer,
         master_minter: &signer,
+        admin: &signer,
         client: &signer,
         creator: &signer,
         moveth: &signer,
@@ -178,7 +179,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let asset = moveth::metadata();
 
         // the master minter sets client to be a minter
-        moveth::add_minter(master_minter, signer::address_of(client));
+        moveth::add_minter(admin, signer::address_of(client));
 
         //client now mints themselves 100 moveth
         moveth::mint(client, signer::address_of(client), 100);
