@@ -55,7 +55,7 @@ alloy-rpc-types = { workspace = true }
 futures = { workspace = true }
 
 [features]
-default = ["mock"]
+default = ["eth"]
 e2e = ["eth"]
 eth = []
 mock = []

@@ -21,10 +21,10 @@ members = [
     "util/commander",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
-    "protocol-units/settlement/mcr/anvil",
     "protocol-units/bridge/shared",
     "protocol-units/bridge/cli",
     "protocol-units/bridge/service",
+    "protocol-units/settlement/mcr/runner",
 ]
 
 [workspace.package]
@@ -252,7 +252,8 @@ url = "2.2.2"
 x25519-dalek = "1.0.1"
 zstd-sys = "2.0.9"
 inotify = "0.10.2"
-rustix = "0.38.34"
+rustix = "0.38.34" 
+paste = "1.0.15"
 
 
 [workspace.lints.rust]

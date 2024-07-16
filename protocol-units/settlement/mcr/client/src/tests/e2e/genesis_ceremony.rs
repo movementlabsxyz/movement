@@ -4,6 +4,7 @@ use crate::eth_client::{
     MOVEToken,
     MovementStaking
 };
+use alloy::signers::Signer;
 use mcr_settlement_config::Config;
 use alloy::providers::ProviderBuilder;
 use alloy::signers::{local::PrivateKeySigner};

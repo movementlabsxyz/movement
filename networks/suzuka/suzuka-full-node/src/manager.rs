@@ -32,13 +32,15 @@ impl Manager<SuzukaPartialNode<Executor>> {
 
         let (stop_tx, mut stop_rx) = tokio::sync::watch::channel(());
         tokio::spawn({
-            let mut sigterm = signal(SignalKind::terminate()).context("Can't register to SIGTERM.")?;
-            let mut sigint = signal(SignalKind::interrupt()).context("Can't register to SIGKILL.")?;
+            let mut sigterm = signal(SignalKind::terminate()).context("can't register to SIGTERM.")?;
+            let mut sigint = signal(SignalKind::interrupt()).context("can't register to SIGKILL.")?;
+            let mut sigquit = signal(SignalKind::quit()).context("can't register to SIGKILL.")?;
             async move {
                 loop {
                     tokio::select! {
                         _ = sigterm.recv() => (),
                         _ = sigint.recv() => (),
+                        _ = sigquit.recv() => (),
                     };
                     tracing::info!("Receive Terminate Signal");
                     if let Err(err) = stop_tx.send(()) {
