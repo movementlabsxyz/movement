@@ -5,7 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {MockToken} from "../src/MockToken.sol";
 import {WETH10} from "../src/WETH10.sol";
 
-contract CounterTest is Test {
+contract DeployTest is Test {
     function setUp() public {}
 
     function testDeploy() public {
