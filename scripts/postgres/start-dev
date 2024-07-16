@@ -23,4 +23,4 @@ psql -U "$USER" -d template1 -c "ALTER DATABASE postgres OWNER TO postgres;"
 pg_ctl -D ./.data stop
 
 # Start the PostgreSQL server normally
-postgres -D ./.data
+postgres -D ./.data -h 0.0.0.0 -p 5432
