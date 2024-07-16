@@ -6,19 +6,4 @@ processes:
 
   build:
     command: |
-<<<<<<< HEAD
-      exit 0
-    depends_on: 
-      build-m1-da-light-node:
-        condition: process_completed_successfully
-      build-wait-for-celestia-light-node:
-        condition: process_completed_successfully
-      build-suzuka-full-node:
-        condition: process_completed_successfully
-    availability:
-      # NOTE: `restart: exit_on_failure` is not needed since
-      # exit_on_end implies it.
-      exit_failure: true
-=======
       ./scripts/services/suzuka-full-node/build
->>>>>>> l-monninger/indexer-integration

@@ -261,8 +261,8 @@ rustix = "0.38.34"
 paste = "1.0.15"
 
 # trying to pin diesel
-diesel = "=2.1.1"
-migrations_internals = "=2.1.1"
+# diesel = "=2.1.1"
+# migrations_internals = "=2.1.1"
 num_cpus = "=1.16.0"
 ahash = "=0.8.11"
 

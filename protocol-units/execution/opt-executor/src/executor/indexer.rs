@@ -12,6 +12,8 @@ impl Executor {
 	// https://github.com/movementlabsxyz/aptos-core/blob/ea91067b81f9673547417bff9c70d5a2fe1b0e7b/aptos-node/src/services.rs#L40
     pub async fn run_indexer_grpc_service(&self) -> Result<(), anyhow::Error> {
 
+		tracing::info!("Starting indexer gRPC with node config {:?}", self.node_config);
+
 		// bootstrap table info
 		let (_table_info_runtime, _async_indexer_v2) = bootstrap_table_info(
 			&self.node_config,
