@@ -170,7 +170,6 @@ module atomic_bridge::atomic_bridge_counterparty {
     fun test_complete_transfer_assets(
         client: &signer,
         aptos_framework: &signer,
-        //mint_to: &signer,
         master_minter: &signer, 
         creator: &signer,
         moveth: &signer,
