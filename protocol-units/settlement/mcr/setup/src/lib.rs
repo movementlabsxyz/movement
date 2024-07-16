@@ -25,6 +25,7 @@ impl Setup {
 	) -> Result<(Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>), anyhow::Error> {
 		
 		let join_handle = if config.should_run_local() {
+			tracing::info!("Setting up local run...");
 			let (new_config, handle) = self.local.setup(dot_movement, config).await?;
 			config = new_config;
 			handle
@@ -33,6 +34,7 @@ impl Setup {
 		};
 	
 		if let Some(deploy) = &config.deploy {
+			tracing::info!("Deploying contracts...");
 			config = self.deploy.setup(dot_movement, config.clone(), deploy).await?;
 		}
 	

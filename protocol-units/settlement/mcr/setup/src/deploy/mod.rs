@@ -7,7 +7,7 @@ use mcr_settlement_config::{
 };
 use serde_json::Value;
 use alloy::signers::local::PrivateKeySigner;
-
+use anyhow::Context;
 use tracing::info;
 
 /// The local setup strategy for MCR settlement
@@ -45,8 +45,27 @@ impl Deploy {
 		let mut solidity_path = std::env::current_dir()?;
 		solidity_path.push(deploy.mcr_deployment_working_directory.clone());
 
+		let solc_path = run_command(
+			"which",
+			&[
+				"solc"
+			]
+		).await.context("Failed to get solc path")?.trim().to_string();
+
 		let solidity_path = solidity_path.to_string_lossy();
 		tracing::info!("solidity_path: {:?}", solidity_path);
+		run_command(
+			"forge",
+			&[
+				"compile",
+				"--root",
+				&solidity_path,
+				"--use",
+				&solc_path,
+			],
+		)
+		.await.context("Failed to compile with MCR workspace")?;
+
 		let output_exec = run_command(
 			"forge",
 			&[
@@ -61,7 +80,9 @@ impl Deploy {
 				&config.eth_rpc_connection_url(),
 				"--private-key",
 				&deploy.mcr_deployment_account_private_key,
-				"--legacy"
+				"--legacy",
+				"--use",
+				&solc_path,
 			],
 		)
 		.await?
