@@ -48,11 +48,11 @@ The following tokens cam be minted by depositing the network native asset (MOVE)
 
 #### Mintable Tokens
 
-Package ID: 0x5f28918574a1cef2e369fc5793f37f893d1223b0afdb3a508e24ef814212cd1a
+Package ID: 0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9
 
 The following tokens can be minted through their own module once per hour by calling the mint function or mint_and_transfer:
 
-- BTC: 0x5f28918574a1cef2e369fc5793f37f893d1223b0afdb3a508e24ef814212cd1a::btc::BTC
-- ETH: 0x5f28918574a1cef2e369fc5793f37f893d1223b0afdb3a508e24ef814212cd1a::eth::ETH
-- USDC: 0x5f28918574a1cef2e369fc5793f37f893d1223b0afdb3a508e24ef814212cd1a::usdc::USDC
-- USDT: 0x5f28918574a1cef2e369fc5793f37f893d1223b0afdb3a508e24ef814212cd1a::usdt::USDT
+- BTC: 0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9::wbtc::WBTC
+- ETH: 0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9::weth::WETH
+- USDC: 0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9::usdc::USDC
+- USDT: 0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9::usdt::USDT
