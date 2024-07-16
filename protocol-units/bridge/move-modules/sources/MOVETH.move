@@ -316,7 +316,7 @@ module moveth::moveth {
     public entry fun add_minter(admin: &signer, minter: address) acquires Roles, State {
         assert_not_paused();
         let roles = borrow_global_mut<Roles>(moveth_address());
-        assert!(signer::address_of(admin) == roles.admin, EUNAUTHORIZED);
+        assert!(signer::address_of(admin) == roles.admin || signer::address_of(admin) == roles.master_minter, EUNAUTHORIZED);
         assert!(!vector::contains(&roles.minters, &minter), EALREADY_MINTER);
         vector::push_back(&mut roles.minters, minter);
     }

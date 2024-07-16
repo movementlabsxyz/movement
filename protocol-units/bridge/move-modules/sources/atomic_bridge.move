@@ -99,7 +99,8 @@ module atomic_bridge::atomic_bridge_counterparty {
     public fun complete_bridge_transfer(
         caller: &signer,
         bridge_transfer_id: vector<u8>,
-        pre_image: vector<u8>
+        pre_image: vector<u8>,
+        master_minter: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let bridge_store = borrow_global_mut<BridgeTransferStore>(config_address);
@@ -108,7 +109,10 @@ module atomic_bridge::atomic_bridge_counterparty {
         let computed_hash = keccak256(pre_image);
         assert!(computed_hash == details.hash_lock, 2);
 
-        // Mint moveth tokens to the recipient, caller must me a minter of moveth
+        // Make caller a minter of MovETH
+        moveth::add_minter(master_minter, signer::address_of(caller));
+
+        // Mint moveth tokens to the recipient
         moveth::mint(caller, details.recipient, details.amount);
 
         smart_table::add(&mut bridge_store.completed_transfers, bridge_transfer_id, details);
@@ -179,7 +183,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let asset = moveth::metadata();
 
         // the master minter sets client to be a minter
-        moveth::add_minter(admin, signer::address_of(client));
+        moveth::add_minter(master_minter, signer::address_of(client));
 
         //client now mints themselves 100 moveth
         moveth::mint(client, signer::address_of(client), 100);
@@ -223,7 +227,8 @@ module atomic_bridge::atomic_bridge_counterparty {
        complete_bridge_transfer(
            client,
            bridge_transfer_id,
-           pre_image 
+           pre_image,
+           admin 
        );
 
         debug::print(&utf8(msg));

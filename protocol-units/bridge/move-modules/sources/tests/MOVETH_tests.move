@@ -42,7 +42,7 @@ module moveth::moveth_tests{
         let minter_address = signer::address_of(minter);
         moveth::set_pause(pauser, true);
         moveth::add_minter(admin, minter_address);
-    }
+    } 
 
     //test the ability of a denylisted account to transfer out newly created store
     #[test(creator = @moveth, denylister = @0xcade, receiver = @0xdead)]
