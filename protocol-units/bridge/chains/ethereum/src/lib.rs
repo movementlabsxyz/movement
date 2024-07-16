@@ -10,7 +10,7 @@ use alloy_provider::{
 };
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use alloy_rpc_types::{Filter, Log};
-use alloy_sol_types::sol;
+use alloy_sol_types::{sol, SolEvent};
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
@@ -304,7 +304,7 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
-		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
+		let mapping_slot = U256::from(0); // the solidity mapping is the zeroth slot in the contract
 		let key = bridge_transfer_id.0;
 		let storage_slot = self.calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
@@ -436,32 +436,100 @@ impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
 }
 
 // Utility functions
-
 fn convert_log_to_event<A, H>(log: Log) -> BridgeContractInitiatorEvent<A, H>
 where
 	A: Default,
 	H: Default + From<[u8; 32]>,
 {
+	let initiated_log = AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
+	let completed_log = AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
+	let refunded_log = AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
+
 	// Extract details from the log and map to event type
-	let address = log.address();
 	let topics = log.topics();
-	let data = log.data();
+	let data = log.data().clone();
 
-	// Assuming the first topic is the event type identifier and the second is the hash
-	let event_type = topics.get(0).expect("Expected event type in topics");
-	let hash: [u8; 32] = topics.get(1).expect("Expected hash in topics").0;
+	// Assuming the first topic is the event type identifier
+	let topic = topics.get(0).expect("Expected event type in topics");
 
-	// Map the log data to the appropriate event type
-	if *event_type == B256::from([0u8; 32]) {
-		// Replace with actual event identifier bytes
-		BridgeContractInitiatorEvent::Initiated(BridgeTransferDetails::default())
-	} else if *event_type == B256::from([1u8; 32]) {
-		BridgeContractInitiatorEvent::Completed(BridgeTransferId(H::from(hash)))
-	} else if *event_type == B256::from([2u8; 32]) {
-		BridgeContractInitiatorEvent::Refunded(BridgeTransferId(H::from(hash)))
+	if topic == &initiated_log {
+		// Decode the data for Initiated event
+		let tokens = decode_log_data(
+			&data,
+			&[
+				ParamType::FixedBytes(32), // bridge_transfer_id
+				ParamType::Address,        // initiator_address
+				ParamType::Address,        // recipient_address
+				ParamType::FixedBytes(32), // hash_lock
+				ParamType::Uint(256),      // time_lock
+				ParamType::Uint(256),      // amount
+			],
+		);
+
+		let bridge_transfer_id =
+			BridgeTransferId(H::from(tokens[0].clone().into_fixed_bytes().unwrap()));
+		let initiator_address = InitiatorAddress(A::from(
+			tokens[1].clone().into_address().unwrap().as_fixed_bytes().try_into().unwrap(),
+		));
+		let recipient_address = RecipientAddress(tokens[2].clone().into_address().unwrap());
+		let hash_lock = HashLock(H::from(tokens[3].clone().into_fixed_bytes().unwrap()));
+		let time_lock = TimeLock(tokens[4].clone().into_uint().unwrap().as_u64());
+		let amount = Amount(tokens[5].clone().into_uint().unwrap());
+
+		let details = BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address,
+			recipient_address,
+			hash_lock,
+			time_lock,
+			amount,
+		};
+
+		BridgeContractInitiatorEvent::Initiated(details)
+	} else if topic == &completed_log {
+		// Decode the data for Completed event
+		let bridge_transfer_id = BridgeTransferId(H::from(
+			topics
+				.get(1)
+				.expect("Expected hash in topics")
+				.as_fixed_bytes()
+				.try_into()
+				.unwrap(),
+		));
+		BridgeContractInitiatorEvent::Completed(bridge_transfer_id)
+	} else if topic == &refunded_log {
+		// Decode the data for Refunded event
+		let bridge_transfer_id = BridgeTransferId(H::from(
+			topics
+				.get(1)
+				.expect("Expected hash in topics")
+				.as_fixed_bytes()
+				.try_into()
+				.unwrap(),
+		));
+		BridgeContractInitiatorEvent::Refunded(bridge_transfer_id)
 	} else {
 		unimplemented!("Unexpected event type");
 	}
+}
+
+fn decode_log_data(name: &str, data: &[u8], params: &[ParamType]) -> Vec<Token> {
+	let event = Event {
+		name: name.to_string(),
+		inputs: params
+			.iter()
+			.map(|p| ethabi::EventParam { name: "".to_string(), kind: p.clone(), indexed: false })
+			.collect(),
+		anonymous: false,
+	};
+	let raw_log = RawLog { topics: vec![], data: data.to_vec() };
+	event
+		.parse_log(raw_log)
+		.expect("Unable to parse log data")
+		.params
+		.into_iter()
+		.map(|p| p.value)
+		.collect()
 }
 
 fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
