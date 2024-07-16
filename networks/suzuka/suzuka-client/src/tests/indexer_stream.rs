@@ -50,18 +50,19 @@ async fn test_example_indexer_stream() -> Result<(), anyhow::Error> {
     ).await?;
 
     let request = GetTransactionsRequest {
-        starting_version : Some(0),
-        transactions_count : Some(100),
+        starting_version : Some(1),
+        transactions_count : Some(10),
         batch_size : Some(100),
     }; 
 
-    let stream = client.get_transactions(request).await?;
+    let mut stream = client.get_transactions(request).await?.into_inner();
 
-    stream
-	    .into_inner()
-		.next()
-		.await
-		.ok_or(anyhow::anyhow!("No response from server"))??;
+	for _ in 1..10 {
+		let response = stream
+			.next()
+			.await;
+		println!("{:?}", response);
+	}
 
 	Ok(())
 }
