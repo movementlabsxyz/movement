@@ -31,7 +31,7 @@ async fn main() -> Result<(), anyhow::Error> {
 					_ = sigint.recv() => (),
 					_ = sigquit.recv() => (),
 				};
-				tracing::info!("Receive Terminate Signal");
+				tracing::info!("Received terminate Signal");
 				if let Err(err) = stop_tx.send(()) {
 					tracing::warn!("Can't update stop watch channel because :{err}");
 					return Err::<(), anyhow::Error>(anyhow::anyhow!(err));

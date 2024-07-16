@@ -47,6 +47,7 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
 
     let mut sigterm = signal(SignalKind::terminate())?;
     let mut sigint = signal(SignalKind::interrupt())?;
+    let mut sigquit = signal(SignalKind::quit())?;
 
     tokio::spawn(async move {
         tokio::select! {
@@ -54,6 +55,9 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<String> {
                 let _ = tx.send(());
             }
             _ = sigint.recv() => {
+                let _ = tx.send(());
+            }
+            _ = sigquit.recv() => {
                 let _ = tx.send(());
             }
         }
