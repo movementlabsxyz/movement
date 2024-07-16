@@ -39,10 +39,16 @@ where
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddress<A>(pub A);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct RecipientAddress(pub Vec<u8>);
+impl From<&str> for InitiatorAddress<Vec<u8>> {
+	fn from(value: &str) -> Self {
+		Self(value.as_bytes().to_vec())
+	}
+}
 
-impl From<&str> for RecipientAddress {
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RecipientAddress<A>(pub A);
+
+impl From<&str> for RecipientAddress<Vec<u8>> {
 	fn from(value: &str) -> Self {
 		RecipientAddress(value.as_bytes().to_vec())
 	}
@@ -68,47 +74,57 @@ pub struct Amount(pub u64);
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<A>,
-	pub recipient_address: RecipientAddress,
+	pub recipient_address: RecipientAddress<Vec<u8>>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct LockDetails<H> {
+pub struct LockDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
-	pub recipient_address: RecipientAddress,
+	pub initiator_address: InitiatorAddress<Vec<u8>>,
+	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct CompletedDetails<H> {
+pub struct CounterpartyCompletedDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
-	pub recipient_address: RecipientAddress,
+	pub initiator_address: InitiatorAddress<Vec<u8>>,
+	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub secret: HashLockPreImage,
 	pub amount: Amount,
 }
 
-impl<H> CompletedDetails<H> {
-	pub fn from_bridge_transfer_details<A>(
+impl<A, H> CounterpartyCompletedDetails<A, H>
+where
+	InitiatorAddress<Vec<u8>>: From<InitiatorAddress<A>>,
+	RecipientAddress<A>: From<RecipientAddress<Vec<u8>>>,
+{
+	pub fn from_bridge_transfer_details(
 		bridge_transfer_details: BridgeTransferDetails<A, H>,
 		secret: HashLockPreImage,
 	) -> Self {
-		CompletedDetails {
+		CounterpartyCompletedDetails {
 			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
-			recipient_address: bridge_transfer_details.recipient_address,
+			initiator_address: From::from(bridge_transfer_details.initiator_address),
+			recipient_address: From::from(bridge_transfer_details.recipient_address),
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,
 		}
 	}
+}
 
-	pub fn from_lock_details(lock_details: LockDetails<H>, secret: HashLockPreImage) -> Self {
-		CompletedDetails {
+impl<A, H> CounterpartyCompletedDetails<A, H> {
+	pub fn from_lock_details(lock_details: LockDetails<A, H>, secret: HashLockPreImage) -> Self {
+		CounterpartyCompletedDetails {
 			bridge_transfer_id: lock_details.bridge_transfer_id,
+			initiator_address: lock_details.initiator_address,
 			recipient_address: lock_details.recipient_address,
 			hash_lock: lock_details.hash_lock,
 			secret,
@@ -127,7 +143,10 @@ pub trait Convert<O> {
 
 // Blankets
 impl<T> BridgeHashType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
-impl<T> BridgeAddressType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
+impl<T> BridgeAddressType for T where
+	T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone + From<Vec<u8>>
+{
+}
 
 pub trait GenUniqueHash {
 	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self;

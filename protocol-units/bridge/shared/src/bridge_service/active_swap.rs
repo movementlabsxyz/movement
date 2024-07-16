@@ -11,14 +11,17 @@ use futures_time::future::{FutureExt as TimeoutFutureExt, Timeout};
 use futures_timer::Delay;
 use thiserror::Error;
 
-use crate::bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator};
 use crate::{
 	blockchain_service::BlockchainService,
 	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
 	types::{
-		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId, CompletedDetails,
-		HashLock,
+		convert_bridge_transfer_id, BridgeTransferDetails, BridgeTransferId,
+		CounterpartyCompletedDetails, HashLock, InitiatorAddress,
 	},
+};
+use crate::{
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	types::RecipientAddress,
 };
 
 pub type BoxedFuture<R, E> = Timeout<Pin<Box<dyn Future<Output = Result<R, E>> + Send>>, Delay>;
@@ -56,10 +59,10 @@ where
 	WaitingForUnlockedEvent,
 	CompletingBridging(
 		BoxedFuture<(), CompleteBridgeTransferError>,
-		CompletedDetails<BTo::Hash>,
+		CounterpartyCompletedDetails<BTo::Address, BTo::Hash>,
 		Attempts,
 	),
-	CompletingBridgingError(Delay, CompletedDetails<BTo::Hash>, Attempts),
+	CompletingBridgingError(Delay, CounterpartyCompletedDetails<BTo::Address, BTo::Hash>, Attempts),
 	Completed,
 	Aborted,
 }
@@ -142,6 +145,8 @@ impl<BTo, BFrom> ActiveSwapMap<BFrom, BTo>
 where
 	BTo: BlockchainService + 'static,
 	BFrom: BlockchainService + 'static,
+	Vec<u8>: From<BTo::Address>,
+	Vec<u8>: From<BFrom::Address>,
 {
 	pub fn build(
 		initiator_contract: BFrom::InitiatorContract,
@@ -176,6 +181,7 @@ where
 		&mut self,
 		details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 	) where
+		BTo::Address: From<Vec<u8>>,
 		BTo::Hash: From<BFrom::Hash>,
 	{
 		assert!(self.swaps.get(&details.bridge_transfer_id).is_none());
@@ -203,7 +209,7 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		details: CompletedDetails<BTo::Hash>,
+		details: CounterpartyCompletedDetails<BTo::Address, BTo::Hash>,
 	) -> Result<(), ActiveSwapMapError>
 	where
 		BFrom::Hash: From<BTo::Hash>,
@@ -265,6 +271,11 @@ where
 
 	BFrom::Hash: From<BTo::Hash>,
 	BTo::Hash: From<BFrom::Hash>,
+
+	BTo::Address: From<Vec<u8>>,
+
+	Vec<u8>: From<BTo::Address>,
+	Vec<u8>: From<BFrom::Address>,
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
 
@@ -462,12 +473,16 @@ async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: Blockch
 		hash_lock,
 		time_lock,
 		recipient_address,
+		initiator_address,
 		amount,
 		..
 	}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 ) -> Result<(), LockBridgeTransferAssetsError>
 where
+	BTo::Address: From<Vec<u8>>,
 	BTo::Hash: From<BFrom::Hash>,
+	Vec<u8>: From<BTo::Address>,
+	Vec<u8>: From<BFrom::Address>,
 {
 	let bridge_transfer_id = BridgeTransferId(From::from(bridge_transfer_id.0));
 	let hash_lock = HashLock(From::from(hash_lock.0));
@@ -482,7 +497,8 @@ where
 			bridge_transfer_id,
 			hash_lock,
 			time_lock,
-			recipient_address,
+			InitiatorAddress(From::from(initiator_address.0)),
+			RecipientAddress(From::from(recipient_address.0)),
 			amount,
 		)
 		.await?;
@@ -508,7 +524,10 @@ impl HasTimeoutError for CompleteBridgeTransferError {
 
 async fn call_complete_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
 	mut initiator_contract: BFrom::InitiatorContract,
-	CompletedDetails { bridge_transfer_id, secret, .. }: CompletedDetails<BTo::Hash>,
+	CounterpartyCompletedDetails { bridge_transfer_id, secret, .. }: CounterpartyCompletedDetails<
+		BTo::Address,
+		BTo::Hash,
+	>,
 ) -> Result<(), CompleteBridgeTransferError>
 where
 	BFrom::Hash: From<BTo::Hash>,

@@ -16,7 +16,13 @@ pub enum SmartContractInitiatorEvent<A, H> {
 
 #[derive(Debug)]
 pub enum InitiatorCall<A, H> {
-	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress, Amount, TimeLock, HashLock<H>),
+	InitiateBridgeTransfer(
+		InitiatorAddress<A>,
+		RecipientAddress<Vec<u8>>,
+		Amount,
+		TimeLock,
+		HashLock<H>,
+	),
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
@@ -53,7 +59,7 @@ where
 	pub fn initiate_bridge_transfer(
 		&mut self,
 		initiator: InitiatorAddress<A>,
-		recipient: RecipientAddress,
+		recipient: RecipientAddress<Vec<u8>>,
 		amount: Amount,
 		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
