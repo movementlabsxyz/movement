@@ -1,6 +1,8 @@
-use anyhow::Context as _;
+use super::Executor;
 use aptos_api::Context;
 use aptos_config::config::NodeConfig;
+#[cfg(test)]
+use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::{ed25519::Ed25519PublicKey, PrivateKey};
 use aptos_db::AptosDB;
 use aptos_executor::{
@@ -21,10 +23,14 @@ use aptos_vm_genesis::{
 };
 use maptos_execution_util::config::Config;
 
-use super::Executor;
+use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
-use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
+
+#[cfg(test)]
+use tempfile::TempDir;
+
+use std::{path::PathBuf, sync::Arc};
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
@@ -161,13 +167,18 @@ impl Executor {
 		)
 	}
 
-	pub fn try_test_default() -> Result<Self, anyhow::Error> {
-		let mut maptos_config = Config::default();
+	#[cfg(test)]
+	pub fn try_test_default(
+		private_key: Ed25519PrivateKey,
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		let tempdir = tempfile::tempdir()?;
 
-		// replace the db path with a temporary directory
-		let value = tempfile::tempdir()?.into_path(); // todo: this works because it's at the top level, but won't be cleaned up automatically
-		maptos_config.chain.maptos_db_path.replace(value);
-		dbg!(&maptos_config.chain.maptos_db_path);
-		Self::try_from_config(&maptos_config)
+		let mut maptos_config = Config::default();
+		maptos_config.chain.maptos_private_key = private_key;
+
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::try_from_config(&maptos_config)?;
+		Ok((executor, tempdir))
 	}
 }

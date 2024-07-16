@@ -221,7 +221,7 @@ mod tests {
 		transaction_builder::TransactionFactory,
 		types::{AccountKey, LocalAccount},
 	};
-	use aptos_storage_interface::state_view::{DbStateView, DbStateViewAtVersion};
+	use aptos_storage_interface::state_view::DbStateViewAtVersion;
 	use aptos_types::{
 		account_address::AccountAddress,
 		account_config::{aptos_test_root_address, AccountResource},
@@ -234,7 +234,6 @@ mod tests {
 		},
 		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
 	};
-	use maptos_execution_util::config::Config;
 	use rand::SeedableRng;
 
 	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
@@ -255,7 +254,8 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
-		let executor = Executor::try_test_default()?;
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -286,7 +286,8 @@ mod tests {
 		// Logger::builder().level(Level::Info).build();
 
 		// Create an executor instance from the environment configuration.
-		let executor = Executor::try_test_default()?;
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -385,7 +386,8 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
-		let executor = Executor::try_test_default()?;
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
