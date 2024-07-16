@@ -208,7 +208,8 @@ mod tests {
 		executor.tick_transaction_pipe(tx.clone()).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _) = callback.await??;
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;
