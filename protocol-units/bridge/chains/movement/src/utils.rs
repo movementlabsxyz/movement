@@ -152,15 +152,3 @@ pub async fn send_view_request(
 		.await?;
 	Ok(view_response.inner().clone())
 }
-
-/// Convert address string to H256
-pub fn convert_hex_string_to_h256(addr: &str) -> Result<H256, String> {
-	let formatted_addr = format!("{:0>64}", addr.trim_start_matches("0x"));
-	let mut bytes = [0u8; 32];
-	for (i, byte) in bytes.iter_mut().enumerate() {
-		let start = i * 2;
-		let end = start + 2;
-		*byte = u8::from_str_radix(&formatted_addr[start..end], 16).map_err(|e| e.to_string())?;
-	}
-	Ok(H256(bytes))
-}
