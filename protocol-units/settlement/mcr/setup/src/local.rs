@@ -17,7 +17,7 @@ impl Local {
 	/// Instantiates the local setup strategy with ports on localhost
 	/// to configure for Ethernet RPC and WebSocket client access.
 	pub fn new() -> Self {
-		Self { }
+		Self {}
 	}
 }
 
@@ -32,7 +32,12 @@ impl Setup for Local {
 		&self,
 		dot_movement: &DotMovement,
 		mut config: Config,
-	) -> impl Future<Output = Result<(Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>), anyhow::Error>> + Send {
+	) -> impl Future<
+		Output = Result<
+			(Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>),
+			anyhow::Error,
+		>,
+	> + Send {
 		//define a temporary chain Id for Anvil
 		let mut rng = thread_rng(); // rng is not send.
 		let id: u16 = rng.gen_range(100, 32768);
@@ -42,14 +47,16 @@ impl Setup for Local {
 		tracing::info!("Init Settlement local conf");
 
 		async move {
-			
 			//start local process and deploy smart contract.
 			//define working directory of Anvil
 			info!("Starting Anvil");
 			let mut path = dot_movement.get_path().to_path_buf();
 			path.push("anvil/mcr");
 			path.push(chain_id.clone());
-			tokio::fs::create_dir_all(&path).await.context("Failed to create Anvil directory").context("Failed to create Anvil directory")?;
+			tokio::fs::create_dir_all(&path)
+				.await
+				.context("Failed to create Anvil directory")
+				.context("Failed to create Anvil directory")?;
 			path.push("anvil.json");
 
 			let anvil_path = path.to_string_lossy().to_string();
@@ -65,10 +72,11 @@ impl Setup for Local {
 					config.eth_rpc_connection_port.to_string(),
 					"--host".to_string(),
 					"0.0.0.0".to_string(),
-					"--steps-tracing".to_string()
+					// "--steps-tracing".to_string(),
 				],
 			)
-			.await.context("Failed to start Anvil")?;
+			.await
+			.context("Failed to start Anvil")?;
 			//wait Anvil to start
 			let mut counter = 0;
 			loop {
@@ -85,23 +93,27 @@ impl Setup for Local {
 			// Deploy MCR smart contract.
 			info!("Deploying MCR smart contract");
 			let anvil_addresses =
-				mcr_settlement_client::eth_client::read_anvil_json_file_addresses(
-					&*anvil_path,
-				).context("Failed to read Anvil addresses")?;
-			config.governor_private_key = anvil_addresses.get(0).ok_or(
-				anyhow!("Governor private key not found in Anvil addresses"),
-			)?.private_key.clone();
+				mcr_settlement_client::eth_client::read_anvil_json_file_addresses(&*anvil_path)
+					.context("Failed to read Anvil addresses")?;
+			config.governor_private_key = anvil_addresses
+				.get(0)
+				.ok_or(anyhow!("Governor private key not found in Anvil addresses"))?
+				.private_key
+				.clone();
 
-			// set the signer private key to the governor private key 
+			// set the signer private key to the governor private key
 			// so that it can mint for itself in future iterations of local mode testing
 			config.signer_private_key = config.governor_private_key.clone();
 
-			let governor_address = anvil_addresses.get(0).ok_or(
-				anyhow!("Governor address not found in Anvil addresses"),
-			)?.address.clone();
+			let governor_address = anvil_addresses
+				.get(0)
+				.ok_or(anyhow!("Governor address not found in Anvil addresses"))?
+				.address
+				.clone();
 
 			// todo: make sure this shows up in the docker container as well
-			let mut solidity_path = std::env::current_dir().context("Failed to get current directory")?;
+			let mut solidity_path =
+				std::env::current_dir().context("Failed to get current directory")?;
 			solidity_path.push("protocol-units/settlement/mcr/contracts");
 
 			let solidity_path = solidity_path.to_string_lossy();
@@ -124,7 +136,8 @@ impl Setup for Local {
 					&config.governor_private_key,
 				],
 			)
-			.await.context("Failed to deploy MCR smart contract")?
+			.await
+			.context("Failed to deploy MCR smart contract")?
 			.trim()
 			.to_string();
 
@@ -148,8 +161,7 @@ impl Setup for Local {
 			let json_text = std::fs::read_to_string(path)
 				.context("Failed to read forge script exec deployement result file")?;
 			//Get the value of the field contractAddress under transactions array
-			let json_value: Value =
-				serde_json::from_str(&json_text).expect("Error parsing JSON");
+			let json_value: Value = serde_json::from_str(&json_text).expect("Error parsing JSON");
 			info!("Deployment JSON value: {json_value:#?}");
 
 			// Extract the move token contract address
@@ -158,25 +170,21 @@ impl Setup for Local {
 				.and_then(|transactions| transactions.get(3))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
-				.ok_or(anyhow!(
-					"No contract address in forge script exec deployement result file."
-				))
+				.ok_or(anyhow!("No contract address in forge script exec deployement result file."))
 				.map(|v| {
 					let s = v.as_str().expect("Contract address elements should be strings");
 					s.to_owned()
 				})?;
 			info!("setting up MCR Ethereum client move_token_address: {move_token_address}");
 			config.move_token_contract_address = move_token_address.to_string();
-			
+
 			// Extract the movement staking contract address
 			let movement_staking_address = json_value["transactions"]
 				.as_array()
 				.and_then(|transactions| transactions.get(4))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
-				.ok_or(anyhow!(
-					"No contract address in forge script exec deployement result file."
-				))
+				.ok_or(anyhow!("No contract address in forge script exec deployement result file."))
 				.map(|v| {
 					let s = v.as_str().expect("Contract address elements should be strings");
 					s.to_owned()
@@ -190,9 +198,7 @@ impl Setup for Local {
 				.and_then(|transactions| transactions.get(5))
 				.and_then(|transaction| transaction.as_object())
 				.and_then(|transaction_object| transaction_object.get("contractAddress"))
-				.ok_or(anyhow!(
-					"No contract address in forge script exec deployement result file."
-				))
+				.ok_or(anyhow!("No contract address in forge script exec deployement result file."))
 				.map(|v| {
 					let s = v.as_str().expect("Contract address elements should be strings");
 					s.to_owned()
@@ -200,16 +206,12 @@ impl Setup for Local {
 			info!("setting up MCR Ethereum client mcr_address: {mcr_address}");
 			config.mcr_contract_address = mcr_address.to_string();
 
-			config.well_known_accounts = anvil_addresses
-				.iter()
-				.map(|account| account.private_key.clone())
-				.collect();
+			config.well_known_accounts =
+				anvil_addresses.iter().map(|account| account.private_key.clone()).collect();
 			info!("MCR config:{config:?}");
 
-			config.well_known_addresses = anvil_addresses
-				.iter()
-				.map(|account| account.address.clone())
-				.collect();
+			config.well_known_addresses =
+				anvil_addresses.iter().map(|account| account.address.clone()).collect();
 
 			Ok((config, anvil_join_handle))
 		}

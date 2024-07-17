@@ -7,8 +7,6 @@ pub mod tests;
 #[cfg(feature = "mock")]
 pub mod mock;
 
-// #[cfg(feature = "eth")]
-// pub mod eth;
 #[cfg(feature = "eth")]
 pub mod eth_client;
 #[cfg(feature = "eth")]
