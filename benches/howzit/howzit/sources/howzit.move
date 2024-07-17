@@ -15,14 +15,14 @@ module howzit::howzit {
   }
 
     // Simply updates the count in the Counter struct
-    public entry fun probe_1(account: &signer) acquires Counter {
-        let counter = borrow_global_mut<Counter>(signer::address_of(account));
+    public entry fun probe_1(_account: &signer) acquires Counter {
+        let counter = borrow_global_mut<Counter>(@howzit);
         counter.count = counter.count + 1;
     }
 
     // Medium loop over the Counter struct
-    public entry fun probe_2(account: &signer) acquires Counter {
-        let counter = borrow_global_mut<Counter>(signer::address_of(account));
+    public entry fun probe_2(_account: &signer) acquires Counter {
+        let counter = borrow_global_mut<Counter>(@howzit);
         let i = 0;
         while (i < 100) {
             counter.count = counter.count + 1;
@@ -31,8 +31,8 @@ module howzit::howzit {
     }
 
     // Big loop over the Counter struct
-    public entry fun probe_3(account: &signer) acquires Counter {
-        let counter = borrow_global_mut<Counter>(signer::address_of(account));
+    public entry fun probe_3(_account: &signer) acquires Counter {
+        let counter = borrow_global_mut<Counter>(@howzit);
         let i = 0;
         while (i < 10000) {
             counter.count = counter.count + 1;

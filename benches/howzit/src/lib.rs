@@ -1,4 +1,5 @@
 pub mod howzit;
+pub use howzit::*;
 
 use std::path::PathBuf;
 
@@ -8,7 +9,6 @@ use aptos_framework::{
     BuildOptions
 };
 use aptos_sdk::{
-    coin_client::{CoinClient, TransferOptions},
     rest_client::{Client, FaucetClient},
     transaction_builder::TransactionBuilder,
     /*types::{
@@ -39,10 +39,9 @@ pub struct PackagePublicationData {
 }
 
 pub async fn build_and_publish_package(
-    wallet : LocalAccount,
+    wallet : &mut LocalAccount,
     rest_client : Client,
-    coin_client : CoinClient<'_>,
-    faucet_client : FaucetClient,
+    faucet_client : &FaucetClient,
     package_path : PathBuf,
     options : BuildOptions,
 ) -> Result<(), anyhow::Error> {
@@ -60,7 +59,7 @@ pub async fn build_and_publish_package(
     // fund the account    
     faucet_client.fund(
         wallet.address(),
-        1_000_000,
+        10_000_000_000,
     ).await.context("Failed to fund account")?;
 
     // get the chain id
@@ -72,20 +71,16 @@ pub async fn build_and_publish_package(
         .chain_id;
 
     // build the publication transaction
-    let transfer_options = TransferOptions::default();
     let transaction_builder = TransactionBuilder::new(
         payload,
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .as_secs()
-            + transfer_options.timeout_secs,
+            .as_secs() + 60,
         ChainId::new(chain_id),
     )
     .sender(wallet.address())
-    .sequence_number(wallet.sequence_number())
-    .max_gas_amount(transfer_options.max_gas_amount)
-    .gas_unit_price(transfer_options.gas_unit_price);
+    .sequence_number(wallet.sequence_number());
     let signed_txn = wallet.sign_with_transaction_builder(transaction_builder);
 
 
