@@ -25,8 +25,9 @@ impl From<anyhow::Error> for TransactionPipeError {
 }
 
 impl Executor {
-	/// Ticks the transaction reader.
-	pub async fn tick_transaction_reader(
+	/// Pipes a batch of transactions from the mempool to the transaction channel.
+	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	pub async fn tick_transaction_pipe(
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
@@ -112,15 +113,6 @@ impl Executor {
 		}
 
 		Ok(())
-	}
-
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub async fn tick_transaction_pipe(
-		&self,
-		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), TransactionPipeError> {
-		self.tick_transaction_reader(transaction_channel).await
 	}
 }
 
