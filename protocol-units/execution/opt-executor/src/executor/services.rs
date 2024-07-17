@@ -47,11 +47,14 @@ mod tests {
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
 
-	fn create_signed_transaction(maptos_config: &Config) -> SignedTransaction {
+	fn create_signed_transaction(
+		sequence_number: u64,
+		maptos_config: &Config,
+	) -> SignedTransaction {
 		let address = account_config::aptos_test_root_address();
 		transaction_test_helpers::get_test_txn_with_chain_id(
 			address,
-			1,
+			sequence_number,
 			&GENESIS_KEYPAIR.0,
 			GENESIS_KEYPAIR.1.clone(),
 			maptos_config.chain.maptos_chain_id.clone(), // This is the value used in aptos testing code.
@@ -68,7 +71,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let user_transaction = create_signed_transaction(&executor.maptos_config);
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
