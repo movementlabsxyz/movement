@@ -25,6 +25,7 @@ members = [
     "protocol-units/bridge/cli",
     "protocol-units/bridge/service",
     "protocol-units/settlement/mcr/runner",
+    "benches/*",
 ]
 
 [workspace.package]
