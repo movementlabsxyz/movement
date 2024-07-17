@@ -1,20 +1,20 @@
+use crate::eth_client::Client;
 use crate::eth_client::{MOVEToken, MovementStaking, MCR};
+use crate::McrSettlementClientOperations;
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
-use alloy::signers::Signer;
 use alloy_network::EthereumWallet;
 use alloy_primitives::Address;
 use alloy_primitives::U256;
-use mcr_settlement_config::Config;
-use mcr_settlement_config::Config;
-use std::str::FromStr;
-use std::str::FromStr;
-
 use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use mcr_settlement_config::Config;
+use movement_types::BlockCommitment;
+use movement_types::Commitment;
+use movement_types::Id;
+use std::str::FromStr;
+use tokio_stream::StreamExt;
 use tracing::info;
-// use alloy::rpc::types::trace::parity::TraceType;
-// use alloy_rpc_types::TransactionRequest;
 
 async fn run_genesis_ceremony(
     config : &Config,
@@ -27,8 +27,8 @@ async fn run_genesis_ceremony(
 
     // Build alice client for MOVEToken, MCR, and staking
     info!("Creating alice client");
-    let alice : PrivateKeySigner = config.well_known_accounts.get(1).context("No well known account")?.parse()?;
-    let alice_address : Address = config.well_known_addresses.get(1).context("No well known address")?.parse()?;
+    let alice : PrivateKeySigner = config.testing.as_ref().context("Testing config not defined.")?.well_known_account_private_keys.get(1).context("No well known account")?.parse()?;
+    let alice_address = alice.address();
     let alice_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(EthereumWallet::from(alice.clone()))
@@ -39,7 +39,7 @@ async fn run_genesis_ceremony(
 
     // Build bob client for MOVEToken, MCR, and staking
     info!("Creating bob client");
-    let bob: PrivateKeySigner = config.well_known_accounts.get(2).context("No well known account")?.parse()?;
+    let bob: PrivateKeySigner = config.testing.as_ref().context("Testing config not defined.")?.well_known_account_private_keys.get(2).context("No well known account")?.parse()?;
     let bob_rpc_provider = ProviderBuilder::new()
         .with_recommended_fillers()
         .wallet(EthereumWallet::from(bob.clone()))
@@ -143,13 +143,6 @@ async fn run_genesis_ceremony(
     Ok(())
 }
 
-use crate::eth_client::Client;
-use crate::McrSettlementClientOperations;
-use movement_types::Commitment;
-use movement_types::Id;
-use movement_types::BlockCommitment;
-use tokio_stream::StreamExt;
-
 #[tokio::test]
 pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
 
@@ -171,19 +164,23 @@ pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
     let config : Config = godfig.try_wait_for_ready().await?;
     let rpc_url = config.eth_rpc_connection_url();
 
-
+    let testing_config = config.testing.as_ref().context("Testing config not defined.")?;
     run_genesis_ceremony(
         &config,
-        PrivateKeySigner::from_str(&config.governor_private_key)?,
+        PrivateKeySigner::from_str(&testing_config.mcr_testing_admin_account_private_key)?,
         &rpc_url,
-        Address::from_str(&config.move_token_contract_address)?,
-        Address::from_str(&config.movement_staking_contract_address)?,
-        Address::from_str(&config.mcr_contract_address)?
+        Address::from_str(&testing_config.move_token_contract_address)?,
+        Address::from_str(&testing_config.movement_staking_contract_address)?,
+        Address::from_str(&config.settle.mcr_contract_address)?
     ).await?;
 
     // Build client 1 and send the first commitment.
+    //let settlement_config = 
     let config1 = Config {
-        signer_private_key: config.well_known_accounts.get(1).context("No well known account")?.to_string(),
+        settle : mcr_settlement_config::common::settlement::Config {
+            signer_private_key:  testing_config.well_known_account_private_keys.get(1).context("No well known account")?.to_string(),
+            ..config.settle.clone()
+        },
         ..config.clone()
     };
     let client1 = Client::build_with_config(config1).await.unwrap();
@@ -203,7 +200,10 @@ pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
 
     // Build client 2 and send the second commitment.
     let config2 = Config {
-        signer_private_key: config.well_known_accounts.get(2).context("No well known account")?.to_string(),
+        settle : mcr_settlement_config::common::settlement::Config {
+            signer_private_key:  testing_config.well_known_account_private_keys.get(2).context("No well known account")?.to_string(),
+            ..config.settle.clone()
+        },
         ..config.clone()
     };
     let client2 = Client::build_with_config(config2).await.unwrap();

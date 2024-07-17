@@ -6,13 +6,9 @@ pub mod tests;
 
 pub mod mock;
 
-<<<<<<< HEAD
 #[cfg(feature = "mock")]
 pub use mock::*;
 
-=======
-#[cfg(feature = "eth")]
->>>>>>> affd8a71 (add MCR settlement client test)
 pub mod eth_client;
 
 #[cfg(feature = "eth")]
