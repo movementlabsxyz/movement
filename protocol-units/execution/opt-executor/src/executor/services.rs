@@ -35,41 +35,32 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-
 	use super::*;
-	use aptos_crypto::{
-		ed25519::{Ed25519PrivateKey, Ed25519Signature},
-		PrivateKey, Uniform,
-	};
+	use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform};
 	use aptos_mempool::MempoolClientRequest;
 	use aptos_types::{
-		account_address::AccountAddress,
-		chain_id::ChainId,
-		transaction::{RawTransaction, Script, SignedTransaction, TransactionPayload},
+		account_config, mempool_status::MempoolStatusCode, test_helpers::transaction_test_helpers,
+		transaction::SignedTransaction,
 	};
+	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
 	use futures::SinkExt;
+	use maptos_execution_util::config::Config;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let public_key = private_key.public_key();
-		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
-		let raw_transaction = RawTransaction::new(
-			AccountAddress::random(),
-			0,
-			transaction_payload,
-			0,
-			gas_unit_price,
-			0,
-			chain_id, // This is the value used in aptos testing code.
-		);
-		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
+	fn create_signed_transaction(maptos_config: &Config) -> SignedTransaction {
+		let address = account_config::aptos_test_root_address();
+		transaction_test_helpers::get_test_txn_with_chain_id(
+			address,
+			1,
+			&GENESIS_KEYPAIR.0,
+			GENESIS_KEYPAIR.1.clone(),
+			maptos_config.chain.maptos_chain_id.clone(), // This is the value used in aptos testing code.
+		)
 	}
 
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (mut executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let server_executor = executor.clone();
 
 		let handle = tokio::spawn(async move {
@@ -77,8 +68,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let user_transaction =
-			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -92,7 +82,9 @@ mod tests {
 		executor.tick_transaction_pipe(tx).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		// dbg!(_vm_status_code);
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;

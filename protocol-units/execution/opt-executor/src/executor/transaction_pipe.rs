@@ -131,37 +131,30 @@ mod tests {
 
 	use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
-	use aptos_crypto::ValidCryptoMaterialStringExt;
-use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 	use aptos_types::{
-		account_address::AccountAddress, 
-		test_helpers::transaction_test_helpers::get_test_txn_with_chain_id,
-		transaction::SignedTransaction,
+		account_config, test_helpers::transaction_test_helpers, transaction::SignedTransaction,
 	};
-	use aptos_sdk::types::LocalAccount;
+	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
 	use futures::SinkExt;
-	use hex::ToHex;
-use maptos_execution_util::config::Config;
+	use maptos_execution_util::config::Config;
 
-	fn create_signed_transaction(maptos_config: &Config) -> Result<SignedTransaction, anyhow::Error> {
-		let public_key = maptos_config.chain.maptos_private_key.public_key();
-		let local_account = LocalAccount::from_private_key(&maptos_config.chain.maptos_private_key.clone().to_encoded_string()?, 1)?;
-		Ok(get_test_txn_with_chain_id(
-			local_account.address(),
+	fn create_signed_transaction(maptos_config: &Config) -> SignedTransaction {
+		let address = account_config::aptos_test_root_address();
+		transaction_test_helpers::get_test_txn_with_chain_id(
+			address,
 			1,
-			&maptos_config.chain.maptos_private_key,
-			public_key,
+			&GENESIS_KEYPAIR.0,
+			GENESIS_KEYPAIR.1.clone(),
 			maptos_config.chain.maptos_chain_id.clone(), // This is the value used in aptos testing code.
-		))
+		)
 	}
 
 	#[tokio::test]
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (mut executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
-		let user_transaction = create_signed_transaction(&executor.maptos_config)?;
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -175,7 +168,8 @@ use maptos_execution_util::config::Config;
 		executor.tick_transaction_pipe(tx).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;
@@ -187,9 +181,8 @@ use maptos_execution_util::config::Config;
 	#[tokio::test]
 	async fn test_pipe_mempool_with_malformed_transaction() -> Result<(), anyhow::Error> {
 		// header
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (mut executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
-		let user_transaction = create_signed_transaction(&executor.maptos_config)?;
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -203,7 +196,8 @@ use maptos_execution_util::config::Config;
 		executor.tick_transaction_pipe(tx.clone()).await?;
 
 		// receive the callback
-		let (status, _) = callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		// dbg!(_vm_status_code);
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
@@ -235,8 +229,7 @@ use maptos_execution_util::config::Config;
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -249,7 +242,7 @@ use maptos_execution_util::config::Config;
 		});
 
 		let api = executor.get_apis();
-		let user_transaction = create_signed_transaction(&executor.maptos_config)?;
+		let user_transaction = create_signed_transaction(&executor.maptos_config);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
@@ -264,8 +257,7 @@ use maptos_execution_util::config::Config;
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -281,7 +273,7 @@ use maptos_execution_util::config::Config;
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
 		for _ in 0..25 {
-			let user_transaction = create_signed_transaction(&executor.maptos_config)?;
+			let user_transaction = create_signed_transaction(&executor.maptos_config);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 
