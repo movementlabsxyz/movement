@@ -41,6 +41,8 @@ impl<B1, B2> BridgeService<B1, B2>
 where
 	B1: BlockchainService + 'static,
 	B2: BlockchainService + 'static,
+	Vec<u8>: From<B1::Address>,
+	Vec<u8>: From<B2::Address>,
 {
 	pub fn new(blockchain_1: B1, blockchain_2: B2, config: BridgeServiceConfig) -> Self {
 		Self {
@@ -68,6 +70,10 @@ where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
 	BTo::Hash: From<BFrom::Hash>,
+	BTo::Address: From<Vec<u8>>,
+
+	Vec<u8>: From<BTo::Address>,
+	Vec<u8>: From<BFrom::Address>,
 {
 	match initiator_event {
 		BridgeContractInitiatorEvent::Initiated(ref details) => {
@@ -84,13 +90,16 @@ where
 }
 
 fn handle_counterparty_event<BFrom, BTo>(
-	event: BridgeContractCounterpartyEvent<BTo::Hash>,
+	event: BridgeContractCounterpartyEvent<BTo::Address, BTo::Hash>,
 	active_swaps: &mut ActiveSwapMap<BFrom, BTo>,
-) -> Option<CEvent<BTo::Hash>>
+) -> Option<CEvent<BTo::Address, BTo::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
 	BFrom::Hash: From<BTo::Hash>,
+
+	Vec<u8>: From<BTo::Address>,
+	Vec<u8>: From<BFrom::Address>,
 {
 	use BridgeContractCounterpartyEvent::*;
 	match event {
@@ -119,6 +128,12 @@ where
 
 	B1::Hash: From<B2::Hash>,
 	B2::Hash: From<B1::Hash>,
+
+	B1::Address: From<Vec<u8>>,
+	B2::Address: From<Vec<u8>>,
+
+	Vec<u8>: From<B1::Address>,
+	Vec<u8>: From<B2::Address>,
 {
 	type Item = Event<B1, B2>;
 
@@ -223,14 +238,18 @@ where
 
 // Initiator events pertain to the initiator contract, while counterparty events are associated
 // with the counterparty contract.
-enum HandleActiveSwapEvent<A, H, H2> {
-	InitiatorEvent(IEvent<A, H>),
-	CounterpartyEvent(CEvent<H2>),
+enum HandleActiveSwapEvent<BFrom, BTo>
+where
+	BFrom: BlockchainService,
+	BTo: BlockchainService,
+{
+	InitiatorEvent(IEvent<BFrom::Address, BFrom::Hash>),
+	CounterpartyEvent(CEvent<BTo::Address, BTo::Hash>),
 }
 
 fn handle_active_swap_event<BFrom, BTo>(
 	active_swap_event: Poll<Option<ActiveSwapEvent<BFrom::Hash>>>,
-) -> Option<HandleActiveSwapEvent<BFrom::Address, BFrom::Hash, BTo::Hash>>
+) -> Option<HandleActiveSwapEvent<BFrom, BTo>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
