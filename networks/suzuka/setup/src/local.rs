@@ -5,8 +5,7 @@ use dot_movement::DotMovement;
 
 #[derive(Debug, Clone, Default)]
 pub struct Local {
-	// this is just for the current version without settlement because this field is never read.
-	mcr_settlement_strategy: mcr_settlement_setup::local::Local,
+	mcr_settlement_strategy: mcr_settlement_setup::Setup
 }
 
 impl Local {
