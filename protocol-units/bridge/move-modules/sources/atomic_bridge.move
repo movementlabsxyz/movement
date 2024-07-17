@@ -184,15 +184,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         let recipient = @0xface; 
         let asset = moveth::metadata();
 
-        // the master minter sets client to be a minter
-        // moveth::add_minter(master_minter, signer::address_of(client));
-
-        //client now mints themselves 100 moveth
-        // moveth::mint(client, signer::address_of(client), 100);
-        // assert!(primary_fungible_store::balance(signer::address_of(client), asset) == 100, 0);
-
-
-        // In this case the moveth_minter (2nd param) is also the creator.
         init_module(creator);
 
         let bridge_transfer_id = b"transfer1";
@@ -259,15 +250,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         let recipient = @0xface; 
         let asset = moveth::metadata();
 
-        // the master minter sets client to be a minter
-        // moveth::add_minter(master_minter, signer::address_of(client));
-
-        //client now mints themselves 100 moveth
-        // moveth::mint(client, signer::address_of(client), 100);
-        // assert!(primary_fungible_store::balance(signer::address_of(client), asset) == 100, 0);
-
-
-        // In this case the moveth_minter (2nd param) is also the creator.
         init_module(creator);
 
         let bridge_transfer_id = b"transfer1";
