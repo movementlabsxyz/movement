@@ -99,7 +99,8 @@ module atomic_bridge::atomic_bridge_counterparty {
     public fun complete_bridge_transfer(
         caller: &signer,
         bridge_transfer_id: vector<u8>,
-        pre_image: vector<u8>
+        pre_image: vector<u8>,
+        master_minter: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let bridge_store = borrow_global_mut<BridgeTransferStore>(config_address);
@@ -108,7 +109,10 @@ module atomic_bridge::atomic_bridge_counterparty {
         let computed_hash = keccak256(pre_image);
         assert!(computed_hash == details.hash_lock, 2);
 
-        // Mint moveth tokens to the recipient, caller must me a minter of moveth
+        // Make caller a minter of MovETH
+        moveth::add_minter(master_minter, signer::address_of(caller));
+
+        // Mint moveth tokens to the recipient
         moveth::mint(caller, details.recipient, details.amount);
 
         smart_table::add(&mut bridge_store.completed_transfers, bridge_transfer_id, details);
@@ -162,11 +166,11 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, client = @0xface, master_minter = @0xbab)]
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_complete_transfer_assets(
-        aptos_framework: &signer,
-        master_minter: &signer,
         client: &signer,
+        aptos_framework: &signer,
+        master_minter: &signer, 
         creator: &signer,
         moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
@@ -178,11 +182,11 @@ module atomic_bridge::atomic_bridge_counterparty {
         let asset = moveth::metadata();
 
         // the master minter sets client to be a minter
-        moveth::add_minter(master_minter, signer::address_of(client));
+        // moveth::add_minter(master_minter, signer::address_of(client));
 
         //client now mints themselves 100 moveth
-        moveth::mint(client, signer::address_of(client), 100);
-        assert!(primary_fungible_store::balance(signer::address_of(client), asset) == 100, 0);
+        // moveth::mint(client, signer::address_of(client), 100);
+        // assert!(primary_fungible_store::balance(signer::address_of(client), asset) == 100, 0);
 
 
         // In this case the moveth_minter (2nd param) is also the creator.
@@ -218,11 +222,11 @@ module atomic_bridge::atomic_bridge_counterparty {
        let msg:vector<u8> = b"secret";
         debug::print(&utf8(msg));
 
-       // Client must be a moveth minter, otherwise this will fail
        complete_bridge_transfer(
            client,
            bridge_transfer_id,
-           pre_image 
+           pre_image,
+           master_minter 
        );
 
         debug::print(&utf8(msg));

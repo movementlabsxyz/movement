@@ -4,20 +4,23 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-atomic_bridge = "_"
-moveth = "_"
-master_minter = "_"
-minter = "_"
-pauser = "_"
-denylister = "_"
-
-[dev-addresses]
-moveth = "0xbeef"
-atomic_bridge = "0xfeef"
-master_minter = "0xbab"
-minter = "0xface"
+atomic_bridge = "0x6a05dca724278092fb96a8ff91e1b814092e4e2059e1769793cda8d48f199951"
+moveth = "0x6a05dca724278092fb96a8ff91e1b814092e4e2059e1769793cda8d48f199951"
+master_minter = "0x6a05dca724278092fb96a8ff91e1b814092e4e2059e1769793cda8d48f199951"
+minter = "0xe4442499a19ba92b5901cb059bad46eb15c88ebf99bc4d18f7f17e8beea4a4b2"
+admin = "0xe4442499a19ba92b5901cb059bad46eb15c88ebf99bc4d18f7f17e8beea4a4b2"
 pauser = "0xdafe"
 denylister = "0xcade"
+
+[dev-addresses]
+# moveth = "0xbeef"
+# atomic_bridge = "0xfeef"
+# master_minter = "0xbab"
+# minter = "0xface"
+# admin = "0xad"
+# pauser = "_"
+# denylister = "_"
+
 
 [dependencies.AptosFramework]
 git = "https://github.com/aptos-labs/aptos-core.git"
