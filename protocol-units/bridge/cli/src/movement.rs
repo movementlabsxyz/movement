@@ -1,10 +1,13 @@
 use anyhow::Result;
 use bridge_shared::{
 	bridge_contracts::BridgeContractCounterparty,
-	types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, RecipientAddress, TimeLock},
+	types::{
+		Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
+		TimeLock,
+	},
 };
 use clap::{Parser, Subcommand};
-use movement_bridge::MovementClient;
+use movement_bridge::{utils::MovementAddress, MovementClient};
 
 #[derive(Parser)]
 #[command(name = "movement-cli")]
@@ -102,7 +105,8 @@ async fn lock_assets(
 			BridgeTransferId::parse(bridge_transfer_id)?,
 			HashLock::parse(hash_lock)?,
 			TimeLock(time_lock),
-			RecipientAddress::from(recipient),
+			InitiatorAddress(Vec::new()), //dummy for now
+			RecipientAddress(MovementAddress::from(recipient)),
 			Amount(amount),
 		)
 		.await?;

@@ -20,6 +20,15 @@ use derive_new::new;
 use keccak_hash::H256;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+use thiserror::Error;
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum MovementAddressError {
+	#[error("Invalid hex string")]
+	InvalidHexString,
+	#[error("Invalid byte length for AccountAddress")]
+	InvalidByteLength,
+}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct MovementAddress(pub AccountAddress);
@@ -32,6 +41,14 @@ impl From<Vec<u8>> for MovementAddress {
 		let account_address =
 			AccountAddress::from_bytes(vec).expect("Invalid byte length for AccountAddress");
 		MovementAddress(account_address)
+	}
+}
+
+impl From<&str> for MovementAddress {
+	fn from(s: &str) -> Self {
+		let s = s.trim_start_matches("0x");
+		let bytes = hex::decode(s).expect("Invalid hex string");
+		bytes.into()
 	}
 }
 

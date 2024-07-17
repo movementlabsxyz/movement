@@ -20,9 +20,11 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 derive-new = { workspace = true }
+hex = { workspace = true }
 poem = { workspace = true }
 keccak-hash = { workspace = true }
 tokio = { workspace = true }
+thiserror = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }

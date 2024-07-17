@@ -21,7 +21,7 @@ use url::Url;
 
 use crate::utils::MovementAddress;
 
-mod utils;
+pub mod utils;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";

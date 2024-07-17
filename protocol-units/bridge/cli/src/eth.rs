@@ -1,4 +1,4 @@
-use alloy_primitives::{hex::decode, Address as EthAddress};
+use alloy_primitives::{hex::decode, Address};
 use anyhow::Result;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
@@ -8,7 +8,7 @@ use bridge_shared::{
 	},
 };
 use clap::{Parser, Subcommand};
-use ethereum_bridge::{Config, EthClient};
+use ethereum_bridge::{utils::EthAddress, Config, EthClient};
 
 #[derive(Parser)]
 #[command(name = "eth-bridge-cli")]
@@ -131,16 +131,12 @@ async fn initiate_transfer(
 ) -> Result<()> {
 	println!("config {:?}", config);
 	let mut client = EthClient::build_with_config(config, recipient_address).await?;
-	//let chain_id = 42; //dummy value for now
-	let initiator_address = EthAddress::parse_checksummed(initiator_address, None)?;
+	let initiator_address = Address::parse_checksummed(initiator_address, None)?;
 	let recipient_address = Vec::from(parse_recipient_address(recipient_address).unwrap());
 	let hash_lock = HashLock::parse(hash_lock)?;
-	println!("initiator_address: {:?}", initiator_address);
-	println!("recipient_address: {:?}", recipient_address);
-	println!("hash_lock: {:?}", hash_lock);
 	client
 		.initiate_bridge_transfer(
-			InitiatorAddress(initiator_address),
+			InitiatorAddress(EthAddress(initiator_address)),
 			RecipientAddress(recipient_address),
 			HashLock(hash_lock.0),
 			TimeLock(time_lock),

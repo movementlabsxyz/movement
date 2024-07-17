@@ -32,7 +32,7 @@ use std::fmt::Debug;
 use thiserror::Error;
 use utils::EthAddress;
 
-mod utils;
+pub mod utils;
 
 const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
