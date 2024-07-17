@@ -54,7 +54,6 @@ pub(crate) struct ProviderArgs {
 	pub rpc_provider: AlloyProvider,
 	pub ws_provider: RootProvider<PubSubFrontend>,
 	pub initiator_address: EthAddress,
-	pub signer_address: EthAddress,
 	pub counterparty_address: EthAddress,
 	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,

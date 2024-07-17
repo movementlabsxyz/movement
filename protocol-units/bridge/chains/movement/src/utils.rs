@@ -18,7 +18,22 @@ use aptos_sdk::{
 };
 use derive_new::new;
 use keccak_hash::H256;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct MovementAddress(pub AccountAddress);
+
+impl From<Vec<u8>> for MovementAddress {
+	fn from(vec: Vec<u8>) -> Self {
+		// Ensure the vector has the correct length
+		assert_eq!(vec.len(), AccountAddress::LENGTH);
+
+		let account_address =
+			AccountAddress::from_bytes(vec).expect("Invalid byte length for AccountAddress");
+		MovementAddress(account_address)
+	}
+}
 
 /// limit of gas unit
 const GAS_UNIT_LIMIT: u64 = 100000;

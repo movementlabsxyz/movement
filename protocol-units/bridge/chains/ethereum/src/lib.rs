@@ -174,7 +174,6 @@ impl EthClient<AlloyProvider> {
 			rpc_provider,
 			ws_provider,
 			initiator_address,
-			signer_address: counterparty_address.parse()?,
 			counterparty_address: counterparty_address.parse()?,
 			gas_limit: config.gas_limit,
 			num_tx_send_retries: config.num_tx_send_retries,

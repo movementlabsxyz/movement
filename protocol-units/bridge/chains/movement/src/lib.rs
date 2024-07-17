@@ -1,15 +1,9 @@
 use aptos_sdk::{
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, TypeTag},
-	},
-	rest_client::{aptos_api_types::MoveModuleId, Client, FaucetClient},
+	move_types::language_storage::TypeTag,
+	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
-use aptos_types::{
-	account_address::AccountAddress,
-	transaction::{EntryFunction, TransactionPayload},
-};
+use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractCounterpartyError,
@@ -17,13 +11,15 @@ use bridge_shared::{
 	},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		RecipientAddress, TimeLock,
+		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
 use rand::prelude::*;
 use serde::Serialize;
 use std::str::FromStr;
 use url::Url;
+
+use crate::utils::MovementAddress;
 
 mod utils;
 
@@ -104,7 +100,7 @@ impl Clone for MovementClient {
 
 #[async_trait::async_trait]
 impl BridgeContractCounterparty for MovementClient {
-	type Address = AccountAddress;
+	type Address = MovementAddress;
 	type Hash = [u8; 32];
 
 	async fn lock_bridge_transfer_assets(
@@ -112,12 +108,13 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddress,
+		initiator: InitiatorAddress<Vec<u8>>,
+		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
 		//@TODO properly return an error instead of unwrapping
 		let args = vec![
-			self.to_bcs_bytes(&self.signer.address()).unwrap(),
+			self.to_bcs_bytes(&initiator.0).unwrap(),
 			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
 			self.to_bcs_bytes(&hash_lock.0).unwrap(),
 			self.to_bcs_bytes(&time_lock.0).unwrap(),
@@ -183,7 +180,7 @@ impl BridgeContractCounterparty for MovementClient {
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
 	{
 		// let _ = utils::send_view_request(
