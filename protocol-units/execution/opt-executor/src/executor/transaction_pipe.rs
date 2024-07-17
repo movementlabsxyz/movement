@@ -131,7 +131,8 @@ mod tests {
 
 	use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
-	use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
+	use aptos_crypto::ValidCryptoMaterialStringExt;
+use aptos_crypto::{ed25519::Ed25519PrivateKey, PrivateKey, Uniform};
 	use aptos_types::{
 		account_address::AccountAddress, 
 		test_helpers::transaction_test_helpers::get_test_txn_with_chain_id,
@@ -140,11 +141,12 @@ mod tests {
 	use aptos_sdk::types::LocalAccount;
 	use futures::channel::oneshot;
 	use futures::SinkExt;
-	use maptos_execution_util::config::Config;
+	use hex::ToHex;
+use maptos_execution_util::config::Config;
 
 	fn create_signed_transaction(maptos_config: &Config) -> Result<SignedTransaction, anyhow::Error> {
 		let public_key = maptos_config.chain.maptos_private_key.public_key();
-		let local_account = LocalAccount::from_private_key(&maptos_config.chain.maptos_private_key.clone().to_string(), 1)?;
+		let local_account = LocalAccount::from_private_key(&maptos_config.chain.maptos_private_key.clone().to_encoded_string()?, 1)?;
 		Ok(get_test_txn_with_chain_id(
 			local_account.address(),
 			1,
