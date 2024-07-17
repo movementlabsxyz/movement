@@ -12,6 +12,6 @@ else
     CARGO_PROFILE_FLAGS=""
 fi
 
-echo "Building mcr-settlement-anvil..."
-cargo build $CARGO_PROFILE_FLAGS -p mcr-settlement-anvil
-echo "Built mcr-settlement-anvil!"
+echo "Building mcr-settlement-runner..."
+cargo build $CARGO_PROFILE_FLAGS -p mcr-settlement-runner
+echo "Built mcr-settlement-runner!"

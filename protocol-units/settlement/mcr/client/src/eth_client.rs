@@ -10,15 +10,11 @@ use alloy::providers::fillers::JoinFill;
 use alloy::providers::fillers::NonceFiller;
 use alloy::providers::fillers::WalletFiller;
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
-use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
-use alloy_network::Ethereum;
-use alloy_network::EthereumWallet;
-use alloy_primitives::Address;
-use alloy_primitives::U256;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
+use anyhow::Context;
 use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use movement_types::{Commitment, Id};
@@ -98,25 +94,26 @@ impl
 	>
 {
 	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
-		let signer_private_key = config.signer_private_key.clone();
+		let signer_private_key = config.settle.signer_private_key.clone();
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
-		let contract_address = config.mcr_contract_address.parse()?;
+		let contract_address = config.settle.mcr_contract_address.parse()?;
 		let rpc_url = config.eth_rpc_connection_url();
 		let ws_url = config.eth_ws_connection_url();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(signer))
 			.on_builtin(&rpc_url)
-			.await?;
+			.await
+			.context("Failed to create the RPC provider for the MCR settlement client")?;
 
 		let mut client = Client::build_with_provider(
 			rpc_provider,
 			ws_url,
 			signer_address,
 			contract_address,
-			config.gas_limit,
-			config.transaction_send_retries,
+			config.transactions.gas_limit,
+			config.transactions.transaction_send_retries,
 		)
 		.await?;
 		Ok(client)
@@ -247,10 +244,17 @@ where
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getAcceptedCommitmentAtBlockHeightReturn { _0: commitment } =
 			contract.getAcceptedCommitmentAtBlockHeight(U256::from(height)).call().await?;
-		let return_height: u64 = commitment.height.try_into()?;
+
+		let return_height: u64 = commitment
+			.height
+			.try_into()
+			.context("Failed to convert the commitment height from U256 to u64")?;
 		// Commitment with height 0 mean not found
 		Ok((return_height != 0).then_some(BlockCommitment {
-			height: commitment.height.try_into()?,
+			height: commitment
+				.height
+				.try_into()
+				.context("Failed to convert the commitment height from U256 to u64")?,
 			block_id: Id(commitment.blockId.into()),
 			commitment: Commitment(commitment.commitment.into()),
 		}))
@@ -260,8 +264,9 @@ where
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
 			contract.getMaxTolerableBlockHeight().call().await?;
-		let return_height: u64 = block_height.try_into()?;
-		Ok(return_height)
+		Ok(block_height
+			.try_into()
+			.context("Failed to convert the max tolerable block height from U256 to u64")?)
 	}
 }
 
@@ -303,4 +308,3 @@ pub fn read_anvil_json_file_addresses<P: AsRef<Path>>(
 		.collect::<Vec<_>>();
 	Ok(res)
 }
-

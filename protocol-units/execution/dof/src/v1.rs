@@ -3,6 +3,7 @@ use aptos_api::runtime::Apis;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::Executor as OptExecutor;
 use movement_types::BlockCommitment;
+use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 
 use async_channel::Sender;
 use async_trait::async_trait;
@@ -50,7 +51,17 @@ impl DynOptFinExecutor for Executor {
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
 		loop {
 			// readers should be able to run concurrently
-			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
+			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
+				Ok(_) => {}
+				Err(e) => match e {
+					TransactionPipeError::TransactionNotAccepted(e) => {
+						// allow the transaction not to be accepted by the mempool
+						// because the client may have sent a bad sequence number
+						tracing::warn!("Transaction not accepted: {:?}", e);
+					}
+					_ => anyhow::bail!("Server error: {:?}", e),
+				}, 
+			}
 		}
 	}
 
@@ -357,7 +368,7 @@ mod tests {
 
 		let latest_version = {
 			let db_reader = executor.executor.db.reader.clone();
-			db_reader.get_latest_version()?
+			db_reader.get_synced_version()?
 		};
 		assert_eq!(latest_version, version_to_revert_to);
 

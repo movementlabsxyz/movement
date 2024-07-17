@@ -30,7 +30,7 @@ impl Manager {
 		client: C,
 		config: &Config,
 	) -> (Self, CommitmentEventStream) {
-		let batch_timeout = Duration::from_millis(config.batch_timeout);
+		let batch_timeout = Duration::from_millis(config.transactions.batch_timeout);
 		let (sender, receiver) = mpsc::channel(16);
 		let event_stream = process_commitments(receiver, client, batch_timeout);
 		(Self { sender }, event_stream)
@@ -146,13 +146,13 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use mcr_settlement_client::mock::MockMcrSettlementClient;
+	use mcr_settlement_client::mock::McrSettlementClient;
 	use movement_types::{BlockCommitment, Commitment};
 
 	#[tokio::test]
 	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let mut client = MockMcrSettlementClient::new();
+		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 		let commitment = BlockCommitment {
@@ -177,7 +177,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_block_commitment_rejected() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let mut client = MockMcrSettlementClient::new();
+		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 		let commitment = BlockCommitment {
@@ -215,7 +215,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_back_pressure() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let mut client = MockMcrSettlementClient::new();
+		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 2;
 		client.pause_after(2).await;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
@@ -274,8 +274,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_batch_timeout() -> Result<(), anyhow::Error> {
-		let config = Config { batch_timeout: 1000, ..Config::default() };
-		let client = MockMcrSettlementClient::new();
+		let mut config = Config::default();
+		config.transactions.batch_timeout = 100;
+		let client = McrSettlementClient::new();
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
 		let commitment1 = BlockCommitment {

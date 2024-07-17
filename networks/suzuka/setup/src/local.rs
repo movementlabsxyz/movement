@@ -1,12 +1,12 @@
 use crate::SuzukaFullNodeSetupOperations;
 use dot_movement::DotMovement;
-use mcr_settlement_setup::Setup as _;
 
 // use tracing::debug;
 
 #[derive(Debug, Clone, Default)]
 pub struct Local {
-	mcr_settlement_strategy: mcr_settlement_setup::Local,
+	// this is just for the current version without settlement because this field is never read.
+	pub mcr_settlement_strategy: mcr_settlement_setup::local::Local,
 }
 
 impl Local {

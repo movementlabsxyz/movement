@@ -30,6 +30,7 @@ module moveth::moveth {
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Roles has key {
         master_minter: address,
+        admin: address,
         minters: vector<address>,
         pauser: address,
         denylister: address,
@@ -118,9 +119,14 @@ module moveth::moveth {
 
         // All resources created will be kept in the asset metadata object.
         let metadata_object_signer = &object::generate_signer(constructor_ref);
+
+        let minters = vector::empty<address>();
+        vector::push_back(&mut minters, @minter);
+
         move_to(metadata_object_signer, Roles {
             master_minter: @master_minter,
-            minters: vector[],
+            admin: @admin,
+            minters,
             pauser: @pauser,
             denylister: @denylister,
         });
@@ -310,7 +316,7 @@ module moveth::moveth {
     public entry fun add_minter(admin: &signer, minter: address) acquires Roles, State {
         assert_not_paused();
         let roles = borrow_global_mut<Roles>(moveth_address());
-        assert!(signer::address_of(admin) == roles.master_minter, EUNAUTHORIZED);
+        assert!(signer::address_of(admin) == roles.admin || signer::address_of(admin) == roles.master_minter, EUNAUTHORIZED);
         assert!(!vector::contains(&roles.minters, &minter), EALREADY_MINTER);
         vector::push_back(&mut roles.minters, minter);
     }

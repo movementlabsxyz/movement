@@ -49,6 +49,11 @@ services:
         condition: service_completed_successfully
     ports:
       - "30730:30730"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30730" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${CONTAINER_REV}
@@ -61,19 +66,11 @@ services:
       - m1-da-light-node
     ports:
       - "30731:30731"
-
-  wait-for-suzuka-full-node:
-    image: busybox
-    container_name: wait-for-suzuka-full-node
-    depends_on:
-      - suzuka-full-node
-    entrypoint: 
-      - /bin/sh
-      - -c
-      - |
-        echo "Waiting for suzuka-full-node to be ready..."
-        sleep 5
-        echo "suzuka-full-node is ready"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30731" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
 
   suzuka-faucet-service:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -86,8 +83,13 @@ services:
     ports:
       - "30732:30732"
     depends_on:
-      wait-for-suzuka-full-node:
-        condition: service_completed_successfully
+      suzuka-full-node:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
 
 volumes:
   dot-movement:
