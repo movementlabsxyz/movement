@@ -17,6 +17,10 @@ path = "src/bin/celestia-appd.rs"
 name = "m1-da-light-node-celestia-bridge"
 path = "src/bin/celestia-bridge.rs"
 
+[[bin]]
+name = "m1-da-light-node-celestia-light"
+path = "src/bin/celestia-light.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]

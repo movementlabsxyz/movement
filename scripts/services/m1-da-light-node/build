@@ -23,3 +23,7 @@ echo "Built m1-da-light-node-celestia-appd!"
 echo "Building m1-da-light-node-celestia-bridge..."
 cargo build $CARGO_PROFILE_FLAGS --bin m1-da-light-node-celestia-bridge
 echo "Built m1-da-light-node-celestia-bridge!"
+
+echo "Building m1-da-light-node-celestia-light..."
+cargo build $CARGO_PROFILE_FLAGS --bin m1-da-light-node-celestia-light
+echo "Built m1-da-light-node-celestia-light!"
