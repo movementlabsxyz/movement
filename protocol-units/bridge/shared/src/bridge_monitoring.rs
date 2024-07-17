@@ -20,7 +20,7 @@ impl<A, H> BridgeContractInitiatorEvent<A, H> {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyEvent<A, H> {
 	Locked(LockDetails<A, H>),
 	Completed(CounterpartyCompletedDetails<A, H>),

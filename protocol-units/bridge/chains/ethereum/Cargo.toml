@@ -18,6 +18,7 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
 poem = { workspace = true }
+hex = { workspace = true }
 keccak-hash = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }

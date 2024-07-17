@@ -5002,6 +5002,7 @@ dependencies = [
  "async-trait",
  "bridge-shared",
  "futures",
+ "hex",
  "keccak-hash",
  "mcr-settlement-client",
  "poem",

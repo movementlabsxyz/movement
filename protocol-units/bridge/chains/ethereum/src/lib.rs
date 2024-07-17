@@ -2,7 +2,7 @@ use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_network::{Ethereum, EthereumWallet};
 use alloy_primitives::private::serde::{Deserialize, Serialize};
-use alloy_primitives::{Address as EthAddress, FixedBytes, U256};
+use alloy_primitives::{FixedBytes, U256};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
 	Provider, ProviderBuilder, RootProvider,
@@ -13,8 +13,8 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails, HashLock,
+	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 use bridge_shared::{
 	bridge_contracts::{
@@ -22,7 +22,7 @@ use bridge_shared::{
 		BridgeContractInitiatorResult,
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{CompletedDetails, LockDetails},
+	types::LockDetails,
 };
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
@@ -30,6 +30,7 @@ use mcr_settlement_client::send_eth_transaction::{
 };
 use std::fmt::Debug;
 use thiserror::Error;
+use utils::EthAddress;
 
 mod utils;
 
@@ -42,12 +43,13 @@ const MAX_RETRIES: u32 = 5;
 type EthHash = [u8; 32];
 
 pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
-pub type SCCResult<H> = Result<BridgeContractCounterpartyEvent<H>, BridgeContractCounterpartyError>;
+pub type SCCResult<A, H> =
+	Result<BridgeContractCounterpartyEvent<A, H>, BridgeContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<H> {
-	LockedBridgeTransfer(LockDetails<H>),
-	CompletedBridgeTransfer(CompletedDetails<H>),
+pub enum MoveCounterpartyEvent<A, H> {
+	LockedBridgeTransfer(LockDetails<A, H>),
+	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -64,20 +66,10 @@ pub enum EthInitiatorEvent<A, H> {
 	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum EthInitiatorError {
-	#[error("Failed to initiate bridge transfer")]
-	InitiateTransferError,
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<H>),
+	CounterpartyContractEvent(SCCResult<A, H>),
 	Noop,
 }
 
@@ -226,12 +218,12 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		_initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress,
+		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
@@ -256,7 +248,7 @@ where
 	) -> BridgeContractInitiatorResult<()> {
 		let pre_image: [u8; 32] = utils::vec_to_array(pre_image.0)
 			.unwrap_or_else(|_| panic!("Failed to convert pre_image"));
-		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
 		let _ = send_transaction(
@@ -273,7 +265,7 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		let _ = send_transaction(
 			call,
@@ -294,7 +286,7 @@ where
 		let storage_slot = self.calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
-			.get_storage_at(self.initiator_address, storage_slot)
+			.get_storage_at(self.initiator_address.0, storage_slot)
 			.await
 			.unwrap_or_else(|_| panic!("Failed to get storage at slot"));
 		let storage_bytes = storage.to_be_bytes::<32>();
