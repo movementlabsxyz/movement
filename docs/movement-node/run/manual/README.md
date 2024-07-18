@@ -8,6 +8,13 @@ We recommend that you run a movement node using containers to leverage the porta
 3. [Docker compose](https://docs.docker.com/compose/install/linux/)
 4. Make sure you are logged in as the user who wants to run the node
 
+## Hardware requirements
+AWS EC2 c5.4xlarge 
+
+ - vCPU: 16
+ - Memory:  32 GB
+ - Disk: 1 TB.
+
 ## Run the movement node as an RPC provider
 
 
