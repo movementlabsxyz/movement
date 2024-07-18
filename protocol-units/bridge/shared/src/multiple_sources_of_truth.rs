@@ -39,7 +39,7 @@ where
 	}
 }
 
-pub fn hash_of_source<S: Hash>(source: &S) -> u64 {
+pub fn hash_of<S: Hash>(source: &S) -> u64 {
 	let mut hasher = DefaultHasher::new();
 	source.hash(&mut hasher);
 	hasher.finish()
@@ -57,7 +57,6 @@ where
 		tracing::trace!("poll_next called");
 		let this = self.get_mut();
 		tracing::trace!("Current state: {:?}", this.emitted_events);
-		let mut emitted_event = None;
 
 		// Remove expired events
 		this.emitted_events.retain(|event, info| {
@@ -72,8 +71,9 @@ where
 			}
 		});
 
-		for (i, source) in this.sources.iter_mut().enumerate() {
-			let source_span = tracing::trace_span!("source",  i=i, hash=?hash_of_source(source));
+		for i in (0..this.sources.len()).rev() {
+			let source = &mut this.sources[i];
+			let source_span = tracing::trace_span!("source",  i=i, hash=?hash_of(source));
 			let _enter_source = source_span.enter();
 			tracing::trace!("polling source");
 			match source.poll_next_unpin(cx) {
@@ -81,7 +81,7 @@ where
 					let event_span = tracing::trace_span!("event", event=?event);
 					let _enter_event = event_span.enter();
 					tracing::trace!("received event");
-					if !this.processed.contains(&event) {
+					if this.processed.contains(&event) {
 						tracing::trace!("already processed");
 						continue;
 					}
@@ -90,25 +90,26 @@ where
 						tracing::trace!("new event, initiatlizing event info");
 						EventInfo { sources: HashSet::new(), timestamp: Delay::new(this.timeout) }
 					});
-					info.sources.insert(hash_of_source(source));
+					info.sources.insert(hash_of(source));
 					tracing::trace!("event info: {:?}", info);
 					if info.sources.len() >= this.threshold {
 						tracing::trace!("threshold reached for event, emitting");
-						emitted_event = Some(event.clone());
 						this.processed.insert(event.clone());
-						break;
+						return Poll::Ready(Some(event));
 					}
 				}
-				Poll::Ready(None) | Poll::Pending => continue,
+				Poll::Ready(None) => {
+					tracing::warn!("Source ended: {:?}", hash_of(source));
+					this.sources.remove(i);
+					if this.sources.len() < this.threshold {
+						tracing::warn!("Not enough sources left, ending stream");
+						return Poll::Ready(None);
+					}
+				}
+				Poll::Pending => {}
 			}
 		}
 
-		if let Some(event) = emitted_event {
-			tracing::trace!("Emitting event: {:?}", event);
-			this.emitted_events.remove(&event);
-			this.processed.insert(event.clone());
-			return Poll::Ready(Some(event));
-		}
 		tracing::trace!("No event emitted, returning Poll::Pending");
 		Poll::Pending
 	}
