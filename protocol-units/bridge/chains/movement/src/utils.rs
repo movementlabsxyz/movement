@@ -92,7 +92,6 @@ pub async fn send_aptos_transaction(
 	Ok(response)
 }
 
-/// Send Aptos Transaction
 // This is not used for now, but we may need to use it in later. It's used for estimating gas
 pub async fn simulate_aptos_transaction(
 	aptos_client: &MovementClient,

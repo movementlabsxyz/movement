@@ -11,7 +11,7 @@ use movement_bridge::{utils::MovementAddress, MovementClient};
 
 #[derive(Parser)]
 #[command(name = "movement-cli")]
-#[command(about = "CLI for interacting with the Movement client", long_about = None)]
+#[command(about = "Movement Bridge client", long_about = None)]
 pub struct MovementCli {
 	#[command(subcommand)]
 	pub command: MovementCommands,

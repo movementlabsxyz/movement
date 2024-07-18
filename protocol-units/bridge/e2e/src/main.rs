@@ -43,7 +43,14 @@ async fn main() -> Result<()> {
 	}
 
 	//Start Anvil
-	let _ = TokioCommand::new("anvil").stdout(Stdio::null()).stderr(Stdio::null()).spawn()?;
+	let output = TokioCommand::new("anvil").output().await?;
+	if !output.stdout.is_empty() {
+		println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+	}
+
+	if !output.stderr.is_empty() {
+		eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+	}
 	sleep(Duration::from_secs(5)).await;
 
 	//Deploy WETH9
