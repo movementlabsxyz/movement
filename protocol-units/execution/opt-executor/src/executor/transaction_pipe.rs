@@ -25,8 +25,9 @@ impl From<anyhow::Error> for TransactionPipeError {
 }
 
 impl Executor {
-	/// Ticks the transaction reader.
-	pub async fn tick_transaction_reader(
+	/// Pipes a batch of transactions from the mempool to the transaction channel.
+	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	pub async fn tick_transaction_pipe(
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
@@ -113,17 +114,6 @@ impl Executor {
 
 		Ok(())
 	}
-
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub async fn tick_transaction_pipe(
-		&self,
-		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), TransactionPipeError> {
-		self.tick_transaction_reader(transaction_channel.clone()).await?;
-
-		Ok(())
-	}
 }
 
 #[cfg(test)]
@@ -133,42 +123,33 @@ mod tests {
 
 	use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
-	use aptos_crypto::{
-		ed25519::{Ed25519PrivateKey, Ed25519Signature},
-		PrivateKey, Uniform,
-	};
-	use aptos_sdk::types::{AccountKey, LocalAccount};
 	use aptos_types::{
-		account_address::AccountAddress,
-		chain_id::ChainId,
-		transaction::{RawTransaction, Script, SignedTransaction, TransactionPayload},
+		account_config, test_helpers::transaction_test_helpers, transaction::SignedTransaction,
 	};
+	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let public_key = private_key.public_key();
-		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
-		let raw_transaction = RawTransaction::new(
-			AccountAddress::random(),
-			0,
-			transaction_payload,
-			0,
-			gas_unit_price,
-			0,
-			chain_id, // This is the value used in aptos testing code.
-		);
-		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
+	fn create_signed_transaction(
+		sequence_number: u64,
+		maptos_config: &Config,
+	) -> SignedTransaction {
+		let address = account_config::aptos_test_root_address();
+		transaction_test_helpers::get_test_txn_with_chain_id(
+			address,
+			sequence_number,
+			&GENESIS_KEYPAIR.0,
+			GENESIS_KEYPAIR.1.clone(),
+			maptos_config.chain.maptos_chain_id.clone(), // This is the value used in aptos testing code.
+		)
 	}
 
 	#[tokio::test]
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
-		let mut executor = Executor::try_test_default()?;
-		let user_transaction =
-			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -182,7 +163,8 @@ mod tests {
 		executor.tick_transaction_pipe(tx).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;
@@ -194,11 +176,8 @@ mod tests {
 	#[tokio::test]
 	async fn test_pipe_mempool_with_malformed_transaction() -> Result<(), anyhow::Error> {
 		// header
-		let mut executor = Executor::try_test_default()?;
-		let user_transaction = create_signed_transaction(
-			0, 
-			executor.maptos_config.chain.maptos_chain_id.clone()
-		);
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -212,7 +191,9 @@ mod tests {
 		executor.tick_transaction_pipe(tx.clone()).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		// dbg!(_vm_status_code);
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;
@@ -243,7 +224,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let mut executor = Executor::try_test_default()?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -256,8 +237,7 @@ mod tests {
 		});
 
 		let api = executor.get_apis();
-		let user_transaction =
-			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
@@ -272,7 +252,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let mut executor = Executor::try_test_default()?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -287,9 +267,8 @@ mod tests {
 		let api = executor.get_apis();
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
-		for _ in 0..25 {
-			let user_transaction =
-				create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		for i in 1..25 {
+			let user_transaction = create_signed_transaction(i, &executor.maptos_config);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 
