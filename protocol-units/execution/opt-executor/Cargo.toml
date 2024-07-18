@@ -67,6 +67,7 @@ aptos-logger = { workspace = true }
 
 movement-rest = { workspace = true }
 
+[dev-dependencies]
 dirs = { workspace = true }
 tempfile = { workspace = true }
 tracing-test = { workspace = true }

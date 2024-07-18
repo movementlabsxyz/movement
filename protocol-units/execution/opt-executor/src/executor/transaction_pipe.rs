@@ -1,14 +1,15 @@
 use super::Executor;
-use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
 use aptos_vm_validator::vm_validator::TransactionValidation;
 use aptos_vm_validator::vm_validator::VMValidator;
-use futures::StreamExt;
-use std::sync::Arc;
 
+use futures::StreamExt;
 use thiserror::Error;
+use tracing::debug;
+
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
@@ -46,22 +47,16 @@ impl Executor {
 									// Re-create the validator for each Tx because it uses a frozen version of the ledger.
 									let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
 									let tx_result = vm_validator.validate_transaction(transaction.clone())?;
-									// If the verification failed return the error status.
-									if let Some(vm_status) = tx_result.status() {
+
+									let status = if let Some(vm_status) = tx_result.status() {
+										// If the verification failed, return the error status.
 										let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-										let status: SubmissionStatus = (ms, Some(vm_status));
-										callback.send(Ok(status)).map_err(
-											|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-										)?;
-										continue;
-									}
-
-									// add to the mempool
-									{
-
+										(ms, Some(vm_status))
+									} else {
+										// add to the mempool
 										let mut core_mempool = self.core_mempool.write().await;
 
-										tracing::debug!("Adding transaction to mempool: {:?} {:?}", transaction, transaction.sequence_number());
+										debug!("Adding transaction to mempool: {:?} {:?}", transaction, transaction.sequence_number());
 										let status = core_mempool.add_txn(
 											transaction.clone(),
 											0,
@@ -72,10 +67,10 @@ impl Executor {
 
 										match status.code {
 											MempoolStatusCode::Accepted => {
-												tracing::debug!("Transaction accepted: {:?}", transaction);
+												debug!("Transaction accepted: {:?}", transaction);
 											},
 											_ => {
-												tracing::debug!("Transaction not accepted: {:?}", status);
+												debug!("Transaction not accepted: {:?}", status);
 												Err(TransactionPipeError::TransactionNotAccepted(status))?;
 											}
 										}
@@ -85,22 +80,21 @@ impl Executor {
 											|e| anyhow::anyhow!("Error sending transaction: {:?}", e)
 										)?;
 
+										// report status
+										let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
+										(ms, None)
 									};
 
-									// report status
-									let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-									let status: SubmissionStatus = (ms, None);
-									callback.send(Ok(status)).map_err(
-										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-									)?;
-
+									if callback.send(Ok(status)).is_err() {
+										debug!("submit_transaction request has been canceled");
+									}
 								},
 								MempoolClientRequest::GetTransactionByHash(hash, sender) => {
 									let mempool = self.core_mempool.read().await;
 									let mempool_result = mempool.get_by_hash(hash);
-									sender.send(mempool_result).map_err(
-										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-									)?;
+									if sender.send(mempool_result).is_err() {
+										debug!("get_transaction_by_hash request has been canceled");
+									}
 								},
 							}
 						},
