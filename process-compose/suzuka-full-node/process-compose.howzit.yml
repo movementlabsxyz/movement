@@ -1,0 +1,17 @@
+version: "3"
+
+
+processes:
+
+  howzit:
+    environment:
+      - "AUTH_TOKEN=notrealnotneeded"
+      - "REST_URL=http://0.0.0.0:30731"
+      - "FAUCET_URL=http://0.0.0.0:30732"
+    command: |
+      cargo run --bin howzit-bench
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy

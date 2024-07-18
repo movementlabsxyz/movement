@@ -32,7 +32,7 @@ celestia-types = { workspace = true }
 async-recursion = { workspace = true }
 tracing-subscriber = { workspace = true }
 godfig = { workspace = true }
-reqwest = { workspace = true }
+reqwest = { workspace = true } 
 
 [dev-dependencies]
 tempfile = { workspace = true }
