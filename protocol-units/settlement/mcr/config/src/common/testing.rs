@@ -1,8 +1,5 @@
+use godfig::env_short_default;
 use serde::{Deserialize, Serialize};
-use godfig::{
-    env_short_default,
-    env_or_none
-};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -38,13 +35,17 @@ env_short_default!(
 	"0x0"
 );
 
-env_or_none!(
-    default_maybe_testing,
-    Config,
-    default_mcr_testing_admin_account_private_key,
-    default_move_token_contract_address,
-    default_movement_staking_contract_address
-);
+// env_or_none!(
+//     default_maybe_testing,
+//     Config,
+//     default_mcr_testing_admin_account_private_key,
+//     default_move_token_contract_address,
+//     default_movement_staking_contract_address
+// );
+
+pub fn maybe_testing() -> Option<Config> {
+    std::env::var("MAYBE_TESTING_MCR").ok().map(|_| Config::default())
+}
 
 impl Default for Config {
     fn default() -> Self {

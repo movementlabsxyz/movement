@@ -132,31 +132,30 @@ impl Deploy {
 			})?;
 
 		// generate random well-known accounts and addresses
-		let mut well_known_account_private_keys =
-			if let Some(existing_testing_config) = config.testing.clone() {
-				existing_testing_config.well_known_account_private_keys
-			} else {
-				let mut keys = Vec::new();
-				for _ in 0..10 {
-					let wallet = PrivateKeySigner::random();
-					keys.push(wallet.to_bytes().to_string());
-				}
-				keys
-			};
+		// let mut well_known_account_private_keys =
+		// 	if let Some(existing_testing_config) = config.testing.clone() {
+		// 		existing_testing_config.well_known_account_private_keys
+		// 	} else {
+		// 		let mut keys = Vec::new();
+		// 		for _ in 0..10 {
+		// 			let wallet = PrivateKeySigner::random();
+		// 			keys.push(wallet.to_bytes().to_string());
+		// 		}
+		// 		keys
+		// 	};
 
 		info!("setting up MCR Ethereum client move_token_address: {move_token_address}");
 		info!(
 			"setting up MCR Ethereum client movement_staking_address: {movement_staking_address}"
 		);
 		info!("setting up MCR Ethereum client mcr_address: {mcr_address}");
-		let testing_config = common::testing::Config {
-			well_known_account_private_keys: well_known_account_private_keys,
-			mcr_testing_admin_account_private_key: deploy
-				.mcr_deployment_account_private_key
-				.clone(),
-			move_token_contract_address: move_token_address,
-			movement_staking_contract_address: movement_staking_address,
-		};
+
+		if let Some(testing) = &mut config.testing {
+			testing.mcr_testing_admin_account_private_key =
+				deploy.mcr_deployment_account_private_key.clone();
+			testing.move_token_contract_address = move_token_address;
+			testing.movement_staking_contract_address = movement_staking_address;
+		}
 
 		config.settle.mcr_contract_address = mcr_address;
 
