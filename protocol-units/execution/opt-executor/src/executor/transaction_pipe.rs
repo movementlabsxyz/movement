@@ -168,6 +168,29 @@ mod tests {
 	}
 
 	#[tokio::test]
+	async fn test_pipe_mempool_cancellation() -> Result<(), anyhow::Error> {
+		// header
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
+
+		// send transaction to mempool
+		let (req_sender, callback) = oneshot::channel();
+		executor
+			.mempool_client_sender
+			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
+			.await?;
+
+		// drop the callback to simulate cancellation of the request
+		drop(callback);
+
+		// tick the transaction pipe, should succeed
+		let (tx, rx) = async_channel::unbounded();
+		executor.tick_transaction_pipe(tx).await?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
 	async fn test_pipe_mempool_with_malformed_transaction() -> Result<(), anyhow::Error> {
 		// header
 		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
