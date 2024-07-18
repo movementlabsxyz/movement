@@ -1,11 +1,7 @@
 
 use howzit::Howzit;
-use aptos_sdk::{
-    rest_client::{AptosBaseUrl, Client, FaucetClient},
-    types::LocalAccount,
-};
-use std::{env, path::PathBuf, sync::Arc};
-use tokio::sync::RwLock;
+use aptos_sdk::rest_client::{AptosBaseUrl, Client};
+use std::{env, path::PathBuf};
 use anyhow::Context;   
 
 #[tokio::main]
@@ -25,17 +21,11 @@ pub async fn main() -> Result<(), anyhow::Error> {
     )?;
     let rest_client = rest_client_builder.build();
 
-    let faucet_client = FaucetClient::new_from_rest_client(
-        faucet_url.parse()?,   
-        rest_client.clone()
-    ).with_auth_token(
-        token.clone()
-    );
-
     let howzit = Howzit::generate(
         crate_path_buf.join("howzit"),
         rest_client.clone(),
-        faucet_client,
+        faucet_url.parse()?,  
+        token
     );
 
     howzit.build_and_publish().await?;
@@ -45,35 +35,14 @@ pub async fn main() -> Result<(), anyhow::Error> {
     // fund the accounts in an orderly manner
     let n = 100;
     let k = 20;
-    let mut local_accounts = Vec::with_capacity(n);
-    for _ in 0..n {
-        let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-        {
-            let faucet_client = FaucetClient::new_from_rest_client(
-                "https://faucet.devnet.suzuka.movementlabs.xyz".parse()?,   
-                rest_client.clone()
-            ).with_auth_token(
-                token.clone()
-            );
-            faucet_client.fund(
-                alice.address(),
-                10_000_000_000,
-            ).await.context("Failed to fund account")?;
-        }
-        local_accounts.push(alice);
-    }
     let mut futures = Vec::with_capacity(n);
     let start_time = std::time::Instant::now();
-    for alice in local_accounts {
-        let shared_alice = Arc::new(RwLock::new(alice));
-
+    for _ in 0..n {
         for _ in 0..k {
             let howzit = howzit.clone();
             let sender = transaction_result_sender.clone();
-            let alice = shared_alice.clone();
             futures.push(tokio::spawn(async move {
-                    let mut alice = alice.write().await;
-                    match howzit.call_probe(&mut *alice).await {
+                    match howzit.call_probe().await {
                         Ok(_) => sender.send(true).unwrap(),
                         Err(e) => {
                             eprintln!("Error sending transaction: {:?}", e);
@@ -83,7 +52,6 @@ pub async fn main() -> Result<(), anyhow::Error> {
                 Ok::<(), anyhow::Error>(())
             }));
         }
-        
     }
     drop(transaction_result_sender);
 
@@ -108,7 +76,7 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let (success, failures) = counter_task.await?;
 
     // print successes per second
-    let success_per_second = (success * 2) as f64 / duration.as_secs_f64();
+    let success_per_second = (success * 3) as f64 / duration.as_secs_f64();
     println!("Successes per second: {}", success_per_second);
 
     // print failures per second

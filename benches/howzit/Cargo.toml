@@ -27,6 +27,7 @@ bcs = { workspace = true }
 godfig = { workspace = true }
 rand = { workspace = true }
 futures = { workspace = true }
+url = { workspace = true }
 
 
 [lints]

@@ -11,21 +11,6 @@ use aptos_framework::{
 use aptos_sdk::{
     rest_client::{Client, FaucetClient},
     transaction_builder::TransactionBuilder,
-    /*types::{
-        account_address::AccountAddress,
-        transaction::{
-            EntryFunction,
-
-        }
-    },
-    move_types::{
-        language_storage::{
-            ModuleId,
-            TypeTag
-        },
-        identifier::Identifier,
-        
-    },*/
     types::{chain_id::ChainId, LocalAccount},
 };
 use anyhow::Context;

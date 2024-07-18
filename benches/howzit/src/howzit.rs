@@ -14,6 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::build_and_publish_package;
 use tokio::sync::RwLock;
 use std::sync::Arc;
+use url::Url;
 
 #[derive(Debug, Clone)]
 pub enum Probe {
@@ -41,7 +42,7 @@ impl Probe {
 
         // take the log base 2 of the result to get the probe
         // we'll use the leading zeros trick here
-        let probe = u32::MAX - (inverse.leading_zeros() as u32);
+        let probe = 32 - (inverse.leading_zeros() as u32);
         
         probe.into()
 
@@ -74,12 +75,32 @@ impl TryInto<Identifier> for Probe {
         }
     }
 }
-#[derive(Clone)]
 pub struct Howzit {
     pub howzit_package_path : PathBuf,
     pub wallet : Arc<RwLock<LocalAccount>>,
     pub rest_client : Client,
-    pub faucet_client : Arc<RwLock<FaucetClient>>
+    faucet_client_url :Url,
+    pub faucet_client : FaucetClient,
+    pub faucet_auth_token : String
+}
+
+impl Clone for Howzit {
+    fn clone(&self) -> Self {
+        Howzit {
+            howzit_package_path: self.howzit_package_path.clone(),
+            wallet: self.wallet.clone(),
+            rest_client: self.rest_client.clone(),
+            faucet_client_url : self.faucet_client_url.clone(),
+            faucet_client: FaucetClient::new_from_rest_client(
+                self.faucet_client_url.clone(),
+                self.rest_client.clone()
+            ).with_auth_token(
+                self.faucet_auth_token.clone()
+            ),
+            faucet_auth_token : self.faucet_auth_token.clone()
+        }
+    }
+
 }
 
 impl Howzit {
@@ -88,14 +109,22 @@ impl Howzit {
     pub fn generate(
         howzit_package_path: PathBuf,
         rest_client: Client,
-        faucet_client: FaucetClient,
+        faucet_client_url : Url,
+        faucet_auth_token : String
     ) -> Self {
         let wallet = LocalAccount::generate(&mut rand::rngs::OsRng);
         Howzit { 
             howzit_package_path, 
             wallet: Arc::new(RwLock::new(wallet)),
-            rest_client,
-            faucet_client: Arc::new(RwLock::new(faucet_client)),
+            rest_client : rest_client.clone(),
+            faucet_client_url : faucet_client_url.clone(),
+            faucet_client: FaucetClient::new_from_rest_client(
+                faucet_client_url,
+                rest_client
+            ).with_auth_token(
+                faucet_auth_token.clone()
+            ),
+            faucet_auth_token
         }
     }
 
@@ -103,7 +132,6 @@ impl Howzit {
     pub async fn build_and_publish(&self) -> Result<(), anyhow::Error> {
 
         let mut wallet = self.wallet.write().await;
-        let mut faucet_client = self.faucet_client.write().await;
 
         // need to set the howzit address
         let mut build_options = BuildOptions::default();
@@ -115,7 +143,7 @@ impl Howzit {
         build_and_publish_package(
             &mut *wallet,
             self.rest_client.clone(),
-            &*faucet_client,
+            &self.faucet_client,
             self.howzit_package_path.clone(),
             build_options
         ).await
@@ -123,13 +151,21 @@ impl Howzit {
     }
 
     /// Calls a generated probe function
-    pub async fn call_probe(&self, alice : &mut LocalAccount) -> Result<(), anyhow::Error> {
+    pub async fn call_probe(&self) -> Result<(), anyhow::Error> {
 
         let chain_id = self.rest_client.get_index().await.context(
             "failed to get chain ID"
         )?.inner().chain_id;
         let wallet = self.wallet.read().await;
         let probe = Probe::generate_exponential(&mut rand::rngs::OsRng);
+        let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+
+        self.faucet_client.fund(
+            alice.address(),
+            10_000_000_000
+        ).await.context(
+            "failed to fund account"
+        )?;
 
         let transaction_builder = TransactionBuilder::new(
             TransactionPayload::EntryFunction(EntryFunction::new(
