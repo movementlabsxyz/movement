@@ -45,7 +45,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     #[event]
-    /// An event triggered upon cancelling a bridge transfer
+    /// An event triggered upon canceling a bridge transfer
     struct BridgeTransferCancelledEvent has store, drop {
         bridge_transfer_id: vector<u8>,
     }
