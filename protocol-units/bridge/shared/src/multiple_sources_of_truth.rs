@@ -198,4 +198,75 @@ mod tests {
 
 		assert_eq!(events, vec![1, 2, 3]);
 	}
+
+	#[test_log::test(tokio::test)]
+	async fn test_multiple_sources_of_truth_edge_cases() {
+		tracing::trace!("test_multiple_sources_of_truth_edge_cases");
+
+		// Scenario 1: Different delays for events
+		let source1 = TestSource::new("source1", vec![(1, 100), (2, 200), (3, 300)]);
+		let source2 = TestSource::new("source2", vec![(1, 150), (2, 250), (3, 350)]);
+		let source3 = TestSource::new("source3", vec![(1, 200), (2, 300), (3, 400)]);
+		let sources = vec![source1, source2, source3];
+		let mut msot = MultipleSourceOfTruth::new(sources, 2, Duration::from_secs(5));
+
+		let mut events = Vec::new();
+		while let Some(event) = msot.next().await {
+			tracing::trace!("event: {:?}", event);
+			events.push(event);
+		}
+
+		assert_eq!(events, vec![1, 2, 3]);
+
+		// Scenario 2: Events that do not meet the threshold
+		let source1 = TestSource::new("source1", vec![(4, 100)]);
+		let source2 = TestSource::new("source2", vec![(5, 150)]);
+		let source3 = TestSource::new("source3", vec![(6, 200)]);
+		let sources = vec![source1, source2, source3];
+		let mut msot = MultipleSourceOfTruth::new(sources, 2, Duration::from_secs(5));
+
+		let mut events = Vec::new();
+		while let Some(event) = msot.next().await {
+			tracing::trace!("event: {:?}", event);
+			events.push(event);
+		}
+
+		assert!(events.is_empty());
+
+		// Scenario 3: Sources that end prematurely
+		let source1 = TestSource::new("source1", vec![(7, 100), (8, 200), (9, 300)]);
+		let source2 = TestSource::new("source2", vec![(7, 150)]);
+		let source3 = TestSource::new("source3", vec![(7, 200), (8, 300), (9, 400)]);
+		let sources = vec![source1, source2, source3];
+		let mut msot = MultipleSourceOfTruth::new(sources, 2, Duration::from_secs(5));
+
+		let mut events = Vec::new();
+		while let Some(event) = msot.next().await {
+			tracing::trace!("event: {:?}", event);
+			events.push(event);
+		}
+
+		assert_eq!(events, vec![7, 8, 9]);
+	}
+
+	#[test_log::test(tokio::test)]
+	async fn test_multiple_sources_of_truth_sources_end_prematurely() {
+		tracing::trace!("test_multiple_sources_of_truth_sources_end_prematurely");
+
+		// Scenario: Two sources end after a few messages, not reaching the threshold
+		let source1 = TestSource::new("source1", vec![(1, 100), (2, 200)]);
+		let source2 = TestSource::new("source2", vec![(1, 150)]);
+		let source3 = TestSource::new("source3", vec![(1, 200), (2, 300), (3, 400)]);
+		let sources = vec![source1, source2, source3];
+		let mut msot = MultipleSourceOfTruth::new(sources, 2, Duration::from_secs(5));
+
+		let mut events = Vec::new();
+		while let Some(event) = msot.next().await {
+			tracing::trace!("event: {:?}", event);
+			events.push(event);
+		}
+
+		// Since the threshold is 3 and only one event (1) reaches the threshold, the stream should end without emitting any events.
+		assert_eq!(events, [1, 2]);
+	}
 }
