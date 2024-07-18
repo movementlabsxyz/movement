@@ -36,7 +36,6 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform};
 	use aptos_mempool::MempoolClientRequest;
 	use aptos_types::{
 		account_config, mempool_status::MempoolStatusCode, test_helpers::transaction_test_helpers,
@@ -71,7 +70,7 @@ mod tests {
 			Ok(()) as Result<(), anyhow::Error>
 		});
 
-		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
+		let user_transaction = create_signed_transaction(0, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
