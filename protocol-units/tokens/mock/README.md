@@ -19,12 +19,6 @@ The following tokens can be minted through the faucet once per hour by calling `
 - WBTC: `0x275f508689de8756169d1ee02d889c777de1cebda3a7bbcce63ba8a27c563c6f::tokens::WBTC`
 - WETH: `0x275f508689de8756169d1ee02d889c777de1cebda3a7bbcce63ba8a27c563c6f::tokens::WETH`
 
-#### Bridge Tokens
-
-The following tokens can only be minted by using the Bridge Service by sending ETH from Holesky:
-
-- MOVETH
-
 ## Devnets
 
 ### M1 (MEVM)

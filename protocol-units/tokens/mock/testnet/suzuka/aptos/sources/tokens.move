@@ -54,8 +54,8 @@ module mock::tokens {
         coin::deposit(admin_addr, usdt_coins);
         coin::deposit(admin_addr, btc_coins);
         coin::deposit(admin_addr, eth_coins);
-        faucet::create_faucet<USDC>(admin, max_value - (1_000_000_000_000 * dexs), 60_000_000_000_000, 3600);
-        faucet::create_faucet<USDT>(admin, max_value - (1_000_000_000_000 * dexs), 60_000_000_000_000, 3600);
+        faucet::create_faucet<USDC>(admin, max_value - (1_000_000_000_000 * dexs), 60_000_000_000, 3600);
+        faucet::create_faucet<USDT>(admin, max_value - (1_000_000_000_000 * dexs), 60_000_000_000, 3600);
         faucet::create_faucet<WBTC>(admin, max_value - (1_700_000_000 * dexs), 100_000_000, 3600);
         faucet::create_faucet<WETH>(admin, max_value - (34_000_000_000 * dexs), 2000_000_000, 3600);
     }
