@@ -64,7 +64,7 @@ impl Executor {
 				max_stake: 100_000_000_000_000,
 				recurring_lockup_duration_secs: EPOCH_DURATION_SECS * 2,
 				required_proposer_stake: 0,
-				rewards_apy_percentage: 10,
+				rewards_apy_percentage: 0,
 				voting_duration_secs: EPOCH_DURATION_SECS,
 				voting_power_increase_limit: 50,
 				employee_vesting_start: 1663456089,

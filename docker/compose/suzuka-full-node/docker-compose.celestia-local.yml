@@ -10,7 +10,7 @@ services:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
       setup:
-        condition: service_completed_successfully
+        condition: service_healthy
     ports:
       - "26657:26657"
       - "9090:9090"
@@ -31,12 +31,14 @@ services:
       - "26658:26658"
     depends_on:
       setup:
-        condition: service_completed_successfully
+        condition: service_healthy
       m1-da-light-node-celestia-appd:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 26658" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
 
   celestia-light-node:
     image: busybox

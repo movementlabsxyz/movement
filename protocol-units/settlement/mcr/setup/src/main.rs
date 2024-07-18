@@ -1,9 +1,9 @@
-use mcr_settlement_setup::{Setup, Local};
 use mcr_settlement_config::Config;
 use godfig::{
 	Godfig,
 	backend::config_file::ConfigFile
 };
+use mcr_settlement_setup::Setup;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -27,7 +27,7 @@ async fn main() -> Result<(), anyhow::Error> {
 	// run a godfig transaction to update the file
 	godfig.try_transaction(|config| async move {
 		println!("Config: {:?}", config);
-        let local = Local::default();
+        let local = Setup::default();
 		match config {
 			Some(config) => {
 				let (config, _) = local.setup(&dot_movement, config).await?;

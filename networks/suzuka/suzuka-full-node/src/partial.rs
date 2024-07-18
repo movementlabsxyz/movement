@@ -32,6 +32,7 @@ pub struct SuzukaPartialNode<T> {
 	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
 	settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
+	pub config: suzuka_config::Config,
 }
 
 impl<T> SuzukaPartialNode<T>
@@ -60,6 +61,7 @@ where
 				light_node_client: Arc::new(RwLock::new(light_node_client)),
 				settlement_manager,
 				movement_rest,
+				config: config.clone(),
 			},
 			read_commitment_events(commitment_events, bg_executor),
 		)
@@ -206,12 +208,18 @@ where
 			info!("Executed block: {:?}", block_id);
 
 			// todo: this needs defaults
-			match self.settlement_manager.post_block_commitment(commitment).await {
-				Ok(_) => {}
-				Err(e) => {
-					error!("Failed to post block commitment: {:?}", e);
+			if self.config.mcr.should_settle() {
+				info!("Posting block commitment via settlement manager");
+				match self.settlement_manager.post_block_commitment(commitment).await {
+					Ok(_) => {}
+					Err(e) => {
+						error!("Failed to post block commitment: {:?}", e);
+					}
 				}
+			} else {
+				info!("Skipping settlement");
 			}
+			
 		}
 
 		Ok(())
@@ -296,20 +304,12 @@ impl SuzukaPartialNode<Executor> {
 		let (tx, _) = async_channel::unbounded();
 
 		// todo: extract into getter
-		let light_node_connection_hostname = match &config.m1_da_light_node.m1_da_light_node_config
-		{
-			m1_da_light_node_util::config::Config::Local(local) => {
-				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
-			}
-		};
+		let light_node_connection_hostname = config.m1_da_light_node.m1_da_light_node_config
+			.m1_da_light_node_connection_hostname();
 
 		// todo: extract into getter
-		let light_node_connection_port = match &config.m1_da_light_node.m1_da_light_node_config {
-			m1_da_light_node_util::config::Config::Local(local) => {
-				local.m1_da_light_node.m1_da_light_node_connection_port.clone()
-			}
-		};
-
+		let light_node_connection_port =config.m1_da_light_node.m1_da_light_node_config 
+			.m1_da_light_node_connection_port();
 		// todo: extract into getter
 		debug!("Connecting to light node at {}:{}", light_node_connection_hostname, light_node_connection_port);
 		let light_node_client = LightNodeServiceClient::connect(format!(
