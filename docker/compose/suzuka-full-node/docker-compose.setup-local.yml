@@ -15,8 +15,8 @@ services:
       ETH_RPC_CONNECTION_HOSTNAME: setup
       ETH_RPC_CONNECTION_PROTOCOL: http
       ETH_RPC_CONNECTION_PORT: 8090
-      MAYBE_RUN_LOCAL: true
-      MAYBE_DEPLOY_MCR: true
+      MAYBE_RUN_LOCAL: "true"
+      MAYBE_DEPLOY_MCR: "true"
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     ports:
