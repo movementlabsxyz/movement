@@ -52,8 +52,11 @@ impl Local {
 			.await
 			.context("Failed to check if Anvil file exists")?;
 
-		info!("Anvil path: {:?}", path);
-		info! {"Anvil exists: {:?}", exists};
+		info!(
+			"Anvil path: `{}`, {}",
+			path.display(),
+			if exists { "exists" } else { "does not exist" }
+		);
 
 		let anvil_path = path.to_string_lossy().to_string();
 
