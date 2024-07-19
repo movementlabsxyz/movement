@@ -2,7 +2,7 @@ use anyhow::Result;
 //use bridge_shared::types::BridgeTransferId;
 //use std::process::Command;
 use hex::encode;
-use std::{env, process::Stdio};
+use std::env;
 use tokio::process::Command as TokioCommand;
 use tokio::time::{sleep, Duration};
 
