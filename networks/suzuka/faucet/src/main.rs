@@ -20,7 +20,7 @@ use tracing::info;
 use aptos_sdk::{
 	crypto::{
 		ed25519::Ed25519PrivateKey, PrivateKey, ValidCryptoMaterialStringExt
-	}, rest_client::Client, transaction_builder::TransactionFactory, types::{
+	}, rest_client::Client, transaction_builder::{TransactionFactory, aptos_stdlib}, types::{
 		account_address::AccountAddress, chain_id::ChainId, transaction::{
 			authenticator::AuthenticationKey, Script, TransactionArgument
 		}, LocalAccount
@@ -92,6 +92,13 @@ pub async fn self_mint(
 	);
 
 	let transaction_factory = TransactionFactory::new(chain_id);
+	rest_client
+            .submit_and_wait(&local_account.sign_with_transaction_builder(
+                transaction_factory.payload(aptos_stdlib::aptos_coin_claim_mint_capability()),
+            ))
+            .await
+            .context("Failed to claim the minting capability")?;
+
 	let signed_transaction = local_account.sign_with_transaction_builder(transaction_factory.script(
 		Script::new(MINTER_SCRIPT.to_vec(), vec![], vec![
 			TransactionArgument::Address(address),
