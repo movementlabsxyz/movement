@@ -16,7 +16,6 @@ path = "src/lib.rs"
 anyhow = { workspace = true }
 chrono = { workspace = true }
 fail = { workspace = true }
-log = { workspace = true }
 thiserror = { workspace = true }
 bytes = { workspace = true }
 schemars = { workspace = true, optional = true }
@@ -68,14 +67,8 @@ aptos-logger = { workspace = true }
 
 movement-rest = { workspace = true }
 
+[dev-dependencies]
 dirs = { workspace = true }
 tempfile = { workspace = true }
 tracing-test = { workspace = true }
 async-trait = { workspace = true }
-
-# optional logging dependencies
-tracing-subscriber = { workspace = true, optional = true }
-
-[features]
-default = ["logging"]
-logging = ["tracing-subscriber"]
