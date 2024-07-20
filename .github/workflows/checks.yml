@@ -50,8 +50,8 @@ jobs:
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup-local.test.celestia-local -t=false"
-        nix develop --command bash  -c "just suzuka-full-node native build.setup-local.test.celestia-local -t=false"  
+        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"
+        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"  
   
   suzuka-full-node-remote:
     strategy:
@@ -77,8 +77,8 @@ jobs:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
         export MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY=${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
-        nix develop --command bash  -c "just suzuka-full-node native build.setup-holesky.test.celestia-local -t=false"
-        nix develop --command bash  -c "just suzuka-full-node native build.setup-holesky.test.celestia-local -t=false"
+        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
+        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
   m1-da-light-node:
     if: false # this is effectively tested by the above

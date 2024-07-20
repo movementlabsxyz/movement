@@ -4,6 +4,7 @@ pub mod initialization;
 pub mod services;
 pub mod transaction_pipe;
 use anyhow::Context as _;
+use aptos_api::context::Context;
 use aptos_config::config::NodeConfig;
 use aptos_db::AptosDB;
 use aptos_executor::block_executor::BlockExecutor;
@@ -14,7 +15,6 @@ use aptos_vm::AptosVM;
 use futures::channel::mpsc as futures_mpsc;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use aptos_api::context::Context;
 pub mod indexer;
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
@@ -53,8 +53,9 @@ impl Executor {
 		node_config: NodeConfig,
 		maptos_config: maptos_execution_util::config::Config,
 	) -> Result<Self, anyhow::Error> {
-		let (_aptos_db, reader_writer) =
-			DbReaderWriter::wrap(AptosDB::new_for_test(&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?));
+		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(
+			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
+		));
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
 		Ok(Self {

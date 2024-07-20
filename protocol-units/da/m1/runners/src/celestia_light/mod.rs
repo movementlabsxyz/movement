@@ -1,12 +1,13 @@
-pub mod local;
+pub mod arabica;
+pub mod mocha;
 use m1_da_light_node_util::config::M1DaLightNodeConfig;
 
 use crate::Runner;
 
 #[derive(Debug, Clone)]
-pub struct CelestiaBridge {}
+pub struct CelestiaLight {}
 
-impl Runner for CelestiaBridge {
+impl Runner for CelestiaLight {
 	async fn run(
 		&self,
 		dot_movement: dot_movement::DotMovement,
@@ -14,14 +15,15 @@ impl Runner for CelestiaBridge {
 	) -> Result<(), anyhow::Error> {
 		match config.m1_da_light_node_config {
 			m1_da_light_node_util::config::Config::Local(config) => {
-				let local = local::Local::new();
-				local.run(dot_movement, config).await?;
+				Err(anyhow::anyhow!("Local not implemented"))?;
 			},
 			m1_da_light_node_util::config::Config::Arabica(config) => {
-				Err(anyhow::anyhow!("Arabica not implemented"))?;
+				let arabica = arabica::Arabica::new();
+				arabica.run(dot_movement, config).await?;
 			},
 			m1_da_light_node_util::config::Config::Mocha(config) => {
-				Err(anyhow::anyhow!("Mocha not implemented"))?;
+				let mocha = mocha::Mocha::new();
+				mocha.run(dot_movement, config).await?;
 			},
 		}
 		Ok(())

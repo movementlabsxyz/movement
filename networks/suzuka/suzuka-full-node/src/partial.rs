@@ -304,20 +304,12 @@ impl SuzukaPartialNode<Executor> {
 		let (tx, _) = async_channel::unbounded();
 
 		// todo: extract into getter
-		let light_node_connection_hostname = match &config.m1_da_light_node.m1_da_light_node_config
-		{
-			m1_da_light_node_util::config::Config::Local(local) => {
-				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
-			}
-		};
+		let light_node_connection_hostname = config.m1_da_light_node.m1_da_light_node_config
+			.m1_da_light_node_connection_hostname();
 
 		// todo: extract into getter
-		let light_node_connection_port = match &config.m1_da_light_node.m1_da_light_node_config {
-			m1_da_light_node_util::config::Config::Local(local) => {
-				local.m1_da_light_node.m1_da_light_node_connection_port.clone()
-			}
-		};
-
+		let light_node_connection_port =config.m1_da_light_node.m1_da_light_node_config 
+			.m1_da_light_node_connection_port();
 		// todo: extract into getter
 		debug!("Connecting to light node at {}:{}", light_node_connection_hostname, light_node_connection_port);
 		let light_node_client = LightNodeServiceClient::connect(format!(

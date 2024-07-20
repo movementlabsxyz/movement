@@ -1,6 +1,8 @@
-use anyhow::Context as _;
+use super::Executor;
 use aptos_api::Context;
 use aptos_config::config::NodeConfig;
+#[cfg(test)]
+use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::{ed25519::Ed25519PublicKey, PrivateKey};
 use aptos_db::AptosDB;
 use aptos_executor::{
@@ -21,10 +23,14 @@ use aptos_vm_genesis::{
 };
 use maptos_execution_util::config::Config;
 
-use super::Executor;
+use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
-use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
+
+#[cfg(test)]
+use tempfile::TempDir;
+
+use std::{path::PathBuf, sync::Arc};
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
@@ -58,7 +64,7 @@ impl Executor {
 				max_stake: 100_000_000_000_000,
 				recurring_lockup_duration_secs: EPOCH_DURATION_SECS * 2,
 				required_proposer_stake: 0,
-				rewards_apy_percentage: 10,
+				rewards_apy_percentage: 0,
 				voting_duration_secs: EPOCH_DURATION_SECS,
 				voting_power_increase_limit: 50,
 				employee_vesting_start: 1663456089,
@@ -80,7 +86,6 @@ impl Executor {
 		chain_id: ChainId,
 		public_key: &Ed25519PublicKey,
 	) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
-
 		let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
 		let (genesis, validators) =
 			Self::genesis_change_set_and_validators(chain_id, Some(1), public_key);
@@ -91,15 +96,12 @@ impl Executor {
 		);
 
 		// check for context
-		
+
 		match db_rw.reader.get_latest_ledger_info_option()? {
 			Some(ledger_info) => {
 				// context exists
-				tracing::info!(
-					"Ledger info found, not bootstrapping DB: {:?}",
-					ledger_info
-				);
-			},
+				tracing::info!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
+			}
 			None => {
 				// context does not exist
 				// simply continue
@@ -112,20 +114,19 @@ impl Executor {
 		}
 
 		Ok((db_rw, validator_signer))
-
 	}
 
 	pub fn bootstrap(
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		maptos_config: &Config,
+		maptos_config: Config,
 	) -> Result<Self, anyhow::Error> {
 
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
-			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
+			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&maptos_config.chain.maptos_private_key.clone().public_key(),
+			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
@@ -139,7 +140,7 @@ impl Executor {
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
 			context: Arc::new(Context::new(
-				maptos_config.chain.maptos_chain_id.clone(),	
+				maptos_config.chain.maptos_chain_id.clone(),
 				reader,
 				mempool_client_sender,
 				node_config,
@@ -150,7 +151,7 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_hostname,
 				maptos_config.chain.maptos_rest_listen_port
 			),
-			maptos_config : maptos_config.clone()
+			maptos_config,
 		})
 	}
 
@@ -191,16 +192,21 @@ impl Executor {
 		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
+		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config.clone())
 	}
 
-	pub fn try_test_default() -> Result<Self, anyhow::Error> {
+	#[cfg(test)]
+	pub fn try_test_default(
+		private_key: Ed25519PrivateKey,
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		let tempdir = tempfile::tempdir()?;
+
 		let mut maptos_config = Config::default();
+		maptos_config.chain.maptos_private_key = private_key;
 
-		// replace the db path with a temporary directory
-		let value = tempfile::tempdir()?.into_path(); // todo: this works because it's at the top level, but won't be cleaned up automatically
-		maptos_config.chain.maptos_db_path.replace(value);
-		Self::try_from_config(&maptos_config)
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::try_from_config(&maptos_config)?;
+		Ok((executor, tempdir))
 	}
-
 }
