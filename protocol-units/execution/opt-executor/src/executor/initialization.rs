@@ -1,6 +1,8 @@
-use anyhow::Context as _;
+use super::Executor;
 use aptos_api::Context;
 use aptos_config::config::NodeConfig;
+#[cfg(test)]
+use aptos_crypto::ed25519::Ed25519PrivateKey;
 use aptos_crypto::{ed25519::Ed25519PublicKey, PrivateKey};
 use aptos_db::AptosDB;
 use aptos_executor::{
@@ -21,10 +23,14 @@ use aptos_vm_genesis::{
 };
 use maptos_execution_util::config::Config;
 
-use super::Executor;
+use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
-use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
+
+#[cfg(test)]
+use tempfile::TempDir;
+
+use std::{path::PathBuf, sync::Arc};
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
@@ -114,12 +120,13 @@ impl Executor {
 		mempool_client_sender: MempoolClientSender,
 		mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
 		node_config: NodeConfig,
-		maptos_config: &Config,
+		maptos_config: Config,
 	) -> Result<Self, anyhow::Error> {
+
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
-			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
+			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
-			&maptos_config.chain.maptos_private_key.clone().public_key(),
+			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
 		let reader = db.reader.clone();
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
@@ -144,7 +151,7 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_hostname,
 				maptos_config.chain.maptos_rest_listen_port
 			),
-			maptos_config: maptos_config.clone(),
+			maptos_config,
 		})
 	}
 
@@ -152,16 +159,54 @@ impl Executor {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(10);
-		let node_config = NodeConfig::default();
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config)
+		let mut node_config = NodeConfig::default();
+
+		node_config.indexer.enabled = true;
+		// indexer config
+		node_config.indexer.processor = Some("default_processor".to_string());
+		node_config.indexer.check_chain_id = Some(false);
+		node_config.indexer.skip_migrations = Some(false);
+		node_config.indexer.fetch_tasks = Some(4);
+		node_config.indexer.processor_tasks = Some(4);
+		node_config.indexer.emit_every = Some(4);
+		node_config.indexer.batch_size = Some(8);
+		node_config.indexer.gap_lookback_versions = Some(4);
+
+		node_config.indexer_grpc.enabled = true;
+
+		node_config.indexer.postgres_uri = Some("postgresql://postgres:password@localhost:5432".to_string());
+
+		// indexer_grpc config
+		node_config.indexer_grpc.processor_batch_size = 4;
+		node_config.indexer_grpc.processor_task_count = 4;
+		node_config.indexer_grpc.output_batch_size = 4;
+		node_config.indexer_grpc.address = format!(
+			"{}:{}",
+			maptos_config.indexer.maptos_indexer_grpc_listen_hostname,
+			maptos_config.indexer.maptos_indexer_grpc_listen_port
+		).parse()?;
+		node_config.indexer_grpc.use_data_service_interface = true;
+
+		// indexer table info config
+		node_config.indexer_table_info.enabled = true;
+		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.set_data_dir(node_config.storage.dir.clone());
+
+		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config.clone())
 	}
 
-	pub fn try_test_default() -> Result<Self, anyhow::Error> {
-		let mut maptos_config = Config::default();
+	#[cfg(test)]
+	pub fn try_test_default(
+		private_key: Ed25519PrivateKey,
+	) -> Result<(Self, TempDir), anyhow::Error> {
+		let tempdir = tempfile::tempdir()?;
 
-		// replace the db path with a temporary directory
-		let value = tempfile::tempdir()?.into_path(); // todo: this works because it's at the top level, but won't be cleaned up automatically
-		maptos_config.chain.maptos_db_path.replace(value);
-		Self::try_from_config(&maptos_config)
+		let mut maptos_config = Config::default();
+		maptos_config.chain.maptos_private_key = private_key;
+
+		// replace the db path with the temporary directory
+		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
+		let executor = Self::try_from_config(&maptos_config)?;
+		Ok((executor, tempdir))
 	}
 }

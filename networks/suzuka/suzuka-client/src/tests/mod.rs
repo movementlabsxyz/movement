@@ -1,3 +1,5 @@
+// pub mod alice_bob;
+pub mod indexer_stream;
 use crate::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario, TestKind};
 use crate::{
 	coin_client::{CoinClient, TransferOptions},

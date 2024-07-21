@@ -53,7 +53,7 @@
           coreutils
           gcc
           rust
-          mold
+          postgresql
         ];
         
         sysDependencies = with pkgs; [] 
@@ -80,6 +80,7 @@
           docker
           solc
           grpcurl
+          grpcui
         ];
 
         # Specific version of toolchain

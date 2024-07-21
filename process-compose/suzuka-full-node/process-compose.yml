@@ -1,7 +1,5 @@
 version: "3"
 
-environment:
-
 processes:
 
   build:
@@ -43,14 +41,25 @@ processes:
       exec:
         command: grpcurl -plaintext 0.0.0.0:30730 list
 
+  postgres:
+    command: |
+      ./scripts/postgres/start-dev
+
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: echo "true"
+    
   suzuka-full-node:
     command: |
-      suzuka-full-node
+      RUST_LOG=aptos-indexer=debug suzuka-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy
+      postgres:
+        condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:30731
 
