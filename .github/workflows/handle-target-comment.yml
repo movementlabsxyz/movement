@@ -1,5 +1,4 @@
 name: Handle Target Comment
-
 on:
   workflow_dispatch:
     inputs:
