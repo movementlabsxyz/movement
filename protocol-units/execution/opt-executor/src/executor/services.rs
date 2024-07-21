@@ -1,7 +1,8 @@
 use super::Executor;
 use aptos_api::{
 	get_api_service,
-	runtime::{get_apis, Apis},
+	runtime::{get_apis, Apis, root_handler},
+	set_failpoints,
 };
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tracing::info;
@@ -34,10 +35,9 @@ impl Executor {
             .at("/spec.yaml", poem::get(spec_yaml))
 			.at(
 				"/set_failpoint",
-				poem::get(set_failpoints::set_failpoint_poem).data(context.clone()),
+				poem::get(set_failpoints::set_failpoint_poem).data(self.context()),
 			)
-			.with(cors)
-			.with(PostSizeLimit::new(size_limit));
+			.with(cors);
 
 		Server::new(TcpListener::bind(self.listen_url.clone()))
 			.run(app)
