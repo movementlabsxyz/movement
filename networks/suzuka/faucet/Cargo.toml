@@ -25,4 +25,4 @@ aptos-sdk = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 aptos-rest-client = { workspace = true }
-aptos-stdlib = { workspace = true }
+rand = { workspace = true }

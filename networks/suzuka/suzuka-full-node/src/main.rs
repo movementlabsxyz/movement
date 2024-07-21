@@ -8,13 +8,17 @@ use std::process::ExitCode;
 fn main() -> Result<ExitCode, anyhow::Error> {
 	let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
 
-	use tracing_subscriber::EnvFilter;
+	aptos_logger::Logger::builder()
+	.level(aptos_logger::Level::Info)
+	.build();
+
+	/*use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()
 		.with_env_filter(
 			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
 		)
-		.init();
+		.init();*/
 
 	if let Err(err) = runtime.block_on(run_suzuka()) {
 		tracing::error!("Suzuka node main task exit with an error : {err}",);

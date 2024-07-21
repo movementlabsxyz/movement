@@ -11180,6 +11180,7 @@ dependencies = [
  "aptos-sdk",
  "clap 4.5.9",
  "dot-movement",
+ "rand 0.7.3",
  "suzuka-config",
  "tokio",
  "tracing",
@@ -11191,6 +11192,7 @@ name = "suzuka-full-node"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "aptos-logger",
  "async-channel 2.3.1",
  "dot-movement",
  "godfig",
