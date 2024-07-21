@@ -43,7 +43,7 @@ impl Memseq<RocksdbMempool> {
 		)?;
 		let mempool = Arc::new(RwLock::new(mempool));
 		let parent_block = Arc::new(RwLock::new(Id::default()));
-		Ok(Self::new(mempool, 10, parent_block, 1000))
+		Ok(Self::new(mempool, 1024, parent_block, 500))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
@@ -72,15 +72,23 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 			}
 
 			for _ in 0..self.block_size - current_block_size {
+
+				// make sure we are not over the building time
+				now = std::time::Instant::now();
+				if now > finish_by {
+					break;
+				}
+
 				if let Some(transaction) = mempool.pop_transaction().await? {
 					transactions.push(transaction);
 				} else {
 					break;
 				}
+
 			}
 
 			// sleep to yield to other tasks and wait for more transactions
-			tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+			tokio::task::yield_now().await;
 
 			now = std::time::Instant::now();
 			if now > finish_by {

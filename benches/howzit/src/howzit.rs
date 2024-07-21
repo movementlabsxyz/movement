@@ -151,13 +151,12 @@ impl Howzit {
     }
 
     /// Calls a generated probe function
-    pub async fn call_probe(&self) -> Result<(), anyhow::Error> {
+    pub async fn call_probe(&self, count : u64) -> Result<(), anyhow::Error> {
 
         let chain_id = self.rest_client.get_index().await.context(
             "failed to get chain ID"
         )?.inner().chain_id;
         let wallet = self.wallet.read().await;
-        let probe = Probe::generate_exponential(&mut rand::rngs::OsRng);
         let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 
         self.faucet_client.fund(
@@ -167,35 +166,44 @@ impl Howzit {
             "failed to fund account"
         )?;
 
-        let transaction_builder = TransactionBuilder::new(
-            TransactionPayload::EntryFunction(EntryFunction::new(
-                ModuleId::new(
-                    wallet.address(), 
-                    Identifier::new("howzit")?
-                ),
-                probe.clone().try_into()?,
-                vec![],
-                vec![],
-            )),
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)?
-                .as_secs() + 60,
-            ChainId::new(chain_id),
-        )
-        .sender(alice.address())
-        .sequence_number(alice.sequence_number());
-        let signed_txn = alice.sign_with_transaction_builder(transaction_builder);
-    
-        let txn_hash = self.rest_client
-            .submit(&signed_txn)
-            .await
-            .context(
-                format!("failed to submit transaction fo probe {:?}", probe)
-            )?
-            .into_inner();
-        self.rest_client.wait_for_transaction(&txn_hash).await.context(
-            format!("failed to wait for transaction for probe {:?}", probe)
-        )?;
+        let mut transactions = Vec::new();
+        for _ in 0..count {
+            let probe = Probe::generate_exponential(&mut rand::rngs::OsRng);
+            let transaction_builder = TransactionBuilder::new(
+                TransactionPayload::EntryFunction(EntryFunction::new(
+                    ModuleId::new(
+                        wallet.address(), 
+                        Identifier::new("howzit")?
+                    ),
+                    probe.clone().try_into()?,
+                    vec![],
+                    vec![],
+                )),
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)?
+                    .as_secs() + 60,
+                ChainId::new(chain_id),
+            )
+            .sender(alice.address())
+            .sequence_number(alice.sequence_number());
+            let signed_txn = alice.sign_with_transaction_builder(transaction_builder);
+        
+            let txn_hash = self.rest_client
+                .submit(&signed_txn)
+                .await
+                .context(
+                    format!("failed to submit transaction fo probe {:?}", probe)
+                )?
+                .into_inner();
+            transactions.push(txn_hash);
+        }
+
+        
+        for txn_hash in transactions {
+            self.rest_client.wait_for_transaction(&txn_hash).await.context(
+                "transaction failed to execute"
+            )?;
+        }
 
         Ok(())
     

@@ -33,25 +33,22 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let (transaction_result_sender, mut transaction_result_receiver) = tokio::sync::mpsc::unbounded_channel::<bool>();
 
     // fund the accounts in an orderly manner
-    let n = 10;
-    let k = 20;
+    let n = 8;
     let mut futures = Vec::with_capacity(n);
     let start_time = std::time::Instant::now();
     for _ in 0..n {
-        for _ in 0..k {
-            let howzit = howzit.clone();
-            let sender = transaction_result_sender.clone();
-            futures.push(tokio::spawn(async move {
-                    match howzit.call_probe().await {
-                        Ok(_) => sender.send(true).unwrap(),
-                        Err(e) => {
-                            eprintln!("Error sending transaction: {:?}", e);
-                            sender.send(false).unwrap();
-                        }
+        let howzit = howzit.clone();
+        let sender = transaction_result_sender.clone();
+        futures.push(tokio::spawn(async move {
+                match howzit.call_probe(256).await {
+                    Ok(_) => sender.send(true).unwrap(),
+                    Err(e) => {
+                        eprintln!("Error sending transaction: {:?}", e);
+                        sender.send(false).unwrap();
                     }
-                Ok::<(), anyhow::Error>(())
-            }));
-        }
+                }
+            Ok::<(), anyhow::Error>(())
+        }));
     }
     drop(transaction_result_sender);
 
