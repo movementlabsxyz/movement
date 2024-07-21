@@ -14,15 +14,30 @@ impl Executor {
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 		info!("Starting maptos-opt-executor services at: {:?}", self.listen_url);
 
+		let size_limit = self.context.content_length_limit();
 		let api_service =
 			get_api_service(self.context()).server(format!("http://{:?}", self.listen_url));
+
+		let spec_json = api_service.spec_endpoint();
+		let spec_yaml = api_service.spec_endpoint_yaml();
 
 		let ui = api_service.swagger_ui();
 
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
+		let app = Route::new()
+			.at("/", poem::get(root_handler))
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.at("/spec.json", poem::get(spec_json))
+            .at("/spec.yaml", poem::get(spec_yaml))
+			.at(
+				"/set_failpoint",
+				poem::get(set_failpoints::set_failpoint_poem).data(context.clone()),
+			)
+			.with(cors)
+			.with(PostSizeLimit::new(size_limit));
 
 		Server::new(TcpListener::bind(self.listen_url.clone()))
 			.run(app)
