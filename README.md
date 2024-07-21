@@ -127,8 +127,8 @@ Under the hood, `just` runs
 GIT_ROOT=$(git rev-parse --show-toplevel)
 docker compose --env-file .env \
                --file docker/compose/suzuka-full-node/docker-compose.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.setup.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.local.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
                up
 ```
 
