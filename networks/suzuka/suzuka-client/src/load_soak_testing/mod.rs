@@ -70,14 +70,14 @@ impl ExecutionConfig {
 			TestKind::Load { number_scenarios } => {
 				assert!(
 					number_scenarios >= self.number_scenario_per_client,
-					"Number of running scenarios is less than the number of scenarios per client."
+					"Number of running scenario less than the number if scenario per client."
 				);
 			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.number_scenario_per_client,
-					"Number of min running scenarios is less than the number of scenarios per client."
+					"Number of min running scenario less than the number if scenario per client."
 				);
 			}
 		}
@@ -167,20 +167,20 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 		.into_iter()
 		.filter_map(|res| (res.average_execution_time_milli > 0).then_some(res))
 		.collect();
-	if no_zero_exec_time.len() > 0 {
-		let average_exec_time = no_zero_exec_time
+
+	let average_exec_time = if !no_zero_exec_time.is_empty() {
+		no_zero_exec_time
 			.iter()
 			.map(|res| res.average_execution_time_milli)
 			.sum::<u128>()
-			/ no_zero_exec_time.len() as u128;
-		let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
-			.unwrap_or("Metric  execution result serialization error.".to_string());
-		tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
-		tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
+			/ no_zero_exec_time.len() as u128
 	} else {
-		tracing::info!(target:EXEC_LOG_FILTER, "No scenario has been executed");
-		tracing::info!("Scenarios execution: No scenario has been executed");
+		0
 	};
+	let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
+		.unwrap_or("Metric  execution result serialization error.".to_string());
+	tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
+	tracing::info!("Scenarios execution average_exec_time:{average_exec_time}");
 
 	tracing::info!("End test scenario execution.");
 }
@@ -224,8 +224,8 @@ impl TestClient {
 					// max_scenarios - min_scenarios scenarios run part-time depending on the number of cycle.
 					// Part-time scenario duration max: Duration / (number_cycle * 2)
 					// scenario start delta: (Part-time scenario duration max * scenario index / nb scenario) + (Duration * current cycle / nb cycle)
-					let number_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
-					let parttime_scenario_duration = duration / (number_cycle * 2);
+					let _number_part_time_scenario: u32 = (max_scenarios - min_scenarios) as u32;
+					let _parttime_scenario_duration = duration / (number_cycle * 2);
 					vec![]
 				}
 			}
@@ -383,15 +383,14 @@ impl ClientExecResult {
 	}
 
 	pub fn calculate_average_exec_time_milli(scenarios: &[ScenarioExecMetric]) -> u128 {
-		if !scenarios.is_empty() {
-			let ok_scenario: Vec<_> = scenarios
-				.into_iter()
-				.filter_map(|s| if s.is_ok() { Some(s.elapse_millli) } else { None })
-				.collect();
-			ok_scenario.iter().sum::<u128>()
-			// / ok_scenario.len() as u128
+		let ok_scenario: Vec<_> = scenarios
+			.into_iter()
+			.filter_map(|s| if s.is_ok() { Some(s.elapse_millli) } else { None })
+			.collect();
+		if !ok_scenario.is_empty() {
+			ok_scenario.iter().sum::<u128>() / ok_scenario.len() as u128
 		} else {
-			tracing::warn!("No result available average exec time is 0");
+			tracing::warn!("Client exec: No scenario executes correctly, average exec time is 0");
 			0
 		}
 	}
