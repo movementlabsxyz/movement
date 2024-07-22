@@ -11,6 +11,12 @@ pub enum BridgeContractInitiatorError {
 	InitiateTransferError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
+	#[error("Failed to parse preimage")]
+	ParsePreimageError,
+	#[error("Faled to get value at contract mapping storage")]
+	GetMappingStorageError,
+	#[error("Faled to decode storage value")]
+	DecodeStorageError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }

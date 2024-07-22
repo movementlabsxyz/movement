@@ -5,6 +5,8 @@ use alloy::pubsub::PubSubFrontend;
 use alloy_primitives::Address;
 use alloy_provider::RootProvider;
 use alloy_rlp::{RlpDecodable, RlpEncodable};
+use bridge_shared::bridge_contracts::BridgeContractInitiatorError;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -21,8 +23,14 @@ pub enum EthInitiatorError {
 	LengthError,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
 pub struct EthAddress(pub Address);
+
+impl From<String> for EthAddress {
+	fn from(s: String) -> Self {
+		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
+	}
+}
 
 impl From<Vec<u8>> for EthAddress {
 	fn from(vec: Vec<u8>) -> Self {
@@ -60,14 +68,14 @@ pub(crate) struct ProviderArgs {
 	pub chain_id: String,
 }
 
-pub fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
+pub fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], BridgeContractInitiatorError> {
 	if vec.len() == 32 {
 		// Try to convert the Vec<u8> to [u8; 32]
 		match vec.try_into() {
 			Ok(array) => Ok(array),
-			Err(_) => Err("Failed to convert Vec<u8> to [u8; 32]"),
+			Err(_) => Err(BridgeContractInitiatorError::ParsePreimageError),
 		}
 	} else {
-		Err("Vec<u8> does not have exactly 32 elements")
+		Err(BridgeContractInitiatorError::ParsePreimageError)
 	}
 }

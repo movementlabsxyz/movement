@@ -35,7 +35,6 @@ use utils::EthAddress;
 pub mod utils;
 
 const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
 const RECIPIENT_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
 const MAX_RETRIES: u32 = 5;
@@ -46,33 +45,6 @@ pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeCont
 pub type SCCResult<A, H> =
 	Result<BridgeContractCounterpartyEvent<A, H>, BridgeContractCounterpartyError>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyError {
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EthInitiatorEvent<A, H> {
-	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
-	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AbstractBlockainEvent<A, H> {
-	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<A, H>),
-	Noop,
-}
-
 ///Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -80,8 +52,7 @@ pub struct Config {
 	pub ws_url: Option<String>,
 	pub chain_id: String,
 	pub signer_private_key: String,
-	pub initiator_address: String,
-	pub counterparty_address: String,
+	pub initiator_address: EthAddress,
 	pub recipient_address: String,
 	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,
@@ -94,8 +65,7 @@ impl Default for Config {
 			ws_url: Some("ws://localhost:8545".to_string()),
 			chain_id: "31337".to_string(),
 			signer_private_key: Self::default_for_private_key(),
-			initiator_address: INITIATOR_ADDRESS.to_string(),
-			counterparty_address: COUNTERPARTY_ADDRESS.to_string(),
+			initiator_address: EthAddress::from(INITIATOR_ADDRESS.to_string()),
 			recipient_address: RECIPIENT_ADDRESS.to_string(),
 			gas_limit: DEFAULT_GAS_LIMIT,
 			num_tx_send_retries: MAX_RETRIES,
@@ -146,7 +116,6 @@ pub struct EthClient<P> {
 	chain_id: String,
 	ws_provider: RootProvider<PubSubFrontend>,
 	initiator_address: EthAddress,
-	counterparty_address: EthAddress,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u64,
 	num_tx_send_retries: u32,
@@ -157,9 +126,7 @@ impl EthClient<AlloyProvider> {
 		config: Config,
 		counterparty_address: &str,
 	) -> Result<Self, anyhow::Error> {
-		let signer_private_key = config.signer_private_key;
-		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
-		let initiator_address = config.initiator_address.parse()?;
+		let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
 		let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()
@@ -173,7 +140,7 @@ impl EthClient<AlloyProvider> {
 		EthClient::build_with_provider(utils::ProviderArgs {
 			rpc_provider,
 			ws_provider,
-			initiator_address,
+			initiator_address: config.initiator_address,
 			counterparty_address: counterparty_address.parse()?,
 			gas_limit: config.gas_limit,
 			num_tx_send_retries: config.num_tx_send_retries,
@@ -192,7 +159,6 @@ impl EthClient<AlloyProvider> {
 			chain_id: args.chain_id,
 			ws_provider: args.ws_provider,
 			initiator_address: args.initiator_address,
-			counterparty_address: args.counterparty_address,
 			gas_limit: args.gas_limit,
 			num_tx_send_retries: args.num_tx_send_retries,
 			send_transaction_error_rules,
@@ -245,8 +211,7 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
-		let pre_image: [u8; 32] = utils::vec_to_array(pre_image.0)
-			.unwrap_or_else(|_| panic!("Failed to convert pre_image"));
+		let pre_image: [u8; 32] = utils::vec_to_array(pre_image.0)?;
 		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
@@ -287,11 +252,11 @@ where
 			.rpc_provider
 			.get_storage_at(self.initiator_address.0, storage_slot)
 			.await
-			.unwrap_or_else(|_| panic!("Failed to get storage at slot"));
+			.map_err(|_| BridgeContractInitiatorError::GetMappingStorageError)?;
 		let storage_bytes = storage.to_be_bytes::<32>();
 		let mut storage_slice = &storage_bytes[..];
-		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice).unwrap();
-
+		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
+			.map_err(|_| BridgeContractInitiatorError::DecodeStorageError)?;
 		let details = BridgeTransferDetails {
 			bridge_transfer_id,
 			initiator_address: InitiatorAddress(eth_details.originator),
