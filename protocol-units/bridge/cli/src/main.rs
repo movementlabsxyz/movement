@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
 			eth::run(eth_command).await?;
 		}
 		Commands::Movement { movement_command } => {
-			todo!()
+			movement::run(movement_command).await?;
 		}
 	}
 
