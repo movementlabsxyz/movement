@@ -312,44 +312,6 @@ impl<P> EthClient<P> {
 	}
 }
 
-impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
-	type Item = BridgeContractInitiatorEvent<
-		<Self as BridgeContractInitiatorMonitoring>::Address,
-		<Self as BridgeContractInitiatorMonitoring>::Hash,
-	>;
-
-	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
-		let this = self.get_mut();
-		if let Poll::Ready(Some(AbstractBlockainEvent::InitiatorContractEvent(contract_result))) =
-			this.listener.poll_next_unpin(cx)
-		{
-			tracing::trace!(
-				"InitiatorContractMonitoring: Received contract event: {:?}",
-				contract_result
-			);
-
-			// Only listen to the initiator contract events
-			match contract_result {
-				Ok(contract_event) => match contract_event {
-					BridgeContractInitiatorEvent::Initiated(details) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)));
-					}
-					BridgeContractInitiatorEvent::Completed(id) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(id)))
-					}
-					BridgeContractInitiatorEvent::Refunded(id) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Refunded(id)))
-					}
-				},
-				Err(e) => {
-					tracing::error!("Error in contract event: {:?}", e);
-				}
-			}
-		}
-		Poll::Pending
-	}
-}
-
 fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 	if vec.len() == 32 {
 		// Try to convert the Vec<u8> to [u8; 32]
