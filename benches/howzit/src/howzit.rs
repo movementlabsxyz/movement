@@ -1,4 +1,4 @@
-use std::ops::RangeInclusive;
+use std::{collections::HashMap, ops::RangeInclusive};
 use std::path::PathBuf;
 
 use aptos_types::transaction::TransactionPayload;
@@ -7,7 +7,7 @@ use aptos_sdk::{
     move_types::{
         identifier::Identifier, language_storage::ModuleId
         
-    }, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::EntryFunction, LocalAccount}
+    }, coin_client::{CoinClient, TransferOptions}, rest_client::{Client, FaucetClient}, transaction_builder::TransactionBuilder, types::{chain_id::ChainId, transaction::EntryFunction, LocalAccount}
 };
 use anyhow::Context;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -15,6 +15,9 @@ use crate::build_and_publish_package;
 use tokio::sync::RwLock;
 use std::sync::Arc;
 use url::Url;
+use aptos_sdk::types::account_address::AccountAddress;
+use aptos_sdk::move_types::language_storage::TypeTag;
+use std::str::FromStr;
 
 #[derive(Debug, Clone)]
 pub enum Probe {
@@ -170,6 +173,7 @@ impl Howzit {
             Err(e) => {
                 tracing::error!("Failed to create account: {:?}", e);
                 failures += 1;
+                return Ok((successes, failures));
             }
         }
 
@@ -221,6 +225,167 @@ impl Howzit {
                 }
             }
         }
+
+        Ok((successes, failures))
+    
+    }
+
+    pub async fn call_transfers(&self, count : u64) -> Result<(u64, u64), anyhow::Error> {
+
+        let mut latencies = HashMap::new();
+        let mut successes = 0;
+        let mut failures = 0;
+
+        let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+        let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+
+        tracing::info!("Funding Alice");
+        match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
+            Ok(_) => {
+                successes += 1;
+            },
+            Err(e) => {
+                tracing::error!("Failed to create account: {:?}", e);
+                failures += 1;
+                return Ok((successes, failures));
+            }
+        }
+        tracing::info!("Funding Bob");
+        match self.faucet_client.fund(bob.address(), 10_000_000_000).await {
+            Ok(_) => {
+                successes += 1;
+            },
+            Err(e) => {
+                tracing::error!("Failed to create account: {:?}", e);
+                failures += 1;
+                return Ok((successes, failures));
+            }
+        }
+
+        let coin_client = CoinClient::new(&self.rest_client);
+        let mut transactions = Vec::new();
+        for _ in 0..count {
+          match coin_client
+                .transfer(&mut alice, bob.address(), 1_000, None)
+                .await {
+                    Ok(txn) => {
+                        transactions.push(txn.clone());
+                        let start = std::time::Instant::now();
+                        latencies.insert(txn.hash, start);
+                    },
+                    Err(e) => {
+                        tracing::error!("Failed to submit transaction: {:?}", e);
+                        failures += 1;
+                    }
+                
+                }
+        }
+
+        for txn_hash in transactions {
+            match self.rest_client.wait_for_transaction(&txn_hash).await {
+                Ok(_) => {
+                    successes += 1;
+                    let start = latencies.remove(&txn_hash.hash).ok_or(
+                        anyhow::anyhow!("Missing latency for transaction")
+                    )?;
+                    let duration = start.elapsed();
+                    tracing::info!("Transaction {} took {:?}", txn_hash.hash, duration);
+                },
+                Err(e) => {
+                    tracing::error!("Failed to wait for transaction: {:?}", e);
+                    failures += 1;
+                }
+            }
+        }
+
+        Ok((successes, failures))
+    
+    }
+
+    pub async fn call_transfers_batch(&self, count : u64) -> Result<(u64, u64), anyhow::Error> {
+
+        let mut successes = 0;
+        let mut failures = 0;
+
+        let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+        let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+
+        tracing::info!("Funding Alice");
+        match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
+            Ok(_) => {
+                successes += 1;
+            },
+            Err(e) => {
+                tracing::error!("Failed to create account: {:?}", e);
+                failures += 1;
+                return Ok((successes, failures));
+            }
+        }
+        tracing::info!("Funding Bob");
+        match self.faucet_client.fund(bob.address(), 10_000_000_000).await {
+            Ok(_) => {
+                successes += 1;
+            },
+            Err(e) => {
+                tracing::error!("Failed to create account: {:?}", e);
+                failures += 1;
+                return Ok((successes, failures));
+            }
+        }
+
+        let coin_client = CoinClient::new(&self.rest_client);
+        let mut transactions = Vec::new();
+        for _ in 0..count {
+
+            let options = TransferOptions::default();
+
+            let chain_id = self.rest_client
+                    .get_index()
+                    .await
+                    .context("Failed to get chain ID")?
+                    .inner()
+                    .chain_id;
+
+            let transaction_builder = TransactionBuilder::new(
+                TransactionPayload::EntryFunction(EntryFunction::new(
+                    ModuleId::new(AccountAddress::ONE, Identifier::new("coin").unwrap()),
+                    Identifier::new("transfer").unwrap(),
+                    vec![TypeTag::from_str(options.coin_type).unwrap()],
+                    vec![
+                        bcs::to_bytes(&bob.address()).unwrap(),
+                        bcs::to_bytes(&(1_000 as u64)).unwrap(),
+                    ],
+                )),
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    + options.timeout_secs,
+                ChainId::new(chain_id),
+            )
+            .sender(alice.address())
+            .sequence_number(alice.sequence_number())
+            .max_gas_amount(options.max_gas_amount)
+            .gas_unit_price(options.gas_unit_price);
+
+            let signed_txn = alice.sign_with_transaction_builder(transaction_builder);
+
+            transactions.push(signed_txn);
+
+        }
+
+        tracing::info!("Submitting batch"); 
+        let batch = match self.rest_client.submit_batch_bcs(&transactions.as_slice()).await {
+            Ok(batch) => batch,
+            Err(e) => {
+                tracing::error!("Failed to submit batch: {:?}", e);
+                return Ok((successes, failures));
+            }
+        }.into_inner();
+    
+        tracing::info!("Batch: {:?}", batch);
+        failures += batch.transaction_failures.len() as u64;
+        successes += (transactions.len() - batch.transaction_failures.len()) as u64;
 
         Ok((successes, failures))
     

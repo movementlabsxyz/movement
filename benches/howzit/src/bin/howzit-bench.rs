@@ -41,16 +41,16 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let (transaction_result_sender, mut transaction_result_receiver) = tokio::sync::mpsc::unbounded_channel::<(u64, u64)>();
 
     // fund the accounts in an orderly manner
-    let n = 300;
+    let n = 512;
 
-    let k = 3;
+    let k = 4;
     let mut futures = Vec::with_capacity(n);
     let start_time = std::time::Instant::now();
     for _ in 0..n {
         let howzit = howzit.clone();
         let sender = transaction_result_sender.clone();
         futures.push(tokio::spawn(async move {
-            let (successes, failures) = howzit.call_probe(k).await?;
+            let (successes, failures) = howzit.call_transfers(k).await?;
             sender.send((successes, failures))?;
             Ok::<(), anyhow::Error>(())
         }));

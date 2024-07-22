@@ -4,11 +4,11 @@ processes:
 
   m1-da-light-node:
     command: |
-      sudo -E flamegraph -o ./.movement/m1-da-light-node-flamegraph.svg -- $(which m1-da-light-node)
+      samply record $(which m1-da-light-node)
 
   suzuka-full-node:
     command: |
-      sudo -E flamegraph -o ./.movement/suzuka-full-node-flamegraph.svg -- $(which suzuka-full-node)
+      samply record $(which suzuka-full-node)
     depends_on:
       m1-da-light-node:
         condition: process_healthy
@@ -22,11 +22,11 @@ processes:
   suzuka-faucet:
   
     command : |
-      sudo -E flamegraph -o ./.movement/suzuka-faucet-service-flamegraph.svg --  $(which suzuka-faucet-service) run-simple
+      samply record $(which suzuka-faucet-service) run-simple
     depends_on:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 30
+      initial_delay_seconds: 60
       exec:
         command: curl http://0.0.0.0:30732
