@@ -50,6 +50,7 @@ reqwest = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+tonic = { workspace = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }
@@ -59,6 +60,7 @@ maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+aptos-protos = { workspace = true }
 
 [lints]
 workspace = true

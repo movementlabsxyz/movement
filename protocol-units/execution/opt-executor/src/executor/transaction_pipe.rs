@@ -1,14 +1,15 @@
 use super::Executor;
-use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
 use aptos_vm_validator::vm_validator::TransactionValidation;
 use aptos_vm_validator::vm_validator::VMValidator;
-use futures::StreamExt;
-use std::sync::Arc;
 
+use futures::StreamExt;
 use thiserror::Error;
+use tracing::debug;
+
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
@@ -25,8 +26,9 @@ impl From<anyhow::Error> for TransactionPipeError {
 }
 
 impl Executor {
-	/// Ticks the transaction reader.
-	pub async fn tick_transaction_reader(
+	/// Pipes a batch of transactions from the mempool to the transaction channel.
+	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
+	pub async fn tick_transaction_pipe(
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
@@ -45,22 +47,16 @@ impl Executor {
 									// Re-create the validator for each Tx because it uses a frozen version of the ledger.
 									let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
 									let tx_result = vm_validator.validate_transaction(transaction.clone())?;
-									// If the verification failed return the error status.
-									if let Some(vm_status) = tx_result.status() {
+
+									let status = if let Some(vm_status) = tx_result.status() {
+										// If the verification failed, return the error status.
 										let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-										let status: SubmissionStatus = (ms, Some(vm_status));
-										callback.send(Ok(status)).map_err(
-											|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-										)?;
-										continue;
-									}
-
-									// add to the mempool
-									{
-
+										(ms, Some(vm_status))
+									} else {
+										// add to the mempool
 										let mut core_mempool = self.core_mempool.write().await;
 
-										tracing::debug!("Adding transaction to mempool: {:?} {:?}", transaction, transaction.sequence_number());
+										debug!("Adding transaction to mempool: {:?} {:?}", transaction, transaction.sequence_number());
 										let status = core_mempool.add_txn(
 											transaction.clone(),
 											0,
@@ -71,10 +67,10 @@ impl Executor {
 
 										match status.code {
 											MempoolStatusCode::Accepted => {
-												tracing::debug!("Transaction accepted: {:?}", transaction);
+												debug!("Transaction accepted: {:?}", transaction);
 											},
 											_ => {
-												tracing::debug!("Transaction not accepted: {:?}", status);
+												debug!("Transaction not accepted: {:?}", status);
 												Err(TransactionPipeError::TransactionNotAccepted(status))?;
 											}
 										}
@@ -84,22 +80,21 @@ impl Executor {
 											|e| anyhow::anyhow!("Error sending transaction: {:?}", e)
 										)?;
 
+										// report status
+										let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
+										(ms, None)
 									};
 
-									// report status
-									let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-									let status: SubmissionStatus = (ms, None);
-									callback.send(Ok(status)).map_err(
-										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-									)?;
-
+									if callback.send(Ok(status)).is_err() {
+										debug!("submit_transaction request has been canceled");
+									}
 								},
 								MempoolClientRequest::GetTransactionByHash(hash, sender) => {
 									let mempool = self.core_mempool.read().await;
 									let mempool_result = mempool.get_by_hash(hash);
-									sender.send(mempool_result).map_err(
-										|e| anyhow::anyhow!("Error sending callback: {:?}", e)
-									)?;
+									if sender.send(mempool_result).is_err() {
+										debug!("get_transaction_by_hash request has been canceled");
+									}
 								},
 							}
 						},
@@ -113,17 +108,6 @@ impl Executor {
 
 		Ok(())
 	}
-
-	/// Pipes a batch of transactions from the mempool to the transaction channel.
-	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
-	pub async fn tick_transaction_pipe(
-		&self,
-		transaction_channel: async_channel::Sender<SignedTransaction>,
-	) -> Result<(), TransactionPipeError> {
-		self.tick_transaction_reader(transaction_channel.clone()).await?;
-
-		Ok(())
-	}
 }
 
 #[cfg(test)]
@@ -133,42 +117,33 @@ mod tests {
 
 	use super::*;
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
-	use aptos_crypto::{
-		ed25519::{Ed25519PrivateKey, Ed25519Signature},
-		PrivateKey, Uniform,
-	};
-	use aptos_sdk::types::{AccountKey, LocalAccount};
 	use aptos_types::{
-		account_address::AccountAddress,
-		chain_id::ChainId,
-		transaction::{RawTransaction, Script, SignedTransaction, TransactionPayload},
+		account_config, test_helpers::transaction_test_helpers, transaction::SignedTransaction,
 	};
+	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
-		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let public_key = private_key.public_key();
-		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
-		let raw_transaction = RawTransaction::new(
-			AccountAddress::random(),
-			0,
-			transaction_payload,
-			0,
-			gas_unit_price,
-			0,
-			chain_id, // This is the value used in aptos testing code.
-		);
-		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
+	fn create_signed_transaction(
+		sequence_number: u64,
+		maptos_config: &Config,
+	) -> SignedTransaction {
+		let address = account_config::aptos_test_root_address();
+		transaction_test_helpers::get_test_txn_with_chain_id(
+			address,
+			sequence_number,
+			&GENESIS_KEYPAIR.0,
+			GENESIS_KEYPAIR.1.clone(),
+			maptos_config.chain.maptos_chain_id.clone(), // This is the value used in aptos testing code.
+		)
 	}
 
 	#[tokio::test]
 	async fn test_pipe_mempool() -> Result<(), anyhow::Error> {
 		// header
-		let mut executor = Executor::try_test_default()?;
-		let user_transaction =
-			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -182,7 +157,8 @@ mod tests {
 		executor.tick_transaction_pipe(tx).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;
@@ -192,13 +168,33 @@ mod tests {
 	}
 
 	#[tokio::test]
+	async fn test_pipe_mempool_cancellation() -> Result<(), anyhow::Error> {
+		// header
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
+
+		// send transaction to mempool
+		let (req_sender, callback) = oneshot::channel();
+		executor
+			.mempool_client_sender
+			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
+			.await?;
+
+		// drop the callback to simulate cancellation of the request
+		drop(callback);
+
+		// tick the transaction pipe, should succeed
+		let (tx, rx) = async_channel::unbounded();
+		executor.tick_transaction_pipe(tx).await?;
+
+		Ok(())
+	}
+
+	#[tokio::test]
 	async fn test_pipe_mempool_with_malformed_transaction() -> Result<(), anyhow::Error> {
 		// header
-		let mut executor = Executor::try_test_default()?;
-		let user_transaction = create_signed_transaction(
-			0, 
-			executor.maptos_config.chain.maptos_chain_id.clone()
-		);
+		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
@@ -212,7 +208,9 @@ mod tests {
 		executor.tick_transaction_pipe(tx.clone()).await?;
 
 		// receive the callback
-		callback.await??;
+		let (status, _vm_status_code) = callback.await??;
+		// dbg!(_vm_status_code);
+		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
 		let received_transaction = rx.recv().await?;
@@ -243,7 +241,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let mut executor = Executor::try_test_default()?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -256,8 +254,7 @@ mod tests {
 		});
 
 		let api = executor.get_apis();
-		let user_transaction =
-			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		let user_transaction = create_signed_transaction(1, &executor.maptos_config);
 		let comparison_user_transaction = user_transaction.clone();
 		let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
@@ -272,7 +269,7 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
-		let mut executor = Executor::try_test_default()?;
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let mempool_executor = executor.clone();
 
 		let (tx, rx) = async_channel::unbounded();
@@ -287,9 +284,8 @@ mod tests {
 		let api = executor.get_apis();
 		let mut user_transactions = BTreeSet::new();
 		let mut comparison_user_transactions = BTreeSet::new();
-		for _ in 0..25 {
-			let user_transaction =
-				create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone());
+		for i in 1..25 {
+			let user_transaction = create_signed_transaction(i, &executor.maptos_config);
 			let bcs_user_transaction = bcs::to_bytes(&user_transaction)?;
 			user_transactions.insert(bcs_user_transaction.clone());
 
