@@ -4,11 +4,11 @@ processes:
 
   m1-da-light-node:
     command: |
-      cargo flamegraph -o ./.movement/m1-da-light-node-flamegraph.svg -- m1-da-light-node
+      sudo -E flamegraph -o ./.movement/m1-da-light-node-flamegraph.svg -- $(which m1-da-light-node)
 
   suzuka-full-node:
     command: |
-      cargo flamegraph -o ./.movement/suzuka-full-node-flamegraph.svg -- suzuka-full-node
+      sudo -E flamegraph -o ./.movement/suzuka-full-node-flamegraph.svg -- $(which suzuka-full-node)
     depends_on:
       m1-da-light-node:
         condition: process_healthy
@@ -22,7 +22,7 @@ processes:
   suzuka-faucet:
   
     command : |
-      cargo flamegraph -o ./.movement/suzuka-faucet-service-flamegraph.svg -- suzuka-faucet-service run-simple
+      sudo -E flamegraph -o ./.movement/suzuka-faucet-service-flamegraph.svg --  $(which suzuka-faucet-service) run-simple
     depends_on:
       suzuka-full-node:
         condition: process_healthy
