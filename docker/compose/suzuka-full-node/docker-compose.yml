@@ -118,7 +118,7 @@ services:
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 31732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -139,7 +139,7 @@ services:
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 32732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -160,7 +160,7 @@ services:
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 33732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -181,7 +181,7 @@ services:
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 34732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -202,7 +202,7 @@ services:
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 35732" ]
       retries: 10
       interval: 10s
       timeout: 5s
