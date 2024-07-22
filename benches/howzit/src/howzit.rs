@@ -151,7 +151,10 @@ impl Howzit {
     }
 
     /// Calls a generated probe function
-    pub async fn call_probe(&self, count : u64) -> Result<(), anyhow::Error> {
+    pub async fn call_probe(&self, count : u64) -> Result<(u64, u64), anyhow::Error> {
+
+        let mut successes = 0;
+        let mut failures = 0;
 
         let chain_id = self.rest_client.get_index().await.context(
             "failed to get chain ID"
@@ -159,13 +162,18 @@ impl Howzit {
         let wallet = self.wallet.read().await;
         let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 
-        self.faucet_client.fund(
-            alice.address(),
-            10_000_000_000
-        ).await.context(
-            "failed to fund account"
-        )?;
+        tracing::info!("Funding account");
+        match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
+            Ok(_) => {
+                successes += 1;
+            },
+            Err(e) => {
+                tracing::error!("Failed to create account: {:?}", e);
+                failures += 1;
+            }
+        }
 
+        tracing::info!("Calling probe function");
         let mut transactions = Vec::new();
         for _ in 0..count {
             let probe = Probe::generate_exponential(&mut rand::rngs::OsRng);
@@ -188,24 +196,33 @@ impl Howzit {
             .sequence_number(alice.sequence_number());
             let signed_txn = alice.sign_with_transaction_builder(transaction_builder);
         
-            let txn_hash = self.rest_client
+            match self.rest_client
                 .submit(&signed_txn)
-                .await
-                .context(
-                    format!("failed to submit transaction fo probe {:?}", probe)
-                )?
-                .into_inner();
-            transactions.push(txn_hash);
+                .await {
+                    Ok(txn_hash) => {
+                        transactions.push(txn_hash.into_inner());
+                    },
+                    Err(e) => {
+                        tracing::error!("Failed to submit transaction: {:?}", e);
+                        failures += 1;
+                    }
+                }
         }
 
         
         for txn_hash in transactions {
-            self.rest_client.wait_for_transaction(&txn_hash).await.context(
-                "transaction failed to execute"
-            )?;
+            match self.rest_client.wait_for_transaction(&txn_hash).await {
+                Ok(_) => {
+                    successes += 1;
+                },
+                Err(e) => {
+                    tracing::error!("Failed to wait for transaction: {:?}", e);
+                    failures += 1;
+                }
+            }
         }
 
-        Ok(())
+        Ok((successes, failures))
     
     }
 
