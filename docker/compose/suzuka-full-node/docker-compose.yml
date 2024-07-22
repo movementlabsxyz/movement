@@ -113,6 +113,8 @@ services:
     ports:
       - "31732:30732"
     depends_on:
+      suzuka-faucet-service:
+        condition: service_healthy
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
@@ -132,6 +134,8 @@ services:
     ports:
       - "32732:30732"
     depends_on:
+      suzuka-faucet-service-replica-1:
+        condition: service_healthy
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
@@ -151,6 +155,8 @@ services:
     ports:
       - "33732:30732"
     depends_on:
+      suzuka-faucet-service-replica-2:
+        condition: service_healthy
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
@@ -170,6 +176,8 @@ services:
     ports:
       - "34732:30732"
     depends_on:
+      suzuka-faucet-service-replica-3:
+        condition: service_healthy
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
@@ -189,6 +197,8 @@ services:
     ports:
       - "35732:30732"
     depends_on:
+      suzuka-faucet-service-replica-4:
+        condition: service_healthy
       suzuka-full-node:
         condition: service_healthy
     healthcheck:
@@ -200,5 +210,4 @@ services:
 
 volumes:
   dot-movement:
-
 
