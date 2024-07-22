@@ -57,6 +57,7 @@ async fn main() -> Result<()> {
 			);
 			server.listen_address = listener_host.to_string();
 			server.listen_port = listener_port;
+			server.do_not_delegate = false;
 			Server::RunSimple(server)
 		}
 		server => server,

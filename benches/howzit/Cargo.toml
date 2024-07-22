@@ -28,6 +28,8 @@ godfig = { workspace = true }
 rand = { workspace = true }
 futures = { workspace = true }
 url = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 
 [lints]

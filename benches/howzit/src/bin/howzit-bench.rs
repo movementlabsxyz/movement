@@ -7,6 +7,14 @@ use anyhow::Context;
 #[tokio::main]
 pub async fn main() -> Result<(), anyhow::Error> {
 
+    use tracing_subscriber::EnvFilter;
+
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
     let crate_path = env!("CARGO_MANIFEST_DIR");
     let crate_path_buf = PathBuf::from(crate_path);
     let token = std::env::var("AUTH_TOKEN").context("AUTH_TOKEN not set")?;
@@ -30,23 +38,20 @@ pub async fn main() -> Result<(), anyhow::Error> {
 
     howzit.build_and_publish().await?;
 
-    let (transaction_result_sender, mut transaction_result_receiver) = tokio::sync::mpsc::unbounded_channel::<bool>();
+    let (transaction_result_sender, mut transaction_result_receiver) = tokio::sync::mpsc::unbounded_channel::<(u64, u64)>();
 
     // fund the accounts in an orderly manner
-    let n = 8;
+    let n = 300;
+
+    let k = 3;
     let mut futures = Vec::with_capacity(n);
     let start_time = std::time::Instant::now();
     for _ in 0..n {
         let howzit = howzit.clone();
         let sender = transaction_result_sender.clone();
         futures.push(tokio::spawn(async move {
-                match howzit.call_probe(256).await {
-                    Ok(_) => sender.send(true).unwrap(),
-                    Err(e) => {
-                        eprintln!("Error sending transaction: {:?}", e);
-                        sender.send(false).unwrap();
-                    }
-                }
+            let (successes, failures) = howzit.call_probe(k).await?;
+            sender.send((successes, failures))?;
             Ok::<(), anyhow::Error>(())
         }));
     }
@@ -55,12 +60,9 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let counter_task = tokio::spawn(async move {
         let mut successes = 0;
         let mut failures = 0;
-        while let Some(result) = transaction_result_receiver.recv().await {
-            if result {
-                successes += 1;
-            } else {
-                failures += 1;
-            }
+        while let Some((run_successes, run_failures)) = transaction_result_receiver.recv().await {
+            successes += run_successes;
+            failures += run_failures;
        }
        (successes, failures)
     });
@@ -73,7 +75,7 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let (success, failures) = counter_task.await?;
 
     // print successes per second
-    let success_per_second = (success * 3) as f64 / duration.as_secs_f64();
+    let success_per_second = success as f64 / duration.as_secs_f64();
     println!("Successes per second: {}", success_per_second);
 
     // print failures per second
