@@ -32,16 +32,18 @@ impl Executor {
 		&self,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
-		let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
-		let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
-
+		// Drop the receiver RwLock as soon as possible.
+		let next = {
+			let mut mempool_client_receiver = self.mempool_client_receiver.write().await;
+			mempool_client_receiver.next().await
+		};
 		
-		if let Some(request) = mempool_client_receiver.next().await  {
+		if let Some(request) = next  {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					// Pre-execute Tx to validate its content.
 					// Re-create the validator for each Tx because it uses a frozen version of the ledger.
-					// let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
+					let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
 					let tx_result = vm_validator.validate_transaction(transaction.clone())?;
 
 					let status = if let Some(vm_status) = tx_result.status() {
