@@ -18,18 +18,16 @@ use movement_types::{Block, BlockCommitmentEvent};
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
-use tokio::sync::RwLock;
 use tokio_stream::StreamExt;
 use tracing::{debug, info, error};
 
 use std::future::Future;
-use std::sync::Arc;
 use std::time::Duration;
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
 	pub transaction_receiver: Receiver<SignedTransaction>,
-	light_node_client: Arc<RwLock<LightNodeServiceClient<tonic::transport::Channel>>>,
+	light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 	settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
 	pub config: suzuka_config::Config,
@@ -58,7 +56,7 @@ where
 				executor,
 				transaction_sender,
 				transaction_receiver,
-				light_node_client: Arc::new(RwLock::new(light_node_client)),
+				light_node_client,
 				settlement_manager,
 				movement_rest,
 				config: config.clone(),
@@ -121,10 +119,8 @@ where
 		}
 
 		if transactions.len() > 0 {
-			let client_ptr = self.light_node_client.clone();
-			let mut light_node_client = client_ptr.write().await;
+			let mut light_node_client = self.light_node_client.clone();
 			light_node_client.batch_write(BatchWriteRequest { blobs: transactions }).await?;
-
 			debug!("Wrote transactions to DA");
 		}
 
@@ -143,8 +139,7 @@ where
 		let block_head_height = self.executor.get_block_head_height().await?;
 
 		let mut stream = {
-			let client_ptr = self.light_node_client.clone();
-			let mut light_node_client = client_ptr.write().await;
+			let mut light_node_client = self.light_node_client.clone();
 			light_node_client
 				.stream_read_from_height(StreamReadFromHeightRequest { height: block_head_height })
 				.await?

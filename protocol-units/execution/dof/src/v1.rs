@@ -38,14 +38,6 @@ impl Executor {
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
 
-	/// Runs the necessary background tasks.
-	async fn run_transaction_pipe(&self) -> Result<(), anyhow::Error> {
-		loop {
-			// readers should be able to run concurrently
-			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
-		}
-		Ok(())
-	}
 }
 
 #[async_trait]

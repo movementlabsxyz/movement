@@ -47,11 +47,8 @@ impl Executor {
 		)?;
 
 		// sleep forever
-		loop {
-			tokio::time::sleep(tokio::time::Duration::from_secs(100000)).await;
-		}
+		Ok(futures::future::pending::<()>().await)
 
-		Ok(())
 	}
 
 }
