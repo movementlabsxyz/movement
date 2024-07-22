@@ -1,7 +1,10 @@
 use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_network::{Ethereum, EthereumWallet};
-use alloy_primitives::private::serde::{Deserialize, Serialize};
+use alloy_primitives::{
+	private::serde::{Deserialize, Serialize},
+	Address,
+};
 use alloy_primitives::{FixedBytes, U256};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
@@ -13,8 +16,8 @@ use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails, HashLock,
-	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	RecipientAddress, TimeLock,
 };
 use bridge_shared::{
 	bridge_contracts::{
@@ -22,15 +25,14 @@ use bridge_shared::{
 		BridgeContractInitiatorResult,
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::LockDetails,
 };
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
-	send_transaction, InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
+	InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
+
 use std::fmt::Debug;
-use thiserror::Error;
-use utils::EthAddress;
+use utils::{send_transaction, EthAddress};
 
 pub mod utils;
 
@@ -116,6 +118,7 @@ pub struct EthClient<P> {
 	chain_id: String,
 	ws_provider: RootProvider<PubSubFrontend>,
 	initiator_address: EthAddress,
+	signing_address: EthAddress,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
 	gas_limit: u64,
 	num_tx_send_retries: u32,
@@ -140,6 +143,7 @@ impl EthClient<AlloyProvider> {
 		EthClient::build_with_provider(utils::ProviderArgs {
 			rpc_provider,
 			ws_provider,
+			signing_address: EthAddress(signer.address()),
 			initiator_address: config.initiator_address,
 			counterparty_address: counterparty_address.parse()?,
 			gas_limit: config.gas_limit,
@@ -158,6 +162,7 @@ impl EthClient<AlloyProvider> {
 			rpc_provider: args.rpc_provider,
 			chain_id: args.chain_id,
 			ws_provider: args.ws_provider,
+			signing_address: args.signing_address,
 			initiator_address: args.initiator_address,
 			gas_limit: args.gas_limit,
 			num_tx_send_retries: args.num_tx_send_retries,
@@ -182,13 +187,13 @@ where
 
 	async fn initiate_bridge_transfer(
 		&mut self,
-		_initiator_address: InitiatorAddress<Self::Address>,
+		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(initiator_address.0 .0, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
@@ -212,7 +217,7 @@ where
 		pre_image: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
 		let pre_image: [u8; 32] = utils::vec_to_array(pre_image.0)?;
-		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(self.signing_address.0, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
 		let _ = send_transaction(
@@ -229,7 +234,7 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_address.0, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(self.signing_address.0, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		let _ = send_transaction(
 			call,
