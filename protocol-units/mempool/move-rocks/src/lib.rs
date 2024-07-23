@@ -3,8 +3,10 @@ use mempool_util::{MempoolBlockOperations, MempoolTransaction, MempoolTransactio
 use movement_types::{Block, Id};
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use serde_json;
-use std::sync::Arc;
 use tokio::sync::RwLock;
+
+use std::fmt::Write;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct RocksdbMempool {
@@ -34,27 +36,19 @@ impl RocksdbMempool {
 		Ok(RocksdbMempool { db: Arc::new(RwLock::new(db)) })
 	}
 
-
 	pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
 		// Pre-allocate a string with the required capacity
 		let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32);
-	
-		// Pad to 32 characters for slot_seconds and append to key
-		key.push_str(&format!("{:032}", transaction.timestamp));
-		key.push(':');
-	
-		// Pad to 32 characters for sequence number and append to key
-		key.push_str(&format!("{:032}", transaction.transaction.sequence_number));
-		key.push(':');
-	
-		// Assuming transaction.transaction.id() returns a hex string of length 32
-		let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
-		key.push_str(&transaction_id_hex.to_string().as_str());
-	
+		// Write key components. The numbers are zero-padded to 32 characters.
+		key.write_fmt(format_args!(
+			"{:032}:{:032}:{}",
+			transaction.timestamp,
+			transaction.transaction.sequence_number,
+			transaction.transaction.id(),
+		))
+		.unwrap();
 		key
 	}
-	
-
 
 	/// Helper function to retrieve the key for mempool transaction from the lookup table.
 	async fn get_mempool_transaction_key(
@@ -322,5 +316,4 @@ pub mod test {
 
 		Ok(())
 	}
-
 }
