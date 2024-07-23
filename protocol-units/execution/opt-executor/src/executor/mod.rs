@@ -22,7 +22,7 @@ pub mod indexer;
 #[derive(Clone)]
 pub struct Executor {
 	/// The executing type.
-	pub block_executor: Arc<RwLock<BlockExecutor<AptosVM>>>,
+	pub block_executor: Arc<BlockExecutor<AptosVM>>,
 	/// The access to db.
 	pub db: DbReaderWriter,
 	/// The signer of the executor's transactions.
@@ -59,7 +59,7 @@ impl Executor {
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
 		Ok(Self {
-			block_executor: Arc::new(RwLock::new(block_executor)),
+			block_executor : Arc::new(block_executor),
 			db: reader_writer,
 			signer,
 			core_mempool,

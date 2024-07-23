@@ -8,6 +8,7 @@ use std::process::ExitCode;
 fn main() -> Result<ExitCode, anyhow::Error> {
 	let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
 
+	// console_subscriber::init();
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()

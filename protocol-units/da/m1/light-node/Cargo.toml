@@ -38,15 +38,12 @@ godfig = { workspace = true }
 # sequencer
 memseq = { workspace = true, optional = true }
 
-tracing-subscriber = { workspace = true, optional = true }
+tracing-subscriber = { workspace = true }
+console-subscriber = { workspace = true }
 
 [features]
 default = [
-    "sequencer",
-    "logging"
-]
-logging = [
-    "tracing-subscriber"
+    "sequencer"
 ]
 sequencer = [
     "memseq",

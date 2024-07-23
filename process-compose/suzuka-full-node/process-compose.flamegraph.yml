@@ -18,15 +18,3 @@ processes:
       initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:30731
-
-  suzuka-faucet:
-  
-    command : |
-      samply record $(which suzuka-faucet-service) run-simple
-    depends_on:
-      suzuka-full-node:
-        condition: process_healthy
-    readiness_probe:
-      initial_delay_seconds: 60
-      exec:
-        command: curl http://0.0.0.0:30732
