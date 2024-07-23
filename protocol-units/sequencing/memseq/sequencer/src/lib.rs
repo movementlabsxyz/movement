@@ -42,7 +42,7 @@ impl Memseq<RocksdbMempool> {
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
 		)?;
 		let parent_block = Arc::new(RwLock::new(Id::default()));
-		Ok(Self::new(mempool, 1024, parent_block, 1000))
+		Ok(Self::new(mempool, 1024, parent_block, 100))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
