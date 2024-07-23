@@ -1,9 +1,9 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
 use maptos_fin_view::FinalityView;
+use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 use maptos_opt_executor::Executor as OptExecutor;
 use movement_types::BlockCommitment;
-use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 
 use async_channel::Sender;
 use async_trait::async_trait;
@@ -37,7 +37,6 @@ impl Executor {
 		)?;
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
-
 }
 
 #[async_trait]
@@ -64,12 +63,9 @@ impl DynOptFinExecutor for Executor {
 						tracing::warn!("Transaction not accepted: {:?}", e);
 					}
 					_ => anyhow::bail!("Server error: {:?}", e),
-				}, 
+				},
 			}
 		}
-
-		Ok(())
-
 	}
 
 	async fn execute_block_opt(

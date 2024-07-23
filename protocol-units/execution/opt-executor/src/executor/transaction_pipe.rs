@@ -17,6 +17,8 @@ pub enum TransactionPipeError {
 	InternalError(String),
 	#[error("Transaction not accepted: {0}")]
 	TransactionNotAccepted(MempoolStatus),
+	#[error("Transaction stream closed")]
+	InputClosed,
 }
 
 impl From<anyhow::Error> for TransactionPipeError {
@@ -38,8 +40,8 @@ impl Executor {
 			mempool_client_receiver.next().await
 		};
 		
-		if let Some(request) = next  {
-			match request {
+		match next {
+			Some(request) => match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					// Pre-execute Tx to validate its content.
 					// Re-create the validator for each Tx because it uses a frozen version of the ledger.
@@ -101,7 +103,9 @@ impl Executor {
 					}
 				},
 			}
-	
+			None => {
+				return Err(TransactionPipeError::InputClosed);
+			}
 		}
 
 		Ok(())
@@ -182,7 +186,7 @@ mod tests {
 		drop(callback);
 
 		// tick the transaction pipe, should succeed
-		let (tx, rx) = async_channel::unbounded();
+		let (tx, _rx) = async_channel::unbounded();
 		executor.tick_transaction_pipe(tx).await?;
 
 		Ok(())
