@@ -250,7 +250,7 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
-		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
+		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.inner().as_bytes()));
 		let _ = send_transaction(
 			call,
 			&self.send_transaction_error_rules,
@@ -266,8 +266,8 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		let mapping_slot = U256::from(0); // the solidity mapping is the zeroth slot in the contract
-		let key = bridge_transfer_id.0;
-		let storage_slot = self.calculate_storage_slot(key, mapping_slot);
+		let storage_slot =
+			self.calculate_storage_slot(bridge_transfer_id.inner().as_bytes(), mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
 			.get_storage_at(self.initiator_address, storage_slot)
@@ -281,7 +281,7 @@ where
 			bridge_transfer_id,
 			initiator_address: InitiatorAddress(eth_details.originator),
 			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
-			hash_lock: HashLock(eth_details.hash_lock),
+			hash_lock: HashLock(EthHash(eth_details.hash_lock)),
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
 		};

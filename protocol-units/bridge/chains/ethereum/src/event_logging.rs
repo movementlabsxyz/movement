@@ -1,8 +1,11 @@
 use std::{fmt::Debug, pin::Pin, task::Poll};
 
-use alloy::{json_abi::Event, pubsub::PubSubFrontend};
+use alloy::{
+	json_abi::{Event, EventParam},
+	pubsub::PubSubFrontend,
+};
 use alloy_eips::BlockNumberOrTag;
-use alloy_primitives::{address, Address as EthAddress, LogData};
+use alloy_primitives::{address, Address as EthAddress, FixedBytes, LogData};
 use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy_rpc_types::{Filter, Log, RawLog};
 use alloy_sol_types::{sol, SolEvent};
@@ -183,15 +186,16 @@ fn convert_log_to_event(
 				],
 			);
 
+			// Once PR #153 is merged I'll use the proper error created there types and not unwrap here ?
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
-			let initiator_address = InitiatorAddress(A::from(
-				tokens[1].clone().into_address().unwrap().as_fixed_bytes().try_into().unwrap(),
-			));
-			let recipient_address = RecipientAddress(tokens[2].clone().into_address().unwrap());
+			let initiator_address = InitiatorAddress(EthAddress(FixedBytes(
+				tokens[1].clone().into_address().unwrap().0,
+			)));
+			let recipient_address = RecipientAddress(tokens[2].clone().into_fixed_bytes().unwrap());
 			let hash_lock = HashLock(EthHash::from(tokens[3].clone().into_fixed_bytes().unwrap()));
 			let time_lock = TimeLock(tokens[4].clone().into_uint().unwrap().as_u64());
-			let amount = Amount(tokens[5].clone().into_uint().unwrap());
+			let amount = Amount(tokens[5].clone().into_uint().unwrap().as_u64());
 
 			let details = BridgeTransferDetails {
 				bridge_transfer_id,
@@ -206,29 +210,34 @@ fn convert_log_to_event(
 		}
 		t if t == &completed_log => {
 			// Decode the data for Completed event
-			let bridge_transfer_id = BridgeTransferId(H::from(
-				topics
-					.get(1)
-					.expect("Expected hash in topics")
-					.as_fixed_bytes()
-					.try_into()
-					.unwrap(),
-			));
+			let tokens = decode_log_data(
+				address,
+				"BridgeTransferCompleted",
+				&data,
+				&[
+					ParamType::FixedBytes(32), // bridge_transfer_id
+					ParamType::FixedBytes(32), // secret
+				],
+			);
+			let bridge_transfer_id =
+				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
+
 			BridgeContractInitiatorEvent::Completed(bridge_transfer_id)
 		}
 		t if t == &refunded_log => {
 			// Decode the data for Refunded event
-			let bridge_transfer_id = BridgeTransferId(H::from(
-				topics
-					.get(1)
-					.expect("Expected hash in topics")
-					.as_fixed_bytes()
-					.try_into()
-					.unwrap(),
-			));
+			let tokens = decode_log_data(
+				address,
+				"BridgeTransferRefunded",
+				&data,
+				&[ParamType::FixedBytes(32)], // bridge_transfer_id
+			);
+			let bridge_transfer_id =
+				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
+
 			BridgeContractInitiatorEvent::Refunded(bridge_transfer_id)
 		}
-		_ => unimplemented!("Unexpected event type"),
+		_ => unimplemented!("Unexpected event type"), //Return proper error type here
 	}
 }
 
@@ -242,7 +251,13 @@ fn decode_log_data(
 		name: name.to_string(),
 		inputs: params
 			.iter()
-			.map(|p| ethabi::EventParam { name: "".to_string(), kind: p.clone(), indexed: false })
+			.map(|p| EventParam {
+				ty: "".to_string(),
+				name: p.clone(),
+				indexed: false,
+				components: vec![],
+				internal_type: None, //for now
+			})
 			.collect(),
 		anonymous: false,
 	};

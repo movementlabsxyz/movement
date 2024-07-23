@@ -6,7 +6,7 @@ use std::{fmt::Debug, hash::Hash};
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
-impl BridgeTransferId<H> {
+impl<H> BridgeTransferId<H> {
 	pub fn inner(&self) -> &H {
 		&self.0
 	}
