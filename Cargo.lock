@@ -8457,6 +8457,7 @@ dependencies = [
  "anyhow",
  "mempool-util",
  "movement-types",
+ "rand 0.7.3",
  "rocksdb",
  "serde_json",
  "tempfile",
