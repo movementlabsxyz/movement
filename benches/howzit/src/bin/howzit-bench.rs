@@ -41,9 +41,9 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let (transaction_result_sender, mut transaction_result_receiver) = tokio::sync::mpsc::unbounded_channel::<(u64, u64)>();
 
     // fund the accounts in an orderly manner
-    let n = 512;
+    let n = 32;
 
-    let k = 4;
+    let k = 1024;
     let mut futures = Vec::with_capacity(n);
     let start_time = std::time::Instant::now();
     for _ in 0..n {

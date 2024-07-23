@@ -15,7 +15,13 @@ rust-version = { workspace = true }
 tokio = { workspace = true }
 mempool-util = { workspace = true }
 movement-types = { workspace = true }
-rocksdb = { workspace = true }
+rocksdb = { workspace = true, features = [
+    "snappy",
+    "lz4",
+    "zstd",
+    "zlib",
+    "multi-threaded-cf",
+] }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 tempfile = { workspace = true }
