@@ -35,7 +35,6 @@ rand_core = { workspace = true }
 bcs = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
-tonic = { wrkspace = true }
 
 aptos-vm = { workspace = true }
 aptos-vm-validator = { workspace = true }
