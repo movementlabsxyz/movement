@@ -130,7 +130,6 @@ aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", rev 
 aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6b1e45dc58d4a1e95b8b8a7356fa721f30a48e2d" }
 aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6b1e45dc58d4a1e95b8b8a7356fa721f30a48e2d" }
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
-ethabi = "18.0.0"
 ethereum-types = "0.14.1"
 ethers = "=2.0.10"
 ethers-core = { version = "=2.0.10", default-features = false }

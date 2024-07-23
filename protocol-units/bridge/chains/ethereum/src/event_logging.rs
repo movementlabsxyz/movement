@@ -1,14 +1,15 @@
 use std::{fmt::Debug, pin::Pin, task::Poll};
 
+use crate::types::{SCCResult, SCIResult};
 use alloy::{
-	json_abi::{Event, EventParam},
+	json_abi::{Event, EventParam, Param},
 	pubsub::PubSubFrontend,
 };
 use alloy_eips::BlockNumberOrTag;
 use alloy_primitives::{address, Address as EthAddress, FixedBytes, LogData};
 use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy_rpc_types::{Filter, Log, RawLog};
-use alloy_sol_types::{sol, SolEvent};
+use alloy_sol_types::{abi::Token, sol, SolEvent};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
@@ -16,11 +17,47 @@ use bridge_shared::{
 		HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 	},
 };
-use ethabi::{ParamType, Token};
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use thiserror::Error;
 
-use crate::{EthHash, SCCResult, SCIResult};
+use crate::{types::AlloyParam, EthHash};
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MoveCounterpartyEvent<H> {
+	LockedBridgeTransfer(LockDetails<H>),
+	CompletedBridgeTransfer(CompletedDetails<H>),
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum MoveCounterpartyError {
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EthInitiatorEvent<A, H> {
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
+	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum EthInitiatorError {
+	#[error("Failed to initiate bridge transfer")]
+	InitiateTransferError,
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AbstractBlockainEvent<A, H> {
+	InitiatorContractEvent(SCIResult<A, H>),
+	CounterpartyContractEvent(SCCResult<H>),
+	Noop,
+}
 
 // Codegen from the abi
 sol!(
@@ -116,43 +153,6 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<H> {
-	LockedBridgeTransfer(LockDetails<H>),
-	CompletedBridgeTransfer(CompletedDetails<H>),
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyError {
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EthInitiatorEvent<A, H> {
-	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
-	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum EthInitiatorError {
-	#[error("Failed to initiate bridge transfer")]
-	InitiateTransferError,
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AbstractBlockainEvent<A, H> {
-	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<H>),
-	Noop,
-}
-
 // Utility functions
 fn convert_log_to_event(
 	address: EthAddress,
@@ -177,12 +177,12 @@ fn convert_log_to_event(
 				"BridgeTransferInitiated",
 				&data,
 				&[
-					ParamType::FixedBytes(32), // bridge_transfer_id
-					ParamType::Address,        // initiator_address
-					ParamType::Address,        // recipient_address
-					ParamType::FixedBytes(32), // hash_lock
-					ParamType::Uint(256),      // time_lock
-					ParamType::Uint(256),      // amount
+					AlloyParam::BridgeTransferId.fill(),
+					AlloyParam::InitiatorAddress.fill(),
+					AlloyParam::RecipientAddress.fill(),
+					AlloyParam::HashLock.fill(),
+					AlloyParam::TimeLock.fill(),
+					AlloyParam::Amount.fill(),
 				],
 			);
 
@@ -214,10 +214,7 @@ fn convert_log_to_event(
 				address,
 				"BridgeTransferCompleted",
 				&data,
-				&[
-					ParamType::FixedBytes(32), // bridge_transfer_id
-					ParamType::FixedBytes(32), // secret
-				],
+				&[AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()],
 			);
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
@@ -230,7 +227,7 @@ fn convert_log_to_event(
 				address,
 				"BridgeTransferRefunded",
 				&data,
-				&[ParamType::FixedBytes(32)], // bridge_transfer_id
+				&[AlloyParam::BridgeTransferId.fill()],
 			);
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
@@ -245,14 +242,14 @@ fn decode_log_data(
 	address: EthAddress,
 	name: &str,
 	data: &LogData,
-	params: &[ParamType],
+	params: &[Param],
 ) -> Vec<Token> {
 	let event = Event {
 		name: name.to_string(),
 		inputs: params
 			.iter()
 			.map(|p| EventParam {
-				ty: "".to_string(),
+				ty: p.to_string(),
 				name: p.clone(),
 				indexed: false,
 				components: vec![],

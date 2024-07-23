@@ -1,40 +1,29 @@
 use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
-use alloy_eips::BlockNumberOrTag;
 use alloy_network::{Ethereum, EthereumWallet};
 use alloy_primitives::private::serde::{Deserialize, Serialize};
-use alloy_primitives::{address, Address as EthAddress, FixedBytes, B256, U256};
+use alloy_primitives::{Address as EthAddress, FixedBytes, B256, U256};
 use alloy_provider::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
 	Provider, ProviderBuilder, RootProvider,
 };
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
-use alloy_rpc_types::{Filter, Log};
 use alloy_sol_types::{sol, SolEvent};
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
-use bridge_shared::{
-	bridge_contracts::{
-		BridgeContractCounterpartyError, BridgeContractInitiator, BridgeContractInitiatorError,
-		BridgeContractInitiatorResult,
-	},
-	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{CompletedDetails, LockDetails},
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
+use bridge_shared::types::{
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	RecipientAddress, TimeLock,
 };
-use bridge_shared::{
-	bridge_monitoring::BridgeContractInitiatorMonitoring,
-	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
-	},
-};
-use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use futures::StreamExt;
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
 	send_transaction, InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
-use std::{fmt::Debug, pin::Pin, task::Poll};
+use std::fmt::Debug;
+use types::EthHash;
 
 const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
@@ -43,6 +32,7 @@ const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
 const MAX_RETRIES: u32 = 5;
 
 mod event_logging;
+mod types;
 
 ///Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -319,26 +309,3 @@ fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 		Err("Vec<u8> does not have exactly 32 elements")
 	}
 }
-
-#[derive(Debug, Clone, Copy, Default, Hash, Eq, PartialEq)]
-struct EthHash([u8; 32]);
-
-impl From<Vec<u8>> for EthHash {
-	fn from(vec: Vec<u8>) -> Self {
-		let mut array = [0u8; 32];
-		let bytes = &vec[..std::cmp::min(vec.len(), 32)];
-		array[..bytes.len()].copy_from_slice(bytes);
-		EthHash(array)
-	}
-}
-
-impl EthHash {
-	pub fn as_bytes(&self) -> [u8; 32] {
-		self.0
-	}
-}
-
-pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
-pub type SCCResult<H> = Result<BridgeContractCounterpartyEvent<H>, BridgeContractCounterpartyError>;
-
-mod tests {}
