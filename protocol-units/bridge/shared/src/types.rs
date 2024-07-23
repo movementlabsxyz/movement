@@ -6,6 +6,12 @@ use std::{fmt::Debug, hash::Hash};
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
+impl BridgeTransferId<H> {
+	pub fn inner(&self) -> &H {
+		&self.0
+	}
+}
+
 impl BridgeTransferId<[u8; 32]> {
 	pub fn parse(s: &str) -> Result<Self, FromHexError> {
 		let bytes = hex::decode(s)?;
@@ -65,6 +71,12 @@ pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
+
+impl<H> HashLock<H> {
+	pub fn inner(&self) -> &H {
+		&self.0
+	}
+}
 
 impl HashLock<[u8; 32]> {
 	pub fn parse(s: &str) -> Result<Self, FromHexError> {

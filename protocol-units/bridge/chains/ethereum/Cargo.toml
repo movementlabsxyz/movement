@@ -36,6 +36,7 @@ alloy-sol-types = { workspace = true }
 alloy-rlp = { workspace = true }
 alloy-transport = { workspace = true }
 alloy-transport-ws = { workspace = true }
+ethabi = { workspace = true }
 
 bridge-shared = { workspace = true }
 mcr-settlement-client = { workspace = true }

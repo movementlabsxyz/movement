@@ -1201,7 +1201,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_bytes",
- "sha3",
+ "sha3 0.9.1",
  "static_assertions",
 ]
 
@@ -1479,7 +1479,7 @@ dependencies = [
  "serde_yaml 0.8.26",
  "sha2 0.10.8",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "siphasher",
  "smallvec",
  "tempfile",
@@ -1829,7 +1829,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "smallvec",
  "walkdir",
 ]
@@ -2333,7 +2333,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-test-utils",
  "move-vm-types",
- "sha3",
+ "sha3 0.9.1",
  "smallvec",
 ]
 
@@ -3594,7 +3594,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "serde_derive",
- "sha3",
+ "sha3 0.9.1",
  "subtle-ng",
  "thiserror",
 ]
@@ -5121,6 +5121,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "ethabi"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7413c5f74cc903ea37386a8965a936cbeb334bd270862fdece542c1b2dcbc898"
+dependencies = [
+ "ethereum-types",
+ "hex",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha3 0.10.8",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
+name = "ethbloom"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c22d4b5885b6aa2fe5e8b9329fb8d232bf739e434e6b87347c63bdd00c120f60"
+dependencies = [
+ "crunchy",
+ "fixed-hash 0.8.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
+ "tiny-keccak",
+]
+
+[[package]]
 name = "ethereum-bridge"
 version = "0.3.0"
 dependencies = [
@@ -5139,6 +5169,7 @@ dependencies = [
  "aptos-api",
  "async-trait",
  "bridge-shared",
+ "ethabi",
  "futures",
  "keccak-hash",
  "mcr-settlement-client",
@@ -5148,6 +5179,20 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "ethereum-types"
+version = "0.14.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02d215cbf040552efcbe99a38372fe80ab9d00268e20012b79fcd0f073edd8ee"
+dependencies = [
+ "ethbloom",
+ "fixed-hash 0.8.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
+ "primitive-types 0.12.2",
+ "uint",
 ]
 
 [[package]]
@@ -6321,10 +6366,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl-rlp"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f28220f89297a075ddc7245cd538076ee98b01f2a9c23a53a4f1105d5a322808"
+dependencies = [
+ "rlp",
+]
+
+[[package]]
 name = "impl-serde"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "impl-serde"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
 dependencies = [
  "serde",
 ]
@@ -7829,7 +7892,7 @@ dependencies = [
  "once_cell",
  "petgraph 0.5.1",
  "regex",
- "sha3",
+ "sha3 0.9.1",
  "tempfile",
  "walkdir",
 ]
@@ -8266,7 +8329,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "sha2 0.9.9",
- "sha3",
+ "sha3 0.9.1",
  "smallvec",
  "walkdir",
 ]
@@ -8294,7 +8357,7 @@ dependencies = [
  "move-vm-runtime",
  "move-vm-types",
  "once_cell",
- "sha3",
+ "sha3 0.9.1",
  "smallvec",
 ]
 
@@ -8347,7 +8410,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.11.2",
  "serde",
- "sha3",
+ "sha3 0.9.1",
  "smallbitvec",
  "tracing",
  "triomphe",
@@ -9579,7 +9642,7 @@ checksum = "05e4722c697a58a99d5d06a08c30821d7c082a4632198de1eaa5a6c22ef42373"
 dependencies = [
  "fixed-hash 0.7.0",
  "impl-codec 0.5.1",
- "impl-serde",
+ "impl-serde 0.3.2",
  "uint",
 ]
 
@@ -9591,6 +9654,8 @@ checksum = "0b34d9fd68ae0b74a41b21c03c2f62847aa0ffea044eee893b4c140b37e244e2"
 dependencies = [
  "fixed-hash 0.8.0",
  "impl-codec 0.6.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
  "uint",
 ]
 
@@ -11026,6 +11091,16 @@ dependencies = [
  "digest 0.9.0",
  "keccak",
  "opaque-debug",
+]
+
+[[package]]
+name = "sha3"
+version = "0.10.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75872d278a8f37ef87fa0ddbda7802605cb18344497949862c0d4dcb291eba60"
+dependencies = [
+ "digest 0.10.7",
+ "keccak",
 ]
 
 [[package]]

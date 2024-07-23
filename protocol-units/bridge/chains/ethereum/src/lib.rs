@@ -35,18 +35,12 @@ use mcr_settlement_client::send_eth_transaction::{
 	send_transaction, InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
 use std::{fmt::Debug, pin::Pin, task::Poll};
-use thiserror::Error;
 
 const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const COUNTERPARTY_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"; //Dummy val
 const RECIPIENT_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
 const MAX_RETRIES: u32 = 5;
-
-type EthHash = [u8; 32];
-
-pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
-pub type SCCResult<H> = Result<BridgeContractCounterpartyEvent<H>, BridgeContractCounterpartyError>;
 
 mod event_logging;
 
@@ -216,7 +210,7 @@ where
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
 			FixedBytes(recipient_bytes),
-			FixedBytes(hash_lock.0),
+			FixedBytes(hash_lock.inner().as_bytes()),
 			U256::from(time_lock.0),
 		);
 		let _ = send_transaction(
@@ -237,8 +231,10 @@ where
 		let pre_image: [u8; 32] =
 			vec_to_array(pre_image.0).unwrap_or_else(|_| panic!("Failed to convert pre_image"));
 		let contract = AtomicBridgeInitiator::new(self.initiator_address, &self.rpc_provider);
-		let call = contract
-			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
+		let call = contract.completeBridgeTransfer(
+			FixedBytes(bridge_transfer_id.inner().as_bytes()),
+			FixedBytes(pre_image),
+		);
 		let _ = send_transaction(
 			call,
 			&self.send_transaction_error_rules,
@@ -323,5 +319,26 @@ fn vec_to_array(vec: Vec<u8>) -> Result<[u8; 32], &'static str> {
 		Err("Vec<u8> does not have exactly 32 elements")
 	}
 }
+
+#[derive(Debug, Clone, Copy, Default, Hash, Eq, PartialEq)]
+struct EthHash([u8; 32]);
+
+impl From<Vec<u8>> for EthHash {
+	fn from(vec: Vec<u8>) -> Self {
+		let mut array = [0u8; 32];
+		let bytes = &vec[..std::cmp::min(vec.len(), 32)];
+		array[..bytes.len()].copy_from_slice(bytes);
+		EthHash(array)
+	}
+}
+
+impl EthHash {
+	pub fn as_bytes(&self) -> [u8; 32] {
+		self.0
+	}
+}
+
+pub type SCIResult<A, H> = Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
+pub type SCCResult<H> = Result<BridgeContractCounterpartyEvent<H>, BridgeContractCounterpartyError>;
 
 mod tests {}

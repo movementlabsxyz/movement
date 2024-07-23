@@ -1,39 +1,46 @@
 use std::{fmt::Debug, pin::Pin, task::Poll};
 
-use alloy::pubsub::PubSubFrontend;
+use alloy::{json_abi::Event, pubsub::PubSubFrontend};
 use alloy_eips::BlockNumberOrTag;
-use alloy_primitives::address;
-use alloy_provider::{ProviderBuilder, RootProvider, WsConnect};
-use alloy_rpc_types::Filter;
+use alloy_primitives::{address, Address as EthAddress, LogData};
+use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
+use alloy_rpc_types::{Filter, Log, RawLog};
+use alloy_sol_types::{sol, SolEvent};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
-		BridgeTransferDetails, BridgeTransferId, CompletedDetails, HashLockPreImage, LockDetails,
+		Amount, BridgeTransferDetails, BridgeTransferId, CompletedDetails, HashLock,
+		HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 	},
 };
-use futures::{channel::mpsc::UnboundedReceiver, Stream};
+use ethabi::{ParamType, Token};
+use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use thiserror::Error;
 
-use crate::{SCCResult, SCIResult};
+use crate::{EthHash, SCCResult, SCIResult};
+
+// Codegen from the abi
+sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiator,
+	"abis/AtomicBridgeInitiator.json"
+);
 
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
 	ws: RootProvider<PubSubFrontend>,
 }
 
-impl<A: Debug, H: Debug> BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<A, H> {
-	type Address = A;
-	type Hash = H;
+impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, EthHash> {
+	type Address = EthAddress;
+	type Hash = EthHash;
 }
 
-impl<A, H> EthInitiatorMonitoring<A, H>
-where
-	A: Debug + Default + Send + 'static,
-	H: Debug + Default + Send + From<[u8; 32]> + 'static,
-{
+impl EthInitiatorMonitoring<EthAddress, EthHash> {
 	async fn run(
 		rpc_url: &str,
-		listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
+		listener: UnboundedReceiver<AbstractBlockainEvent<EthAddress, EthHash>>,
 	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
@@ -49,12 +56,14 @@ where
 		let mut sub_stream = sub.into_stream();
 
 		// Spawn a task to forward events to the listener channel
-		let (sender, _) = tokio::sync::mpsc::unbounded_channel::<AbstractBlockainEvent<A, H>>();
+		let (sender, _) =
+			tokio::sync::mpsc::unbounded_channel::<AbstractBlockainEvent<EthAddress, EthHash>>();
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
-				let event =
-					AbstractBlockainEvent::InitiatorContractEvent(Ok(convert_log_to_event(log)));
+				let event = AbstractBlockainEvent::InitiatorContractEvent(Ok(
+					convert_log_to_event(initiator_address, log),
+				));
 				if sender.send(event).is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
@@ -66,7 +75,7 @@ where
 	}
 }
 
-impl<A: Debug, H: Debug> Stream for EthInitiatorMonitoring<A, H> {
+impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 	type Item = BridgeContractInitiatorEvent<
 		<Self as BridgeContractInitiatorMonitoring>::Address,
 		<Self as BridgeContractInitiatorMonitoring>::Hash,
@@ -142,11 +151,10 @@ pub enum AbstractBlockainEvent<A, H> {
 }
 
 // Utility functions
-fn convert_log_to_event<A, H>(log: Log) -> BridgeContractInitiatorEvent<A, H>
-where
-	A: Default,
-	H: Default + From<[u8; 32]>,
-{
+fn convert_log_to_event(
+	address: EthAddress,
+	log: Log,
+) -> BridgeContractInitiatorEvent<EthAddress, EthHash> {
 	let initiated_log = AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
 	let completed_log = AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
 	let refunded_log = AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
@@ -158,68 +166,78 @@ where
 	// Assuming the first topic is the event type identifier
 	let topic = topics.get(0).expect("Expected event type in topics");
 
-	if topic == &initiated_log {
-		// Decode the data for Initiated event
-		let tokens = decode_log_data(
-			&data,
-			&[
-				ParamType::FixedBytes(32), // bridge_transfer_id
-				ParamType::Address,        // initiator_address
-				ParamType::Address,        // recipient_address
-				ParamType::FixedBytes(32), // hash_lock
-				ParamType::Uint(256),      // time_lock
-				ParamType::Uint(256),      // amount
-			],
-		);
+	match topic {
+		t if t == &initiated_log => {
+			// Decode the data for Initiated event
+			let tokens = decode_log_data(
+				address,
+				"BridgeTransferInitiated",
+				&data,
+				&[
+					ParamType::FixedBytes(32), // bridge_transfer_id
+					ParamType::Address,        // initiator_address
+					ParamType::Address,        // recipient_address
+					ParamType::FixedBytes(32), // hash_lock
+					ParamType::Uint(256),      // time_lock
+					ParamType::Uint(256),      // amount
+				],
+			);
 
-		let bridge_transfer_id =
-			BridgeTransferId(H::from(tokens[0].clone().into_fixed_bytes().unwrap()));
-		let initiator_address = InitiatorAddress(A::from(
-			tokens[1].clone().into_address().unwrap().as_fixed_bytes().try_into().unwrap(),
-		));
-		let recipient_address = RecipientAddress(tokens[2].clone().into_address().unwrap());
-		let hash_lock = HashLock(H::from(tokens[3].clone().into_fixed_bytes().unwrap()));
-		let time_lock = TimeLock(tokens[4].clone().into_uint().unwrap().as_u64());
-		let amount = Amount(tokens[5].clone().into_uint().unwrap());
+			let bridge_transfer_id =
+				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
+			let initiator_address = InitiatorAddress(A::from(
+				tokens[1].clone().into_address().unwrap().as_fixed_bytes().try_into().unwrap(),
+			));
+			let recipient_address = RecipientAddress(tokens[2].clone().into_address().unwrap());
+			let hash_lock = HashLock(EthHash::from(tokens[3].clone().into_fixed_bytes().unwrap()));
+			let time_lock = TimeLock(tokens[4].clone().into_uint().unwrap().as_u64());
+			let amount = Amount(tokens[5].clone().into_uint().unwrap());
 
-		let details = BridgeTransferDetails {
-			bridge_transfer_id,
-			initiator_address,
-			recipient_address,
-			hash_lock,
-			time_lock,
-			amount,
-		};
+			let details = BridgeTransferDetails {
+				bridge_transfer_id,
+				initiator_address,
+				recipient_address,
+				hash_lock,
+				time_lock,
+				amount,
+			};
 
-		BridgeContractInitiatorEvent::Initiated(details)
-	} else if topic == &completed_log {
-		// Decode the data for Completed event
-		let bridge_transfer_id = BridgeTransferId(H::from(
-			topics
-				.get(1)
-				.expect("Expected hash in topics")
-				.as_fixed_bytes()
-				.try_into()
-				.unwrap(),
-		));
-		BridgeContractInitiatorEvent::Completed(bridge_transfer_id)
-	} else if topic == &refunded_log {
-		// Decode the data for Refunded event
-		let bridge_transfer_id = BridgeTransferId(H::from(
-			topics
-				.get(1)
-				.expect("Expected hash in topics")
-				.as_fixed_bytes()
-				.try_into()
-				.unwrap(),
-		));
-		BridgeContractInitiatorEvent::Refunded(bridge_transfer_id)
-	} else {
-		unimplemented!("Unexpected event type");
+			BridgeContractInitiatorEvent::Initiated(details)
+		}
+		t if t == &completed_log => {
+			// Decode the data for Completed event
+			let bridge_transfer_id = BridgeTransferId(H::from(
+				topics
+					.get(1)
+					.expect("Expected hash in topics")
+					.as_fixed_bytes()
+					.try_into()
+					.unwrap(),
+			));
+			BridgeContractInitiatorEvent::Completed(bridge_transfer_id)
+		}
+		t if t == &refunded_log => {
+			// Decode the data for Refunded event
+			let bridge_transfer_id = BridgeTransferId(H::from(
+				topics
+					.get(1)
+					.expect("Expected hash in topics")
+					.as_fixed_bytes()
+					.try_into()
+					.unwrap(),
+			));
+			BridgeContractInitiatorEvent::Refunded(bridge_transfer_id)
+		}
+		_ => unimplemented!("Unexpected event type"),
 	}
 }
 
-fn decode_log_data(name: &str, data: &[u8], params: &[ParamType]) -> Vec<Token> {
+fn decode_log_data(
+	address: EthAddress,
+	name: &str,
+	data: &LogData,
+	params: &[ParamType],
+) -> Vec<Token> {
 	let event = Event {
 		name: name.to_string(),
 		inputs: params
@@ -228,7 +246,7 @@ fn decode_log_data(name: &str, data: &[u8], params: &[ParamType]) -> Vec<Token> 
 			.collect(),
 		anonymous: false,
 	};
-	let raw_log = RawLog { topics: vec![], data: data.to_vec() };
+	let raw_log = RawLog { address, topics: vec![], data: data.to_vec() };
 	event
 		.parse_log(raw_log)
 		.expect("Unable to parse log data")
