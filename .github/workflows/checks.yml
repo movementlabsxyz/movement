@@ -107,7 +107,7 @@ jobs:
       run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv  
 
   mcr:
-    if: false
+#    if: false
     strategy:
       matrix:
         include:
@@ -130,3 +130,4 @@ jobs:
 
     - name: Run MCR Client Tests
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
+
