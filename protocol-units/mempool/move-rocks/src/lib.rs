@@ -39,21 +39,12 @@ impl RocksdbMempool {
 		// Pre-allocate a string with the required capacity
 		let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32);
 	
-		// Function to pad an integer to 32 characters with leading zeros
-		fn pad_to_32_chars(num: u64) -> String {
-			let mut s = num.to_string();
-			while s.len() < 32 {
-				s.insert(0, '0');
-			}
-			s
-		}
-	
 		// Pad to 32 characters for slot_seconds and append to key
-		key.push_str(&pad_to_32_chars(transaction.timestamp));
+		key.push_str(&format!("{:032}", transaction.timestamp));
 		key.push(':');
 	
 		// Pad to 32 characters for sequence number and append to key
-		key.push_str(&pad_to_32_chars(transaction.transaction.sequence_number));
+		key.push_str(&format!("{:032}", transaction.transaction.sequence_number));
 		key.push(':');
 	
 		// Assuming transaction.transaction.id() returns a hex string of length 32

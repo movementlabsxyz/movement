@@ -17,6 +17,8 @@ pub enum TransactionPipeError {
 	InternalError(String),
 	#[error("Transaction not accepted: {0}")]
 	TransactionNotAccepted(MempoolStatus),
+	#[error("Transaction stream closed")]
+	InputClosed,
 }
 
 impl From<anyhow::Error> for TransactionPipeError {
@@ -185,7 +187,7 @@ mod tests {
 		drop(callback);
 
 		// tick the transaction pipe, should succeed
-		let (tx, rx) = async_channel::unbounded();
+		let (tx, _rx) = async_channel::unbounded();
 		executor.tick_transaction_pipe(tx).await?;
 
 		Ok(())
