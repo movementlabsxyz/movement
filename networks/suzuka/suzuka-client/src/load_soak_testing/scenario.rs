@@ -2,7 +2,7 @@ use super::EXEC_LOG_FILTER;
 
 /// A scenario is any struct that implements the Scenario trait.
 /// To ease scenario execution and logs, an id (usize) is provided during creation.
-/// This id is only used by teh runtime to identify scenario execution is the logs.
+/// This id is only used by the runtime to identify scenario execution is the logs.
 
 /// Implements this trait to develop a scenario.
 /// How logs works during scenario execution:
