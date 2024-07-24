@@ -1,6 +1,6 @@
 use std::{fmt::Debug, pin::Pin, task::Poll};
 
-use crate::types::{SCCResult, SCIResult};
+use crate::types::{EventName, SCCResult, SCIResult};
 use alloy::{
 	json_abi::{Event, EventParam, Param},
 	pubsub::PubSubFrontend,
@@ -8,8 +8,11 @@ use alloy::{
 use alloy_eips::BlockNumberOrTag;
 use alloy_primitives::{address, Address as EthAddress, FixedBytes, LogData};
 use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
-use alloy_rpc_types::{Filter, Log, RawLog};
-use alloy_sol_types::{abi::Token, sol, SolEvent};
+use alloy_rpc_types::{Filter, Log};
+use alloy_sol_types::{
+	abi::{self, Token},
+	sol, SolEvent,
+};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
@@ -174,9 +177,9 @@ fn convert_log_to_event(
 			// Decode the data for Initiated event
 			let tokens = decode_log_data(
 				address,
-				"BridgeTransferInitiated",
-				&data,
-				&[
+				EventName::Initiated.as_str(),
+				data,
+				vec![
 					AlloyParam::BridgeTransferId.fill(),
 					AlloyParam::InitiatorAddress.fill(),
 					AlloyParam::RecipientAddress.fill(),
@@ -186,7 +189,6 @@ fn convert_log_to_event(
 				],
 			);
 
-			// Once PR #153 is merged I'll use the proper error created there types and not unwrap here ?
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
 			let initiator_address = InitiatorAddress(EthAddress(FixedBytes(
@@ -212,9 +214,9 @@ fn convert_log_to_event(
 			// Decode the data for Completed event
 			let tokens = decode_log_data(
 				address,
-				"BridgeTransferCompleted",
-				&data,
-				&[AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()],
+				EventName::Completed.as_str(),
+				data,
+				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()],
 			);
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
@@ -225,9 +227,9 @@ fn convert_log_to_event(
 			// Decode the data for Refunded event
 			let tokens = decode_log_data(
 				address,
-				"BridgeTransferRefunded",
-				&data,
-				&[AlloyParam::BridgeTransferId.fill()],
+				EventName::Refunded.as_str(),
+				data,
+				vec![AlloyParam::BridgeTransferId.fill()],
 			);
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
@@ -241,29 +243,63 @@ fn convert_log_to_event(
 fn decode_log_data(
 	address: EthAddress,
 	name: &str,
-	data: &LogData,
-	params: &[Param],
-) -> Vec<Token> {
+	data: LogData,
+	params: Vec<Param>,
+) -> Result<BridgeContractInitiatorEvent<EthAddress, EthHash>, anyhow::Error> {
 	let event = Event {
 		name: name.to_string(),
 		inputs: params
 			.iter()
 			.map(|p| EventParam {
 				ty: p.to_string(),
-				name: p.clone(),
+				name: p.name,
 				indexed: false,
 				components: vec![],
-				internal_type: None, //for now
+				internal_type: None, // for now
 			})
 			.collect(),
 		anonymous: false,
 	};
-	let raw_log = RawLog { address, topics: vec![], data: data.to_vec() };
-	event
-		.parse_log(raw_log)
-		.expect("Unable to parse log data")
-		.params
-		.into_iter()
-		.map(|p| p.value)
-		.collect()
+
+	let raw_log = RawLog { address, topics: vec![], data: data.clone() };
+	let decoded = event.parse_log(raw_log)?.params;
+
+	let event_name = EventName::from(name);
+	match event_name {
+		EventName::Completed => {
+			let bridge_transfer_id =
+				BridgeTransferId(EthHash::from(decoded[0].value.clone().into_fixed_bytes()?));
+			let initiator_address = InitiatorAddress(EthAddress(FixedBytes(
+				decoded[1].value.clone().into_address()?.0,
+			)));
+			let recipient_address = RecipientAddress(decoded[2].value.clone().into_fixed_bytes()?);
+			let hash_lock = HashLock(EthHash::from(decoded[3].value.clone().into_fixed_bytes()?));
+			let time_lock = TimeLock(decoded[4].value.clone().into_uint()?.as_u64());
+			let amount = Amount(decoded[5].value.clone().into_uint()?.as_u64());
+
+			let details = BridgeTransferDetails {
+				bridge_transfer_id,
+				initiator_address,
+				recipient_address,
+				hash_lock,
+				time_lock,
+				amount,
+			};
+
+			Ok(BridgeContractInitiatorEvent::Initiated(details))
+		}
+		EventName::Completed => {
+			let bridge_transfer_id =
+				BridgeTransferId(EthHash::from(decoded[0].value.clone().into_fixed_bytes()?));
+
+			Ok(BridgeContractInitiatorEvent::Completed(bridge_transfer_id))
+		}
+		EventName::Refunded => {
+			let bridge_transfer_id =
+				BridgeTransferId(EthHash::from(decoded[0].value.clone().into_fixed_bytes()?));
+
+			Ok(BridgeContractInitiatorEvent::Refunded(bridge_transfer_id))
+		}
+		_ => Err(anyhow::anyhow!("Unexpected event type")),
+	}
 }

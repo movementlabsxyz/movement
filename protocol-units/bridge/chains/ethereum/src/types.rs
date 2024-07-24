@@ -4,6 +4,33 @@ use bridge_shared::{
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 };
 
+pub(crate) enum EventName {
+	Initiated,
+	Completed,
+	Refunded,
+}
+
+impl EventName {
+	pub fn as_str(&self) -> &str {
+		match self {
+			EventName::Initiated => "BridgeTransferInitiated",
+			EventName::Completed => "BridgeTransferCompleted",
+			EventName::Refunded => "BridgeTransferRefunded",
+		}
+	}
+}
+
+impl From<&str> for EventName {
+	fn from(s: &str) -> Self {
+		match s {
+			"BridgeTransferInitiated" => EventName::Initiated,
+			"BridgeTransferCompleted" => EventName::Completed,
+			"BridgeTransferRefunded" => EventName::Refunded,
+			_ => panic!("Invalid event name"),
+		}
+	}
+}
+
 #[derive(Debug, Clone, Copy, Default, Hash, Eq, PartialEq)]
 pub(crate) struct EthHash(pub(crate) [u8; 32]);
 
