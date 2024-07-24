@@ -16,7 +16,13 @@ impl Runner for CelestiaBridge {
 			m1_da_light_node_util::config::Config::Local(config) => {
 				let local = local::Local::new();
 				local.run(dot_movement, config).await?;
-			}
+			},
+			m1_da_light_node_util::config::Config::Arabica(config) => {
+				Err(anyhow::anyhow!("Arabica not implemented"))?;
+			},
+			m1_da_light_node_util::config::Config::Mocha(config) => {
+				Err(anyhow::anyhow!("Mocha not implemented"))?;
+			},
 		}
 		Ok(())
 	}

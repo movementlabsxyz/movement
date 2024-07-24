@@ -4,29 +4,6 @@ environment:
 
 processes:
 
-  build-m1-da-light-node:
-    command: |
-      ./scripts/services/m1-da-light-node/build
-
-  build-wait-for-celestia-light-node:
-    command: |
-      ./scripts/services/wait-for-celestia-light-node/build
-
-  build-suzuka-full-node:
-    command: |
-      ./scripts/services/suzuka-full-node/build
-
   build:
     command: |
-      exit 0
-    depends_on: 
-      build-m1-da-light-node:
-        condition: process_completed_successfully
-      build-wait-for-celestia-light-node:
-        condition: process_completed_successfully
-      build-suzuka-full-node:
-        condition: process_completed_successfully
-    availability:
-      # NOTE: `restart: exit_on_failure` is not needed since
-      # exit_on_end implies it.
-      exit_failure: true
+      ./scripts/services/suzuka-full-node/build

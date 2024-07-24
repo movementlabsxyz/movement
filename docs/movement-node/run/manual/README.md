@@ -58,8 +58,8 @@ DOT_MOVEMENT_PATH="/home/${USER}/.movement"
 mkdir -p "${DOT_MOVEMENT_PATH}"
 docker compose \
         -f docker/compose/suzuka-full-node/docker-compose.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.setup.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.local.yml \
+        -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
+        -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
         pull
 ```
 

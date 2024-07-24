@@ -17,6 +17,7 @@ services:
       ETH_RPC_CONNECTION_PORT: 8090
       MAYBE_RUN_LOCAL: true
       MAYBE_DEPLOY_MCR: true
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     ports:
