@@ -19,7 +19,7 @@ use aptos_types::{
 };
 use movement_types::{BlockCommitment, Commitment, Id};
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::{debug, debug_span, info};
 
 impl Executor {
 	pub async fn execute_block(
@@ -55,14 +55,15 @@ impl Executor {
 				parent_block_id,
 				BlockExecutorConfigFromOnchain::new_no_block_limit(),
 			)
-		}).await??;
+		})
+		.await??;
 
 		debug!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
-	
+
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
 			epoch,
 			round,
@@ -74,7 +75,8 @@ impl Executor {
 		let block_executor_clone = block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
-		}).await??;
+		})
+		.await??;
 
 		// commit mempool transactions in batches of size 16
 		for chunk in mempool_transactions.chunks(16) {
@@ -84,7 +86,16 @@ impl Executor {
 					Transaction::UserTransaction(transaction) => {
 						let sender = transaction.sender();
 						let sequence_number = transaction.sequence_number();
-						core_mempool.commit_transaction(&AccountAddress::from(sender), sequence_number);
+						// Instrument the synchronous commit_transaction call with a span
+						let _span = debug_span!(
+							"commit_transaction",
+							tx_hash = %transaction.committed_hash(),
+							sender = %transaction.sender(),
+							sequence_number = transaction.sequence_number(),
+						)
+						.entered();
+						core_mempool
+							.commit_transaction(&AccountAddress::from(sender), sequence_number);
 					}
 					_ => {}
 				}

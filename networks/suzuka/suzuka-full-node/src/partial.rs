@@ -95,10 +95,15 @@ where
 		{
 			match transaction_result {
 				Ok(transaction) => {
-					debug!("Got transaction: {:?}", transaction);
+					debug!(
+						tx_hash = %transaction.committed_hash(),
+						sender = %transaction.sender(),
+						sequence_number = transaction.sequence_number(),
+						"received transaction",
+					);
 
 					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-					debug!("Serialized transaction: {:?}", serialized_aptos_transaction);
+					trace!("Serialized transaction: {:?}", serialized_aptos_transaction);
 					let movement_transaction = movement_types::Transaction {
 						data: serialized_aptos_transaction,
 						sequence_number: transaction.sequence_number(),

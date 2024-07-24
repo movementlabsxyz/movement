@@ -44,8 +44,9 @@ impl Executor {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					let span = info_span!(
 						"submit_transaction",
-						seq = transaction.sequence_number(),
-						// TODO: more identifying data for this span
+						tx_hash = %transaction.committed_hash(),
+						sender = %transaction.sender(),
+						sequence_number = transaction.sequence_number(),
 					);
 					let status = self
 						.submit_transaction(transaction, transaction_channel)
