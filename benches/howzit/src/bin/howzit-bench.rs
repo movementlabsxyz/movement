@@ -43,14 +43,14 @@ pub async fn main() -> Result<(), anyhow::Error> {
     // fund the accounts in an orderly manner
     let n = 32;
 
-    let k = 1024;
+    let k = 256;
     let mut futures = Vec::with_capacity(n);
     let start_time = std::time::Instant::now();
     for _ in 0..n {
         let howzit = howzit.clone();
         let sender = transaction_result_sender.clone();
         futures.push(tokio::spawn(async move {
-            let (successes, failures) = howzit.call_transfers(k).await?;
+            let (successes, failures) = howzit.call_transfers_batch(k).await?;
             sender.send((successes, failures))?;
             Ok::<(), anyhow::Error>(())
         }));

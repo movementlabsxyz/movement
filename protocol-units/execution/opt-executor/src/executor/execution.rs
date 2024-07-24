@@ -76,16 +76,15 @@ impl Executor {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
 		}).await??;
 
-		// commit mempool transactions
-		{
-			for transaction in mempool_transactions.iter() {
+		// commit mempool transactions in batches of size 16
+		for chunk in mempool_transactions.chunks(16) {
+			let mut core_mempool = self.core_mempool.write().await;
+			for transaction in chunk {
 				match transaction.clone().into_inner() {
 					Transaction::UserTransaction(transaction) => {
 						let sender = transaction.sender();
 						let sequence_number = transaction.sequence_number();
-						let mut core_pool = self.core_mempool.write().await;
-						core_pool
-							.commit_transaction(&AccountAddress::from(sender), sequence_number);
+						core_mempool.commit_transaction(&AccountAddress::from(sender), sequence_number);
 					}
 					_ => {}
 				}
