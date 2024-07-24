@@ -55,14 +55,15 @@ impl Executor {
 				parent_block_id,
 				BlockExecutorConfigFromOnchain::new_no_block_limit(),
 			)
-		}).await??;
+		})
+		.await??;
 
 		debug!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
-	
+
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
 			epoch,
 			round,
@@ -74,7 +75,8 @@ impl Executor {
 		let block_executor_clone = block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
-		}).await??;
+		})
+		.await??;
 
 		// commit mempool transactions
 		{
@@ -83,7 +85,7 @@ impl Executor {
 					Transaction::UserTransaction(transaction) => {
 						let sender = transaction.sender();
 						let sequence_number = transaction.sequence_number();
-						let mut core_pool = self.core_mempool.write().await;
+						let mut core_pool = self.core_mempool.write().unwrap();
 						core_pool
 							.commit_transaction(&AccountAddress::from(sender), sequence_number);
 					}

@@ -14,7 +14,8 @@ use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
 use futures::channel::mpsc as futures_mpsc;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use std::sync::RwLock as StdRwLock;
+use tokio::sync::RwLock as TokioRwLock;
 pub mod indexer;
 
 /// The `Executor` is responsible for executing blocks and managing the state of the execution
@@ -28,11 +29,11 @@ pub struct Executor {
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	/// The core mempool (used for the api to query the mempool).
-	pub core_mempool: Arc<RwLock<CoreMempool>>,
+	pub core_mempool: Arc<StdRwLock<CoreMempool>>,
 	/// The sender for the mempool client.
 	pub mempool_client_sender: MempoolClientSender,
 	/// The receiver for the mempool client.
-	pub mempool_client_receiver: Arc<RwLock<futures_mpsc::Receiver<MempoolClientRequest>>>,
+	pub mempool_client_receiver: Arc<TokioRwLock<futures_mpsc::Receiver<MempoolClientRequest>>>,
 	/// The configuration of the node.
 	pub node_config: NodeConfig,
 	/// Context
@@ -56,16 +57,16 @@ impl Executor {
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
 		));
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
+		let core_mempool = Arc::new(StdRwLock::new(CoreMempool::new(&node_config)));
 		let reader = reader_writer.reader.clone();
 		Ok(Self {
-			block_executor : Arc::new(block_executor),
+			block_executor: Arc::new(block_executor),
 			db: reader_writer,
 			signer,
 			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			node_config: node_config.clone(),
-			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
+			mempool_client_receiver: Arc::new(TokioRwLock::new(mempool_client_receiver)),
 			context: Arc::new(Context::new(
 				maptos_config.chain.maptos_chain_id.clone(),
 				reader,
