@@ -22,5 +22,5 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
-      suzuka-faucet-service:
+      suzuka-faucet-service-replica-5: # wait for all of the replicas to be ready
         condition: service_healthy

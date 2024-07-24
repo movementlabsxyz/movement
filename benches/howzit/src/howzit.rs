@@ -18,6 +18,7 @@ use url::Url;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::move_types::language_storage::TypeTag;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 #[derive(Debug, Clone)]
 pub enum Probe {
@@ -232,9 +233,11 @@ impl Howzit {
 
     pub async fn call_transfers(&self, count : u64) -> Result<(u64, u64), anyhow::Error> {
 
-        let mut latencies = HashMap::new();
-        let mut successes = 0;
-        let mut failures = 0;
+        let mut latencies = Arc::new(RwLock::new(HashMap::new()));
+
+        // create atomic u64 counters
+        let successes = Arc::new(AtomicU64::new(0));
+        let failures = Arc::new(AtomicU64::new(0));
 
         let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
         let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -242,23 +245,23 @@ impl Howzit {
         tracing::info!("Funding Alice");
         match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
             Ok(_) => {
-                successes += 1;
+                successes.fetch_add(1, Ordering::Relaxed);
             },
             Err(e) => {
                 tracing::error!("Failed to create account: {:?}", e);
-                failures += 1;
-                return Ok((successes, failures));
+                failures.fetch_add(1, Ordering::Relaxed);
+                return Ok((successes.load(Ordering::SeqCst), failures.load(Ordering::SeqCst)));
             }
         }
         tracing::info!("Funding Bob");
         match self.faucet_client.fund(bob.address(), 10_000_000_000).await {
             Ok(_) => {
-                successes += 1;
+                successes.fetch_add(1, Ordering::Relaxed);
             },
             Err(e) => {
                 tracing::error!("Failed to create account: {:?}", e);
-                failures += 1;
-                return Ok((successes, failures));
+                failures.fetch_add(1, Ordering::Relaxed);
+                return Ok((successes.load(Ordering::SeqCst), failures.load(Ordering::SeqCst)));
             }
         }
 
@@ -271,34 +274,47 @@ impl Howzit {
                     Ok(txn) => {
                         transactions.push(txn.clone());
                         let start = std::time::Instant::now();
+                        let mut latencies = latencies.write().await;
                         latencies.insert(txn.hash, start);
                     },
                     Err(e) => {
                         tracing::error!("Failed to submit transaction: {:?}", e);
-                        failures += 1;
+                        failures.fetch_add(1, Ordering::Relaxed);
                     }
                 
                 }
         }
 
+        let mut futures = Vec::with_capacity(transactions.len());
         for txn_hash in transactions {
-            match self.rest_client.wait_for_transaction(&txn_hash).await {
-                Ok(_) => {
-                    successes += 1;
-                    let start = latencies.remove(&txn_hash.hash).ok_or(
-                        anyhow::anyhow!("Missing latency for transaction")
-                    )?;
-                    let duration = start.elapsed();
-                    tracing::info!("Transaction {} took {:?}", txn_hash.hash, duration);
-                },
-                Err(e) => {
-                    tracing::error!("Failed to wait for transaction: {:?}", e);
-                    failures += 1;
-                }
-            }
+            let rest_client = self.rest_client.clone();
+            let successes = successes.clone();
+            let failures = failures.clone();
+            let latencies = latencies.clone();
+            let fut = async move {
+                match rest_client.wait_for_transaction(&txn_hash).await {
+                    Ok(_) => {
+                        let mut latencies = latencies.write().await;
+                        successes.fetch_add(1, Ordering::Relaxed);
+                        let start = latencies.remove(&txn_hash.hash).ok_or(
+                            anyhow::anyhow!("Missing latency for transaction")
+                        )?;
+                        let duration = start.elapsed();
+                        tracing::info!("Transaction {} took {:?}", txn_hash.hash, duration);
+                    },
+                    Err(e) => {
+                        tracing::error!("Failed to wait for transaction: {:?}", e);
+                        failures.fetch_add(1, Ordering::Relaxed);
+                    }
+                };
+                Ok::<(), anyhow::Error>(())
+            };
+            futures.push(tokio::spawn(fut));
         }
 
-        Ok((successes, failures))
+        futures::future::try_join_all(futures).await?;
+
+        Ok((successes.load(Ordering::SeqCst), failures.load(Ordering::SeqCst)))
     
     }
 
