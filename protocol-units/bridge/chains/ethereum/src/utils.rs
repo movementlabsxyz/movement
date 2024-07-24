@@ -1,17 +1,32 @@
 use std::str::FromStr;
 
-use crate::AlloyProvider;
 use alloy::pubsub::PubSubFrontend;
 use alloy_contract::{CallBuilder, CallDecoder};
-use alloy_network::Ethereum;
+use alloy_network::{Ethereum, EthereumWallet};
 use alloy_primitives::Address;
-use alloy_provider::{Provider, RootProvider};
+use alloy_provider::{
+	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
+	Provider, RootProvider,
+};
 use alloy_rlp::{RlpDecodable, RlpEncodable};
-use alloy_transport::Transport;
+use alloy_transport::{BoxTransport, Transport};
 use bridge_shared::bridge_contracts::BridgeContractInitiatorError;
 use mcr_settlement_client::send_eth_transaction::VerifyRule;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+pub(crate) type AlloyProvider = FillProvider<
+	JoinFill<
+		JoinFill<
+			JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,
+			ChainIdFiller,
+		>,
+		WalletFiller<EthereumWallet>,
+	>,
+	RootProvider<BoxTransport>,
+	BoxTransport,
+	Ethereum,
+>;
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum EthInitiatorError {
@@ -65,9 +80,8 @@ impl FromStr for EthAddress {
 pub(crate) struct ProviderArgs {
 	pub rpc_provider: AlloyProvider,
 	pub ws_provider: RootProvider<PubSubFrontend>,
-	pub initiator_address: EthAddress,
 	pub signing_address: EthAddress,
-	pub counterparty_address: EthAddress,
+	pub initator_contract: EthAddress,
 	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,
 	pub chain_id: String,
@@ -132,7 +146,10 @@ pub async fn send_transaction<
 						continue;
 					}
 				}
-				return Err(BridgeContractInitiatorError::UnknownRpcError.into());
+				return Err(BridgeContractInitiatorError::GenericError(
+					"Unknown Error sending the tx".to_string(),
+				)
+				.into());
 			}
 		};
 
@@ -158,9 +175,9 @@ pub async fn send_transaction<
 			}
 			Ok(_) => return Ok(()),
 			Err(err) => {
-				return Err(BridgeContractInitiatorError::RpcTransactionExecutionError(
-					err.to_string(),
-				)
+				return Err(BridgeContractInitiatorError::GenericError(format!(
+					"Error getting receipt: {err:?}"
+				))
 				.into())
 			}
 		};

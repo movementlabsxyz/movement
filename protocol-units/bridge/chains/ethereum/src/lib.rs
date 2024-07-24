@@ -1,18 +1,11 @@
 use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
-use alloy_network::{Ethereum, EthereumWallet};
-use alloy_primitives::{
-	private::serde::{Deserialize, Serialize},
-	Address,
-};
+use alloy_network::EthereumWallet;
+use alloy_primitives::private::serde::{Deserialize, Serialize};
 use alloy_primitives::{FixedBytes, U256};
-use alloy_provider::{
-	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
-	Provider, ProviderBuilder, RootProvider,
-};
+use alloy_provider::{Provider, ProviderBuilder, RootProvider};
 use alloy_rlp::{Decodable, Encodable, RlpDecodable, RlpEncodable};
 use alloy_sol_types::sol;
-use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
 use anyhow::Context;
 use bridge_shared::types::{
@@ -32,12 +25,11 @@ use mcr_settlement_client::send_eth_transaction::{
 };
 
 use std::fmt::Debug;
-use utils::{send_transaction, EthAddress};
+use utils::{send_transaction, AlloyProvider, EthAddress};
 
 pub mod utils;
 
-const INITIATOR_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-const RECIPIENT_ADDRESS: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const INITIATOR_CONTRACT: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
 const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
 const MAX_RETRIES: u32 = 5;
 
@@ -54,8 +46,7 @@ pub struct Config {
 	pub ws_url: Option<String>,
 	pub chain_id: String,
 	pub signer_private_key: String,
-	pub initiator_address: EthAddress,
-	pub recipient_address: String,
+	pub initiator_contract: EthAddress,
 	pub gas_limit: u64,
 	pub num_tx_send_retries: u32,
 }
@@ -67,8 +58,7 @@ impl Default for Config {
 			ws_url: Some("ws://localhost:8545".to_string()),
 			chain_id: "31337".to_string(),
 			signer_private_key: Self::default_for_private_key(),
-			initiator_address: EthAddress::from(INITIATOR_ADDRESS.to_string()),
-			recipient_address: RECIPIENT_ADDRESS.to_string(),
+			initiator_contract: EthAddress::from(INITIATOR_CONTRACT.to_string()),
 			gas_limit: DEFAULT_GAS_LIMIT,
 			num_tx_send_retries: MAX_RETRIES,
 		}
@@ -90,19 +80,6 @@ sol!(
 	"abis/AtomicBridgeInitiator.json"
 );
 
-type AlloyProvider = FillProvider<
-	JoinFill<
-		JoinFill<
-			JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,
-			ChainIdFiller,
-		>,
-		WalletFiller<EthereumWallet>,
-	>,
-	RootProvider<BoxTransport>,
-	BoxTransport,
-	Ethereum,
->;
-
 #[derive(RlpDecodable, RlpEncodable)]
 struct EthBridgeTransferDetails {
 	pub amount: U256,
@@ -117,18 +94,15 @@ pub struct EthClient<P> {
 	rpc_provider: P,
 	chain_id: String,
 	ws_provider: RootProvider<PubSubFrontend>,
-	initiator_address: EthAddress,
 	signing_address: EthAddress,
 	send_transaction_error_rules: Vec<Box<dyn VerifyRule>>,
+	initiator_contract: EthAddress,
 	gas_limit: u64,
 	num_tx_send_retries: u32,
 }
 
 impl EthClient<AlloyProvider> {
-	pub async fn build_with_config(
-		config: Config,
-		counterparty_address: &str,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
 		let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
 		let ws_url = config.ws_url.context("ws_url not set")?;
@@ -144,8 +118,7 @@ impl EthClient<AlloyProvider> {
 			rpc_provider,
 			ws_provider,
 			signing_address: EthAddress(signer.address()),
-			initiator_address: config.initiator_address,
-			counterparty_address: counterparty_address.parse()?,
+			initator_contract: config.initiator_contract,
 			gas_limit: config.gas_limit,
 			num_tx_send_retries: config.num_tx_send_retries,
 			chain_id: config.chain_id,
@@ -163,7 +136,7 @@ impl EthClient<AlloyProvider> {
 			chain_id: args.chain_id,
 			ws_provider: args.ws_provider,
 			signing_address: args.signing_address,
-			initiator_address: args.initiator_address,
+			initiator_contract: args.initator_contract,
 			gas_limit: args.gas_limit,
 			num_tx_send_retries: args.num_tx_send_retries,
 			send_transaction_error_rules,
@@ -255,7 +228,7 @@ where
 		let storage_slot = self.calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
-			.get_storage_at(self.initiator_address.0, storage_slot)
+			.get_storage_at(self.initiator_contract.0, storage_slot)
 			.await
 			.map_err(|_| BridgeContractInitiatorError::GetMappingStorageError)?;
 		let storage_bytes = storage.to_be_bytes::<32>();
