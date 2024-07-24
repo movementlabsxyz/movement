@@ -1,15 +1,14 @@
 use super::Executor;
-use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
+use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest, SubmissionStatus};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
 use aptos_vm_validator::vm_validator::TransactionValidation;
 use aptos_vm_validator::vm_validator::VMValidator;
 
+use async_channel::Sender;
 use futures::StreamExt;
 use thiserror::Error;
-use tracing::debug;
-
-use std::sync::Arc;
+use tracing::{debug, info_span, Instrument};
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
@@ -32,7 +31,7 @@ impl Executor {
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub async fn tick_transaction_pipe(
 		&self,
-		transaction_channel: async_channel::Sender<SignedTransaction>,
+		transaction_channel: Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
 		// Drop the receiver RwLock as soon as possible.
 		let next = {
@@ -43,55 +42,15 @@ impl Executor {
 		if let Some(request) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-					// Pre-execute Tx to validate its content.
-					// Re-create the validator for each Tx because it uses a frozen version of the ledger.
-					// let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
-					// let tx_result = vm_validator.validate_transaction(transaction.clone())?;
-
-					// let status = if let Some(vm_status) = tx_result.status() {
-					// 	// If the verification failed, return the error status.
-					// 	let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-					// 	(ms, Some(vm_status))
-					// } else {
-					let status = {
-						// add to the mempool
-						{
-							let mut core_mempool = self.core_mempool.write().await;
-
-							debug!(
-								"Adding transaction to mempool: {:?} {:?}",
-								transaction,
-								transaction.sequence_number()
-							);
-							let status = core_mempool.add_txn(
-								transaction.clone(),
-								0,
-								transaction.sequence_number(),
-								TimelineState::NonQualified,
-								true,
-							);
-
-							match status.code {
-								MempoolStatusCode::Accepted => {
-									debug!("Transaction accepted: {:?}", transaction);
-								}
-								_ => {
-									debug!("Transaction not accepted: {:?}", status);
-									Err(TransactionPipeError::TransactionNotAccepted(status))?;
-								}
-							}
-						}
-
-						// send along to the receiver
-						transaction_channel
-							.send(transaction)
-							.await
-							.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
-
-						// report status
-						let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-						(ms, None)
-					};
+					let span = info_span!(
+						"submit_transaction",
+						seq = transaction.sequence_number(),
+						// TODO: more identifying data for this span
+					);
+					let status = self
+						.submit_transaction(transaction, transaction_channel)
+						.instrument(span)
+						.await?;
 
 					if callback.send(Ok(status)).is_err() {
 						debug!("submit_transaction request has been canceled");
@@ -110,6 +69,59 @@ impl Executor {
 		}
 
 		Ok(())
+	}
+
+	async fn submit_transaction(
+		&self,
+		transaction: SignedTransaction,
+		transaction_channel: Sender<SignedTransaction>,
+	) -> Result<SubmissionStatus, TransactionPipeError> {
+		// Pre-execute Tx to validate its content.
+		// Re-create the validator for each Tx because it uses a frozen version of the ledger.
+		// let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
+		// let tx_result = vm_validator.validate_transaction(transaction.clone())?;
+
+		// let status = if let Some(vm_status) = tx_result.status() {
+		// 	// If the verification failed, return the error status.
+		// 	let ms = MempoolStatus::new(MempoolStatusCode::VmError);
+		// 	(ms, Some(vm_status))
+		// } else {
+		{
+			let mut core_mempool = self.core_mempool.write().await;
+
+			debug!(
+				"Adding transaction to mempool: {:?} {:?}",
+				transaction,
+				transaction.sequence_number()
+			);
+			let status = core_mempool.add_txn(
+				transaction.clone(),
+				0,
+				transaction.sequence_number(),
+				TimelineState::NonQualified,
+				true,
+			);
+
+			match status.code {
+				MempoolStatusCode::Accepted => {
+					debug!("Transaction accepted: {:?}", transaction);
+				}
+				_ => {
+					debug!("Transaction not accepted: {:?}", status);
+					return Err(TransactionPipeError::TransactionNotAccepted(status));
+				}
+			}
+		}
+
+		// send along to the receiver
+		transaction_channel
+			.send(transaction)
+			.await
+			.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
+
+		// report status
+		let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
+		Ok((ms, None))
 	}
 }
 
