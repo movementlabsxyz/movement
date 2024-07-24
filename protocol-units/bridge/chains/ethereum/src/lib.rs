@@ -114,7 +114,7 @@ where
 		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(initiator_address.0 .0, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(self.initiator_contract.0, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
 		// TODO:(richard) we are missing here the intiator address
 		let call = contract.initiateBridgeTransfer(
