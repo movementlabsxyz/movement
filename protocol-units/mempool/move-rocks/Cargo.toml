@@ -16,7 +16,7 @@ tokio = { workspace = true }
 mempool-util = { workspace = true }
 movement-types = { workspace = true }
 rocksdb = { workspace = true }
-serde_json = { workspace = true }
+bcs = { workspace = true }
 anyhow = { workspace = true }
 tempfile = { workspace = true }
 
