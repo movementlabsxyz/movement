@@ -359,7 +359,7 @@ impl <T> SuzukaPartialNode<T> {
 
 	pub async fn add_executed_block(&self, id : String) -> Result<(), anyhow::Error> {
 		let cf = self.da_db.cf_handle("executed_blocks").ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
-		self.da_db.put_cf(&cf, "executed_blocks", id).map_err(|e| anyhow::anyhow!("Failed to add executed block: {:?}", e))?;
+		self.da_db.put_cf(&cf, id.clone(), id).map_err(|e| anyhow::anyhow!("Failed to add executed block: {:?}", e))?;
 		Ok(())
 	}
 
