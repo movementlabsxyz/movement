@@ -7713,7 +7713,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -8609,7 +8608,6 @@ dependencies = [
  "poem",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

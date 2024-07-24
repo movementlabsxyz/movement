@@ -21,14 +21,12 @@ alloy = { workspace = true, features = [
     "signers",
     "signer-yubihsm",
     "pubsub",
-    "providers"
-]}
+    "providers",
+] }
 alloy-contract = { workspace = true }
 alloy-network = { workspace = true }
 alloy-primitives = { workspace = true }
-alloy-provider = { workspace = true, features = [
-
-] }
+alloy-provider = { workspace = true, features = [] }
 alloy-signer = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-transport = { workspace = true }
@@ -43,7 +41,6 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 
 godfig = { workspace = true }
