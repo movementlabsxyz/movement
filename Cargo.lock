@@ -6239,6 +6239,7 @@ dependencies = [
  "aptos-sdk",
  "aptos-types",
  "bcs 0.1.4",
+ "chrono",
  "futures",
  "godfig",
  "rand 0.7.3",

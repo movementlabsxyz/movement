@@ -26,27 +26,46 @@ impl Executor {
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		let block_metadata = {
+
+		let (block_metadata, block, senders_and_sequence_numbers) = {
+
+			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
 			let first_signed = metadata_access_transactions
 				.first()
 				.ok_or(anyhow::anyhow!("Block must contain a block metadata transaction"))?;
 			// cloning is cheaper than moving the array
-			match first_signed.clone().into_inner() {
+			let block_metadata = match first_signed.clone().into_inner() {
 				Transaction::BlockMetadata(metadata) => metadata.clone(),
 				_ => {
 					anyhow::bail!("First transaction in block must be a block metadata transaction")
 				}
-			}
+			};
+
+			// senders and sequence numbers
+			let senders_and_sequence_numbers = metadata_access_transactions
+				.iter()
+				.map(|transaction| {
+					match transaction.clone().into_inner() {
+						Transaction::UserTransaction(transaction) => {
+							(transaction.sender(), transaction.sequence_number())
+						}
+						_ => (AccountAddress::ZERO, 0),
+					}
+				})
+				.collect::<Vec<(AccountAddress, u64)>>();
+
+			// reconstruct the block
+			let block = ExecutableBlock::new(block.block_id.clone(), ExecutableTransactions::Unsharded(metadata_access_transactions));
+
+			(block_metadata, block, senders_and_sequence_numbers)
 		};
 
 		let block_executor = self.block_executor.clone();
 
 		let block_id = block.block_id.clone();
 		let parent_block_id = block_executor.committed_block_id();
-
-		let mempool_transactions = block.transactions.clone().into_txns();
 
 		let block_executor_clone = block_executor.clone();
 		let state_compute = tokio::task::spawn_blocking(move || {
@@ -77,17 +96,10 @@ impl Executor {
 		}).await??;
 
 		// commit mempool transactions in batches of size 16
-		for chunk in mempool_transactions.chunks(16) {
+		for chunk in senders_and_sequence_numbers.chunks(16) {
 			let mut core_mempool = self.core_mempool.write().await;
-			for transaction in chunk {
-				match transaction.clone().into_inner() {
-					Transaction::UserTransaction(transaction) => {
-						let sender = transaction.sender();
-						let sequence_number = transaction.sequence_number();
-						core_mempool.commit_transaction(&AccountAddress::from(sender), sequence_number);
-					}
-					_ => {}
-				}
+			for (sender, sequence_number) in chunk {
+				core_mempool.commit_transaction(sender, *sequence_number);
 			}
 		}
 
