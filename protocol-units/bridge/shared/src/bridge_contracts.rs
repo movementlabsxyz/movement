@@ -13,19 +13,6 @@ pub enum BridgeContractInitiatorError {
 	CompleteTransferError,
 	#[error("Failed to parse preimage")]
 	ParsePreimageError,
-	#[error("Faled to get value at contract mapping storage")]
-	GetMappingStorageError,
-	#[error("Faled to decode storage value")]
-	DecodeStorageError,
-	#[error(
-		"Transaction fails because gas estimation is too high. Estimated gas:{0} gas limit:{1}"
-	)]
-	GasLimitExceededError(u128, u128),
-	#[error("MCR Settlement Transaction send failed during its execution :{0}")]
-	RpcTransactionExecutionError(String),
-
-	#[error("Unkown RPC error")]
-	UnknownRpcError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
