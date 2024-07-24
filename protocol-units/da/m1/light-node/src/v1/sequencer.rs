@@ -54,23 +54,26 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 impl LightNodeV1 {
 	pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let block = self.memseq.wait_for_next_block().await?;
-		match block {
-			Some(block) => {
-				info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-				let block_blob = self.pass_through.create_new_celestia_blob(
-					serde_json::to_vec(&block)
-						.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-				)?;
-
-				let height = self.pass_through.submit_celestia_blob(block_blob).await?;
-
-				debug!("Submitted block: {:?} {:?}", block.id(), height);
-			}
-			None => {
-				// no transactions to include
+		let start_time = std::time::Instant::now();
+		let mut blocks = Vec::new();
+		while start_time.elapsed().as_millis() < 250 {
+			let block = self.memseq.wait_for_next_block().await?;
+			match block {
+				Some(block) => {
+					info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+					let block_blob = self.pass_through.create_new_celestia_blob(
+						serde_json::to_vec(&block)
+							.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+					)?;
+					blocks.push(block_blob);
+				}
+				None => {
+					// no transactions to include
+				}
 			}
 		}
+		self.pass_through.submit_celestia_blobs(&blocks).await?;
+
 		Ok(())
 	}
 
@@ -78,7 +81,6 @@ impl LightNodeV1 {
 		loop {
 			// build the next block from the blobs
 			self.tick_block_proposer().await?;
-			tokio::task::yield_now().await;
 		}
 
 		Ok(())

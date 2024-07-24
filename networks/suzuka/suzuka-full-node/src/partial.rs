@@ -19,7 +19,8 @@ use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio_stream::StreamExt;
-use tracing::{debug, info, error};
+use tracing::{debug, info, warn, error};
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 
 use std::future::Future;
 use std::time::Duration;
@@ -31,6 +32,7 @@ pub struct SuzukaPartialNode<T> {
 	settlement_manager: McrSettlementManager,
 	movement_rest: MovementRest,
 	pub config: suzuka_config::Config,
+	da_db: DB,
 }
 
 impl<T> SuzukaPartialNode<T>
@@ -43,6 +45,7 @@ where
 		settlement_client: C,
 		movement_rest: MovementRest,
 		config: &suzuka_config::Config,
+		da_db: DB,
 	) -> (Self, impl Future<Output = Result<(), anyhow::Error>> + Send)
 	where
 		C: McrSettlementClientOperations + Send + 'static,
@@ -60,6 +63,7 @@ where
 				settlement_manager,
 				movement_rest,
 				config: config.clone(),
+				da_db: da_db,
 			},
 			read_commitment_events(commitment_events, bg_executor),
 		)
@@ -75,12 +79,13 @@ where
 		settlement_client: C,
 		movement_rest: MovementRest,
 		config: &suzuka_config::Config,
+		da_db: DB
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
 	{
 		let (mut node, background_task) =
-			Self::new(executor, light_node_client, settlement_client, movement_rest, config);
+			Self::new(executor, light_node_client, settlement_client, movement_rest, config, da_db);
 		node.bind_transaction_channel();
 		Ok((node, background_task))
 	}
@@ -136,12 +141,11 @@ where
 	// receive transactions from the transaction channel and send them to be executed
 	// ! This assumes the m1 da light node is running sequencer mode
 	pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
-		let block_head_height = self.executor.get_block_head_height().await?;
 
 		let mut stream = {
 			let mut light_node_client = self.light_node_client.clone();
 			light_node_client
-				.stream_read_from_height(StreamReadFromHeightRequest { height: block_head_height })
+				.stream_read_from_height(StreamReadFromHeightRequest { height: self.get_synced_height().await? })
 				.await?
 		}
 		.into_inner();
@@ -150,21 +154,33 @@ where
 			debug!("Got blob: {:?}", blob);
 
 			// get the block
-			let (block_bytes, block_timestamp, block_id) = match blob?
+			let (block_bytes, block_timestamp, block_id, da_height) = match blob?
 				.blob
 				.ok_or(anyhow::anyhow!("No blob in response"))?
 				.blob_type
 				.ok_or(anyhow::anyhow!("No blob type in response"))?
 			{
 				blob_response::BlobType::SequencedBlobBlock(blob) => {
-					(blob.data, blob.timestamp, blob.blob_id)
+					(blob.data, blob.timestamp, blob.blob_id, blob.height)
 				}
 				_ => {
 					anyhow::bail!("Invalid blob type in response")
 				}
 			};
 
+			// check if the block has already been executed
+			if self.has_executed_block(block_id.clone()).await? {
+				warn!("Block already executed: {:?}. It will be skipped", block_id);
+				continue;
+			}
+
+			// the da height must be greater than 1
+			if da_height < 2 {
+				anyhow::bail!("Invalid DA height: {:?}", da_height);
+			}
+
 			let block: Block = serde_json::from_slice(&block_bytes)?;
+
 
 			debug!("Got block: {:?}", block);
 			info!("Block micros timestamp: {:?}", block_timestamp);
@@ -201,6 +217,13 @@ where
 			let block_id = executable_block.block_id;
 			let commitment = self.executor.execute_block_opt(executable_block).await?;
 			info!("Executed block: {:?}", block_id);
+
+			// mark the da_height - 1 as synced
+			// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
+			self.set_synced_height(da_height - 1).await?;
+
+			// set the block as executed
+			self.add_executed_block(block_id.to_string()).await?;
 
 			// todo: this needs defaults
 			if self.config.mcr.should_settle() {
@@ -290,9 +313,66 @@ where
 		self.movement_rest.run_service().await?;
 		Ok(())
 	}
+	
+}
+
+impl <T> SuzukaPartialNode<T> {
+
+	pub async fn create_or_get_da_db(config: &suzuka_config::Config) -> Result<DB, anyhow::Error> {
+		let path = config.da_db.da_db_path.clone();
+
+		let mut options = Options::default();
+		options.create_if_missing(true);
+		options.create_missing_column_families(true);
+
+		let synced_height =
+			ColumnFamilyDescriptor::new("synced_height", Options::default());
+		let executed_blocks =
+			ColumnFamilyDescriptor::new("executed_blocks", Options::default());
+
+		let db = DB::open_cf_descriptors(
+			&options,
+			path,
+			vec![synced_height, executed_blocks],
+		)
+		.map_err(|e| anyhow::anyhow!("Failed to open DA DB: {:?}", e))?;
+
+		Ok(db)
+	}
+
+	pub async fn set_synced_height(&self, height: u64) -> Result<(), anyhow::Error> {
+		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
+		let cf = self.da_db.cf_handle("synced_height").ok_or(anyhow::anyhow!("No synced_height column family"))?;
+		let height = serde_json::to_string(&height).map_err(|e| anyhow::anyhow!("Failed to serialize synced height: {:?}", e))?;
+		self.da_db.put_cf(&cf, "synced_height", height).map_err(|e| anyhow::anyhow!("Failed to set synced height: {:?}", e))?;
+		Ok(())
+	}
+
+	pub async fn get_synced_height(&self) -> Result<u64, anyhow::Error> {
+		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
+		let cf = self.da_db.cf_handle("synced_height").ok_or(anyhow::anyhow!("No synced_height column family"))?;
+		let height = self.da_db.get_cf(&cf, "synced_height").map_err(|e| anyhow::anyhow!("Failed to get synced height: {:?}", e))?;
+		let height = height.ok_or(anyhow::anyhow!("No synced height"))?;
+		let height = serde_json::from_slice(&height).map_err(|e| anyhow::anyhow!("Failed to deserialize synced height: {:?}", e))?;
+		Ok(height)
+	}
+
+	pub async fn add_executed_block(&self, id : String) -> Result<(), anyhow::Error> {
+		let cf = self.da_db.cf_handle("executed_blocks").ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
+		self.da_db.put_cf(&cf, "executed_blocks", id).map_err(|e| anyhow::anyhow!("Failed to add executed block: {:?}", e))?;
+		Ok(())
+	}
+
+	pub async fn has_executed_block(&self, id : String) -> Result<bool, anyhow::Error> {
+		let cf = self.da_db.cf_handle("executed_blocks").ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
+		let id = self.da_db.get_cf(&cf, id).map_err(|e| anyhow::anyhow!("Failed to get executed block: {:?}", e))?;
+		Ok(id.is_some())
+	}
+
 }
 
 impl SuzukaPartialNode<Executor> {
+
 	pub async fn try_from_config(
 		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
@@ -326,7 +406,10 @@ impl SuzukaPartialNode<Executor> {
 		debug!("Creating the movement rest service");
 		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone())).context("Failed to create MovementRest")?;
 
-		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config).context(
+		debug!("Creating the DA DB");
+		let da_db = Self::create_or_get_da_db(&config).await.context("Failed to create or get DA DB")?;
+
+		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config, da_db).context(
 			"Failed to bind the executor, light node client, settlement client, and movement rest"
 		)
 		

@@ -32,6 +32,7 @@ dot-movement = { workspace = true }
 godfig = { workspace = true }
 tracing-subscriber = { workspace = true }
 console-subscriber = { workspace = true }
+rocksdb = { workspace = true }
 
 [features]
 default = []

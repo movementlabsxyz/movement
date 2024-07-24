@@ -2,14 +2,9 @@ use super::Executor;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
-use aptos_vm_validator::vm_validator::TransactionValidation;
-use aptos_vm_validator::vm_validator::VMValidator;
-
 use futures::StreamExt;
 use thiserror::Error;
 use tracing::debug;
-
-use std::sync::Arc;
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {

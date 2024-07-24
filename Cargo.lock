@@ -11817,6 +11817,7 @@ name = "suzuka-config"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "godfig",
  "m1-da-light-node-util",
  "maptos-execution-util",
  "mcr-settlement-client",
@@ -11860,6 +11861,7 @@ dependencies = [
  "mcr-settlement-manager",
  "movement-rest",
  "movement-types",
+ "rocksdb",
  "serde_json",
  "sha2 0.10.8",
  "suzuka-config",
