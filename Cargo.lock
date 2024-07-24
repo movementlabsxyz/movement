@@ -213,7 +213,7 @@ dependencies = [
  "const-hex",
  "itoa",
  "serde",
- "serde_json",
+ "bcs 0.1.4",
  "winnow 0.6.13",
 ]
 
