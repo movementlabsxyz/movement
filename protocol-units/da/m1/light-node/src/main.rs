@@ -4,6 +4,7 @@ use m1_da_light_node::v1::{Manager, LightNodeV1};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// TODO: set up tracing-subscriber if the "logging" feature is enabled
 
+	// console_subscriber::init();
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()

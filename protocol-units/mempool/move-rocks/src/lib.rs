@@ -3,8 +3,10 @@ use mempool_util::{MempoolBlockOperations, MempoolTransaction, MempoolTransactio
 use movement_types::{Block, Id};
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use serde_json;
-use std::sync::Arc;
 use tokio::sync::RwLock;
+
+use std::fmt::Write;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct RocksdbMempool {
@@ -35,18 +37,16 @@ impl RocksdbMempool {
 	}
 
 	pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
-		// pad to 32 characters for slot_seconds
-		let slot_seconds_str = format!("{:032}", transaction.timestamp);
-
-		// pad to 32 characters for sequence number
-		let sequence_number_str = format!("{:032}", transaction.transaction.sequence_number);
-
-		// Assuming transaction.transaction.id() returns a hex string of length 32
-		let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
-
-		// Concatenate the two parts to form a 80-character hex string key
-		let key = format!("{}:{}:{}", slot_seconds_str, sequence_number_str, transaction_id_hex);
-
+		// Pre-allocate a string with the required capacity
+		let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32);
+		// Write key components. The numbers are zero-padded to 32 characters.
+		key.write_fmt(format_args!(
+			"{:032}:{:032}:{}",
+			transaction.timestamp,
+			transaction.transaction.sequence_number,
+			transaction.transaction.id(),
+		))
+		.unwrap();
 		key
 	}
 
@@ -316,5 +316,4 @@ pub mod test {
 
 		Ok(())
 	}
-
 }

@@ -25,6 +25,8 @@ members = [
     "protocol-units/bridge/shared",
     "protocol-units/bridge/cli",
     "protocol-units/bridge/service",
+    "protocol-units/settlement/mcr/runner",
+    "benches/*",
 ]
 
 [workspace.package]
@@ -240,7 +242,9 @@ sha2 = "0.10.8"
 syn = "2.0"
 tempfile = "3.5"
 thiserror = "1.0.50"
-tokio = { version = "1.35.1", features = ["full"] }
+tokio = { version = "1.35.1", features = ["full", "tracing"] }
+tokio-console = "0.1.0"
+console-subscriber = "0.3.0"
 tokio-stream = "0.1.15"
 toml = "0.8"
 tonic = "0.11"
