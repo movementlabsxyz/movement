@@ -8,7 +8,7 @@ use bridge_shared::{
 	},
 };
 use clap::{Parser, Subcommand};
-use ethereum_bridge::{utils::EthAddress, Config, EthClient};
+use ethereum_bridge::{types::EthAddress, Config, EthClient};
 
 #[derive(Parser)]
 #[command(name = "eth-bridge-cli")]

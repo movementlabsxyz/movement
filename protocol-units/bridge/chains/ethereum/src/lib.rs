@@ -108,14 +108,13 @@ where
 
 	async fn initiate_bridge_transfer(
 		&mut self,
-		// TODO: (richard) we are missing the initiator address here
-		_initiator_address: InitiatorAddress<Self::Address>,
+		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_contract.0, &self.rpc_provider);
+		let contract = AtomicBridgeInitiator::new(initiator_address.0 .0, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
 		// TODO:(richard) we are missing here the intiator address
 		let call = contract.initiateBridgeTransfer(
