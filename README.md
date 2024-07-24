@@ -21,8 +21,8 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`docker`](./docker): Dockerfiles for building Movement Labs software and Docker compose files for orchestrating services. See the [docker README](./docker/README.md) for more information about the organization of Dockerfiles.
 - [`protocol-units`](./protocol-units): Protocol units for the Movement Network. These are the core building blocks of the Movement Network. See the [protocol-units README](./protocol-units/README.md) for more information about the organization of protocol units.
 - [`networks`](./networks): Network runner entry points for the Movement Network. These are the entry points for running the Movement Network. See the [networks README](./networks/README.md) for more information about the organization of network runners.
-- [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
-- [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
+- [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util](./util) for more information about the organization of utility crates.
+- [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto](./proto) for more information about the organization of protocol buffer definitions.
 
 ## Naming Conventions
 Because we are in early stages of the "movement" network we decided to version the
