@@ -424,7 +424,7 @@ mod tests {
 				let user_account_creation_tx = root_account.sign_with_transaction_builder(
 					tx_factory.create_user_account(new_account.public_key()),
 				);
-				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				let tx_hash = user_account_creation_tx.committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}
@@ -490,7 +490,7 @@ mod tests {
 			let user_account_creation_tx = root_account.sign_with_transaction_builder(
 				tx_factory.create_user_account(new_account.public_key()),
 			);
-			let tx_hash = user_account_creation_tx.clone().committed_hash();
+			let tx_hash = user_account_creation_tx.committed_hash();
 			transaction_hashes.push(tx_hash);
 			transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 

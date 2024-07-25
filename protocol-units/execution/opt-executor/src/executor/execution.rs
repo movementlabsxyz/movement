@@ -364,7 +364,7 @@ mod tests {
 			let mint_tx = root_account
 				.sign_with_transaction_builder(tx_factory.mint(new_account.address(), 2000));
 			// Store the hash of the committed transaction for later verification.
-			let mint_tx_hash = mint_tx.clone().committed_hash();
+			let mint_tx_hash = mint_tx.committed_hash();
 
 			// Block Metadata
 			let transactions =
@@ -457,7 +457,7 @@ mod tests {
 				let user_account_creation_tx = root_account.sign_with_transaction_builder(
 					tx_factory.create_user_account(new_account.public_key()),
 				);
-				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				let tx_hash = user_account_creation_tx.committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}
