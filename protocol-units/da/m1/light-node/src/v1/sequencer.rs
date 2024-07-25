@@ -1,22 +1,21 @@
 use m1_da_light_node_util::config::Config;
 use tokio_stream::Stream;
 use tracing::{debug, info};
-
+use std::sync::Arc;
 use std::{fmt::Debug, path::PathBuf};
-
 use celestia_rpc::HeaderClient;
 
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
-use memseq::{Sequencer, Transaction};
+use memseq::{Block, Sequencer, Transaction};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
 	pub pass_through: LightNodeV1PassThrough,
-	pub memseq: memseq::Memseq<memseq::RocksdbMempool>,
+	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 }
 
 impl Debug for LightNodeV1 {
@@ -35,7 +34,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let memseq_path = pass_through.config.try_memseq_path()?;
 		info!("Memseq path: {:?}", memseq_path);
 
-		let memseq = memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?;
+		let memseq = Arc::new(memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?);
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
 		Ok(Self { pass_through, memseq })
@@ -54,30 +53,41 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 impl LightNodeV1 {
 	pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let start_time = std::time::Instant::now();
-		let mut blocks = Vec::new();
-		while start_time.elapsed().as_millis() < 100 {
-			let block = self.memseq.wait_for_next_block().await?;
-			match block {
-				Some(block) => {
-					info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-					let block_blob = self.pass_through.create_new_celestia_blob(
-						serde_json::to_vec(&block)
-							.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-					)?;
-					blocks.push(block_blob);
-				}
-				None => {
-					// no transactions to include
+
+		let memseq = self.memseq.clone();
+		// should help performance by dedicating a thread to this
+		let blocks = tokio::spawn(async move {
+			let start_time = std::time::Instant::now();
+			let mut blocks = Vec::new();
+			while start_time.elapsed().as_millis() < 100 {
+				let block = memseq.wait_for_next_block().await?;
+				match block {
+					Some(block) => {
+						info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+						blocks.push(block);
+					}
+					None => {
+						// no transactions to include
+					}
 				}
 			}
-		}
-
+			Ok::<Vec<Block>, anyhow::Error>(blocks)
+		}).await??;
+		
 		if blocks.is_empty() {
 			return Ok(());
 		}
 
-		self.pass_through.submit_celestia_blobs(&blocks).await?;
+		let mut block_blobs = Vec::new();
+		for block in blocks {
+			let block_blob = self.pass_through.create_new_celestia_blob(
+				serde_json::to_vec(&block)
+					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+			)?;
+			block_blobs.push(block_blob);
+		}
+
+		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
 
 		Ok(())
 	}
