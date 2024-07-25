@@ -18,7 +18,7 @@ m1-da-light-node-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 mcr-settlement-manager = { workspace = true }
 async-channel = { workspace = true }
-serde_json = { workspace = true }
+bcs = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }

@@ -11850,6 +11850,7 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel 2.3.1",
+ "bcs 0.1.4",
  "console-subscriber",
  "dot-movement",
  "godfig",
@@ -11860,7 +11861,6 @@ dependencies = [
  "mcr-settlement-manager",
  "movement-rest",
  "movement-types",
- "serde_json",
  "sha2 0.10.8",
  "suzuka-config",
  "tokio",
