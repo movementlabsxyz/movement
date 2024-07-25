@@ -1,12 +1,13 @@
-use m1_da_light_node_util::config::Config;
 use tokio_stream::Stream;
-use tracing::{debug, info};
+use tracing::{debug, info, info_span, Instrument};
 
 use std::{fmt::Debug, path::PathBuf};
 
 use celestia_rpc::HeaderClient;
 
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
+use m1_da_light_node_util::config::Config;
+use movement_types::Block;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
@@ -57,20 +58,26 @@ impl LightNodeV1 {
 		let block = self.memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-				let block_blob = self.pass_through.create_new_celestia_blob(
-					serde_json::to_vec(&block)
-						.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-				)?;
-
-				let height = self.pass_through.submit_celestia_blob(block_blob).await?;
-
-				debug!("Submitted block: {:?} {:?}", block.id(), height);
+				let span = info_span!("submit_block", block_id = %block.id());
+				self.submit_proposed_block(block).instrument(span).await?;
 			}
 			None => {
 				// no transactions to include
 			}
 		}
+		Ok(())
+	}
+
+	async fn submit_proposed_block(&self, block: Block) -> Result<(), anyhow::Error> {
+		info!("built block with {} transactions", block.transactions.len());
+		let block_blob = self.pass_through.create_new_celestia_blob(
+			serde_json::to_vec(&block)
+				.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+		)?;
+
+		let height = self.pass_through.submit_celestia_blob(block_blob).await?;
+
+		debug!("submitted block at height {height}");
 		Ok(())
 	}
 
@@ -80,8 +87,6 @@ impl LightNodeV1 {
 			self.tick_block_proposer().await?;
 			tokio::task::yield_now().await;
 		}
-
-		Ok(())
 	}
 
 	pub fn to_sequenced_blob_block(
@@ -155,7 +160,7 @@ impl LightNodeService for LightNodeV1 {
 	/// Stream blobs out, either individually or in batches.
 	async fn stream_write_blob(
 		&self,
-		request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
+		_request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
 		unimplemented!("stream_write_blob")
 	}
@@ -201,11 +206,11 @@ impl LightNodeService for LightNodeV1 {
 		// make transactions from the blobs
 		let mut transactions = Vec::new();
 		for blob in blobs_for_submission {
-			let transaction : Transaction = serde_json::from_slice(&blob.data)
+			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
 			transactions.push(transaction);
 		}
-		
+
 		// publish the transactions
 		for transaction in transactions {
 			debug!("Publishing transaction: {:?}", transaction.id());

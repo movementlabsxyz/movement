@@ -7400,6 +7400,7 @@ dependencies = [
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-types",
  "prost",
  "serde",
  "serde_json",
