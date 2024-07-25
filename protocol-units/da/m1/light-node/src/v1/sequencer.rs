@@ -224,14 +224,19 @@ impl LightNodeService for LightNodeV1 {
 		}
 		
 		// publish the transactions
-		for transaction in transactions {
-			debug!("Publishing transaction: {:?}", transaction.id());
-
-			self.memseq
-				.publish(transaction)
-				.await
-				.map_err(|e| tonic::Status::internal(e.to_string()))?;
-		}
+		let memseq = self.memseq.clone();
+		tokio::spawn(async move {
+			for transaction in transactions {
+				debug!("Publishing transaction: {:?}", transaction.id());
+				memseq
+					.publish(transaction)
+					.await
+					.map_err(|e| tonic::Status::internal(e.to_string()))?;
+			}
+			Ok::<(), tonic::Status>(())
+		}).await.map_err(
+			|e| tonic::Status::internal(e.to_string())
+		)??;
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
 	}
