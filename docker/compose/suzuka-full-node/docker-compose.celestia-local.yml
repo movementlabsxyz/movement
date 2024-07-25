@@ -19,6 +19,12 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   m1-da-light-node-celestia-bridge:
     image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${CONTAINER_REV}
@@ -39,6 +45,12 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   celestia-light-node:
     image: busybox
