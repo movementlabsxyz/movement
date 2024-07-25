@@ -175,7 +175,38 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 		}).await?
 	}
+
+	async fn pop_mempool_transactions(&self, n : usize) -> Result<Vec<MempoolTransaction>, anyhow::Error> {
+		let db = self.db.clone();
+		tokio::task::spawn_blocking(move ||{
+			let cf_handle = db
+			.cf_handle("mempool_transactions")
+			.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
+	
+			let mut mempool_transactions = Vec::with_capacity(n as usize);
+			while let Some(res) = iter.next() {
+				let (key, value) = res?;
+				let tx: MempoolTransaction = serde_json::from_slice(&value)?;
+				db.delete_cf(&cf_handle, &key)?;
+
+				// Optionally, remove from the lookup table as well
+				let lookups_cf_handle = db
+					.cf_handle("transaction_lookups")
+					.ok_or_else(|| Error::msg("CF handle not found"))?;
+				db.delete_cf(&lookups_cf_handle, tx.transaction.id().to_vec())?;
+
+				mempool_transactions.push(tx);
+				if mempool_transactions.len() > n - 1 {
+					break;
+				}
+			}
+			Ok(mempool_transactions)
+		}).await?
+	}
+
 }
+
 
 impl MempoolBlockOperations for RocksdbMempool {
 	async fn has_block(&self, block_id: Id) -> Result<bool, Error> {

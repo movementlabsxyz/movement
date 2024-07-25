@@ -57,7 +57,7 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 	}
 
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
-		let mut transactions = Vec::new();
+		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
 		let mut now = std::time::Instant::now();
 
@@ -67,25 +67,12 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 				break;
 			}
 
-			for _ in 0..self.block_size - current_block_size {
-
-				// make sure we are not over the building time
-				now = std::time::Instant::now();
-				if now.elapsed().as_millis() as u64 > self.building_time_ms {
-					break;
-				}
-
-				if let Some(transaction) = self.mempool.pop_transaction().await? {
-					transactions.push(transaction);
-				} else {
-					tracing::debug!("No more transactions in the mempool");
-					break;
-				}
-
-			}
+			let remaining = self.block_size - current_block_size;
+			let mut transactions_to_add = self.mempool.pop_transactions(remaining as usize).await?;
+			transactions.append(&mut transactions_to_add);
 
 			// sleep to yield to other tasks and wait for more transactions
-			tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+			tokio::task::yield_now().await;
 
 			if now.elapsed().as_millis() as u64 > self.building_time_ms {
 				break;
@@ -95,11 +82,19 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-			Ok(Some(Block::new(
-				Default::default(),
-				self.parent_block.read().await.clone().to_vec(),
-				transactions,
-			)))
+
+			let new_block = {
+				let parent_block = self.parent_block.read().await.clone();
+				Block::new(Default::default(), parent_block.to_vec(), transactions)
+			};
+			
+			// update the parent block 
+			{
+				let mut parent_block = self.parent_block.write().await;
+				*parent_block = new_block.id();
+			}
+
+			Ok(Some(new_block))
 		}
 	}
 }
