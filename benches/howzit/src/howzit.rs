@@ -230,75 +230,146 @@ impl Howzit {
     
     }
 
-    pub async fn call_transfers(&self, count : u64) -> Result<(u64, u64), anyhow::Error> {
+    pub async fn call_transfers(&self, count : u64) -> Result<Vec<(bool, u64, u64)>, anyhow::Error> {
 
-        let mut latencies = HashMap::new();
-        let mut successes = 0;
-        let mut failures = 0;
+        let mut results = Arc::new(RwLock::new(Vec::new()));
+        let mut latencies = Arc::new(RwLock::new(HashMap::new()));
 
+        // local accounts
         let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
         let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
         tracing::info!("Funding Alice");
+        let start_time = chrono::Utc::now();
         match self.faucet_client.fund(alice.address(), 10_000_000_000).await {
             Ok(_) => {
-                successes += 1;
+                let end_time = chrono::Utc::now();
+                let mut results = results.write().await;
+                results.push((
+                    true, 
+                    // start timestamp
+                    start_time.timestamp_millis() as u64,
+                    // end timestamp
+                    end_time.timestamp_millis() as u64
+                ));
             },
             Err(e) => {
                 tracing::error!("Failed to create account: {:?}", e);
-                failures += 1;
-                return Ok((successes, failures));
+                
+                let mut results = results.write().await;
+                results.push((
+                    false, 
+                    // start timestamp
+                    start_time.timestamp_millis() as u64,
+                    // end timestamp
+                    start_time.timestamp_millis() as u64
+                ));
+                
+                return Ok(results.to_owned());
             }
         }
         tracing::info!("Funding Bob");
+        let start_time = chrono::Utc::now();
         match self.faucet_client.fund(bob.address(), 10_000_000_000).await {
             Ok(_) => {
-                successes += 1;
+                let end_time = chrono::Utc::now();
+                let mut results = results.write().await;
+                results.push((
+                    true, 
+                    // start timestamp
+                    start_time.timestamp_millis() as u64,
+                    // end timestamp
+                    end_time.timestamp_millis() as u64
+                ));
             },
             Err(e) => {
                 tracing::error!("Failed to create account: {:?}", e);
-                failures += 1;
-                return Ok((successes, failures));
+                let mut results = results.write().await;
+                results.push((
+                    false, 
+                    // start timestamp
+                    start_time.timestamp_millis() as u64,
+                    // end timestamp
+                    start_time.timestamp_millis() as u64
+                ));
+                return Ok(results.to_owned());
             }
         }
 
         let coin_client = CoinClient::new(&self.rest_client);
         let mut transactions = Vec::new();
         for _ in 0..count {
-          match coin_client
+            let results = results.clone();
+            match coin_client
                 .transfer(&mut alice, bob.address(), 1_000, None)
                 .await {
                     Ok(txn) => {
                         transactions.push(txn.clone());
-                        let start = std::time::Instant::now();
+                        let start = chrono::Utc::now();
+                        let mut latencies = latencies.write().await;
                         latencies.insert(txn.hash, start);
                     },
                     Err(e) => {
+                        let start_time = chrono::Utc::now();
                         tracing::error!("Failed to submit transaction: {:?}", e);
-                        failures += 1;
+                        results.write().await.push((
+                            false, 
+                            // start timestamp
+                            start_time.timestamp_millis() as u64,
+                            // end timestamp
+                            start_time.timestamp_millis() as u64
+                        ));
                     }
-                
-                }
-        }
-
-        for txn_hash in transactions {
-            match self.rest_client.wait_for_transaction(&txn_hash).await {
-                Ok(_) => {
-                    successes += 1;
-                    let start = latencies.remove(&txn_hash.hash).ok_or(
-                        anyhow::anyhow!("Missing latency for transaction")
-                    )?;
-                    let duration = start.elapsed();
-                    tracing::info!("Transaction {} took {:?}", txn_hash.hash, duration);
-                },
-                Err(e) => {
-                    tracing::error!("Failed to wait for transaction: {:?}", e);
-                    failures += 1;
-                }
             }
         }
 
-        Ok((successes, failures))
+        let mut futures = Vec::with_capacity(transactions.len());
+        for txn_hash in transactions {
+            let rest_client = self.rest_client.clone();
+            let results = results.clone();
+            let latencies = latencies.clone();
+            let fut = async move {
+                match rest_client.wait_for_transaction(&txn_hash).await {
+                    Ok(_) => {
+                        let mut latencies = latencies.write().await;
+                        let start = latencies.remove(&txn_hash.hash).ok_or(
+                            anyhow::anyhow!("Missing latency for transaction")
+                        )?;
+                        let end_time = chrono::Utc::now();
+                        let mut results = results.write().await;
+                        results.push((
+                            true, 
+                            // start timestamp
+                            start.timestamp_millis() as u64,
+                            // end timestamp
+                            end_time.timestamp_millis() as u64
+                        ));
+                    },
+                    Err(e) => {
+                        let mut latencies = latencies.write().await;
+                        let start_time = latencies.remove(&txn_hash.hash).ok_or(
+                            anyhow::anyhow!("Missing latency for transaction")
+                        )?;
+                        tracing::error!("Failed to wait for transaction: {:?}", e);
+                        let mut results = results.write().await;
+                        results.push((
+                            false, 
+                            // start timestamp
+                            start_time.timestamp_millis() as u64,
+                            // end timestamp
+                            start_time.timestamp_millis() as u64
+                        ));
+                    }
+                };
+                Ok::<(), anyhow::Error>(())
+            };
+            futures.push(tokio::spawn(fut));
+        }
+
+        futures::future::try_join_all(futures).await?;
+
+        let results = results.read().await;
+        Ok(results.to_owned())
     
     }
 
