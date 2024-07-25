@@ -99,4 +99,31 @@ module mock::faucet {
 
         coin::deposit(account_addr, coins);
     }
+
+    public entry fun mintAll<C1, C2, C3, C4>(account: &signer) acquires Faucet, Restricted {
+        let account_addr = signer::address_of(account);
+
+        if (!coin::is_account_registered<C1>(account_addr)) {
+            coin::register<C1>(account);
+        };
+        if (!coin::is_account_registered<C2>(account_addr)) {
+            coin::register<C2>(account);
+        };
+        if (!coin::is_account_registered<C3>(account_addr)) {
+            coin::register<C3>(account);
+        };
+        if (!coin::is_account_registered<C4>(account_addr)) {
+            coin::register<C4>(account);
+        };
+
+        let usdtCoins = request_internal<C1>(account, @mock);
+        let usdcCoins = request_internal<C2>(account, @mock);
+        let wbtcCoins = request_internal<C3>(account, @mock);
+        let wethCoins = request_internal<C4>(account, @mock);
+
+        coin::deposit(account_addr, usdtCoins);
+        coin::deposit(account_addr, usdcCoins);
+        coin::deposit(account_addr, wbtcCoins);
+        coin::deposit(account_addr, wethCoins);
+    }
 }

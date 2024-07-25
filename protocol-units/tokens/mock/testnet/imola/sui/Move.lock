@@ -32,3 +32,9 @@ chain-id = "6ec19c1f"
 original-published-id = "0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9"
 latest-published-id = "0x457abead7283c8af79b0902e71decf173f88624fe8dd2e76be97b6132c39e9c9"
 published-version = "1"
+
+[env.imola]
+chain-id = "db4b6646"
+original-published-id = "0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711"
+latest-published-id = "0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711"
+published-version = "1"

@@ -7,7 +7,7 @@ module mock_tokens::wbtc {
   fun init(witness: WBTC, ctx: &mut TxContext) {
       let (treasury_cap, metadata) = coin::create_currency<WBTC>(
             witness, 
-            9, 
+            8, 
             b"WBTC",
             b"Bitcoin", 
             b"The first cryptocurrency!", 

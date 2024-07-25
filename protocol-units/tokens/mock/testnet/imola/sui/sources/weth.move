@@ -7,7 +7,7 @@ module mock_tokens::weth {
   fun init(witness: WETH, ctx: &mut TxContext) {
       let (treasury_cap, metadata) = coin::create_currency<WETH>(
             witness, 
-            9, 
+            8, 
             b"WETH",
             b"WETH", 
             b"Wrapped Ethereum", 

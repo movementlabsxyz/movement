@@ -6,17 +6,24 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract MockToken is ERC20 {
     uint256 public amount;
     uint256 public timeLimit;
+    address public faucet;
     uint8 internal decimals_;
     mapping(address => uint256) public requests;
 
-    constructor(string memory name, string memory symbol, uint8 _decimals, uint256 _premint, uint256 _amount, uint256 _timeLimit)
-        public
-        ERC20(name, symbol)
-    {
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint8 _decimals,
+        uint256 _premint,
+        uint256 _amount,
+        uint256 _timeLimit,
+        address _faucet
+    ) public ERC20(name, symbol) {
         amount = _amount;
         timeLimit = _timeLimit;
         decimals_ = _decimals;
-        _mint(msg.sender, _premint * 10**decimals_);
+        _mint(msg.sender, _premint * 10 ** decimals_);
+        faucet = _faucet;
     }
 
     function decimals() public view override returns (uint8) {
@@ -26,6 +33,12 @@ contract MockToken is ERC20 {
     function mint() public {
         require(requests[msg.sender] + timeLimit < block.timestamp, "Request is too soon");
         requests[msg.sender] = block.timestamp;
-        _mint(msg.sender, amount*10**decimals_);
+        _mint(msg.sender, amount * 10 ** decimals_);
+    }
+
+    function faucetMint() external returns (uint256) {
+        require(msg.sender == faucet, "Only faucet can mint");
+        _mint(msg.sender, amount * 10 ** decimals_);
+        return amount * 10 ** decimals_;
     }
 }

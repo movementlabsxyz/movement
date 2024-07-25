@@ -7,7 +7,7 @@ module mock_tokens::usdt {
   fun init(witness: USDT, ctx: &mut TxContext) {
       let (treasury_cap, metadata) = coin::create_currency<USDT>(
             witness, 
-            9, 
+            6, 
             b"USDT",
             b"USD Tether", 
             b"Stable coin", 

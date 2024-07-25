@@ -40,3 +40,6 @@
 [submodule "protocol-units/mock-assets/testnet/suzuka/mevm/lib/openzeppelin-contracts"]
 	path = protocol-units/mock-assets/testnet/suzuka/mevm/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "protocol-units/tokens/mock/testnet/imola/mevm/lib/openzeppelin-contracts"]
+	path = protocol-units/tokens/mock/testnet/imola/mevm/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

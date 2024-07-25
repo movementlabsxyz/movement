@@ -40,18 +40,18 @@ The following tokens cam be minted by depositing the network native asset (MOVE)
 
 #### Mintable Tokens
 
-Package ID: `0x11ae349b278ee9c775483b4d61a8b2d0ac54a8e3eb7aba0fce57ac501f6bc738`
+Package ID: `0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711`
 
 The following tokens can be minted through their own module once per hour by calling the mint function or mint_and_transfer:
 
-- WBTC: `0x11ae349b278ee9c775483b4d61a8b2d0ac54a8e3eb7aba0fce57ac501f6bc738::wbtc::WBTC`
-  - Treasury Cap Object ID: `0x091c640d0b1a3b2ed4a6142a9e9b3c1aa9ecd4d96f9dff44ec21731e6a22464c`
-- WETH: `0x11ae349b278ee9c775483b4d61a8b2d0ac54a8e3eb7aba0fce57ac501f6bc738::weth::WETH`
-  - Treasury Cap Object ID: `0x6ead36c02cabf5de036725b698f5210c75b6880711ded921355d92330ad6cd03`
-- USDC: `0x11ae349b278ee9c775483b4d61a8b2d0ac54a8e3eb7aba0fce57ac501f6bc738::usdc::USDC`
-  - Treasury Cap Object ID: `0x4bf99b8530de038b3a32f40d012f82846ce47a5d50124a4a99deea4dca0cc17e`
-- USDT: `0x11ae349b278ee9c775483b4d61a8b2d0ac54a8e3eb7aba0fce57ac501f6bc738::usdt::USDT`
-  - Treasury Cap Object ID: `0x196d59ed9a105100c1b5f8be7778512f062446b5441c8f09b645e60418f58a7e`
+- WBTC: `0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711::wbtc::WBTC`
+  - Treasury Cap Object ID: `0xd2c1127a16494f9df5b6f973baebd78e093d66b3c06463c4e930c8545a9b6df2`
+- WETH: `0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711::weth::WETH`
+  - Treasury Cap Object ID: `0xe02ba3510a9240ba970aed72e0c6188989c3e6d6bd316edfa12bd04da8ebf675`
+- USDC: `0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711::usdc::USDC`
+  - Treasury Cap Object ID: `0x6bad1a88caef6f9ea56680cd31315b2cfeb6018b105471320407559042e6d067`
+- USDT: `0x8ac626e474c33520a815175649fefcbb272678c8c37a7b024e7171fa45d47711::usdt::USDT`
+  - Treasury Cap Object ID: `0x8cacf2fd727720db5fc11006786fbcf69408decda4611921da791cc8ed844878`
 
 ## Devnets
 
