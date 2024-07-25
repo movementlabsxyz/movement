@@ -4,7 +4,6 @@ use tracing::{debug, info};
 use std::sync::Arc;
 use std::{fmt::Debug, path::PathBuf};
 use celestia_rpc::HeaderClient;
-use tokio::time::{self, Duration};
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
@@ -56,35 +55,17 @@ impl LightNodeV1 {
 
 		let memseq = self.memseq.clone();
 		// should help performance by dedicating a thread to this
-		let blocks = tokio::spawn(async move {
-			let mut blocks = Vec::new();
-			let timeout_duration = Duration::from_millis(1000);
-			let result = time::timeout(timeout_duration, async {
-				loop {
-					debug!("Waiting for next block");
-					let block = memseq.wait_for_next_block().await?;
-					match block {
-						Some(block) => {
-							info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-							blocks.push(block);
-						}
-						None => {
-							// no transactions to include
-						}
-					}
-				}
-				Ok::<(), anyhow::Error>(())
-			}).await;
-		
-			match result {
-				Ok(Ok(())) => Ok(blocks),
-				Ok(Err(e)) => Err(e),
-				Err(e) => {
-					debug!("Timeout case, returning collected blocks");
-					Ok(blocks)
-				}, // Timeout case, return the collected blocks
+		let mut blocks = Vec::new();
+		let block = memseq.wait_for_next_block().await?;
+		match block {
+			Some(block) => {
+				info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+				blocks.push(block);
 			}
-		}).await??;
+			None => {
+				// no transactions to include
+			}
+		}
 		
 		if blocks.is_empty() {
 			return Ok(());
