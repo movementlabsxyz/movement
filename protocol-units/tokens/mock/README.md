@@ -25,16 +25,17 @@ The following tokens can be minted through the faucet once per hour by calling `
 
 The following tokens can be minted through their own contract once per hour by calling the mint function:
 
-- USDC: `0xdfd318a689EF63833C4e9ab6Da17F0d5e3010013`
-- USDT: `0x3150DC83cc9985f2433E546e725C9B5E6feb2E8c`
-- WBTC: `0x8507bC108d0e8b8bd404d04084692B118B4F8332`
-- WETH: `0x56c035c3f0e8e11fA34F79aaEf6a28A4cc8e31a8`
+- Faucet: `0x4A6af60286C778514AFB95639B0A74a0adC24711`
+- USDC: `0xaFE0732F985659986Cc3f27AeF76f419BAae5Cde`
+- USDT: `0x846B2EaEC7D9A21cf073F4dDa79C6aEa0919c867`
+- WBTC: `0x852d5ecB513f8F1928539AaF7217F7e6E0Bfdaa3`
+- WETH: `0x4114E6516413c5BA631002A0cF95E828714F8f18`
 
 #### Wrapped Tokens
 
 The following tokens cam be minted by depositing the network native asset (MOVE) to it:
 
-- WMOVE: 0xBcD2b1D0263b7735138fBCAd05Df7f08dD5F73DA
+- WMOVE: `0xc02df8710Be33901D11A7E2D49B6c841e12B6f76`
 
 ### Imola (SUI)
 
