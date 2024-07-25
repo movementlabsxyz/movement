@@ -56,7 +56,7 @@ impl LightNodeV1 {
 	pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
 		let start_time = std::time::Instant::now();
 		let mut blocks = Vec::new();
-		while start_time.elapsed().as_millis() < 250 {
+		while start_time.elapsed().as_millis() < 100 {
 			let block = self.memseq.wait_for_next_block().await?;
 			match block {
 				Some(block) => {
@@ -72,6 +72,11 @@ impl LightNodeV1 {
 				}
 			}
 		}
+
+		if blocks.is_empty() {
+			return Ok(());
+		}
+
 		self.pass_through.submit_celestia_blobs(&blocks).await?;
 
 		Ok(())

@@ -5,8 +5,8 @@ use suzuka_full_node::{
 use maptos_dof_execution::v1::Executor;
 use std::process::ExitCode;
 
-fn main() -> Result<ExitCode, anyhow::Error> {
-	let runtime = tokio::runtime::Builder::new_multi_thread().enable_all().build()?;
+#[tokio::main]
+async fn main() -> Result<ExitCode, anyhow::Error> {
 
 	// console_subscriber::init();
 	use tracing_subscriber::EnvFilter;
@@ -17,18 +17,6 @@ fn main() -> Result<ExitCode, anyhow::Error> {
 		)
 		.init();
 
-	if let Err(err) = runtime.block_on(run_suzuka()) {
-		tracing::error!("Suzuka node main task exit with an error : {err}",);
-	}
-
-	// Terminate all running task.
-	runtime.shutdown_background();
-	Ok(ExitCode::SUCCESS)
-}
-
-async fn run_suzuka() -> Result<ExitCode, anyhow::Error> {
-
-	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 

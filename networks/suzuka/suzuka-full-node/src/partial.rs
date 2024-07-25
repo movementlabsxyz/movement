@@ -352,8 +352,10 @@ impl <T> SuzukaPartialNode<T> {
 		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
 		let cf = self.da_db.cf_handle("synced_height").ok_or(anyhow::anyhow!("No synced_height column family"))?;
 		let height = self.da_db.get_cf(&cf, "synced_height").map_err(|e| anyhow::anyhow!("Failed to get synced height: {:?}", e))?;
-		let height = height.ok_or(anyhow::anyhow!("No synced height"))?;
-		let height = serde_json::from_slice(&height).map_err(|e| anyhow::anyhow!("Failed to deserialize synced height: {:?}", e))?;
+		let height = match height {
+			Some(height) => serde_json::from_slice(&height).map_err(|e| anyhow::anyhow!("Failed to deserialize synced height: {:?}", e))?,
+			None => 0
+		};
 		Ok(height)
 	}
 
