@@ -96,6 +96,7 @@ impl Executor {
 						.entered();
 						core_mempool
 							.commit_transaction(&AccountAddress::from(sender), sequence_number);
+						debug!("committed transaction");
 					}
 					_ => {}
 				}
