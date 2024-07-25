@@ -43,8 +43,9 @@ impl Executor {
 					// Shed load.
 					// Low-ball the load shedding for now with 4096 transactions allowed in flight.
 					// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-					if self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed) > 2^12 {
-						info!("Transaction ins flight: {:?}, shedding load", self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed));
+					let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
+					if in_flight > 2^12 {
+						info!("Transaction ins flight: {:?}, shedding load", in_flight);
 						let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
 						callback.send(Ok((status.clone(), None))).map_err(
 							|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
