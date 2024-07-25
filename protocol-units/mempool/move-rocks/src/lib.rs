@@ -33,14 +33,22 @@ impl RocksdbMempool {
         }
 
         pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
+                // pad to 32 characters for slot_seconds
                 let slot_seconds_str = format!("{:032}", transaction.timestamp);
+
+                // pad to 32 characters for sequence number
                 let sequence_number_str = format!("{:032}", transaction.transaction.sequence_number);
-                let transaction_id_hex = transaction.transaction.id();
+
+		// Assuming transaction.transaction.id() returns a hex string of length 32
+                let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
+
+		// Concatenate the two parts to form a 80-character hex string key
                 let key = format!("{}:{}:{}", slot_seconds_str, sequence_number_str, transaction_id_hex);
 
                 key
         }
 
+	/// Helper function to retrieve the key for mempool transaction from the lookup table.
         async fn get_mempool_transaction_key(
                 &self,
                 transaction_id: &Id,
@@ -109,13 +117,14 @@ impl MempoolTransactionOperations for RocksdbMempool {
                 Ok(())
         }
 
+	// Updated method signatures and implementations go here
         async fn get_mempool_transaction(
                 &self,
                 transaction_id: Id,
         ) -> Result<Option<MempoolTransaction>, Error> {
                 let key = match self.get_mempool_transaction_key(&transaction_id).await? {
                         Some(k) => k,
-                        None => return Ok(None),
+                        None => return Ok(None), // If no key found in lookup, return None
                 };
                 let db = self.db.read().await;
                 let cf_handle = db
@@ -140,13 +149,14 @@ impl MempoolTransactionOperations for RocksdbMempool {
                 let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
 
                 match iter.next() {
-                        None => return Ok(None),
+                        None => return Ok(None), // No transactions to pop
                         Some(res) => {
                                 let (key, value) = res?;
                                 let tx: MempoolTransaction = bcs::from_bytes(&value)?;
                                 println!("Deserialized transaction: {:?}", tx);
                                 db.delete_cf(&cf_handle, &key)?;
 
+				// Optionally, remove from the lookup table as well
                                 let lookups_cf_handle = db
                                         .cf_handle("transaction_lookups")
                                         .ok_or_else(|| Error::msg("CF handle not found"))?;
