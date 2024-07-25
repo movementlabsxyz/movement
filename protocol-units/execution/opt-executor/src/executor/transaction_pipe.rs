@@ -56,7 +56,9 @@ impl Executor {
 					let status = {
 						// add to the mempool
 						{
-							let mut core_mempool = self.core_mempool.write().await;
+							let mut core_mempool = self.core_mempool.write().map_err(|e| {
+								anyhow::anyhow!("Failed to acquire core_mempool RwLock: {}", e)
+							})?;
 
 							debug!(
 								"Adding transaction to mempool: {:?} {:?}",
@@ -99,7 +101,7 @@ impl Executor {
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
 					let mempool_result = {
-						let mempool = self.core_mempool.read().await;
+						let mempool = self.core_mempool.read().unwrap();
 						mempool.get_by_hash(hash)
 					};
 					if sender.send(mempool_result).is_err() {

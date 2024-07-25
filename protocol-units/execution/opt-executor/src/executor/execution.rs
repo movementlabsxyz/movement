@@ -26,9 +26,7 @@ impl Executor {
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-
 		let (block_metadata, block, senders_and_sequence_numbers) = {
-
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
@@ -46,18 +44,19 @@ impl Executor {
 			// senders and sequence numbers
 			let senders_and_sequence_numbers = metadata_access_transactions
 				.iter()
-				.map(|transaction| {
-					match transaction.clone().into_inner() {
-						Transaction::UserTransaction(transaction) => {
-							(transaction.sender(), transaction.sequence_number())
-						}
-						_ => (AccountAddress::ZERO, 0),
+				.map(|transaction| match transaction.clone().into_inner() {
+					Transaction::UserTransaction(transaction) => {
+						(transaction.sender(), transaction.sequence_number())
 					}
+					_ => (AccountAddress::ZERO, 0),
 				})
 				.collect::<Vec<(AccountAddress, u64)>>();
 
 			// reconstruct the block
-			let block = ExecutableBlock::new(block.block_id.clone(), ExecutableTransactions::Unsharded(metadata_access_transactions));
+			let block = ExecutableBlock::new(
+				block.block_id.clone(),
+				ExecutableTransactions::Unsharded(metadata_access_transactions),
+			);
 
 			(block_metadata, block, senders_and_sequence_numbers)
 		};
@@ -74,14 +73,15 @@ impl Executor {
 				parent_block_id,
 				BlockExecutorConfigFromOnchain::new_no_block_limit(),
 			)
-		}).await??;
+		})
+		.await??;
 
 		debug!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
-	
+
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
 			epoch,
 			round,
@@ -93,11 +93,15 @@ impl Executor {
 		let block_executor_clone = block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
-		}).await??;
+		})
+		.await??;
 
 		// commit mempool transactions in batches of size 16
 		for chunk in senders_and_sequence_numbers.chunks(16) {
-			let mut core_mempool = self.core_mempool.write().await;
+			let mut core_mempool = self
+				.core_mempool
+				.write()
+				.map_err(|e| anyhow::anyhow!("Failed to acquire core_mempool RwLock: {}", e))?;
 			for (sender, sequence_number) in chunk {
 				core_mempool.commit_transaction(sender, *sequence_number);
 			}

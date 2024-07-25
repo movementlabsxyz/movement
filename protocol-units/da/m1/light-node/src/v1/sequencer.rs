@@ -2,7 +2,7 @@ use m1_da_light_node_util::config::Config;
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
-use std::{fmt::Debug, path::PathBuf};
+use std::{fmt::Debug, path::PathBuf, sync::Arc};
 
 use celestia_rpc::HeaderClient;
 
@@ -16,7 +16,7 @@ use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1O
 #[derive(Clone)]
 pub struct LightNodeV1 {
 	pub pass_through: LightNodeV1PassThrough,
-	pub memseq: memseq::Memseq<memseq::RocksdbMempool>,
+	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 }
 
 impl Debug for LightNodeV1 {
@@ -38,7 +38,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let memseq = memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?;
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
-		Ok(Self { pass_through, memseq })
+		Ok(Self { pass_through, memseq: Arc::new(memseq) })
 	}
 
 	fn try_service_address(&self) -> Result<String, anyhow::Error> {
@@ -57,7 +57,11 @@ impl LightNodeV1 {
 		let block = self.memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+				info!(
+					"Built block {:?} with {:?} transactions",
+					block.id(),
+					block.transactions.len()
+				);
 				let block_blob = self.pass_through.create_new_celestia_blob(
 					serde_json::to_vec(&block)
 						.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
@@ -201,11 +205,11 @@ impl LightNodeService for LightNodeV1 {
 		// make transactions from the blobs
 		let mut transactions = Vec::new();
 		for blob in blobs_for_submission {
-			let transaction : Transaction = serde_json::from_slice(&blob.data)
+			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
 			transactions.push(transaction);
 		}
-		
+
 		// publish the transactions
 		for transaction in transactions {
 			debug!("Publishing transaction: {:?}", transaction.id());
