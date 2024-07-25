@@ -236,7 +236,14 @@ pub mod test {
 
 		assert_eq!(memseq.block_size, block_size);
 		assert_eq!(memseq.building_time_ms, building_time_ms);
-		assert_eq!(*memseq.parent_block.read().await, *parent_block.read().await);
+		let memseq_block = memseq
+			.parent_block
+			.read()
+			.map_err(|e| anyhow::anyhow!("Failed to acquire core_mempool RwLock: {}", e))?;
+		let parent_block = parent_block
+			.read()
+			.map_err(|e| anyhow::anyhow!("Failed to acquire parent_block RwLock: {}", e))?;
+		assert_eq!(*memseq_block, *parent_block);
 
 		Ok(())
 	}

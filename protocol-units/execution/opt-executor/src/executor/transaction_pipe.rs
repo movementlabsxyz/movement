@@ -56,7 +56,9 @@ impl Executor {
 					let status = {
 						// add to the mempool
 						{
-							let mut core_mempool = self.core_mempool.write().unwrap();
+							let mut core_mempool = self.core_mempool.write().map_err(|e| {
+								anyhow::anyhow!("Failed to acquire core_mempool RwLock: {}", e)
+							})?;
 
 							debug!(
 								"Adding transaction to mempool: {:?} {:?}",
