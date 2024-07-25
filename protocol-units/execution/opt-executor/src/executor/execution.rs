@@ -98,7 +98,10 @@ impl Executor {
 
 		// commit mempool transactions in batches of size 16
 		for chunk in senders_and_sequence_numbers.chunks(16) {
-			let mut core_mempool = self.core_mempool.write().await;
+			let mut core_mempool = self
+				.core_mempool
+				.write()
+				.map_err(|e| anyhow::anyhow!("Failed to acquire core_mempool RwLock: {}", e))?;
 			for (sender, sequence_number) in chunk {
 				core_mempool.commit_transaction(sender, *sequence_number);
 			}
