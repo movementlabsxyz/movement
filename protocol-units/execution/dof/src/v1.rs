@@ -115,6 +115,13 @@ impl DynOptFinExecutor for Executor {
 	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
 		self.executor.rollover_genesis_now().await
 	}
+
+	fn decrement_transactions_in_flight(&self, count : u64) {
+		self.executor.transactions_in_flight.fetch_sub(
+			count,
+			std::sync::atomic::Ordering::Relaxed, // relaxed because this is just for load shedding, now need for strict ordering.
+		);
+	}
 }
 
 #[cfg(test)]
