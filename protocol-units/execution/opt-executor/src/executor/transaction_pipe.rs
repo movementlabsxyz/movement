@@ -1,4 +1,5 @@
 use super::Executor;
+use aptos_logger::info;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
@@ -93,6 +94,7 @@ impl Executor {
 					}
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
+					info!("GetTransactionByHash request: {:?}", hash);
 					let mempool_result = {
 						let mempool = self.core_mempool.read().await;
 						mempool.get_by_hash(hash)

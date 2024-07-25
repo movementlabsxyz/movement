@@ -158,7 +158,7 @@ impl Executor {
 	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(10);
+			futures_mpsc::channel::<MempoolClientRequest>(262144); // allow 2^18 transactions before apply backpressure given theoretical maximum TPS of 170k
 		let mut node_config = NodeConfig::default();
 
 		node_config.indexer.enabled = true;

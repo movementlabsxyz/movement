@@ -4,11 +4,11 @@ use tracing::{debug, info};
 use std::sync::Arc;
 use std::{fmt::Debug, path::PathBuf};
 use celestia_rpc::HeaderClient;
-
+use tokio::time::{self, Duration};
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
-use memseq::{Block, Sequencer, Transaction};
+use memseq::{Sequencer, Transaction};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
@@ -57,21 +57,33 @@ impl LightNodeV1 {
 		let memseq = self.memseq.clone();
 		// should help performance by dedicating a thread to this
 		let blocks = tokio::spawn(async move {
-			let start_time = std::time::Instant::now();
 			let mut blocks = Vec::new();
-			while start_time.elapsed().as_millis() < 100 {
-				let block = memseq.wait_for_next_block().await?;
-				match block {
-					Some(block) => {
-						info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-						blocks.push(block);
-					}
-					None => {
-						// no transactions to include
+			let timeout_duration = Duration::from_millis(1000);
+			let result = time::timeout(timeout_duration, async {
+				loop {
+					debug!("Waiting for next block");
+					let block = memseq.wait_for_next_block().await?;
+					match block {
+						Some(block) => {
+							info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+							blocks.push(block);
+						}
+						None => {
+							// no transactions to include
+						}
 					}
 				}
+				Ok::<(), anyhow::Error>(())
+			}).await;
+		
+			match result {
+				Ok(Ok(())) => Ok(blocks),
+				Ok(Err(e)) => Err(e),
+				Err(e) => {
+					debug!("Timeout case, returning collected blocks");
+					Ok(blocks)
+				}, // Timeout case, return the collected blocks
 			}
-			Ok::<Vec<Block>, anyhow::Error>(blocks)
 		}).await??;
 		
 		if blocks.is_empty() {

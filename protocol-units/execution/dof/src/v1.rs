@@ -54,17 +54,32 @@ impl DynOptFinExecutor for Executor {
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
 		loop {
 			// readers should be able to run concurrently
-			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
-				Ok(_) => {}
-				Err(e) => match e {
-					TransactionPipeError::TransactionNotAccepted(e) => {
-						// allow the transaction not to be accepted by the mempool
-						// because the client may have sent a bad sequence number
-						tracing::warn!("Transaction not accepted: {:?}", e);
-					}
-					_ => anyhow::bail!("Server error: {:?}", e),
-				},
-			}
+			let executor = self.executor.clone();
+			let transaction_channel = self.transaction_channel.clone();
+			tokio::spawn(async move {
+				let mut futures = Vec::new();
+				for _ in 0..2048 {
+					let executor = executor.clone();
+					let transaction_channel = transaction_channel.clone();
+					let future = async move {
+						match executor.tick_transaction_pipe(transaction_channel.clone()).await {
+							Ok(_) => {}
+							Err(e) => match e {
+								TransactionPipeError::TransactionNotAccepted(e) => {
+									// allow the transaction not to be accepted by the mempool
+									// because the client may have sent a bad sequence number
+									tracing::warn!("Transaction not accepted: {:?}", e);
+								}
+								_ => anyhow::bail!("Server error: {:?}", e),
+							},
+						}
+						Ok::<(), anyhow::Error>(())
+					};
+					futures.push(future);
+				}
+				futures::future::try_join_all(futures).await?;
+				Ok::<(), anyhow::Error>(())
+			}).await??;
 		}
 	}
 

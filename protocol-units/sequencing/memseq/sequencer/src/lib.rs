@@ -60,7 +60,6 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		let mut transactions = Vec::new();
 
 		let mut now = std::time::Instant::now();
-		let finish_by = now + std::time::Duration::from_millis(self.building_time_ms);
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -72,23 +71,23 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 
 				// make sure we are not over the building time
 				now = std::time::Instant::now();
-				if now > finish_by {
+				if now.elapsed().as_millis() as u64 > self.building_time_ms {
 					break;
 				}
 
 				if let Some(transaction) = self.mempool.pop_transaction().await? {
 					transactions.push(transaction);
 				} else {
+					tracing::debug!("No more transactions in the mempool");
 					break;
 				}
 
 			}
 
 			// sleep to yield to other tasks and wait for more transactions
-			tokio::task::yield_now().await;
+			tokio::time::sleep(std::time::Duration::from_millis(20)).await;
 
-			now = std::time::Instant::now();
-			if now > finish_by {
+			if now.elapsed().as_millis() as u64 > self.building_time_ms {
 				break;
 			}
 		}
