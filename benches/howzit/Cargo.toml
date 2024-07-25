@@ -30,6 +30,7 @@ futures = { workspace = true }
 url = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+chrono = { workspace = true }
 
 
 [lints]

@@ -3,6 +3,7 @@ use howzit::Howzit;
 use aptos_sdk::rest_client::{AptosBaseUrl, Client};
 use std::{env, path::PathBuf};
 use anyhow::Context;   
+use std::io::Write;
 
 #[tokio::main]
 pub async fn main() -> Result<(), anyhow::Error> {
@@ -20,6 +21,7 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let token = std::env::var("AUTH_TOKEN").context("AUTH_TOKEN not set")?;
     let rest_url = std::env::var("REST_URL").unwrap_or("https://aptos.devnet.suzuka.movementlabs.xyz".to_string());
     let faucet_url = std::env::var("FAUCET_URL").unwrap_or("https://faucet.devnet.suzuka.movementlabs.xyz".to_string());
+    let bench_output_file = std::env::var("BENCH_OUTPUT_FILE").unwrap_or("howzit_bench_output.dat".to_string());
 
     let rest_client_builder = Client::builder(
         AptosBaseUrl::Custom(rest_url.parse()?)
@@ -38,49 +40,45 @@ pub async fn main() -> Result<(), anyhow::Error> {
 
     howzit.build_and_publish().await?;
 
-    let (transaction_result_sender, mut transaction_result_receiver) = tokio::sync::mpsc::unbounded_channel::<(u64, u64)>();
-
     // fund the accounts in an orderly manner
     let n = 32;
+    let l = 3000;
+    let k = 64;
 
-    let k = 128;
-    let mut futures = Vec::with_capacity(n);
-    let start_time = std::time::Instant::now();
-    for _ in 0..n {
-        let howzit = howzit.clone();
-        let sender = transaction_result_sender.clone();
-        futures.push(tokio::spawn(async move {
-            let (successes, failures) = howzit.call_transfers(k).await?;
-            sender.send((successes, failures))?;
-            Ok::<(), anyhow::Error>(())
-        }));
+    for epoch in 0..l {
+
+        let mut futures = Vec::with_capacity(n);
+        // run the load
+        for _ in 0..n {
+            let howzit = howzit.clone();
+            futures.push(tokio::spawn(async move {
+                howzit.call_transfers(k).await
+            }));
+        }
+
+        let results = futures::future::try_join_all(futures).await?;
+
+        // append each result to a file
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(bench_output_file.clone())?;
+        for result in results {
+            match result {
+                Ok(result) => {
+                    for transaction_result in result {
+                        file.write_all(format!("{:?},{:?},{:?},{:?}\n", epoch, transaction_result.0, transaction_result.1, transaction_result.2).as_bytes())?;
+                    }
+                },
+                Err(e) => {
+                    tracing::error!("Error: {:?}", e);
+                    continue;
+                }
+            }
+        }
+
     }
-    drop(transaction_result_sender);
 
-    let counter_task = tokio::spawn(async move {
-        let mut successes = 0;
-        let mut failures = 0;
-        while let Some((run_successes, run_failures)) = transaction_result_receiver.recv().await {
-            successes += run_successes;
-            failures += run_failures;
-       }
-       (successes, failures)
-    });
-
-    futures::future::try_join_all(futures).await?;
-    let end_time = std::time::Instant::now();
-    let duration = end_time - start_time;
-
-    println!("Duration: {:?}", duration);
-    let (success, failures) = counter_task.await?;
-
-    // print successes per second
-    let success_per_second = success as f64 / duration.as_secs_f64();
-    println!("Successes per second: {}", success_per_second);
-
-    // print failures per second
-    let failures_per_second = failures as f64 / duration.as_secs_f64();
-    println!("Failures per second: {}", failures_per_second);
     
     Ok(())
 }
