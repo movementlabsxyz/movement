@@ -7,7 +7,7 @@ use celestia_rpc::HeaderClient;
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
-use memseq::{Sequencer, Transaction};
+use memseq::{Block, Sequencer, Transaction};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
@@ -55,17 +55,20 @@ impl LightNodeV1 {
 
 		let memseq = self.memseq.clone();
 		// should help performance by dedicating a thread to this
-		let mut blocks = Vec::new();
-		let block = memseq.wait_for_next_block().await?;
-		match block {
-			Some(block) => {
-				info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-				blocks.push(block);
+		let blocks = tokio::spawn(async move {
+			let mut blocks = Vec::new();
+			let block = memseq.wait_for_next_block().await?;
+			match block {
+				Some(block) => {
+					info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+					blocks.push(block);
+				}
+				None => {
+					// no transactions to include
+				}
 			}
-			None => {
-				// no transactions to include
-			}
-		}
+			Ok::<Vec<Block>, anyhow::Error>(blocks)
+		}).await??;
 		
 		if blocks.is_empty() {
 			return Ok(());
