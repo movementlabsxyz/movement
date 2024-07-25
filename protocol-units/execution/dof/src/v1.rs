@@ -4,10 +4,13 @@ use maptos_fin_view::FinalityView;
 use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 use maptos_opt_executor::Executor as OptExecutor;
 use movement_types::BlockCommitment;
-
 use async_channel::Sender;
 use async_trait::async_trait;
 use tracing::debug;
+use tokio::time::interval;
+use tokio_stream::wrappers::IntervalStream;
+use tokio::time::Duration;
+use tokio_stream::StreamExt;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -37,6 +40,32 @@ impl Executor {
 		)?;
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
+
+	pub async fn run_transaction_pipe(&self) -> Result<(), anyhow::Error> {
+		loop {
+			// readers should be able to run concurrently
+			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
+				Ok(_) => {}
+				Err(e) => match e {
+					TransactionPipeError::TransactionNotAccepted(e) => {
+						// allow the transaction not to be accepted by the mempool
+						// because the client may have sent a bad sequence number
+						tracing::warn!("Transaction not accepted: {:?}", e);
+					}
+					_ => anyhow::bail!("Server error: {:?}", e),
+				},
+			}
+		}
+	}
+
+	pub async fn run_gc_mempool(&self) -> Result<(), anyhow::Error> {
+		let mut interval = IntervalStream::new(interval(Duration::from_millis(60_000)));
+		while let Some(_interval) = interval.next().await {
+			self.executor.gc_mempool().await?;
+		}
+		Ok(())
+	}
+
 }
 
 #[async_trait]
@@ -52,20 +81,11 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
-		loop {
-			// readers should be able to run concurrently
-			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
-				Ok(_) => {}
-				Err(e) => match e {
-					TransactionPipeError::TransactionNotAccepted(e) => {
-						// allow the transaction not to be accepted by the mempool
-						// because the client may have sent a bad sequence number
-						tracing::warn!("Transaction not accepted: {:?}", e);
-					}
-					_ => anyhow::bail!("Server error: {:?}", e),
-				},
-			}
-		}
+		tokio::try_join!(
+			self.run_transaction_pipe(),
+			self.run_gc_mempool(),
+		)?;
+		Ok(())
 	}
 
 	async fn execute_block_opt(

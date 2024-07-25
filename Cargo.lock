@@ -7559,6 +7559,7 @@ dependencies = [
  "movement-types",
  "rand 0.7.3",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 
