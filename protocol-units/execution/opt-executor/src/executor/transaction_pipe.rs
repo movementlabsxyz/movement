@@ -24,6 +24,13 @@ impl From<anyhow::Error> for TransactionPipeError {
 }
 
 impl Executor {
+
+	pub async fn gc_mempool(&self) -> Result<(), TransactionPipeError> {
+		let mut core_mempool = self.core_mempool.write().await;
+		core_mempool.gc();
+		Ok(())
+	}
+
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub async fn tick_transaction_pipe(

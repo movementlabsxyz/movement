@@ -29,6 +29,7 @@ maptos-fin-view = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
 futures = { workspace = true }
+tokio-stream = { workspace = true }
 
 [dev-dependencies]
 chrono = { workspace = true }
