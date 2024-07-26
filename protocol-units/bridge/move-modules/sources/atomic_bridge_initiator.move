@@ -76,7 +76,6 @@ module atomic_bridge::atomic_bridge_initiator {
         let store = borrow_global_mut<BridgeTransferStore>(addr);
         if (amount > 0) {
             // todo: transfer amount of moveth from signer to contract address
-            // todo: burn said transferred moveth
         };
         store.nonce = store.nonce + 1;
 
@@ -125,6 +124,8 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(bridge_transfer.state == INITIALIZED, 1);
         assert!(aptos_hash::keccak256(pre_image) == bridge_transfer.hash_lock, 2);
         assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, 3);
+
+        // todo: burn moveth transferred in initiate_bridge_transfer
 
         bridge_transfer.state = COMPLETED;
 
