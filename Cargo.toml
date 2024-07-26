@@ -131,8 +131,8 @@ aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/apto
 aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "b2f58eaeda1d3929a7b381afca78408731b71d77" }
 
 # indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "efefd860fdb2f100f3314fc4aa05185e5082d3c7", subdir = "rust" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "efefd860fdb2f100f3314fc4aa05185e5082d3c7", subdir = "rust" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "da0ccef0f0e0e1be4b39073edb3277dfd6cb7dc1", subdir = "rust" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "da0ccef0f0e0e1be4b39073edb3277dfd6cb7dc1", subdir = "rust" }
 
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 ethereum-types = "0.14.1"
