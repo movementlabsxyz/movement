@@ -1,5 +1,7 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
+use aptos_config::config::NodeConfig;
+use aptos_mempool::core_mempool::CoreMempool;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 use maptos_opt_executor::Executor as OptExecutor;
@@ -52,9 +54,18 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+		let mut node_config = NodeConfig::default();
+		node_config.indexer_table_info.enabled = true;
+		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.set_data_dir(node_config.storage.dir.clone());
+		let mut core_mempool = CoreMempool::new(&node_config);
 		loop {
 			// readers should be able to run concurrently
-			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
+			match self
+				.executor
+				.tick_transaction_pipe(&mut core_mempool, self.transaction_channel.clone())
+				.await
+			{
 				Ok(_) => {}
 				Err(e) => match e {
 					TransactionPipeError::TransactionNotAccepted(e) => {

@@ -28,7 +28,7 @@ pub struct Executor {
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
 	/// The core mempool (used for the api to query the mempool).
-	pub core_mempool: Arc<RwLock<CoreMempool>>,
+	//	pub core_mempool: CoreMempool,
 	/// The sender for the mempool client.
 	pub mempool_client_sender: MempoolClientSender,
 	/// The receiver for the mempool client.
@@ -56,13 +56,13 @@ impl Executor {
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
 		));
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
+
 		let reader = reader_writer.reader.clone();
 		Ok(Self {
-			block_executor : Arc::new(block_executor),
+			block_executor: Arc::new(block_executor),
 			db: reader_writer,
 			signer,
-			core_mempool,
+			//			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			node_config: node_config.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),

@@ -2,14 +2,15 @@ use super::Executor;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
-use aptos_vm_validator::vm_validator::TransactionValidation;
-use aptos_vm_validator::vm_validator::VMValidator;
+//use aptos_vm_validator::vm_validator::TransactionValidation;
+//use aptos_vm_validator::vm_validator::VMValidator;
 
+use aptos_mempool::core_mempool::CoreMempool;
 use futures::StreamExt;
 use thiserror::Error;
 use tracing::debug;
 
-use std::sync::Arc;
+//use std::sync::Arc;
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
@@ -32,6 +33,7 @@ impl Executor {
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub async fn tick_transaction_pipe(
 		&self,
+		core_mempool: &mut CoreMempool,
 		transaction_channel: async_channel::Sender<SignedTransaction>,
 	) -> Result<(), TransactionPipeError> {
 		// Drop the receiver RwLock as soon as possible.
@@ -56,8 +58,6 @@ impl Executor {
 					let status = {
 						// add to the mempool
 						{
-							let mut core_mempool = self.core_mempool.write().await;
-
 							debug!(
 								"Adding transaction to mempool: {:?} {:?}",
 								transaction,
@@ -98,10 +98,7 @@ impl Executor {
 					}
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-					let mempool_result = {
-						let mempool = self.core_mempool.read().await;
-						mempool.get_by_hash(hash)
-					};
+					let mempool_result = { core_mempool.get_by_hash(hash) };
 					if sender.send(mempool_result).is_err() {
 						debug!("get_transaction_by_hash request has been canceled");
 					}

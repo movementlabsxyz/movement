@@ -7545,8 +7545,10 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-api",
+ "aptos-config",
  "aptos-crypto",
  "aptos-db",
+ "aptos-mempool",
  "aptos-proptest-helpers",
  "aptos-sdk",
  "aptos-types",
