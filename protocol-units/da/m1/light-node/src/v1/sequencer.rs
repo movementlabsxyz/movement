@@ -58,7 +58,8 @@ impl LightNodeV1 {
 		let block = self.memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				let span = info_span!("submit_block", block_id = %block.id());
+				let span =
+					info_span!(target: "movement_timing", "submit_block", block_id = %block.id());
 				self.submit_proposed_block(block).instrument(span).await?;
 			}
 			None => {

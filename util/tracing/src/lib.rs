@@ -1,5 +1,5 @@
 use tracing_appender::non_blocking::WorkerGuard as AppenderGuard;
-use tracing_subscriber::filter::{EnvFilter, LevelFilter};
+use tracing_subscriber::filter::{self, EnvFilter, LevelFilter};
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
 
@@ -56,7 +56,8 @@ pub fn init_tracing_subscriber(config: Config) -> WorkerGuard {
 						.with_writer(writer)
 						.json()
 						.with_span_events(FmtSpan::CLOSE)
-						.with_filter(env_filter);
+						.with_filter(env_filter)
+						.with_filter(filter::filter_fn(|meta| meta.target() == "movement_timing"));
 					(Some(layer), Some(guard))
 				}
 				Err(e) => {

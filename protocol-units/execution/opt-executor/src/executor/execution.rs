@@ -101,6 +101,7 @@ impl Executor {
 			let mut core_mempool = self.core_mempool.write().await;
 			for (sender, sequence_number) in chunk {
 				let _span = debug_span!(
+					target: "movement_timing",
 					"commit_transaction",
 					%sender,
 					sequence_number = *sequence_number,

@@ -43,6 +43,7 @@ impl Executor {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					let span = info_span!(
+						target: "movement_timing",
 						"submit_transaction",
 						tx_hash = %transaction.committed_hash(),
 						sender = %transaction.sender(),
