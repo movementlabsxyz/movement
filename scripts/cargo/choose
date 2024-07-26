@@ -3,5 +3,3 @@ set -e
 
 # change symbolic link to be Cargo.$1.toml
 ln -sf Cargo.$1.toml Cargo.toml
-
-

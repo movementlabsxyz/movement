@@ -1,0 +1,25 @@
+[package]
+name = "suzuka-indexer-processor"
+description = "Indexer GRPC processor in Rust."
+version = "1.0.0"
+
+# Workspace inherited keys
+authors = ["Aptos Labs <opensource@aptoslabs.com>"]
+edition = "2021"
+homepage = "https://aptoslabs.com"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/aptos-labs/aptos-core"
+rust-version = { workspace = true }
+
+[dependencies]
+processor = { workspace = true }
+server-framework = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+num_cpus = { workspace = true }
+dot-movement = { workspace = true }
+suzuka-config = { workspace = true }
+ahash = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
