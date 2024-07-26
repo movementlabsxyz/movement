@@ -114,7 +114,8 @@ module atomic_bridge::atomic_bridge_initiator {
     public fun complete_bridge_transfer(
         account: &signer,
         bridge_transfer_id: vector<u8>,
-        pre_image: vector<u8>
+        pre_image: vector<u8>,
+        master_minter: &signer
     ) acquires BridgeTransferStore {
         let addr = signer::address_of(account);
         let store = borrow_global_mut<BridgeTransferStore>(addr);
@@ -125,7 +126,9 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(aptos_hash::keccak256(pre_image) == bridge_transfer.hash_lock, 2);
         assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, 3);
 
-        // todo: burn moveth transferred in initiate_bridge_transfer
+        moveth::add_minter(master_minter, signer::address_of(account));
+
+        moveth::burn(account, @atomic_bridge, bridge_transfer.amount); 
 
         bridge_transfer.state = COMPLETED;
 
@@ -135,7 +138,11 @@ module atomic_bridge::atomic_bridge_initiator {
         });
     }
 
-    public fun refund_bridge_transfer(account: &signer, bridge_transfer_id: vector<u8>) acquires BridgeTransferStore {
+    public fun refund_bridge_transfer(
+        account: &signer, 
+        bridge_transfer_id: vector<u8>,
+        master_minter: &signer
+    ) acquires BridgeTransferStore {
         let addr = signer::address_of(account);
         let store = borrow_global_mut<BridgeTransferStore>(addr);
         let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
@@ -144,7 +151,9 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(bridge_transfer.state == INITIALIZED, 1);
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, 2);
 
-        // todo: mint and transfer the correct amount of MovETH back to initiator
+        moveth::add_minter(master_minter, signer::address_of(account));
+
+        moveth::mint(account, bridge_transfer.originator, bridge_transfer.amount);
 
         bridge_transfer.state = REFUNDED;
 
@@ -176,7 +185,7 @@ module atomic_bridge::atomic_bridge_initiator {
         i 
     }
 
-    #[test(sender=@0xface)]
+    #[test(sender = 0xdaff)]
     public fun test_initialize (
         sender: signer
     ) acquires BridgeTransferStore{
@@ -189,7 +198,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(store.nonce == 0, 101);
     }
 
-    #[test(sender=@0xface)]
+    #[test(sender = 0xdaff)]
     public fun test_initiate_bridge_transfer(
         sender: signer
     ) acquires BridgeTransferStore{
@@ -221,7 +230,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == INITIALIZED, 205);
     }
 
-    #[test(sender=@0xface)]
+    #[test(sender = @0xdaff)]
     public fun test_complete_bridge_transfer(
         sender: signer    
     ) acquires BridgeTransferStore{
@@ -255,7 +264,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == COMPLETED, 300);
     }
 
-    #[test(sender = @0xface)]
+    #[test(sender = 0xdaff)]
     public fun test_refund_bridge_transfer(
         sender: signer
     ) acquires BridgeTransferStore{
