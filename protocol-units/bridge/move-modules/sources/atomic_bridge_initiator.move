@@ -185,10 +185,15 @@ module atomic_bridge::atomic_bridge_initiator {
         i 
     }
 
-    #[test(sender = 0xdaff)]
+    #[test(sender = @0xdaff)]
     public fun test_initialize (
         sender: signer
     ) acquires BridgeTransferStore{
+        let addr = signer::address_of(&sender);
+        
+        // Ensure Account resource exists for the sender
+        account::create_account_if_does_not_exist(addr);
+
         init_module(&sender);
 
         let addr = signer::address_of(&sender);
@@ -198,10 +203,14 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(store.nonce == 0, 101);
     }
 
-    #[test(sender = 0xdaff)]
+    #[test(sender = @0xdaff)]
     public fun test_initiate_bridge_transfer(
         sender: signer
     ) acquires BridgeTransferStore{
+        let addr = signer::address_of(&sender);
+        // Ensure Account resource exists for the sender
+        account::create_account_if_does_not_exist(addr);
+
         init_module(&sender);
 
         let recipient = b"recipient_address";
@@ -230,10 +239,14 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == INITIALIZED, 205);
     }
 
-    #[test(sender = @0xdaff)]
+    #[test(sender = @0xdaff, master_minter = @0xbab)]
     public fun test_complete_bridge_transfer(
-        sender: signer    
+        sender: signer,
+        master_minter: signer    
     ) acquires BridgeTransferStore{
+        let addr = signer::address_of(&sender);
+        // Ensure Account resource exists for the sender
+        account::create_account_if_does_not_exist(addr);
         init_module(&sender);
 
         let recipient = b"recipient_address";
@@ -253,7 +266,8 @@ module atomic_bridge::atomic_bridge_initiator {
         complete_bridge_transfer(
             &sender,
             bridge_transfer_id,
-            pre_image
+            pre_image,
+            &master_minter
         );
 
         let addr = signer::address_of(&sender);
@@ -264,10 +278,14 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == COMPLETED, 300);
     }
 
-    #[test(sender = 0xdaff)]
+    #[test(sender = @0xdaff, master_minter = @0xbab)]
     public fun test_refund_bridge_transfer(
-        sender: signer
+        sender: signer,
+        master_minter: signer
     ) acquires BridgeTransferStore{
+        let addr = signer::address_of(&sender);
+        // Ensure Account resource exists for the sender
+        account::create_account_if_does_not_exist(addr);
         init_module(&sender);
 
         let recipient = b"recipient_address";
@@ -288,7 +306,8 @@ module atomic_bridge::atomic_bridge_initiator {
 
         refund_bridge_transfer(
             &sender,
-            bridge_transfer_id
+            bridge_transfer_id,
+            &master_minter
         );
 
         let addr = signer::address_of(&sender);
