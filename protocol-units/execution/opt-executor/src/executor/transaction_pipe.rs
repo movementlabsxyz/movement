@@ -1,14 +1,14 @@
+use std::collections::BTreeMap;
+
 use super::Executor;
+use aptos_logger::{info, warn};
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
-//use aptos_vm_validator::vm_validator::TransactionValidation;
-//use aptos_vm_validator::vm_validator::VMValidator;
-
-use aptos_mempool::core_mempool::CoreMempool;
 use futures::StreamExt;
 use thiserror::Error;
 use tracing::debug;
+use aptos_mempool::core_mempool::CoreMempool;
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
@@ -45,63 +45,79 @@ impl Executor {
 		if let Some(request) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-					// Pre-execute Tx to validate its content.
-					// Re-create the validator for each Tx because it uses a frozen version of the ledger.
-					// let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
-					// let tx_result = vm_validator.validate_transaction(transaction.clone())?;
 
-					// let status = if let Some(vm_status) = tx_result.status() {
-					// 	// If the verification failed, return the error status.
-					// 	let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-					// 	(ms, Some(vm_status))
-					// } else {
+					// Shed load.
+					// Low-ball the load shedding for now with 4096 transactions allowed in flight.
+					// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
+					let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
+					if in_flight > 2^12 {
+						info!("Transaction ins flight: {:?}, shedding load", in_flight);
+						let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
+						callback.send(Ok((status.clone(), None))).map_err(
+							|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
+						)?;
+						return Ok(())
+					}
+
 					let status = {
-						// add to the mempool
-						{
-							debug!(
-								"Adding transaction to mempool: {:?} {:?}",
-								transaction,
-								transaction.sequence_number()
-							);
-							let status = core_mempool.add_txn(
-								transaction.clone(),
-								0,
-								transaction.sequence_number(),
-								TimelineState::NonQualified,
-								true,
-							);
 
-							match status.code {
-								MempoolStatusCode::Accepted => {
-									debug!("Transaction accepted: {:?}", transaction);
-								}
-								_ => {
-									debug!("Transaction not accepted: {:?}", status);
-									Err(TransactionPipeError::TransactionNotAccepted(status))?;
-								}
-							}
-						}
-
-						// send along to the receiver
-						transaction_channel
-							.send(transaction)
-							.await
-							.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
-
-						// report status
-						let ms = MempoolStatus::new(MempoolStatusCode::Accepted);
-						(ms, None)
+						debug!(
+							"Adding transaction to mempool: {:?} {:?}",
+							transaction,
+							transaction.sequence_number()
+						);
+						core_mempool.add_txn(
+							transaction.clone(),
+							0,
+							transaction.sequence_number(),
+							TimelineState::NonQualified,
+							true,
+						)
 					};
 
-					if callback.send(Ok(status)).is_err() {
-						debug!("submit_transaction request has been canceled");
+					// increment 
+					match &status.code {
+						MempoolStatusCode::Accepted => {
+							// Note the `get_batch` API does not actually remove the transactions from the mempool.
+							// We only add batch to be compatible with the existing API.
+
+							/*let batch = core_mempool.get_batch(
+								512,
+								1024 * 1024 * 512,
+								true,
+								BTreeMap::new()
+							);
+
+							for transaction in batch {
+								transaction_channel
+								.send(transaction)
+								.await
+								.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
+								self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+							}*/
+
+							// Send the transaction to the transaction channel.
+							transaction_channel
+								.send(transaction)
+								.await
+								.map_err(|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e)))?;
+
+						},
+						_ => {
+							warn!("Transaction not accepted: {:?}", status);
+						}
 					}
+
+					callback.send(Ok((status.clone(), None))).map_err(
+						|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
+					)?;
+
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
-					let mempool_result = { core_mempool.get_by_hash(hash) };
-					if sender.send(mempool_result).is_err() {
-						debug!("get_transaction_by_hash request has been canceled");
-					}
+					let mempool_result = core_mempool.get_by_hash(hash);
+					sender.send(mempool_result).map_err(
+						|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
+					)?;
 				}
 			}
 		}

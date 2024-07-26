@@ -123,10 +123,13 @@ where
 			}
 		}
 
-		if transactions.len() > 0 {
+		let length = transactions.len();
+		if length > 0 {
 			let mut light_node_client = self.light_node_client.clone();
 			light_node_client.batch_write(BatchWriteRequest { blobs: transactions }).await?;
 			debug!("Wrote transactions to DA");
+			// We now consider the transactions no longer in mempool flight.
+			self.executor.decrement_transactions_in_flight(length as u64);
 		}
 
 		Ok(())

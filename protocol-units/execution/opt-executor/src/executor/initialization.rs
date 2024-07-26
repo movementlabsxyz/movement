@@ -30,7 +30,7 @@ use tokio::sync::RwLock;
 #[cfg(test)]
 use tempfile::TempDir;
 
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::{atomic::AtomicU64, Arc}};
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
@@ -151,6 +151,7 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_port
 			),
 			maptos_config,
+			transactions_in_flight: Arc::new(AtomicU64::new(0)),
 		})
 	}
 

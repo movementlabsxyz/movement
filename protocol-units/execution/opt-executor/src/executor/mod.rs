@@ -13,7 +13,7 @@ use aptos_storage_interface::DbReaderWriter;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
 use futures::channel::mpsc as futures_mpsc;
-use std::sync::Arc;
+use std::sync::{atomic::AtomicU64, Arc};
 use tokio::sync::RwLock;
 pub mod indexer;
 
@@ -41,6 +41,8 @@ pub struct Executor {
 	pub listen_url: String,
 	/// Maptos config
 	pub maptos_config: maptos_execution_util::config::Config,
+	/// Transactions in flight counter.
+	pub transactions_in_flight: Arc<AtomicU64>,
 }
 
 impl Executor {
@@ -79,6 +81,7 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_port
 			),
 			maptos_config,
+			transactions_in_flight: Arc::new(AtomicU64::new(0)),
 		})
 	}
 }
