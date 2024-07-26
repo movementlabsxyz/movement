@@ -3,19 +3,19 @@ use crate::send_eth_transaction::SendTransactionErrorRule;
 use crate::send_eth_transaction::UnderPriced;
 use crate::send_eth_transaction::VerifyRule;
 use crate::{CommitmentStream, McrSettlementClientOperations};
-use alloy::pubsub::PubSubFrontend;
-use alloy_network::Ethereum;
-use alloy_network::EthereumWallet;
-use alloy_primitives::Address;
-use alloy_primitives::U256;
 use alloy::providers::fillers::ChainIdFiller;
 use alloy::providers::fillers::FillProvider;
 use alloy::providers::fillers::GasFiller;
 use alloy::providers::fillers::JoinFill;
 use alloy::providers::fillers::NonceFiller;
 use alloy::providers::fillers::WalletFiller;
-use alloy::providers::{ProviderBuilder, Provider, RootProvider};
+use alloy::providers::{Provider, ProviderBuilder, RootProvider};
+use alloy::pubsub::PubSubFrontend;
 use alloy::signers::local::PrivateKeySigner;
+use alloy_network::Ethereum;
+use alloy_network::EthereumWallet;
+use alloy_primitives::Address;
+use alloy_primitives::U256;
 use alloy_sol_types::sol;
 use alloy_transport::BoxTransport;
 use alloy_transport_ws::WsConnect;
@@ -56,7 +56,6 @@ sol!(
 	"abis/MCR.json"
 );
 
-
 // Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
 sol!(
 	#[allow(missing_docs)]
@@ -64,7 +63,6 @@ sol!(
 	MovementStaking,
 	"abis/MovementStaking.json"
 );
-
 
 // Note: we prefer using the ABI because the [`sol!`](alloy_sol_types::sol) macro, when used with smart contract code directly, will not handle inheritance.
 sol!(
@@ -111,9 +109,8 @@ impl
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(signer))
 			.on_builtin(&rpc_url)
-			.await.context(
-				"Failed to create the RPC provider for the MCR settlement client",
-			)?;
+			.await
+			.context("Failed to create the RPC provider for the MCR settlement client")?;
 
 		let mut client = Client::build_with_provider(
 			rpc_provider,
@@ -250,19 +247,19 @@ where
 		height: u64,
 	) -> Result<Option<BlockCommitment>, anyhow::Error> {
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
-		let MCR::getAcceptedCommitmentAtBlockHeightReturn { _0: commitment } = contract
-			.getAcceptedCommitmentAtBlockHeight(U256::from(height))
-			.call()
-			.await?;
-		
-		let return_height: u64 = commitment.height.try_into().context(
-			"Failed to convert the commitment height from U256 to u64",
-		)?;
+		let MCR::getAcceptedCommitmentAtBlockHeightReturn { _0: commitment } =
+			contract.getAcceptedCommitmentAtBlockHeight(U256::from(height)).call().await?;
+
+		let return_height: u64 = commitment
+			.height
+			.try_into()
+			.context("Failed to convert the commitment height from U256 to u64")?;
 		// Commitment with height 0 mean not found
 		Ok((return_height != 0).then_some(BlockCommitment {
-			height: commitment.height.try_into().context(
-				"Failed to convert the commitment height from U256 to u64",
-			)?,
+			height: commitment
+				.height
+				.try_into()
+				.context("Failed to convert the commitment height from U256 to u64")?,
 			block_id: Id(commitment.blockId.into()),
 			commitment: Commitment(commitment.commitment.into()),
 		}))
@@ -272,9 +269,9 @@ where
 		let contract = MCR::new(self.contract_address, &self.ws_provider);
 		let MCR::getMaxTolerableBlockHeightReturn { _0: block_height } =
 			contract.getMaxTolerableBlockHeight().call().await?;
-		Ok(block_height.try_into().context(
-			"Failed to convert the max tolerable block height from U256 to u64",
-		)?)
+		Ok(block_height
+			.try_into()
+			.context("Failed to convert the max tolerable block height from U256 to u64")?)
 	}
 }
 

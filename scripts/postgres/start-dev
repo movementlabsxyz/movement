@@ -5,7 +5,7 @@ set -e
 rm -rf ./.data
 
 # Initialize the database cluster
-initdb -D ./.data
+initdb -D ./.data --no-locale
 
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile start

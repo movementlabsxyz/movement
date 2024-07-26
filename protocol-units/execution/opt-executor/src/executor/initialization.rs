@@ -132,7 +132,7 @@ impl Executor {
 		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
 		Ok(Self {
-			block_executor: Arc::new(RwLock::new(BlockExecutor::new(db.clone()))),
+			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			db,
 			signer,
 			core_mempool,

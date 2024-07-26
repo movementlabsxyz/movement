@@ -2,9 +2,11 @@ use anyhow::Error;
 use mempool_util::{MempoolBlockOperations, MempoolTransaction, MempoolTransactionOperations};
 use movement_types::{Block, Id};
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
-use serde_json;
-use std::sync::Arc;
+use bcs;
 use tokio::sync::RwLock;
+
+use std::fmt::Write;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct RocksdbMempool {
@@ -35,18 +37,16 @@ impl RocksdbMempool {
 	}
 
 	pub fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
-		// pad to 32 characters for slot_seconds
-		let slot_seconds_str = format!("{:032}", transaction.timestamp);
-
-		// pad to 32 characters for sequence number
-		let sequence_number_str = format!("{:032}", transaction.transaction.sequence_number);
-
-		// Assuming transaction.transaction.id() returns a hex string of length 32
-		let transaction_id_hex = transaction.transaction.id(); // This should be a String of hex characters
-
-		// Concatenate the two parts to form a 80-character hex string key
-		let key = format!("{}:{}:{}", slot_seconds_str, sequence_number_str, transaction_id_hex);
-
+		// Pre-allocate a string with the required capacity
+		let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32);
+		// Write key components. The numbers are zero-padded to 32 characters.
+		key.write_fmt(format_args!(
+			"{:032}:{:032}:{}",
+			transaction.timestamp,
+			transaction.transaction.sequence_number,
+			transaction.transaction.id(),
+		))
+		.unwrap();
 		key
 	}
 
@@ -79,7 +79,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	}
 
 	async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), Error> {
-		let serialized_tx = serde_json::to_vec(&tx)?;
+		let serialized_tx = bcs::to_bytes(&tx)?;
 		let db = self.db.write().await;
 		let mempool_transactions_cf_handle = db
 			.cf_handle("mempool_transactions")
@@ -130,7 +130,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			.ok_or_else(|| Error::msg("CF handle not found"))?;
 		match db.get_cf(&cf_handle, &key)? {
 			Some(serialized_tx) => {
-				let tx: MempoolTransaction = serde_json::from_slice(&serialized_tx)?;
+				let tx: MempoolTransaction = bcs::from_bytes(&serialized_tx)?;
 				Ok(Some(tx))
 			}
 			None => Ok(None),
@@ -148,7 +148,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			None => return Ok(None), // No transactions to pop
 			Some(res) => {
 				let (key, value) = res?;
-				let tx: MempoolTransaction = serde_json::from_slice(&value)?;
+				let tx: MempoolTransaction = bcs::from_bytes(&value)?;
 				db.delete_cf(&cf_handle, &key)?;
 
 				// Optionally, remove from the lookup table as well
@@ -171,7 +171,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 	}
 
 	async fn add_block(&self, block: Block) -> Result<(), Error> {
-		let serialized_block = serde_json::to_vec(&block)?;
+		let serialized_block = bcs::to_bytes(&block)?;
 		let db = self.db.write().await;
 		let cf_handle = db.cf_handle("blocks").ok_or_else(|| Error::msg("CF handle not found"))?;
 		db.put_cf(&cf_handle, block.id().to_vec(), &serialized_block)?;
@@ -191,7 +191,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		let serialized_block = db.get_cf(&cf_handle, block_id.to_vec())?;
 		match serialized_block {
 			Some(serialized_block) => {
-				let block: Block = serde_json::from_slice(&serialized_block)?;
+				let block: Block = bcs::from_bytes(&serialized_block)?;
 				Ok(Some(block))
 			}
 			None => Ok(None),
@@ -316,5 +316,4 @@ pub mod test {
 
 		Ok(())
 	}
-
 }
