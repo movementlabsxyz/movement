@@ -6,6 +6,7 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::signer;
     use std::vector;
     use std::bcs;
+    use moveth::moveth;
 
     /// Constants to represent the state of a bridge transfer
     const INITIALIZED: u8 = 0;
@@ -66,13 +67,17 @@ module atomic_bridge::atomic_bridge_initiator {
 
     public fun initiate_bridge_transfer(
         account: &signer,
-        recipient: vector<u8>,
+        recipient: vector<u8>, // eth address
         hash_lock: vector<u8>,
         time_lock: u64,
         amount: u64
     ): vector<u8> acquires BridgeTransferStore {
         let addr = signer::address_of(account);
         let store = borrow_global_mut<BridgeTransferStore>(addr);
+        if (amount > 0) {
+            // todo: transfer amount of moveth from signer to contract address
+            // todo: burn said transferred moveth
+        };
         store.nonce = store.nonce + 1;
 
         // Create a single byte vector by concatenating all components
@@ -137,6 +142,8 @@ module atomic_bridge::atomic_bridge_initiator {
 
         assert!(bridge_transfer.state == INITIALIZED, 1);
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, 2);
+
+        // todo: mint and transfer the correct amount of MovETH back to initiator
 
         bridge_transfer.state = REFUNDED;
 
