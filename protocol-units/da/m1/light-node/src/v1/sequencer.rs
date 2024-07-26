@@ -78,7 +78,6 @@ impl LightNodeV1 {
 		loop {
 			// build the next block from the blobs
 			self.tick_block_proposer().await?;
-			tokio::task::yield_now().await;
 		}
 
 		Ok(())
