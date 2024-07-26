@@ -96,12 +96,12 @@ impl Executor {
 		}).await??;
 
 		// commit mempool transactions in batches of size 16
-		for chunk in senders_and_sequence_numbers.chunks(16) {
+		/*for chunk in senders_and_sequence_numbers.chunks(16) {
 			let mut core_mempool = self.core_mempool.write().await;
 			for (sender, sequence_number) in chunk {
 				core_mempool.commit_transaction(sender, *sequence_number);
 			}
-		}
+		}*/
 
 		let proof = {
 			let reader = self.db.reader.clone();
