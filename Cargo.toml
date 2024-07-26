@@ -15,10 +15,15 @@ members = [
     "protocol-units/settlement/mcr/manager",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/movement-rest",
-    "util/*",
+    "util/buildtime",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
     "util/commander",
+    "util/dot-movement",
+    "util/flocks",
+    "util/godfig",
+    "util/movement-types",
+    "util/tracing",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
@@ -81,6 +86,7 @@ monza-config = { path = "networks/monza/monza-config" }
 # util
 flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
+movement-tracing = { path = "util/tracing" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump

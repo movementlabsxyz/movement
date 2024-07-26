@@ -4202,44 +4202,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "console-api"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a257c22cd7e487dd4a13d413beabc512c5052f0bc048db0da6a84c3d8a6142fd"
-dependencies = [
- "futures-core",
- "prost",
- "prost-types",
- "tonic",
- "tracing-core",
-]
-
-[[package]]
-name = "console-subscriber"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "31c4cc54bae66f7d9188996404abdf7fdfa23034ef8e43478c8810828abad758"
-dependencies = [
- "console-api",
- "crossbeam-channel",
- "crossbeam-utils",
- "futures-task",
- "hdrhistogram",
- "humantime",
- "prost",
- "prost-types",
- "serde",
- "serde_json",
- "thread_local",
- "tokio",
- "tokio-stream",
- "tonic",
- "tracing",
- "tracing-core",
- "tracing-subscriber 0.3.18",
-]
-
-[[package]]
 name = "const-hex"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6045,19 +6007,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hdrhistogram"
-version = "7.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "765c9198f173dd59ce26ff9f95ef0aafd0a0fe01fb9d72841bc5066a4c06511d"
-dependencies = [
- "base64 0.21.7",
- "byteorder",
- "flate2",
- "nom",
- "num-traits",
-]
-
-[[package]]
 name = "headers"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6332,12 +6281,6 @@ checksum = "6cb51c9a029ddc91b07a787f1d86b53ccfa49b0e86688c946ebe8d3555685dd7"
 dependencies = [
  "libm",
 ]
-
-[[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
@@ -7392,7 +7335,6 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "chrono",
- "console-subscriber",
  "dot-movement",
  "godfig",
  "hex",
@@ -7400,6 +7342,7 @@ dependencies = [
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-tracing",
  "movement-types",
  "prost",
  "serde",
@@ -7411,7 +7354,6 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -8610,6 +8552,14 @@ dependencies = [
  "poem",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "movement-tracing"
+version = "0.3.0"
+dependencies = [
+ "tracing-appender",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -11849,7 +11799,6 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-channel 2.3.1",
- "console-subscriber",
  "dot-movement",
  "godfig",
  "m1-da-light-node-client",
@@ -11858,6 +11807,7 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-manager",
  "movement-rest",
+ "movement-tracing",
  "movement-types",
  "serde_json",
  "sha2 0.10.8",
@@ -11866,8 +11816,6 @@ dependencies = [
  "tokio-stream",
  "tonic",
  "tracing",
- "tracing-appender",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

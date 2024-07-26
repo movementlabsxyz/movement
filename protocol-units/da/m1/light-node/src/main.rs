@@ -1,14 +1,14 @@
 use m1_da_light_node::v1::{LightNodeV1, Manager};
 
-use tracing_subscriber::{filter::LevelFilter, fmt::format::FmtSpan, EnvFilter};
-
 use std::env;
 
-const TIMING_ENV_VAR: &str = "M1_DA_LIGHT_NODE_TIMING";
+const TIMING_LOG_ENV: &str = "M1_DA_LIGHT_NODE_TIMING_LOG";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-	init_tracing_subscriber();
+	let tracing_config =
+		movement_tracing::Config { timing_log_path: env::var_os(TIMING_LOG_ENV).map(Into::into) };
+	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config_path = dot_movement.get_config_json_path();
@@ -17,16 +17,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	manager.try_run().await?;
 
 	Ok(())
-}
-
-fn init_tracing_subscriber() {
-	// TODO: compose console_subscriber as a layer
-	let env_filter = EnvFilter::builder()
-		.with_default_directive(LevelFilter::INFO.into())
-		.from_env_lossy();
-	let mut subscriber = tracing_subscriber::fmt().with_env_filter(env_filter);
-	if env::var(TIMING_ENV_VAR).map_or(false, |v| v != "0") {
-		subscriber = subscriber.with_span_events(FmtSpan::CLOSE);
-	}
-	subscriber.init()
 }
