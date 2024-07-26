@@ -1,5 +1,5 @@
 use super::Executor;
-use aptos_logger::info;
+use aptos_logger::{info, warn};
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
@@ -81,7 +81,9 @@ impl Executor {
 							.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 							self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 						},
-						_ => {}
+						_ => {
+							warn!("Transaction not accepted: {:?}", status);
+						}
 					}
 
 					callback.send(Ok((status.clone(), None))).map_err(
