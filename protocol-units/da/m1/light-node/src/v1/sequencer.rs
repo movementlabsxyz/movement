@@ -53,18 +53,26 @@ impl LightNodeV1Operations for LightNodeV1 {
 impl LightNodeV1 {
 	pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
 
+		let half_building_time = self.memseq.building_time_ms();
+		let start = std::time::Instant::now();
+
 		let memseq = self.memseq.clone();
 		// should help performance by dedicating a thread to this
 		let blocks = tokio::spawn(async move {
 			let mut blocks = Vec::new();
-			let block = memseq.wait_for_next_block().await?;
-			match block {
-				Some(block) => {
-					info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
-					blocks.push(block);
-				}
-				None => {
-					// no transactions to include
+			while (start.elapsed().as_millis() as u64)  < half_building_time {
+
+				// this has an internal timeout based on its building time
+				// so in the worst case scenario we will roughly double the internal timeout
+				let block = memseq.wait_for_next_block().await?;
+				match block {
+					Some(block) => {
+						info!("Built block {:?} with {:?} transactions", block.id(), block.transactions.len());
+						blocks.push(block);
+					}
+					None => {
+						// no transactions to include
+					}
 				}
 			}
 			Ok::<Vec<Block>, anyhow::Error>(blocks)

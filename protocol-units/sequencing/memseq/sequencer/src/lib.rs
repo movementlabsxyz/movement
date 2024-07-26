@@ -34,6 +34,11 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 		self.building_time_ms = building_time_ms;
 		self
 	}
+
+	pub fn building_time_ms(&self) -> u64 {
+		self.building_time_ms
+	}
+
 }
 
 impl Memseq<RocksdbMempool> {
