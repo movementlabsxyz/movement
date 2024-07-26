@@ -168,10 +168,11 @@ module atomic_bridge::atomic_bridge_initiator {
         i 
     }
 
-    #[test]
-    public fun test_initialize() {
-        let sender = aptos_framework::unit_test::create_signer(@0x1);
-        atomic_bridge_initiator::init_module(&sender);
+    #[test(sender=@0xface)]
+    public fun test_initialize (
+        sender: signer
+    ) acquires BridgeTransferStore{
+        init_module(&sender);
 
         let addr = signer::address_of(&sender);
         let store = borrow_global<BridgeTransferStore>(addr);
@@ -180,13 +181,14 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(store.nonce == 0, 101);
     }
 
-    #[test]
-    public fun test_initiate_bridge_transfer() {
-        let sender = aptos_framework::unit_test::create_signer(@0x1);
+    #[test(sender=@0xface)]
+    public fun test_initiate_bridge_transfer(
+        sender: signer
+    ) acquires BridgeTransferStore{
         init_module(&sender);
 
-        let recipient = b"recipient_address".to_vec();
-        let hash_lock = b"hash_lock_value".to_vec();
+        let recipient = b"recipient_address";
+        let hash_lock = b"hash_lock_value";
         let time_lock = 1000;
         let amount = 1000;
         
@@ -205,20 +207,21 @@ module atomic_bridge::atomic_bridge_initiator {
 
         assert!(transfer.amount == amount, 200);
         assert!(transfer.originator == addr, 201);
-        assert!(transfer.recipient == b"recipient_address".to_vec(), 202);
-        assert!(transfer.hash_lock == b"hash_lock_value".to_vec(), 203);
+        assert!(transfer.recipient == b"recipient_address", 202);
+        assert!(transfer.hash_lock == b"hash_lock_value", 203);
         assert!(transfer.time_lock == timestamp::now_seconds() + time_lock, 204);
         assert!(transfer.state == INITIALIZED, 205);
     }
 
-    #[test]
-    public fun test_complete_bridge_transfer() {
-        let sender = aptos_framework::unit_test::create_signer(@0x1);
+    #[test(sender=@0xface)]
+    public fun test_complete_bridge_transfer(
+        sender: signer    
+    ) acquires BridgeTransferStore{
         init_module(&sender);
 
-        let recipient = b"recipient_address".to_vec();
-        let pre_image = b"pre_image_value".to_vec();
-        let hash_lock = aptos_hash::keccak256(&pre_image);
+        let recipient = b"recipient_address";
+        let pre_image = b"pre_image_value";
+        let hash_lock = aptos_hash::keccak256(bcs::to_bytes(&pre_image));
         let time_lock = 1000;
         let amount = 1000;
         
@@ -244,13 +247,14 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == COMPLETED, 300);
     }
 
-    #[test]
-    public fun test_refund_bridge_transfer() {
-        let sender = aptos_framework::unit_test::create_signer(@0x1);
+    #[test(sender = @0xface)]
+    public fun test_refund_bridge_transfer(
+        sender: signer
+    ) acquires BridgeTransferStore{
         init_module(&sender);
 
-        let recipient = b"recipient_address".to_vec();
-        let hash_lock = b"hash_lock_value".to_vec();
+        let recipient = b"recipient_address";
+        let hash_lock = b"hash_lock_value";
         let time_lock = 1;
         let amount = 1000;
 
@@ -263,7 +267,7 @@ module atomic_bridge::atomic_bridge_initiator {
         );
 
         // Simulate time passing
-        aptos_framework::unit_test::increase_time(time_lock + 1);
+        aptos_framework::timestamp::fast_forward_seconds(time_lock + 1);
 
         refund_bridge_transfer(
             &sender,
