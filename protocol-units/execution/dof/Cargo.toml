@@ -23,6 +23,8 @@ aptos-crypto = { workspace = true }
 aptos-api = { workspace = true }
 aptos-types = { workspace = true }
 aptos-sdk = { workspace = true }
+aptos-mempool = { workspace = true }
+aptos-config = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
 maptos-fin-view = { workspace = true }

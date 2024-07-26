@@ -122,20 +122,19 @@ impl Executor {
 		node_config: NodeConfig,
 		maptos_config: Config,
 	) -> Result<Self, anyhow::Error> {
-
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
 			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
 			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
 		let reader = db.reader.clone();
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
+		//		let core_mempool = Arc::new(CoreMempool::new(&node_config));
 
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			db,
 			signer,
-			core_mempool,
+			//			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
@@ -174,7 +173,8 @@ impl Executor {
 
 		node_config.indexer_grpc.enabled = true;
 
-		node_config.indexer.postgres_uri = Some("postgresql://postgres:password@localhost:5432".to_string());
+		node_config.indexer.postgres_uri =
+			Some("postgresql://postgres:password@localhost:5432".to_string());
 
 		// indexer_grpc config
 		node_config.indexer_grpc.processor_batch_size = 4;
@@ -184,7 +184,8 @@ impl Executor {
 			"{}:{}",
 			maptos_config.indexer.maptos_indexer_grpc_listen_hostname,
 			maptos_config.indexer.maptos_indexer_grpc_listen_port
-		).parse()?;
+		)
+		.parse()?;
 		node_config.indexer_grpc.use_data_service_interface = true;
 
 		// indexer table info config
@@ -192,7 +193,12 @@ impl Executor {
 		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config.clone())
+		Self::bootstrap(
+			mempool_client_sender,
+			mempool_client_receiver,
+			node_config,
+			maptos_config.clone(),
+		)
 	}
 
 	#[cfg(test)]

@@ -1,5 +1,7 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
+use aptos_config::config::NodeConfig;
+use aptos_mempool::core_mempool::CoreMempool;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 use maptos_opt_executor::Executor as OptExecutor;
@@ -41,10 +43,34 @@ impl Executor {
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
 
-	pub async fn run_transaction_pipe(&self) -> Result<(), anyhow::Error> {
+}
+
+#[async_trait]
+impl DynOptFinExecutor for Executor {
+	/// Runs the service.
+	async fn run_service(&self) -> Result<(), anyhow::Error> {
+		tokio::try_join!(
+			self.executor.run_service(),
+			self.executor.run_indexer_grpc_service(),
+			self.finality_view.run_service(),
+		)?;
+		Ok(())
+	}
+
+	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+		/*let mut node_config = NodeConfig::default();
+		node_config.indexer_table_info.enabled = true;
+		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.set_data_dir(node_config.storage.dir.clone());*/
+		let mut core_mempool = CoreMempool::new(&self.executor.node_config.clone());
+		let mut last_gc = std::time::Instant::now();
 		loop {
 			// readers should be able to run concurrently
-			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
+			match self
+				.executor
+				.tick_transaction_pipe(&mut core_mempool, self.transaction_channel.clone(), &mut last_gc)
+				.await
+			{
 				Ok(_) => {}
 				Err(e) => match e {
 					TransactionPipeError::TransactionNotAccepted(e) => {
@@ -56,36 +82,6 @@ impl Executor {
 				},
 			}
 		}
-	}
-
-	pub async fn run_gc_mempool(&self) -> Result<(), anyhow::Error> {
-		let mut interval = IntervalStream::new(interval(Duration::from_millis(60_000)));
-		while let Some(_interval) = interval.next().await {
-			self.executor.gc_mempool().await?;
-		}
-		Ok(())
-	}
-
-}
-
-#[async_trait]
-impl DynOptFinExecutor for Executor {
-	/// Runs the service.
-	async fn run_service(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(
-			self.executor.run_service(),
-			// self.executor.run_indexer_grpc_service(),
-			self.finality_view.run_service(),
-		)?;
-		Ok(())
-	}
-
-	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(
-			self.run_transaction_pipe(),
-			self.run_gc_mempool(),
-		)?;
-		Ok(())
 	}
 
 	async fn execute_block_opt(
