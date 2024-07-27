@@ -110,10 +110,10 @@ where
 
 					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
 					trace!("Serialized transaction: {:?}", serialized_aptos_transaction);
-					let movement_transaction = movement_types::Transaction {
-						data: serialized_aptos_transaction,
-						sequence_number: transaction.sequence_number(),
-					};
+					let movement_transaction = movement_types::Transaction::new(
+						serialized_aptos_transaction,
+						transaction.sequence_number(),
+					);
 					let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
 					transactions.push(BlobWrite { data: serialized_transaction });
 				}
