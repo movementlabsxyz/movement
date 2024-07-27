@@ -234,8 +234,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.initiator == initiator, 4);
     }
 
-        #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
-        #[expected_failure]
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
+    #[expected_failure]
     fun test_complete_transfer_assets_minter(
         client: &signer,
         aptos_framework: &signer,
