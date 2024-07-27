@@ -61,8 +61,8 @@ contract AtomicBridgeCounterpartyTest is Test {
     }
 
     function testCompleteBridgeTransfer() public {
-        bytes memory preImage = "secret";
-        bytes32 testHashLock = keccak256(preImage);
+        bytes32 preImage = "secret";
+        bytes32 testHashLock = keccak256(abi.encodePacked(preImage));
 
         vm.deal(deployer, 1 ether);
         vm.startPrank(deployer);

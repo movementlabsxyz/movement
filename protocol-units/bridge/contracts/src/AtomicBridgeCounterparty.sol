@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.22;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/Keccak256.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-import "./IAtomicBridgeCounterparty.sol";
+import {IWETH9} from "./IWETH9.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {IAtomicBridgeCounterparty} from "./IAtomicBridgeCounterparty.sol";
 
-contract AtomicBridgeCounterparty is Ownable, IAtomicBridgeCounterparty {
-    using EnumerableMap for EnumerableMap.Bytes32ToAddressMap;
+contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
+    enum MessageState {
+        PENDING,
+        COMPLETED,
+        REFUNDED,
+    }
+
 
     struct BridgeTransferDetails {
         address initiator; // Ethereum address
@@ -23,8 +27,11 @@ contract AtomicBridgeCounterparty is Ownable, IAtomicBridgeCounterparty {
     mapping(bytes32 => BridgeTransferDetails) public completedTransfers;
     mapping(bytes32 => BridgeTransferDetails) public abortedTransfers;
 
-    constructor(IERC20 _weth) {
-        weth = _weth;
+    function initialize(address _weth) public initializer {
+        if (_weth == address(0)) {
+            revert ZeroAddress();
+        }
+        weth = IWETH9(_weth);
     }
 
     function lockBridgeTransferAssets(
@@ -52,11 +59,11 @@ contract AtomicBridgeCounterparty is Ownable, IAtomicBridgeCounterparty {
         return true;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes memory preImage) external override {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external override {
         BridgeTransferDetails memory details = pendingTransfers[bridgeTransferId];
         require(details.initiator != address(0), "Transfer ID does not exist");
 
-        bytes32 computedHash = keccak256(preImage);
+        bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         require(computedHash == details.hashLock, "Invalid preImage");
 
         delete pendingTransfers[bridgeTransferId];
@@ -78,18 +85,6 @@ contract AtomicBridgeCounterparty is Ownable, IAtomicBridgeCounterparty {
         weth.transfer(details.initiator, details.amount);
 
         emit BridgeTransferCancelled(bridgeTransferId);
-    }
-
-    function getPendingTransferDetails(bytes32 bridgeTransferId) external view returns (BridgeTransferDetails memory) {
-        return pendingTransfers[bridgeTransferId];
-    }
-
-    function getCompletedTransferDetails(bytes32 bridgeTransferId) external view returns (BridgeTransferDetails memory) {
-        return completedTransfers[bridgeTransferId];
-    }
-
-    function getAbortedTransferDetails(bytes32 bridgeTransferId) external view returns (BridgeTransferDetails memory) {
-        return abortedTransfers[bridgeTransferId];
     }
 }
 
