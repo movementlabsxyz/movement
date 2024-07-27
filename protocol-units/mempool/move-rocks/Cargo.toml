@@ -22,7 +22,7 @@ rocksdb = { workspace = true, features = [
     "zlib",
     "multi-threaded-cf",
 ] }
-serde_json = { workspace = true }
+bcs = { workspace = true }
 anyhow = { workspace = true }
 tempfile = { workspace = true }
 

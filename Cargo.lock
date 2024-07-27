@@ -7559,6 +7559,7 @@ dependencies = [
  "movement-types",
  "rand 0.7.3",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 
@@ -8443,11 +8444,11 @@ name = "move-rocks"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "bcs 0.1.4",
  "mempool-util",
  "movement-types",
  "rand 0.7.3",
  "rocksdb",
- "serde_json",
  "tempfile",
  "tokio",
 ]
