@@ -2,6 +2,7 @@ module atomic_bridge::atomic_bridge_initiator {
     use aptos_framework::event::{Self, EventHandle};
     use aptos_framework::account::{Self, Account};
     use aptos_framework::timestamp;
+    use aptos_framework::primary_fungible_store;
     use aptos_std::aptos_hash;
     use std::signer;
     use std::vector;
@@ -155,7 +156,7 @@ module atomic_bridge::atomic_bridge_initiator {
         moveth::add_minter(master_minter, signer::address_of(account));
 
         moveth::mint(account, bridge_transfer.originator, bridge_transfer.amount);
-
+        
         bridge_transfer.state = REFUNDED;
 
         event::emit_event(&mut store.bridge_transfer_refunded_events, BridgeTransferRefundedEvent {
@@ -297,7 +298,9 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_framework: &signer
     ) acquires BridgeTransferStore{
         moveth::init_for_test(creator);
+        let asset = moveth::metadata();
         timestamp::set_time_has_started_for_testing(aptos_framework);
+
         let addr = signer::address_of(&sender);
         // Ensure Account resource exists for the sender
         account::create_account_if_does_not_exist(addr);
@@ -324,8 +327,10 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_id,
             &master_minter
         );
-
+        
         let addr = signer::address_of(&sender);
+        assert!(primary_fungible_store::balance(addr, asset) == amount, 0);
+
         let store = borrow_global<BridgeTransferStore>(addr);
         let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
         let transfer = vector::borrow(&store.transfers, idx);
