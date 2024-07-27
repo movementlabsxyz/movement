@@ -8,7 +8,7 @@ use aptos_api::context::Context;
 use aptos_config::config::NodeConfig;
 use aptos_db::AptosDB;
 use aptos_executor::block_executor::BlockExecutor;
-use aptos_mempool::{core_mempool::CoreMempool, MempoolClientRequest, MempoolClientSender};
+use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;

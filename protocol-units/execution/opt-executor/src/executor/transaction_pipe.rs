@@ -126,6 +126,8 @@ impl Executor {
 					.send(transaction)
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
+				// increment transactions in flight
+				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);

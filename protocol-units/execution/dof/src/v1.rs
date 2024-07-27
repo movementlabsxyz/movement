@@ -13,6 +13,7 @@ use tokio::time::interval;
 use tokio_stream::wrappers::IntervalStream;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
+use std::sync::atomic::Ordering;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -133,10 +134,12 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	fn decrement_transactions_in_flight(&self, count : u64) {
-		self.executor.transactions_in_flight.fetch_sub(
-			count,
-			std::sync::atomic::Ordering::Relaxed, // relaxed because this is just for load shedding, now need for strict ordering.
-		);
+		
+		// fetch sub mind the underflow
+		self.executor.transactions_in_flight.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+			Some(current.saturating_sub(count))
+		}).unwrap_or_else(|_| 0);
+
 	}
 }
 
