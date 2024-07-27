@@ -136,6 +136,7 @@ impl DynOptFinExecutor for Executor {
 	fn decrement_transactions_in_flight(&self, count : u64) {
 		
 		// fetch sub mind the underflow
+		// a semaphore might be better here as this will rerun until the value does not change during the operation
 		self.executor.transactions_in_flight.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
 			Some(current.saturating_sub(count))
 		}).unwrap_or_else(|_| 0);
