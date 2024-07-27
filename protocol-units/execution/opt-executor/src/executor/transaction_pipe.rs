@@ -46,7 +46,7 @@ impl Executor {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 					let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
-					if in_flight > 2^12 {
+					if in_flight > 2^16 {
 						info!("Transaction ins flight: {:?}, shedding load", in_flight);
 						let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
 						callback.send(Ok((status.clone(), None))).map_err(
@@ -81,7 +81,7 @@ impl Executor {
 			}
 		}
 
-		if last_gc.elapsed().as_secs() > 60 {
+		if last_gc.elapsed().as_secs() > 30 {
 			core_mempool.gc();
 			*last_gc = std::time::Instant::now();
 		}
