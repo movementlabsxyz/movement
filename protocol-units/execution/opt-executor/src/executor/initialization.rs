@@ -163,6 +163,7 @@ impl Executor {
 
 		node_config.indexer.enabled = true;
 		// indexer config
+		node_config.indexer.postgres_uri = Some(maptos_config.indexer_processor.postgres_connection_string.clone());
 		node_config.indexer.processor = Some("default_processor".to_string());
 		node_config.indexer.check_chain_id = Some(false);
 		node_config.indexer.skip_migrations = Some(false);
