@@ -10,12 +10,11 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
     enum MessageState {
         PENDING,
         COMPLETED,
-        REFUNDED,
+        REFUNDED
     }
 
-
     struct BridgeTransferDetails {
-        address initiator; // Ethereum address
+        bytes32 initiator; // move address
         address recipient;
         uint256 amount;
         bytes32 hashLock;
@@ -35,20 +34,21 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
     }
 
     function lockBridgeTransferAssets(
+        bytes32 initiator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
         uint256 timeLock,
         address recipient,
         uint256 amount
-    ) external override returns (bool) {
-        require(pendingTransfers[bridgeTransferId].initiator == address(0), "Transfer ID already exists");
+    ) external returns (bool) {
+        require(pendingTransfers[bridgeTransferId].recipient == address(0), "Transfer ID already exists");
         require(amount > 0, "Zero amount not allowed");
 
         weth.transferFrom(msg.sender, address(this), amount);
 
         pendingTransfers[bridgeTransferId] = BridgeTransferDetails({
-            initiator: msg.sender,
             recipient: recipient,
+            initiator: initiator,
             amount: amount,
             hashLock: hashLock,
             timeLock: block.timestamp + timeLock
@@ -59,9 +59,9 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
         return true;
     }
 
-    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external override {
+    function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails memory details = pendingTransfers[bridgeTransferId];
-        require(details.initiator != address(0), "Transfer ID does not exist");
+        require(details.recipient != address(0), "Transfer ID does not exist");
 
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         require(computedHash == details.hashLock, "Invalid preImage");
@@ -74,15 +74,15 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function abortBridgeTransfer(bytes32 bridgeTransferId) external override onlyOwner {
+    function abortBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransferDetails memory details = pendingTransfers[bridgeTransferId];
-        require(details.initiator != address(0), "Transfer ID does not exist");
+        require(details.recipient != address(0), "Transfer ID does not exist");
         require(block.timestamp > details.timeLock, "Timelock has not expired");
 
         delete pendingTransfers[bridgeTransferId];
         abortedTransfers[bridgeTransferId] = details;
 
-        weth.transfer(details.initiator, details.amount);
+        weth.transfer(details.recipient, details.amount);
 
         emit BridgeTransferCancelled(bridgeTransferId);
     }

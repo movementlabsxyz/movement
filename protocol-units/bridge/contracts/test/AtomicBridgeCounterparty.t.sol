@@ -17,14 +17,16 @@ contract AtomicBridgeCounterpartyTest is Test {
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
     uint256 public timeLock = 100;
-    bytes32 public bridgeTransferId = keccak256(abi.encodePacked(block.number, deployer, recipient, amount, hashLock, timeLock));
+    bytes32 public initiator = keccak256(abi.encodePacked(deployer));
+    bytes32 public bridgeTransferId = keccak256(abi.encodePacked(block.number, initiator, recipient, amount, hashLock, timeLock));
 
     function setUp() public {
         // Sepolia WETH9 address
         address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
         weth = IWETH9(wethAddress);
 
-        atomicBridgeCounterparty = new AtomicBridgeCounterparty(IERC20(wethAddress));
+        atomicBridgeCounterparty = new AtomicBridgeCounterparty();
+        atomicBridgeCounterparty.initialize(wethAddress);
     }
 
     function testLockBridgeTransferAssets() public {
@@ -35,6 +37,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         weth.approve(address(atomicBridgeCounterparty), amount);
 
         bool result = atomicBridgeCounterparty.lockBridgeTransferAssets(
+            initiator,
             bridgeTransferId,
             hashLock,
             timeLock,
@@ -43,19 +46,19 @@ contract AtomicBridgeCounterpartyTest is Test {
         );
 
         (
-            address initiator,
-            address storedRecipient,
-            uint256 storedAmount,
-            bytes32 storedHashLock,
-            uint256 storedTimeLock
+            bytes32 pendingInitiator,
+            address pendingRecipient,
+            uint256 pendingAmount,
+            bytes32 pendingHashLock,
+            uint256 pendingTimelock
         ) = atomicBridgeCounterparty.pendingTransfers(bridgeTransferId);
 
         assert(result);
-        assertEq(initiator, deployer);
-        assertEq(storedRecipient, recipient);
-        assertEq(storedAmount, amount);
-        assertEq(storedHashLock, hashLock);
-        assertGt(storedTimeLock, block.timestamp);
+        assertEq(pendingInitiator, initiator);
+        assertEq(pendingRecipient, recipient);
+        assertEq(pendingAmount, amount);
+        assertEq(pendingHashLock, hashLock);
+        assertGt(pendingTimelock, block.timestamp);
 
         vm.stopPrank();
     }
@@ -71,6 +74,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         weth.approve(address(atomicBridgeCounterparty), amount);
 
         atomicBridgeCounterparty.lockBridgeTransferAssets(
+            initiator,
             bridgeTransferId,
             testHashLock,
             timeLock,
@@ -84,18 +88,18 @@ contract AtomicBridgeCounterpartyTest is Test {
         atomicBridgeCounterparty.completeBridgeTransfer(bridgeTransferId, preImage);
 
         (
-            address initiator,
-            address storedRecipient,
-            uint256 storedAmount,
-            bytes32 storedHashLock,
-            uint256 storedTimeLock
+            bytes32 completedInitiator,
+            address completedRecipient,
+            uint256 completedAmount,
+            bytes32 completedHashLock,
+            uint256 completedTimeLock 
         ) = atomicBridgeCounterparty.completedTransfers(bridgeTransferId);
 
-        assertEq(initiator, deployer);
-        assertEq(storedRecipient, recipient);
-        assertEq(storedAmount, amount);
-        assertEq(storedHashLock, testHashLock);
-        assertGt(storedTimeLock, block.timestamp);
+        assertEq(completedInitiator, initiator);
+        assertEq(completedRecipient, recipient);
+        assertEq(completedAmount, amount);
+        assertEq(completedHashLock, testHashLock);
+        assertGt(completedTimeLock, block.timestamp);
 
         vm.stopPrank();
     }
@@ -108,6 +112,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         weth.approve(address(atomicBridgeCounterparty), amount);
 
         atomicBridgeCounterparty.lockBridgeTransferAssets(
+            initiator,
             bridgeTransferId,
             hashLock,
             timeLock,
@@ -123,18 +128,18 @@ contract AtomicBridgeCounterpartyTest is Test {
         atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
 
         (
-            address initiator,
-            address storedRecipient,
-            uint256 storedAmount,
-            bytes32 storedHashLock,
-            uint256 storedTimeLock
+            bytes32 abortedInitiator,
+            address abortedRecipient,
+            uint256 abortedAmount,
+            bytes32 abortedHashLock,
+            uint256 abortedTimeLock 
         ) = atomicBridgeCounterparty.abortedTransfers(bridgeTransferId);
 
-        assertEq(initiator, deployer);
-        assertEq(storedRecipient, recipient);
-        assertEq(storedAmount, amount);
-        assertEq(storedHashLock, hashLock);
-        assertGt(storedTimeLock, block.timestamp);
+        assertEq(abortedInitiator, initiator);
+        assertEq(abortedRecipient, recipient);
+        assertEq(abortedAmount, amount);
+        assertEq(abortedHashLock, hashLock);
+        assertGt(abortedTimeLock, block.timestamp);
 
         vm.stopPrank();
     }
