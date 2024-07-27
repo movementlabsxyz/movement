@@ -7,21 +7,20 @@ use maptos_dof_execution::{
 	v1::Executor, DynOptFinExecutor, ExecutableBlock, ExecutableTransactions, HashValue,
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
-use mcr_settlement_client::{
- McrSettlementClient, McrSettlementClientOperations,
-};
+use mcr_settlement_client::{McrSettlementClient, McrSettlementClientOperations};
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::{McrSettlementManager, McrSettlementManagerOperations};
 use movement_rest::MovementRest;
-use movement_types::{Block, BlockCommitmentEvent};
+use movement_types::{Block, BlockCommitment, BlockCommitmentEvent};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use sha2::Digest;
 use tokio_stream::StreamExt;
-use tracing::{debug, info, warn, error};
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::sync::Arc;
+use tracing::{debug, error, info, warn, info_span, trace, Instrument};
+
 use std::future::Future;
 use std::time::Duration;
 pub struct SuzukaPartialNode<T> {
@@ -102,13 +101,18 @@ where
 		{
 			match transaction_result {
 				Ok(transaction) => {
-					debug!("Got transaction: {:?}", transaction);
+					debug!(
+						tx_hash = %transaction.committed_hash(),
+						sender = %transaction.sender(),
+						sequence_number = transaction.sequence_number(),
+						"received transaction",
+					);
 
 					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-					debug!("Serialized transaction: {:?}", serialized_aptos_transaction);
+					trace!("Serialized transaction: {:?}", serialized_aptos_transaction);
 					let movement_transaction = movement_types::Transaction {
-						data : serialized_aptos_transaction,
-						sequence_number : transaction.sequence_number()
+						data: serialized_aptos_transaction,
+						sequence_number: transaction.sequence_number(),
 					};
 					let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
 					transactions.push(BlobWrite { data: serialized_transaction });
@@ -182,44 +186,12 @@ where
 				anyhow::bail!("Invalid DA height: {:?}", da_height);
 			}
 
-			let block: Block = serde_json::from_slice(&block_bytes)?;
-
-
-			debug!("Got block: {:?}", block);
-			info!("Block micros timestamp: {:?}", block_timestamp);
-
 			// get the transactions
-			let mut block_transactions = Vec::new();
-			let block_metadata = self
-				.executor
-				.build_block_metadata(HashValue::sha3_256_of(block_id.as_bytes()), block_timestamp)
+			let span = info_span!(target: "movement_timing", "execute_block", id = block_id);
+			let commitment = self
+				.execute_block(block_bytes, block_id.clone(), block_timestamp)
+				.instrument(span)
 				.await?;
-			let block_metadata_transaction =
-				SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
-			block_transactions.push(block_metadata_transaction);
-
-			for transaction in block.transactions {
-				let signed_transaction = serde_json::from_slice(&transaction.data)?;
-				let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
-					Transaction::UserTransaction(signed_transaction),
-				);
-				block_transactions.push(signature_verified_transaction);
-			}
-
-			// form the executable transactions vec
-			let block = ExecutableTransactions::Unsharded(block_transactions);
-
-			// hash the block bytes
-			let mut hasher = sha2::Sha256::new();
-			hasher.update(&block_bytes);
-			let slice = hasher.finalize();
-			let block_hash = HashValue::from_slice(slice.as_slice())?;
-
-			// form the executable block and execute it
-			let executable_block = ExecutableBlock::new(block_hash, block);
-			let block_id = executable_block.block_id;
-			let commitment = self.executor.execute_block_opt(executable_block).await?;
-			info!("Executed block: {:?}", block_id);
 
 			// mark the da_height - 1 as synced
 			// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
@@ -240,10 +212,60 @@ where
 			} else {
 				info!("Skipping settlement");
 			}
-			
 		}
 
 		Ok(())
+	}
+
+	async fn execute_block(
+		&self,
+		block_bytes: Vec<u8>,
+		block_id: String,
+		block_timestamp: u64,
+	) -> anyhow::Result<BlockCommitment> {
+
+		let block: Block = serde_json::from_slice(&block_bytes)?;
+		// get the transactions
+		let mut block_transactions = Vec::new();
+		let block_metadata = self
+			.executor
+			.build_block_metadata(HashValue::sha3_256_of(block_id.as_bytes()), block_timestamp)
+			.await?;
+		let block_metadata_transaction =
+			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
+		block_transactions.push(block_metadata_transaction);
+
+		for transaction in block.transactions {
+			let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.data)?;
+			info!(
+				target: "movement_timing",
+				tx_hash = %signed_transaction.committed_hash(),
+				block_id = %block_id,
+				"transaction_in_block",
+			);
+			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
+				Transaction::UserTransaction(signed_transaction),
+			);
+			block_transactions.push(signature_verified_transaction);
+		}
+
+		// form the executable transactions vec
+		let block = ExecutableTransactions::Unsharded(block_transactions);
+
+		// hash the block bytes
+		let mut hasher = sha2::Sha256::new();
+		hasher.update(&block_bytes);
+		let slice = hasher.finalize();
+		let block_hash = HashValue::from_slice(slice.as_slice())?;
+
+		// form the executable block and execute it
+		let executable_block = ExecutableBlock::new(block_hash, block);
+		let block_id = executable_block.block_id;
+		let commitment = self.executor.execute_block_opt(executable_block).await?;
+
+		info!("Executed block: {}", block_id);
+
+		Ok(commitment)
 	}
 }
 
@@ -397,32 +419,40 @@ impl SuzukaPartialNode<Executor> {
 		let (tx, _) = async_channel::unbounded();
 
 		// todo: extract into getter
-		let light_node_connection_hostname = config.m1_da_light_node.m1_da_light_node_config
+		let light_node_connection_hostname = config
+			.m1_da_light_node
+			.m1_da_light_node_config
 			.m1_da_light_node_connection_hostname();
 
 		// todo: extract into getter
-		let light_node_connection_port =config.m1_da_light_node.m1_da_light_node_config 
+		let light_node_connection_port = config
+			.m1_da_light_node
+			.m1_da_light_node_config
 			.m1_da_light_node_connection_port();
 		// todo: extract into getter
-		debug!("Connecting to light node at {}:{}", light_node_connection_hostname, light_node_connection_port);
+		debug!(
+			"Connecting to light node at {}:{}",
+			light_node_connection_hostname, light_node_connection_port
+		);
 		let light_node_client = LightNodeServiceClient::connect(format!(
 			"http://{}:{}",
 			light_node_connection_hostname, light_node_connection_port
 		))
-		.await.context("Failed to connect to light node")?;
+		.await
+		.context("Failed to connect to light node")?;
 
 		debug!("Creating the executor");
 		let executor = Executor::try_from_config(tx, config.execution_config.maptos_config.clone())
 			.context("Failed to create the inner executor")?;
 
 		debug!("Creating the settlement client");
-		let settlement_client =
-			McrSettlementClient::build_with_config(config.mcr.clone()).await.context(
-				"Failed to build MCR settlement client with config",
-			)?;
+		let settlement_client = McrSettlementClient::build_with_config(config.mcr.clone())
+			.await
+			.context("Failed to build MCR settlement client with config")?;
 
 		debug!("Creating the movement rest service");
-		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone())).context("Failed to create MovementRest")?;
+		let movement_rest = MovementRest::try_from_env(Some(executor.executor.context.clone()))
+			.context("Failed to create MovementRest")?;
 
 		debug!("Creating the DA DB");
 		let da_db = Self::create_or_get_da_db(&config).await.context("Failed to create or get DA DB")?;
@@ -430,6 +460,5 @@ impl SuzukaPartialNode<Executor> {
 		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config, da_db).context(
 			"Failed to bind the executor, light node client, settlement client, and movement rest"
 		)
-		
 	}
 }

@@ -19,7 +19,7 @@ use aptos_types::{
 };
 use movement_types::{BlockCommitment, Commitment, Id};
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::{debug, debug_span, info};
 
 impl Executor {
 	pub async fn execute_block(
@@ -100,7 +100,15 @@ impl Executor {
 		/*for chunk in senders_and_sequence_numbers.chunks(16) {
 			let mut core_mempool = self.core_mempool.write().await;
 			for (sender, sequence_number) in chunk {
+				let _span = debug_span!(
+					target: "movement_timing",
+					"commit_transaction",
+					%sender,
+					sequence_number = *sequence_number,
+				)
+				.entered();
 				core_mempool.commit_transaction(sender, *sequence_number);
+				debug!("committed transaction");
 			}
 		}*/
 
@@ -357,7 +365,7 @@ mod tests {
 			let mint_tx = root_account
 				.sign_with_transaction_builder(tx_factory.mint(new_account.address(), 2000));
 			// Store the hash of the committed transaction for later verification.
-			let mint_tx_hash = mint_tx.clone().committed_hash();
+			let mint_tx_hash = mint_tx.committed_hash();
 
 			// Block Metadata
 			let transactions =
@@ -450,7 +458,7 @@ mod tests {
 				let user_account_creation_tx = root_account.sign_with_transaction_builder(
 					tx_factory.create_user_account(new_account.public_key()),
 				);
-				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				let tx_hash = user_account_creation_tx.committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}

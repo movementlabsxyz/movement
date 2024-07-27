@@ -7392,7 +7392,6 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "chrono",
- "console-subscriber",
  "dot-movement",
  "godfig",
  "hex",
@@ -7400,6 +7399,8 @@ dependencies = [
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-tracing",
+ "movement-types",
  "prost",
  "serde",
  "serde_json",
@@ -7410,7 +7411,7 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tracing",
- "tracing-subscriber 0.3.18",
+ "uuid",
 ]
 
 [[package]]
@@ -8615,6 +8616,13 @@ dependencies = [
  "poem",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "movement-tracing"
+version = "0.3.0"
+dependencies = [
+ "tracing-appender",
  "tracing-subscriber 0.3.18",
 ]
 
@@ -11865,6 +11873,7 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-manager",
  "movement-rest",
+ "movement-tracing",
  "movement-types",
  "rocksdb",
  "serde_json",
@@ -12606,6 +12615,18 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-appender"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3566e8ce28cc0a3fe42519fc80e6b4c943cc4c8cef275620eb8dac2d3d4e06cf"
+dependencies = [
+ "crossbeam-channel",
+ "thiserror",
+ "time",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]

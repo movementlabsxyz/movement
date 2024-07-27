@@ -143,11 +143,14 @@ impl LightNodeV1 {
 		Ok(verified_blobs)
 	}
 
-	pub async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
+	#[tracing::instrument(target = "movement_timing", level = "debug")]
+	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
 		let celestia_blobs = self.get_celestia_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
-		for blob in celestia_blobs {
-			blobs.push(Self::celestia_blob_to_blob(blob, height)?);
+		for celestia_blob in celestia_blobs {
+			let blob = Self::celestia_blob_to_blob(celestia_blob, height)?;
+			debug!(blob_id = %blob.blob_id, "got blob");
+			blobs.push(blob);
 		}
 		Ok(blobs)
 	}
