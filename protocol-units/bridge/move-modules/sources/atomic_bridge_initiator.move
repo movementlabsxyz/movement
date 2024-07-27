@@ -181,7 +181,7 @@ module atomic_bridge::atomic_bridge_initiator {
             vector::append(&mut combined_bytes, transfer.recipient);
             vector::append(&mut combined_bytes, transfer.hash_lock);
             vector::append(&mut combined_bytes, bcs::to_bytes(&i));
-
+            
             let id = aptos_hash::keccak256(combined_bytes);
             if (id == *bridge_transfer_id) {
                 break
