@@ -18,6 +18,12 @@ services:
       - POSTGRES_DB=postgres
     ports:
       - "5432:5432"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
 
   celestia-light-node:
     image: busybox
@@ -35,6 +41,12 @@ services:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 3
       start_period: 3s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 150s
 
   celestia-light-node-synced:
     image: ghcr.io/movementlabsxyz/wait-for-celestia-light-node:${CONTAINER_REV}
@@ -64,6 +76,12 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 150s
 
   suzuka-full-node:
     image: ghcr.io/movementlabsxyz/suzuka-full-node:${CONTAINER_REV}
@@ -82,6 +100,12 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 5
+        window: 150s
 
   suzuka-faucet-service:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -101,6 +125,12 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 10 # high number of attempts in case the mempool is backed up
+        window: 150s
 
 volumes:
   dot-movement:
