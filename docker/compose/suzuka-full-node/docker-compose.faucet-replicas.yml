@@ -18,12 +18,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
 
   suzuka-faucet-service-replica-2:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -43,12 +38,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
 
   suzuka-faucet-service-replica-3:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -68,12 +58,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
 
   suzuka-faucet-service-replica-4:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -93,12 +78,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
 
   suzuka-faucet-service-replica-5:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -118,12 +98,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
 
   suzuka-faucet-service-replica-6:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -143,12 +118,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
 
   suzuka-faucet-service-replica-7:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -168,9 +138,4 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 10 # high number of attempts in case the mempool is backed up
-        window: 150s
+    restart: unless-stopped:10
