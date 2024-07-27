@@ -64,6 +64,7 @@ services:
     container_name: m1-da-light-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=true
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
@@ -88,6 +89,7 @@ services:
     container_name: suzuka-full-node
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=true
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
@@ -113,6 +115,7 @@ services:
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
+      - MOVEMENT_TIMING=true
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     ports:
