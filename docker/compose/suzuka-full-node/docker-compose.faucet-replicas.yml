@@ -18,7 +18,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
 
   suzuka-faucet-service-replica-2:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -38,7 +38,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
 
   suzuka-faucet-service-replica-3:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -58,7 +58,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
 
   suzuka-faucet-service-replica-4:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -78,7 +78,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
 
   suzuka-faucet-service-replica-5:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -98,7 +98,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
 
   suzuka-faucet-service-replica-6:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -118,7 +118,7 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
 
   suzuka-faucet-service-replica-7:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
@@ -138,4 +138,4 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
-    restart: unless-stopped:10
+    restart: on-failure:10
