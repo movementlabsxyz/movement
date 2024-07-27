@@ -78,7 +78,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let asset = moveth::metadata();
         let store = borrow_global_mut<BridgeTransferStore>(addr);
         if (amount > 0) {
-            // Transfer amount of moveth from signer to contract address
+            // Transfer amount of moveth from initiator to contract address
             let initiator_store = primary_fungible_store::ensure_primary_store_exists(addr, asset);
             let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
             dispatchable_fungible_asset::transfer(initiator, initiator_store, bridge_store, amount);
@@ -129,8 +129,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_transfer = vector::borrow_mut(&mut store.transfers, idx);
 
         assert!(bridge_transfer.state == INITIALIZED, 1);
-        assert!(bridge_transfer.hash_lock == bridge_transfer.hash_lock, 2);
-        //assert!(aptos_hash::keccak256(pre_image) == bridge_transfer.hash_lock, 2);
+        assert!(aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, 2);
         assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, 3);
 
         moveth::add_minter(master_minter, signer::address_of(account));
@@ -270,10 +269,12 @@ module atomic_bridge::atomic_bridge_initiator {
         // Ensure Account resource exists for the sender
         account::create_account_if_does_not_exist(addr);
         init_module(sender);
+
         assert!(exists<BridgeTransferStore>(addr), 42);
         let recipient = b"recipient_address";
         let pre_image = b"pre_image_value";
         let hash_lock = aptos_hash::keccak256(bcs::to_bytes(&pre_image));
+        assert!(aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == hash_lock, 5);
         let time_lock = 1000;
         let amount = 1000;
         let sender_address = signer::address_of(sender);
