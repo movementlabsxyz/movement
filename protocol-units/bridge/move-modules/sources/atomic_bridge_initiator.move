@@ -98,7 +98,7 @@ module atomic_bridge::atomic_bridge_initiator {
             amount: amount,
             originator: addr,
             recipient: recipient,
-            hash_lock: hash_lock,
+            hash_lock: hash_lock, 
             time_lock: timestamp::now_seconds() + time_lock,
             state: INITIALIZED,
         };
@@ -147,7 +147,7 @@ module atomic_bridge::atomic_bridge_initiator {
     public fun refund_bridge_transfer(
         account: &signer, 
         bridge_transfer_id: vector<u8>,
-        master_minter: &signer
+        atomic_bridge: &signer
     ) acquires BridgeTransferStore {
         let addr = signer::address_of(account);
         let store = borrow_global_mut<BridgeTransferStore>(addr);
@@ -157,10 +157,17 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(bridge_transfer.state == INITIALIZED, 1);
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, 2);
 
-        moveth::add_minter(master_minter, signer::address_of(account));
-
-        moveth::mint(account, bridge_transfer.originator, bridge_transfer.amount);
+        // moveth::add_minter(master_minter, signer::address_of(account));
+        // moveth::mint(account, bridge_transfer.originator, bridge_transfer.amount);
         
+        let initiator_addr = bridge_transfer.originator;
+        let bridge_addr = signer::address_of(atomic_bridge);
+        let asset = moveth::metadata();
+
+        let initiator_store = primary_fungible_store::ensure_primary_store_exists(initiator_addr, asset);
+        let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
+        dispatchable_fungible_asset::transfer(atomic_bridge, bridge_store, initiator_store, bridge_transfer.amount);
+
         bridge_transfer.state = REFUNDED;
 
         event::emit_event(&mut store.bridge_transfer_refunded_events, BridgeTransferRefundedEvent {
@@ -303,10 +310,10 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == COMPLETED, 300);
     }
 
-    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, master_minter = @master_minter)]
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
     public fun test_refund_bridge_transfer(
         sender: &signer,
-        master_minter: &signer,
+        atomic_bridge: &signer,
         creator: &signer,
         aptos_framework: &signer
     ) acquires BridgeTransferStore{
@@ -326,7 +333,7 @@ module atomic_bridge::atomic_bridge_initiator {
 
         // Mint amount of tokens to sender
         let sender_address = signer::address_of(sender);
-        moveth::mint(master_minter, sender_address, amount);
+        moveth::mint(atomic_bridge, sender_address, amount);
 
         let bridge_transfer_id = initiate_bridge_transfer(
             sender,
@@ -342,7 +349,7 @@ module atomic_bridge::atomic_bridge_initiator {
         refund_bridge_transfer(
             sender,
             bridge_transfer_id,
-            master_minter
+            atomic_bridge
         );
         
         let addr = signer::address_of(sender);
