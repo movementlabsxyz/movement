@@ -175,9 +175,6 @@ impl Executor {
 
 		node_config.indexer_grpc.enabled = true;
 
-		node_config.indexer.postgres_uri =
-			Some("postgresql://postgres:password@localhost:5432".to_string());
-
 		// indexer_grpc config
 		node_config.indexer_grpc.processor_batch_size = 4;
 		node_config.indexer_grpc.processor_task_count = 4;
