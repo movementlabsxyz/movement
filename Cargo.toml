@@ -270,6 +270,7 @@ inotify = "0.10.2"
 rustix = "0.38.34"
 paste = "1.0.15"
 uuid = { version = "1.10.0", features = ["v4"] }
+blake-3 = "1.4.0"
 
 # trying to pin diesel
 # diesel = "=2.1.1"

@@ -68,13 +68,10 @@ impl LightNodeV1 {
 				// so in the worst case scenario we will roughly double the internal timeout
 				let uid = uuid::Uuid::new_v4();
 				info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
-
 				let block = memseq.wait_for_next_block().await?;
-
-				
 				match block {
 					Some(block) => {
-						info!(target: "movement_timing", block_id = %block.id(), "received_block");
+						info!(target: "movement_timing", block_id = %block.id(), uid = %uid, "received_block");
 						blocks.push(block);
 					}
 					None => {
