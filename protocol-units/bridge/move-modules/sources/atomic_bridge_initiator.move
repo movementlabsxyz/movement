@@ -264,6 +264,50 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, master_minter = @master_minter)]
+    #[expected_failure]
+    public fun test_initiate_bridge_transfer_no_moveth(
+        sender: &signer,
+        creator: &signer,
+        aptos_framework: &signer,
+        master_minter: &signer
+    ) acquires BridgeTransferStore{
+        moveth::init_for_test(creator);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        let addr = signer::address_of(sender);
+        // Ensure Account resource exists for the sender
+        account::create_account_if_does_not_exist(addr);
+
+        init_module(sender);
+
+        let recipient = b"recipient_address";
+        let hash_lock = b"hash_lock_value";
+        let time_lock = 1000;
+        let amount = 1000;
+
+        // Do not mint tokens to sender; sender has no MovETH
+        
+        let bridge_transfer_id = initiate_bridge_transfer(
+            sender,
+            recipient,
+            hash_lock,
+            time_lock,
+            amount
+        );
+
+        let addr = signer::address_of(sender);
+        let store = borrow_global<BridgeTransferStore>(addr);
+        let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
+        let transfer = vector::borrow(&store.transfers, idx);
+
+        assert!(transfer.amount == amount, 200);
+        assert!(transfer.originator == addr, 201);
+        assert!(transfer.recipient == b"recipient_address", 202);
+        assert!(transfer.hash_lock == b"hash_lock_value", 203);
+        assert!(transfer.time_lock == timestamp::now_seconds() + time_lock, 204);
+        assert!(transfer.state == INITIALIZED, 205);
+    }
+
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, master_minter = @master_minter)]
     public fun test_complete_bridge_transfer(
         sender: &signer,
         master_minter: &signer,
@@ -299,6 +343,54 @@ module atomic_bridge::atomic_bridge_initiator {
             sender,
             bridge_transfer_id,
             pre_image,
+            master_minter
+        );
+
+        let addr = signer::address_of(sender);
+        let store = borrow_global<BridgeTransferStore>(addr);
+        let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
+        let transfer = vector::borrow(&store.transfers, idx);
+
+        assert!(transfer.state == COMPLETED, 300);
+    }
+
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, master_minter = @master_minter)]
+    #[expected_failure]
+    public fun test_complete_bridge_transfer_wrong_preimage(
+        sender: &signer,
+        master_minter: &signer,
+        creator: &signer,
+        aptos_framework: &signer    
+    ) acquires BridgeTransferStore{
+        moveth::init_for_test(creator);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        let addr = signer::address_of(sender);
+        // Ensure Account resource exists for the sender
+        account::create_account_if_does_not_exist(addr);
+        init_module(sender);
+
+        assert!(exists<BridgeTransferStore>(addr), 42);
+        let recipient = b"recipient_address";
+        let pre_image = b"pre_image_value";
+        let wrong_pre_image = b"wrong_pre_image_value";
+        let hash_lock = aptos_hash::keccak256(bcs::to_bytes(&pre_image));
+        let time_lock = 1000;
+        let amount = 1000;
+        let sender_address = signer::address_of(sender);
+        moveth::mint(master_minter, sender_address, amount);
+        
+        let bridge_transfer_id = initiate_bridge_transfer(
+            sender,
+            recipient,
+            hash_lock,
+            time_lock,
+            amount
+        );
+
+        complete_bridge_transfer(
+            sender,
+            bridge_transfer_id,
+            wrong_pre_image,
             master_minter
         );
 
