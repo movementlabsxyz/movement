@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "py-toy-vms"
+version = "0.1.0"
+description = "Toy VMs written in Python."
+authors = ["Liam Monninger"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.10"
+numpy = "^1.24.3"
+torch = "^2.0.1"
+seaborn = "^0.12.2"
+Pygments = "^2.15.1"
+scipy = "^1.10.1"
+statsmodels = "^0.14.0"
+sympy = "^1.12"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
