@@ -19,7 +19,7 @@ use sha2::Digest;
 use tokio_stream::StreamExt;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::sync::Arc;
-use tracing::{debug, error, info, warn, info_span, trace, Instrument};
+use tracing::{debug, error, info, warn, info_span, Instrument};
 
 use std::future::Future;
 use std::time::Duration;
@@ -101,15 +101,14 @@ where
 		{
 			match transaction_result {
 				Ok(transaction) => {
-					debug!(
+					info!(
+						target : "movement_timing",
 						tx_hash = %transaction.committed_hash(),
 						sender = %transaction.sender(),
 						sequence_number = transaction.sequence_number(),
 						"received transaction",
 					);
-
 					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-					trace!("Serialized transaction: {:?}", serialized_aptos_transaction);
 					let movement_transaction = movement_types::Transaction::new(
 						serialized_aptos_transaction,
 						transaction.sequence_number(),
