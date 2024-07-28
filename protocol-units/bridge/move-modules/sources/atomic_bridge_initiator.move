@@ -516,6 +516,4 @@ module atomic_bridge::atomic_bridge_initiator {
 
         assert!(transfer.state == COMPLETED, 300);
     }
-
-
 }
