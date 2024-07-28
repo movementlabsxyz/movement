@@ -50,6 +50,7 @@ impl Executor {
 impl DynOptFinExecutor for Executor {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
+		
 		tokio::try_join!(
 			self.executor.run_service(),
 			self.executor.run_indexer_grpc_service(),

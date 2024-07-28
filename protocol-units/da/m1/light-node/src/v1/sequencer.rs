@@ -71,7 +71,7 @@ impl LightNodeV1 {
 				let block = memseq.wait_for_next_block().await?;
 				match block {
 					Some(block) => {
-						info!(target: "movement_timing", block_id = %block.id(), uid = %uid, "received_block");
+						info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions.len(), "received_block");
 						blocks.push(block);
 					}
 					None => {
@@ -98,9 +98,16 @@ impl LightNodeV1 {
 		}
 
 		for block_id in &ids {
-			info!(target: "movement_timing", block_id = %block_id, transaction_count = block_blobs.len(), "submitting_block");
+			info!(target: "movement_timing", block_id = %block_id, "submitting_block");
 		}
-		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
+		match self.pass_through.submit_celestia_blobs(&block_blobs).await {
+			Ok(_) => {
+				info!("submitted blocks");
+			}
+			Err(e) => {
+				info!("failed to submit blocks: {:?}", e);
+			}
+		}
 		for block_id in &ids {
 			info!(target: "movement_timing", block_id = %block_id, "submitted_block");
 		}
