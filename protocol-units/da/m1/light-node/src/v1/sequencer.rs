@@ -97,6 +97,7 @@ impl LightNodeV1 {
 			block_blobs.push(block_blob);
 		}
 
+		info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
 		for block_id in &ids {
 			info!(target: "movement_timing", block_id = %block_id, "submitting_block");
 		}
