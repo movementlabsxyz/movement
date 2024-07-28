@@ -17,3 +17,4 @@ state_merkle_db/
 node_modules/
 .env
 node_modules
+.aptos
