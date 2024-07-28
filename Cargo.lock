@@ -11898,6 +11898,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "uuid",
 ]
 
 [[package]]

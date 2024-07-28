@@ -98,7 +98,7 @@ impl LightNodeV1 {
 		}
 
 		for block_id in &ids {
-			info!(target: "movement_timing", block_id = %block_id, "submitting_block");
+			info!(target: "movement_timing", block_id = %block_id, transaction_count = block_blobs.len(), "submitting_block");
 		}
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
 		for block_id in &ids {

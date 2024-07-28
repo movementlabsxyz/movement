@@ -19,6 +19,7 @@ serde_with = { workspace = true }
 # derivative = { workspace = true }
 anyhow = { workspace = true }
 blake3 = { workspace = true }
+# hex = { workspace = true }
 
 [lints]
 workspace = true

@@ -96,6 +96,7 @@ where
 
 		let mut transactions = Vec::new();
 
+		let batch_id = uuid::Uuid::new_v4();
 		while let Ok(transaction_result) =
 			tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await
 		{
@@ -103,6 +104,7 @@ where
 				Ok(transaction) => {
 					info!(
 						target : "movement_timing",
+						batch_id = %batch_id,
 						tx_hash = %transaction.committed_hash(),
 						sender = %transaction.sender(),
 						sequence_number = transaction.sequence_number(),
@@ -129,8 +131,15 @@ where
 		let length = transactions.len();
 		if length > 0 {
 			let mut light_node_client = self.light_node_client.clone();
-			light_node_client.batch_write(BatchWriteRequest { blobs: transactions }).await?;
-			debug!("Wrote transactions to DA");
+			let span = info_span!(
+				target: "movement_timing", 
+				"batch_write", 
+				batch_id = %batch_id, 
+				length = length
+			);
+			light_node_client.batch_write(BatchWriteRequest { blobs: transactions }).instrument(
+				span,
+			).await?;
 			// We now consider the transactions no longer in mempool flight.
 			self.executor.decrement_transactions_in_flight(length as u64);
 		}

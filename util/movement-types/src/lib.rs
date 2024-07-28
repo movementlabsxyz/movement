@@ -1,7 +1,6 @@
 use aptos_types::state_proof::StateProof;
 
 use serde::{Deserialize, Serialize};
-
 use core::fmt;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -29,7 +28,10 @@ impl AsRef<[u8]> for Id {
 
 impl fmt::Display for Id {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{:?}", &self.0.to_ascii_lowercase())
+		for byte in &self.0 {
+			write!(f, "{:02x}", byte)?;
+		}
+		Ok(())
 	}
 }
 
