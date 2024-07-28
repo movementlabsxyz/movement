@@ -10,12 +10,21 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::bcs;
     use moveth::moveth;
 
-    /// Constants to represent the state of a bridge transfer
+    // Constants to represent the state of a bridge transfer
     const INITIALIZED: u8 = 0;
     const COMPLETED: u8 = 1;
     const REFUNDED: u8 = 2;
 
-    /// A struct to hold the details of a bridge transfer
+    // Constants for error handling
+
+    const EINSUFFICIENT_AMOUNT: u64 = 0;
+    const EINSUFFICIENT_BALANCE: u64 = 1;
+    const EDOES_NOT_EXIST: u64 = 2;
+    const EWRONG_PREIMAGE: u64 = 3;
+    const ENOT_INITIALIZED: u64 = 4;
+    
+
+    // A struct to hold the details of a bridge transfer
     struct BridgeTransfer has key, store {
         amount: u64,
         originator: address,
@@ -33,7 +42,7 @@ module atomic_bridge::atomic_bridge_initiator {
         bridge_transfer_refunded_events: EventHandle<BridgeTransferRefundedEvent>,
     }
 
-    /// Event triggered upon initiating a bridge transfer
+    // Event triggered upon initiating a bridge transfer
     struct BridgeTransferInitiatedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
         originator: address,
@@ -43,13 +52,13 @@ module atomic_bridge::atomic_bridge_initiator {
         time_lock: u64,
     }
 
-    /// Event triggered upon completing a bridge transfer
+    // Event triggered upon completing a bridge transfer
     struct BridgeTransferCompletedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
     }
 
-    /// Event triggered upon refunding a bridge transfer
+    // Event triggered upon refunding a bridge transfer
     struct BridgeTransferRefundedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
     }
@@ -77,12 +86,14 @@ module atomic_bridge::atomic_bridge_initiator {
         let addr = signer::address_of(initiator);
         let asset = moveth::metadata();
         let store = borrow_global_mut<BridgeTransferStore>(addr);
-        if (amount > 0) {
-            // Transfer amount of moveth from initiator to contract address
-            let initiator_store = primary_fungible_store::ensure_primary_store_exists(addr, asset);
-            let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
-            dispatchable_fungible_asset::transfer(initiator, initiator_store, bridge_store, amount);
-        };
+        assert!(amount > 0, EINSUFFICIENT_AMOUNT);
+        // Transfer amount of moveth from initiator to atomic bridge address
+        let initiator_store = primary_fungible_store::ensure_primary_store_exists(addr, asset);
+
+        // Check balance of initiator account
+        assert!(primary_fungible_store::balance(addr, asset) >= amount, EINSUFFICIENT_BALANCE);
+        let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
+        dispatchable_fungible_asset::transfer(initiator, initiator_store, bridge_store, amount);
         store.nonce = store.nonce + 1;
 
         // Create a single byte vector by concatenating all components
@@ -154,16 +165,14 @@ module atomic_bridge::atomic_bridge_initiator {
         let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
         let bridge_transfer = vector::borrow_mut(&mut store.transfers, idx);
 
-        assert!(bridge_transfer.state == INITIALIZED, 1);
+        assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, 2);
-
-        // moveth::add_minter(master_minter, signer::address_of(account));
-        // moveth::mint(account, bridge_transfer.originator, bridge_transfer.amount);
         
         let initiator_addr = bridge_transfer.originator;
         let bridge_addr = signer::address_of(atomic_bridge);
         let asset = moveth::metadata();
 
+        // Transfer amount of asset from atomic bridge primary fungible store to initiator's primary fungible store
         let initiator_store = primary_fungible_store::ensure_primary_store_exists(initiator_addr, asset);
         let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
         dispatchable_fungible_asset::transfer(atomic_bridge, bridge_store, initiator_store, bridge_transfer.amount);
@@ -321,11 +330,11 @@ module atomic_bridge::atomic_bridge_initiator {
         account::create_account_if_does_not_exist(addr);
         init_module(sender);
 
-        assert!(exists<BridgeTransferStore>(addr), 42);
+        assert!(exists<BridgeTransferStore>(addr), EDOES_NOT_EXIST);
         let recipient = b"recipient_address";
         let pre_image = b"pre_image_value";
         let hash_lock = aptos_hash::keccak256(bcs::to_bytes(&pre_image));
-        assert!(aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == hash_lock, 5);
+        assert!(aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == hash_lock, EWRONG_PREIMAGE);
         let time_lock = 1000;
         let amount = 1000;
         let sender_address = signer::address_of(sender);
