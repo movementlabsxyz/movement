@@ -13,11 +13,11 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
     }
 
     struct BridgeTransferDetails {
-        bytes32 initiator; 
+        bytes32 initiator;  
         address recipient;
         uint256 amount;
         bytes32 hashLock;
-        uint256 timeLock;
+        uint256 timeLock; 
         MessageState state; 
     }
 
@@ -44,12 +44,14 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         uint256 amount
     ) external onlyOwner returns (bool) {
         if (amount == 0) revert ZeroAmount();
+        if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
+
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
             initiator: initiator,
             amount: amount,
             hashLock: hashLock,
-            timeLock: block.timestamp + timeLock,
+            timeLock: block.number + timeLock, // using block number for timelock
             state: MessageState.PENDING 
         });
 
@@ -62,7 +64,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         if (computedHash != details.hashLock) revert InvalidSecret();
-        if (block.timestamp > details.timeLock) revert TimeLockNotExpired();
+        if (block.number > details.timeLock) revert TimeLockNotExpired();
 
         details.state = MessageState.COMPLETED;
 
@@ -74,7 +76,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
     function abortBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
-        if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
+        if (block.number <= details.timeLock) revert TimeLockNotExpired();
 
         details.state = MessageState.REFUNDED;
 
