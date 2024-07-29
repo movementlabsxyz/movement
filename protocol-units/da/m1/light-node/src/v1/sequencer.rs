@@ -1,22 +1,24 @@
-use m1_da_light_node_util::config::Config;
 use tokio_stream::Stream;
+use std::sync::{atomic::AtomicU64, Arc};
 use tracing::{debug, info};
 
 use std::{fmt::Debug, path::PathBuf};
-
 use celestia_rpc::HeaderClient;
-
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
+use m1_da_light_node_util::config::Config;
+use movement_types::Block;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
+const LOGGING_UID : AtomicU64 = AtomicU64::new(0);
+
 #[derive(Clone)]
 pub struct LightNodeV1 {
 	pub pass_through: LightNodeV1PassThrough,
-	pub memseq: memseq::Memseq<memseq::RocksdbMempool>,
+	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 }
 
 impl Debug for LightNodeV1 {
@@ -35,7 +37,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 		let memseq_path = pass_through.config.try_memseq_path()?;
 		info!("Memseq path: {:?}", memseq_path);
 
-		let memseq = memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?;
+		let memseq = Arc::new(memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?);
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
 		Ok(Self { pass_through, memseq })
@@ -54,22 +56,66 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 impl LightNodeV1 {
 	pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let block = self.memseq.wait_for_next_block().await?;
-		match block {
-			Some(block) => {
-				let block_blob = self.pass_through.create_new_celestia_blob(
-					serde_json::to_vec(&block)
-						.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-				)?;
 
-				let height = self.pass_through.submit_celestia_blob(block_blob).await?;
+		let half_building_time = self.memseq.building_time_ms();
+		let start = std::time::Instant::now();
 
-				debug!("Submitted block: {:?} {:?}", block.id(), height);
-			}
-			None => {
-				// no transactions to include
+		let memseq = self.memseq.clone();
+		let mut blocks = Vec::new();
+		while (start.elapsed().as_millis() as u64)  < half_building_time {
+
+			// this has an internal timeout based on its building time
+			// so in the worst case scenario we will roughly double the internal timeout
+			let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+			info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+			let block = memseq.wait_for_next_block().await?;
+			match block {
+				Some(block) => {
+					info!(target: "movement_timing", block_id = %block.id(), uid = %uid, "received_block");
+					blocks.push(block);
+				}
+				None => {
+					// no transactions to include
+				}
 			}
 		}
+		
+		if blocks.is_empty() {
+			return Ok(());
+		}
+
+		let mut block_blobs = Vec::new();
+		let mut ids = Vec::new();
+		for block in blocks {
+			ids.push(block.id());
+			let block_blob = self.pass_through.create_new_celestia_blob(
+				serde_json::to_vec(&block)
+					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+			)?;
+			block_blobs.push(block_blob);
+		}
+
+		for block_id in &ids {
+			info!(target: "movement_timing", %block_id, transaction_count = block_blobs.len(), "submitting_block");
+		}
+		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
+		for block_id in &ids {
+			info!(target: "movement_timing", %block_id, "submitted_block");
+		}
+
+		Ok(())
+	}
+
+	pub async fn submit_proposed_block(&self, block: Block) -> Result<(), anyhow::Error> {
+		info!("built block with {} transactions", block.transactions.len());
+		let block_blob = self.pass_through.create_new_celestia_blob(
+			serde_json::to_vec(&block)
+				.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+		)?;
+
+		let height = self.pass_through.submit_celestia_blob(block_blob).await?;
+
+		debug!("submitted block at height {height}");
 		Ok(())
 	}
 
@@ -77,12 +123,7 @@ impl LightNodeV1 {
 		loop {
 			// build the next block from the blobs
 			self.tick_block_proposer().await?;
-
-			// sleep for a while
-			tokio::time::sleep(std::time::Duration::from_millis(300)).await;
 		}
-
-		Ok(())
 	}
 
 	pub fn to_sequenced_blob_block(
@@ -156,7 +197,7 @@ impl LightNodeService for LightNodeV1 {
 	/// Stream blobs out, either individually or in batches.
 	async fn stream_write_blob(
 		&self,
-		request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
+		_request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
 		unimplemented!("stream_write_blob")
 	}
@@ -202,20 +243,16 @@ impl LightNodeService for LightNodeV1 {
 		// make transactions from the blobs
 		let mut transactions = Vec::new();
 		for blob in blobs_for_submission {
-			let transaction : Transaction = serde_json::from_slice(&blob.data)
+			let transaction: Transaction = serde_json::from_slice(&blob.data)
 				.map_err(|e| tonic::Status::internal(e.to_string()))?;
 			transactions.push(transaction);
 		}
-		
-		// publish the transactions
-		for transaction in transactions {
-			debug!("Publishing transaction: {:?}", transaction.id());
 
-			self.memseq
-				.publish(transaction)
-				.await
-				.map_err(|e| tonic::Status::internal(e.to_string()))?;
-		}
+		// publish the transactions
+		let memseq = self.memseq.clone();
+		memseq.publish_many(transactions).await.map_err(
+			|e| tonic::Status::internal(e.to_string())
+		)?;
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
 	}

@@ -35,7 +35,6 @@ rand_core = { workspace = true }
 bcs = { workspace = true }
 futures = { workspace = true }
 async-channel = { workspace = true }
-tonic = { wrkspace = true }
 
 aptos-vm = { workspace = true }
 aptos-vm-validator = { workspace = true }
@@ -69,7 +68,7 @@ aptos-indexer-grpc-table-info = { workspace = true }
 aptos-indexer = { workspace = true }
 aptos-protos = { workspace = true }
 aptos-logger = { workspace = true }
-
+tonic = { workspace = true }
 movement-rest = { workspace = true }
 
 [dev-dependencies]

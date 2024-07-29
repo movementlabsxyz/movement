@@ -16,4 +16,7 @@ state_merkle_db/
 .data
 node_modules/
 .env
-node_modules
+.aptos
+profile.json
+*.dat
+*.log
