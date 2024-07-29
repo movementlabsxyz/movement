@@ -52,6 +52,21 @@ impl Local {
 
 		Ok(config)
 	}
+
+	async fn setup_da_db_config(
+		&self,
+		dot_movement: DotMovement,
+		mut config: suzuka_config::Config,
+	) -> Result<suzuka_config::Config, anyhow::Error> {
+		// update the db path
+		let db_path = dot_movement.get_path().join(config.da_db.da_db_path.clone());
+		config.da_db.da_db_path = db_path.to_str().ok_or(
+			anyhow::anyhow!("Failed to convert db path to string: {:?}", db_path),
+		)?.to_string();
+
+		Ok(config)
+	}
+
 }
 
 impl SuzukaFullNodeSetupOperations for Local {
@@ -65,6 +80,9 @@ impl SuzukaFullNodeSetupOperations for Local {
 
 		// run the maptos execution config setup
 		let config = self.setup_maptos_execution_config(dot_movement.clone(), config).await?;
+
+		// run the da_db config setup
+		let config = self.setup_da_db_config(dot_movement.clone(), config).await?;
 
 		// Placeholder for returning the actual configuration.
 		Ok((config, join_handle))

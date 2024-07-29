@@ -14,7 +14,7 @@ pg_ctl -D ./.data -l ./.data/logfile start
 sleep 5
 
 # Create the 'postgres' superuser
-psql -U "$USER" -d template1 -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'your_password';"
+psql -U "$USER" -d template1 -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'password';"
 
 # Change ownership of the 'postgres' database
 psql -U "$USER" -d template1 -c "ALTER DATABASE postgres OWNER TO postgres;"

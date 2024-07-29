@@ -8,7 +8,7 @@ use aptos_api::context::Context;
 use aptos_config::config::NodeConfig;
 use aptos_db::AptosDB;
 use aptos_executor::block_executor::BlockExecutor;
-use aptos_mempool::{core_mempool::CoreMempool, MempoolClientRequest, MempoolClientSender};
+use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::validator_signer::ValidatorSigner;
 use aptos_vm::AptosVM;
@@ -27,8 +27,6 @@ pub struct Executor {
 	pub db: DbReaderWriter,
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
-	/// The core mempool (used for the api to query the mempool).
-	pub core_mempool: Arc<RwLock<CoreMempool>>,
 	/// The sender for the mempool client.
 	pub mempool_client_sender: MempoolClientSender,
 	/// The receiver for the mempool client.
@@ -58,13 +56,12 @@ impl Executor {
 		let (_aptos_db, reader_writer) = DbReaderWriter::wrap(AptosDB::new_for_test(
 			&maptos_config.chain.maptos_db_path.clone().context("No db path provided.")?,
 		));
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
+
 		let reader = reader_writer.reader.clone();
 		Ok(Self {
-			block_executor : Arc::new(block_executor),
+			block_executor: Arc::new(block_executor),
 			db: reader_writer,
 			signer,
-			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			node_config: node_config.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),

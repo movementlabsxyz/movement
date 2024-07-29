@@ -1,5 +1,7 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
+use aptos_config::config::NodeConfig;
+use aptos_mempool::core_mempool::CoreMempool;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 use maptos_opt_executor::Executor as OptExecutor;
@@ -11,6 +13,7 @@ use tokio::time::interval;
 use tokio_stream::wrappers::IntervalStream;
 use tokio::time::Duration;
 use tokio_stream::StreamExt;
+use std::sync::atomic::Ordering;
 
 #[derive(Clone)]
 pub struct Executor {
@@ -41,31 +44,6 @@ impl Executor {
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
 
-	pub async fn run_transaction_pipe(&self) -> Result<(), anyhow::Error> {
-		loop {
-			// readers should be able to run concurrently
-			match self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await {
-				Ok(_) => {}
-				Err(e) => match e {
-					TransactionPipeError::TransactionNotAccepted(e) => {
-						// allow the transaction not to be accepted by the mempool
-						// because the client may have sent a bad sequence number
-						tracing::warn!("Transaction not accepted: {:?}", e);
-					}
-					_ => anyhow::bail!("Server error: {:?}", e),
-				},
-			}
-		}
-	}
-
-	pub async fn run_gc_mempool(&self) -> Result<(), anyhow::Error> {
-		let mut interval = IntervalStream::new(interval(Duration::from_millis(60_000)));
-		while let Some(_interval) = interval.next().await {
-			self.executor.gc_mempool().await?;
-		}
-		Ok(())
-	}
-
 }
 
 #[async_trait]
@@ -81,11 +59,30 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(
-			self.run_transaction_pipe(),
-			self.run_gc_mempool(),
-		)?;
-		Ok(())
+		/*let mut node_config = NodeConfig::default();
+		node_config.indexer_table_info.enabled = true;
+		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.set_data_dir(node_config.storage.dir.clone());*/
+		let mut core_mempool = CoreMempool::new(&self.executor.node_config);
+		let mut last_gc = std::time::Instant::now();
+		loop {
+			// readers should be able to run concurrently
+			match self
+				.executor
+				.tick_transaction_pipe(&mut core_mempool, self.transaction_channel.clone(), &mut last_gc)
+				.await
+			{
+				Ok(_) => {}
+				Err(e) => match e {
+					TransactionPipeError::TransactionNotAccepted(e) => {
+						// allow the transaction not to be accepted by the mempool
+						// because the client may have sent a bad sequence number
+						tracing::warn!("Transaction not accepted: {:?}", e);
+					}
+					_ => anyhow::bail!("Server error: {:?}", e),
+				},
+			}
+		}
 	}
 
 	async fn execute_block_opt(
@@ -137,10 +134,13 @@ impl DynOptFinExecutor for Executor {
 	}
 
 	fn decrement_transactions_in_flight(&self, count : u64) {
-		self.executor.transactions_in_flight.fetch_sub(
-			count,
-			std::sync::atomic::Ordering::Relaxed, // relaxed because this is just for load shedding, now need for strict ordering.
-		);
+		
+		// fetch sub mind the underflow
+		// a semaphore might be better here as this will rerun until the value does not change during the operation
+		self.executor.transactions_in_flight.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+			Some(current.saturating_sub(count))
+		}).unwrap_or_else(|_| 0);
+
 	}
 }
 
@@ -451,7 +451,7 @@ mod tests {
 				let user_account_creation_tx = root_account.sign_with_transaction_builder(
 					tx_factory.create_user_account(new_account.public_key()),
 				);
-				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				let tx_hash = user_account_creation_tx.committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}
@@ -517,7 +517,7 @@ mod tests {
 			let user_account_creation_tx = root_account.sign_with_transaction_builder(
 				tx_factory.create_user_account(new_account.public_key()),
 			);
-			let tx_hash = user_account_creation_tx.clone().committed_hash();
+			let tx_hash = user_account_creation_tx.committed_hash();
 			transaction_hashes.push(tx_hash);
 			transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 

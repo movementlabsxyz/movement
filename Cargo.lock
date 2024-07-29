@@ -3377,6 +3377,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake3"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9ec96fe9a81b5e365f9db71fe00edc4fe4ca2cc7dcb7861f0603012a7caa210"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.4",
+ "cc",
+ "cfg-if",
+ "constant_time_eq 0.3.0",
+ "digest 0.10.7",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7392,7 +7406,6 @@ dependencies = [
  "celestia-rpc",
  "celestia-types",
  "chrono",
- "console-subscriber",
  "dot-movement",
  "godfig",
  "hex",
@@ -7400,6 +7413,8 @@ dependencies = [
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-tracing",
+ "movement-types",
  "prost",
  "serde",
  "serde_json",
@@ -7410,7 +7425,7 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tracing",
- "tracing-subscriber 0.3.18",
+ "uuid",
 ]
 
 [[package]]
@@ -7545,14 +7560,17 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "aptos-api",
+ "aptos-config",
  "aptos-crypto",
  "aptos-db",
+ "aptos-mempool",
  "aptos-proptest-helpers",
  "aptos-sdk",
  "aptos-types",
  "async-channel 2.3.1",
  "async-trait",
  "chrono",
+ "futures",
  "maptos-execution-util",
  "maptos-fin-view",
  "maptos-opt-executor",
@@ -7816,6 +7834,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml 0.8.15",
+ "tracing",
 ]
 
 [[package]]
@@ -8611,6 +8630,13 @@ dependencies = [
  "poem",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "movement-tracing"
+version = "0.3.0"
+dependencies = [
+ "tracing-appender",
  "tracing-subscriber 0.3.18",
 ]
 
@@ -8621,9 +8647,9 @@ dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
+ "blake3",
  "serde",
  "serde_with",
- "sha2 0.10.8",
 ]
 
 [[package]]
@@ -11818,6 +11844,7 @@ name = "suzuka-config"
 version = "0.3.0"
 dependencies = [
  "anyhow",
+ "godfig",
  "m1-da-light-node-util",
  "maptos-execution-util",
  "mcr-settlement-client",
@@ -11860,7 +11887,9 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-manager",
  "movement-rest",
+ "movement-tracing",
  "movement-types",
+ "rocksdb",
  "serde_json",
  "sha2 0.10.8",
  "suzuka-config",
@@ -12600,6 +12629,18 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-appender"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3566e8ce28cc0a3fe42519fc80e6b4c943cc4c8cef275620eb8dac2d3d4e06cf"
+dependencies = [
+ "crossbeam-channel",
+ "thiserror",
+ "time",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
