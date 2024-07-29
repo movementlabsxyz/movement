@@ -48,6 +48,16 @@ impl RocksdbMempool {
 		key
 	}
 
+	fn internal_get_mempool_transaction_key(
+		db : Arc<DB>,
+		transaction_id: &Id
+	) -> Result<Option<Vec<u8>>, Error> {
+		let cf_handle = db
+		.cf_handle("transaction_lookups")
+		.ok_or_else(|| Error::msg("CF handle not found"))?;
+		db.get_cf(&cf_handle, transaction_id.to_vec()).map_err(|e| Error::new(e))
+	}
+
 	/// Helper function to retrieve the key for mempool transaction from the lookup table.
 	async fn get_mempool_transaction_key(
 		&self,
@@ -56,29 +66,57 @@ impl RocksdbMempool {
 		let db = self.db.clone();
 		let transaction_id = transaction_id.clone();
 		tokio::task::spawn_blocking(move ||{
-			let cf_handle = db
-			.cf_handle("transaction_lookups")
-			.ok_or_else(|| Error::msg("CF handle not found"))?;
-			db.get_cf(&cf_handle, transaction_id.to_vec()).map_err(|e| Error::new(e))
+			Self::internal_get_mempool_transaction_key(db, &transaction_id)
 		}).await?
 	}
+
+	fn internal_has_mempool_transaction(db : Arc<DB>, transaction_id: &Id) -> Result<bool, Error> {
+		let key = Self::internal_get_mempool_transaction_key(db.clone(), transaction_id)?;
+		match key {
+			Some(k) => {
+				let cf_handle = db
+					.cf_handle("mempool_transactions")
+					.ok_or_else(|| Error::msg("CF handle not found"))?;
+				Ok(db.get_cf(&cf_handle, k)?.is_some())
+			}
+			None => Ok(false),
+		}
+	}
+
 }
 
 impl MempoolTransactionOperations for RocksdbMempool {
 	async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, Error> {
-		let key = self.get_mempool_transaction_key(&transaction_id).await?;
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
-			match key {
-				Some(k) => {
-					let cf_handle = db
-						.cf_handle("mempool_transactions")
-						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					Ok(db.get_cf(&cf_handle, k)?.is_some())
-				}
-				None => Ok(false),
-			}
+			Self::internal_has_mempool_transaction(db, &transaction_id)
 		}).await?
+	}
+
+	async fn add_mempool_transactions (&self, transactions: Vec<MempoolTransaction>) -> Result<(), anyhow::Error> {
+		let db = self.db.clone();
+		tokio::task::spawn_blocking(move ||{
+			let mempool_transactions_cf_handle = db
+				.cf_handle("mempool_transactions")
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
+				let transaction_lookups_cf_handle = db
+					.cf_handle("transaction_lookups")
+					.ok_or_else(|| Error::msg("CF handle not found"))?;
+
+			for tx in transactions {
+
+				if Self::internal_has_mempool_transaction(db.clone(), &tx.transaction.id())? {
+					continue;
+				}
+
+				let serialized_tx = bcs::to_bytes(&tx)?;
+				let key = Self::construct_mempool_transaction_key(&tx);
+				db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_tx)?;
+				db.put_cf(&transaction_lookups_cf_handle, tx.transaction.id().to_vec(), &key)?;
+			}
+			Ok::<(), Error>(())
+		}).await??;
+		Ok(())
 	}
 
 	async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), Error> {

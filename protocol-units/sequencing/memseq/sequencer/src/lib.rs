@@ -56,6 +56,12 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
+
+	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
+		self.mempool.add_transactions(transactions).await?;
+		Ok(())
+	}
+
 	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
 		self.mempool.add_transaction(transaction).await?;
 		Ok(())
@@ -395,6 +401,13 @@ pub mod test {
 			_transaction_id: Id,
 		) -> Result<bool, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock has_mempool_transaction"))
+		}
+
+		async fn add_mempool_transactions(
+			&self,
+			_transactions: Vec<MempoolTransaction>,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock add_mempool_transactions"))
 		}
 
 		async fn add_mempool_transaction(
