@@ -2,10 +2,11 @@
 pragma solidity ^0.8.22;
 
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterparty} from "./IAtomicBridgeCounterparty.sol";
-import {AtomicBridgeInitiator} from "./AtomicBridgeInitator.sol";
+import {AtomicBridgeInitiator} from "./AtomicBridgeInitiator.sol";
 
-contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
+contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, OwnableUpgradeable {
     enum MessageState {
         PENDING,
         COMPLETED,
@@ -13,20 +14,32 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
     }
 
     struct BridgeTransferDetails {
-        bytes32 initiator; // movement address 
+        bytes32 initiator; // address of the initiator
         address recipient;
         uint256 amount;
         bytes32 hashLock;
         uint256 timeLock;
-        MessageState state; 
+        MessageState state; // Added state to manage the status of each transfer
     }
 
     AtomicBridgeInitiator public atomicBridgeInitiator;
-    mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers; 
+    mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers; // Single mapping for all transfers
 
-    function initialize(address _atomicBridgeInitiator) public initializer {
+    function initialize(address _atomicBridgeInitiator, address owner) public initializer {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
+        __Ownable_init();
+        transferOwnership(owner);
+    }
+
+    function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
+        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
+        atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
+    }
+
+    modifier onlyInitiator() {
+        require(msg.sender == address(atomicBridgeInitiator), "Caller is not the initiator contract");
+        _;
     }
 
     function lockBridgeTransferAssets(
@@ -36,10 +49,11 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
         uint256 timeLock,
         address recipient,
         uint256 amount
-    ) external returns (bool) {
+    ) external onlyInitiator returns (bool) {
         BridgeTransferDetails storage transfer = bridgeTransfers[bridgeTransferId];
-        if (transfer.recipient != address(0)) revert BridgeTransferInvalid();
+        if (recipient != address(0)) revert BridgeTransferInvalid();
         if (amount == 0) revert ZeroAmount();
+
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
             initiator: initiator,
@@ -57,11 +71,10 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
         if (details.state != MessageState.PENDING) revert BridgeTransferInvalid();
-        
-
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         if (computedHash != details.hashLock) revert InvalidSecret();
         if (block.timestamp > details.timeLock) revert TimeLockNotExpired();
+
         details.state = MessageState.COMPLETED;
 
         // Call withdrawWETH on AtomicBridgeInitiator to transfer funds to the recipient
@@ -72,10 +85,14 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
 
     function abortBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
+
+        // Ensure the transfer is in PENDING state and the timelock has expired
         if (details.state != MessageState.PENDING) revert BridgeTransferInvalid();
         if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
-        details.state = MessageState.REFUNDED;
+
+        delete bridgeTransfers[bridgeTransferId];
 
         emit BridgeTransferCancelled(bridgeTransferId);
     }
 }
+
