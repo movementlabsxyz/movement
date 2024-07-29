@@ -1,15 +1,16 @@
 use tokio_stream::Stream;
-use std::sync::{atomic::AtomicU64, Arc};
-use tracing::{debug, info};
+use std::{sync::{atomic::AtomicU64, Arc}};
+use tracing::info;
 
 use std::{fmt::Debug, path::PathBuf};
 use celestia_rpc::HeaderClient;
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_util::config::Config;
-use movement_types::Block;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
+use tokio::sync::mpsc::{Receiver, Sender};
+use movement_types::Block;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
@@ -52,11 +53,13 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 		Ok(())
 	}
+
 }
 
 impl LightNodeV1 {
-	pub async fn tick_block_proposer(&self) -> Result<(), anyhow::Error> {
 
+	async fn tick_build_blocks(&self, sender : Sender<Vec<Block>>) -> Result<(), anyhow::Error> {
+		
 		let half_building_time = self.memseq.building_time_ms();
 		let start = std::time::Instant::now();
 
@@ -85,60 +88,86 @@ impl LightNodeV1 {
 			return Ok(());
 		}
 
-		let mut block_blobs = Vec::new();
-		let mut ids = Vec::new();
-		for block in blocks {
-			ids.push(block.id());
-			let block_blob = self.pass_through.create_new_celestia_blob(
-				serde_json::to_vec(&block)
-					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-			)?;
-			block_blobs.push(block_blob);
+		sender.send(blocks).await.map_err(|e| anyhow::anyhow!("Failed to send blocks: {}", e))?;
+
+		Ok(())
+
+	}
+
+	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Vec<Block>>) -> Result<(), anyhow::Error> {
+		
+		match receiver.recv().await {
+			Some(blocks) => {
+
+				let mut block_blobs = Vec::new();
+				let mut ids = Vec::new();
+				for block in blocks {
+					ids.push(block.id());
+					let block_blob = self.pass_through.create_new_celestia_blob(
+						serde_json::to_vec(&block)
+							.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+					)?;
+					block_blobs.push(block_blob);
+				}
+
+				let pass_through = self.pass_through.clone();
+				info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
+				for block_id in &ids {
+					info!(target: "movement_timing", %block_id, "submitting_block");
+				}
+				match pass_through.submit_celestia_blobs(&block_blobs).await {
+					Ok(_) => {
+						info!("submitted blocks");
+					}
+					Err(e) => {
+						info!("failed to submit blocks: {:?}", e);
+					}
+				}
+				for block_id in &ids {
+					info!(target: "movement_timing", %block_id, "submitted_block");
+				}
+				
+			}
+			None => {
+				// no blocks to submit
+				info!(target : "movement_timing", "no_blocks_to_submit");
+			}
 		}
-
-		// This allows the block proposer to keep ticking while the transaction are sent. 
-		// For now, this is acceptable because we accept that some blocks may be dropped.
-		// In the future, however, we will want to implement a strategy for block resizing and resubmission. 
-		let pass_through = self.pass_through.clone();
-		tokio::spawn(async move {
-			info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
-			for block_id in &ids {
-				info!(target: "movement_timing", block_id = %block_id, "submitting_block");
-			}
-			match pass_through.submit_celestia_blobs(&block_blobs).await {
-				Ok(_) => {
-					info!("submitted blocks");
-				}
-				Err(e) => {
-					info!("failed to submit blocks: {:?}", e);
-				}
-			}
-			for block_id in &ids {
-				info!(target: "movement_timing", block_id = %block_id, "submitted_block");
-			}
-		});
-
 		Ok(())
 	}
 
-	pub async fn submit_proposed_block(&self, block: Block) -> Result<(), anyhow::Error> {
-		info!("built block with {} transactions", block.transactions.len());
-		let block_blob = self.pass_through.create_new_celestia_blob(
-			serde_json::to_vec(&block)
-				.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-		)?;
-
-		let height = self.pass_through.submit_celestia_blob(block_blob).await?;
-
-		debug!("submitted block at height {height}");
-		Ok(())
+	async fn run_block_builder(&self, sender : Sender<Vec<Block>>) -> Result<(), anyhow::Error> {
+		loop {
+			self.tick_build_blocks(sender.clone()).await?;
+		}
 	}
+
+	async fn run_block_publisher(&self, receiver : &mut Receiver<Vec<Block>>) -> Result<(), anyhow::Error> {
+		loop {
+			self.tick_publish_blobs(receiver).await?;
+		}
+	}
+
 
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
+		let (sender, mut receiver) = tokio::sync::mpsc::channel(2^10);
+
 		loop {
-			// build the next block from the blobs
-			self.tick_block_proposer().await?;
+			match futures::try_join!(
+				self.run_block_builder(sender.clone()),
+				self.run_block_publisher(&mut receiver),
+			) {
+				Ok(_) => {
+					info!("block proposer completed");
+				}
+				Err(e) => {
+					info!("block proposer failed: {:?}", e);
+				}
+			}	
 		}
+
+		Ok(())
+
 	}
 
 	pub fn to_sequenced_blob_block(

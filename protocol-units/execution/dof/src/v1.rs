@@ -8,7 +8,7 @@ use maptos_opt_executor::Executor as OptExecutor;
 use movement_types::BlockCommitment;
 use async_channel::Sender;
 use async_trait::async_trait;
-use tracing::debug;
+use tracing::{debug, info};
 use tokio::time::interval;
 use tokio_stream::wrappers::IntervalStream;
 use tokio::time::Duration;
@@ -138,9 +138,16 @@ impl DynOptFinExecutor for Executor {
 		
 		// fetch sub mind the underflow
 		// a semaphore might be better here as this will rerun until the value does not change during the operation
-		self.executor.transactions_in_flight.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+		self.executor.transactions_in_flight.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+			info!(
+				target: "movement_timing",
+				count,
+				current,
+				"decrementing_transactions_in_flight",
+			);
 			Some(current.saturating_sub(count))
 		}).unwrap_or_else(|_| 0);
+
 
 	}
 }

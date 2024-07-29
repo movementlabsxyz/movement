@@ -1,11 +1,10 @@
 use super::Executor;
-use aptos_logger::{info, warn};
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
 use futures::StreamExt;
 use thiserror::Error;
-use tracing::{debug, info_span, Instrument};
+use tracing::{info, warn, debug, info_span, Instrument};
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use async_channel::Sender;
@@ -45,10 +44,17 @@ impl Executor {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-					let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
-					info!("Transactions in flight: {:?}", in_flight);
-					if in_flight > 2^16 {
-						info!("Shedding load.");
+					let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::SeqCst);
+					info!(
+						target: "movement_timing",
+						in_flight = %in_flight,
+						"transactions_in_flight"
+					);
+					if in_flight > 2u64.pow(16) {
+						info!(
+							target: "movement_timing",
+							"shedding_load"
+						);
 						let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
 						callback.send(Ok((status.clone(), None))).map_err(
 							|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
@@ -128,7 +134,7 @@ impl Executor {
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
-				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);

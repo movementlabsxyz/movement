@@ -7407,6 +7407,7 @@ dependencies = [
  "celestia-types",
  "chrono",
  "dot-movement",
+ "futures",
  "godfig",
  "hex",
  "m1-da-light-node-grpc",
@@ -7425,7 +7426,6 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tracing",
- "uuid",
 ]
 
 [[package]]
