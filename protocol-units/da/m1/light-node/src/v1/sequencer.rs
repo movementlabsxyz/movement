@@ -94,9 +94,6 @@ impl LightNodeV1 {
 		let start = std::time::Instant::now();
 		let mut blocks = Vec::new();
 
-		// select receive or timeout
-
-
 		loop {
 			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
 				Some(remaining) => remaining,
@@ -127,6 +124,11 @@ impl LightNodeV1 {
 			}
 		}
 
+		info!(
+			target: "movement_timing",
+			batch_size = blocks.len(),
+			"building_block_batch"
+		);
 		let mut block_blobs = Vec::new();
 		let mut ids = Vec::new();
 		for block in &blocks {
@@ -142,7 +144,7 @@ impl LightNodeV1 {
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitting_block_batch");
 		}
-		if blocks.len() > 0 {
+		if block_blobs.len() > 0 {
 
 			let mut chunk_size = 4;
 			loop {
@@ -157,24 +159,38 @@ impl LightNodeV1 {
 					break;
 				}
 
-				// iter in chunks of 4
-				for blobs in block_blobs.chunks(chunk_size) {
-					// submit the blocks
-					let pass_through = self.pass_through.clone();
-					match pass_through.submit_celestia_blobs(blobs).await {
-						Ok(_) => {
-							info!(
-								target: "movement_timing",
-								batch_size = blobs.len(),
-								"submitted_blob_batch",
-							);
-							break;
-						}
-						Err(e) => {
-							info!("failed to submit blocks: {:?}", e);
-							chunk_size -= 1;
+				let new_chunk_size = {
+
+					// iter in chunks of 4
+					for blobs in block_blobs.chunks(chunk_size) {
+						// submit the blocks
+						let pass_through = self.pass_through.clone();
+						match pass_through.submit_celestia_blobs(blobs).await {
+							Ok(_) => {
+								info!(
+									target: "movement_timing",
+									batch_size = blobs.len(),
+									"submitted_blob_batch",
+								);
+							}
+							Err(e) => {
+								info!("failed to submit blocks: {:?}", e);
+								chunk_size -= 1;
+								break;
+							}
 						}
 					}
+					chunk_size
+				};
+
+				if new_chunk_size == chunk_size {
+					// we have succeeded
+					info!(
+						target: "movement_timing",
+						batch_size = blocks.len(),
+						"submitted_all_blob_batches",
+					);
+					break;
 				}
 
 			}
