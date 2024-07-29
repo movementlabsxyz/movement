@@ -8,6 +8,8 @@ use aptos_protos::indexer::v1::{
     raw_data_client::RawDataClient,
 };
 use futures::StreamExt;
+use std::io::{self, Write};
+
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -39,11 +41,11 @@ static INDEXER_URL: Lazy<String> = Lazy::new(|| {
 #[tokio::test]
 async fn test_example_indexer_stream() -> Result<(), anyhow::Error> {
 
-    /*let channel = tonic::transport::Channel::from_shared(
+    let channel = tonic::transport::Channel::from_shared(
         INDEXER_URL.to_string(),
     ).expect(
         "[Parser] Failed to build GRPC channel, perhaps because the data service URL is invalid",
-    );*/
+    );
     
     let mut client = RawDataClient::connect(
         INDEXER_URL.as_str(),
@@ -54,7 +56,7 @@ async fn test_example_indexer_stream() -> Result<(), anyhow::Error> {
         transactions_count : Some(10),
         batch_size : Some(100),
     }; 
-
+	println!("{:?}", request);
     let mut stream = client.get_transactions(request).await?.into_inner();
 
 	for _ in 1..10 {
@@ -62,7 +64,8 @@ async fn test_example_indexer_stream() -> Result<(), anyhow::Error> {
 			.next()
 			.await;
 		println!("{:?}", response);
-	}
+		io::stdout().flush().unwrap();
+	}	
 
 	Ok(())
 }

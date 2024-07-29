@@ -81,6 +81,7 @@
           solc
           grpcurl
           grpcui
+          redis
         ];
 
         # Specific version of toolchain

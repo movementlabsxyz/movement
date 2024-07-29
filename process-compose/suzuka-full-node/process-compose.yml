@@ -84,6 +84,7 @@ processes:
       # for now, we will just prove the service is running with a grpcurl call
       # we will check the output
       RESPONSE=$(grpcurl -plaintext 0.0.0.0:30734 list aptos.indexer.v1.RawData)
+      echho $RESPONSE
       EXPECTED="aptos.indexer.v1.RawData.GetTransactions"
       if [[ "$RESPONSE" == "$EXPECTED" ]]; then
         exit 0
@@ -97,3 +98,5 @@ processes:
       initial_delay_seconds: 30
       exec:
         command: echo "true"
+
+  
