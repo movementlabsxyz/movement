@@ -25,9 +25,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers; 
 
     function initialize(address _atomicBridgeInitiator) public initializer {
-        if (_atomicBridgeInitiator == address(0)) {
-            revert ZeroAddress();
-        }
+        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
     }
 
@@ -81,4 +79,3 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
         emit BridgeTransferCancelled(bridgeTransferId);
     }
 }
-
