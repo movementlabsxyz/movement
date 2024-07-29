@@ -10,21 +10,16 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::bcs;
     use moveth::moveth;
 
-    // Constants to represent the state of a bridge transfer
     const INITIALIZED: u8 = 0;
     const COMPLETED: u8 = 1;
     const REFUNDED: u8 = 2;
-
-    // Constants for error handling
 
     const EINSUFFICIENT_AMOUNT: u64 = 0;
     const EINSUFFICIENT_BALANCE: u64 = 1;
     const EDOES_NOT_EXIST: u64 = 2;
     const EWRONG_PREIMAGE: u64 = 3;
     const ENOT_INITIALIZED: u64 = 4;
-    
 
-    // A struct to hold the details of a bridge transfer
     struct BridgeTransfer has key, store {
         amount: u64,
         originator: address,
