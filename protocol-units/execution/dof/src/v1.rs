@@ -63,7 +63,7 @@ impl DynOptFinExecutor for Executor {
 		node_config.indexer_table_info.enabled = true;
 		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());*/
-		let mut core_mempool = CoreMempool::new(&self.executor.node_config.clone());
+		let mut core_mempool = CoreMempool::new(&self.executor.node_config);
 		let mut last_gc = std::time::Instant::now();
 		loop {
 			// readers should be able to run concurrently

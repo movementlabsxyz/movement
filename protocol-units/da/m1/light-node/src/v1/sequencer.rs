@@ -59,28 +59,24 @@ impl LightNodeV1 {
 		let start = std::time::Instant::now();
 
 		let memseq = self.memseq.clone();
-		// should help performance by dedicating a thread to this
-		let blocks = tokio::spawn(async move {
-			let mut blocks = Vec::new();
-			while (start.elapsed().as_millis() as u64)  < half_building_time {
+		let mut blocks = Vec::new();
+		while (start.elapsed().as_millis() as u64)  < half_building_time {
 
-				// this has an internal timeout based on its building time
-				// so in the worst case scenario we will roughly double the internal timeout
-				let uid = uuid::Uuid::new_v4();
-				info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
-				let block = memseq.wait_for_next_block().await?;
-				match block {
-					Some(block) => {
-						info!(target: "movement_timing", block_id = %block.id(), uid = %uid, "received_block");
-						blocks.push(block);
-					}
-					None => {
-						// no transactions to include
-					}
+			// this has an internal timeout based on its building time
+			// so in the worst case scenario we will roughly double the internal timeout
+			let uid = uuid::Uuid::new_v4();
+			info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+			let block = memseq.wait_for_next_block().await?;
+			match block {
+				Some(block) => {
+					info!(target: "movement_timing", block_id = %block.id(), uid = %uid, "received_block");
+					blocks.push(block);
+				}
+				None => {
+					// no transactions to include
 				}
 			}
-			Ok::<Vec<Block>, anyhow::Error>(blocks)
-		}).await??;
+		}
 		
 		if blocks.is_empty() {
 			return Ok(());
@@ -252,18 +248,9 @@ impl LightNodeService for LightNodeV1 {
 
 		// publish the transactions
 		let memseq = self.memseq.clone();
-		tokio::spawn(async move {
-			for transaction in transactions {
-				debug!("Publishing transaction: {:?}", transaction.id());
-				memseq
-					.publish(transaction)
-					.await
-					.map_err(|e| tonic::Status::internal(e.to_string()))?;
-			}
-			Ok::<(), tonic::Status>(())
-		}).await.map_err(
+		memseq.publish_many(transactions).await.map_err(
 			|e| tonic::Status::internal(e.to_string())
-		)??;
+		)?;
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
 	}
