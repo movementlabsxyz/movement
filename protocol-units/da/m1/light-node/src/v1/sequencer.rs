@@ -1,5 +1,5 @@
 use tokio_stream::Stream;
-use std::sync::{atomic::AtomicU64, Arc};
+use std::{sync::{atomic::AtomicU64, Arc}, time::Duration};
 use tracing::info;
 
 use std::{fmt::Debug, path::PathBuf};
@@ -9,7 +9,7 @@ use m1_da_light_node_util::config::Config;
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::{time::timeout, sync::mpsc::{Receiver, Sender}};
 use movement_types::Block;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
@@ -88,14 +88,40 @@ impl LightNodeV1 {
 		let half_building_time = self.memseq.building_time_ms();
 		let start = std::time::Instant::now();
 		let mut blocks = Vec::new();
-		while let Some(block) = receiver.recv().await {
-			let elapsed = start.elapsed();
-			if (elapsed.as_millis() as u64) > half_building_time {
-				info!(target: "movement_timing", elapsed = ?elapsed, half_building_time = half_building_time, "publishing_blocks");
-				break;
+
+		// select receive or timeout
+
+
+		loop {
+			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
+				Some(remaining) => remaining,
+				None => {
+					// we have exceeded the half building time
+					break;
+				}
+			};
+			match timeout(Duration::from_millis(remaining), receiver.recv()).await {
+				Ok(Some(block)) => {
+					// Process the block
+					blocks.push(block);
+				}
+				Ok(None) => {
+					// The channel was closed
+					info!("sender dropped");
+					break;
+				}
+				Err(_) => {
+					// The operation timed out
+					info!(
+						target: "movement_timing",
+						batch_size = blocks.len(),
+						"timed_out_building_block"
+					);
+					break;
+				}
 			}
-			blocks.push(block);
 		}
+
 
 		if blocks.len() > 0 {
 
