@@ -92,9 +92,6 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
         delete pendingTransfers[bridgeTransferId];
         abortedTransfers[bridgeTransferId] = details;
 
-        // Call withdrawWETH on AtomicBridgeInitiator to refund the initiator
-        atomicBridgeInitiator.withdrawWETH(details.recipient, details.amount);
-
         emit BridgeTransferCancelled(bridgeTransferId);
     }
 }
