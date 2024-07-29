@@ -4,11 +4,15 @@ pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeCounterparty} from "../src/AtomicBridgeCounterparty.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IWETH9} from "../src/IWETH9.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract AtomicBridgeCounterpartyTest is Test {
+    AtomicBridgeCounterparty public atomicBridgeCounterpartyImplementation;
     AtomicBridgeCounterparty public atomicBridgeCounterparty;
+    ProxyAdmin public proxyAdmin;
+    TransparentUpgradeableProxy public proxy;
     IWETH9 public weth;
 
     address public deployer = address(1);
@@ -25,13 +29,21 @@ contract AtomicBridgeCounterpartyTest is Test {
         address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
         weth = IWETH9(wethAddress);
 
-        atomicBridgeCounterparty = new AtomicBridgeCounterparty();
-        atomicBridgeCounterparty.initialize(wethAddress);
+        // Deploy the AtomicBridgeCounterparty contract
+        atomicBridgeCounterpartyImplementation = new AtomicBridgeCounterparty();
+        proxyAdmin = new ProxyAdmin(msg.sender);
+        proxy = new TransparentUpgradeableProxy(
+            address(atomicBridgeCounterpartyImplementation),
+            address(proxyAdmin),
+            abi.encodeWithSignature("initialize(address,address)", wethAddress, deployer)
+        );
+
+        atomicBridgeCounterparty = AtomicBridgeCounterparty(address(proxy));
     }
 
     function testLockBridgeTransferAssets() public {
-        vm.deal(deployer, 1 ether);
         vm.startPrank(deployer);
+        vm.deal(deployer, 1 ether);
 
         weth.deposit{value: amount}();
         weth.approve(address(atomicBridgeCounterparty), amount);
@@ -109,47 +121,46 @@ contract AtomicBridgeCounterpartyTest is Test {
     }
 
     function testAbortBridgeTransfer() public {
-    vm.deal(deployer, 1 ether);
-    vm.startPrank(deployer);
+        vm.deal(deployer, 1 ether);
+        vm.startPrank(deployer);
 
-    weth.deposit{value: amount}();
-    weth.approve(address(atomicBridgeCounterparty), amount);
+        weth.deposit{value: amount}();
+        weth.approve(address(atomicBridgeCounterparty), amount);
 
-    atomicBridgeCounterparty.lockBridgeTransferAssets(
-        initiator,
-        bridgeTransferId,
-        hashLock,
-        timeLock,
-        recipient,
-        amount
-    );
+        atomicBridgeCounterparty.lockBridgeTransferAssets(
+            initiator,
+            bridgeTransferId,
+            hashLock,
+            timeLock,
+            recipient,
+            amount
+        );
 
-    vm.stopPrank();
+        vm.stopPrank();
 
-    // Advance the block timestamp to beyond the timelock period
-    vm.warp(block.timestamp + timeLock + 1);
-    vm.startPrank(deployer);
+        // Advance the block timestamp to beyond the timelock period
+        vm.warp(block.timestamp + timeLock + 1);
+        vm.startPrank(deployer);
 
-    atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
+        atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
 
-    (
-        bytes32 abortedInitiator,
-        address abortedRecipient,
-        uint256 abortedAmount,
-        bytes32 abortedHashLock,
-        uint256 abortedTimeLock,
-        AtomicBridgeCounterparty.MessageState abortedState
-    ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
+        (
+            bytes32 abortedInitiator,
+            address abortedRecipient,
+            uint256 abortedAmount,
+            bytes32 abortedHashLock,
+            uint256 abortedTimeLock,
+            AtomicBridgeCounterparty.MessageState abortedState
+        ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
 
-    assertEq(abortedInitiator, initiator);
-    assertEq(abortedRecipient, recipient);
-    assertEq(abortedAmount, amount);
-    assertEq(abortedHashLock, hashLock);
-    assertLe(abortedTimeLock, block.timestamp, "Timelock is not less than or equal to current block timestamp");
-    assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
+        assertEq(abortedInitiator, initiator);
+        assertEq(abortedRecipient, recipient);
+        assertEq(abortedAmount, amount);
+        assertEq(abortedHashLock, hashLock);
+        assertLe(abortedTimeLock, block.timestamp, "Timelock is not less than or equal to current block timestamp");
+        assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
 
-    vm.stopPrank();
-}
-
+        vm.stopPrank();
+    }
 }
 

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterparty} from "./IAtomicBridgeCounterparty.sol";
-import {AtomicBridgeInitiator} from "./AtomicBridgeInitiator.sol";
+import {AtomicBridgeInitiator} from "./AtomicBridgeInitator.sol";
 
-contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, OwnableUpgradeable {
+contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeable {
     enum MessageState {
         PENDING,
         COMPLETED,
@@ -14,7 +13,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
     }
 
     struct BridgeTransferDetails {
-        bytes32 initiator; // move address 
+        bytes32 initiator; 
         address recipient;
         uint256 amount;
         bytes32 hashLock;
@@ -28,18 +27,12 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
     function initialize(address _atomicBridgeInitiator, address owner) public initializer {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
-        __Ownable_init();
-        transferOwnership(owner);
+        __Ownable_init(owner);
     }
 
     function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
-    }
-
-    modifier onlyInitiator() {
-        require(msg.sender == address(atomicBridgeInitiator), "Caller is not the initiator contract");
-        _;
     }
 
     function lockBridgeTransferAssets(
@@ -49,9 +42,8 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
         uint256 timeLock,
         address recipient,
         uint256 amount
-    ) external onlyInitiator returns (bool) {
-        BridgeTransferDetails storage transfer = bridgeTransfers[bridgeTransferId];
-        if (recipient != address(0)) revert BridgeTransferInvalid();
+    ) external onlyOwner returns (bool) {
+        if (recipient == address(0)) revert BridgeTransferInvalid();
         if (amount == 0) revert ZeroAmount();
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
@@ -64,7 +56,6 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
         });
 
         emit BridgeTransferAssetsLocked(bridgeTransferId, recipient, amount, hashLock, timeLock);
-
         return true;
     }
 
@@ -77,7 +68,6 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
 
         details.state = MessageState.COMPLETED;
 
-        // Call withdrawWETH on AtomicBridgeInitiator to transfer funds to the recipient
         atomicBridgeInitiator.withdrawWETH(details.recipient, details.amount);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -85,12 +75,10 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
 
     function abortBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-
-        // Ensure the transfer is in PENDING state and the timelock has expired
         if (details.state != MessageState.PENDING) revert BridgeTransferInvalid();
         if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
 
-        delete bridgeTransfers[bridgeTransferId];
+        details.state = MessageState.REFUNDED;
 
         emit BridgeTransferCancelled(bridgeTransferId);
     }
