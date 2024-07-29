@@ -9,6 +9,8 @@ use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use async_channel::Sender;
 
+const IN_FLIGHT_LIMIT : u64 =  2u64.pow(16);
+
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
 	#[error("Transaction Pipe InternalError: {0}")]
@@ -50,7 +52,7 @@ impl Executor {
 						in_flight = %in_flight,
 						"transactions_in_flight"
 					);
-					if in_flight > 2u64.pow(16) {
+					if in_flight > IN_FLIGHT_LIMIT {
 						info!(
 							target: "movement_timing",
 							"shedding_load"
