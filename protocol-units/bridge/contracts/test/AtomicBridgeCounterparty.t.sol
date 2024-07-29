@@ -105,43 +105,46 @@ contract AtomicBridgeCounterpartyTest is Test {
     }
 
     function testAbortBridgeTransfer() public {
-        vm.deal(deployer, 1 ether);
-        vm.startPrank(deployer);
+    vm.deal(deployer, 1 ether);
+    vm.startPrank(deployer);
 
-        weth.deposit{value: amount}();
-        weth.approve(address(atomicBridgeCounterparty), amount);
+    weth.deposit{value: amount}();
+    weth.approve(address(atomicBridgeCounterparty), amount);
 
-        atomicBridgeCounterparty.lockBridgeTransferAssets(
-            initiator,
-            bridgeTransferId,
-            hashLock,
-            timeLock,
-            recipient,
-            amount
-        );
+    atomicBridgeCounterparty.lockBridgeTransferAssets(
+        initiator,
+        bridgeTransferId,
+        hashLock,
+        timeLock,
+        recipient,
+        amount
+    );
 
-        vm.stopPrank();
+    vm.stopPrank();
 
-        vm.warp(block.timestamp + timeLock + 1);
-        vm.startPrank(deployer);
+    // Advance the block timestamp to beyond the timelock period
+    vm.warp(block.timestamp + timeLock + 1);
+    vm.startPrank(deployer);
 
-        atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
+    atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
 
-        (
-            bytes32 abortedInitiator,
-            address abortedRecipient,
-            uint256 abortedAmount,
-            bytes32 abortedHashLock,
-            uint256 abortedTimeLock 
-        ) = atomicBridgeCounterparty.abortedTransfers(bridgeTransferId);
+    (
+        bytes32 abortedInitiator,
+        address abortedRecipient,
+        uint256 abortedAmount,
+        bytes32 abortedHashLock,
+        uint256 abortedTimeLock
+    ) = atomicBridgeCounterparty.abortedTransfers(bridgeTransferId);
 
-        assertEq(abortedInitiator, initiator);
-        assertEq(abortedRecipient, recipient);
-        assertEq(abortedAmount, amount);
-        assertEq(abortedHashLock, hashLock);
-        assertGt(abortedTimeLock, block.timestamp);
+    // Correct assertions
+    assertEq(abortedInitiator, initiator);
+    assertEq(abortedRecipient, recipient);
+    assertEq(abortedAmount, amount);
+    assertEq(abortedHashLock, hashLock);
+    assertLe(abortedTimeLock, block.timestamp, "Timelock is not less than or equal to current block timestamp");
 
-        vm.stopPrank();
-    }
+    vm.stopPrank();
+}
+
 }
 
