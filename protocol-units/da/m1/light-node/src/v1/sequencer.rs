@@ -97,21 +97,27 @@ impl LightNodeV1 {
 			block_blobs.push(block_blob);
 		}
 
-		info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
-		for block_id in &ids {
-			info!(target: "movement_timing", block_id = %block_id, "submitting_block");
-		}
-		match self.pass_through.submit_celestia_blobs(&block_blobs).await {
-			Ok(_) => {
-				info!("submitted blocks");
+		// This allows the block proposer to keep ticking while the transaction are sent. 
+		// For now, this is acceptable because we accept that some blocks may be dropped.
+		// In the future, however, we will want to implement a strategy for block resizing and resubmission. 
+		let pass_through = self.pass_through.clone();
+		tokio::spawn(async move {
+			info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
+			for block_id in &ids {
+				info!(target: "movement_timing", block_id = %block_id, "submitting_block");
 			}
-			Err(e) => {
-				info!("failed to submit blocks: {:?}", e);
+			match pass_through.submit_celestia_blobs(&block_blobs).await {
+				Ok(_) => {
+					info!("submitted blocks");
+				}
+				Err(e) => {
+					info!("failed to submit blocks: {:?}", e);
+				}
 			}
-		}
-		for block_id in &ids {
-			info!(target: "movement_timing", block_id = %block_id, "submitted_block");
-		}
+			for block_id in &ids {
+				info!(target: "movement_timing", block_id = %block_id, "submitted_block");
+			}
+		});
 
 		Ok(())
 	}
