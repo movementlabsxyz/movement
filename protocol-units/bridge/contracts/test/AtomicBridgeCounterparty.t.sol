@@ -50,8 +50,9 @@ contract AtomicBridgeCounterpartyTest is Test {
             address pendingRecipient,
             uint256 pendingAmount,
             bytes32 pendingHashLock,
-            uint256 pendingTimelock
-        ) = atomicBridgeCounterparty.pendingTransfers(bridgeTransferId);
+            uint256 pendingTimelock,
+            AtomicBridgeCounterparty.MessageState pendingState
+        ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
 
         assert(result);
         assertEq(pendingInitiator, initiator);
@@ -59,6 +60,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         assertEq(pendingAmount, amount);
         assertEq(pendingHashLock, hashLock);
         assertGt(pendingTimelock, block.timestamp);
+        assertEq(uint8(pendingState), uint8(AtomicBridgeCounterparty.MessageState.PENDING));
 
         vm.stopPrank();
     }
@@ -92,14 +94,16 @@ contract AtomicBridgeCounterpartyTest is Test {
             address completedRecipient,
             uint256 completedAmount,
             bytes32 completedHashLock,
-            uint256 completedTimeLock 
-        ) = atomicBridgeCounterparty.completedTransfers(bridgeTransferId);
+            uint256 completedTimeLock,
+            AtomicBridgeCounterparty.MessageState completedState
+        ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
 
         assertEq(completedInitiator, initiator);
         assertEq(completedRecipient, recipient);
         assertEq(completedAmount, amount);
         assertEq(completedHashLock, testHashLock);
         assertGt(completedTimeLock, block.timestamp);
+        assertEq(uint8(completedState), uint8(AtomicBridgeCounterparty.MessageState.COMPLETED));
 
         vm.stopPrank();
     }
@@ -133,15 +137,16 @@ contract AtomicBridgeCounterpartyTest is Test {
         address abortedRecipient,
         uint256 abortedAmount,
         bytes32 abortedHashLock,
-        uint256 abortedTimeLock
-    ) = atomicBridgeCounterparty.abortedTransfers(bridgeTransferId);
+        uint256 abortedTimeLock,
+        AtomicBridgeCounterparty.MessageState abortedState
+    ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
 
-    // Correct assertions
     assertEq(abortedInitiator, initiator);
     assertEq(abortedRecipient, recipient);
     assertEq(abortedAmount, amount);
     assertEq(abortedHashLock, hashLock);
     assertLe(abortedTimeLock, block.timestamp, "Timelock is not less than or equal to current block timestamp");
+    assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
 
     vm.stopPrank();
 }
