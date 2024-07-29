@@ -1,6 +1,6 @@
 use tokio_stream::Stream;
 use std::{sync::{atomic::AtomicU64, Arc}, time::Duration};
-use tracing::info;
+use tracing::{info, debug};
 
 use std::{fmt::Debug, path::PathBuf};
 use celestia_rpc::HeaderClient;
@@ -37,8 +37,13 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 		let memseq_path = pass_through.config.try_memseq_path()?;
 		info!("Memseq path: {:?}", memseq_path);
+		let (max_block_size, build_time) = pass_through.config.try_block_building_parameters()?;
 
-		let memseq = Arc::new(memseq::Memseq::try_move_rocks(PathBuf::from(memseq_path))?);
+		let memseq = Arc::new(memseq::Memseq::try_move_rocks(
+			PathBuf::from(memseq_path),
+			max_block_size,
+			build_time,
+		)?);
 		info!("Initialized Memseq with Move Rocks for LightNodeV1 in sequencer mode.");
 
 		Ok(Self { pass_through, memseq })
@@ -65,7 +70,7 @@ impl LightNodeV1 {
 		// this has an internal timeout based on its building time
 		// so in the worst case scenario we will roughly double the internal timeout
 		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+		debug!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
@@ -75,7 +80,7 @@ impl LightNodeV1 {
 			}
 			None => {
 				// no transactions to include
-				info!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
+				debug!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
 				Ok(())
 			}
 			
@@ -112,7 +117,7 @@ impl LightNodeV1 {
 				}
 				Err(_) => {
 					// The operation timed out
-					info!(
+					debug!(
 						target: "movement_timing",
 						batch_size = blocks.len(),
 						"timed_out_building_block"
@@ -122,37 +127,62 @@ impl LightNodeV1 {
 			}
 		}
 
+		let mut block_blobs = Vec::new();
+		let mut ids = Vec::new();
+		for block in &blocks {
+			let block_blob = self.pass_through.create_new_celestia_blob(
+				serde_json::to_vec(&block)
+					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+			)?;
+			block_blobs.push(block_blob);
+			ids.push(block.id());
+		}
 
+
+		for block_id in &ids {
+			info!(target: "movement_timing", %block_id, "submitting_block_batch");
+		}
 		if blocks.len() > 0 {
 
-			let mut block_blobs = Vec::new();
-			let mut ids = Vec::new();
-			for block in blocks {
-				ids.push(block.id());
-				let block_blob = self.pass_through.create_new_celestia_blob(
-					serde_json::to_vec(&block)
-						.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-				)?;
-				block_blobs.push(block_blob);
-			}
+			let mut chunk_size = 4;
+			loop {
 
-			let pass_through = self.pass_through.clone();
-			info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
-			for block_id in &ids {
-				info!(target: "movement_timing", %block_id, "submitting_block");
-			}
-			match pass_through.submit_celestia_blobs(&block_blobs).await {
-				Ok(_) => {
-					info!("submitted blocks");
+				if chunk_size < 1 {
+					// failed all chunk sizes
+					info!(
+						target: "movement_timing",
+						batch_size = blocks.len(),
+						"failed_all_chunk_sizes",
+					);
+					break;
 				}
-				Err(e) => {
-					info!("failed to submit blocks: {:?}", e);
+
+				// iter in chunks of 4
+				for blobs in block_blobs.chunks(chunk_size) {
+					// submit the blocks
+					let pass_through = self.pass_through.clone();
+					match pass_through.submit_celestia_blobs(blobs).await {
+						Ok(_) => {
+							info!(
+								target: "movement_timing",
+								batch_size = blobs.len(),
+								"submitted_blob_batch",
+							);
+							break;
+						}
+						Err(e) => {
+							info!("failed to submit blocks: {:?}", e);
+							chunk_size -= 1;
+						}
+					}
 				}
+
 			}
-			for block_id in &ids {
-				info!(target: "movement_timing", %block_id, "submitted_block");
-			}	
 		}
+		for block_id in &ids {
+			info!(target: "movement_timing", %block_id, "submitted_block_batch");
+		}
+
 		Ok(())
 	}
 

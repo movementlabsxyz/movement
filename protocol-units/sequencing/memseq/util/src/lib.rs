@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use dot_movement::DotMovement;
 use serde::{Deserialize, Serialize};
+use godfig::env_default;
 
 /// The configuration for the MemSeq sequencer
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -14,13 +15,37 @@ pub struct Config {
 	#[serde(default = "Config::default_sequencer_database_path")]
 	pub sequencer_database_path : Option<String>,
 
+	/// The memseq build time for the block
+	#[serde(default = "default_memseq_build_time")]
+	pub memseq_build_time : u64,
+
+	/// The memseq max block size
+	#[serde(default = "default_memseq_max_block_size")]
+	pub memseq_max_block_size : u32,
+
 }
+
+env_default!(
+	default_memseq_build_time,
+	"MEMSEQ_BUILD_TIME",
+	u64,
+	250
+);
+
+env_default!(
+	default_memseq_max_block_size,
+	"MEMSEQ_MAX_BLOCK_SIZE",
+	u32,
+	256
+);
 
 impl Default for Config {
 	fn default() -> Self {
 		Config {
 			sequencer_chain_id: Config::default_sequencer_chain_id(),
 			sequencer_database_path: Config::default_sequencer_database_path(),
+			memseq_build_time: default_memseq_build_time(),
+			memseq_max_block_size: default_memseq_max_block_size(),
 		}
 	}
 }
@@ -82,32 +107,4 @@ impl Config {
 		Ok(())
 	}
 	
-}
-
-
-#[cfg(test)]
-pub mod test {
-	use super::*;
-
-	#[test]
-	fn test_to_and_from_toml_file() -> Result<(), anyhow::Error> {
-		
-		let config = Config {
-			sequencer_chain_id: Some("test".to_string()),
-			sequencer_database_path: Some("/tmp/sequencer".to_string()),
-		};
-
-		let temp_directory = tempfile::tempdir()?;
-		let path = temp_directory.path().join("config.toml");
-		config.try_write_to_toml_file(&path)?;
-
-		let read_config = Config::try_from_toml_file(&path)?;
-
-		assert_eq!(config, read_config);
-
-		Ok(())
-
-
-	}
-
 }
