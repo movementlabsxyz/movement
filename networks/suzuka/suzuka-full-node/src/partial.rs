@@ -248,7 +248,7 @@ where
 			info!(
 				target: "movement_timing",
 				tx_hash = %signed_transaction.committed_hash(),
-				block_id = %block_id,
+				%block_id,
 				"transaction_in_block",
 			);
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
