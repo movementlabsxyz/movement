@@ -106,10 +106,10 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
 
     // Counterparty contract to withdraw WETH for originator
     function withdrawWETH(address originator, uint256 amount) external {
-        require(msg.sender == counterpartyContract, "Caller is not the counterparty contract");
-        require(balances[originator] >= amount, "Insufficient balance");
+        if (msg.sender != counterpartyContract) revert Unauthorized();
+        if (balances[originator] < amount) revert ZeroAmount();
         balances[originator] -= amount;
-        require(weth.transfer(originator, amount), "WETH transfer failed");
+        if (!weth.transfer(originator, amount)) revert WETHTransferFailed();
     }
 }
 
