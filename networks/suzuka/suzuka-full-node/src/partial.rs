@@ -20,7 +20,7 @@ use tokio_stream::StreamExt;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::sync::Arc;
 use tracing::{debug, error, info, warn, info_span, Instrument};
-
+use core::sync::atomic::AtomicU64;
 use std::future::Future;
 use std::time::Duration;
 pub struct SuzukaPartialNode<T> {
@@ -33,6 +33,8 @@ pub struct SuzukaPartialNode<T> {
 	pub config: suzuka_config::Config,
 	da_db: Arc<DB>,
 }
+
+const LOGGING_UID : AtomicU64 = AtomicU64::new(0);
 
 impl<T> SuzukaPartialNode<T>
 where
@@ -96,7 +98,7 @@ where
 
 		let mut transactions = Vec::new();
 
-		let batch_id = uuid::Uuid::new_v4();
+		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 		while let Ok(transaction_result) =
 			tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await
 		{
