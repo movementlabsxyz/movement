@@ -144,7 +144,7 @@ jobs:
     - name: Install Foundry
       run: |
         curl -L https://foundry.paradigm.xyz | bash
-        echo "::add-path::${HOME}/.foundry/bin"
+        echo "${HOME}/.foundry/bin" >> $GITHUB_PATH
         source ${HOME}/.foundry/bin/foundryup
 
     - name: Run foundry tests
