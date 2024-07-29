@@ -42,7 +42,6 @@ module atomic_bridge::atomic_bridge_initiator {
         bridge_transfer_refunded_events: EventHandle<BridgeTransferRefundedEvent>,
     }
 
-    // Event triggered upon initiating a bridge transfer
     struct BridgeTransferInitiatedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
         originator: address,
@@ -52,13 +51,11 @@ module atomic_bridge::atomic_bridge_initiator {
         time_lock: u64,
     }
 
-    // Event triggered upon completing a bridge transfer
     struct BridgeTransferCompletedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
     }
 
-    // Event triggered upon refunding a bridge transfer
     struct BridgeTransferRefundedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
     }
@@ -89,9 +86,9 @@ module atomic_bridge::atomic_bridge_initiator {
         let asset = moveth::metadata();
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
-        //let store = borrow_global_mut<BridgeTransferStore>(addr);
+
         assert!(amount > 0, EINSUFFICIENT_AMOUNT);
-        // Transfer amount of moveth from initiator to atomic bridge address
+
         let initiator_store = primary_fungible_store::ensure_primary_store_exists(addr, asset);
 
         // Check balance of initiator account
