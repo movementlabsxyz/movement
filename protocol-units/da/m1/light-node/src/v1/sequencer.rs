@@ -1,5 +1,5 @@
 use tokio_stream::Stream;
-use std::{sync::{atomic::AtomicU64, Arc}};
+use std::sync::{atomic::AtomicU64, Arc};
 use tracing::info;
 
 use std::{fmt::Debug, path::PathBuf};
@@ -58,91 +58,85 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 impl LightNodeV1 {
 
-	async fn tick_build_blocks(&self, sender : Sender<Vec<Block>>) -> Result<(), anyhow::Error> {
+	async fn tick_build_blocks(&self, sender : Sender<Block>) -> Result<(), anyhow::Error> {
+
+		let memseq = self.memseq.clone();
+
+		// this has an internal timeout based on its building time
+		// so in the worst case scenario we will roughly double the internal timeout
+		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+		info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+		let block = memseq.wait_for_next_block().await?;
+		match block {
+			Some(block) => {
+				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions.len(), "received_block");
+				sender.send(block).await?;
+				Ok(())
+			}
+			None => {
+				// no transactions to include
+				info!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
+				Ok(())
+			}
+			
+		}
+
+	}
+
+	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
 		
 		let half_building_time = self.memseq.building_time_ms();
 		let start = std::time::Instant::now();
-
-		let memseq = self.memseq.clone();
 		let mut blocks = Vec::new();
-		while (start.elapsed().as_millis() as u64)  < half_building_time {
-
-			// this has an internal timeout based on its building time
-			// so in the worst case scenario we will roughly double the internal timeout
-			let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-			info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
-			let block = memseq.wait_for_next_block().await?;
-			match block {
-				Some(block) => {
-					info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions.len(), "received_block");
-					blocks.push(block);
-				}
-				None => {
-					// no transactions to include
-				}
-				
+		while let Some(block) = receiver.recv().await {
+			let elapsed = start.elapsed();
+			if (elapsed.as_millis() as u64) > half_building_time {
+				info!(target: "movement_timing", elapsed = ?elapsed, half_building_time = half_building_time, "publishing_blocks");
+				break;
 			}
-		}
-		
-		if blocks.is_empty() {
-			return Ok(());
+			blocks.push(block);
 		}
 
-		sender.send(blocks).await.map_err(|e| anyhow::anyhow!("Failed to send blocks: {}", e))?;
+		if blocks.len() > 0 {
 
-		Ok(())
-
-	}
-
-	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Vec<Block>>) -> Result<(), anyhow::Error> {
-		
-		match receiver.recv().await {
-			Some(blocks) => {
-
-				let mut block_blobs = Vec::new();
-				let mut ids = Vec::new();
-				for block in blocks {
-					ids.push(block.id());
-					let block_blob = self.pass_through.create_new_celestia_blob(
-						serde_json::to_vec(&block)
-							.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-					)?;
-					block_blobs.push(block_blob);
-				}
-
-				let pass_through = self.pass_through.clone();
-				info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
-				for block_id in &ids {
-					info!(target: "movement_timing", %block_id, "submitting_block");
-				}
-				match pass_through.submit_celestia_blobs(&block_blobs).await {
-					Ok(_) => {
-						info!("submitted blocks");
-					}
-					Err(e) => {
-						info!("failed to submit blocks: {:?}", e);
-					}
-				}
-				for block_id in &ids {
-					info!(target: "movement_timing", %block_id, "submitted_block");
-				}
-				
+			let mut block_blobs = Vec::new();
+			let mut ids = Vec::new();
+			for block in blocks {
+				ids.push(block.id());
+				let block_blob = self.pass_through.create_new_celestia_blob(
+					serde_json::to_vec(&block)
+						.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+				)?;
+				block_blobs.push(block_blob);
 			}
-			None => {
-				// no blocks to submit
-				info!(target : "movement_timing", "no_blocks_to_submit");
+
+			let pass_through = self.pass_through.clone();
+			info!(target : "movement_timing", block_count = block_blobs.len(), "submitting_blocks");
+			for block_id in &ids {
+				info!(target: "movement_timing", %block_id, "submitting_block");
 			}
+			match pass_through.submit_celestia_blobs(&block_blobs).await {
+				Ok(_) => {
+					info!("submitted blocks");
+				}
+				Err(e) => {
+					info!("failed to submit blocks: {:?}", e);
+				}
+			}
+			for block_id in &ids {
+				info!(target: "movement_timing", %block_id, "submitted_block");
+			}	
 		}
 		Ok(())
 	}
 
-	async fn run_block_builder(&self, sender : Sender<Vec<Block>>) -> Result<(), anyhow::Error> {
+	async fn run_block_builder(&self, sender : Sender<Block>) -> Result<(), anyhow::Error> {
 		loop {
 			self.tick_build_blocks(sender.clone()).await?;
 		}
 	}
 
-	async fn run_block_publisher(&self, receiver : &mut Receiver<Vec<Block>>) -> Result<(), anyhow::Error> {
+	async fn run_block_publisher(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
 		loop {
 			self.tick_publish_blobs(receiver).await?;
 		}
