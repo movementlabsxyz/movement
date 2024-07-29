@@ -22,6 +22,7 @@ interface IAtomicBridgeCounterparty {
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
+    error BridgeTransferStateNotPending();
     error TimeLockNotExpired();
     error ZeroAddress();
     error Unauthorized();

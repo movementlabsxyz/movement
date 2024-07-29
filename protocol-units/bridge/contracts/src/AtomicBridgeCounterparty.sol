@@ -43,7 +43,8 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         address recipient,
         uint256 amount
     ) external onlyOwner returns (bool) {
-        if (recipient == address(0)) revert BridgeTransferInvalid();
+        BridgeTransferDetails storage transfer = bridgeTransfers[bridgeTransferId];
+        if (transfer.recipient != address(0)) revert BridgeTransferInvalid();
         if (amount == 0) revert ZeroAmount();
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
@@ -61,7 +62,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferInvalid();
+        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         if (computedHash != details.hashLock) revert InvalidSecret();
         if (block.timestamp > details.timeLock) revert TimeLockNotExpired();
@@ -75,7 +76,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
     function abortBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
-        if (details.state != MessageState.PENDING) revert BridgeTransferInvalid();
+        if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
 
         details.state = MessageState.REFUNDED;
