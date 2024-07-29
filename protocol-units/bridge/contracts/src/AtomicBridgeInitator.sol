@@ -23,8 +23,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
 
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-    // Mapping of user addresses to WETH balances
-    mapping(address => uint256) public balances;
+
+    // Total WETH pool balance
+    uint256 public poolBalance;
 
     address public counterpartyContract; 
     IWETH9 public weth;
@@ -39,7 +40,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     }
 
     function setCounterpartyContract(address _counterpartyContract) external onlyOwner {
-        require(_counterpartyContract != address(0), "Invalid counterparty address");
+        if (_counterpartyContract == address(0)) revert ZeroAddress();
         counterpartyContract = _counterpartyContract;
     }
 
@@ -62,8 +63,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
             if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
         }
 
-        // Update the balance of the originator 
-        balances[originator] += totalAmount;
+        // Update the pool balance
+        poolBalance += totalAmount;
 
         nonce++; // increment the nonce
         bridgeTransferId =
@@ -97,8 +98,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-        // Decrease balance of originator and transfer WETH back to originator
-        balances[bridgeTransfer.originator] -= bridgeTransfer.amount;
+        // Decrease pool balance and transfer WETH back to originator
+        poolBalance -= bridgeTransfer.amount;
         if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
@@ -107,8 +108,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Counterparty contract to withdraw WETH for originator
     function withdrawWETH(address recipient, uint256 amount) external {
         if (msg.sender != counterpartyContract) revert Unauthorized();
-        if (balances[recipient] < amount) revert ZeroAmount();
-        balances[recipient] -= amount;
+        if (poolBalance < amount) revert ZeroAmount();
+        poolBalance -= amount;
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
     }
 }
