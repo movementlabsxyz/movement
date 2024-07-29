@@ -5,7 +5,7 @@ import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator,  OwnableUpgradeable {
+contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,

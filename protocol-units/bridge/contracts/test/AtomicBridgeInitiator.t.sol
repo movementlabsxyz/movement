@@ -7,6 +7,7 @@ import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IWETH9} from "../src/IWETH9.sol";
+import {console} from "forge-std/console.sol";
 
 
 contract AtomicBridgeInitiatorWethTest is Test {
@@ -37,8 +38,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address)", wethAddress)
+            abi.encodeWithSignature("initialize(address,address)", wethAddress, address(this))
         );
+
         atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
     }
 
