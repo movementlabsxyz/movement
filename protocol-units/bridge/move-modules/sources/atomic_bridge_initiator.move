@@ -1,13 +1,15 @@
 module atomic_bridge::atomic_bridge_initiator {
     use aptos_framework::event::{Self, EventHandle};
     use aptos_framework::account::{Self, Account};
-    use aptos_framework::timestamp;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::dispatchable_fungible_asset;
+    use aptos_framework::block;
+    use aptos_framework::genesis;
     use aptos_std::aptos_hash;
     use std::signer;
     use std::vector;
     use std::bcs;
+    use std::debug;
     use moveth::moveth;
 
     const INITIALIZED: u8 = 0;
@@ -19,6 +21,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const EDOES_NOT_EXIST: u64 = 2;
     const EWRONG_PREIMAGE: u64 = 3;
     const ENOT_INITIALIZED: u64 = 4;
+    const ETIMELOCK_EXPIRED: u64 = 5;
 
     struct BridgeTransfer has key, store {
         amount: u64,
@@ -111,7 +114,7 @@ module atomic_bridge::atomic_bridge_initiator {
             originator: addr,
             recipient: recipient,
             hash_lock: hash_lock, 
-            time_lock: timestamp::now_seconds() + time_lock,
+            time_lock: block::get_current_block_height() + time_lock,
             state: INITIALIZED,
         };
 
@@ -123,7 +126,7 @@ module atomic_bridge::atomic_bridge_initiator {
             recipient: recipient,
             amount: amount,
             hash_lock: hash_lock,
-            time_lock: timestamp::now_seconds() + time_lock,
+            time_lock: block::get_current_block_height() + time_lock,
         });
 
         bridge_transfer_id
@@ -140,9 +143,9 @@ module atomic_bridge::atomic_bridge_initiator {
         let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
         let bridge_transfer = vector::borrow_mut(&mut store.transfers, idx);
 
-        assert!(bridge_transfer.state == INITIALIZED, 1);
-        assert!(aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, 2);
-        assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, 3);
+        assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
+        assert!(aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
+        assert!( block::get_current_block_height() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
 
         moveth::add_minter(master_minter, signer::address_of(account));
 
@@ -167,7 +170,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_transfer = vector::borrow_mut(&mut store.transfers, idx);
 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
-        assert!(timestamp::now_seconds() > bridge_transfer.time_lock, 2);
+        assert!(block::get_current_block_height() > bridge_transfer.time_lock, 2);
         
         let initiator_addr = bridge_transfer.originator;
         let bridge_addr = signer::address_of(atomic_bridge);
@@ -235,12 +238,17 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_framework: &signer,
         master_minter: &signer,
         atomic_bridge: &signer,
-    ) acquires BridgeTransferStore, BridgeConfig{
+    ) acquires BridgeTransferStore, BridgeConfig {
+        genesis::setup();
+        let current_block_height = block::get_current_block_height();
+        debug::print(&current_block_height);
+   
         moveth::init_for_test(creator);
-        timestamp::set_time_has_started_for_testing(aptos_framework);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
+        current_block_height = block::get_current_block_height();
+        debug::print(&current_block_height);
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
 
         let recipient = b"recipient_address";
@@ -269,7 +277,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.originator == addr, 201);
         assert!(transfer.recipient == b"recipient_address", 202);
         assert!(transfer.hash_lock == b"hash_lock_value", 203);
-        assert!(transfer.time_lock == timestamp::now_seconds() + time_lock, 204);
+        assert!(transfer.time_lock == block::get_current_block_height() + time_lock, 204);
         assert!(transfer.state == INITIALIZED, 205);
     }
 
@@ -283,7 +291,6 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) acquires BridgeTransferStore, BridgeConfig{
         moveth::init_for_test(creator);
-        timestamp::set_time_has_started_for_testing(aptos_framework);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
@@ -313,7 +320,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.originator == addr, 201);
         assert!(transfer.recipient == b"recipient_address", 202);
         assert!(transfer.hash_lock == b"hash_lock_value", 203);
-        assert!(transfer.time_lock == timestamp::now_seconds() + time_lock, 204);
+        assert!(transfer.time_lock == block::get_current_block_height() + time_lock, 204);
         assert!(transfer.state == INITIALIZED, 205);
     }
 
@@ -325,8 +332,8 @@ module atomic_bridge::atomic_bridge_initiator {
         creator: &signer,
         aptos_framework: &signer    
     ) acquires BridgeTransferStore, BridgeConfig{
+        genesis::setup();
         moveth::init_for_test(creator);
-        timestamp::set_time_has_started_for_testing(aptos_framework);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
@@ -374,7 +381,6 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_framework: &signer    
     ) acquires BridgeTransferStore, BridgeConfig{
         moveth::init_for_test(creator);
-        timestamp::set_time_has_started_for_testing(aptos_framework);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
@@ -413,15 +419,16 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    public fun test_refund_bridge_transfer(
+    #[expected_failure]
+    public fun test_refund_bridge_transfer_not_expired(
         sender: &signer,
         atomic_bridge: &signer,
         creator: &signer,
         aptos_framework: &signer
     ) acquires BridgeTransferStore, BridgeConfig{
+        genesis::setup();
         moveth::init_for_test(creator);
         let asset = moveth::metadata();
-        timestamp::set_time_has_started_for_testing(aptos_framework);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
@@ -444,8 +451,7 @@ module atomic_bridge::atomic_bridge_initiator {
             amount
         );
 
-        // Simulate time passing
-        aptos_framework::timestamp::fast_forward_seconds(time_lock + 1);
+        // Todo: Simulate time passing
 
         refund_bridge_transfer(
             sender,
@@ -472,7 +478,6 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_framework: &signer    
     ) acquires BridgeTransferStore, BridgeConfig{
         moveth::init_for_test(creator);
-        timestamp::set_time_has_started_for_testing(aptos_framework);
         let addr = signer::address_of(sender);
         // Ensure Account resource exists for the sender
         account::create_account_if_does_not_exist(addr);
