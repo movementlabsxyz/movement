@@ -14,16 +14,16 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable, O
     }
 
     struct BridgeTransferDetails {
-        bytes32 initiator; // address of the initiator
+        bytes32 initiator; // move address 
         address recipient;
         uint256 amount;
         bytes32 hashLock;
         uint256 timeLock;
-        MessageState state; // Added state to manage the status of each transfer
+        MessageState state; 
     }
 
     AtomicBridgeInitiator public atomicBridgeInitiator;
-    mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers; // Single mapping for all transfers
+    mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers; 
 
     function initialize(address _atomicBridgeInitiator, address owner) public initializer {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
