@@ -88,12 +88,71 @@ impl LightNodeV1 {
 
 	}
 
-	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
-		
+	/// Attempts to submit a batch of blobs according to the chunk size
+	async fn submit_and_resize(&self, block_blobs: &mut Vec<celestia_types::Blob>, chunk_size : usize) -> Result<usize, anyhow::Error> {
+	
+
+		// iter in chunks of 4
+		while !block_blobs.is_empty() {
+			let mut chunk: Vec<celestia_types::Blob> = Vec::with_capacity(chunk_size);
+			
+			for _ in 0..chunk_size {
+				if let Some(blob) = block_blobs.pop() {
+					chunk.push(blob);
+				} else {
+					break;
+				}
+			}
+			
+			match self.pass_through.submit_celestia_blobs(&chunk).await {
+				Ok(_) => {
+					info!(
+						target: "movement_timing",
+						batch_size = chunk.len(),
+						"submitted_blob_batch",
+					);
+				}
+				Err(e) => {
+					info!("failed to submit blocks: {:?}", e);
+					block_blobs.extend(chunk.into_iter());
+					return Ok(chunk_size - 1);
+				}
+			}
+		}
+	
+
+		Ok(chunk_size)
+
+	}
+
+	/// Submits block blobs in chunks, beginning with a chunk size of 4
+	async fn submit_block_blobs(&self, block_blobs: &mut Vec<celestia_types::Blob>) -> Result<(), anyhow::Error> {
+		if block_blobs.len() > 0 {
+
+			let mut chunk_size = 4;
+			loop {
+
+				let new_chunk_size = self.submit_and_resize(block_blobs, chunk_size).await?;			
+				if new_chunk_size == chunk_size {
+					// we have succeeded
+					info!(
+						target: "movement_timing",
+						"submitted_all_blob_batches",
+					);
+					break;
+				}
+				chunk_size = new_chunk_size;
+
+			}
+		}
+		Ok(())
+	}
+
+	/// Reads blobs from the receiver until the building time is exceeded
+	async fn read_blocks(&self, receiver : &mut Receiver<Block>)-> Result<Vec<Block>, anyhow::Error> {
 		let half_building_time = self.memseq.building_time_ms();
 		let start = std::time::Instant::now();
 		let mut blocks = Vec::new();
-
 		loop {
 			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
 				Some(remaining) => remaining,
@@ -123,7 +182,16 @@ impl LightNodeV1 {
 				}
 			}
 		}
+		Ok(blocks)
+	}
 
+	/// Ticks the block proposer to build blocks and submit them
+	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
+		
+		// get some blocks in a batch
+		let blocks = self.read_blocks(receiver).await?;
+
+		// form blobs from the blocks
 		info!(
 			target: "movement_timing",
 			batch_size = blocks.len(),
@@ -141,60 +209,11 @@ impl LightNodeV1 {
 		}
 
 
+		// submit the blobs, resizing as needed
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitting_block_batch");
 		}
-		if block_blobs.len() > 0 {
-
-			let mut chunk_size = 4;
-			loop {
-
-				if chunk_size < 1 {
-					// failed all chunk sizes
-					info!(
-						target: "movement_timing",
-						batch_size = blocks.len(),
-						"failed_all_chunk_sizes",
-					);
-					break;
-				}
-
-				let new_chunk_size = {
-
-					// iter in chunks of 4
-					for blobs in block_blobs.chunks(chunk_size) {
-						// submit the blocks
-						let pass_through = self.pass_through.clone();
-						match pass_through.submit_celestia_blobs(blobs).await {
-							Ok(_) => {
-								info!(
-									target: "movement_timing",
-									batch_size = blobs.len(),
-									"submitted_blob_batch",
-								);
-							}
-							Err(e) => {
-								info!("failed to submit blocks: {:?}", e);
-								chunk_size -= 1;
-								break;
-							}
-						}
-					}
-					chunk_size
-				};
-
-				if new_chunk_size == chunk_size {
-					// we have succeeded
-					info!(
-						target: "movement_timing",
-						batch_size = blocks.len(),
-						"submitted_all_blob_batches",
-					);
-					break;
-				}
-
-			}
-		}
+		self.submit_block_blobs(&mut block_blobs).await?;
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitted_block_batch");
 		}
