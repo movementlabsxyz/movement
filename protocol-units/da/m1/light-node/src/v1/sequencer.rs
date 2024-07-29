@@ -1,5 +1,5 @@
 use tokio_stream::Stream;
-use std::sync::Arc;
+use std::sync::{atomic::AtomicU64, Arc};
 use tracing::{debug, info};
 
 use std::{fmt::Debug, path::PathBuf};
@@ -12,6 +12,8 @@ use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
+
+const LOGGING_UID : AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
@@ -64,7 +66,7 @@ impl LightNodeV1 {
 
 			// this has an internal timeout based on its building time
 			// so in the worst case scenario we will roughly double the internal timeout
-			let uid = uuid::Uuid::new_v4();
+			let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 			info!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
 			let block = memseq.wait_for_next_block().await?;
 			match block {

@@ -9,7 +9,7 @@ use aptos_executor::{
 	block_executor::BlockExecutor,
 	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
 };
-use aptos_mempool::{core_mempool::CoreMempool, MempoolClientRequest, MempoolClientSender};
+use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
 use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
@@ -128,13 +128,11 @@ impl Executor {
 			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
 		let reader = db.reader.clone();
-		//		let core_mempool = Arc::new(CoreMempool::new(&node_config));
 
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			db,
 			signer,
-			//			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
@@ -158,7 +156,7 @@ impl Executor {
 	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(262144); // allow 2^18 transactions before apply backpressure given theoretical maximum TPS of 170k
+			futures_mpsc::channel::<MempoolClientRequest>(2^16); // allow 2^16 transactions before apply backpressure given theoretical maximum TPS of 170k
 		let mut node_config = NodeConfig::default();
 
 		node_config.indexer.enabled = true;

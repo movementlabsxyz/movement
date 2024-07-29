@@ -27,8 +27,6 @@ pub struct Executor {
 	pub db: DbReaderWriter,
 	/// The signer of the executor's transactions.
 	pub signer: ValidatorSigner,
-	/// The core mempool (used for the api to query the mempool).
-	//	pub core_mempool: CoreMempool,
 	/// The sender for the mempool client.
 	pub mempool_client_sender: MempoolClientSender,
 	/// The receiver for the mempool client.
@@ -64,7 +62,6 @@ impl Executor {
 			block_executor: Arc::new(block_executor),
 			db: reader_writer,
 			signer,
-			//			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			node_config: node_config.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
