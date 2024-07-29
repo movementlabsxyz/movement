@@ -142,11 +142,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install Foundry
-      run: curl -L https://foundry.paradigm.xyz | bash
+      run: |
+        curl -L https://foundry.paradigm.xyz | bash
+        echo "::add-path::${HOME}/.foundry/bin"
+        source ${HOME}/.foundry/bin/foundryup
 
     - name: Run foundry tests
       run: |
-        source $HOME/.foundry/bin
         cd protocol-units/bridge/contracts
         forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
 
