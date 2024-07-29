@@ -40,8 +40,12 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
         address recipient,
         uint256 amount
     ) external returns (bool) {
-        require(pendingTransfers[bridgeTransferId].recipient == address(0), "Transfer ID already exists");
-        require(amount > 0, "Zero amount not allowed");
+        if (pendingTransfers[bridgeTransferId].recipient != address(0)) {
+            revert BridgeTransferInvalid();
+        }
+        if (amount == 0) {
+            revert ZeroAmount();
+        }
 
         pendingTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
@@ -58,10 +62,14 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails memory details = pendingTransfers[bridgeTransferId];
-        require(details.recipient != address(0), "Transfer ID does not exist");
+        if (details.recipient == address(0)) {
+            revert BridgeTransferInvalid();
+        }
 
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
-        require(computedHash == details.hashLock, "Invalid preImage");
+        if (computedHash != details.hashLock) {
+            revert InvalidSecret();
+        }
 
         delete pendingTransfers[bridgeTransferId];
         completedTransfers[bridgeTransferId] = details;
@@ -74,8 +82,12 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, Initializable {
 
     function abortBridgeTransfer(bytes32 bridgeTransferId) external {
         BridgeTransferDetails memory details = pendingTransfers[bridgeTransferId];
-        require(details.recipient != address(0), "Transfer ID does not exist");
-        require(block.timestamp > details.timeLock, "Timelock has not expired");
+        if (details.recipient == address(0)) {
+            revert BridgeTransferInvalid();
+        }
+        if (block.timestamp <= details.timeLock) {
+            revert TimeLockNotExpired();
+        }
 
         delete pendingTransfers[bridgeTransferId];
         abortedTransfers[bridgeTransferId] = details;
