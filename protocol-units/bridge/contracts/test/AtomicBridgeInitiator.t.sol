@@ -25,11 +25,11 @@ contract AtomicBridgeInitiatorWethTest is Test {
     uint256 public timeLock = 100;
 
     function setUp() public {
-        //Sepolia WETH9 address
+        // Sepolia WETH9 address
         address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
         weth = IWETH9(wethAddress);
 
-        //generate random address for each test
+        // generate random address for each test
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address
@@ -60,14 +60,16 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address transferOriginator,
             bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint256 transferTimeLock
-            ,
+            uint256 transferTimeLock,
+            AtomicBridgeInitiator.MessageState transferState
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
+
         assertEq(transferAmount, amount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
         assertGt(transferTimeLock, block.number);
+        assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();
     }
@@ -94,14 +96,16 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address completedOriginator,
             bytes32 completedRecipient,
             bytes32 completedHashLock,
-            uint256 completedTimeLock
-            ,
+            uint256 completedTimeLock,
+            AtomicBridgeInitiator.MessageState completedState
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
+
         assertEq(completedAmount, amount);
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
         assertGt(completedTimeLock, block.number);
+        assertEq(uint8(completedState), uint8(AtomicBridgeInitiator.MessageState.COMPLETED));
     }
 
     function testInitiateBridgeTransferWithWeth() public {
@@ -120,14 +124,16 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address transferOriginator,
             bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint256 transferTimeLock
-            ,
+            uint256 transferTimeLock,
+            AtomicBridgeInitiator.MessageState transferState
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
+
         assertEq(transferAmount, wethAmount);
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
         assertGt(transferTimeLock, block.number);
+        assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();
     }
@@ -159,8 +165,8 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address transferOriginator,
             bytes32 transferRecipient,
             bytes32 transferHashLock,
-            uint256 transferTimeLock
-            ,
+            uint256 transferTimeLock,
+            AtomicBridgeInitiator.MessageState transferState
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
         // Assertions
@@ -169,6 +175,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferRecipient, recipient, "Recipient address mismatch");
         assertEq(transferHashLock, hashLock, "HashLock mismatch");
         assertGt(transferTimeLock, block.number, "TimeLock is not greater than current block number");
+        assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();
     }
@@ -198,3 +205,4 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.stopPrank();
     }
 }
+
