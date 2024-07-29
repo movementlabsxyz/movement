@@ -143,8 +143,6 @@ module atomic_bridge::atomic_bridge_initiator {
         pre_image: vector<u8>,
         master_minter: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
-        // let addr = signer::address_of(account);
-        //let store = borrow_global_mut<BridgeTransferStore>(addr);
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
         let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
@@ -171,11 +169,8 @@ module atomic_bridge::atomic_bridge_initiator {
         bridge_transfer_id: vector<u8>,
         atomic_bridge: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
-        //let addr = signer::address_of(account);
-        //let store = borrow_global_mut<BridgeTransferStore>(addr);
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
-        
         let idx = get_bridge_transfer_index(&store.transfers, &bridge_transfer_id);
         let bridge_transfer = vector::borrow_mut(&mut store.transfers, idx);
 
@@ -251,14 +246,8 @@ module atomic_bridge::atomic_bridge_initiator {
     ) acquires BridgeTransferStore, BridgeConfig{
         moveth::init_for_test(creator);
         timestamp::set_time_has_started_for_testing(aptos_framework);
-
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
-        
-        let addr = signer::address_of(sender);
-        // Ensure Account resource exists for the sender
-        account::create_account_if_does_not_exist(addr);
-
         init_module(atomic_bridge);
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
 
@@ -304,14 +293,7 @@ module atomic_bridge::atomic_bridge_initiator {
         moveth::init_for_test(creator);
         timestamp::set_time_has_started_for_testing(aptos_framework);
         let bridge_addr = signer::address_of(atomic_bridge);
-
         account::create_account_if_does_not_exist(bridge_addr);
-     
-       
-        let addr = signer::address_of(sender);
-        // Ensure Account resource exists for the sender
-        account::create_account_if_does_not_exist(addr);
-
         init_module(atomic_bridge);
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
 
@@ -353,10 +335,7 @@ module atomic_bridge::atomic_bridge_initiator {
     ) acquires BridgeTransferStore, BridgeConfig{
         moveth::init_for_test(creator);
         timestamp::set_time_has_started_for_testing(aptos_framework);
-        let addr = signer::address_of(sender);
-         let bridge_addr = signer::address_of(atomic_bridge);
-        // Ensure Account resource exists for the sender
-        account::create_account_if_does_not_exist(addr);
+        let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
 
@@ -404,13 +383,11 @@ module atomic_bridge::atomic_bridge_initiator {
     ) acquires BridgeTransferStore, BridgeConfig{
         moveth::init_for_test(creator);
         timestamp::set_time_has_started_for_testing(aptos_framework);
-         let bridge_addr = signer::address_of(atomic_bridge);
-        // Ensure Account resource exists for the sender
-        //account::create_account_if_does_not_exist(addr);
+        let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
-
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
+
         let recipient = b"recipient_address";
         let pre_image = b"pre_image_value";
         let wrong_pre_image = b"wrong_pre_image_value";
@@ -453,15 +430,11 @@ module atomic_bridge::atomic_bridge_initiator {
         moveth::init_for_test(creator);
         let asset = moveth::metadata();
         timestamp::set_time_has_started_for_testing(aptos_framework);
-         let bridge_addr = signer::address_of(atomic_bridge);
+        let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
-
-        
-        let addr = signer::address_of(sender);
-        // Ensure Account resource exists for the sender
-        account::create_account_if_does_not_exist(addr);
         init_module(atomic_bridge);
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
+
         let recipient = b"recipient_address";
         let hash_lock = b"hash_lock_value";
         let time_lock = 1;
