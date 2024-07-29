@@ -43,8 +43,6 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         address recipient,
         uint256 amount
     ) external onlyOwner returns (bool) {
-        BridgeTransferDetails storage transfer = bridgeTransfers[bridgeTransferId];
-        if (transfer.recipient != address(0)) revert BridgeTransferInvalid();
         if (amount == 0) revert ZeroAmount();
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
