@@ -13,8 +13,8 @@ interface IAtomicBridgeCounterparty {
     // Event emitted when a BridgeTransfer is completed
     event BridgeTransferCompleted(bytes32 indexed bridgeTransferId, bytes32 pre_image);
 
-    // Event emitted when a BridgeTransfer is cancelled
-    event BridgeTransferCancelled(bytes32 indexed bridgeTransferId);
+    // Event emitted when a BridgeTransfer is aborted 
+    event BridgeTransferAborted(bytes32 indexed bridgeTransferId);
 
     error ZeroAmount();
     error WETHTransferFailed();

@@ -81,7 +81,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
         details.state = MessageState.REFUNDED;
 
-        emit BridgeTransferCancelled(bridgeTransferId);
+        emit BridgeTransferAborted(bridgeTransferId);
     }
 }
 
