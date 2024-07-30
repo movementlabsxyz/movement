@@ -1,8 +1,8 @@
-use crate::{
-	BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, MakeOptFinServices, Services,
-	SignedTransaction,
-};
-use maptos_execution_util::config::Config;
+use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
+use aptos_api::runtime::Apis;
+use aptos_mempool::core_mempool::CoreMempool;
+use async_channel::Sender;
+use async_trait::async_trait;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
 use movement_types::block::BlockCommitment;
@@ -93,7 +93,7 @@ impl DynOptFinExecutor for Executor {
 		self.finality_view.set_finalized_block_height(height)
 	}
 
-	async fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
+	fn revert_block_head(&self, block_height: u64) -> Result<(), anyhow::Error> {
 		if let Some(final_height) = self.finality_view.finalized_block_height() {
 			if block_height < final_height {
 				return Err(format_err!(
@@ -101,7 +101,20 @@ impl DynOptFinExecutor for Executor {
 				));
 			}
 		}
-		self.executor.revert_block_head_to(block_height).await
+		self.executor.revert_block_head(block_height)
+	}
+
+	/// Sets the transaction channel.
+	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>) {
+		self.transaction_channel = tx_channel;
+	}
+
+	fn get_opt_apis(&self) -> Apis {
+		self.executor.get_apis()
+	}
+
+	fn get_fin_apis(&self) -> Apis {
+		self.finality_view.get_apis()
 	}
 
 	/// Get block head height.
