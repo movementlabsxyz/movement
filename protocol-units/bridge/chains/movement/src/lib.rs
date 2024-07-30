@@ -1,8 +1,4 @@
-use aptos_sdk::{
-	move_types::language_storage::TypeTag,
-	rest_client::{Client, FaucetClient},
-	types::LocalAccount,
-};
+use aptos_sdk::{move_types::language_storage::TypeTag, rest_client::Client, types::LocalAccount};
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
@@ -71,7 +67,6 @@ impl MovementClient {
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 
 		let rest_client = Client::new(node_connection_url.clone());
-		let faucet_client = FaucetClient::new(faucet_url, node_connection_url.clone());
 
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
@@ -108,12 +103,12 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		//@TODO properly return an error instead of unwrapping
 		let args = vec![
-			self.to_bcs_bytes(&initiator.0).unwrap(),
-			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
-			self.to_bcs_bytes(&hash_lock.0).unwrap(),
-			self.to_bcs_bytes(&time_lock.0).unwrap(),
-			self.to_bcs_bytes(&recipient.0).unwrap(),
-			self.to_bcs_bytes(&amount.0).unwrap(),
+			to_bcs_bytes(&initiator.0).unwrap(),
+			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			to_bcs_bytes(&hash_lock.0).unwrap(),
+			to_bcs_bytes(&time_lock.0).unwrap(),
+			to_bcs_bytes(&recipient.0).unwrap(),
+			to_bcs_bytes(&amount.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -134,9 +129,9 @@ impl BridgeContractCounterparty for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			self.to_bcs_bytes(&self.signer.address()).unwrap(),
-			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
-			self.to_bcs_bytes(&preimage.0).unwrap(),
+			to_bcs_bytes(&self.signer.address()).unwrap(),
+			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			to_bcs_bytes(&preimage.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -156,8 +151,8 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			self.to_bcs_bytes(&self.signer.address()).unwrap(),
-			self.to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			to_bcs_bytes(&self.signer.address()).unwrap(),
+			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -175,7 +170,7 @@ impl BridgeContractCounterparty for MovementClient {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
 		// let _ = utils::send_view_request(
 		// 	self.rest_client,

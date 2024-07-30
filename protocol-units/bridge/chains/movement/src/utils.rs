@@ -17,7 +17,6 @@ use aptos_sdk::{
 	},
 };
 use derive_new::new;
-use keccak_hash::H256;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
