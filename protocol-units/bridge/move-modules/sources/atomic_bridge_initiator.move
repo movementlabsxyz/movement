@@ -393,6 +393,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge, master_minter = @master_minter)]
+    // see tracking issue https://github.com/movementlabsxyz/movement/issues/272
     #[expected_failure]
     public fun test_refund_bridge_transfer(
         sender: &signer,
