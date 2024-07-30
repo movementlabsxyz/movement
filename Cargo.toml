@@ -32,8 +32,9 @@ members = [
     "protocol-units/bridge/chains/ethereum",
     "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",
+    "protocol-units/bridge/cli",
     "protocol-units/settlement/mcr/runner",
-    "benches/*",
+    "benches/*", "protocol-units/bridge/bridge-cli",
 ]
 
 [workspace.package]
