@@ -7,7 +7,7 @@
 //! and [`LeafNode`] as building blocks of a 256-bit
 //! [`JellyfishMerkleTree`](crate::JellyfishMerkleTree). [`InternalNode`] represents a 4-level
 //! binary tree to optimize for IOPS: it compresses a tree with 31 nodes into one node with 16
-//! chidren at the lowest level. [`LeafNode`] stores the full key and the value associated.
+//! children at the lowest level. [`LeafNode`] stores the full key and the value associated.
 use crate::storage::TreeReader;
 
 use crate::SimpleHasher;
@@ -342,11 +342,11 @@ impl SparseMerkleInternalNode {
 /// height
 /// ```
 ///
-/// As illustrated above, at nibble height 0, `0..F` in hex denote 16 chidren hashes.  Each `#`
+/// As illustrated above, at nibble height 0, `0..F` in hex denote 16 children hashes.  Each `#`
 /// means the hash of its two direct children, which will be used to generate the hash of its
 /// parent with the hash of its sibling. Finally, we can get the hash of this internal node.
 ///
-/// However, if an internal node doesn't have all 16 chidren exist at height 0 but just a few of
+/// However, if an internal node doesn't have all 16 children exist at height 0 but just a few of
 /// them, we have a modified hashing rule on top of what is stated above:
 /// 1. From top to bottom, a node will be replaced by a leaf child if the subtree rooted at this
 /// node has only one child at height 0 and it is a leaf child.
@@ -387,7 +387,7 @@ impl Arbitrary for InternalNode {
     }
 }
 
-/// Helper for `InternalNode` implementations. Test if the leaf exaclty has one child within the width range specified
+/// Helper for `InternalNode` implementations. Test if the leaf exactly has one child within the width range specified
 fn has_only_child(width: u8, range_existence_bitmap: u16, range_leaf_bitmap: u16) -> bool {
     width == 1 || (range_existence_bitmap.count_ones() == 1 && range_leaf_bitmap != 0)
 }

@@ -42,11 +42,11 @@ contract MOVETokenTest is Test {
 
         // Call the initialize function
         token.initialize();
-        uint256 intialBalance = token.balanceOf(address(0x1337));
+        uint256 initialBalance = token.balanceOf(address(0x1337));
         // Mint tokens
         token.mint(address(0x1337), 100);
 
         // Check the token details
-        assertEq(token.balanceOf(address(0x1337)), intialBalance + 100);
+        assertEq(token.balanceOf(address(0x1337)), initialBalance + 100);
     }
 }

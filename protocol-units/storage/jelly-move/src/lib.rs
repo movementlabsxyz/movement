@@ -3,8 +3,8 @@ pub mod rocksdb;
 
 use anyhow::Ok;
 use move_core_types::{
-    account_address:: AccountAddress, 
-    language_storage::{ModuleId, StructTag}, 
+    account_address:: AccountAddress,
+    language_storage::{ModuleId, StructTag},
     resolver::{
         ModuleResolver, ResourceResolver
     },
@@ -38,7 +38,7 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> JellyMove<'a, R, H> {
         }
     }
 
-    pub fn get_latest_vesion(&self) -> Result<u64, anyhow::Error> {
+    pub fn get_latest_version(&self) -> Result<u64, anyhow::Error> {
         Ok(0)
     }
 
@@ -52,11 +52,11 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> JellyMove<'a, R, H> {
     }
 
     pub fn resource_key(
-        &self, 
+        &self,
         account_address : &AccountAddress,
         tag: &StructTag
     ) -> Result<Vec<u8>, anyhow::Error> {
-       
+
         let mut key = Vec::new();
         key.extend_from_slice(Self::RESOURCE_PREFIX.as_bytes());
         key.extend_from_slice(
@@ -76,29 +76,29 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> ModuleResolver for JellyMove<'a
     type Error = anyhow::Error;
 
     fn get_module(&self, id: &ModuleId) -> Result<Option<Vec<u8>>, Self::Error> {
-        
+
         let key = self.module_key(id)?;
 
         let value = self.jmt.get(
             KeyHash::with::<H>(&key),
-            self.get_latest_vesion()?
+            self.get_latest_version()?
         )?;
 
         Ok(value)
 
-    }   
+    }
 
 }
 
 impl <'a, R : 'a + TreeReader, H : SimpleHasher> JellyMove<'a, R, H> {
 
     pub fn get_module_with_proof(&self, id: &ModuleId) -> Result<Option<(Vec<u8>, SparseMerkleProof<H>)>, anyhow::Error> {
-        
+
         let key = self.module_key(id)?;
 
         let (value, proof) = self.jmt.get_with_proof(
             KeyHash::with::<H>(&key),
-            self.get_latest_vesion()?
+            self.get_latest_version()?
         )?;
 
         Ok(value.map(|v| (v, proof)))
@@ -113,16 +113,16 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> ResourceResolver for JellyMove<
     type Error = anyhow::Error;
 
     fn get_resource(
-        &self, 
+        &self,
         account_address: &AccountAddress,
         tag: &StructTag
     ) -> Result<Option<Vec<u8>>, Self::Error> {
-        
+
         let key = self.resource_key(account_address, tag)?;
 
         let value = self.jmt.get(
             KeyHash::with::<H>(&key),
-            self.get_latest_vesion()?
+            self.get_latest_version()?
         )?;
 
         Ok(value)
@@ -134,16 +134,16 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> ResourceResolver for JellyMove<
 impl <'a, R : 'a + TreeReader, H : SimpleHasher> JellyMove<'a, R, H> {
 
     pub fn get_resource_with_proof(
-        &self, 
+        &self,
         account_address: &AccountAddress,
         tag: &StructTag
     ) -> Result<Option<(Vec<u8>, SparseMerkleProof<H>)>, anyhow::Error> {
-        
+
         let key = self.resource_key(account_address, tag)?;
 
         let (value, proof) = self.jmt.get_with_proof(
             KeyHash::with::<H>(&key),
-            self.get_latest_vesion()?
+            self.get_latest_version()?
         )?;
 
         Ok(value.map(|v| (v, proof)))
@@ -154,11 +154,11 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> JellyMove<'a, R, H> {
 impl <'a, R : 'a + TreeReader, H : SimpleHasher> move_vm_ext::storage::ChangeSetWriter for JellyMove<'a, R, H> {
 
     fn write_change_set(&self, change_set: ChangeSet) -> Result<(), anyhow::Error> {
-        
+
         let mut value_sets : Vec<(KeyHash, Option<OwnedValue>)> = Vec::new();
 
         for (account_address, identifier, value) in change_set.modules() {
-            
+
             let module_id = ModuleId::new(account_address, identifier.clone());
             let key = self.module_key(&module_id)?;
 
@@ -169,7 +169,7 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> move_vm_ext::storage::ChangeSet
         }
 
         for (account_address, struct_tag, value) in change_set.resources() {
-            
+
             let key = self.resource_key(&account_address, &struct_tag)?;
 
             let key_hash = KeyHash::with::<H>(&key);
@@ -180,7 +180,7 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> move_vm_ext::storage::ChangeSet
 
         let (root_hash, tree_update_batch) = self.jmt.put_value_set(
             value_sets,
-            self.get_latest_vesion()?,
+            self.get_latest_version()?,
         )?;
 
 
@@ -197,20 +197,20 @@ impl <'a, R : 'a + TreeReader, H : SimpleHasher> move_vm_ext::storage::ChangeSet
 impl <'a, R : 'a + TreeReader, H : SimpleHasher> move_vm_ext::storage::BasicStorageOperations for JellyMove<'a, R, H> {
 
     fn publish_or_overwrite_module(&self, id: ModuleId, blob: Vec<u8>) -> Result<(), anyhow::Error> {
-        
+
         let key = self.module_key(&id)?;
 
         let key_hash = KeyHash::with::<H>(&key);
 
         let (root_hash, tree_update_batch) = self.jmt.put_value_set(
             vec![(key_hash, Some(blob.to_owned()))],
-            self.get_latest_vesion()?
+            self.get_latest_version()?
         )?;
 
         self.writer.write_node_batch(
             &tree_update_batch.node_batch
         )?;
-    
+
         Ok(())
 
     }
@@ -365,7 +365,7 @@ pub mod test {
 
         assert_eq!(res.return_values.len(), 1);
         assert_eq!(
-            res.return_values[0].0, 
+            res.return_values[0].0,
             vec![0x01]
         );
         assert_eq!(
@@ -393,7 +393,7 @@ pub mod test {
 
         assert_eq!(res.return_values.len(), 1);
         assert_eq!(
-            res.return_values[0].0, 
+            res.return_values[0].0,
             vec![0x00]
         );
         assert_eq!(
@@ -418,7 +418,7 @@ pub mod test {
 
         assert_eq!(res.return_values.len(), 1);
         assert_eq!(
-            res.return_values[0].0, 
+            res.return_values[0].0,
             vec![0x00]
         );
         assert_eq!(
@@ -427,7 +427,7 @@ pub mod test {
         );
 
         Ok(())
-        
+
     }
 
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
-import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitator.sol";
+import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitiator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IWETH9} from "../src/IWETH9.sol";
@@ -187,7 +187,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.warp(block.number + timeLock + 1);
         vm.startPrank(originator);
 
-        // increase time / blockheight so that timelock expires 
+        // increase time / blockheight so that timelock expires
         uint256 futureBlockNumber = block.number + timeLock + 4200;
         vm.roll(futureBlockNumber);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);

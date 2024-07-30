@@ -295,7 +295,7 @@ where
 						}
 						Poll::Ready(Err(error)) => {
 							tracing::trace!(
-								"Locking brige_transfer {:?} failed, error: {:?} attempts: {}",
+								"Locking bridge_transfer {:?} failed, error: {:?} attempts: {}",
 								bridge_transfer_id,
 								error,
 								attempts
@@ -357,7 +357,7 @@ where
 						}
 						Poll::Ready(Err(error)) => {
 							tracing::trace!(
-								"Completing bridge transfer {:?} failed: {:?} attemtps: {}",
+								"Completing bridge transfer {:?} failed: {:?} attempts: {}",
 								bridge_transfer_id,
 								error,
 								attempts

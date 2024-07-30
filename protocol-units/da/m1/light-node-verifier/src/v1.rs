@@ -67,7 +67,7 @@ impl Verifier for V1Verifier {
 		unimplemented!()
 	}
 
-	async fn verifiy_validator_in(
+	async fn verify_validator_in(
 		&self,
 		_verification_mode: VerificationMode,
 		_blob: &[u8],
