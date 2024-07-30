@@ -25,6 +25,7 @@ uuid.workspace = true
 alloy.workspace = true
 
 directories = "5.0"
+url.workspace = true
 
 [lints]
 workspace = true

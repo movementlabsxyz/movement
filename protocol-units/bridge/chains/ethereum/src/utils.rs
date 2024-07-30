@@ -59,7 +59,7 @@ pub async fn send_transaction<
 	T: Transport + Clone,
 	D: CallDecoder + Clone,
 >(
-	contract_call: CallBuilder<T, &&P, D, Ethereum>,
+	contract_call: CallBuilder<T, P, D, Ethereum>,
 ) -> Result<TransactionReceipt, EthUtilError> {
 	let pending_transaction = contract_call.send().await?;
 

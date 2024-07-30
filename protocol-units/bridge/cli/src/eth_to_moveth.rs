@@ -1,6 +1,6 @@
-use crate::clap::eth_to_movement::{Commands, SharedArgs};
+use crate::clap::eth_to_movement::{Commands, EthSharedArgs};
 use anyhow::Result;
-use ethereum_bridge::{Config, EthClient};
+use ethereum_bridge::EthClient;
 
 pub async fn execute(command: &Commands) -> Result<()> {
 	match command {
@@ -9,15 +9,15 @@ pub async fn execute(command: &Commands) -> Result<()> {
 	}
 }
 
-async fn initiate_swap(args: &SharedArgs, recipient: &str, amount: u64) -> Result<()> {
+async fn initiate_swap(args: &EthSharedArgs, recipient: &str, amount: u64) -> Result<()> {
 	println!("Initiating swap to {} with amount {}", recipient, amount);
 
-	let config = EthClient::new(Config::default()).await?;
+	let client = EthClient::new(args).await?;
 
 	Ok(())
 }
 
-async fn resume_swap(args: &SharedArgs, transfer_id: &str) -> Result<()> {
+async fn resume_swap(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
 	println!("Resuming transfer with ID: {}", transfer_id);
 
 	Ok(())
