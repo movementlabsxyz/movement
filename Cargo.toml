@@ -34,7 +34,7 @@ members = [
     "protocol-units/bridge/service",
     "protocol-units/bridge/cli",
     "protocol-units/settlement/mcr/runner",
-    "benches/*", "protocol-units/bridge/bridge-cli",
+    "benches/*", 
 ]
 
 [workspace.package]
