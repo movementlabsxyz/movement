@@ -3,7 +3,6 @@ module atomic_bridge::atomic_bridge_initiator {
     use aptos_framework::account::{Self, Account};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::timestamp;
     use aptos_framework::block;
     use aptos_framework::genesis;
     use aptos_std::aptos_hash;
@@ -202,16 +201,12 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) {
         genesis::setup();
-        //block::initialize_for_test(aptos_framework, 1);
         let current_block_height = block::get_current_block_height();
         debug::print(&current_block_height);
         moveth::init_for_test(creator);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
-        timestamp::fast_forward_seconds(5);
-        let current_block_height_now = block::get_current_block_height();
-        debug::print(&current_block_height_now);
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
     }
 
