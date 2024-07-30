@@ -28,3 +28,11 @@ impl From<Vec<u8>> for EthAddress {
 		EthAddress(Address(bytes.into()))
 	}
 }
+
+impl From<[u8; 32]> for EthAddress {
+	fn from(bytes: [u8; 32]) -> Self {
+		let mut address_bytes = [0u8; 20];
+		address_bytes.copy_from_slice(&bytes[0..20]);
+		EthAddress(Address(address_bytes.into()))
+	}
+}

@@ -33,6 +33,15 @@ enum Call {
 	GetDetails,
 }
 
+pub struct Config {
+	pub rpc_url: Option<String>,
+	pub ws_url: Option<String>,
+	pub chain_id: String,
+	pub signer_private_key: String,
+	pub initiator_contract: MovementAddress,
+	pub gas_limit: u64,
+}
+
 pub struct MovementClient {
 	///Address of the counterparty moduke
 	counterparty_address: AccountAddress,
@@ -40,13 +49,12 @@ pub struct MovementClient {
 	initiator_address: Vec<u8>,
 	///The Apotos Rest Client
 	rest_client: Client,
-	faucet_client: FaucetClient,
 	///The signer account
 	signer: LocalAccount,
 }
 
 impl MovementClient {
-	pub async fn build_with_config() -> Result<Self, anyhow::Error> {
+	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
 		let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
 		let suzuka_config =
 			dot_movement.try_get_config_from_json::<suzuka_config::Config>().unwrap();
@@ -62,19 +70,6 @@ impl MovementClient {
 			format!("http://{}:{}", node_connection_address, node_connection_port);
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 
-		let faucet_listen_address = suzuka_config
-			.execution_config
-			.maptos_config
-			.client
-			.maptos_faucet_rest_connection_hostname;
-		let faucet_listen_port = suzuka_config
-			.execution_config
-			.maptos_config
-			.client
-			.maptos_faucet_rest_connection_port;
-		let faucet_url = format!("http://{}:{}", faucet_listen_address, faucet_listen_port);
-		let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
-
 		let rest_client = Client::new(node_connection_url.clone());
 		let faucet_client = FaucetClient::new(faucet_url, node_connection_url.clone());
 
@@ -85,7 +80,6 @@ impl MovementClient {
 		Ok(MovementClient {
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
-			faucet_client,
 			counterparty_address: DUMMY_ADDRESS,
 			signer,
 		})
@@ -201,11 +195,11 @@ impl MovementClient {
 			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
 		}
 	}
+}
 
-	fn to_bcs_bytes<T>(&self, value: &T) -> Result<Vec<u8>, anyhow::Error>
-	where
-		T: Serialize,
-	{
-		Ok(bcs::to_bytes(value)?)
-	}
+fn to_bcs_bytes<T>(value: &T) -> Result<Vec<u8>, anyhow::Error>
+where
+	T: Serialize,
+{
+	Ok(bcs::to_bytes(value)?)
 }

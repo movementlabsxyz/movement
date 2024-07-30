@@ -13,6 +13,8 @@ pub enum BridgeContractInitiatorError {
 	CompleteTransferError,
 	#[error("Failed to parse preimage")]
 	ParsePreimageError,
+	#[error("Initiator address not set")]
+	InitiatorAddressNotSet,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
@@ -31,6 +33,8 @@ pub enum BridgeContractCounterpartyError {
 	CompleteTransferError,
 	#[error("Failed to abort bridge transfer")]
 	AbortTransferError,
+	#[error("Counterparty address not set")]
+	CounterpartyAddressNotSet,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }

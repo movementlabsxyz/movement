@@ -92,7 +92,7 @@ pub async fn send_aptos_transaction(
 	Ok(response)
 }
 
-// This is not used for now, but we may need to use it in later. It's used for estimating gas
+// This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(
 	aptos_client: &MovementClient,
 	signer: &mut LocalAccount,
