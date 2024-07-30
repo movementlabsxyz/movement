@@ -3538,6 +3538,7 @@ name = "bridge-cli"
 version = "0.0.2"
 dependencies = [
  "bridge-shared",
+ "ethereum-bridge",
 ]
 
 [[package]]
@@ -5301,13 +5302,11 @@ dependencies = [
  "alloy-transport",
  "alloy-transport-ws",
  "anyhow",
- "aptos-api",
  "async-trait",
  "bridge-shared",
  "futures",
  "hex",
  "keccak-hash",
- "mcr-settlement-client",
  "poem",
  "serde",
  "thiserror",

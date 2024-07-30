@@ -11,6 +11,7 @@ rust-version.workspace = true
 
 [dependencies]
 bridge-shared.workspace = true
+ethereum-bridge.workspace = true
 
 [lints]
 workspace = true
