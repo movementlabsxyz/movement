@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "Bridge CLI")]
@@ -15,13 +15,28 @@ pub enum Commands {
 	Eth(EthCommands),
 }
 
+#[derive(Args)]
+pub struct EthShared {
+	#[arg(long)]
+	pub private_key: String,
+}
+
 #[derive(Subcommand)]
 pub enum EthCommands {
 	/// Initiate a bridge transfer
 	Swap {
+		#[command(flatten)]
+		args: EthShared,
 		#[arg(long)]
 		recipient: String,
 		#[arg(long)]
 		amount: u64,
+	},
+	/// Resume a bridge transfer
+	Resume {
+		#[command(flatten)]
+		args: EthShared,
+		#[arg(long)]
+		transfer_id: String,
 	},
 }
