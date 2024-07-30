@@ -29,6 +29,7 @@ members = [
     "protocol-units/bridge/cli",
     "protocol-units/bridge/e2e",
     "protocol-units/bridge/service",
+    "protocol-units/bridge/e2e",
 ]
 
 [workspace.package]
