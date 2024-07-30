@@ -61,12 +61,10 @@ impl Executor {
 			(block_metadata, block, senders_and_sequence_numbers)
 		};
 
-		let block_executor = self.block_executor.clone();
-
 		let block_id = block.block_id.clone();
-		let parent_block_id = block_executor.committed_block_id();
+		let parent_block_id = self.block_executor.committed_block_id();
 
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		let state_compute = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
@@ -90,7 +88,7 @@ impl Executor {
 			state_compute.root_hash(),
 			version,
 		);
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
 		})
