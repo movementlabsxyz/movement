@@ -130,7 +130,7 @@ async fn initiate_transfer(
 	amount: u64,
 ) -> Result<()> {
 	println!("config {:?}", config);
-	let mut client = EthClient::build_with_config(config).await?;
+	let mut client = EthClient::new(config).await?;
 	let initiator_address = Address::parse_checksummed(initiator_address, None)?;
 	let recipient_address = Vec::from(parse_recipient_address(recipient_address).unwrap());
 	let hash_lock = HashLock::parse(hash_lock)?;
@@ -152,7 +152,7 @@ async fn complete_transfer(
 	pre_image: &str,
 ) -> Result<()> {
 	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
-	let mut client = EthClient::build_with_config(config).await?;
+	let mut client = EthClient::new(config).await?;
 	client
 		.complete_bridge_transfer(bridge_transfer_id, HashLockPreImage(pre_image.into()))
 		.await?;
@@ -160,14 +160,14 @@ async fn complete_transfer(
 }
 
 async fn refund_transfer(config: Config, bridge_transfer_id: &str) -> Result<()> {
-	let mut client = EthClient::build_with_config(config).await?;
+	let mut client = EthClient::new(config).await?;
 	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
 	client.refund_bridge_transfer(bridge_transfer_id).await?;
 	Ok(())
 }
 
 async fn get_transfer_details(config: Config, bridge_transfer_id: &str) -> Result<()> {
-	let mut client = EthClient::build_with_config(config).await?;
+	let mut client = EthClient::new(config).await?;
 	let bridge_transfer_id = BridgeTransferId::parse(bridge_transfer_id)?;
 	client.get_bridge_transfer_details(bridge_transfer_id).await?;
 	Ok(())

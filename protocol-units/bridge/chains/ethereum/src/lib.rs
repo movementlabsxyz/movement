@@ -1,11 +1,11 @@
 use anyhow::Context;
 use std::fmt::Debug;
 
-use alloy::signers::local::PrivateKeySigner;
+use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use alloy_network::EthereumWallet;
 use alloy_primitives::private::serde::{Deserialize, Serialize};
 use alloy_primitives::{FixedBytes, U256};
-use alloy_provider::{Provider, ProviderBuilder};
+use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy_rlp::{Decodable, RlpDecodable, RlpEncodable};
 use alloy_sol_types::sol;
 use bridge_shared::bridge_contracts::{
@@ -75,23 +75,27 @@ struct EthBridgeTransferDetails {
 
 pub struct EthClient<P> {
 	rpc_provider: P,
+	ws_provider: RootProvider<PubSubFrontend>,
 	initiator_contract: EthAddress,
 }
 
 impl EthClient<utils::AlloyProvider> {
-	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
 		let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
+		let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(signer.clone()))
 			.on_builtin(&rpc_url)
 			.await?;
-
-		Ok(EthClient { rpc_provider, initiator_contract: config.initiator_contract })
+		let ws = WsConnect::new(ws_url);
+		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+		Ok(EthClient { rpc_provider, ws_provider, initiator_contract: config.initiator_contract })
 	}
 }
 
+// See tracking issue: https://github.com/movementlabsxyz/movement/issues/250
 impl<P> Clone for EthClient<P> {
 	fn clone(&self) -> Self {
 		todo!()
@@ -106,9 +110,11 @@ where
 	type Address = EthAddress;
 	type Hash = EthHash;
 
+	// `_initiator_address` or in the contract `originator` is set
+	// via the msg.sender value so `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator_address: InitiatorAddress<Self::Address>,
+		_initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
@@ -116,7 +122,6 @@ where
 	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_contract.0, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
-		// TODO:(richard) we are missing here the intiator address
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
 			FixedBytes(recipient_bytes),
@@ -135,7 +140,8 @@ where
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
-		// TODO: (richard) the pre-image could be anything really, why the limiting to 32 bytes?
+		// the Alloy generated type for pre_image arg is `FixedBytes<32>` so it must be converted to `[u8; 32]`
+		// in order to be used in the contract call.
 		let generic_error = |desc| BridgeContractInitiatorError::GenericError(String::from(desc));
 		let pre_image: [u8; 32] = pre_image
 			.0
