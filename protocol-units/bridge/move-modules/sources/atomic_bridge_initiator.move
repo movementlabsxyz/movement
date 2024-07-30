@@ -150,6 +150,8 @@ module atomic_bridge::atomic_bridge_initiator {
 
         moveth::add_minter(atomic_bridge, signer::address_of(account));
         moveth::burn(account, @atomic_bridge, bridge_transfer.amount);
+        moveth::remove_minter(atomic_bridge, signer::address_of(account));
+
 
         // Update the state directly on the mutable reference
         bridge_transfer.state = COMPLETED;
