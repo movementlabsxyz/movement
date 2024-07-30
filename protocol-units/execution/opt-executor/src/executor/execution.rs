@@ -117,6 +117,27 @@ impl Executor {
 		Ok(ledger_info.block_height.into())
 	}
 
+	pub fn revert_block_head(&self, block_height: u64) -> Result<(), anyhow::Error> {
+		let (_start_ver, end_ver, block_event) =
+			self.db.reader.get_block_info_by_height(block_height)?;
+		let block_info = BlockInfo::new(
+			block_event.epoch(),
+			block_event.round(),
+			block_event.hash()?,
+			self.db.reader.get_accumulator_root_hash(end_ver)?,
+			end_ver,
+			block_event.proposed_time(),
+			None,
+		);
+		let ledger_info = LedgerInfo::new(block_info, HashValue::zero());
+		let aggregate_signature = AggregateSignature::empty();
+		let ledger_info = LedgerInfoWithSignatures::new(ledger_info, aggregate_signature);
+		self.db.writer.revert_commit(&ledger_info)?;
+		// Reset the executor state to the reverted storage
+		self.block_executor.reset()?;
+		Ok(())
+	}
+
 	pub fn context(&self) -> Arc<Context> {
 		self.context.clone()
 	}
