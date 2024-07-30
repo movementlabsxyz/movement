@@ -19,10 +19,7 @@ use bridge_shared::types::{
 pub mod types;
 pub mod utils;
 
-use crate::types::{EthAddress, EthHash};
-
-const INITIATOR_CONTRACT: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-const DEFAULT_GAS_LIMIT: u64 = 10_000_000_000;
+use crate::types::{EthAddress, EthHash, DEFAULT_GAS_LIMIT, INITIATOR_CONTRACT};
 
 ///Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug, Serialize, Deserialize)]
