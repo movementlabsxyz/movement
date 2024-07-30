@@ -3,9 +3,9 @@ pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
+contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,
@@ -21,15 +21,27 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         MessageState state;
     }
 
+    // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
+
+    // Total WETH pool balance
+    uint256 public poolBalance;
+
+    address public counterpartyContract; 
     IWETH9 public weth;
     uint256 private nonce;
 
-    function initialize(address _weth) public initializer {
+    function initialize(address _weth, address owner) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
         weth = IWETH9(_weth);
+        __Ownable_init(owner);
+    }
+
+    function setCounterpartyContract(address _counterpartyContract) external onlyOwner {
+        if (_counterpartyContract == address(0)) revert ZeroAddress();
+        counterpartyContract = _counterpartyContract;
     }
 
     function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
@@ -46,12 +58,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         }
         // If msg.value is greater than 0, convert ETH to WETH
         if (ethAmount > 0) weth.deposit{value: ethAmount}();
-        //Transfer WETH to this contract, revert if transfer fails
+        // Transfer WETH to this contract, revert if transfer fails
         if (wethAmount > 0) {
             if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
         }
 
-        nonce++; //increment the nonce
+        // Update the pool balance
+        poolBalance += totalAmount;
+
+        nonce++; // increment the nonce
         bridgeTransferId =
             keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce));
 
@@ -83,8 +98,19 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
+        // Decrease pool balance and transfer WETH back to originator
+        poolBalance -= bridgeTransfer.amount;
         if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
+
+    // Counterparty contract to withdraw WETH for originator
+    function withdrawWETH(address recipient, uint256 amount) external {
+        if (msg.sender != counterpartyContract) revert Unauthorized();
+        if (poolBalance < amount) revert InsufficientWethBalance();
+        poolBalance -= amount;
+        if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
+    }
 }
+

@@ -14,21 +14,30 @@ members = [
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
     "protocol-units/settlement/mcr/setup",
+    "protocol-units/settlement/mcr/runner",
     "protocol-units/movement-rest",
-    "util/*",
+    "util/buildtime",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
     "util/commander",
+    "util/dot-movement",
+    "util/flocks",
+    "util/godfig",
+    "util/movement-types",
+    "util/tracing",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/shared",
-    "protocol-units/bridge/cli",
+    "protocol-units/bridge/chains/ethereum",
+    "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",
+    "protocol-units/settlement/mcr/runner",
+    "benches/*",
 ]
 
 [workspace.package]
-version = "0.3.0"
+version = "0.0.2"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Movement Labs"]
@@ -39,6 +48,10 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
+## bridge
+movement-bridge = { path = "protocol-units/bridge/chains/movement" }
+ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
+bridge-shared = { path = "protocol-units/bridge/shared" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
@@ -79,6 +92,7 @@ monza-config = { path = "networks/monza/monza-config" }
 # util
 flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
+movement-tracing = { path = "util/tracing" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -158,7 +172,7 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
-## Alloy Dependencies
+
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "node-bindings",
     "rpc-types-trace",
@@ -169,12 +183,15 @@ alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev 
     "pubsub",
     "providers",
 ] }
+alloy-rpc-types-eth = "0.1.3"
+alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-primitives = { version = "0.7.2", default-features = false }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "ws",
 ] }
+alloy-rlp = "0.3.5"
 alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
@@ -193,6 +210,7 @@ chrono = "0.4.37"
 clap = { version = "4.4.10", features = ["derive"] }
 derivative = "2.2.0"
 derive_more = { version = "0.99.11", default-features = false }
+derive-new = "0.6.0"
 digest = "0.10"
 dirs = "3.0.2"
 fail = "0.5.1"
@@ -204,6 +222,7 @@ hex = { version = "0.4.3", default-features = false, features = [
 ] }
 ics23 = { version = "0.11.0" }
 k256 = { version = "0.13.3" }
+keccak-hash = "0.10.0"
 itertools = { version = "0.12.1", default-features = false }
 jmt = "0.9.0"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
@@ -240,7 +259,9 @@ sha2 = "0.10.8"
 syn = "2.0"
 tempfile = "3.5"
 thiserror = "1.0.50"
-tokio = { version = "1.35.1", features = ["full"] }
+tokio = { version = "1.35.1", features = ["full", "tracing"] }
+tokio-console = "0.1.0"
+console-subscriber = "0.3.0"
 tokio-stream = "0.1.15"
 toml = "0.8"
 tonic = "0.11"
@@ -249,6 +270,7 @@ tonic-reflection = "0.11"
 tonic-web = "0.11"
 ### To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 tracing = "0.1.40"
+tracing-appender = "0.2"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 trie-db = "0.28.0"
@@ -258,6 +280,8 @@ zstd-sys = "2.0.9"
 inotify = "0.10.2"
 rustix = "0.38.34"
 paste = "1.0.15"
+uuid = { version = "1.10.0", features = ["v4"] }
+blake-3 = "1.4.0"
 
 # trying to pin diesel
 # diesel = "=2.1.1"
@@ -266,7 +290,7 @@ num_cpus = "=1.16.0"
 ahash = "=0.8.11"
 
 [workspace.lints.rust]
-dead_code = "deny"
+dead_code = "deny"        ## Alloy Dependencies
 unused_imports = "deny"
 non_ascii_idents = "deny" # Bad for readability and it can also be a security vulnerability
 

@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
-	pub mempool: Arc<RwLock<T>>,
+	mempool: T,
 	// this value should not be changed after initialization
 	block_size: u32,
 	pub parent_block: Arc<RwLock<Id>>,
@@ -17,7 +17,7 @@ pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 	pub fn new(
-		mempool: Arc<RwLock<T>>,
+		mempool: T,
 		block_size: u32,
 		parent_block: Arc<RwLock<Id>>,
 		building_time_ms: u64,
@@ -34,6 +34,11 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 		self.building_time_ms = building_time_ms;
 		self
 	}
+
+	pub fn building_time_ms(&self) -> u64 {
+		self.building_time_ms
+	}
+
 }
 
 impl Memseq<RocksdbMempool> {
@@ -41,9 +46,8 @@ impl Memseq<RocksdbMempool> {
 		let mempool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
 		)?;
-		let mempool = Arc::new(RwLock::new(mempool));
 		let parent_block = Arc::new(RwLock::new(Id::default()));
-		Ok(Self::new(mempool, 10, parent_block, 1000))
+		Ok(Self::new(mempool, 128, parent_block, 125))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
@@ -52,18 +56,21 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
+
+	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
+		self.mempool.add_transactions(transactions).await?;
+		Ok(())
+	}
+
 	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
-		let mempool = self.mempool.read().await;
-		mempool.add_transaction(transaction).await?;
+		self.mempool.add_transaction(transaction).await?;
 		Ok(())
 	}
 
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
-		let mempool = self.mempool.read().await;
-		let mut transactions = Vec::new();
+		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
 		let mut now = std::time::Instant::now();
-		let finish_by = now + std::time::Duration::from_millis(self.building_time_ms);
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -71,19 +78,14 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 				break;
 			}
 
-			for _ in 0..self.block_size - current_block_size {
-				if let Some(transaction) = mempool.pop_transaction().await? {
-					transactions.push(transaction);
-				} else {
-					break;
-				}
-			}
+			let remaining = self.block_size - current_block_size;
+			let mut transactions_to_add = self.mempool.pop_transactions(remaining as usize).await?;
+			transactions.append(&mut transactions_to_add);
 
 			// sleep to yield to other tasks and wait for more transactions
-			tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+			tokio::task::yield_now().await;
 
-			now = std::time::Instant::now();
-			if now > finish_by {
+			if now.elapsed().as_millis() as u64 > self.building_time_ms {
 				break;
 			}
 		}
@@ -91,11 +93,19 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-			Ok(Some(Block::new(
-				Default::default(),
-				self.parent_block.read().await.clone().to_vec(),
-				transactions,
-			)))
+
+			let new_block = {
+				let parent_block = self.parent_block.read().await.clone();
+				Block::new(Default::default(), parent_block.to_vec(), transactions)
+			};
+			
+			// update the parent block 
+			{
+				let mut parent_block = self.parent_block.write().await;
+				*parent_block = new_block.id();
+			}
+
+			Ok(Some(new_block))
 		}
 	}
 }
@@ -134,7 +144,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_publish_error_propagation() -> Result<(), anyhow::Error> {
-		let mempool = Arc::new(RwLock::new(MockMempool));
+		let mempool = MockMempool;
 		let parent_block = Arc::new(RwLock::new(Id::default()));
 		let memseq = Memseq::new(mempool, 10, parent_block, 1000);
 
@@ -206,8 +216,8 @@ pub mod test {
 		let path = dir.path().to_path_buf();
 		let memseq = Memseq::try_move_rocks(path.clone())?;
 
-		assert_eq!(memseq.block_size, 10);
-		assert_eq!(memseq.building_time_ms, 1000);
+		assert_eq!(memseq.block_size, 1024);
+		assert_eq!(memseq.building_time_ms, 500);
 
 		// Test invalid path
 		let invalid_path = PathBuf::from("");
@@ -222,9 +232,9 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 
-		let mem_pool = Arc::new(RwLock::new(RocksdbMempool::try_new(
+		let mem_pool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
-		)?));
+		)?;
 		let block_size = 50;
 		let building_time_ms = 2000;
 		let parent_block = Arc::new(RwLock::new(Id::default()));
@@ -243,9 +253,9 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 
-		let mem_pool = Arc::new(RwLock::new(RocksdbMempool::try_new(
+		let mem_pool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
-		)?));
+		)?;
 		let block_size = 50;
 		let building_time_ms = 2000;
 		let parent_block = Arc::new(RwLock::new(Id::default()));
@@ -391,6 +401,13 @@ pub mod test {
 			_transaction_id: Id,
 		) -> Result<bool, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock has_mempool_transaction"))
+		}
+
+		async fn add_mempool_transactions(
+			&self,
+			_transactions: Vec<MempoolTransaction>,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock add_mempool_transactions"))
 		}
 
 		async fn add_mempool_transaction(

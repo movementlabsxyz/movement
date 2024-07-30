@@ -1,8 +1,0 @@
----
-profiles:
-  default:
-    private_key: "0x8c8c209f74a0e5e5e54d3cb2d6154fe31b85fa34aa33afb7a8a43b6f00d13b67"
-    public_key: "0x3fce43a616d1a9efc8114417bbc642122b75b9054d8ac1357f70a3eb90510328"
-    account: d1939537bbfd08a0fdee25d8216f5696e90c090a7641046d6c606b0aeec77b4a
-    rest_url: "http://localhost:30731/"
-    faucet_url: "http://localhost:30732/"
