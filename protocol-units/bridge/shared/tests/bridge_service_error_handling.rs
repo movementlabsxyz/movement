@@ -362,7 +362,7 @@ async fn test_bridge_service_completion_abort_after_errors() {
 	.await
 	.expect("complete_bridge_transfer failed");
 
-	// Frist we get a completed event from the counterparty
+	// First we get a completed event from the counterparty
 	let completed_event_counterparty = bridge_service.next().await.expect("No event");
 	let completed_event_counterparty =
 		completed_event_counterparty.B2C_ContractEvent().expect("Not a B2C event");

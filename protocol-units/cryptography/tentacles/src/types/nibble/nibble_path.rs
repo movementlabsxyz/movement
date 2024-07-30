@@ -129,7 +129,7 @@ impl NibblePath {
 
     /// Pops a nibble from the end of the nibble path.
     pub fn pop(&mut self) -> Option<Nibble> {
-        let poped_nibble = if self.num_nibbles % 2 == 0 {
+        let popped_nibble = if self.num_nibbles % 2 == 0 {
             self.bytes.last_mut().map(|last_byte| {
                 let nibble = *last_byte & 0x0f;
                 *last_byte &= 0xf0;
@@ -141,7 +141,7 @@ impl NibblePath {
         if poped_nibble.is_some() {
             self.num_nibbles -= 1;
         }
-        poped_nibble
+        popped_nibble
     }
 
     /// Returns the last nibble.
