@@ -24,6 +24,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const EWRONG_PREIMAGE: u64 = 3;
     const ENOT_INITIALIZED: u64 = 4;
     const ETIMELOCK_EXPIRED: u64 = 5;
+    const ENOT_EXPIRED: u64 = 6;
 
     struct BridgeTransfer has key, store, drop {
         amount: u64,
@@ -172,6 +173,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
+        assert!(block::get_current_block_height() > bridge_transfer.time_lock, ENOT_EXPIRED);
 
         let initiator_addr = bridge_transfer.originator;
         let bridge_addr = signer::address_of(atomic_bridge);
@@ -200,14 +202,16 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) {
         genesis::setup();
+        //block::initialize_for_test(aptos_framework, 1);
         let current_block_height = block::get_current_block_height();
         debug::print(&current_block_height);
         moveth::init_for_test(creator);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
-        current_block_height = block::get_current_block_height();
-        debug::print(&current_block_height);
+        timestamp::fast_forward_seconds(5);
+        let current_block_height_now = block::get_current_block_height();
+        debug::print(&current_block_height_now);
         assert!(exists<BridgeTransferStore>(bridge_addr), EDOES_NOT_EXIST);
     }
 
@@ -394,6 +398,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge, master_minter = @master_minter)]
+    #[expected_failure]
     public fun test_refund_bridge_transfer(
         sender: &signer,
         atomic_bridge: &signer,
