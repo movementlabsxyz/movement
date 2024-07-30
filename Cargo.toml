@@ -14,6 +14,7 @@ members = [
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
     "protocol-units/settlement/mcr/setup",
+    "protocol-units/settlement/mcr/runner",
     "protocol-units/movement-rest",
     "util/buildtime",
     "util/buildtime/buildtime-helpers",
@@ -28,7 +29,8 @@ members = [
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/shared",
-    "protocol-units/bridge/cli",
+    "protocol-units/bridge/chains/ethereum",
+    "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
@@ -46,6 +48,10 @@ rust-version = "1.75"
 
 [workspace.dependencies]
 # internal
+## bridge
+movement-bridge = { path = "protocol-units/bridge/chains/movement" }
+ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
+bridge-shared = { path = "protocol-units/bridge/shared" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
@@ -166,7 +172,7 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 celestia-rpc = { git = "https://github.com/eigerco/lumina" }
 celestia-types = { git = "https://github.com/eigerco/lumina" }
 
-## Alloy Dependencies
+
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "node-bindings",
     "rpc-types-trace",
@@ -177,12 +183,15 @@ alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev 
     "pubsub",
     "providers",
 ] }
+alloy-rpc-types-eth = "0.1.3"
+alloy-eips = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-contract = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-network = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-primitives = { version = "0.7.2", default-features = false }
 alloy-provider = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "ws",
 ] }
+alloy-rlp = "0.3.5"
 alloy-rpc-types = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 alloy-sol-types = { version = "0.7.2", features = ["json"] }
 alloy-signer = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
@@ -201,6 +210,7 @@ chrono = "0.4.37"
 clap = { version = "4.4.10", features = ["derive"] }
 derivative = "2.2.0"
 derive_more = { version = "0.99.11", default-features = false }
+derive-new = "0.6.0"
 digest = "0.10"
 dirs = "3.0.2"
 fail = "0.5.1"
@@ -212,6 +222,7 @@ hex = { version = "0.4.3", default-features = false, features = [
 ] }
 ics23 = { version = "0.11.0" }
 k256 = { version = "0.13.3" }
+keccak-hash = "0.10.0"
 itertools = { version = "0.12.1", default-features = false }
 jmt = "0.9.0"
 jsonrpsee = { version = "0.20.1", features = ["jsonrpsee-types"] }
@@ -279,7 +290,7 @@ num_cpus = "=1.16.0"
 ahash = "=0.8.11"
 
 [workspace.lints.rust]
-dead_code = "deny"
+dead_code = "deny"        ## Alloy Dependencies
 unused_imports = "deny"
 non_ascii_idents = "deny" # Bad for readability and it can also be a security vulnerability
 

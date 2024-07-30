@@ -299,5 +299,4 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.hash_lock == hash_lock, 3);
         assert!(transfer_details.initiator == initiator, 4);
     }
-    
 }
