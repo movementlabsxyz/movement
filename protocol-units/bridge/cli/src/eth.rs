@@ -1,6 +1,6 @@
 use crate::{
 	clap::{EthCommands, EthShared},
-	state::{load_swap_state, save_swap_state, SwapStatus},
+	state::{load_swap_state, save_swap_state, SwapState, SwapStatus},
 };
 use anyhow::Result;
 use uuid::Uuid;
@@ -18,7 +18,7 @@ async fn initiate_swap(args: &EthShared, recipient: &str, amount: u64) -> Result
 	println!("Initiating swap to {} with amount {}", recipient, amount);
 
 	// Create a new swap state
-	let swap_state = crate::state::SwapState {
+	let swap_state = SwapState {
 		id: Uuid::new_v4().to_string(),
 		recipient: recipient.to_string(),
 		amount,
@@ -26,7 +26,12 @@ async fn initiate_swap(args: &EthShared, recipient: &str, amount: u64) -> Result
 	};
 
 	// Save the initial state
-	save_swap_state(&swap_state)?;
+	save_swap_state(&SwapState {
+		id: Uuid::new_v4().to_string(),
+		recipient: recipient.to_string(),
+		amount,
+		status: SwapStatus::Initiated,
+	})?;
 
 	// Implement the actual swap initiation logic here
 	// For now, we'll just print a message
