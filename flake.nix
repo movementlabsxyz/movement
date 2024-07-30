@@ -70,6 +70,8 @@
         ];
 
         testDependencies = with pkgs; [
+          python311
+          poetry
           just
           foundry-bin
           process-compose

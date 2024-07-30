@@ -1,8 +1,6 @@
 use aptos_types::state_proof::StateProof;
 
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
-
 use core::fmt;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -30,7 +28,10 @@ impl AsRef<[u8]> for Id {
 
 impl fmt::Display for Id {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		write!(f, "{:?}", &self.0)
+		for byte in &self.0 {
+			write!(f, "{:02x}", byte)?;
+		}
+		Ok(())
 	}
 }
 
@@ -38,22 +39,24 @@ impl fmt::Display for Id {
 pub struct Transaction {
 	pub data: Vec<u8>,
 	pub sequence_number: u64,
+	pub id : Id,
 }
 
 impl Transaction {
 	pub fn new(data: Vec<u8>, sequence_number: u64) -> Self {
-		Self { data, sequence_number }
+		let mut hasher = blake3::Hasher::new();
+		hasher.update(&data);
+		hasher.update(&sequence_number.to_le_bytes());
+		let id = Id(hasher.finalize().into());
+		Self { data, sequence_number, id }
 	}
 
 	pub fn id(&self) -> Id {
-		let mut hasher = sha2::Sha256::new();
-		hasher.update(&self.data);
-		hasher.update(&self.sequence_number.to_le_bytes());
-		Id(hasher.finalize().into())
+		self.id.clone()
 	}
 
 	pub fn test() -> Self {
-		Self { data: vec![0], sequence_number: 0 }
+		Self::new(vec![0], 0)
 	}
 }
 
@@ -101,28 +104,32 @@ pub struct Block {
 	pub metadata: BlockMetadata,
 	pub parent: Vec<u8>,
 	pub transactions: Vec<Transaction>,
+	pub id : Id,
 }
 
 impl Block {
 	pub fn new(metadata: BlockMetadata, parent: Vec<u8>, transactions: Vec<Transaction>) -> Self {
-		Self { metadata, parent, transactions }
+
+		let mut hasher = blake3::Hasher::new();
+		hasher.update(&parent);
+		for transaction in &transactions {
+			hasher.update(&transaction.id().as_ref());
+		}
+		let id = Id(hasher.finalize().into());
+
+		Self { metadata, parent, transactions, id }
 	}
 
 	pub fn id(&self) -> Id {
-		let mut hasher = sha2::Sha256::new();
-		hasher.update(&self.parent);
-		for transaction in &self.transactions {
-			hasher.update(&transaction.id());
-		}
-		Id(hasher.finalize().into())
+		self.id.clone()
 	}
 
 	pub fn test() -> Self {
-		Self {
-			metadata: BlockMetadata::BlockMetadata,
-			parent: vec![0],
-			transactions: vec![Transaction::test()],
-		}
+		Self::new(
+			BlockMetadata::BlockMetadata,
+			vec![0],
+			vec![Transaction::test()],
+		)
 	}
 
 	pub fn add_transaction(&mut self, transaction: Transaction) {
@@ -140,7 +147,7 @@ impl Commitment {
 
 	/// Creates a commitment by making a cryptographic digest of the state proof.
 	pub fn digest_state_proof(state_proof: &StateProof) -> Self {
-		let mut hasher = sha2::Sha256::new();
+		let mut hasher = blake3::Hasher::new();
 		bcs::serialize_into(&mut hasher, &state_proof).expect("unexpected serialization error");
 		Self(hasher.finalize().into())
 	}

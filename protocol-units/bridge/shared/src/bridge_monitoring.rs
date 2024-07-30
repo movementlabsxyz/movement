@@ -4,7 +4,7 @@ use crate::types::{
 	BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails, LockDetails,
 };
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BridgeContractInitiatorEvent<A, H> {
 	Initiated(BridgeTransferDetails<A, H>),
 	Completed(BridgeTransferId<H>),
@@ -20,7 +20,7 @@ impl<A, H> BridgeContractInitiatorEvent<A, H> {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyEvent<A, H> {
 	Locked(LockDetails<A, H>),
 	Completed(CounterpartyCompletedDetails<A, H>),
