@@ -148,10 +148,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
         assert!(block::get_current_block_height() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
 
-        moveth::add_minter(atomic_bridge, signer::address_of(account));
-        moveth::burn(account, @atomic_bridge, bridge_transfer.amount);
-        moveth::remove_minter(atomic_bridge, signer::address_of(account));
-
+        moveth::burn(atomic_bridge, @atomic_bridge, bridge_transfer.amount);
 
         // Update the state directly on the mutable reference
         bridge_transfer.state = COMPLETED;
