@@ -197,7 +197,7 @@ where
 			}
 
 			// get the transactions
-			let span = info_span!(target: "movement_timing", "execute_block", id = block_id);
+			let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
 			let commitment = self
 				.execute_block(block_bytes, block_id.clone(), block_timestamp)
 				.instrument(span)

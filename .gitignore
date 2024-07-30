@@ -20,3 +20,4 @@ node_modules/
 profile.json
 *.dat
 *.log
+venv
