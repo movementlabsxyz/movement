@@ -258,7 +258,7 @@ where
 
 		for transaction in block.transactions {
 			let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.data)?;
-			info!(
+			debug!(
 				target: "movement_timing",
 				tx_hash = %signed_transaction.committed_hash(),
 				%block_id,

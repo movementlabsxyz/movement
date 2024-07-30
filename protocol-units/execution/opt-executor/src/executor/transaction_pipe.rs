@@ -132,11 +132,15 @@ impl Executor {
 			MempoolStatusCode::Accepted => {
 				debug!("Transaction accepted: {:?}", transaction);
 				transaction_channel
-					.send(transaction)
+					.send(transaction.clone())
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
 				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+				core_mempool.commit_transaction(
+					&transaction.sender(),
+					transaction.sequence_number()
+				);
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);
