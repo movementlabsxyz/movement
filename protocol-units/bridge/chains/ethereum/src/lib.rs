@@ -1,15 +1,15 @@
+use alloy_rlp::Decodable;
 use anyhow::Context;
+use serde_with::serde_as;
 use std::fmt::Debug;
 
-use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
-use alloy_network::EthereumWallet;
-use alloy_primitives::{
-	private::serde::{Deserialize, Serialize},
-	Address, FixedBytes, U256,
+use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
+use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
+use alloy::{
+	network::EthereumWallet,
+	rlp::{RlpDecodable, RlpEncodable},
 };
-use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
-use alloy_rlp::{Decodable, RlpDecodable, RlpEncodable};
-use alloy_sol_types::sol;
+use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
@@ -25,14 +25,14 @@ pub mod utils;
 use crate::types::{EthAddress, EthHash, DEFAULT_GAS_LIMIT, INITIATOR_CONTRACT};
 
 // Codegen from the abis
-sol!(
+alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeInitiator,
 	"abis/AtomicBridgeInitiator.json"
 );
 
-sol!(
+alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeCounterparty,
@@ -40,12 +40,14 @@ sol!(
 );
 
 ///Configuration for the Ethereum Bridge Client
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde_as]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: String,
+	#[serde_as(as = "serde_with::DisplayFromStr")]
+	pub signer_private_key: PrivateKeySigner,
 	pub initiator_contract: Option<EthAddress>,
 	pub counterparty_contract: Option<EthAddress>,
 	pub gas_limit: u64,
@@ -66,9 +68,8 @@ impl Default for Config {
 }
 
 impl Config {
-	fn default_for_private_key() -> String {
-		let random_wallet = PrivateKeySigner::random();
-		random_wallet.to_bytes().to_string()
+	fn default_for_private_key() -> PrivateKeySigner {
+		PrivateKeySigner::random()
 	}
 }
 
@@ -91,7 +92,7 @@ pub struct EthClient {
 
 impl EthClient {
 	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
-		let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
+		let signer = config.signer_private_key;
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
 		let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()

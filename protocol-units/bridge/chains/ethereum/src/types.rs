@@ -1,7 +1,5 @@
-use std::str::FromStr;
-
-use alloy_primitives::Address;
-use alloy_rlp::{RlpDecodable, RlpEncodable};
+use alloy::primitives::Address;
+use alloy::rlp::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
 pub const INITIATOR_CONTRACT: &str = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";

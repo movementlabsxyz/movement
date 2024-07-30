@@ -1,20 +1,17 @@
 use std::str::FromStr;
 
 use crate::types::EthAddress;
-use alloy::pubsub::PubSubFrontend;
-use alloy_contract::{CallBuilder, CallDecoder};
-use alloy_network::{Ethereum, EthereumWallet};
-use alloy_primitives::{Address, U256};
-use alloy_provider::{
+use alloy::contract::{CallBuilder, CallDecoder};
+use alloy::network::{Ethereum, EthereumWallet};
+use alloy::primitives::U256;
+use alloy::providers::{
 	fillers::{ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller},
 	Provider, RootProvider,
 };
-use alloy_rlp::{Encodable, RlpDecodable, RlpEncodable};
-use alloy_rpc_types::TransactionReceipt;
-use alloy_transport::{BoxTransport, Transport};
-use bridge_shared::bridge_contracts::BridgeContractInitiatorError;
+use alloy::rlp::{Encodable, RlpEncodable};
+use alloy::rpc::types::TransactionReceipt;
+use alloy::transports::{BoxTransport, Transport};
 use keccak_hash::keccak;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub(crate) type AlloyProvider = FillProvider<
@@ -37,7 +34,7 @@ pub enum EthUtilError {
 	#[error("Failed to convert Vec<u8> to EthAddress")]
 	LengthError,
 	#[error("SendTxError: {0}")]
-	SendTxError(#[from] alloy_contract::Error),
+	SendTxError(#[from] alloy::contract::Error),
 	#[error("ReceiptError: {0}")]
 	GetReceiptError(String),
 }

@@ -22,6 +22,8 @@ tracing-subscriber.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 
+alloy.workspace = true
+
 directories = "5.0"
 
 [lints]

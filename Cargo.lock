@@ -135,6 +135,7 @@ dependencies = [
  "alloy-eips",
  "alloy-genesis",
  "alloy-json-rpc",
+ "alloy-network",
  "alloy-node-bindings",
  "alloy-provider",
  "alloy-pubsub",
@@ -143,7 +144,10 @@ dependencies = [
  "alloy-serde",
  "alloy-signer",
  "alloy-signer-local",
+ "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ipc",
+ "alloy-transport-ws",
 ]
 
 [[package]]
@@ -197,6 +201,7 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
+ "alloy-rlp",
  "alloy-sol-types",
 ]
 
@@ -226,6 +231,7 @@ dependencies = [
  "alloy-rlp",
  "alloy-serde",
  "c-kzg",
+ "derive_more",
  "once_cell",
  "serde",
  "sha2 0.10.8",
@@ -341,6 +347,7 @@ dependencies = [
  "alloy-signer-local",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ipc",
  "alloy-transport-ws",
  "async-stream",
  "async-trait",
@@ -408,6 +415,7 @@ dependencies = [
  "alloy-pubsub",
  "alloy-transport",
  "alloy-transport-http",
+ "alloy-transport-ipc",
  "alloy-transport-ws",
  "futures",
  "pin-project 1.1.5",
@@ -426,6 +434,7 @@ name = "alloy-rpc-types"
 version = "0.1.4"
 source = "git+https://github.com/alloy-rs/alloy.git?rev=83343b172585fe4e040fb104b4d1421f58cbf9a2#83343b172585fe4e040fb104b4d1421f58cbf9a2"
 dependencies = [
+ "alloy-rpc-types-engine",
  "alloy-rpc-types-eth",
  "alloy-rpc-types-trace",
  "alloy-serde",
@@ -439,6 +448,23 @@ dependencies = [
  "alloy-primitives",
  "alloy-serde",
  "serde",
+]
+
+[[package]]
+name = "alloy-rpc-types-engine"
+version = "0.1.4"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=83343b172585fe4e040fb104b4d1421f58cbf9a2#83343b172585fe4e040fb104b4d1421f58cbf9a2"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips",
+ "alloy-primitives",
+ "alloy-rlp",
+ "alloy-rpc-types-eth",
+ "alloy-serde",
+ "jsonwebtoken 9.3.0",
+ "rand 0.8.5",
+ "serde",
+ "thiserror",
 ]
 
 [[package]]
@@ -614,6 +640,24 @@ dependencies = [
  "tower",
  "tracing",
  "url",
+]
+
+[[package]]
+name = "alloy-transport-ipc"
+version = "0.1.4"
+source = "git+https://github.com/alloy-rs/alloy.git?rev=83343b172585fe4e040fb104b4d1421f58cbf9a2#83343b172585fe4e040fb104b4d1421f58cbf9a2"
+dependencies = [
+ "alloy-json-rpc",
+ "alloy-pubsub",
+ "alloy-transport",
+ "bytes 1.6.1",
+ "futures",
+ "interprocess",
+ "pin-project 1.1.5",
+ "serde_json",
+ "tokio",
+ "tokio-util",
+ "tracing",
 ]
 
 [[package]]
@@ -3537,6 +3581,7 @@ dependencies = [
 name = "bridge-cli"
 version = "0.0.2"
 dependencies = [
+ "alloy",
  "anyhow",
  "bridge-shared",
  "clap 4.5.11",
@@ -5107,6 +5152,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
+name = "doctest-file"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aac81fa3e28d21450aa4d2ac065992ba96a1d7303efbce51a95f4fd175b67562"
+
+[[package]]
 name = "dot-movement"
 version = "0.0.2"
 dependencies = [
@@ -5321,16 +5372,7 @@ name = "ethereum-bridge"
 version = "0.0.2"
 dependencies = [
  "alloy",
- "alloy-contract",
- "alloy-eips",
- "alloy-network",
- "alloy-primitives",
- "alloy-provider",
  "alloy-rlp",
- "alloy-rpc-types",
- "alloy-sol-types",
- "alloy-transport",
- "alloy-transport-ws",
  "anyhow",
  "async-trait",
  "bridge-shared",
@@ -5339,6 +5381,7 @@ dependencies = [
  "keccak-hash",
  "poem",
  "serde",
+ "serde_with",
  "thiserror",
  "tokio",
  "tracing",
@@ -5862,8 +5905,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -6809,6 +6854,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "interprocess"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2f4e4a06d42fab3e85ab1b419ad32b09eab58b901d40c57935ff92db3287a13"
+dependencies = [
+ "doctest-file",
+ "futures-core",
+ "libc",
+ "recvmsg",
+ "tokio",
+ "widestring 1.1.0",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "io-lifetimes"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7121,6 +7181,21 @@ dependencies = [
  "base64 0.21.7",
  "pem 1.1.1",
  "ring 0.16.20",
+ "serde",
+ "serde_json",
+ "simple_asn1 0.6.2",
+]
+
+[[package]]
+name = "jsonwebtoken"
+version = "9.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9ae10193d25051e74945f1ea2d0b42e03cc3b890f7e4cc5faa44997d808193f"
+dependencies = [
+ "base64 0.21.7",
+ "js-sys",
+ "pem 3.0.4",
+ "ring 0.17.8",
  "serde",
  "serde_json",
  "simple_asn1 0.6.2",
@@ -8853,7 +8928,7 @@ dependencies = [
  "once_cell",
  "parking_lot",
  "thiserror",
- "widestring",
+ "widestring 0.5.1",
  "winapi 0.3.9",
 ]
 
@@ -9496,6 +9571,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8835c273a76a90455d7344889b0964598e3316e2a79ede8e36f16bdcf2228b8"
 dependencies = [
  "base64 0.13.1",
+]
+
+[[package]]
+name = "pem"
+version = "3.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e459365e590736a54c3fa561947c84837534b8e9af6fc5bf781307e82658fae"
+dependencies = [
+ "base64 0.22.1",
+ "serde",
 ]
 
 [[package]]
@@ -10425,6 +10510,12 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
 ]
+
+[[package]]
+name = "recvmsg"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3edd4d5d42c92f0a659926464d4cce56b562761267ecf0f469d85b7de384175"
 
 [[package]]
 name = "redis"
@@ -13451,6 +13542,12 @@ name = "widestring"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17882f045410753661207383517a6f62ec3dbeb6a4ed2acce01f0728238d1983"
+
+[[package]]
+name = "widestring"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7219d36b6eac893fa81e84ebe06485e7dcbb616177469b142df14f1f4deb1311"
 
 [[package]]
 name = "wildmatch"
