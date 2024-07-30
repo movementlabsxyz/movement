@@ -3537,8 +3537,13 @@ dependencies = [
 name = "bridge-cli"
 version = "0.0.2"
 dependencies = [
+ "anyhow",
  "bridge-shared",
+ "clap 4.5.11",
  "ethereum-bridge",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
