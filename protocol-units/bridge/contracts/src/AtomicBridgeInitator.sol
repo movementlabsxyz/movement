@@ -14,7 +14,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
 
     struct BridgeTransfer {
         uint256 amount;
-        address originator;
+        address initiator;
         bytes32 recipient;
         bytes32 hashLock;
         uint256 timeLock; // in blocks
@@ -37,7 +37,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         payable
         returns (bytes32 bridgeTransferId)
     {
-        address originator = msg.sender;
+        address initiator = msg.sender;
         uint256 ethAmount = msg.value;
         uint256 totalAmount = wethAmount + ethAmount;
         // Ensure there is a valid total amount
@@ -48,23 +48,23 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         if (ethAmount > 0) weth.deposit{value: ethAmount}();
         //Transfer WETH to this contract, revert if transfer fails
         if (wethAmount > 0) {
-            if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
+            if (!weth.transferFrom(initiator, address(this), wethAmount)) revert WETHTransferFailed();
         }
 
         nonce++; //increment the nonce
         bridgeTransferId =
-            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce));
+            keccak256(abi.encodePacked(initiator, recipient, hashLock, timeLock, block.number, nonce));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
-            originator: originator,
+            initiator: initiator,
             recipient: recipient,
             hashLock: hashLock,
             timeLock: block.number + timeLock,
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
+        emit BridgeTransferInitiated(bridgeTransferId, initiator, recipient, totalAmount, hashLock, timeLock);
         return bridgeTransferId;
     }
 
@@ -83,7 +83,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, Initializable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-        if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
+        if (!weth.transfer(bridgeTransfer.initiator, bridgeTransfer.amount)) revert WETHTransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
