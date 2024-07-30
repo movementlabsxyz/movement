@@ -48,6 +48,14 @@ impl FinalityView {
 		self.inner.finalized_block_height()
 	}
 
+	/// Retrieve the finalized block height.
+	///
+	/// If the height was never updated by [`set_finalized_block_height`],
+	/// this method returns `None`.
+	pub fn finalized_block_height(&self) -> Option<u64> {
+		self.inner.finalized_block_height()
+	}
+
 	/// Update the finalized view with the latest block height.
 	///
 	/// The block must be found on the committed chain.
