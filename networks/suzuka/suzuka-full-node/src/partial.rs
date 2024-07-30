@@ -93,41 +93,52 @@ where
 
 	pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		// limit the total time batching transactions
-		let start_time = std::time::Instant::now();
-		let end_time = start_time + std::time::Duration::from_millis(100);
+		let start = std::time::Instant::now();
+		let (_, half_building_time) = self.config.m1_da_light_node.m1_da_light_node_config.try_block_building_parameters()?;
 
 		let mut transactions = Vec::new();
 
 		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		while let Ok(transaction_result) =
-			tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await
-		{
-			match transaction_result {
+		loop{
+			
+			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
+				Some(remaining) => remaining,
+				None => {
+					// we have exceeded the half building time
+					break;
+				}
+			};
+
+			match tokio::time::timeout(Duration::from_millis(remaining), self.transaction_receiver.recv()).await {
 				Ok(transaction) => {
-					info!(
-						target : "movement_timing",
-						batch_id = %batch_id,
-						tx_hash = %transaction.committed_hash(),
-						sender = %transaction.sender(),
-						sequence_number = transaction.sequence_number(),
-						"received transaction",
-					);
-					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-					let movement_transaction = movement_types::Transaction::new(
-						serialized_aptos_transaction,
-						transaction.sequence_number(),
-					);
-					let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
-					transactions.push(BlobWrite { data: serialized_transaction });
+					match transaction {
+						Ok(transaction) => {
+							info!(
+								target : "movement_timing",
+								batch_id = %batch_id,
+								tx_hash = %transaction.committed_hash(),
+								sender = %transaction.sender(),
+								sequence_number = transaction.sequence_number(),
+								"received transaction",
+							);
+							let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
+							let movement_transaction = movement_types::Transaction::new(
+								serialized_aptos_transaction,
+								transaction.sequence_number(),
+							);
+							let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
+							transactions.push(BlobWrite { data: serialized_transaction });
+						}
+						Err(_) => {
+							break;
+						}
+					}
 				}
 				Err(_) => {
 					break;
 				}
 			}
 
-			if std::time::Instant::now() > end_time {
-				break;
-			}
 		}
 
 		let length = transactions.len();

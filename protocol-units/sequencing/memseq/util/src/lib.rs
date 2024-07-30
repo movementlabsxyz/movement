@@ -29,7 +29,7 @@ env_default!(
 	default_memseq_build_time,
 	"MEMSEQ_BUILD_TIME",
 	u64,
-	250
+	500
 );
 
 env_default!(
