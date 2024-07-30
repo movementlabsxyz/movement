@@ -25,7 +25,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const ENOT_INITIALIZED: u64 = 4;
     const ETIMELOCK_EXPIRED: u64 = 5;
 
-    struct BridgeTransfer has key, store {
+    struct BridgeTransfer has key, store, drop {
         amount: u64,
         originator: address,
         recipient: vector<u8>, // eth address
@@ -142,7 +142,7 @@ module atomic_bridge::atomic_bridge_initiator {
     ) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
-        let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, copy bridge_transfer_id);
+        let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
         assert!(aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
@@ -158,6 +158,8 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_id: copy bridge_transfer_id,
             pre_image: pre_image,
         });
+
+        aptos_std::smart_table::remove(&mut store.transfers, copy bridge_transfer_id);
     }
 
     public fun refund_bridge_transfer(
@@ -167,7 +169,7 @@ module atomic_bridge::atomic_bridge_initiator {
     ) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
-        let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, copy bridge_transfer_id);
+        let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
 
@@ -180,13 +182,15 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
         dispatchable_fungible_asset::transfer(atomic_bridge, bridge_store, initiator_store, bridge_transfer.amount);
 
-        // Update the state directly on the mutable reference
         bridge_transfer.state = REFUNDED;
 
         event::emit_event(&mut store.bridge_transfer_refunded_events, BridgeTransferRefundedEvent {
             bridge_transfer_id: copy bridge_transfer_id,
         });
+
+        aptos_std::smart_table::remove(&mut store.transfers, copy bridge_transfer_id);
     }
+
     #[test(sender = @0xdaff)]
     public fun test_initialize (
         sender: signer
@@ -337,11 +341,8 @@ module atomic_bridge::atomic_bridge_initiator {
             master_minter
         );
 
-        let addr = signer::address_of(sender);
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
-        let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
-
-        assert!(transfer.state == COMPLETED, 300);
+        assert!(!aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, master_minter = @master_minter, atomic_bridge = @atomic_bridge)]
@@ -436,9 +437,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(primary_fungible_store::balance(addr, asset) == amount, 0);
 
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
-        let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
-
-        assert!(transfer.state == REFUNDED, 400);
+        assert!(!aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, master_minter = @master_minter)]
