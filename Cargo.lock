@@ -3567,36 +3567,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-cli"
-version = "0.3.0"
-dependencies = [
- "alloy-primitives",
- "anyhow",
- "bridge-shared",
- "clap 4.5.10",
- "ethereum-bridge",
- "hex",
- "movement-bridge",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "bridge-e2e-tests"
-version = "0.3.0"
-dependencies = [
- "alloy-primitives",
- "anyhow",
- "bridge-shared",
- "clap 4.5.10",
- "ethereum-bridge",
- "hex",
- "keccak-hash",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "bridge-service"
 version = "0.3.0"
 
