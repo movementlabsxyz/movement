@@ -7,3 +7,5 @@ processes:
   build:
     command: |
       ./scripts/services/suzuka-full-node/build
+    availability:
+      restart: exit_on_failure

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use godfig::env_default;
 use alloy::signers::local::PrivateKeySigner;
+use godfig::env_default;
+use serde::{Deserialize, Serialize};
 use std::env;
 
 const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0x0";
@@ -8,8 +8,8 @@ const DEFAULT_MCR_CONTRACT_ADDRESS: &str = "0x0";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
 	#[serde(default = "default_should_settle")]
-	pub should_settle : bool,
-    #[serde(default = "default_signer_private_key")]
+	pub should_settle: bool,
+	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
 	#[serde(default = "default_mcr_contract_address")]
 	pub mcr_contract_address: String,
@@ -27,7 +27,6 @@ env_default!(
 	String,
 	DEFAULT_MCR_CONTRACT_ADDRESS.to_string()
 );
-
 
 pub fn default_should_settle() -> bool {
 	env::var("ETH_SIGNER_PRIVATE_KEY").is_ok()

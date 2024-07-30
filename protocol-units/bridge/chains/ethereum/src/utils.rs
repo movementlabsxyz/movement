@@ -57,11 +57,6 @@ impl FromStr for EthAddress {
 	}
 }
 
-pub(crate) struct BuildWithProviderArgs {
-	pub rpc_provider: AlloyProvider,
-	pub initator_contract: EthAddress,
-}
-
 pub async fn send_transaction<
 	P: Provider<T, Ethereum> + Clone,
 	T: Transport + Clone,

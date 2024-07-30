@@ -1,8 +1,8 @@
 use crate::eth_client::McrEthConnectorError;
+use alloy::providers::Provider;
 use alloy_contract::CallBuilder;
 use alloy_contract::CallDecoder;
 use alloy_network::Ethereum;
-use alloy::providers::Provider;
 use alloy_transport::{Transport, TransportError};
 use std::marker::PhantomData;
 
@@ -113,9 +113,12 @@ pub async fn send_transaction<
 					"transaction_receipt.gas_used: {} / estimate_gas: {estimate_gas}",
 					transaction_receipt.gas_used
 				);
-				if transaction_receipt.gas_used == estimate_gas {
-					tracing::warn!("Send commitment Transaction  fail because of insufficient gas, receipt:{transaction_receipt:?} ");
-					estimate_gas += (estimate_gas * 10) / 100;
+				// Some valid Tx can abort cause of insufficient gas without consuming all its gas.
+				// Define a threshold a little less than estimated gas to detect them.
+				let tx_gas_consumption_threshold = estimate_gas - (estimate_gas * 10) / 100;
+				if transaction_receipt.gas_used >= tx_gas_consumption_threshold {
+					tracing::info!("Send commitment Transaction  fail because of insufficient gas, receipt:{transaction_receipt:?} ");
+					estimate_gas += (estimate_gas * 30) / 100;
 					continue;
 				} else {
 					return Err(McrEthConnectorError::RpcTransactionExecution(format!(
