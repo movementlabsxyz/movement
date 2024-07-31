@@ -1,0 +1,11 @@
+[package]
+name = "bridge-integration-tests"
+version = "0.1.0"
+edition = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+ethereum-bridge = { path = "../chains/ethereum" }
+movement-bridge = { path = "../chains/movement" }
