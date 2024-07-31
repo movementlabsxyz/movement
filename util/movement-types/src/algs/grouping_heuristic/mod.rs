@@ -148,6 +148,23 @@ pub struct GroupingOutcome<T>(pub Vec<ElementalOutcome<T>>);
 
 impl <T> GroupingOutcome<T> {
 
+    pub fn new_all_success(size : usize) -> Self {
+
+        let mut outcome = Vec::new();
+        for _ in 0..size {
+            outcome.push(ElementalOutcome::Success);
+        }
+        Self {
+            0: outcome
+        }
+    }
+
+    pub fn new_apply(raw_elements : Vec<T>) -> Self {
+        Self {
+            0: raw_elements.into_iter().map(ElementalOutcome::new_apply).collect()
+        }
+    }
+
     /// Creates a new grouping outcome with all apply outcomes in the 0th position.
     pub fn new_apply_distribution(raw_elements : Vec<T>) -> Vec<Self> {
 
@@ -191,6 +208,22 @@ impl <T> GroupingOutcome<T> {
     /// Converts to inner.
     pub fn into_inner(self) -> Vec<ElementalOutcome<T>> {
         self.0
+    }
+
+    /// Into original
+    pub fn into_original(self) -> Vec<T> {
+        let mut original = Vec::new();
+        for outcome in self.0 {
+            match outcome {
+                ElementalOutcome::Apply(t) => original.push(t),
+                ElementalOutcome::Success => (),
+                ElementalOutcome::Failure(failure) => match failure {
+                    ElementalFailure::Instrumental(t) => original.push(t),
+                    ElementalFailure::Terminal(t) => original.push(t)
+                }
+            }
+        }
+        original
     }
 
 }
@@ -267,11 +300,15 @@ impl <T> GroupingHeuristicStack<T> {
     }
 
     /// Runs the grouping heuristic asynchronously, but in a sequential manner.
-    pub async fn run_async_sequential(
+    pub async fn run_async_sequential<F, Fut>(
         &mut self, 
         mut distribution: Vec<GroupingOutcome<T>>,
-        func: impl Fn(GroupingOutcome<T>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<GroupingOutcome<T>, anyhow::Error>> + Send>> + Send + Sync
-    ) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {
+        func: F
+    ) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error>
+    where
+        F: Fn(GroupingOutcome<T>) -> Fut + Send + Sync,
+        Fut: std::future::Future<Output = Result<GroupingOutcome<T>, anyhow::Error>> + Send,
+    {
         loop {
             // distribute
             distribution = self.distribute(distribution)?;

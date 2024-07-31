@@ -7,6 +7,12 @@ pub struct Chunking {
     pub size: usize
 }
 
+impl Chunking {
+    pub fn new(size: usize) -> Self {
+        Self { size }
+    }
+}
+
 impl <T> GroupingHeuristic<T> for Chunking {
     
     fn distribute(&mut self, distribution: Vec<GroupingOutcome<T>>) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {
@@ -29,6 +35,19 @@ impl <T> GroupingHeuristic<T> for Chunking {
 
 pub struct LinearlyDecreasingChunking {
     pub chunking : Chunking,
+    pub decreasing_factor : usize
+}
+
+impl LinearlyDecreasingChunking {
+    pub fn new(
+        size: usize,
+        decreasing_factor: usize
+    ) -> Self {
+        Self { 
+            chunking: Chunking::new(size),
+            decreasing_factor 
+        }
+    }
 }
 
 impl <T> GroupingHeuristic<T> for LinearlyDecreasingChunking {
@@ -44,7 +63,7 @@ impl <T> GroupingHeuristic<T> for LinearlyDecreasingChunking {
         let distribution = self.chunking.distribute(distribution)?;
 
         // decrease the chunk size by 1
-        self.chunking.size = self.chunking.size.saturating_sub(1);
+        self.chunking.size = self.chunking.size.saturating_sub(self.decreasing_factor);
 
         Ok(distribution)
         

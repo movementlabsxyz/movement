@@ -10,7 +10,15 @@ use m1_da_light_node_util::config::Config;
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
 use tokio::{time::timeout, sync::mpsc::{Receiver, Sender}};
-use movement_types::Block;
+use movement_types::{Block, algs::grouping_heuristic::{
+	GroupingOutcome,
+	GroupingHeuristicStack,
+	apply::ToApply,
+	drop_success::DropSuccess,
+	splitting::Splitting,
+	chunking::LinearlyDecreasingChunking
+}};
+use std::boxed::Box;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
@@ -85,6 +93,43 @@ impl LightNodeV1 {
 			}
 			
 		}
+
+	}
+
+	async fn submit_blocks(&self, blocks : &Vec<Block>) -> Result<(), anyhow::Error> {
+		let mut block_blobs = Vec::new();
+		for block in blocks {
+			let block_blob = self.pass_through.create_new_celestia_blob(
+				serde_json::to_vec(&block)
+					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+			)?;
+			block_blobs.push(block_blob);
+		}
+		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
+		Ok(())
+	}
+
+	pub async fn submit_heuristic(&self, blocks : Vec<Block>) -> Result<(), anyhow::Error> {
+
+		let mut heuristic : GroupingHeuristicStack<Block> = GroupingHeuristicStack::new(vec![
+			Box::new(DropSuccess),
+			Box::new(ToApply),
+			Box::new(Splitting::new(2)),
+			Box::new(LinearlyDecreasingChunking::new(4, 1))
+		]);
+
+		let _failed_blocks = heuristic.run_async_sequential(
+			GroupingOutcome::new_apply_distribution(blocks),
+			|grouping| async move {
+				let blocks = grouping.into_original();
+				match self.submit_blocks(&blocks).await {
+					Ok(_) => Ok(GroupingOutcome::new_all_success(blocks.len())),
+					Err(_) => Ok(GroupingOutcome::new_apply(blocks)),
+				}
+			},
+		);
+
+		Ok(())
 
 	}
 

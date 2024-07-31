@@ -40,6 +40,12 @@ pub struct Splitting {
     pub factor : usize
 }
 
+impl Splitting {
+    pub fn new(factor : usize) -> Self {
+        Self { factor }
+    }
+}
+
 impl <T> GroupingHeuristic<T> for Splitting 
 where T: Splitable {
     
@@ -84,7 +90,7 @@ pub mod block {
                 metadata,
                 transactions, 
                 parent,
-                id
+                id: _
             } = self;
 
             // split the vector of transactions
