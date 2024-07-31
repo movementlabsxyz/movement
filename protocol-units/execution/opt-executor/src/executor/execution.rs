@@ -4,7 +4,6 @@ use aptos_crypto::HashValue;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
-	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
 	block_executor::{
 		config::BlockExecutorConfigFromOnchain,
@@ -26,7 +25,7 @@ impl Executor {
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		let (block_metadata, block, senders_and_sequence_numbers) = {
+		let (block_metadata, block) = {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
@@ -41,24 +40,13 @@ impl Executor {
 				}
 			};
 
-			// senders and sequence numbers
-			let senders_and_sequence_numbers = metadata_access_transactions
-				.iter()
-				.map(|transaction| match transaction.clone().into_inner() {
-					Transaction::UserTransaction(transaction) => {
-						(transaction.sender(), transaction.sequence_number())
-					}
-					_ => (AccountAddress::ZERO, 0),
-				})
-				.collect::<Vec<(AccountAddress, u64)>>();
-
 			// reconstruct the block
 			let block = ExecutableBlock::new(
 				block.block_id.clone(),
 				ExecutableTransactions::Unsharded(metadata_access_transactions),
 			);
 
-			(block_metadata, block, senders_and_sequence_numbers)
+			(block_metadata, block)
 		};
 
 		let block_id = block.block_id.clone();
