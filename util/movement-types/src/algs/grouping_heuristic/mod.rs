@@ -3,12 +3,17 @@ pub mod chunking;
 pub mod apply;
 pub mod drop_success;
 
+/// A failure type for a single member of the heuristically formed group.
 pub enum ElementalFailure<T> {
+    /// An instrumental failure is intended to be be passed on in future iterations.
     Instrumental(T),
+    /// A terminal failure is intended to be dropped or pause the execution altogether.
     Terminal(T)
 }
 
 impl <T> ElementalFailure<T> {
+
+    /// Returns true if the failure is instrumental.
     pub fn is_instrumental(&self) -> bool {
         match self {
             ElementalFailure::Instrumental(_) => true,
@@ -16,6 +21,7 @@ impl <T> ElementalFailure<T> {
         }
     }
 
+    /// Returns true if the failure is terminal.
     pub fn is_terminal(&self) -> bool {
         match self {
             ElementalFailure::Instrumental(_) => false,
@@ -23,6 +29,8 @@ impl <T> ElementalFailure<T> {
         }
     }
 
+    /// Converts the failure to a terminal failure.
+    /// If a terminal failure is already present, it will return itself.
     pub fn to_terminal(self) -> Self {
         match self {
             ElementalFailure::Instrumental(t) => ElementalFailure::Terminal(t),
@@ -30,6 +38,8 @@ impl <T> ElementalFailure<T> {
         }
     }
 
+    /// Converts the failure to an instrumental failure.
+    /// If an instrumental failure is already present, it will return itself.
     pub fn to_instrumental(self) -> Self {
         match self {
             ElementalFailure::Instrumental(t) => ElementalFailure::Instrumental(t),
@@ -37,6 +47,7 @@ impl <T> ElementalFailure<T> {
         }
     }
 
+    /// Converts the failure to an apply outcome.
     pub fn into_inner(self) -> T {
         match self {
             ElementalFailure::Instrumental(t) => t,
@@ -46,13 +57,25 @@ impl <T> ElementalFailure<T> {
 
 }
 
+/// An outcome for a single member of the heuristically formed group.
 pub enum ElementalOutcome<T> {
+    /// Apply is intended to be used by the inner method in the next iteration.
     Apply(T),
+    /// Success is intended to indicate the method completed successfully and no more iteration is needed.
+    /// TODO: consider whether this should also wrap T
     Success,
+    /// Failure is intended to indicate the method failed. Usually, the element wrapped will either be dropped or regrouped.
     Failure(ElementalFailure<T>)
 }
 
 impl <T> ElementalOutcome<T> {
+
+    /// Creates a new apply outcome.
+    pub fn new_apply(t: T) -> Self {
+        ElementalOutcome::Apply(t)
+    }
+
+    /// Returns true if the outcome is a success.
     pub fn is_success(&self) -> bool {
         match self {
             ElementalOutcome::Apply(_) => false,
@@ -61,6 +84,7 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Returns true if the outcome is a failure.
     pub fn is_failure(&self) -> bool {
         match self {
             ElementalOutcome::Apply(_) => false,
@@ -69,6 +93,7 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Returns true if the outcome is an apply.
     pub fn is_apply(&self) -> bool {
         match self {
             ElementalOutcome::Apply(_) => true,
@@ -77,6 +102,7 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Returns true if the outcome is done.
     pub fn is_done(&self) -> bool {
         match self {
             ElementalOutcome::Apply(_) => false,
@@ -85,6 +111,8 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Converts the outcome to a terminal failure.
+    /// Success is not converted to a terminal failure.
     pub fn to_terminal(self) -> Self {
         match self {
             ElementalOutcome::Apply(t) => ElementalOutcome::Failure(ElementalFailure::Terminal(t)),
@@ -93,6 +121,8 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Converts the outcome to an instrumental failure.
+    /// Success is not converted to an instrumental failure.
     pub fn to_instrumental(self) -> Self {
         match self {
             ElementalOutcome::Apply(t) => ElementalOutcome::Failure(ElementalFailure::Instrumental(t)),
@@ -101,6 +131,8 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Converts the outcome to an apply outcome.
+    /// Success is not converted to an apply outcome.
     pub fn to_apply(self) -> Self {
         match self {
             ElementalOutcome::Apply(t) => ElementalOutcome::Apply(t),
@@ -111,15 +143,27 @@ impl <T> ElementalOutcome<T> {
 
 }
 
+/// The outcomes for a particular group in a grouping heuristic.
 pub struct GroupingOutcome<T>(pub Vec<ElementalOutcome<T>>);
 
 impl <T> GroupingOutcome<T> {
+
+    /// Creates a new grouping outcome with all apply outcomes in the 0th position.
+    pub fn new_apply_distribution(raw_elements : Vec<T>) -> Vec<Self> {
+
+        // Place all of the elements into the 0th position in the distribution under one grouping outcome
+        let outcome  = raw_elements.into();
+        vec![outcome]
+
+    }
+
     pub fn new(outcome: Vec<ElementalOutcome<T>>) -> Self {
         Self {
             0: outcome
         }
     }
 
+    /// Returns true if all of the outcomes are successes.
     pub fn all_succeeded(&self) -> bool {
         self.0.iter().all(|outcome| outcome.is_success())
     }
@@ -132,18 +176,19 @@ impl <T> GroupingOutcome<T> {
         }
     }
 
+    /// Converts all outcomes to applies. 
     pub fn all_to_apply(self) -> Self {
         Self {
             0: self.0.into_iter().map(|outcome| outcome.to_apply()).collect()
         }
     }
 
+    /// Checks whether all outcomes are done.
     pub fn all_done(&self) -> bool {
         self.0.iter().all(|outcome| outcome.is_done())
     }
 
-
-
+    /// Converts to inner.
     pub fn into_inner(self) -> Vec<ElementalOutcome<T>> {
         self.0
     }
@@ -158,6 +203,16 @@ impl <T> From<Vec<ElementalOutcome<T>>> for GroupingOutcome<T> {
     }
 }
 
+
+impl <T> From<Vec<T>> for GroupingOutcome<T> {
+    fn from(outcome: Vec<T>) -> Self {
+        Self {
+            0: outcome.into_iter().map(ElementalOutcome::new_apply).collect()
+        }
+    }
+}
+
+
 pub trait GroupingHeuristic<T>
     where T: Sized {
 
@@ -165,9 +220,9 @@ pub trait GroupingHeuristic<T>
 
 }
 
-pub struct GroupingLayers<T>(pub Vec<Box<dyn GroupingHeuristic<T>>>);
+pub struct GroupingHeuristicStack<T>(pub Vec<Box<dyn GroupingHeuristic<T>>>);
 
-impl <T> GroupingLayers<T> {
+impl <T> GroupingHeuristicStack<T> {
 
     pub fn new(grouping: Vec<Box<dyn GroupingHeuristic<T>>>) -> Self {
         Self {
