@@ -19,7 +19,7 @@ use aptos_types::{
 };
 use movement_types::{BlockCommitment, Commitment, Id};
 use std::sync::Arc;
-use tracing::{debug, debug_span, info};
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(
