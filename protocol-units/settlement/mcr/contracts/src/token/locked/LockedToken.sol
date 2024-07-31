@@ -90,14 +90,14 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
                     balanceOf(msg.sender)
                 );
 
+                // burn the amount so that the user can't overdraw
+                _transfer(msg.sender, address(this), amount);
+
                 // add to the total unlocked amount
                 totalUnlocked += amount;
 
                 // deduct the amount from the lock
                 userLocks[i].amount -= amount;
-
-                // burn the amount so that the user can't overdraw
-                _transfer(msg.sender, address(this), amount);
 
                 // if the amount on the lock is now 0, remove the lock
                 if (userLocks[i].amount == 0) {
