@@ -26,3 +26,28 @@ impl <T> GroupingHeuristic<T> for Chunking {
     }
 
 }
+
+pub struct LinearlyDecreasingChunking {
+    pub chunking : Chunking,
+}
+
+impl <T> GroupingHeuristic<T> for LinearlyDecreasingChunking {
+    
+    fn distribute(&mut self, distribution: Vec<GroupingOutcome<T>>) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {
+
+        // if the chunk size is 0, return the distribution with all set to terminal status
+        if self.chunking.size == 0 {
+            return Ok(distribution.into_iter().map(|outcome| outcome.all_to_terminal()).collect());
+        }
+
+        // otherwise use the chunking field to chunk the distribution
+        let distribution = self.chunking.distribute(distribution)?;
+
+        // decrease the chunk size by 1
+        self.chunking.size = self.chunking.size.saturating_sub(1);
+
+        Ok(distribution)
+        
+    }
+
+}

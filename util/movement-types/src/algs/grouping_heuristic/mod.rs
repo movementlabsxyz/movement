@@ -1,5 +1,7 @@
 pub mod splitting;
 pub mod chunking;
+pub mod apply;
+pub mod drop_success;
 
 pub enum ElementalFailure<T> {
     Instrumental(T),
@@ -130,9 +132,17 @@ impl <T> GroupingOutcome<T> {
         }
     }
 
+    pub fn all_to_apply(self) -> Self {
+        Self {
+            0: self.0.into_iter().map(|outcome| outcome.to_apply()).collect()
+        }
+    }
+
     pub fn all_done(&self) -> bool {
         self.0.iter().all(|outcome| outcome.is_done())
     }
+
+
 
     pub fn into_inner(self) -> Vec<ElementalOutcome<T>> {
         self.0
