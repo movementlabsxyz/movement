@@ -4,6 +4,7 @@ use crate::algs::grouping_heuristic::{
     ElementalOutcome,
     ElementalFailure
 };
+use itertools::Itertools;
 
 pub trait Splitable where Self: Sized {
     fn split(self, factor : usize) -> Vec<Self>;
@@ -51,6 +52,54 @@ where T: Splitable {
 
         Ok(distribution)
         
+    }
+
+}
+
+impl<T> Splitable for Vec<T> {
+    fn split(self, factor: usize) -> Vec<Self> {
+
+        let chunk_size = (self.len() as f64 / factor as f64).ceil() as usize;
+
+        // Calculate the chunk size based on the factor
+        self.into_iter()
+        .chunks(chunk_size)
+        .into_iter()
+        .map(|chunk| chunk.collect())
+        .collect() 
+    }
+}
+
+pub mod block {
+
+    use super::*;
+    use crate::Block;
+
+    impl Splitable for Block {
+
+        fn split(self, factor : usize) -> Vec<Self> {
+
+            // unpack the transactions
+            let Block {
+                metadata,
+                transactions, 
+                parent,
+                id
+            } = self;
+
+            // split the vector of transactions
+            let split_transactions = transactions.split(factor);
+
+            // create a new block for each split transaction
+            let mut blocks = Vec::new();
+            for split in split_transactions {
+                let parent = Block::new(metadata.clone(), parent.clone(), split);
+                blocks.push(parent);
+            }
+
+            blocks
+        }
+
     }
 
 }
