@@ -82,8 +82,7 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
     function release() external {
         uint256 totalUnlocked = 0;
         Lock[] storage userLocks = locks[msg.sender];
-        uint256 i = 0;
-        while(i < userLocks.length) {
+        for (uint256 i; i < userLocks.length;) {
             if (block.timestamp > userLocks[i].releaseTime) {
                 // compute the max possible amount to withdraw
                 uint256 amount = Math.min(
@@ -91,14 +90,14 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
                     balanceOf(msg.sender)
                 );
 
-                // burn the amount so that the user can't overdraw
-                _transfer(msg.sender, address(this), amount);
-
                 // add to the total unlocked amount
                 totalUnlocked += amount;
 
                 // deduct the amount from the lock
                 userLocks[i].amount -= amount;
+
+                // burn the amount so that the user can't overdraw
+                _transfer(msg.sender, address(this), amount);
 
                 // if the amount on the lock is now 0, remove the lock
                 if (userLocks[i].amount == 0) {
