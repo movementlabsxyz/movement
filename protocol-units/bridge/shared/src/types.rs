@@ -1,6 +1,6 @@
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
-use rand::Rng;
+use rand::{Rng, RngCore};
 use std::{fmt::Debug, hash::Hash};
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
@@ -87,6 +87,22 @@ pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct HashLockPreImage(pub Vec<u8>);
+
+impl AsRef<[u8]> for HashLockPreImage {
+	fn as_ref(&self) -> &[u8] {
+		&self.0
+	}
+}
+
+impl HashLockPreImage {
+	/// Generate a cryptographically secure random secret
+	pub fn random() -> Self {
+		let mut rng = rand::thread_rng();
+		let mut secret = vec![0u8; 32];
+		rng.fill_bytes(&mut secret);
+		HashLockPreImage(secret)
+	}
+}
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);

@@ -80,6 +80,7 @@ pub struct EthClient {
 	ws_provider: RootProvider<PubSubFrontend>,
 	initiator_contract: Address,
 	counterparty_contract: Address,
+	config: Config,
 }
 
 impl EthClient {
@@ -90,14 +91,26 @@ impl EthClient {
 			.wallet(EthereumWallet::from(config.signer_private_key.clone()))
 			.on_builtin(config.rpc_url.as_str())
 			.await?;
-		let ws = WsConnect::new(config.ws_url);
+		let ws = WsConnect::new(config.ws_url.clone());
 		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 		Ok(EthClient {
 			rpc_provider,
 			ws_provider,
 			initiator_contract: config.initiator_contract,
 			counterparty_contract: config.counterparty_contract,
+			config,
 		})
+	}
+
+	pub async fn get_block_number(&self) -> Result<u64, anyhow::Error> {
+		self.rpc_provider
+			.get_block_number()
+			.await
+			.map_err(|e| anyhow::anyhow!("Failed to get block number: {}", e))
+	}
+
+	pub fn get_signer_address(&self) -> Address {
+		self.config.signer_private_key.address()
 	}
 }
 
