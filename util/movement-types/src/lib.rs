@@ -1,5 +1,5 @@
+pub mod algs;
 use aptos_types::state_proof::StateProof;
-
 use serde::{Deserialize, Serialize};
 use core::fmt;
 
