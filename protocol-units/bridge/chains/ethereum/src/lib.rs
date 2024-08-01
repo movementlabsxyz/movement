@@ -131,7 +131,8 @@ impl BridgeContractInitiator for EthClient {
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_contract, &self.rpc_provider);
-		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
+		let recipient_bytes: [u8; 32] =
+			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
 		let call = contract.initiateBridgeTransfer(
 			U256::from(amount.0),
 			FixedBytes(recipient_bytes),

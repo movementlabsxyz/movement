@@ -1,13 +1,13 @@
-use anyhow::Result;
 use bridge_cli::clap::{CliOptions, Commands};
 use clap::Parser;
+use eyre::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-	inner_main().await
+	inner_main().await.map_err(|e| eyre::eyre!(e))
 }
 
-async fn inner_main() -> Result<()> {
+async fn inner_main() -> anyhow::Result<()> {
 	tracing_subscriber::fmt::init();
 
 	let cli = CliOptions::parse();

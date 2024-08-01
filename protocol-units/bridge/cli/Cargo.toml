@@ -12,6 +12,7 @@ rust-version.workspace = true
 [dependencies]
 bridge-shared.workspace = true
 ethereum-bridge.workspace = true
+movement-bridge.workspace = true
 
 clap.workspace = true
 tokio.workspace = true
@@ -26,6 +27,8 @@ alloy.workspace = true
 
 directories = "5.0"
 url.workspace = true
+eyre = "0.6.12"
+
 
 [lints]
 workspace = true

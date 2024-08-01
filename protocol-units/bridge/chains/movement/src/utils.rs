@@ -2,12 +2,18 @@ use crate::MovementClient;
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
-	move_types::language_storage::TypeTag,
-	move_types::{ident_str, language_storage::ModuleId},
-	rest_client::aptos_api_types::{
-		EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo, ViewRequest,
+	move_types::{
+		account_address::AccountAddressParseError,
+		ident_str,
+		language_storage::{ModuleId, TypeTag},
 	},
-	rest_client::Client as RestClient,
+	rest_client::{
+		aptos_api_types::{
+			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
+			ViewRequest,
+		},
+		Client as RestClient,
+	},
 	transaction_builder::TransactionFactory,
 	types::{
 		account_address::AccountAddress,
@@ -21,16 +27,38 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
 
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
+#[derive(Debug, Error)]
 pub enum MovementAddressError {
 	#[error("Invalid hex string")]
 	InvalidHexString,
 	#[error("Invalid byte length for AccountAddress")]
 	InvalidByteLength,
+	#[error("Invalid AccountAddress")]
+	AccountParseError(#[from] AccountAddressParseError),
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct MovementAddress(pub AccountAddress);
+
+impl From<&MovementAddress> for Vec<u8> {
+	fn from(address: &MovementAddress) -> Vec<u8> {
+		address.0.to_vec()
+	}
+}
+
+impl FromStr for MovementAddress {
+	type Err = MovementAddressError;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		AccountAddress::from_str(s).map(MovementAddress).map_err(From::from)
+	}
+}
+
+impl std::fmt::Display for MovementAddress {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.0.to_standard_string())
+	}
+}
 
 impl From<Vec<u8>> for MovementAddress {
 	fn from(vec: Vec<u8>) -> Self {

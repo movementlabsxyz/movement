@@ -4,6 +4,7 @@ use anyhow::Result;
 use bridge_shared::types::{Amount, HashLock, HashLockPreImage, RecipientAddress, TimeLock};
 use bridge_shared::{bridge_contracts::BridgeContractInitiator, types::InitiatorAddress};
 use ethereum_bridge::{types::EthAddress, EthClient};
+use movement_bridge::utils::MovementAddress;
 
 pub async fn execute(command: &Commands) -> Result<()> {
 	match command {
@@ -12,8 +13,12 @@ pub async fn execute(command: &Commands) -> Result<()> {
 	}
 }
 
-async fn initiate_swap(args: &EthSharedArgs, recipient: &str, amount: u64) -> Result<()> {
-	println!("Initiating swap to {} with amount {}", recipient, amount);
+async fn initiate_swap(
+	args: &EthSharedArgs,
+	recipient: &MovementAddress,
+	amount: u64,
+) -> Result<()> {
+	println!("Initiating swap to {:?} with amount {}", recipient, amount);
 
 	let mut client = EthClient::new(args).await?;
 
@@ -23,7 +28,7 @@ async fn initiate_swap(args: &EthSharedArgs, recipient: &str, amount: u64) -> Re
 
 	// Convert signer's private key to EthAddress
 	let initiator_address = EthAddress(client.get_signer_address());
-	let recipient_address = RecipientAddress(recipient.as_bytes().to_vec());
+	let recipient_address = RecipientAddress(From::from(recipient));
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
@@ -40,6 +45,8 @@ async fn initiate_swap(args: &EthSharedArgs, recipient: &str, amount: u64) -> Re
 			amount,
 		)
 		.await?;
+
+	// Now we need to listen to the blockchain to receive the correct events and match them accordingly.
 
 	// TODO: I need the bridge transfer ID here to store the state of the swap. Therefore,
 	// the initiate bridge transfer function needs to be updated.

@@ -3587,6 +3587,8 @@ dependencies = [
  "clap 4.5.11",
  "directories",
  "ethereum-bridge",
+ "eyre",
+ "movement-bridge",
  "serde",
  "serde_json",
  "tokio",
