@@ -12,7 +12,7 @@ use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy_rlp::{Decodable, RlpDecodable, RlpEncodable};
 use alloy_sol_types::sol;
 use alloy_transport::{Transport, BoxTransport};
-use deadpool::managed::{Manager, Pool, RecycleError};
+use deadpool::managed::{Manager, Pool, PoolConfig, RecycleError};
 use bridge_shared::bridge_contracts::{
     BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
     BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
@@ -133,26 +133,37 @@ pub struct EthClient {
 }
 
 impl EthClient {
-    pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
-        let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
-        let rpc_url = config.rpc_url.context("rpc_url not set")?;
-        let ws_url = config.ws_url.context("ws_url not set")?;
+        pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
+                let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
+                let rpc_url = config.rpc_url.context("rpc_url not set")?;
+                let ws_url = config.ws_url.context("ws_url not set")?;
 
-        let manager = ConnectionManager::new(Arc::from(rpc_url), Arc::new(signer));
-        let pool = Pool::builder(manager)
-            .max_size(32)
-            .build()
-            .await?;
+                // Create a new connection manager
+                let manager = ConnectionManager::new(Arc::from(rpc_url), Arc::new(signer));
 
-        let ws = WsConnect::new(ws_url);
-        let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
-        Ok(EthClient {
-            pool,
-            ws_provider,
-            initiator_contract: config.initiator_contract,
-            counterparty_contract: config.counterparty_contract,
-        })
-    }
+                // Define the pool configuration with a max size of 32
+                let pool_config = PoolConfig {
+                        max_size: 32,
+                        ..Default::default()
+                };
+
+                // Create a connection pool using the manager and configuration
+                let pool = Pool::from_config(manager, pool_config);
+
+                // Initialize WebSocket provider
+                let ws = WsConnect::new(ws_url)
+                    .await
+                    .context("Failed to connect to WebSocket")?;
+                let ws_provider = ProviderBuilder::new().on_provider(ws);
+
+                // Return the new EthClient instance
+                Ok(EthClient {
+                        pool,
+                        ws_provider,
+                        initiator_contract: config.initiator_contract,
+                        counterparty_contract: config.counterparty_contract,
+                })
+        }
 }
 
 #[async_trait::async_trait]
