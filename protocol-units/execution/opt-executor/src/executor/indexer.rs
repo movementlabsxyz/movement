@@ -1,8 +1,8 @@
 use super::Executor;
-use aptos_indexer_grpc_fullnode::{fullnode_data_service::FullnodeDataService, ServiceContext};
+/*use aptos_indexer_grpc_fullnode::{fullnode_data_service::FullnodeDataService, ServiceContext};
 use aptos_protos::internal::fullnode::v1::fullnode_data_server::FullnodeDataServer;
 use std::net::ToSocketAddrs;
-use aptos_indexer::runtime::run_forever;
+use aptos_indexer::runtime::run_forever;*/
 use aptos_indexer_grpc_table_info::runtime::bootstrap as bootstrap_table_info;
 use aptos_indexer_grpc_fullnode::runtime::bootstrap as bootstrap_indexer_grpc;
 use aptos_indexer::runtime::bootstrap as bootstrap_indexer_stream;

@@ -3377,6 +3377,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake3"
+version = "1.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9ec96fe9a81b5e365f9db71fe00edc4fe4ca2cc7dcb7861f0603012a7caa210"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.7.4",
+ "cc",
+ "cfg-if",
+ "constant_time_eq 0.3.0",
+ "digest 0.10.7",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3521,15 +3535,15 @@ dependencies = [
 
 [[package]]
 name = "bridge-cli"
-version = "0.3.0"
+version = "0.0.2"
 
 [[package]]
 name = "bridge-service"
-version = "0.3.0"
+version = "0.0.2"
 
 [[package]]
 name = "bridge-shared"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "async-trait",
  "dashmap 6.0.1",
@@ -3569,7 +3583,7 @@ dependencies = [
 
 [[package]]
 name = "buildtime"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "buildtime-helpers",
@@ -3578,7 +3592,7 @@ dependencies = [
 
 [[package]]
 name = "buildtime-helpers"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "serde_json",
@@ -3587,7 +3601,7 @@ dependencies = [
 
 [[package]]
 name = "buildtime-macros"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "buildtime-helpers",
  "quote",
@@ -4172,7 +4186,7 @@ dependencies = [
 
 [[package]]
 name = "commander"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "futures",
@@ -5048,7 +5062,7 @@ checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "dot-movement"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "serde",
@@ -5500,7 +5514,7 @@ dependencies = [
 
 [[package]]
 name = "flocks"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "futures",
@@ -5838,7 +5852,7 @@ dependencies = [
 
 [[package]]
 name = "godfig"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -6231,7 +6245,7 @@ checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
 
 [[package]]
 name = "howzit"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -7385,21 +7399,23 @@ dependencies = [
 
 [[package]]
 name = "m1-da-light-node"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
  "celestia-rpc",
  "celestia-types",
  "chrono",
- "console-subscriber",
  "dot-movement",
+ "futures",
  "godfig",
  "hex",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-tracing",
+ "movement-types",
  "prost",
  "serde",
  "serde_json",
@@ -7410,12 +7426,11 @@ dependencies = [
  "tonic-reflection",
  "tonic-web",
  "tracing",
- "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
 name = "m1-da-light-node-client"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "m1-da-light-node-grpc",
@@ -7427,7 +7442,7 @@ dependencies = [
 
 [[package]]
 name = "m1-da-light-node-grpc"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "buildtime",
  "prost",
@@ -7439,7 +7454,7 @@ dependencies = [
 
 [[package]]
 name = "m1-da-light-node-runners"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "commander",
@@ -7460,7 +7475,7 @@ dependencies = [
 
 [[package]]
 name = "m1-da-light-node-setup"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -7484,7 +7499,7 @@ dependencies = [
 
 [[package]]
 name = "m1-da-light-node-util"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -7513,7 +7528,7 @@ dependencies = [
 
 [[package]]
 name = "m1-da-light-node-verifier"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -7541,30 +7556,34 @@ checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
 
 [[package]]
 name = "maptos-dof-execution"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-api",
+ "aptos-config",
  "aptos-crypto",
  "aptos-db",
+ "aptos-mempool",
  "aptos-proptest-helpers",
  "aptos-sdk",
  "aptos-types",
  "async-channel 2.3.1",
  "async-trait",
  "chrono",
+ "futures",
  "maptos-execution-util",
  "maptos-fin-view",
  "maptos-opt-executor",
  "movement-types",
  "rand 0.7.3",
  "tokio",
+ "tokio-stream",
  "tracing",
 ]
 
 [[package]]
 name = "maptos-execution-util"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -7581,7 +7600,7 @@ dependencies = [
 
 [[package]]
 name = "maptos-fin-view"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -7601,7 +7620,7 @@ dependencies = [
 
 [[package]]
 name = "maptos-opt-executor"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -7688,7 +7707,7 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
 name = "mcr-settlement-client"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "alloy",
  "alloy-contract",
@@ -7719,7 +7738,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-config"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
@@ -7729,7 +7748,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-manager"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -7745,7 +7764,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-runner"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "alloy-primitives",
  "anyhow",
@@ -7765,7 +7784,7 @@ dependencies = [
 
 [[package]]
 name = "mcr-settlement-setup"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -7791,7 +7810,7 @@ checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "mempool-util"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "movement-types",
@@ -7800,7 +7819,7 @@ dependencies = [
 
 [[package]]
 name = "memseq"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "dot-movement",
@@ -7815,11 +7834,12 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml 0.8.15",
+ "tracing",
 ]
 
 [[package]]
 name = "memseq-util"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "dot-movement",
@@ -8440,7 +8460,7 @@ dependencies = [
 
 [[package]]
 name = "move-rocks"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -8603,26 +8623,33 @@ dependencies = [
 
 [[package]]
 name = "movement-rest"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-api",
  "poem",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "movement-tracing"
+version = "0.0.2"
+dependencies = [
+ "tracing-appender",
  "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
 name = "movement-types"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
+ "blake3",
  "serde",
  "serde_with",
- "sha2 0.10.8",
 ]
 
 [[package]]
@@ -11022,7 +11049,7 @@ checksum = "cd0b0ec5f1c1ca621c432a25813d8d60c88abe6d3e08a3eb9cf37d97a0fe3d73"
 
 [[package]]
 name = "sequencing-util"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "movement-types",
@@ -11780,7 +11807,7 @@ checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
 
 [[package]]
 name = "suzuka-client"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-protos",
@@ -11814,9 +11841,10 @@ dependencies = [
 
 [[package]]
 name = "suzuka-config"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
+ "godfig",
  "m1-da-light-node-util",
  "maptos-execution-util",
  "mcr-settlement-client",
@@ -11846,7 +11874,7 @@ dependencies = [
 
 [[package]]
 name = "suzuka-full-node"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-channel 2.3.1",
@@ -11859,7 +11887,9 @@ dependencies = [
  "mcr-settlement-client",
  "mcr-settlement-manager",
  "movement-rest",
+ "movement-tracing",
  "movement-types",
+ "rocksdb",
  "serde_json",
  "sha2 0.10.8",
  "suzuka-config",
@@ -11872,7 +11902,7 @@ dependencies = [
 
 [[package]]
 name = "suzuka-full-node-setup"
-version = "0.3.0"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -12599,6 +12629,18 @@ dependencies = [
  "pin-project-lite",
  "tracing-attributes",
  "tracing-core",
+]
+
+[[package]]
+name = "tracing-appender"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3566e8ce28cc0a3fe42519fc80e6b4c943cc4c8cef275620eb8dac2d3d4e06cf"
+dependencies = [
+ "crossbeam-channel",
+ "thiserror",
+ "time",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
