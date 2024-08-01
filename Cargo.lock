@@ -7403,6 +7403,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
+ "bcs 0.1.4",
  "celestia-rpc",
  "celestia-types",
  "chrono",
@@ -11880,6 +11881,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-channel 2.3.1",
+ "bcs 0.1.4",
  "console-subscriber",
  "dot-movement",
  "godfig",

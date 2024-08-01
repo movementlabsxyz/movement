@@ -245,7 +245,7 @@ where
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
 
-		let block: Block = serde_json::from_slice(&block_bytes)?;
+		let block: Block = bcs::from_bytes(&block_bytes)?;
 		// get the transactions
 		let mut block_transactions = Vec::new();
 		let block_metadata = self

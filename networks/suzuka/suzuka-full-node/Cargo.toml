@@ -34,6 +34,7 @@ tracing-subscriber = { workspace = true }
 console-subscriber = { workspace = true }
 rocksdb = { workspace = true }
 tracing = { workspace = true }
+bcs = { workspace = true }
 
 [features]
 default = []

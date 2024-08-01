@@ -1,5 +1,5 @@
 use tokio_stream::Stream;
-use std::{sync::{atomic::AtomicU64, Arc}, time::Duration};
+use std::{sync::{atomic::{Ordering, AtomicU64}, Arc}, time::Duration};
 use tracing::{info, debug};
 
 use std::{fmt::Debug, path::PathBuf};
@@ -98,15 +98,29 @@ impl LightNodeV1 {
 	}
 
 	async fn submit_blocks(&self, blocks : &Vec<Block>) -> Result<(), anyhow::Error> {
+
+		let uid = LOGGING_UID.load(Ordering::SeqCst);
+		info!(
+			target: "movement_timing",
+			batch_size = blocks.len(),
+			uid = uid, 
+			"inner_submitting_block_batch"
+		);
 		let mut block_blobs = Vec::new();
 		for block in blocks {
 			let block_blob = self.pass_through.create_new_celestia_blob(
-				serde_json::to_vec(&block)
+					bcs::to_bytes(block)
 					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
 			)?;
 			block_blobs.push(block_blob);
 		}
+		for block in blocks {
+			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
+		}
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
+		for block in blocks {
+			info!(target: "movement_timing", block_id = %block.id(), "submitted_block");
+		}
 		Ok(())
 	}
 

@@ -36,6 +36,7 @@ dot-movement = { workspace = true }
 godfig = { workspace = true }
 movement-tracing = { workspace = true }
 futures = { workspace = true }
+bcs = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }
