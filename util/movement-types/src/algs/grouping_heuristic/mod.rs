@@ -3,6 +3,7 @@ pub mod chunking;
 pub mod apply;
 pub mod drop_success;
 pub mod binpacking;
+pub mod skip;
 
 /// A failure type for a single member of the heuristically formed group.
 pub enum ElementalFailure<T> {

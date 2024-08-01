@@ -39,6 +39,7 @@ pub struct LinearlyDecreasingChunking {
 }
 
 impl LinearlyDecreasingChunking {
+    
     pub fn new(
         size: usize,
         decreasing_factor: usize
@@ -47,6 +48,13 @@ impl LinearlyDecreasingChunking {
             chunking: Chunking::new(size),
             decreasing_factor 
         }
+    }
+
+    pub fn boxed(
+        size: usize,
+        decreasing_factor: usize
+    ) -> Box<Self> {
+        Box::new(Self::new(size, decreasing_factor))
     }
 }
 

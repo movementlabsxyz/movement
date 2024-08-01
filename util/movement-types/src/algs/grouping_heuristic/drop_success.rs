@@ -5,6 +5,18 @@ use crate::algs::grouping_heuristic::{
 
 pub struct DropSuccess;
 
+impl DropSuccess {
+    
+    pub fn new() -> Self {
+        DropSuccess
+    }
+
+    pub fn boxed() -> Box<Self> {
+        Box::new(DropSuccess)
+    }
+    
+}
+
 impl <T> GroupingHeuristic<T> for DropSuccess {
     
     fn distribute(&mut self, distribution: Vec<GroupingOutcome<T>>) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {

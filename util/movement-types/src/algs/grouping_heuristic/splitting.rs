@@ -44,6 +44,11 @@ impl Splitting {
     pub fn new(factor : usize) -> Self {
         Self { factor }
     }
+
+    pub fn boxed(factor : usize) -> Box<Self> {
+        Box::new(Self::new(factor))
+    }
+
 }
 
 impl <T> GroupingHeuristic<T> for Splitting 

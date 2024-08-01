@@ -16,7 +16,8 @@ use movement_types::{Block, algs::grouping_heuristic::{
 	apply::ToApply,
 	drop_success::DropSuccess,
 	splitting::Splitting,
-	chunking::LinearlyDecreasingChunking
+	binpacking::FirstFitBinpacking,
+	skip::SkipFor
 }};
 use std::boxed::Box;
 
@@ -112,10 +113,10 @@ impl LightNodeV1 {
 	pub async fn submit_with_heuristic(&self, blocks : Vec<Block>) -> Result<(), anyhow::Error> {
 
 		let mut heuristic : GroupingHeuristicStack<Block> = GroupingHeuristicStack::new(vec![
-			Box::new(DropSuccess),
-			Box::new(ToApply),
-			Box::new(Splitting::new(2)),
-			Box::new(LinearlyDecreasingChunking::new(4, 1))
+			DropSuccess::boxed(),
+			ToApply::boxed(),
+			SkipFor::boxed(1, Splitting::boxed(2)),
+			FirstFitBinpacking::boxed(1_700_000_000)
 		]);
 
 		let _failed_blocks = heuristic.run_async_sequential(

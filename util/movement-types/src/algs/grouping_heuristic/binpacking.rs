@@ -56,6 +56,11 @@ impl FirstFitDecreasingBinpacking {
     pub fn new(capacity: usize) -> Self {
         Self { capacity }
     }
+
+    pub fn boxed(capacity: usize) -> Box<Self> {
+        Box::new(Self::new(capacity))
+    }
+
 }
 
 impl <T> GroupingHeuristic<T> for FirstFitDecreasingBinpacking
@@ -111,9 +116,15 @@ pub struct FirstFitBinpacking {
 }
 
 impl FirstFitBinpacking {
+
     pub fn new(capacity: usize) -> Self {
         Self { capacity }
     }
+
+    pub fn boxed(capacity: usize) -> Box<Self> {
+        Box::new(Self::new(capacity))
+    }
+
 }
 
 impl <T> GroupingHeuristic<T> for FirstFitBinpacking
@@ -158,5 +169,44 @@ where T: BinpackingWeighted {
        Ok(result)
         
     }
+
+}
+
+pub mod block {
+
+    use super::*;
+    use crate::{Block, Transaction, Id};
+
+    impl BinpackingWeighted for Id {
+        fn weight(&self) -> usize {
+            self.0.len()
+        }
+    }
+
+    impl BinpackingWeighted for Transaction {
+        fn weight(&self) -> usize {
+            self.data.len() + self.id.weight()
+        }
+    }
+
+    impl BinpackingWeighted for Block {
+        fn weight(&self) -> usize {
+        
+            // sum of the transactions
+            let mut weight = self.transactions.iter().map(|transaction| transaction.weight()).sum::<usize>();
+
+            // id
+            weight += self.id.weight();
+
+            // parent
+            weight += self.parent.len();
+
+            // for now metadata is negligible
+
+            weight
+
+        }
+    }
+
 
 }
