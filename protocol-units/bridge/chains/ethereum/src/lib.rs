@@ -85,7 +85,6 @@ struct EthBridgeTransferDetails {
     pub state: u8,
 }
 
-/// Connection Manager for the Deadpool
 pub struct ConnectionManager {
     rpc_url: Arc<str>,
     signer: Arc<PrivateKeySigner>,
@@ -104,7 +103,7 @@ impl Manager for ConnectionManager {
 
         async fn create(&self) -> Result<Self::Type, Self::Error> {
                 // Create a WsConnect instance to manage the connection
-                let transport = WsConnect::new(self.rpc_url.clone())
+                let transport = WsConnect::new(self.rpc_url.as_ref().to_string())
                         .await
                         .context("Failed to connect to WebSocket")?;
 
