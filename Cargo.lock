@@ -14,6 +14,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -32,6 +33,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -122,7 +125,7 @@ dependencies = [
  "once_cell",
  "serde",
  "version_check",
- "zerocopy",
+ "zerocopy 0.7.35",
 ]
 
 [[package]]
@@ -257,7 +260,11 @@ dependencies = [
  "itoa",
  "serde",
  "serde_json",
+<<<<<<< HEAD
  "winnow 0.6.18",
+=======
+ "winnow 0.6.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -611,7 +618,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cbcba3ca07cf7975f15d871b721fb18031eec8bce51103907f6dcce00b255d98"
 dependencies = [
  "serde",
+<<<<<<< HEAD
  "winnow 0.6.18",
+=======
+ "winnow 0.6.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -773,6 +784,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -791,6 +803,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-gas-algebra",
@@ -806,6 +820,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -824,6 +839,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -836,6 +853,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -854,6 +872,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-logger",
  "aptos-types",
@@ -870,6 +890,7 @@ version = "0.2.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -888,6 +909,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -932,6 +955,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -950,6 +974,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -982,6 +1008,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1000,6 +1027,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "hex",
@@ -1011,6 +1040,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1029,6 +1059,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "serde",
  "serde_bytes",
@@ -1040,6 +1072,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1058,6 +1091,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -1095,6 +1130,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1113,13 +1149,19 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "aptos-logger",
  "aptos-metrics-core",
  "aptos-types",
  "bcs 0.1.4",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "dashmap 5.5.3",
  "itertools 0.12.1",
  "jemallocator",
@@ -1136,6 +1178,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1154,6 +1197,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "futures",
  "rustversion",
@@ -1166,6 +1211,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1184,6 +1230,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "shadow-rs",
 ]
@@ -1194,6 +1242,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1212,6 +1261,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -1228,6 +1279,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1246,6 +1298,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -1259,6 +1313,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1277,6 +1332,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -1291,6 +1348,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1309,6 +1367,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1342,6 +1402,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1360,6 +1421,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -1389,6 +1452,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1407,6 +1471,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1462,6 +1528,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1480,6 +1547,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1492,6 +1561,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1510,6 +1580,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-accumulator",
@@ -1559,6 +1631,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1577,6 +1650,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1599,6 +1674,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1617,6 +1693,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-schemadb",
@@ -1633,6 +1711,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1651,6 +1730,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1684,6 +1765,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1702,6 +1784,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-infallible",
  "aptos-metrics-core",
@@ -1715,6 +1799,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1733,6 +1818,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-channels",
@@ -1751,6 +1838,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1769,6 +1857,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-consensus-types",
@@ -1803,6 +1893,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1821,6 +1912,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-block-partitioner",
  "aptos-config",
@@ -1835,7 +1928,11 @@ dependencies = [
  "aptos-types",
  "aptos-vm",
  "bcs 0.1.4",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "crossbeam-channel",
  "ctrlc",
  "dashmap 5.5.3",
@@ -1853,6 +1950,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1871,6 +1969,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -1895,6 +1995,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1913,6 +2014,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -1935,6 +2038,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1953,6 +2057,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-runtimes",
  "core_affinity",
@@ -1968,6 +2074,7 @@ version = "2.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -1986,6 +2093,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-config",
@@ -1995,7 +2104,11 @@ dependencies = [
  "aptos-sdk",
  "async-trait",
  "captcha",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "deadpool-redis",
  "enum_dispatch",
  "futures",
@@ -2022,6 +2135,7 @@ version = "2.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2040,6 +2154,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -2056,6 +2172,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2074,6 +2191,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -2096,7 +2215,11 @@ dependencies = [
  "blake2-rfc",
  "bulletproofs",
  "byteorder",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan-reporting",
  "curve25519-dalek-ng",
  "either",
@@ -2144,6 +2267,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2162,6 +2286,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "either",
  "move-core-types",
@@ -2173,6 +2299,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2191,6 +2318,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -2208,6 +2337,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2226,6 +2356,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-gas-algebra",
@@ -2248,6 +2380,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2266,6 +2399,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-global-constants",
@@ -2281,6 +2416,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2299,6 +2435,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 
 [[package]]
 name = "aptos-id-generator"
@@ -2306,6 +2444,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2324,6 +2463,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 
 [[package]]
 name = "aptos-indexer"
@@ -2331,6 +2472,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2349,6 +2491,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -2383,6 +2527,7 @@ version = "1.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2401,6 +2546,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -2441,6 +2588,7 @@ version = "1.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2459,6 +2607,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-api",
@@ -2492,6 +2642,7 @@ version = "1.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2510,6 +2661,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-metrics-core",
@@ -2544,6 +2697,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2562,6 +2716,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 
 [[package]]
 name = "aptos-jellyfish-merkle"
@@ -2569,6 +2725,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2587,6 +2744,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -2617,6 +2776,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2635,6 +2795,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -2647,6 +2809,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2665,6 +2828,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
@@ -2711,6 +2876,7 @@ version = "0.2.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2729,6 +2895,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "aptos-types",
@@ -2744,6 +2912,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2762,6 +2931,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2774,6 +2945,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2792,6 +2964,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-infallible",
  "aptos-log-derive",
@@ -2818,6 +2992,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2836,6 +3011,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-meter",
@@ -2851,6 +3028,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2869,6 +3047,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-bounded-executor",
@@ -2911,6 +3091,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2929,6 +3110,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-types",
  "async-trait",
@@ -2944,6 +3127,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2962,6 +3146,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-infallible",
  "bytes 1.7.1",
@@ -2975,6 +3161,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -2993,6 +3180,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "prometheus",
@@ -3004,6 +3193,7 @@ version = "0.1.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3022,6 +3212,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-gas-schedule",
  "aptos-native-interface",
@@ -3036,6 +3228,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8f5257a29997cc11394e88d7fa2ccefb7ff9ceb2#8f5257a29997cc11394e88d7fa2ccefb7ff9ceb2"
 dependencies = [
  "chrono",
@@ -3044,6 +3237,8 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors#da0ccef0f0e0e1be4b39073edb3277dfd6cb7dc1"
 dependencies = [
  "chrono",
@@ -3052,6 +3247,7 @@ dependencies = [
 [[package]]
 name = "aptos-mvhashmap"
 version = "0.1.0"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -3073,6 +3269,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -3096,6 +3294,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3114,6 +3313,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-gas-algebra",
  "aptos-gas-schedule",
@@ -3133,6 +3334,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3151,6 +3353,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
@@ -3170,6 +3374,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3188,6 +3393,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -3235,6 +3442,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3253,6 +3461,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -3266,6 +3476,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3284,6 +3495,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-build-info",
  "aptos-infallible",
@@ -3302,6 +3515,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3320,6 +3534,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3332,6 +3548,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3350,6 +3567,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -3365,6 +3584,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3383,6 +3603,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-framework",
@@ -3398,6 +3620,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3416,6 +3639,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-config",
  "aptos-types",
@@ -3443,6 +3668,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3461,6 +3687,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "crossbeam",
  "proptest",
@@ -3470,6 +3698,7 @@ dependencies = [
 [[package]]
 name = "aptos-protos"
 version = "1.3.0"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -3490,6 +3719,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 >>>>>>> 4aed0f2a (Add indexer and Hasura to movement)
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0e6deaff99ce8d2814ab6e812#074c4bac6cab49c0e6deaff99ce8d2814ab6e812"
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "futures-core",
  "pbjson",
@@ -3517,6 +3748,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3535,6 +3767,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "ipnet",
 ]
@@ -3545,6 +3779,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3563,6 +3798,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -3576,6 +3813,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3594,6 +3832,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-types",
@@ -3610,6 +3850,7 @@ version = "0.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3628,6 +3869,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-api-types",
@@ -3653,6 +3896,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3671,6 +3915,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-config",
  "rocksdb",
@@ -3682,6 +3928,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3700,6 +3947,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "rayon",
  "tokio",
@@ -3711,6 +3960,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3729,6 +3979,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -3748,6 +4000,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3766,6 +4019,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "aptos-drop-helper",
@@ -3787,6 +4042,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3805,6 +4061,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
@@ -3829,6 +4087,7 @@ version = "0.2.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3847,11 +4106,17 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-types",
  "bcs 0.1.4",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "heck 0.4.1",
  "move-core-types",
  "once_cell",
@@ -3867,6 +4132,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3885,6 +4151,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-logger",
  "aptos-metrics-core",
@@ -3905,6 +4173,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3923,6 +4192,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "aptos-infallible",
@@ -3946,6 +4217,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3964,6 +4236,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "mirai-annotations",
  "serde",
@@ -3977,6 +4251,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -3995,6 +4270,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-infallible",
@@ -4008,6 +4285,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4026,6 +4304,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-crypto",
@@ -4076,6 +4356,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4094,6 +4375,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-gas-schedule",
  "aptos-native-interface",
@@ -4114,6 +4397,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4132,6 +4416,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "hex",
  "rand 0.7.3",
@@ -4143,6 +4429,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4161,6 +4448,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-infallible",
  "enum_dispatch",
@@ -4176,6 +4465,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4194,6 +4484,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-bitvec",
@@ -4253,6 +4545,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4271,6 +4564,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 
 [[package]]
 name = "aptos-vault-client"
@@ -4278,6 +4573,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4296,6 +4592,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "base64 0.13.1",
@@ -4314,6 +4612,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4332,6 +4631,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -4384,6 +4685,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4402,6 +4704,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-cached-packages",
  "aptos-crypto",
@@ -4425,6 +4729,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4443,6 +4748,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "aptos-crypto",
  "aptos-logger",
@@ -4460,6 +4767,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4478,6 +4786,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-aggregator",
@@ -4502,6 +4812,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -4520,6 +4831,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "aptos-logger",
@@ -5579,7 +5892,11 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "serde_json",
+<<<<<<< HEAD
  "toml 0.8.19",
+=======
+ "toml 0.8.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -5769,9 +6086,15 @@ dependencies = [
 
 [[package]]
 name = "cc"
+<<<<<<< HEAD
 version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "504bdec147f2cc13c8b57ed9401fd8a147cc66b67ad5cb241394244f2c947549"
+=======
+version = "1.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26a5c3fd7bfa1ce3897a3a3501d362b2d87b7f2583ebcb4a949ec25911025cbc"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "jobserver",
  "libc",
@@ -5780,7 +6103,11 @@ dependencies = [
 [[package]]
 name = "celestia-proto"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/eigerco/lumina#a0fe531a59e8006d562ea1a1500d4c2b172c47fa"
+=======
+source = "git+https://github.com/eigerco/lumina#a4cd4a3a8fd553b7320274a064cad5ca6c29641d"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "celestia-tendermint-proto",
@@ -5793,7 +6120,11 @@ dependencies = [
 [[package]]
 name = "celestia-rpc"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/eigerco/lumina#a0fe531a59e8006d562ea1a1500d4c2b172c47fa"
+=======
+source = "git+https://github.com/eigerco/lumina#a4cd4a3a8fd553b7320274a064cad5ca6c29641d"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "async-trait",
  "celestia-types",
@@ -5854,7 +6185,11 @@ dependencies = [
 [[package]]
 name = "celestia-types"
 version = "0.2.0"
+<<<<<<< HEAD
 source = "git+https://github.com/eigerco/lumina#a0fe531a59e8006d562ea1a1500d4c2b172c47fa"
+=======
+source = "git+https://github.com/eigerco/lumina#a4cd4a3a8fd553b7320274a064cad5ca6c29641d"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "base64 0.22.1",
  "bech32",
@@ -6041,9 +6376,15 @@ dependencies = [
 
 [[package]]
 name = "clap"
+<<<<<<< HEAD
 version = "4.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fbb260a053428790f3de475e304ff84cdbc4face759ea7a3e64c1edd938a7fc"
+=======
+version = "4.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35723e6a11662c2afb578bcf0b88bf6ea8e21282a953428f240574fcc3a2b5b3"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -6051,9 +6392,15 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
+<<<<<<< HEAD
 version = "4.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "64b17d7ea74e9f833c7dbf2cbe4fb12ff26783eda4782a8975b72f895c9b4d99"
+=======
+version = "4.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49eb96cbfa7cfa35017b7cd548c75b14c3118c98b423041d70562665e07fb0fa"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anstream",
  "anstyle",
@@ -6063,9 +6410,15 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
+<<<<<<< HEAD
 version = "4.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "501d359d5f3dcaf6ecdeee48833ae73ec6e42723a1e52419c79abf9507eec0a0"
+=======
+version = "4.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d029b67f89d30bbb547c89fd5161293c0aec155fc691d7924b64550662db93e"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -8856,7 +9209,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "232929e1d75fe899576a3d5c7416ad0d88dbfbb3c3d6aa00873a7408a50ddb88"
 dependencies = [
  "ahash 0.8.11",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "crossbeam-channel",
  "crossbeam-utils",
  "dashmap 6.0.1",
@@ -9717,8 +10074,13 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-stream",
+<<<<<<< HEAD
  "toml 0.8.19",
  "tonic 0.11.0",
+=======
+ "toml 0.8.16",
+ "tonic",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "tonic-reflection",
  "tonic-web",
  "tracing",
@@ -9794,7 +10156,11 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tempfile",
+<<<<<<< HEAD
  "toml 0.8.19",
+=======
+ "toml 0.8.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -9858,7 +10224,11 @@ dependencies = [
  "borsh 0.10.3",
  "bytes 1.7.1",
  "chrono",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "derive_more",
  "dirs",
  "fail",
@@ -10051,7 +10421,11 @@ dependencies = [
  "serde_derive",
  "tempfile",
  "tokio",
+<<<<<<< HEAD
  "toml 0.8.19",
+=======
+ "toml 0.8.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "tracing",
 ]
 
@@ -10066,7 +10440,11 @@ dependencies = [
  "serde",
  "serde_derive",
  "tempfile",
+<<<<<<< HEAD
  "toml 0.8.19",
+=======
+ "toml 0.8.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -10190,6 +10568,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10208,6 +10587,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -10227,6 +10608,7 @@ version = "0.0.3"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10245,6 +10627,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "backtrace",
@@ -10262,6 +10646,7 @@ version = "0.0.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10280,6 +10665,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 
 [[package]]
 name = "move-bytecode-source-map"
@@ -10287,6 +10674,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10305,6 +10693,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
@@ -10322,6 +10712,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10340,6 +10731,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "once_cell",
  "quote",
@@ -10352,6 +10745,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10370,6 +10764,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "move-binary-format",
@@ -10384,6 +10780,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10402,6 +10799,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "fail",
  "move-binary-format",
@@ -10418,6 +10817,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10439,6 +10839,11 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596
 dependencies = [
  "anyhow",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "crossterm 0.26.1",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -10453,6 +10858,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10474,6 +10880,11 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596
 dependencies = [
  "anyhow",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan-reporting",
  "colored",
  "move-binary-format",
@@ -10503,6 +10914,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10521,6 +10933,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "difference",
@@ -10537,6 +10951,7 @@ dependencies = [
 [[package]]
 name = "move-compiler"
 version = "0.0.1"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -10562,6 +10977,12 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan-reporting",
  "hex",
  "move-binary-format",
@@ -10586,6 +11007,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10604,11 +11026,17 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
  "bcs 0.1.4",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan-reporting",
  "ethnum",
  "flexi_logger",
@@ -10637,6 +11065,7 @@ version = "0.0.4"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10655,6 +11084,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "arbitrary",
@@ -10682,6 +11113,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10704,6 +11136,12 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan",
  "colored",
  "move-binary-format",
@@ -10721,6 +11159,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10742,6 +11181,11 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596
 dependencies = [
  "anyhow",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "colored",
  "move-binary-format",
  "move-bytecode-source-map",
@@ -10758,6 +11202,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10779,6 +11224,11 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596
 dependencies = [
  "anyhow",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan",
  "codespan-reporting",
  "itertools 0.12.1",
@@ -10797,6 +11247,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10815,6 +11266,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "move-command-line-common",
@@ -10826,6 +11279,7 @@ dependencies = [
 [[package]]
 name = "move-ir-compiler"
 version = "0.1.0"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -10851,6 +11305,12 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "move-binary-format",
  "move-bytecode-source-map",
  "move-bytecode-verifier",
@@ -10862,6 +11322,7 @@ dependencies = [
 [[package]]
 name = "move-ir-to-bytecode"
 version = "0.1.0"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -10883,6 +11344,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "codespan-reporting",
@@ -10903,6 +11366,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10921,6 +11385,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "hex",
@@ -10936,6 +11402,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10954,6 +11421,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "hex",
  "move-command-line-common",
@@ -10969,6 +11438,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -10987,6 +11457,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "codespan",
@@ -11015,6 +11487,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11036,6 +11509,11 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596
 dependencies = [
  "anyhow",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "colored",
  "itertools 0.12.1",
  "move-abigen",
@@ -11069,6 +11547,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11091,6 +11570,12 @@ dependencies = [
  "anyhow",
  "atty",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "atty",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan-reporting",
  "itertools 0.12.1",
  "log",
@@ -11116,6 +11601,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11134,6 +11620,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11165,6 +11653,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11183,6 +11672,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "abstract-domain-derive",
  "anyhow",
@@ -11202,6 +11693,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11220,6 +11712,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "hex",
@@ -11249,6 +11743,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11267,6 +11762,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "abstract-domain-derive",
  "codespan-reporting",
@@ -11288,6 +11785,7 @@ version = "0.1.1"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11306,6 +11804,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "hex",
@@ -11331,6 +11831,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11349,6 +11850,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "once_cell",
  "serde",
@@ -11360,6 +11863,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11378,6 +11882,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "better_any",
  "bytes 1.7.1",
@@ -11392,6 +11898,7 @@ dependencies = [
 [[package]]
 name = "move-unit-test"
 version = "0.1.0"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -11417,6 +11924,12 @@ dependencies = [
  "anyhow",
  "better_any",
  "clap 4.5.13",
+=======
+dependencies = [
+ "anyhow",
+ "better_any",
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "codespan-reporting",
  "colored",
  "itertools 0.12.1",
@@ -11443,6 +11956,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11461,6 +11975,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "better_any",
  "bytes 1.7.1",
@@ -11487,6 +12003,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11505,6 +12022,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "anyhow",
  "bytes 1.7.1",
@@ -11522,6 +12041,7 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=1c63a73c49efa9c4bb568e05eea2e1dda4e5197a#1c63a73c49efa9c4bb568e05eea2e1dda4e5197a"
 =======
 =======
@@ -11540,6 +12060,8 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=074c4bac6cab49c0
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=185b4fb311f5c596d184bc8febc3c7fb92ab4541#185b4fb311f5c596d184bc8febc3c7fb92ab4541"
 >>>>>>> fcbe9765 (rebase from master)
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "bcs 0.1.4",
  "derivative",
@@ -11998,9 +12520,15 @@ dependencies = [
 
 [[package]]
 name = "object"
+<<<<<<< HEAD
 version = "0.36.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27b64972346851a39438c60b341ebc01bba47464ae329e55cf343eb93964efd9"
+=======
+version = "0.36.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f203fa8daa7bb185f760ae12bd8e097f63d17041dcdcaf675ac54cdf863170e"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "memchr",
 ]
@@ -12825,6 +13353,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 
 [[package]]
+<<<<<<< HEAD
 name = "pprof"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12854,6 +13383,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04"
 dependencies = [
  "zerocopy",
+=======
+name = "ppv-lite86"
+version = "0.2.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dee4364d9f3b902ef14fab8a1ddffb783a1cb6b4bba3bfc1fa3922732c7de97f"
+dependencies = [
+ "zerocopy 0.6.6",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -14071,6 +14608,7 @@ name = "rustls-platform-verifier-android"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
+<<<<<<< HEAD
 
 [[package]]
 name = "rustls-webpki"
@@ -14081,6 +14619,8 @@ dependencies = [
  "ring 0.16.20",
  "untrusted 0.7.1",
 ]
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 
 [[package]]
 name = "rustls-webpki"
@@ -14395,9 +14935,15 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
+<<<<<<< HEAD
 version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
+=======
+version = "1.0.121"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ab380d7d9f22ef3f21ad3e6c1ebe8e4fc7a2000ccba2e4d71fc96f15b2cb609"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "indexmap 2.3.0",
  "itoa",
@@ -15128,7 +15674,11 @@ dependencies = [
  "serde",
  "serde_derive",
  "tokio",
+<<<<<<< HEAD
  "toml 0.8.19",
+=======
+ "toml 0.8.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "tracing",
 ]
 
@@ -15141,7 +15691,11 @@ dependencies = [
  "aptos-faucet-core",
  "aptos-logger",
  "aptos-sdk",
+<<<<<<< HEAD
  "clap 4.5.13",
+=======
+ "clap 4.5.11",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "dot-movement",
  "suzuka-config",
  "tokio",
@@ -15789,21 +16343,37 @@ dependencies = [
 
 [[package]]
 name = "toml"
+<<<<<<< HEAD
 version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1ed1f98e3fdc28d6d910e6737ae6ab1a93bf1985935a1193e68f93eeb68d24e"
+=======
+version = "0.8.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81967dd0dd2c1ab0bc3468bd7caecc32b8a4aa47d0c8c695d8c2b2108168d62c"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
+<<<<<<< HEAD
  "toml_edit 0.22.20",
+=======
+ "toml_edit 0.22.17",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
 name = "toml_datetime"
+<<<<<<< HEAD
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
+=======
+version = "0.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8fb9f64314842840f1d940ac544da178732128f1c78c21772e876579e0da1db"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "serde",
 ]
@@ -15845,14 +16415,21 @@ dependencies = [
 
 [[package]]
 name = "toml_edit"
+<<<<<<< HEAD
 version = "0.22.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "583c44c02ad26b0c3f3066fe629275e50627026c51ac2e595cca4c230ce1ce1d"
+=======
+version = "0.22.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d9f8729f5aea9562aac1cc0441f5d6de3cff1ee0c5d67293eeca5eb36ee7c16"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "indexmap 2.3.0",
  "serde",
  "serde_spanned",
  "toml_datetime",
+<<<<<<< HEAD
  "winnow 0.6.18",
 ]
 
@@ -15887,6 +16464,9 @@ dependencies = [
  "tower-service",
  "tracing",
  "webpki-roots 0.23.1",
+=======
+ "winnow 0.6.16",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
@@ -16188,6 +16768,7 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.8.5",
+<<<<<<< HEAD
  "sha1",
  "thiserror",
  "url",
@@ -16207,6 +16788,8 @@ dependencies = [
  "httparse",
  "log",
  "rand 0.8.5",
+=======
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
  "rustls 0.23.12",
  "rustls-pki-types",
  "sha1",
@@ -17074,9 +17657,15 @@ dependencies = [
 
 [[package]]
 name = "winnow"
+<<<<<<< HEAD
 version = "0.6.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68a9bda4691f099d435ad181000724da8e5899daa10713c2d432552b9ccd3a6f"
+=======
+version = "0.6.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b480ae9340fc261e6be3e95a1ba86d54ae3f9171132a73ce8d4bbaf68339507c"
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 dependencies = [
  "memchr",
 ]
@@ -17204,12 +17793,37 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "854e949ac82d619ee9a14c66a1b674ac730422372ccb759ce0c39cabcf2bf8e6"
+dependencies = [
+ "byteorder",
+ "zerocopy-derive 0.6.6",
+]
+
+[[package]]
+name = "zerocopy"
 version = "0.7.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1b9b4fd18abc82b8136838da5d50bae7bdea537c574d8dc1a34ed098d6c166f0"
 dependencies = [
+<<<<<<< HEAD
  "byteorder",
  "zerocopy-derive",
+=======
+ "zerocopy-derive 0.7.35",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.6.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "125139de3f6b9d625c39e2efdd73d41bdac468ccd556556440e322be0e1bbd91"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.72",
+>>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
 ]
 
 [[package]]
