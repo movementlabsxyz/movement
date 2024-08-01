@@ -53,7 +53,7 @@ impl DynOptFinExecutor for Executor {
 		
 		tokio::try_join!(
 			self.executor.run_service(),
-			// self.executor.run_indexer_grpc_service(),
+			self.executor.run_indexer_grpc_service(),
 			self.finality_view.run_service(),
 		)?;
 		Ok(())

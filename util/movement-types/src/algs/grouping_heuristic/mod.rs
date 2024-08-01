@@ -381,7 +381,7 @@ impl <T> GroupingHeuristicStack<T> {
     }
 
     /// Runs the grouping heuristic asynchronously, but in a sequential manner.
-    pub async fn run_async_sequential<F, Fut, M>(
+    pub async fn run_async_sequential_with_metadata<F, Fut, M>(
         &mut self, 
         mut distribution: Vec<GroupingOutcome<T>>,
         func: F,
@@ -437,7 +437,7 @@ pub mod test {
             GroupingOutcome::new_all_success(4)
         ];
 
-        let result = stack.run_async_sequential(
+        let result = stack.run_async_sequential_with_metadata(
             distribution, 
             |_index, outcome, _metadata| async {
                 let mut shared = shared.write().await;

@@ -134,7 +134,7 @@ impl LightNodeV1 {
 		]);
 
 		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
-		let block_group_results = heuristic.run_async_sequential(
+		let block_group_results = heuristic.run_async_sequential_with_metadata(
 			start_distribution,
 			|index, grouping, mut flag| async move {
 
