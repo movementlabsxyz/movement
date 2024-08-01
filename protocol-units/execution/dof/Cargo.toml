@@ -14,9 +14,10 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow = { workspace = true }
-async-channel = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
 tokio = { workspace = true }
+tokio-stream = { workspace = true }
 tracing = { workspace = true }
 
 aptos-crypto = { workspace = true }
@@ -30,8 +31,6 @@ maptos-opt-executor = { workspace = true }
 maptos-fin-view = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
-futures = { workspace = true }
-tokio-stream = { workspace = true }
 
 [dev-dependencies]
 chrono = { workspace = true }

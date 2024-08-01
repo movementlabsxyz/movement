@@ -22,6 +22,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info, info_span, warn, Instrument};
+
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
@@ -37,7 +38,7 @@ const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 impl<T> SuzukaPartialNode<T>
 where
-	T: DynOptFinExecutor + Clone + Send + Sync,
+	T: DynOptFinExecutor + Send + Sync,
 {
 	pub fn new<C>(
 		executor: T,
