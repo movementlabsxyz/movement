@@ -109,7 +109,7 @@ impl LightNodeV1 {
 		Ok(())
 	}
 
-	pub async fn submit_heuristic(&self, blocks : Vec<Block>) -> Result<(), anyhow::Error> {
+	pub async fn submit_with_heuristic(&self, blocks : Vec<Block>) -> Result<(), anyhow::Error> {
 
 		let mut heuristic : GroupingHeuristicStack<Block> = GroupingHeuristicStack::new(vec![
 			Box::new(DropSuccess),
@@ -131,66 +131,6 @@ impl LightNodeV1 {
 
 		Ok(())
 
-	}
-
-	/// Attempts to submit a batch of blobs according to the chunk size
-	async fn submit_and_resize(&self, block_blobs: &mut Vec<celestia_types::Blob>, chunk_size : usize) -> Result<usize, anyhow::Error> {
-	
-
-		// iter in chunks of 4
-		while !block_blobs.is_empty() {
-			let mut chunk: Vec<celestia_types::Blob> = Vec::with_capacity(chunk_size);
-			
-			for _ in 0..chunk_size {
-				if let Some(blob) = block_blobs.pop() {
-					chunk.push(blob);
-				} else {
-					break;
-				}
-			}
-			
-			match self.pass_through.submit_celestia_blobs(&chunk).await {
-				Ok(_) => {
-					info!(
-						target: "movement_timing",
-						batch_size = chunk.len(),
-						"submitted_blob_batch",
-					);
-				}
-				Err(e) => {
-					info!("failed to submit blocks: {:?}", e);
-					block_blobs.extend(chunk.into_iter());
-					return Ok(chunk_size - 1);
-				}
-			}
-		}
-	
-
-		Ok(chunk_size)
-
-	}
-
-	/// Submits block blobs in chunks, beginning with a chunk size of 4
-	async fn submit_block_blobs(&self, block_blobs: &mut Vec<celestia_types::Blob>) -> Result<(), anyhow::Error> {
-		if block_blobs.len() > 0 {
-
-			let mut chunk_size = 4;
-			loop {
-
-				let new_chunk_size = self.submit_and_resize(block_blobs, chunk_size).await?;			
-				if new_chunk_size == chunk_size {
-					// we have succeeded
-					info!(
-						target: "movement_timing",
-						"submitted_all_blob_batches",
-					);
-					break;
-				}
-				chunk_size = new_chunk_size;
-
-			}
-		}
-		Ok(())
 	}
 
 	/// Reads blobs from the receiver until the building time is exceeded
@@ -235,30 +175,13 @@ impl LightNodeV1 {
 		
 		// get some blocks in a batch
 		let blocks = self.read_blocks(receiver).await?;
-
-		// form blobs from the blocks
-		info!(
-			target: "movement_timing",
-			batch_size = blocks.len(),
-			"building_block_batch"
-		);
-		let mut block_blobs = Vec::new();
-		let mut ids = Vec::new();
-		for block in &blocks {
-			let block_blob = self.pass_through.create_new_celestia_blob(
-				serde_json::to_vec(&block)
-					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-			)?;
-			block_blobs.push(block_blob);
-			ids.push(block.id());
-		}
-
+		let ids = blocks.iter().map(|b| b.id()).collect::<Vec<_>>();
 
 		// submit the blobs, resizing as needed
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitting_block_batch");
 		}
-		self.submit_block_blobs(&mut block_blobs).await?;
+		self.submit_with_heuristic(blocks).await?;
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitted_block_batch");
 		}
