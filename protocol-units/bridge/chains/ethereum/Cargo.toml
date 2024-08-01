@@ -16,6 +16,7 @@ path = "src/lib.rs"
 aptos-api = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
+bb8 = { workspace = true }
 futures = { workspace = true }
 poem = { workspace = true }
 hex = { workspace = true }
@@ -33,6 +34,7 @@ alloy-contract = { workspace = true }
 alloy-network = { workspace = true }
 alloy-primitives = { workspace = true }
 alloy-provider = { workspace = true }
+alloy-signer = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-rlp = { workspace = true }
 alloy-transport = { workspace = true }

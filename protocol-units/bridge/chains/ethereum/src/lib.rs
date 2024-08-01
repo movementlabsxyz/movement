@@ -1,12 +1,18 @@
-use anyhow::Context;
-use std::fmt::Debug;
 
+use bb8::{ManageConnection, Pool, PooledConnection};
+
+use anyhow::{Context, Error, Result};
+use std::fmt::Debug;
+use std::sync::Arc;
+use async_trait::async_trait;
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
+use alloy_transport::{WsTransport, BoxTransport};
 use alloy_network::EthereumWallet;
 use alloy_primitives::{
 	private::serde::{Deserialize, Serialize},
 	Address, FixedBytes, U256,
 };
+use futures::future::BoxFuture;
 use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy_rlp::{Decodable, RlpDecodable, RlpEncodable};
 use alloy_sol_types::sol;
@@ -72,6 +78,74 @@ impl Config {
 	}
 }
 
+pub struct ConnectionManager {
+        rpc_url: Arc<str>,
+        signer: Arc<PrivateKeySigner>,
+}
+
+impl ConnectionManager {
+        pub fn new(rpc_url: Arc<str>, signer: Arc<PrivateKeySigner>) -> Self {
+                Self { rpc_url, signer }
+        }
+}
+
+#[async_trait]
+impl ManageConnection for ConnectionManager {
+        type Connection = RootProvider<WsTransport>;
+        type Error = Error;
+
+        async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+                // Create a new WebSocket transport
+                let transport = WsTransport::new(self.rpc_url.clone()).await?;
+
+                // Build the provider
+                let provider: RootProvider<WsTransport> = ProviderBuilder::new()
+                        .wallet(EthereumWallet::from(self.signer.clone()))
+                        .on_provider(transport);
+
+                Ok(provider)
+        }
+
+        async fn is_valid(&self, conn: &mut Self::Connection) -> Result<(), Self::Error> {
+                match conn.get_chain_id().await {
+                        Ok(_) => Ok(()),
+                        Err(e) => Err(Error::msg(format!("Connection validation failed: {:?}", e))),
+                }
+        }
+
+        fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+                false
+        }
+}
+
+// Define a type alias for your connection pool
+pub type CustomPool = Pool<ConnectionManager>;
+
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+        let rpc_url = Arc::from("ws://localhost:8545");
+        let signer_key = PrivateKeySigner::random();
+        let signer = Arc::new(signer_key);
+
+        // Create a new connection manager
+        let manager = ConnectionManager::new(rpc_url, signer);
+
+        // Create a connection pool with a max size of 32
+        let pool = Pool::builder()
+                .max_size(32)
+                .build(manager)
+                .await?;
+
+        // Example: Get a connection from the pool and use it
+        let mut conn = pool.get().await?;
+
+        // Fetch chain ID to test connection
+        let chain_id = conn.get_chain_id().await?;
+        println!("Connected to chain ID: {:?}", chain_id);
+
+        Ok(())
+}
+
 #[derive(RlpDecodable, RlpEncodable)]
 struct EthBridgeTransferDetails {
 	pub amount: U256,
@@ -110,7 +184,7 @@ impl EthClient {
 	}
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl BridgeContractInitiator for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
@@ -210,7 +284,7 @@ impl BridgeContractInitiator for EthClient {
 	}
 }
 
-#[async_trait::async_trait]
+#[async_trait]
 impl BridgeContractCounterparty for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
