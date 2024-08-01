@@ -179,6 +179,17 @@ impl <T> ElementalOutcome<T> {
         }
     }
 
+    /// Converts an outcome to a failure, preserving it's instrumental or terminal status.
+    pub fn to_failures_prefer_instrumental(self) -> Self {
+
+        match self {
+            ElementalOutcome::Apply(t) => ElementalOutcome::Failure(ElementalFailure::Instrumental(t)),
+            ElementalOutcome::Success => ElementalOutcome::Success,
+            ElementalOutcome::Failure(f) => ElementalOutcome::Failure(f)
+        }
+
+    }
+
     /// Converts the outcome to an apply outcome.
     /// Success is not converted to an apply outcome.
     pub fn to_apply(self) -> Self {
@@ -240,6 +251,14 @@ impl <T> GroupingOutcome<T> {
         Self {
             0: outcome
         }
+    }
+
+    pub fn to_failures_prefer_instrumental(self) -> Self {
+
+        Self {
+            0 : self.into_inner().into_iter().map(|outcome| outcome.to_failures_prefer_instrumental()).collect()
+        }
+
     }
 
     /// Returns true if all of the outcomes are successes.
@@ -362,14 +381,15 @@ impl <T> GroupingHeuristicStack<T> {
     }
 
     /// Runs the grouping heuristic asynchronously, but in a sequential manner.
-    pub async fn run_async_sequential<F, Fut>(
+    pub async fn run_async_sequential<F, Fut, M>(
         &mut self, 
         mut distribution: Vec<GroupingOutcome<T>>,
-        func: F
+        func: F,
+        mut metadata: M,
     ) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error>
     where
-        F: Fn(GroupingOutcome<T>) -> Fut + Send + Sync,
-        Fut: std::future::Future<Output = Result<GroupingOutcome<T>, anyhow::Error>> + Send,
+        F: Fn(usize, GroupingOutcome<T>, M) -> Fut + Send + Sync,
+        Fut: std::future::Future<Output = Result<(GroupingOutcome<T>, M), anyhow::Error>> + Send,
     {
         loop {
             // distribute
@@ -377,10 +397,14 @@ impl <T> GroupingHeuristicStack<T> {
     
             // run the function asynchronously
             let mut new_distribution = Vec::new();
-            for outcome in distribution {
-                new_distribution.push(func(outcome).await?);
+
+            // include index in iteration and callback
+            for (index, outcome) in distribution.into_iter().enumerate() {
+                let (new_outcome, new_metadata) = func(index, outcome, metadata).await?;
+                metadata = new_metadata;
+                new_distribution.push(new_outcome);
             }
-    
+
             // check if we're done
             if new_distribution.iter().all(|outcome| outcome.all_done()) {
                 return Ok(new_distribution);
@@ -413,11 +437,15 @@ pub mod test {
             GroupingOutcome::new_all_success(4)
         ];
 
-        let result = stack.run_async_sequential(distribution, |outcome| async {
-            let mut shared = shared.write().await;
-            *shared += 1;
-            Ok(outcome)
-        }).await?;
+        let result = stack.run_async_sequential(
+            distribution, 
+            |_index, outcome, _metadata| async {
+                let mut shared = shared.write().await;
+                *shared += 1;
+                Ok((outcome, Some(1)))
+            }, 
+            Some(1)
+        ).await?;
 
         assert_eq!(*shared.read().await, 2);
         assert_eq!(result.len(), 2);

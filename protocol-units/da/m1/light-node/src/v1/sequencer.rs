@@ -134,22 +134,37 @@ impl LightNodeV1 {
 		]);
 
 		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
-		info!("start distribution: {:?}", start_distribution.len());
-		let failed_block_groups = heuristic.run_async_sequential(
+		let block_group_results = heuristic.run_async_sequential(
 			start_distribution,
-			|grouping| async move {
-				let blocks = grouping.into_original();
-				match self.submit_blocks(&blocks).await {
-					Ok(_) => {
-						println!("all success");
-						Ok(GroupingOutcome::new_all_success(blocks.len()))
-					},
-					Err(_) => Ok(GroupingOutcome::new_apply(blocks)),
+			|index, grouping, mut flag| async move {
+
+				if index == 0 {
+					flag = false;
 				}
+
+				// if the flag is set then we are going to change this grouping outcome to failures and not run anything
+				if flag {
+					return Ok((grouping.to_failures_prefer_instrumental(), flag))
+				}
+
+				let blocks = grouping.into_original();
+				let outcome = match self.submit_blocks(&blocks).await {
+					Ok(_) => {
+						GroupingOutcome::new_all_success(blocks.len())
+					},
+					Err(_) => {
+						flag = true;
+						GroupingOutcome::new_apply(blocks)
+					},
+				};
+
+				Ok((outcome, flag))
+
 			},
+			false
 		).await?;
 
-		info!("failed block groups: {:?}", failed_block_groups.len());
+		info!("block group results: {:?}", block_group_results);
 
 		Ok(())
 
