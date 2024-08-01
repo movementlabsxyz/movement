@@ -130,19 +130,26 @@ impl LightNodeV1 {
 			DropSuccess::boxed(),
 			ToApply::boxed(),
 			SkipFor::boxed(1, Splitting::boxed(2)),
-			FirstFitBinpacking::boxed(1_700_000_000)
+			FirstFitBinpacking::boxed(1_700_000)
 		]);
 
-		let _failed_blocks = heuristic.run_async_sequential(
-			GroupingOutcome::new_apply_distribution(blocks),
+		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
+		info!("start distribution: {:?}", start_distribution.len());
+		let failed_block_groups = heuristic.run_async_sequential(
+			start_distribution,
 			|grouping| async move {
 				let blocks = grouping.into_original();
 				match self.submit_blocks(&blocks).await {
-					Ok(_) => Ok(GroupingOutcome::new_all_success(blocks.len())),
+					Ok(_) => {
+						println!("all success");
+						Ok(GroupingOutcome::new_all_success(blocks.len()))
+					},
 					Err(_) => Ok(GroupingOutcome::new_apply(blocks)),
 				}
 			},
-		);
+		).await?;
+
+		info!("failed block groups: {:?}", failed_block_groups.len());
 
 		Ok(())
 
@@ -190,6 +197,9 @@ impl LightNodeV1 {
 		
 		// get some blocks in a batch
 		let blocks = self.read_blocks(receiver).await?;
+		if blocks.is_empty() {
+			return Ok(());
+		}
 		let ids = blocks.iter().map(|b| b.id()).collect::<Vec<_>>();
 
 		// submit the blobs, resizing as needed

@@ -5,6 +5,8 @@ pub mod drop_success;
 pub mod binpacking;
 pub mod skip;
 
+use std::fmt::Debug;
+
 /// A failure type for a single member of the heuristically formed group.
 pub enum ElementalFailure<T> {
     /// An instrumental failure is intended to be be passed on in future iterations.
@@ -12,6 +14,27 @@ pub enum ElementalFailure<T> {
     /// A terminal failure is intended to be dropped or pause the execution altogether.
     Terminal(T)
 }
+
+impl <T> Debug for ElementalFailure<T>
+where T: Debug {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ElementalFailure::Instrumental(t) => write!(f, "Instrumental({:?})", t),
+            ElementalFailure::Terminal(t) => write!(f, "Terminal({:?})", t)
+        }
+    }
+}
+
+impl <T> PartialEq for ElementalFailure<T> where T: PartialEq {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ElementalFailure::Instrumental(t1), ElementalFailure::Instrumental(t2)) => t1 == t2,
+            (ElementalFailure::Terminal(t1), ElementalFailure::Terminal(t2)) => t1 == t2,
+            _ => false
+        }
+    }
+}
+impl <T> Eq for ElementalFailure<T> where T: Eq {}
 
 impl <T> ElementalFailure<T> {
 
@@ -58,6 +81,29 @@ impl <T> ElementalFailure<T> {
     }
 
 }
+
+impl <T> Debug for ElementalOutcome<T>
+where T: Debug {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ElementalOutcome::Apply(t) => write!(f, "Apply({:?})", t),
+            ElementalOutcome::Success => write!(f, "Success"),
+            ElementalOutcome::Failure(failure) => write!(f, "Failure({:?})", failure)
+        }
+    }
+}
+
+impl <T> PartialEq for ElementalOutcome<T> where T: PartialEq {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ElementalOutcome::Apply(t1), ElementalOutcome::Apply(t2)) => t1 == t2,
+            (ElementalOutcome::Success, ElementalOutcome::Success) => true,
+            (ElementalOutcome::Failure(f1), ElementalOutcome::Failure(f2)) => f1 == f2,
+            _ => false
+        }
+    }
+}
+impl <T> Eq for ElementalOutcome<T> where T: Eq {}
 
 /// An outcome for a single member of the heuristically formed group.
 pub enum ElementalOutcome<T> {
@@ -147,6 +193,20 @@ impl <T> ElementalOutcome<T> {
 
 /// The outcomes for a particular group in a grouping heuristic.
 pub struct GroupingOutcome<T>(pub Vec<ElementalOutcome<T>>);
+
+impl <T> PartialEq for GroupingOutcome<T> where T: PartialEq {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.iter().zip(other.0.iter()).all(|(a, b)| a == b)
+    }
+}
+impl <T> Eq for GroupingOutcome<T> where T: Eq {}
+
+impl <T> Debug for GroupingOutcome<T>
+where T: Debug {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GroupingOutcome({:?})", self.0)
+    }
+}
 
 impl <T> GroupingOutcome<T> {
 
@@ -329,6 +389,42 @@ impl <T> GroupingHeuristicStack<T> {
             // update the distribution
             distribution = new_distribution;
         }
+    }
+
+}
+
+#[cfg(test)]
+pub mod test {
+
+    use super::*;
+    use super::chunking::Chunking;
+    use std::sync::Arc;
+    use tokio::sync::RwLock;
+
+    #[tokio::test]
+    async fn test_async_run_sequential_success() -> Result<(), anyhow::Error> {
+
+        let shared = Arc::new(RwLock::new(0));
+        let mut stack = GroupingHeuristicStack::new(vec![
+            Chunking::boxed(2)
+        ]);
+
+        let distribution : Vec<GroupingOutcome<usize>> = vec![
+            GroupingOutcome::new_all_success(4)
+        ];
+
+        let result = stack.run_async_sequential(distribution, |outcome| async {
+            let mut shared = shared.write().await;
+            *shared += 1;
+            Ok(outcome)
+        }).await?;
+
+        assert_eq!(*shared.read().await, 2);
+        assert_eq!(result.len(), 2);
+        assert!(result.iter().all(|outcome| outcome.all_succeeded()));
+
+        Ok(())
+
     }
 
 }

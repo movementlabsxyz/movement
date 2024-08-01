@@ -11,6 +11,10 @@ impl Chunking {
     pub fn new(size: usize) -> Self {
         Self { size }
     }
+
+    pub fn boxed(size: usize) -> Box<Self> {
+        Box::new(Self::new(size))
+    }
 }
 
 impl <T> GroupingHeuristic<T> for Chunking {
@@ -39,7 +43,7 @@ pub struct LinearlyDecreasingChunking {
 }
 
 impl LinearlyDecreasingChunking {
-    
+
     pub fn new(
         size: usize,
         decreasing_factor: usize

@@ -29,3 +29,51 @@ impl <T> GroupingHeuristic<T> for ToApply {
     }
 
 }
+
+#[cfg(test)]
+pub mod test {
+
+    use super::*;
+    use crate::algs::grouping_heuristic::{
+        ElementalOutcome,
+        ElementalFailure
+    };
+    
+    #[test]
+    fn test_to_apply() -> Result<(), anyhow::Error> {
+
+        let mut heuristic = ToApply::new();
+        let distribution = vec![
+            GroupingOutcome::new(vec![
+                ElementalOutcome::Success,
+                ElementalOutcome::Failure(ElementalFailure::Instrumental(1)),
+                ElementalOutcome::Apply(2)
+            ]),
+            GroupingOutcome::new(vec![
+                ElementalOutcome::Success,
+                ElementalOutcome::Failure(ElementalFailure::Terminal(3)),
+                ElementalOutcome::Apply(4)
+            ])
+        ];
+
+        let distribution = heuristic.distribute(distribution)?;
+
+        let should_be = vec![
+            GroupingOutcome::new(vec![
+                ElementalOutcome::Success,
+                ElementalOutcome::Apply(1),
+                ElementalOutcome::Apply(2)
+            ]),
+            GroupingOutcome::new(vec![
+                ElementalOutcome::Success,
+                ElementalOutcome::Apply(3),
+                ElementalOutcome::Apply(4)
+            ])
+        ];
+        assert_eq!(distribution, should_be);
+
+        Ok(())
+
+    }
+
+}
