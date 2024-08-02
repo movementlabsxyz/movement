@@ -14,8 +14,7 @@ impl Executor {
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 		info!("Starting maptos-opt-executor services at: {:?}", self.listen_url);
-
-		let size_limit = self.context.content_length_limit();
+		
 		let api_service =
 			get_api_service(self.context()).server(format!("http://{:?}", self.listen_url));
 
