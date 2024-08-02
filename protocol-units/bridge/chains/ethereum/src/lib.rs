@@ -104,8 +104,6 @@ impl EthClient {
 			.on_builtin(&rpc_url)
 			.await?;
 
-		let cloned = rpc_provider.clone();
-
 		// let ws = WsConnect::new(ws_url);
 		// println!("ws {:?}", ws);
 		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
