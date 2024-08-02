@@ -54,7 +54,6 @@
           gcc
           rust
           postgresql
-          elfutils
         ];
         
         sysDependencies = with pkgs; [] 
