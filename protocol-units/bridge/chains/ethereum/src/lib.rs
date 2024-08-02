@@ -103,9 +103,9 @@ impl Manager for ConnectionManager {
 
         async fn create(&self) -> Result<Self::Type, Self::Error> {
                 // Create a WsConnect instance to manage the connection
-                let transport = WsConnect::new(self.rpc_url.as_ref().to_string())
-                        .await
-                        .context("Failed to connect to WebSocket")?;
+                let transport = WsConnect::new(self.rpc_url.as_ref().to_string());
+                        //.await
+                        //.context("Failed to connect to WebSocket")?;
 
                 // Convert WsConnect into a Transport using the boxed method
                 let boxed_transport = transport.boxed();
@@ -132,7 +132,8 @@ pub struct EthClient {
 }
 
 impl EthClient {
-        pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
+        pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
+		let config = config.into();
                 let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
                 let rpc_url = config.rpc_url.context("rpc_url not set")?;
                 let ws_url = config.ws_url.context("ws_url not set")?;
@@ -150,10 +151,10 @@ impl EthClient {
                 let pool = Pool::from_config(manager, pool_config);
 
                 // Initialize WebSocket provider
-                let ws = WsConnect::new(ws_url)
-                    .await
-                    .context("Failed to connect to WebSocket")?;
-                let ws_provider = ProviderBuilder::new().on_provider(ws);
+                let ws = WsConnect::new(config.ws_url);
+                    //.await
+                    //.context("Failed to connect to WebSocket")?;
+                let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 
                 // Return the new EthClient instance
                 Ok(EthClient {
