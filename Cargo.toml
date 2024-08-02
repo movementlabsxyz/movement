@@ -32,6 +32,7 @@ members = [
     "protocol-units/bridge/chains/ethereum",
     "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",
+    "protocol-units/bridge/cli",
     "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
     "benches/*",

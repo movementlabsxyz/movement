@@ -13,7 +13,6 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
-aptos-api = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
@@ -26,17 +25,9 @@ tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
-alloy = { workspace = true }
-alloy-eips = { workspace = true }
-alloy-rpc-types = { workspace = true }
-alloy-contract = { workspace = true }
-alloy-network = { workspace = true }
-alloy-primitives = { workspace = true }
-alloy-provider = { workspace = true }
-alloy-sol-types = { workspace = true }
-alloy-rlp = { workspace = true }
-alloy-transport = { workspace = true }
-alloy-transport-ws = { workspace = true }
+alloy = { workspace = true,  features = ["full", "rpc", "rpc-types", "serde", "rlp", "contract", "sol-types"] }
+alloy-rlp.workspace = true
 
 bridge-shared = { workspace = true }
-mcr-settlement-client = { workspace = true }
+serde_with.workspace = true
+url = { workspace = true, features = ["serde"] } 

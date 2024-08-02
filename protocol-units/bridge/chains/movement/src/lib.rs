@@ -13,6 +13,7 @@ use bridge_shared::{
 use rand::prelude::*;
 use serde::Serialize;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 use url::Url;
 
 use crate::utils::MovementAddress;
@@ -47,7 +48,7 @@ pub struct MovementClient {
 	///The Apotos Rest Client
 	rest_client: Client,
 	///The signer account
-	signer: LocalAccount,
+	signer: Arc<LocalAccount>,
 }
 
 impl MovementClient {
@@ -77,14 +78,8 @@ impl MovementClient {
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
 			counterparty_address: DUMMY_ADDRESS,
-			signer,
+			signer: Arc::new(signer),
 		})
-	}
-}
-
-impl Clone for MovementClient {
-	fn clone(&self) -> Self {
-		todo!()
 	}
 }
 
@@ -118,7 +113,7 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Lock),
 			args,
 		);
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
+		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
 			.await
 			.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 		Ok(())
@@ -141,7 +136,8 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Complete),
 			args,
 		);
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
+
+		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
 			.await
 			.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
 		Ok(())
@@ -162,7 +158,7 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Abort),
 			args,
 		);
-		let _ = utils::send_aptos_transaction(&self.rest_client, &mut self.signer, payload)
+		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
 			.await
 			.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 		Ok(())
