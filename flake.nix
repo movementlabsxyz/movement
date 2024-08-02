@@ -54,7 +54,6 @@
           gcc
           rust
           postgresql
-          elfutils
         ];
         
         sysDependencies = with pkgs; [] 
@@ -63,11 +62,13 @@
           frameworks.CoreServices
           frameworks.SystemConfiguration
           frameworks.AppKit
+          libelf
         ] ++ lib.optionals stdenv.isLinux [
           udev
           systemd
           snappy
           bzip2
+          elfutils
         ];
 
         testDependencies = with pkgs; [
