@@ -7,6 +7,10 @@ rm -rf ./.data
 # Initialize the database cluster
 initdb -D ./.data --no-locale
 
+# allow docker connection to the db.
+sed -i "/listen_addresses/c\listen_addresses = \'*\'" ./.data/postgresql.conf
+echo -e "host    all             all             172.0.0.0/8             trust" >> ./.data/pg_hba.conf 
+
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile start
 

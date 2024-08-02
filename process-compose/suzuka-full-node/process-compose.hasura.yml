@@ -1,0 +1,12 @@
+version: "3"
+
+processes:
+
+  hasura:
+    command: |
+      EXTERNAL_IP=$POSTGRES_HOST_IP docker compose -f docker/compose/indexer/docker-compose.hasura.yml up --force-recreate --renew-anon-volumes
+    env:
+      RUST_LOG: info
+    depends_on:
+      indexer:
+        condition: process_healthy

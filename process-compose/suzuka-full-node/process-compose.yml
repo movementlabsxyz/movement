@@ -40,15 +40,6 @@ processes:
       initial_delay_seconds: 3
       exec:
         command: grpcurl -plaintext 0.0.0.0:30730 list
-
-  postgres:
-    command: |
-      ./scripts/postgres/start-dev
-
-    readiness_probe:
-      initial_delay_seconds: 10
-      exec:
-        command: echo "true"
     
   suzuka-full-node:
     command: |
@@ -58,15 +49,12 @@ processes:
     depends_on:
       m1-da-light-node:
         condition: process_healthy
-      postgres:
-        condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:30731
 
-  suzuka-faucet:
-  
+  suzuka-faucet: 
     command : |
       suzuka-faucet-service run-simple
     depends_on:
