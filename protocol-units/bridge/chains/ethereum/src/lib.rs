@@ -102,8 +102,6 @@ impl EthClient {
 		// println!("ws {:?}", ws);
 		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 		// println!("ws_provider {:?}", ws_provider);
-		let ws = WsConnect::new(config.ws_url.clone());
-		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 		Ok(EthClient {
 			rpc_provider,
 			rpc_port: 8545,
