@@ -12,7 +12,7 @@ impl<T> Skip<T> {
 	}
 
 	pub fn skip(
-		&mut self,
+		&self,
 		distribution: Vec<GroupingOutcome<T>>,
 	) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {
 		Ok(distribution)

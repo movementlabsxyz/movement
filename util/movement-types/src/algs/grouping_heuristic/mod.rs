@@ -221,7 +221,8 @@ impl<T> GroupingOutcome<T> {
 		self.0
 	}
 
-	/// Into original
+	/// Converts a grouping to a Vec<T>, i.e., a collection of the original type without outcome wrappers.
+	/// Drops success elemental outcomes.
 	pub fn into_original(self) -> Vec<T> {
 		let mut original = Vec::new();
 		for outcome in self.0 {
@@ -282,7 +283,7 @@ impl<T> GroupingHeuristicStack<T> {
 	pub async fn run(
 		&mut self,
 		distribution: Vec<GroupingOutcome<T>>,
-		func: impl Fn(GroupingOutcome<T>) -> Result<GroupingOutcome<T>, anyhow::Error> + Send + Sync,
+		func: impl Fn(GroupingOutcome<T>) -> Result<GroupingOutcome<T>, anyhow::Error>,
 	) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {
 		let mut distribution = distribution;
 		loop {
