@@ -60,6 +60,7 @@ mod tests {
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
+	use aptos_mempool::core_mempool::CoreMempool;
 
 	fn create_signed_transaction(
 		sequence_number: u64,
@@ -96,7 +97,8 @@ mod tests {
 
 		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
-		executor.tick_transaction_pipe(tx).await?;
+		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
+		executor.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now()).await?;
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;

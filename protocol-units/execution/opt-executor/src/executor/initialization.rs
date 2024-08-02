@@ -9,7 +9,7 @@ use aptos_executor::{
 	block_executor::BlockExecutor,
 	db_bootstrapper::{generate_waypoint, maybe_bootstrap},
 };
-use aptos_mempool::{core_mempool::CoreMempool, MempoolClientRequest, MempoolClientSender};
+use aptos_mempool::{MempoolClientRequest, MempoolClientSender};
 use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
@@ -30,7 +30,7 @@ use tokio::sync::RwLock;
 #[cfg(test)]
 use tempfile::TempDir;
 
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::{atomic::AtomicU64, Arc}};
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
@@ -122,20 +122,17 @@ impl Executor {
 		node_config: NodeConfig,
 		maptos_config: Config,
 	) -> Result<Self, anyhow::Error> {
-
 		let (db, signer) = Self::maybe_bootstrap_empty_db(
 			maptos_config.chain.maptos_db_path.as_ref().context("No db path provided.")?,
 			maptos_config.chain.maptos_chain_id.clone(),
 			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
 		let reader = db.reader.clone();
-		let core_mempool = Arc::new(RwLock::new(CoreMempool::new(&node_config)));
 
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			db,
 			signer,
-			core_mempool,
 			mempool_client_sender: mempool_client_sender.clone(),
 			mempool_client_receiver: Arc::new(RwLock::new(mempool_client_receiver)),
 			node_config: node_config.clone(),
@@ -152,17 +149,19 @@ impl Executor {
 				maptos_config.chain.maptos_rest_listen_port
 			),
 			maptos_config,
+			transactions_in_flight: Arc::new(AtomicU64::new(0)),
 		})
 	}
 
 	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(10);
+			futures_mpsc::channel::<MempoolClientRequest>(2^16); // allow 2^16 transactions before apply backpressure given theoretical maximum TPS of 170k
 		let mut node_config = NodeConfig::default();
 
 		node_config.indexer.enabled = true;
 		// indexer config
+		node_config.indexer.postgres_uri = Some(maptos_config.indexer_processor.postgres_connection_string.clone());
 		node_config.indexer.processor = Some("default_processor".to_string());
 		node_config.indexer.check_chain_id = Some(false);
 		node_config.indexer.skip_migrations = Some(false);
@@ -174,8 +173,6 @@ impl Executor {
 
 		node_config.indexer_grpc.enabled = true;
 
-		node_config.indexer.postgres_uri = Some("postgresql://postgres:password@localhost:5432".to_string());
-
 		// indexer_grpc config
 		node_config.indexer_grpc.processor_batch_size = 4;
 		node_config.indexer_grpc.processor_task_count = 4;
@@ -184,7 +181,8 @@ impl Executor {
 			"{}:{}",
 			maptos_config.indexer.maptos_indexer_grpc_listen_hostname,
 			maptos_config.indexer.maptos_indexer_grpc_listen_port
-		).parse()?;
+		)
+		.parse()?;
 		node_config.indexer_grpc.use_data_service_interface = true;
 
 		// indexer table info config
@@ -192,7 +190,12 @@ impl Executor {
 		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
-		Self::bootstrap(mempool_client_sender, mempool_client_receiver, node_config, maptos_config.clone())
+		Self::bootstrap(
+			mempool_client_sender,
+			mempool_client_receiver,
+			node_config,
+			maptos_config.clone(),
+		)
 	}
 
 	#[cfg(test)]

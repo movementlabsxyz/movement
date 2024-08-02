@@ -34,6 +34,11 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 		self.building_time_ms = building_time_ms;
 		self
 	}
+
+	pub fn building_time_ms(&self) -> u64 {
+		self.building_time_ms
+	}
+
 }
 
 impl Memseq<RocksdbMempool> {
@@ -42,7 +47,7 @@ impl Memseq<RocksdbMempool> {
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
 		)?;
 		let parent_block = Arc::new(RwLock::new(Id::default()));
-		Ok(Self::new(mempool, 512, parent_block, 500))
+		Ok(Self::new(mempool, 128, parent_block, 125))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
@@ -51,16 +56,21 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
+
+	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
+		self.mempool.add_transactions(transactions).await?;
+		Ok(())
+	}
+
 	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
 		self.mempool.add_transaction(transaction).await?;
 		Ok(())
 	}
 
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
-		let mut transactions = Vec::new();
+		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
 		let mut now = std::time::Instant::now();
-		let finish_by = now + std::time::Duration::from_millis(self.building_time_ms);
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -68,27 +78,14 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 				break;
 			}
 
-			for _ in 0..self.block_size - current_block_size {
-
-				// make sure we are not over the building time
-				now = std::time::Instant::now();
-				if now > finish_by {
-					break;
-				}
-
-				if let Some(transaction) = self.mempool.pop_transaction().await? {
-					transactions.push(transaction);
-				} else {
-					break;
-				}
-
-			}
+			let remaining = self.block_size - current_block_size;
+			let mut transactions_to_add = self.mempool.pop_transactions(remaining as usize).await?;
+			transactions.append(&mut transactions_to_add);
 
 			// sleep to yield to other tasks and wait for more transactions
 			tokio::task::yield_now().await;
 
-			now = std::time::Instant::now();
-			if now > finish_by {
+			if now.elapsed().as_millis() as u64 > self.building_time_ms {
 				break;
 			}
 		}
@@ -96,11 +93,19 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-			Ok(Some(Block::new(
-				Default::default(),
-				self.parent_block.read().await.clone().to_vec(),
-				transactions,
-			)))
+
+			let new_block = {
+				let parent_block = self.parent_block.read().await.clone();
+				Block::new(Default::default(), parent_block.to_vec(), transactions)
+			};
+			
+			// update the parent block 
+			{
+				let mut parent_block = self.parent_block.write().await;
+				*parent_block = new_block.id();
+			}
+
+			Ok(Some(new_block))
 		}
 	}
 }
@@ -396,6 +401,13 @@ pub mod test {
 			_transaction_id: Id,
 		) -> Result<bool, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock has_mempool_transaction"))
+		}
+
+		async fn add_mempool_transactions(
+			&self,
+			_transactions: Vec<MempoolTransaction>,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock add_mempool_transactions"))
 		}
 
 		async fn add_mempool_transaction(

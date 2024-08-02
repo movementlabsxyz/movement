@@ -19,16 +19,14 @@ use aptos_types::{
 };
 use movement_types::{BlockCommitment, Commitment, Id};
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::{debug, debug_span, info};
 
 impl Executor {
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-
 		let (block_metadata, block, senders_and_sequence_numbers) = {
-
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
@@ -46,18 +44,19 @@ impl Executor {
 			// senders and sequence numbers
 			let senders_and_sequence_numbers = metadata_access_transactions
 				.iter()
-				.map(|transaction| {
-					match transaction.clone().into_inner() {
-						Transaction::UserTransaction(transaction) => {
-							(transaction.sender(), transaction.sequence_number())
-						}
-						_ => (AccountAddress::ZERO, 0),
+				.map(|transaction| match transaction.clone().into_inner() {
+					Transaction::UserTransaction(transaction) => {
+						(transaction.sender(), transaction.sequence_number())
 					}
+					_ => (AccountAddress::ZERO, 0),
 				})
 				.collect::<Vec<(AccountAddress, u64)>>();
 
 			// reconstruct the block
-			let block = ExecutableBlock::new(block.block_id.clone(), ExecutableTransactions::Unsharded(metadata_access_transactions));
+			let block = ExecutableBlock::new(
+				block.block_id.clone(),
+				ExecutableTransactions::Unsharded(metadata_access_transactions),
+			);
 
 			(block_metadata, block, senders_and_sequence_numbers)
 		};
@@ -74,14 +73,15 @@ impl Executor {
 				parent_block_id,
 				BlockExecutorConfigFromOnchain::new_no_block_limit(),
 			)
-		}).await??;
+		})
+		.await??;
 
 		debug!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
-	
+
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
 			epoch,
 			round,
@@ -93,15 +93,8 @@ impl Executor {
 		let block_executor_clone = block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
-		}).await??;
-
-		// commit mempool transactions in batches of size 16
-		for chunk in senders_and_sequence_numbers.chunks(16) {
-			let mut core_mempool = self.core_mempool.write().await;
-			for (sender, sequence_number) in chunk {
-				core_mempool.commit_transaction(sender, *sequence_number);
-			}
-		}
+		})
+		.await??;
 
 		let proof = {
 			let reader = self.db.reader.clone();
@@ -356,7 +349,7 @@ mod tests {
 			let mint_tx = root_account
 				.sign_with_transaction_builder(tx_factory.mint(new_account.address(), 2000));
 			// Store the hash of the committed transaction for later verification.
-			let mint_tx_hash = mint_tx.clone().committed_hash();
+			let mint_tx_hash = mint_tx.committed_hash();
 
 			// Block Metadata
 			let transactions =
@@ -449,7 +442,7 @@ mod tests {
 				let user_account_creation_tx = root_account.sign_with_transaction_builder(
 					tx_factory.create_user_account(new_account.public_key()),
 				);
-				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				let tx_hash = user_account_creation_tx.committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}
