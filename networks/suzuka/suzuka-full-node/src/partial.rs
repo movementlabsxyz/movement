@@ -15,14 +15,14 @@ use movement_types::{Block, BlockCommitment, BlockCommitmentEvent};
 
 use anyhow::Context;
 use async_channel::{Receiver, Sender};
-use sha2::Digest;
-use tokio_stream::StreamExt;
-use rocksdb::{ColumnFamilyDescriptor, Options, DB};
-use std::sync::Arc;
-use tracing::{debug, error, info, warn, info_span, Instrument};
 use core::sync::atomic::AtomicU64;
+use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use sha2::Digest;
 use std::future::Future;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio_stream::StreamExt;
+use tracing::{debug, error, info, info_span, warn, Instrument};
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
@@ -34,7 +34,7 @@ pub struct SuzukaPartialNode<T> {
 	da_db: Arc<DB>,
 }
 
-const LOGGING_UID : AtomicU64 = AtomicU64::new(0);
+const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 impl<T> SuzukaPartialNode<T>
 where
@@ -80,7 +80,7 @@ where
 		settlement_client: C,
 		movement_rest: MovementRest,
 		config: &suzuka_config::Config,
-		da_db: DB
+		da_db: DB,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error>
 	where
 		C: McrSettlementClientOperations + Send + 'static,
@@ -94,14 +94,18 @@ where
 	pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		// limit the total time batching transactions
 		let start = std::time::Instant::now();
-		let (_, half_building_time) = self.config.m1_da_light_node.m1_da_light_node_config.try_block_building_parameters()?;
+		let (_, half_building_time) = self
+			.config
+			.m1_da_light_node
+			.m1_da_light_node_config
+			.try_block_building_parameters()?;
 
 		let mut transactions = Vec::new();
 
 		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		loop{
-			
-			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
+		loop {
+			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
+			{
 				Some(remaining) => remaining,
 				None => {
 					// we have exceeded the half building time
@@ -109,50 +113,53 @@ where
 				}
 			};
 
-			match tokio::time::timeout(Duration::from_millis(remaining), self.transaction_receiver.recv()).await {
-				Ok(transaction) => {
-					match transaction {
-						Ok(transaction) => {
-							info!(
-								target : "movement_timing",
-								batch_id = %batch_id,
-								tx_hash = %transaction.committed_hash(),
-								sender = %transaction.sender(),
-								sequence_number = transaction.sequence_number(),
-								"received transaction",
-							);
-							let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-							let movement_transaction = movement_types::Transaction::new(
-								serialized_aptos_transaction,
-								transaction.sequence_number(),
-							);
-							let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
-							transactions.push(BlobWrite { data: serialized_transaction });
-						}
-						Err(_) => {
-							break;
-						}
+			match tokio::time::timeout(
+				Duration::from_millis(remaining),
+				self.transaction_receiver.recv(),
+			)
+			.await
+			{
+				Ok(transaction) => match transaction {
+					Ok(transaction) => {
+						info!(
+							target : "movement_timing",
+							batch_id = %batch_id,
+							tx_hash = %transaction.committed_hash(),
+							sender = %transaction.sender(),
+							sequence_number = transaction.sequence_number(),
+							"received transaction",
+						);
+						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
+						let movement_transaction = movement_types::Transaction::new(
+							serialized_aptos_transaction,
+							transaction.sequence_number(),
+						);
+						let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
+						transactions.push(BlobWrite { data: serialized_transaction });
 					}
-				}
+					Err(_) => {
+						break;
+					}
+				},
 				Err(_) => {
 					break;
 				}
 			}
-
 		}
 
 		let length = transactions.len();
 		if length > 0 {
 			let mut light_node_client = self.light_node_client.clone();
 			let span = info_span!(
-				target: "movement_timing", 
-				"batch_write", 
-				batch_id = %batch_id, 
+				target: "movement_timing",
+				"batch_write",
+				batch_id = %batch_id,
 				length = length
 			);
-			light_node_client.batch_write(BatchWriteRequest { blobs: transactions }).instrument(
-				span,
-			).await?;
+			light_node_client
+				.batch_write(BatchWriteRequest { blobs: transactions })
+				.instrument(span)
+				.await?;
 			// We now consider the transactions no longer in mempool flight.
 			self.executor.decrement_transactions_in_flight(length as u64);
 		}
@@ -169,11 +176,12 @@ where
 	// receive transactions from the transaction channel and send them to be executed
 	// ! This assumes the m1 da light node is running sequencer mode
 	pub async fn read_blocks_from_da(&self) -> Result<(), anyhow::Error> {
-
 		let mut stream = {
 			let mut light_node_client = self.light_node_client.clone();
 			light_node_client
-				.stream_read_from_height(StreamReadFromHeightRequest { height: self.get_synced_height().await? })
+				.stream_read_from_height(StreamReadFromHeightRequest {
+					height: self.get_synced_height().await?,
+				})
 				.await?
 		}
 		.into_inner();
@@ -210,7 +218,7 @@ where
 			// get the transactions
 			let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
 			let commitment = self
-				.execute_block(block_bytes, block_id.clone(), block_timestamp)
+				.execute_block_with_retries(block_bytes, block_id.clone(), block_timestamp)
 				.instrument(span)
 				.await?;
 
@@ -238,13 +246,34 @@ where
 		Ok(())
 	}
 
+	/// Retries executing a block several times.
+	/// This can be valid behavior if the block timestamps are too tightly clustered for the full node execution.
+	/// However, this has to be deterministic, otherwise nodes will not be able to agree on the block commitment.
+	async fn execute_block_with_retries(
+		&self,
+		block_bytes: Vec<u8>,
+		block_id: String,
+		mut block_timestamp: u64,
+	) -> anyhow::Result<BlockCommitment> {
+		for _ in 0..5 {
+			match self.execute_block(block_bytes.clone(), block_id.clone(), block_timestamp).await {
+				Ok(commitment) => return Ok(commitment),
+				Err(e) => {
+					error!("Failed to execute block: {:?}. Retrying", e);
+					block_timestamp += 5000; // increase the timestamp by 5 ms (5000 microseconds)
+				}
+			}
+		}
+
+		anyhow::bail!("Failed to execute block after 5 retries")
+	}
+
 	async fn execute_block(
 		&self,
 		block_bytes: Vec<u8>,
 		block_id: String,
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-
 		let block: Block = bcs::from_bytes(&block_bytes)?;
 		// get the transactions
 		let mut block_transactions = Vec::new();
@@ -257,7 +286,7 @@ where
 		block_transactions.push(block_metadata_transaction);
 
 		for transaction in block.transactions {
-			let signed_transaction : SignedTransaction = serde_json::from_slice(&transaction.data)?;
+			let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.data)?;
 			debug!(
 				target: "movement_timing",
 				tx_hash = %signed_transaction.committed_hash(),
@@ -359,11 +388,9 @@ where
 		self.movement_rest.run_service().await?;
 		Ok(())
 	}
-	
 }
 
-impl <T> SuzukaPartialNode<T> {
-
+impl<T> SuzukaPartialNode<T> {
 	pub async fn create_or_get_da_db(config: &suzuka_config::Config) -> Result<DB, anyhow::Error> {
 		let path = config.da_db.da_db_path.clone();
 
@@ -371,17 +398,11 @@ impl <T> SuzukaPartialNode<T> {
 		options.create_if_missing(true);
 		options.create_missing_column_families(true);
 
-		let synced_height =
-			ColumnFamilyDescriptor::new("synced_height", Options::default());
-		let executed_blocks =
-			ColumnFamilyDescriptor::new("executed_blocks", Options::default());
+		let synced_height = ColumnFamilyDescriptor::new("synced_height", Options::default());
+		let executed_blocks = ColumnFamilyDescriptor::new("executed_blocks", Options::default());
 
-		let db = DB::open_cf_descriptors(
-			&options,
-			path,
-			vec![synced_height, executed_blocks],
-		)
-		.map_err(|e| anyhow::anyhow!("Failed to open DA DB: {:?}", e))?;
+		let db = DB::open_cf_descriptors(&options, path, vec![synced_height, executed_blocks])
+			.map_err(|e| anyhow::anyhow!("Failed to open DA DB: {:?}", e))?;
 
 		Ok(db)
 	}
@@ -390,50 +411,70 @@ impl <T> SuzukaPartialNode<T> {
 		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
 		let da_db = self.da_db.clone();
 		tokio::task::spawn_blocking(move || {
-			let cf = da_db.cf_handle("synced_height").ok_or(anyhow::anyhow!("No synced_height column family"))?;
-			let height = serde_json::to_string(&height).map_err(|e| anyhow::anyhow!("Failed to serialize synced height: {:?}", e))?;
-			da_db.put_cf(&cf, "synced_height", height).map_err(|e| anyhow::anyhow!("Failed to set synced height: {:?}", e))
-		}).await??;
+			let cf = da_db
+				.cf_handle("synced_height")
+				.ok_or(anyhow::anyhow!("No synced_height column family"))?;
+			let height = serde_json::to_string(&height)
+				.map_err(|e| anyhow::anyhow!("Failed to serialize synced height: {:?}", e))?;
+			da_db
+				.put_cf(&cf, "synced_height", height)
+				.map_err(|e| anyhow::anyhow!("Failed to set synced height: {:?}", e))
+		})
+		.await??;
 		Ok(())
 	}
 
 	pub async fn get_synced_height(&self) -> Result<u64, anyhow::Error> {
 		// This is heavy for this purpose, but progressively the contents of the DA DB will be used for more things
 		let da_db = self.da_db.clone();
-		let height = tokio::task::spawn_blocking(move ||{
-			let cf = da_db.cf_handle("synced_height").ok_or(anyhow::anyhow!("No synced_height column family"))?;
-			let height = da_db.get_cf(&cf, "synced_height").map_err(|e| anyhow::anyhow!("Failed to get synced height: {:?}", e))?;
+		let height = tokio::task::spawn_blocking(move || {
+			let cf = da_db
+				.cf_handle("synced_height")
+				.ok_or(anyhow::anyhow!("No synced_height column family"))?;
+			let height = da_db
+				.get_cf(&cf, "synced_height")
+				.map_err(|e| anyhow::anyhow!("Failed to get synced height: {:?}", e))?;
 			let height = match height {
-				Some(height) => serde_json::from_slice(&height).map_err(|e| anyhow::anyhow!("Failed to deserialize synced height: {:?}", e))?,
-				None => 0
+				Some(height) => serde_json::from_slice(&height)
+					.map_err(|e| anyhow::anyhow!("Failed to deserialize synced height: {:?}", e))?,
+				None => 0,
 			};
 			Ok::<u64, anyhow::Error>(height)
-		}).await??;
+		})
+		.await??;
 		Ok(height)
 	}
 
-	pub async fn add_executed_block(&self, id : String) -> Result<(), anyhow::Error> {
+	pub async fn add_executed_block(&self, id: String) -> Result<(), anyhow::Error> {
 		let da_db = self.da_db.clone();
 		tokio::task::spawn_blocking(move || {
-			let cf = da_db.cf_handle("executed_blocks").ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
-			da_db.put_cf(&cf, id.clone(), id).map_err(|e| anyhow::anyhow!("Failed to add executed block: {:?}", e))
-		}).await??;
+			let cf = da_db
+				.cf_handle("executed_blocks")
+				.ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
+			da_db
+				.put_cf(&cf, id.clone(), id)
+				.map_err(|e| anyhow::anyhow!("Failed to add executed block: {:?}", e))
+		})
+		.await??;
 		Ok(())
 	}
 
-	pub async fn has_executed_block(&self, id : String) -> Result<bool, anyhow::Error> {
+	pub async fn has_executed_block(&self, id: String) -> Result<bool, anyhow::Error> {
 		let da_db = self.da_db.clone();
-		let id = tokio::task::spawn_blocking(move ||{
-			let cf = da_db.cf_handle("executed_blocks").ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
-			da_db.get_cf(&cf, id).map_err(|e| anyhow::anyhow!("Failed to get executed block: {:?}", e))
-		}).await??;
+		let id = tokio::task::spawn_blocking(move || {
+			let cf = da_db
+				.cf_handle("executed_blocks")
+				.ok_or(anyhow::anyhow!("No executed_blocks column family"))?;
+			da_db
+				.get_cf(&cf, id)
+				.map_err(|e| anyhow::anyhow!("Failed to get executed block: {:?}", e))
+		})
+		.await??;
 		Ok(id.is_some())
 	}
-
 }
 
 impl SuzukaPartialNode<Executor> {
-
 	pub async fn try_from_config(
 		config: suzuka_config::Config,
 	) -> Result<(Self, impl Future<Output = Result<(), anyhow::Error>> + Send), anyhow::Error> {
@@ -476,10 +517,13 @@ impl SuzukaPartialNode<Executor> {
 			.context("Failed to create MovementRest")?;
 
 		debug!("Creating the DA DB");
-		let da_db = Self::create_or_get_da_db(&config).await.context("Failed to create or get DA DB")?;
+		let da_db = Self::create_or_get_da_db(&config)
+			.await
+			.context("Failed to create or get DA DB")?;
 
-		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config, da_db).context(
-			"Failed to bind the executor, light node client, settlement client, and movement rest"
+		Self::bound(executor, light_node_client, settlement_client, movement_rest, &config, da_db)
+			.context(
+			"Failed to bind the executor, light node client, settlement client, and movement rest",
 		)
 	}
 }
