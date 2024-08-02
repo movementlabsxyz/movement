@@ -14,3 +14,4 @@ processes:
       initial_delay_seconds: 5
       exec:
         command: curl http://localhost:8085/console/
+
