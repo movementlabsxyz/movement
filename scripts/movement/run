@@ -16,6 +16,9 @@ export CARGO_PROFILE="${CARGO_PROFILE:-debug}"
 # Add the target directory to the path so that built binaries can be found
 export PATH="$PATH:$(pwd)/target/$CARGO_PROFILE"
 export DOT_MOVEMENT_PATH="$(pwd)/.movement"
+# IP needed by docker container to connect to the database
+# By default use the host ip.
+export POSTGRES_HOST_IP=$(hostname -I | awk '{print $1}')
 
 # Call the runtime script, passing all arguments
 ./scripts/movement/$RUNTIME "$@"
