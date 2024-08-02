@@ -1,11 +1,21 @@
 [package]
 name = "bridge-integration-tests"
-version = "0.1.0"
+authors = { workspace = true }
 edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 
+version = { workspace = true }
 [lib]
 path = "src/lib.rs"
 
 [dependencies]
+alloy = { workspace = true }
+alloy-network = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy-contract = { workspace = true }
+anyhow = { workspace = true }
+
 ethereum-bridge = { path = "../chains/ethereum" }
 movement-bridge = { path = "../chains/movement" }

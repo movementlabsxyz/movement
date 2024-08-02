@@ -1,37 +1,62 @@
+use alloy::{
+	node_bindings::Anvil, primitives::U256, providers::ProviderBuilder,
+	signers::local::PrivateKeySigner,
+};
+use alloy_network::EthereumWallet;
+use alloy_sol_types::sol;
+use anyhow::{Error, Result};
 use ethereum_bridge::{Config as EthConfig, EthClient};
 use movement_bridge::{Config as MovementConfig, MovementClient};
 
+sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiator,
+	"../chains/ethereum/abis/AtomicBridgeInitiator.json"
+);
+
+sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeCounterparty,
+	"../chains/ethereum/abis/AtomicBridgeCounterparty.json"
+);
+
 pub struct BridgeScaffold {
-	pub eth_client: EthClient,
-	pub movement_client: MovementClient,
+	pub eth_client: Option<EthClient>,
+	pub movement_client: Option<MovementClient>,
 }
 
 impl BridgeScaffold {
-	pub async fn new() -> Self {
-		let eth_client = EthClient::new(EthConfig::default()).await;
-		let movement_client = MovementClient::new(MovementConfig::default()).await;
-		Self { eth_client, movement_client }
+	pub async fn new_only_eth() -> Self {
+		let eth_client =
+			EthClient::new(EthConfig::default()).await.expect("Failed to create EthClient");
+		Self { eth_client: Some(eth_client), movement_client: None }
 	}
 
 	/// Compile and deploy a contract
-	pub async fn deploy_contract(&self, contract_path: &str) -> Contract {
-		// Compile the contract using solc
-		let compiled = Solc::default().compile_source(contract_path).expect("Failed to compile");
+	pub async fn deploy_contract(&self) -> Result<()> {
+		// Spin up a local Anvil node.
+		// Ensure `anvil` is available in $PATH.
+		let anvil = Anvil::new().try_spawn()?;
 
-		let (abi, bytecode) = compiled
-			.get(&compiled.contracts[0].id)
-			.expect("Contract not found")
-			.into_parts();
+		// Set up signer from the first default Anvil account (Alice).
+		let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
+		let wallet = EthereumWallet::from(signer);
 
-		// Deploy the contract
-		let factory = ContractFactory::new(abi, bytecode, self.client.clone());
-		let contract = factory
-			.deploy(())
-			.expect("Failed to deploy contract")
-			.send()
-			.await
-			.expect("Contract deployment failed");
+		// Create a provider with the wallet.
+		let rpc_url = anvil.endpoint().parse()?;
+		let provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.wallet(wallet)
+			.on_http(rpc_url);
 
-		contract
+		println!("Anvil running at `{}`", anvil.endpoint());
+
+		// Deploy the `Counter` contract.
+		let contract = AtomicBridgeInitiator::deploy(&provider).await?;
+
+		println!("Deployed contract at address: {}", contract.address());
+		Ok(())
 	}
 }
