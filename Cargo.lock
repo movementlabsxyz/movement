@@ -3535,8 +3535,13 @@ dependencies = [
 
 [[package]]
 name = "bridge-integration-tests"
-version = "0.1.0"
+version = "0.0.2"
 dependencies = [
+ "alloy",
+ "alloy-contract",
+ "alloy-network",
+ "alloy-sol-types",
+ "anyhow",
  "ethereum-bridge",
  "movement-bridge",
 ]
