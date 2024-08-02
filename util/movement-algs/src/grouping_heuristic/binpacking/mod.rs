@@ -104,3 +104,18 @@ mod block {
 		}
 	}
 }
+
+mod shared {
+
+	use super::*;
+	use std::sync::Arc;
+
+	impl<T> BinpackingWeighted for Arc<T>
+	where
+		T: BinpackingWeighted,
+	{
+		fn weight(&self) -> usize {
+			self.as_ref().weight()
+		}
+	}
+}

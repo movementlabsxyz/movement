@@ -97,7 +97,7 @@ impl LightNodeV1 {
 		}
 	}
 
-	async fn submit_blocks(&self, blocks: &Vec<Block>) -> Result<(), anyhow::Error> {
+	async fn submit_blocks(&self, blocks: &Vec<Arc<Block>>) -> Result<(), anyhow::Error> {
 		let uid = LOGGING_UID.load(Ordering::SeqCst);
 		info!(
 			target: "movement_timing",
@@ -124,14 +124,17 @@ impl LightNodeV1 {
 	}
 
 	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
-		let mut heuristic: GroupingHeuristicStack<Block> = GroupingHeuristicStack::new(vec![
+		let mut heuristic: GroupingHeuristicStack<Arc<Block>> = GroupingHeuristicStack::new(vec![
 			DropSuccess::boxed(),
 			ToApply::boxed(),
 			SkipFor::boxed(1, Splitting::boxed(2)),
 			FirstFitBinpacking::boxed(1_700_000),
 		]);
 
-		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
+		// convert the Vec<Block> to Vec<Arc<Block>> for cheap cloning
+		let block_arcs = blocks.iter().map(|b| Arc::new(b.clone())).collect::<Vec<_>>();
+
+		let start_distribution = GroupingOutcome::new_apply_distribution(block_arcs);
 		let block_group_results = heuristic
 			.run_async_sequential_with_metadata(
 				start_distribution,

@@ -1,5 +1,6 @@
 pub mod apply;
 pub mod binpacking;
+pub mod catch;
 pub mod chunking;
 pub mod drop_success;
 pub mod skip;
