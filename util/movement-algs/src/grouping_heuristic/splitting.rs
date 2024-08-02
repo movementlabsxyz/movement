@@ -119,3 +119,18 @@ mod block {
 		}
 	}
 }
+
+mod shared {
+
+	use super::*;
+	use std::sync::Arc;
+
+	impl<T> Splitable for Arc<T>
+	where
+		T: Splitable,
+	{
+		fn split(self, factor: usize) -> Vec<Self> {
+			self.to_owned().into_inner().split(factor).into_iter().map(Arc::new).collect()
+		}
+	}
+}
