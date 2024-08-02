@@ -21,6 +21,7 @@ prost = { workspace = true }
 m1-da-light-node-grpc = { workspace = true, features = ["server"] }
 m1-da-light-node-util = { workspace = true }
 m1-da-light-node-verifier = { workspace = true }
+movement-algs = { workspace = true }
 movement-types = { workspace = true }
 celestia-rpc = { workspace = true }
 celestia-types = { workspace = true }
@@ -40,7 +41,6 @@ bcs = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }
-
 
 
 [features]

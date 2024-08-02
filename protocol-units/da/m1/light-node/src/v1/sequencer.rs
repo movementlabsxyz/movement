@@ -15,13 +15,11 @@ use std::{fmt::Debug, path::PathBuf};
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
-use movement_types::{
-	algs::grouping_heuristic::{
-		apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
-		splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
-	},
-	Block,
+use movement_algs::grouping_heuristic::{
+	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
+	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
 };
+use movement_types::Block;
 use std::boxed::Box;
 use tokio::{
 	sync::mpsc::{Receiver, Sender},

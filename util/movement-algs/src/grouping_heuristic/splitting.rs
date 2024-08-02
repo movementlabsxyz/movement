@@ -1,4 +1,4 @@
-use crate::algs::grouping_heuristic::{
+use crate::grouping_heuristic::{
 	ElementalFailure, ElementalOutcome, GroupingHeuristic, GroupingOutcome,
 };
 use itertools::Itertools;
@@ -98,7 +98,7 @@ impl<T> Splitable for Vec<T> {
 mod block {
 
 	use super::*;
-	use crate::Block;
+	use movement_types::Block;
 
 	impl Splitable for Block {
 		fn split(self, factor: usize) -> Vec<Self> {

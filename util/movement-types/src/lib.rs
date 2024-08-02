@@ -1,7 +1,6 @@
-pub mod algs;
 use aptos_types::state_proof::StateProof;
-use serde::{Deserialize, Serialize};
 use core::fmt;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id(pub [u8; 32]);
@@ -39,7 +38,7 @@ impl fmt::Display for Id {
 pub struct Transaction {
 	pub data: Vec<u8>,
 	pub sequence_number: u64,
-	pub id : Id,
+	pub id: Id,
 }
 
 impl Transaction {
@@ -104,12 +103,11 @@ pub struct Block {
 	pub metadata: BlockMetadata,
 	pub parent: Vec<u8>,
 	pub transactions: Vec<Transaction>,
-	pub id : Id,
+	pub id: Id,
 }
 
 impl Block {
 	pub fn new(metadata: BlockMetadata, parent: Vec<u8>, transactions: Vec<Transaction>) -> Self {
-
 		let mut hasher = blake3::Hasher::new();
 		hasher.update(&parent);
 		for transaction in &transactions {
@@ -125,11 +123,7 @@ impl Block {
 	}
 
 	pub fn test() -> Self {
-		Self::new(
-			BlockMetadata::BlockMetadata,
-			vec![0],
-			vec![Transaction::test()],
-		)
+		Self::new(BlockMetadata::BlockMetadata, vec![0], vec![Transaction::test()])
 	}
 
 	pub fn add_transaction(&mut self, transaction: Transaction) {

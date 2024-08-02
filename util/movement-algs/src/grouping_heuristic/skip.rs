@@ -1,4 +1,4 @@
-use crate::algs::grouping_heuristic::{GroupingHeuristic, GroupingOutcome};
+use crate::grouping_heuristic::{GroupingHeuristic, GroupingOutcome};
 
 pub struct Skip<T>(pub Box<dyn GroupingHeuristic<T>>);
 

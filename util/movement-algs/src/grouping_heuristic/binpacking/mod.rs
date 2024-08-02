@@ -3,7 +3,7 @@ pub use first_fit_decreasing::*;
 pub mod first_fit;
 pub use first_fit::*;
 
-use crate::algs::grouping_heuristic::{ElementalFailure, ElementalOutcome};
+use crate::grouping_heuristic::{ElementalFailure, ElementalOutcome};
 
 pub trait BinpackingWeighted {
 	fn weight(&self) -> usize;
@@ -72,7 +72,7 @@ pub mod numeric {
 mod block {
 
 	use super::*;
-	use crate::{Block, Id, Transaction};
+	use movement_types::{Block, Id, Transaction};
 
 	impl BinpackingWeighted for Id {
 		fn weight(&self) -> usize {

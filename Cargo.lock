@@ -7415,6 +7415,7 @@ dependencies = [
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-algs",
  "movement-tracing",
  "movement-types",
  "prost",
@@ -8621,6 +8622,16 @@ dependencies = [
  "smallbitvec",
  "smallvec",
  "triomphe",
+]
+
+[[package]]
+name = "movement-algs"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "itertools 0.12.1",
+ "movement-types",
+ "tokio",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-use crate::algs::grouping_heuristic::{
+use crate::grouping_heuristic::{
     GroupingHeuristic,
     GroupingOutcome
 };

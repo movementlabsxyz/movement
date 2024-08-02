@@ -1,4 +1,4 @@
-use crate::algs::grouping_heuristic::{
+use crate::grouping_heuristic::{
     GroupingHeuristic,
     GroupingOutcome,
 };
@@ -82,7 +82,7 @@ where T: BinpackingWeighted {
 pub mod test {
 
     use super::*;
-    use crate::algs::grouping_heuristic::ElementalOutcome;
+    use crate::grouping_heuristic::ElementalOutcome;
 
     #[test]
     fn test_first_fit_binpacking() -> Result<(), anyhow::Error> {
