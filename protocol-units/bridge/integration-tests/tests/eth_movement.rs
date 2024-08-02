@@ -40,3 +40,19 @@ async fn test_client_should_build_and_fetch_accounts() {
 		assert_eq!(account, expected);
 	}
 }
+
+#[tokio::test]
+async fn test_client_should_deploy_contract() {
+	let scaffold: BridgeScaffold = BridgeScaffold::new_only_eth().await;
+	if scaffold.eth_client.is_none() {
+		panic!("EthClient was not initialized properly.");
+	}
+
+	// Start Anvil with the fixed port
+	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
+	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
+	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	let contract = AtomicBridgeInitiator::deploy(&provider)
+		.await
+		.expect("Failed to deploy contract");
+}
