@@ -8,7 +8,7 @@ async fn test_eth_to_movement() {
 		panic!("EthClient was not initialized properly.");
 	}
 
-	let provider = scaffold.eth_client.unwrap().rpc_provider.clone();
+	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
 	println!("Provider: {:?}", provider);
 	let accounts = provider.get_accounts().await.expect("Failed to get accounts");
 }

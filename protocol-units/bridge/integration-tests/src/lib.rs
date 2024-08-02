@@ -31,8 +31,9 @@ pub struct BridgeScaffold {
 
 impl BridgeScaffold {
 	pub async fn new_only_eth() -> Self {
-		let eth_client =
-			EthClient::new(EthConfig::default()).await.expect("Failed to create EthClient");
+		let eth_client = EthClient::new(EthConfig::build_for_test())
+			.await
+			.expect("Failed to create EthClient");
 		Self { eth_client: Some(eth_client), movement_client: None }
 	}
 
@@ -40,7 +41,7 @@ impl BridgeScaffold {
 	pub async fn deploy_contract(&self) -> Result<()> {
 		let eth_client = self.eth_client.as_ref().expect("EthClient not found");
 		// Start Anvil with the fixed port
-		let anvil = Anvil::new().port(eth_client.rpc_port).spawn();
+		let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 
 		// Set up signer from the first default Anvil account (Alice).
 		let signer: PrivateKeySigner = anvil.keys()[0].clone().into();
