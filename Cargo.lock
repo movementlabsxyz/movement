@@ -3544,6 +3544,9 @@ dependencies = [
  "anyhow",
  "ethereum-bridge",
  "movement-bridge",
+ "reqwest 0.12.5",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

@@ -11,11 +11,16 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+anyhow = { workspace = true }
 alloy = { workspace = true }
+reqwest = { workspace = true }
 alloy-network = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-contract = { workspace = true }
-anyhow = { workspace = true }
+serde_json = { workspace = true }
 
 ethereum-bridge = { path = "../chains/ethereum" }
 movement-bridge = { path = "../chains/movement" }
+
+[dev-dependencies]
+tokio = { workspace = true }

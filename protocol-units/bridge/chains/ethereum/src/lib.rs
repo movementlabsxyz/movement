@@ -82,28 +82,38 @@ struct EthBridgeTransferDetails {
 	pub state: u8,
 }
 
+#[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: utils::AlloyProvider,
-	ws_provider: RootProvider<PubSubFrontend>,
-	initiator_contract: Option<EthAddress>,
-	counterparty_contract: Option<EthAddress>,
+	pub rpc_provider: utils::AlloyProvider,
+	pub rpc_port: u16,
+	pub ws_provider: Option<RootProvider<PubSubFrontend>>,
+	pub initiator_contract: Option<EthAddress>,
+	pub counterparty_contract: Option<EthAddress>,
 }
 
 impl EthClient {
 	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
 		let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
+		println!("signer {:?}", signer);
+
 		let rpc_url = config.rpc_url.context("rpc_url not set")?;
-		let ws_url = config.ws_url.context("ws_url not set")?;
+		//let ws_url = config.ws_url.context("ws_url not set")?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(signer.clone()))
 			.on_builtin(&rpc_url)
 			.await?;
-		let ws = WsConnect::new(ws_url);
-		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+
+		let cloned = rpc_provider.clone();
+
+		// let ws = WsConnect::new(ws_url);
+		// println!("ws {:?}", ws);
+		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+		// println!("ws_provider {:?}", ws_provider);
 		Ok(EthClient {
 			rpc_provider,
-			ws_provider,
+			rpc_port: 8545,
+			ws_provider: None,
 			initiator_contract: config.initiator_contract,
 			counterparty_contract: config.counterparty_contract,
 		})
@@ -316,12 +326,5 @@ impl EthClient {
 			Some(address) => Ok(address.0),
 			None => Err(BridgeContractCounterpartyError::CounterpartyAddressNotSet),
 		}
-	}
-}
-
-// See tracking issue: https://github.com/movementlabsxyz/movement/issues/250
-impl Clone for EthClient {
-	fn clone(&self) -> Self {
-		todo!()
 	}
 }

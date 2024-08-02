@@ -1,5 +1,7 @@
 use alloy::{
-	node_bindings::Anvil, primitives::U256, providers::ProviderBuilder,
+	node_bindings::Anvil,
+	primitives::U256,
+	providers::{Provider, ProviderBuilder},
 	signers::local::PrivateKeySigner,
 };
 use alloy_network::EthereumWallet;
@@ -36,9 +38,9 @@ impl BridgeScaffold {
 
 	/// Compile and deploy a contract
 	pub async fn deploy_contract(&self) -> Result<()> {
-		// Spin up a local Anvil node.
-		// Ensure `anvil` is available in $PATH.
-		let anvil = Anvil::new().try_spawn()?;
+		let eth_client = self.eth_client.as_ref().expect("EthClient not found");
+		// Start Anvil with the fixed port
+		let anvil = Anvil::new().port(eth_client.rpc_port).spawn();
 
 		// Set up signer from the first default Anvil account (Alice).
 		let signer: PrivateKeySigner = anvil.keys()[0].clone().into();

@@ -12,9 +12,7 @@ use alloy_provider::{
 use alloy_rlp::{Encodable, RlpDecodable, RlpEncodable};
 use alloy_rpc_types::TransactionReceipt;
 use alloy_transport::{BoxTransport, Transport};
-use bridge_shared::bridge_contracts::BridgeContractInitiatorError;
 use keccak_hash::keccak;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 pub(crate) type AlloyProvider = FillProvider<
