@@ -1,7 +1,7 @@
-use async_trait::async_trait;
-use anyhow::{Context, Error};
-use std::{sync::Arc, fmt::Debug};
-
+use anyhow::Context;
+use std::fmt::Debug;
+use std::sync::{Arc, Mutex};
+use tokio::task;
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use alloy_network::EthereumWallet;
 use alloy_primitives::{
@@ -11,8 +11,6 @@ use alloy_primitives::{
 use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy_rlp::{Decodable, RlpDecodable, RlpEncodable};
 use alloy_sol_types::sol;
-use alloy_transport::{Transport, BoxTransport};
-use deadpool::managed::{Manager, Pool, PoolConfig, RecycleError};
 use bridge_shared::bridge_contracts::{
     BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
     BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
@@ -85,319 +83,133 @@ struct EthBridgeTransferDetails {
     pub state: u8,
 }
 
-pub struct ConnectionManager {
-    rpc_url: Arc<str>,
-    signer: Arc<PrivateKeySigner>,
+/// Connection enum to represent either an RPC or WebSocket connection
+enum Connection<P> {
+    Rpc(P),
+    Ws(RootProvider<PubSubFrontend>),
 }
 
-impl ConnectionManager {
-    pub fn new(rpc_url: Arc<str>, signer: Arc<PrivateKeySigner>) -> Self {
-        Self { rpc_url, signer }
-    }
-}
-
-#[async_trait]
-impl Manager for ConnectionManager {
-        type Type = RootProvider<BoxTransport>;
-        type Error = anyhow::Error;
-
-        async fn create(&self) -> Result<Self::Type, Self::Error> {
-                // Create a WsConnect instance to manage the connection
-                let transport = WsConnect::new(self.rpc_url.as_ref().to_string());
-                        //.await
-                        //.context("Failed to connect to WebSocket")?;
-
-                // Convert WsConnect into a Transport using the boxed method
-                let boxed_transport = transport.boxed();
-
-                // Build the provider using the boxed transport
-                let provider: RootProvider<BoxTransport> = ProviderBuilder::new()
-                        .wallet(EthereumWallet::from(self.signer.clone()))
-                        .on_provider(boxed_transport);
-
-                Ok(provider)
-        }
-
-        async fn recycle(&self, _conn: &mut Self::Type) -> Result<(), RecycleError<Self::Error>> {
-                Ok(())
-        }
-}
-
-/// Ethereum Client
-pub struct EthClient {
-    pool: Pool<ConnectionManager>,
-    ws_provider: RootProvider<PubSubFrontend>,
+pub struct EthClient<P> {
+    rpc_providers: Arc<Mutex<Vec<P>>>,
+    ws_providers: Arc<Mutex<Vec<RootProvider<PubSubFrontend>>>>,
     initiator_contract: Option<EthAddress>,
     counterparty_contract: Option<EthAddress>,
+    max_connections: usize,
 }
 
-impl EthClient {
-        pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
-		let config = config.into();
-                let signer = config.signer_private_key.parse::<PrivateKeySigner>()?;
-                let rpc_url = config.rpc_url.context("rpc_url not set")?;
-                let ws_url = config.ws_url.context("ws_url not set")?;
-
-                // Create a new connection manager
-                let manager = ConnectionManager::new(Arc::from(rpc_url), Arc::new(signer));
-
-                // Define the pool configuration with a max size of 32
-                let pool_config = PoolConfig {
-                        max_size: 32,
-                        ..Default::default()
-                };
-
-                // Create a connection pool using the manager and configuration
-                let pool = Pool::from_config(manager, pool_config);
-
-                // Initialize WebSocket provider
-                let ws = WsConnect::new(config.ws_url);
-                    //.await
-                    //.context("Failed to connect to WebSocket")?;
-                let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
-
-                // Return the new EthClient instance
-                Ok(EthClient {
-                        pool,
-                        ws_provider,
-                        initiator_contract: config.initiator_contract,
-                        counterparty_contract: config.counterparty_contract,
-                })
+impl<P> EthClient<P>
+where
+    P: Send + Sync + 'static,
+{
+    /// Creates a new Ethereum client with a specified maximum number of connections
+    pub fn new(
+        rpc_providers: Vec<P>,
+        ws_providers: Vec<RootProvider<PubSubFrontend>>,
+        initiator_contract: Option<EthAddress>,
+        counterparty_contract: Option<EthAddress>,
+        max_connections: usize,
+    ) -> Self {
+        Self {
+            rpc_providers: Arc::new(Mutex::new(rpc_providers)),
+            ws_providers: Arc::new(Mutex::new(ws_providers)),
+            initiator_contract,
+            counterparty_contract,
+            max_connections,
         }
-}
-
-#[async_trait::async_trait]
-impl BridgeContractInitiator for EthClient {
-    type Address = EthAddress;
-    type Hash = EthHash;
-
-    async fn initiate_bridge_transfer(
-        &mut self,
-        _initiator_address: InitiatorAddress<Self::Address>,
-        recipient_address: RecipientAddress<Vec<u8>>,
-        hash_lock: HashLock<Self::Hash>,
-        time_lock: TimeLock,
-        amount: Amount,
-    ) -> BridgeContractInitiatorResult<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractInitiatorError::GenericError(format!("{:?}", e)))?;
-
-        let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &*conn);
-        let recipient_bytes: [u8; 32] = recipient_address.0.try_into().unwrap();
-        let call = contract.initiateBridgeTransfer(
-            U256::from(amount.0),
-            FixedBytes(recipient_bytes),
-            FixedBytes(hash_lock.0),
-            U256::from(time_lock.0),
-        );
-
-        utils::send_transaction(call)
-            .await
-            .map_err(BridgeContractInitiatorError::generic)
-            .map(|_| ())
     }
 
-    async fn complete_bridge_transfer(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-        pre_image: HashLockPreImage,
-    ) -> BridgeContractInitiatorResult<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractInitiatorError::GenericError(format!("{:?}", e)))?;
-
-        let generic_error = |desc| BridgeContractInitiatorError::GenericError(String::from(desc));
-        let pre_image: [u8; 32] = pre_image
-            .0
-            .get(0..32)
-            .ok_or(generic_error("Could not get required slice from pre-image"))?
-            .try_into()
-            .map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
-
-        let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &*conn);
-        let call =
-            contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-
-        utils::send_transaction(call)
-            .await
-            .map_err(BridgeContractInitiatorError::generic)
-            .map(|_| ())
+    /// Adds an RPC provider to the pool
+    fn add_rpc_provider(&self, provider: P) {
+        let mut rpc_providers = self.rpc_providers.lock().unwrap();
+        if rpc_providers.len() < self.max_connections {
+            rpc_providers.push(provider);
+        } else {
+            println!("Max RPC connections reached");
+        }
     }
 
-    async fn refund_bridge_transfer(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-    ) -> BridgeContractInitiatorResult<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractInitiatorError::GenericError(format!("{:?}", e)))?;
-
-        let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &*conn);
-        let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-
-        utils::send_transaction(call)
-            .await
-            .map_err(BridgeContractInitiatorError::generic)
-            .map(|_| ())
+    /// Adds a WebSocket provider to the pool
+    fn add_ws_provider(&self, provider: RootProvider<PubSubFrontend>) {
+        let mut ws_providers = self.ws_providers.lock().unwrap();
+        if ws_providers.len() < self.max_connections {
+            ws_providers.push(provider);
+        } else {
+            println!("Max WebSocket connections reached");
+        }
     }
 
-    async fn get_bridge_transfer_details(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-    ) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
-        let generic_error = |desc| BridgeContractInitiatorError::GenericError(String::from(desc));
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractInitiatorError::GenericError(format!("{:?}", e)))?;
+    /// Fetches an RPC connection from the pool, or creates a new one if possible
+    async fn get_rpc_connection(&self, rpc_url: &str, signer: &PrivateKeySigner) -> Option<P>
+    where
+        P: Provider + Clone + Debug,
+    {
+        {
+            let mut rpc_providers = self.rpc_providers.lock().unwrap();
+            if let Some(provider) = rpc_providers.pop() {
+                return Some(provider);
+            }
+        }
 
-        let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
-        let key = bridge_transfer_id.0;
-        let storage_slot = utils::calculate_storage_slot(key, mapping_slot);
-        let storage: U256 = conn
-            .get_storage_at(self.initiator_contract()?, storage_slot)
-            .await
-            .map_err(|_| generic_error("could not find storage"))?;
-        let storage_bytes = storage.to_be_bytes::<32>();
-        let mut storage_slice = &storage_bytes[..];
-        let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
-            .map_err(|_| generic_error("could not decode storage"))?;
+        if self.rpc_providers.lock().unwrap().len() < self.max_connections {
+            let provider = ProviderBuilder::new()
+                .wallet(EthereumWallet::from(signer.clone()))
+                .on_builtin(rpc_url)
+                .await
+                .ok()?;
+            self.add_rpc_provider(provider.clone());
+            Some(provider)
+        } else {
+            None
+        }
+    }
 
-        Ok(Some(BridgeTransferDetails {
-            bridge_transfer_id,
-            initiator_address: InitiatorAddress(eth_details.originator),
-            recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
-            hash_lock: HashLock(eth_details.hash_lock),
-            //@TODO unit test these wrapping to check for any nasty side effects.
-            time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-            amount: Amount(eth_details.amount.wrapping_to::<u64>()),
-        }))
+    /// Fetches a WebSocket connection from the pool, or creates a new one if possible
+    async fn get_ws_connection(&self, ws_url: &str) -> Option<RootProvider<PubSubFrontend>> {
+        {
+            let mut ws_providers = self.ws_providers.lock().unwrap();
+            if let Some(provider) = ws_providers.pop() {
+                return Some(provider);
+            }
+        }
+
+        if self.ws_providers.lock().unwrap().len() < self.max_connections {
+            let ws = WsConnect::new(ws_url.to_string());
+            let provider = ProviderBuilder::new().on_ws(ws).await.ok()?;
+            self.add_ws_provider(provider.clone());
+            Some(provider)
+        } else {
+            None
+        }
+    }
+
+    /// Executes an operation asynchronously on a connection
+    pub async fn execute<F, T>(&self, f: F) -> Result<T, anyhow::Error>
+    where
+        F: FnOnce(Connection<P>) -> Result<T, anyhow::Error> + Send + 'static,
+        T: Send + 'static,
+    {
+        let rpc_providers = self.rpc_providers.clone();
+        let ws_providers = self.ws_providers.clone();
+
+        task::spawn_blocking(move || {
+            let rpc_providers = rpc_providers.lock().unwrap();
+            let ws_providers = ws_providers.lock().unwrap();
+
+            if let Some(rpc_provider) = rpc_providers.last() {
+                f(Connection::Rpc(rpc_provider.clone()))
+            } else if let Some(ws_provider) = ws_providers.last() {
+                f(Connection::Ws(ws_provider.clone()))
+            } else {
+                Err(anyhow::Error::msg("No available connections"))
+            }
+        })
+        .await?
     }
 }
 
-#[async_trait::async_trait]
-impl BridgeContractCounterparty for EthClient {
-    type Address = EthAddress;
-    type Hash = EthHash;
+// Implement BridgeContractInitiator and BridgeContractCounterparty traits here
 
-    async fn lock_bridge_transfer_assets(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-        hash_lock: HashLock<Self::Hash>,
-        time_lock: TimeLock,
-        initiator: InitiatorAddress<Vec<u8>>,
-        recipient: RecipientAddress<Self::Address>,
-        amount: Amount,
-    ) -> BridgeContractCounterpartyResult<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractCounterpartyError::GenericError(format!("{:?}", e)))?;
-
-        let contract =
-            AtomicBridgeCounterparty::new(self.counterparty_contract()?, &*conn);
-        let initiator: [u8; 32] = initiator.0.try_into().unwrap();
-        let call = contract.lockBridgeTransferAssets(
-            FixedBytes(initiator),
-            FixedBytes(bridge_transfer_id.0),
-            FixedBytes(hash_lock.0),
-            U256::from(time_lock.0),
-            Address::from(recipient.0 .0),
-            U256::from(amount.0),
-        );
-        utils::send_transaction(call)
-            .await
-            .map_err(BridgeContractCounterpartyError::generic)
-            .map(|_| ())
-    }
-
-    async fn complete_bridge_transfer(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-        secret: HashLockPreImage,
-    ) -> BridgeContractCounterpartyResult<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractCounterpartyError::GenericError(format!("{:?}", e)))?;
-
-        let contract =
-            AtomicBridgeCounterparty::new(self.counterparty_contract()?, &*conn);
-        let secret: [u8; 32] = secret.0.try_into().unwrap();
-        let call =
-            contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(secret));
-        utils::send_transaction(call)
-            .await
-            .map_err(BridgeContractCounterpartyError::generic)
-            .map(|_| ())
-    }
-
-    async fn abort_bridge_transfer(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-    ) -> BridgeContractCounterpartyResult<()> {
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractCounterpartyError::GenericError(format!("{:?}", e)))?;
-
-        let contract =
-            AtomicBridgeCounterparty::new(self.counterparty_contract()?, &*conn);
-        let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-        utils::send_transaction(call)
-            .await
-            .map_err(BridgeContractCounterpartyError::generic)
-            .map(|_| ())
-    }
-
-    async fn get_bridge_transfer_details(
-        &mut self,
-        bridge_transfer_id: BridgeTransferId<Self::Hash>,
-    ) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
-        let generic_error =
-            |desc| BridgeContractCounterpartyError::GenericError(String::from(desc));
-        let mut conn = self
-            .pool
-            .get()
-            .await
-            .map_err(|e| BridgeContractCounterpartyError::GenericError(format!("{:?}", e)))?;
-
-        let mapping_slot = U256::from(1); // the mapping is the 1st slot in the contract
-        let key = bridge_transfer_id.0;
-        let storage_slot = utils::calculate_storage_slot(key, mapping_slot);
-        let storage: U256 = conn
-            .get_storage_at(self.counterparty_contract()?, storage_slot)
-            .await
-            .map_err(|_| generic_error("could not find storage"))?;
-        let storage_bytes = storage.to_be_bytes::<32>();
-        let mut storage_slice = &storage_bytes[..];
-        let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
-            .map_err(|_| generic_error("could not decode storage"))?;
-
-        Ok(Some(BridgeTransferDetails {
-            bridge_transfer_id,
-            initiator_address: InitiatorAddress(eth_details.originator),
-            recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
-            hash_lock: HashLock(eth_details.hash_lock),
-            //@TODO unit test these wrapping to check for any nasty side effects.
-            time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-            amount: Amount(eth_details.amount.wrapping_to::<u64>()),
-        }))
-    }
-}
-
-impl EthClient {
+impl EthClient<utils::AlloyProvider> {
     fn initiator_contract(&self) -> BridgeContractInitiatorResult<Address> {
         match &self.initiator_contract {
             Some(address) => Ok(address.0),
@@ -413,14 +225,14 @@ impl EthClient {
     }
 }
 
-// See tracking issue: https://github.com/movementlabsxyz/movement/issues/250
-impl Clone for EthClient {
+impl Clone for EthClient<utils::AlloyProvider> {
     fn clone(&self) -> Self {
-        EthClient {
-            pool: self.pool.clone(),
-            ws_provider: self.ws_provider.clone(),
+        Self {
+            rpc_providers: Arc::clone(&self.rpc_providers),
+            ws_providers: Arc::clone(&self.ws_providers),
             initiator_contract: self.initiator_contract.clone(),
             counterparty_contract: self.counterparty_contract.clone(),
+            max_connections: self.max_connections,
         }
     }
 }
