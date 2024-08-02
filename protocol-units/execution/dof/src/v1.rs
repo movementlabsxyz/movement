@@ -2,18 +2,18 @@ use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, Signed
 use aptos_api::runtime::Apis;
 use aptos_config::config::NodeConfig;
 use aptos_mempool::core_mempool::CoreMempool;
+use async_channel::Sender;
+use async_trait::async_trait;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::transaction_pipe::TransactionPipeError;
 use maptos_opt_executor::Executor as OptExecutor;
 use movement_types::BlockCommitment;
-use async_channel::Sender;
-use async_trait::async_trait;
-use tracing::{debug, info};
-use tokio::time::interval;
-use tokio_stream::wrappers::IntervalStream;
-use tokio::time::Duration;
-use tokio_stream::StreamExt;
 use std::sync::atomic::Ordering;
+use tokio::time::interval;
+use tokio::time::Duration;
+use tokio_stream::wrappers::IntervalStream;
+use tokio_stream::StreamExt;
+use tracing::{debug, info};
 
 #[derive(Clone)]
 pub struct Executor {
@@ -43,14 +43,12 @@ impl Executor {
 		)?;
 		Ok(Self::new(executor, finality_view, transaction_channel))
 	}
-
 }
 
 #[async_trait]
 impl DynOptFinExecutor for Executor {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
-		
 		tokio::try_join!(
 			self.executor.run_service(),
 			self.executor.run_indexer_grpc_service(),
@@ -70,7 +68,11 @@ impl DynOptFinExecutor for Executor {
 			// readers should be able to run concurrently
 			match self
 				.executor
-				.tick_transaction_pipe(&mut core_mempool, self.transaction_channel.clone(), &mut last_gc)
+				.tick_transaction_pipe(
+					&mut core_mempool,
+					self.transaction_channel.clone(),
+					&mut last_gc,
+				)
 				.await
 			{
 				Ok(_) => {}
@@ -134,21 +136,21 @@ impl DynOptFinExecutor for Executor {
 		self.executor.rollover_genesis_now().await
 	}
 
-	fn decrement_transactions_in_flight(&self, count : u64) {
-		
+	fn decrement_transactions_in_flight(&self, count: u64) {
 		// fetch sub mind the underflow
 		// a semaphore might be better here as this will rerun until the value does not change during the operation
-		self.executor.transactions_in_flight.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
-			info!(
-				target: "movement_timing",
-				count,
-				current,
-				"decrementing_transactions_in_flight",
-			);
-			Some(current.saturating_sub(count))
-		}).unwrap_or_else(|_| 0);
-
-
+		self.executor
+			.transactions_in_flight
+			.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+				info!(
+					target: "movement_timing",
+					count,
+					current,
+					"decrementing_transactions_in_flight",
+				);
+				Some(current.saturating_sub(count))
+			})
+			.unwrap_or_else(|_| 0);
 	}
 }
 

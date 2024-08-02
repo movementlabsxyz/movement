@@ -1,7 +1,7 @@
 use super::Executor;
 use aptos_api::{
 	get_api_service,
-	runtime::{get_apis, Apis, root_handler},
+	runtime::{get_apis, root_handler, Apis},
 	set_failpoints,
 };
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
@@ -14,7 +14,7 @@ impl Executor {
 
 	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
 		info!("Starting maptos-opt-executor services at: {:?}", self.listen_url);
-		
+
 		let api_service =
 			get_api_service(self.context()).server(format!("http://{:?}", self.listen_url));
 
@@ -31,7 +31,7 @@ impl Executor {
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
 			.at("/spec.json", poem::get(spec_json))
-            .at("/spec.yaml", poem::get(spec_yaml))
+			.at("/spec.yaml", poem::get(spec_yaml))
 			.at(
 				"/set_failpoint",
 				poem::get(set_failpoints::set_failpoint_poem).data(self.context()),
@@ -50,6 +50,7 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use aptos_mempool::core_mempool::CoreMempool;
 	use aptos_mempool::MempoolClientRequest;
 	use aptos_types::{
 		account_config, mempool_status::MempoolStatusCode, test_helpers::transaction_test_helpers,
@@ -59,7 +60,6 @@ mod tests {
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
-	use aptos_mempool::core_mempool::CoreMempool;
 
 	fn create_signed_transaction(
 		sequence_number: u64,
@@ -97,7 +97,9 @@ mod tests {
 		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
 		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
-		executor.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now()).await?;
+		executor
+			.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now())
+			.await?;
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;
