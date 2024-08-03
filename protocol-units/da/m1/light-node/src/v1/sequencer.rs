@@ -107,12 +107,15 @@ impl LightNodeV1 {
 
 	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
 		// wrap the blocks in a struct that can be split and compressed
-		let blocks = blocks
-			.into_iter()
-			.map(|block| {
-				block::WrappedBlock::try_new(block, self.pass_through.celestia_namespace.clone())
-			})
-			.collect::<Result<Vec<_>, anyhow::Error>>()?;
+		// spawn blocking because the compression is blocking and could be slow
+		let namespace = self.pass_through.celestia_namespace.clone();
+		let blocks = tokio::task::spawn_blocking(move || {
+			blocks
+				.into_iter()
+				.map(|block| block::WrappedBlock::try_new(block, namespace))
+				.collect::<Result<Vec<_>, anyhow::Error>>()
+		})
+		.await??;
 
 		let mut heuristic: GroupingHeuristicStack<block::WrappedBlock> =
 			GroupingHeuristicStack::new(vec![

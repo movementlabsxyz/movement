@@ -91,7 +91,10 @@ where
 		Ok((node, background_task))
 	}
 
-	pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+	async fn next_transaction_batch_write(
+		&self,
+		sender: Sender<BatchWriteRequest>,
+	) -> Result<(), anyhow::Error> {
 		// limit the total time batching transactions
 		let start = std::time::Instant::now();
 		let (_, half_building_time) = self
@@ -147,30 +150,55 @@ where
 			}
 		}
 
-		let length = transactions.len();
-		if length > 0 {
-			let mut light_node_client = self.light_node_client.clone();
-			let span = info_span!(
-				target: "movement_timing",
-				"batch_write",
-				batch_id = %batch_id,
-				length = length
-			);
-			light_node_client
-				.batch_write(BatchWriteRequest { blobs: transactions })
-				.instrument(span)
-				.await?;
-			// We now consider the transactions no longer in mempool flight.
-			self.executor.decrement_transactions_in_flight(length as u64);
+		if transactions.len() > 0 {
+			let batch_write = BatchWriteRequest { blobs: transactions };
+			sender.send(batch_write).await?;
 		}
 
 		Ok(())
 	}
 
+	pub async fn send_transaction_batch_writes(
+		&self,
+		sender: Sender<BatchWriteRequest>,
+	) -> Result<(), anyhow::Error> {
+		loop {
+			self.next_transaction_batch_write(sender.clone()).await?;
+		}
+	}
+
+	pub async fn submit_transaction_batch_writes(
+		&self,
+		receiver: Receiver<BatchWriteRequest>,
+	) -> Result<(), anyhow::Error> {
+		loop {
+			let batch_write = receiver.recv().await?;
+			let mut light_node_client = self.light_node_client.clone();
+			// batch_writes can be submitted in parallel without waiting for the previous one to finish
+			tokio::spawn(async move {
+				light_node_client.batch_write(batch_write).await?;
+				Ok::<(), anyhow::Error>(())
+			});
+		}
+	}
+
 	pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		loop {
-			self.tick_write_transactions_to_da().await?;
+			let (batch_sender, batch_receiver) = async_channel::unbounded();
+
+			// run send transaction batch writes and submit transaction batch writes concurrently
+			match tokio::try_join!(
+				self.send_transaction_batch_writes(batch_sender),
+				self.submit_transaction_batch_writes(batch_receiver)
+			) {
+				Ok(_) => {}
+				Err(e) => {
+					error!("Failed to write transactions to DA: {:?}", e);
+				}
+			}
 		}
+
+		Ok(())
 	}
 
 	// receive transactions from the transaction channel and send them to be executed
@@ -256,8 +284,12 @@ where
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
 		// decompress the block bytes
-		let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
-		let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
+		let block = tokio::task::spawn_blocking(move || {
+			let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
+			let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
+			Ok::<Block, anyhow::Error>(block)
+		})
+		.await??;
 		for _ in 0..5 {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_id.clone(), block_timestamp).await {
