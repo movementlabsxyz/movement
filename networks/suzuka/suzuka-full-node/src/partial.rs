@@ -285,8 +285,8 @@ where
 	) -> anyhow::Result<BlockCommitment> {
 		// decompress the block bytes
 		let block = tokio::task::spawn_blocking(move || {
-			let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
-			let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
+			// let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
+			let block: Block = bcs::from_bytes(&block_bytes)?;
 			Ok::<Block, anyhow::Error>(block)
 		})
 		.await??;
