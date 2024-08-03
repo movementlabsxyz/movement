@@ -19,8 +19,9 @@ alloy-sol-types = { workspace = true }
 alloy-contract = { workspace = true }
 serde_json = { workspace = true }
 
-ethereum-bridge = { path = "../chains/ethereum" }
-movement-bridge = { path = "../chains/movement" }
+bridge-shared = { workspace = true }
+ethereum-bridge = { workspace = true }
+movement-bridge = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

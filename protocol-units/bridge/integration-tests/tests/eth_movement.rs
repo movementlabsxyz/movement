@@ -1,6 +1,6 @@
 use alloy::{
 	node_bindings::Anvil,
-	primitives::{address, Address},
+	primitives::{address, keccak256, Address},
 	providers::{Provider, WalletProvider},
 	signers::{
 		k256::ecdsa::SigningKey,
@@ -9,6 +9,10 @@ use alloy::{
 };
 use alloy_network::EthereumWallet;
 use bridge_integration_tests::TestScaffold;
+use bridge_shared::{
+	bridge_contracts::BridgeContractInitiator,
+	types::{Amount, HashLock, TimeLock},
+};
 use ethereum_bridge::AtomicBridgeInitiator;
 
 #[tokio::test]
@@ -67,4 +71,42 @@ async fn test_client_should_deploy_contract() {
 
 	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
 	assert_eq!(contract.address(), &expected_address);
+}
+
+#[tokio::test]
+async fn test_client_should_successfully_call_initiate_transfer() {
+	let scaffold: TestScaffold = TestScaffold::new_only_eth().await;
+	if scaffold.eth_client.is_none() {
+		panic!("EthClient was not initialized properly.");
+	}
+
+	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
+	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
+	println!("Anvil running at `{}`", anvil.endpoint());
+	let signer = anvil.keys()[0].clone();
+	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
+	wallet.register_default_signer(LocalSigner::from(signer));
+	let contract = AtomicBridgeInitiator::deploy(&provider)
+		.await
+		.expect("Failed to deploy contract");
+
+	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
+	assert_eq!(contract.address(), &expected_address);
+
+	//some data to set for the recipient.
+	let recipient = anvil.keys()[1].clone();
+
+	let secret = "secret".to_string();
+	let hash_lock = keccak256(secret.as_bytes());
+	let hash_lock: [u8; 32] = hash_lock.into();
+
+	let amount = 100u64.into();
+	eth_client.initiate_bridge_transfer(
+		InitiatorAddress::from(signer.public_key().to_string()),
+		RecipientAddress::from(recipient.public_key().to_string()),
+		HashLock(hash_lock),
+		TimeLock(1000),
+		Amount(42),
+	);
 }

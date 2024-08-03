@@ -3607,6 +3607,7 @@ dependencies = [
  "alloy-network",
  "alloy-sol-types",
  "anyhow",
+ "bridge-shared",
  "ethereum-bridge",
  "movement-bridge",
  "reqwest 0.12.5",
