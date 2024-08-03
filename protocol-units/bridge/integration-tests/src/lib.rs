@@ -25,7 +25,7 @@ impl TestScaffold {
 		Self { eth_client: Some(eth_client), movement_client: None }
 	}
 
-	pub fn eth_client(&self) -> Result<&EthClient> {
-		self.eth_client.as_ref().ok_or(Error::msg("EthClient not found"))
+	pub fn eth_client(&self) -> Result<EthClient> {
+		self.eth_client.clone().ok_or(Error::msg("EthClient not initialized"))
 	}
 }

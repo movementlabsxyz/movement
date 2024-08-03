@@ -54,6 +54,12 @@ impl From<&str> for InitiatorAddress<Vec<u8>> {
 	}
 }
 
+impl From<String> for InitiatorAddress<Vec<u8>> {
+	fn from(value: String) -> Self {
+		Self(value.as_bytes().to_vec())
+	}
+}
+
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecipientAddress<A>(pub A);
 
