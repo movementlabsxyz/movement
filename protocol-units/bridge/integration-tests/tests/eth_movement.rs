@@ -1,14 +1,19 @@
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, Address},
-	providers::Provider,
+	providers::{Provider, WalletProvider},
+	signers::{
+		k256::ecdsa::SigningKey,
+		local::{LocalSigner, PrivateKeySigner},
+	},
 };
-use bridge_integration_tests::BridgeScaffold;
+use alloy_network::EthereumWallet;
+use bridge_integration_tests::TestScaffold;
 use ethereum_bridge::AtomicBridgeInitiator;
 
 #[tokio::test]
 async fn test_client_should_build_and_fetch_accounts() {
-	let scaffold: BridgeScaffold = BridgeScaffold::new_only_eth().await;
+	let scaffold: TestScaffold = TestScaffold::new_only_eth().await;
 	if scaffold.eth_client.is_none() {
 		panic!("EthClient was not initialized properly.");
 	}
@@ -33,6 +38,7 @@ async fn test_client_should_build_and_fetch_accounts() {
 	];
 
 	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	println!("provider: {:?}", provider);
 	let accounts = provider.get_accounts().await.expect("Failed to get accounts");
 	assert_eq!(accounts.len(), expected_accounts.len());
 
@@ -43,16 +49,22 @@ async fn test_client_should_build_and_fetch_accounts() {
 
 #[tokio::test]
 async fn test_client_should_deploy_contract() {
-	let scaffold: BridgeScaffold = BridgeScaffold::new_only_eth().await;
+	let scaffold: TestScaffold = TestScaffold::new_only_eth().await;
 	if scaffold.eth_client.is_none() {
 		panic!("EthClient was not initialized properly.");
 	}
 
-	// Start Anvil with the fixed port
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
-	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	println!("Anvil running at `{}`", anvil.endpoint());
+	let signer = anvil.keys()[0].clone();
+	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
+	wallet.register_default_signer(LocalSigner::from(signer));
 	let contract = AtomicBridgeInitiator::deploy(&provider)
 		.await
 		.expect("Failed to deploy contract");
+
+	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
+	assert_eq!(contract.address(), &expected_address);
 }

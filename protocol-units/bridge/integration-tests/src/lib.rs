@@ -12,12 +12,12 @@ use ethereum_bridge::{
 };
 use movement_bridge::{Config as MovementConfig, MovementClient};
 
-pub struct BridgeScaffold {
+pub struct TestScaffold {
 	pub eth_client: Option<EthClient>,
 	pub movement_client: Option<MovementClient>,
 }
 
-impl BridgeScaffold {
+impl TestScaffold {
 	pub async fn new_only_eth() -> Self {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 			.await
