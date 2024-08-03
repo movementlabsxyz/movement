@@ -152,7 +152,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 	let hash_lock = keccak256(secret.as_bytes());
 	let hash_lock: [u8; 32] = hash_lock.into();
 
-	let bridge_transfer_id = eth_client
+	let _ = eth_client
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(expected_address)),
 			RecipientAddress(recipient_bytes),
@@ -162,4 +162,67 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
+
+	let bridge_transfer_details = eth_client
+		.get_bridge_transfer_details(BridgeTransferId([0u8; 32]))
+		.await
+		.expect("Failed to get bridge transfer details");
+}
+
+#[tokio::test]
+async fn test_client_should_successfully_complete_transfer() {
+	let scaffold: TestScaffold = TestScaffold::new_only_eth().await;
+	if scaffold.eth_client.is_none() {
+		panic!("EthClient was not initialized properly.");
+	}
+
+	let mut eth_client = scaffold.eth_client().expect("Failed to get EthClient");
+	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
+	println!("Anvil running at `{}`", anvil.endpoint());
+
+	// set funded signer
+	let signer = anvil.keys()[0].clone();
+	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
+	wallet.register_default_signer(LocalSigner::from(signer));
+
+	let contract = AtomicBridgeInitiator::deploy(&provider)
+		.await
+		.expect("Failed to deploy contract");
+
+	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
+	assert_eq!(contract.address(), &expected_address);
+
+	//some data to set for the recipient.
+	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
+	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
+
+	let secret = "secret".to_string();
+	let hash_lock = keccak256(secret.as_bytes());
+	let hash_lock: [u8; 32] = hash_lock.into();
+
+	let _ = eth_client
+		.initiate_bridge_transfer(
+			InitiatorAddress(EthAddress(expected_address)),
+			RecipientAddress(recipient_bytes),
+			HashLock(hash_lock),
+			TimeLock(1000),
+			Amount(42),
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+
+	let bridge_transfer_details = eth_client
+		.get_bridge_transfer_details(BridgeTransferId([0u8; 32]))
+		.await
+		.expect("Failed to get bridge transfer details");
+
+	let secret = "secret".to_string();
+	let hash_lock = keccak256(secret.as_bytes());
+	let hash_lock: [u8; 32] = hash_lock.into();
+
+	// let _ = eth_client
+	// 	.complete_bridge_transfer()
+	// 	.await
+	// 	.expect
 }
