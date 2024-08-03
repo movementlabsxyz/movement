@@ -249,12 +249,18 @@ where
 				anyhow::bail!("Invalid DA height: {:?}", da_height);
 			}
 
+			// decompress the block bytes
+			let block = tokio::task::spawn_blocking(move || {
+				let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
+				let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
+				Ok::<Block, anyhow::Error>(block)
+			})
+			.await??;
+
 			// get the transactions
 			let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
-			let commitment = self
-				.execute_block_with_retries(block_bytes, block_id.clone(), block_timestamp)
-				.instrument(span)
-				.await?;
+			let commitment =
+				self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
 			// mark the da_height - 1 as synced
 			// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
@@ -285,20 +291,12 @@ where
 	/// However, this has to be deterministic, otherwise nodes will not be able to agree on the block commitment.
 	async fn execute_block_with_retries(
 		&self,
-		block_bytes: Vec<u8>,
-		block_id: String,
+		block: Block,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		// decompress the block bytes
-		let block = tokio::task::spawn_blocking(move || {
-			let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
-			let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
-			Ok::<Block, anyhow::Error>(block)
-		})
-		.await??;
 		for _ in 0..5 {
 			// we have to clone here because the block is supposed to be consumed by the executor
-			match self.execute_block(block.clone(), block_id.clone(), block_timestamp).await {
+			match self.execute_block(block.clone(), block_timestamp).await {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					error!("Failed to execute block: {:?}. Retrying", e);
@@ -313,16 +311,16 @@ where
 	async fn execute_block(
 		&self,
 		block: Block,
-		block_id: String,
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
+		let block_id = block.id();
 		let block_hash = HashValue::from_slice(block.id())?;
 
 		// get the transactions
 		let mut block_transactions = Vec::new();
 		let block_metadata = self
 			.executor
-			.build_block_metadata(HashValue::sha3_256_of(block_id.as_bytes()), block_timestamp)
+			.build_block_metadata(HashValue::sha3_256_of(block_id.0.as_slice()), block_timestamp)
 			.await?;
 		let block_metadata_transaction =
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
@@ -330,12 +328,6 @@ where
 
 		for transaction in block.transactions {
 			let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.data)?;
-			debug!(
-				target: "movement_timing",
-				tx_hash = %signed_transaction.committed_hash(),
-				%block_id,
-				"transaction_in_block",
-			);
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),
 			);
