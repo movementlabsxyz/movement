@@ -319,6 +319,8 @@ impl<T> GroupingHeuristicStack<T> {
 	{
 		loop {
 			// distribute
+			// this can be problematic for an async runtime
+			// it would be nice to spawn blocking
 			distribution = self.distribute(distribution)?;
 
 			// run the function asynchronously
