@@ -151,6 +151,12 @@ where
 		}
 
 		if transactions.len() > 0 {
+			info!(
+				target: "movement_timing",
+				batch_id = %batch_id,
+				transaction_count = transactions.len(),
+				"built_batch_write"
+			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
 			sender.send(batch_write).await?;
 		}
