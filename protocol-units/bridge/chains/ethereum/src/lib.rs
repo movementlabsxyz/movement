@@ -131,6 +131,14 @@ impl EthClient {
 		self.rpc_port
 	}
 
+	pub fn set_initiator_contract(&mut self, contract: Address) {
+		self.initiator_contract = Some(contract);
+	}
+
+	pub fn set_counterparty_contract(&mut self, contract: Address) {
+		self.counterparty_contract = Some(contract);
+	}
+
 	pub fn initiator_contract(&self) -> BridgeContractInitiatorResult<Address> {
 		match self.initiator_contract {
 			Some(contract) => Ok(contract),
