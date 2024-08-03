@@ -17,12 +17,12 @@ use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use core::sync::atomic::AtomicU64;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
-use sha2::Digest;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info, info_span, warn, Instrument};
+
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,
@@ -255,8 +255,12 @@ where
 		block_id: String,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
+		// decompress the block bytes
+		let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
+		let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
 		for _ in 0..5 {
-			match self.execute_block(block_bytes.clone(), block_id.clone(), block_timestamp).await {
+			// we have to clone here because the block is supposed to be consumed by the executor
+			match self.execute_block(block.clone(), block_id.clone(), block_timestamp).await {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					error!("Failed to execute block: {:?}. Retrying", e);
@@ -270,11 +274,12 @@ where
 
 	async fn execute_block(
 		&self,
-		block_bytes: Vec<u8>,
+		block: Block,
 		block_id: String,
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		let block: Block = bcs::from_bytes(&block_bytes)?;
+		let block_hash = HashValue::from_slice(block.id())?;
+
 		// get the transactions
 		let mut block_transactions = Vec::new();
 		let block_metadata = self
@@ -301,12 +306,6 @@ where
 
 		// form the executable transactions vec
 		let block = ExecutableTransactions::Unsharded(block_transactions);
-
-		// hash the block bytes
-		let mut hasher = sha2::Sha256::new();
-		hasher.update(&block_bytes);
-		let slice = hasher.finalize();
-		let block_hash = HashValue::from_slice(slice.as_slice())?;
 
 		// form the executable block and execute it
 		let executable_block = ExecutableBlock::new(block_hash, block);
