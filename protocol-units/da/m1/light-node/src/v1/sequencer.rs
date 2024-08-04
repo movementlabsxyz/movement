@@ -95,6 +95,9 @@ impl LightNodeV1 {
 	}
 
 	async fn submit_blocks(&self, blocks: &Vec<block::WrappedBlock>) -> Result<(), anyhow::Error> {
+		for block in blocks {
+			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitting_block");
+		}
 		// get references to celestia blobs in the wrapped blocks
 		let block_blobs = blocks
 			.iter()
@@ -102,10 +105,17 @@ impl LightNodeV1 {
 			.cloned() // hopefully, the compiler optimizes this out
 			.collect::<Vec<_>>();
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
+		for block in blocks {
+			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitted_block");
+		}
 		Ok(())
 	}
 
 	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
+		for block in &blocks {
+			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
+		}
+
 		// wrap the blocks in a struct that can be split and compressed
 		// spawn blocking because the compression is blocking and could be slow
 		let namespace = self.pass_through.celestia_namespace.clone();
@@ -155,6 +165,9 @@ impl LightNodeV1 {
 			.await?;
 
 		info!("block group results: {:?}", block_group_results);
+		for block_group_result in &block_group_results {
+			info!(target: "movement_timing", block_group_result = ?block_group_result, "block_group_result");
+		}
 
 		Ok(())
 	}
@@ -197,6 +210,9 @@ impl LightNodeV1 {
 				}
 			}
 		}
+
+		info!(target: "movement_timing", block_count = blocks.len(), "read_blocks");
+
 		Ok(blocks)
 	}
 
