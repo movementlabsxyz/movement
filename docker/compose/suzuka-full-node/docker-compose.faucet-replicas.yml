@@ -2,7 +2,7 @@ services:
 
   suzuka-faucet-service-replica-1:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-1
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -22,7 +22,7 @@ services:
 
   suzuka-faucet-service-replica-2:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-2
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -42,7 +42,7 @@ services:
 
   suzuka-faucet-service-replica-3:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-3
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -62,7 +62,7 @@ services:
 
   suzuka-faucet-service-replica-4:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-4
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -82,7 +82,7 @@ services:
 
   suzuka-faucet-service-replica-5:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-5
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -102,7 +102,7 @@ services:
 
   suzuka-faucet-service-replica-6:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-6
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -122,7 +122,7 @@ services:
 
   suzuka-faucet-service-replica-7:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-7
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
