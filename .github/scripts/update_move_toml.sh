@@ -1,23 +1,21 @@
-# Path to your Move.toml file
+#!/bin/bash
+
 MOVE_TOML_PATH="protocol-units/bridge/move-modules/Move.toml"
 
-# Initialize Aptos and capture output
 INIT_OUTPUT=$(aptos init)
 
-# Debugging: Print the output of aptos init
 echo "Aptos init output:"
 echo "$INIT_OUTPUT"
 
-# Extract the address using grep
-ADDRESS=$(echo "$INIT_OUTPUT" | grep -oP 'Account \K0x[a-f0-9]{64}')
+ADDRESS=$(echo "$INIT_OUTPUT" | grep -oP 'Account 0x[a-f0-9]{64}' | head -n 1 | awk '{print $2}')
 
-# Check if the address was successfully extracted
 if [[ -z "$ADDRESS" ]]; then
     echo "Error: Failed to extract the Aptos account address."
     exit 1
 fi
 
-# Update the Move.toml with the new address
+echo "Extracted Aptos Account Address: $ADDRESS"
+
 sed -i "s/^atomic_bridge = \".*\"/atomic_bridge = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^moveth = \".*\"/moveth = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^master_minter = \".*\"/master_minter = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
