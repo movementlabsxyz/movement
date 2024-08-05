@@ -170,7 +170,7 @@ jobs:
       uses: DeterminateSystems/nix-installer-action@main
 
     - name: Install Aptos CLI
-      run: nix develop --command bash -c "aptos-cli install"
+      run: nix develop --command bash -c "brew install aptos"
 
     - name: Update Move.toml with new addresses
       run: |
