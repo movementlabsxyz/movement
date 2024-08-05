@@ -3,7 +3,7 @@ use alloy::{
 	primitives::{address, keccak256, Address},
 	providers::{Provider, WalletProvider},
 	signers::{
-		k256::ecdsa::SigningKey,
+		k256::ecdsa::{SigningKey, VerifyingKey},
 		local::{LocalSigner, PrivateKeySigner},
 	},
 	sol,
@@ -89,20 +89,36 @@ async fn test_client_should_successfully_call_initialize() {
 		panic!("EthClient was not initialized properly.");
 	}
 
-	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
+	let mut eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 	println!("Anvil running at `{}`", anvil.endpoint());
 
 	let signer = anvil.keys()[0].clone();
 	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
 	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
+
 	wallet.register_default_signer(LocalSigner::from(signer));
-	let _ = AtomicBridgeInitiator::deploy(&provider)
+	let initiator_contract = AtomicBridgeInitiator::deploy(&provider)
 		.await
 		.expect("Failed to deploy contract");
 
+	let expected_weth_address = address!("e7f1725e7734ce288f8367e1bb143e90bb3f0512");
+
 	let weth_contract = WETH9::deploy(&provider).await.expect("Failed to deploy contract");
-	assert_eq!(weth_contract.address(), &address!("e7f1725e7734ce288f8367e1bb143e90bb3f0512"));
+
+	eth_client.set_initiator_contract(initiator_contract.address().clone());
+
+	assert_eq!(weth_contract.address(), &expected_weth_address);
+
+	// signer is consumed earlier and not Clone, so we fetch it again
+	let signer = anvil.keys()[0].clone();
+	let verifying_key = VerifyingKey::from(signer.public_key());
+	let owner_address = Address::from_public_key(&verifying_key);
+
+	eth_client
+		.initialize_contract(EthAddress(expected_weth_address), EthAddress(owner_address))
+		.await
+		.expect("Failed to initialize contract")
 }
 
 #[tokio::test]

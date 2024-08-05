@@ -25,7 +25,7 @@ pub mod utils;
 
 use crate::types::{EthAddress, EthHash};
 
-const GAS_LIMIT: u128 = 10_000_000_000;
+const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 const RETRIES: u32 = 6;
 
 // Codegen from the abis
@@ -114,6 +114,19 @@ impl EthClient {
 			counterparty_contract: config.counterparty_contract,
 			config,
 		})
+	}
+
+	pub async fn initialize_contract(
+		&self,
+		weth: EthAddress,
+		owner: EthAddress,
+	) -> Result<(), anyhow::Error> {
+		let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &self.rpc_provider);
+		let call = contract.initialize(weth.0, owner.0);
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	pub async fn get_block_number(&self) -> Result<u64, anyhow::Error> {
