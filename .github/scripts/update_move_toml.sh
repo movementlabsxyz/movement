@@ -7,7 +7,7 @@ INIT_OUTPUT=$(aptos init)
 echo "Aptos init output:"
 echo "$INIT_OUTPUT"
 
-ADDRESS=$(echo "$INIT_OUTPUT" | grep -oP 'Account 0x[a-f0-9]{64}' | head -n 1 | awk '{print $2}')
+ADDRESS=$(echo "$INIT_OUTPUT" | grep -oE '0x[a-f0-9]{64}' | head -1)
 
 if [[ -z "$ADDRESS" ]]; then
     echo "Error: Failed to extract the Aptos account address."
