@@ -18,11 +18,15 @@ use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
 	RecipientAddress, TimeLock,
 };
+use mcr_settlement_client::send_eth_transaction::send_transaction;
 
 pub mod types;
 pub mod utils;
 
 use crate::types::{EthAddress, EthHash};
+
+const GAS_LIMIT: u128 = 10_000_000_000;
+const RETRIES: u32 = 6;
 
 // Codegen from the abis
 alloy::sol!(
@@ -81,7 +85,7 @@ struct EthBridgeTransferDetails {
 // This is true for the integration tests.
 #[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: utils::AlloyProvider,
+	rpc_provider: types::AlloyProvider,
 	rpc_port: u16,
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<Address>,
@@ -123,7 +127,7 @@ impl EthClient {
 		self.config.signer_private_key.address()
 	}
 
-	pub fn rpc_provider(&self) -> utils::AlloyProvider {
+	pub fn rpc_provider(&self) -> types::AlloyProvider {
 		self.rpc_provider.clone()
 	}
 
@@ -175,6 +179,7 @@ impl BridgeContractInitiator for EthClient {
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &self.rpc_provider);
+		println!("rpc_provider {:?}", self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
 		let call = contract.initiateBridgeTransfer(
@@ -183,11 +188,11 @@ impl BridgeContractInitiator for EthClient {
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 		);
-
-		utils::send_transaction(call)
+		println!("call {:?}", call);
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractInitiatorError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
@@ -208,11 +213,11 @@ impl BridgeContractInitiator for EthClient {
 		let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-
-		utils::send_transaction(call)
+		println!("call {:?}", call);
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractInitiatorError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn refund_bridge_transfer(
@@ -221,11 +226,10 @@ impl BridgeContractInitiator for EthClient {
 	) -> BridgeContractInitiatorResult<()> {
 		let contract = AtomicBridgeInitiator::new(self.initiator_contract()?, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractInitiatorError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
@@ -284,10 +288,10 @@ impl BridgeContractCounterparty for EthClient {
 			Address::from(recipient.0 .0),
 			U256::from(amount.0),
 		);
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractCounterpartyError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
@@ -300,10 +304,10 @@ impl BridgeContractCounterparty for EthClient {
 		let secret: [u8; 32] = secret.0.try_into().unwrap();
 		let call =
 			contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(secret));
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractCounterpartyError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn abort_bridge_transfer(
@@ -313,10 +317,10 @@ impl BridgeContractCounterparty for EthClient {
 		let contract =
 			AtomicBridgeCounterparty::new(self.counterparty_contract()?, &self.rpc_provider);
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractCounterpartyError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(

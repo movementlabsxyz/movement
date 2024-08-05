@@ -25,9 +25,20 @@ tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
-alloy = { workspace = true,  features = ["full", "rpc", "rpc-types", "serde", "rlp", "contract", "sol-types"] }
+alloy = { workspace = true, features = [
+  "full",
+  "rpc",
+  "rpc-types",
+  "serde",
+  "rlp",
+  "contract",
+  "sol-types",
+] }
 alloy-rlp.workspace = true
 
 bridge-shared = { workspace = true }
 serde_with.workspace = true
-url = { workspace = true, features = ["serde"] } 
+url = { workspace = true, features = ["serde"] }
+
+#To be removed once we refactor eth_tx functions into our own crate
+mcr-settlement-client = { workspace = true }
