@@ -2,7 +2,8 @@ module atomic_bridge::atomic_bridge_counterparty {
     use std::signer;
     use std::event;
     use std::vector;
-    use aptos_framework::timestamp;
+    use aptos_framework::block;
+    use aptos_framework::genesis;
     use aptos_framework::aptos_hash::keccak256;
     use aptos_std::smart_table::{Self, SmartTable};
     use moveth::moveth;
@@ -79,7 +80,7 @@ module atomic_bridge::atomic_bridge_counterparty {
             initiator,
             amount,
             hash_lock,
-            time_lock: timestamp::now_seconds() + time_lock
+            time_lock: block::get_current_block_height() + time_lock
         };
 
         smart_table::add(&mut bridge_store.pending_transfers, bridge_transfer_id, details);
@@ -137,7 +138,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let details: BridgeTransferDetails = smart_table::remove(&mut bridge_store.pending_transfers, bridge_transfer_id);
 
         // Ensure the timelock has expired
-        assert!(timestamp::now_seconds() > details.time_lock, 2);
+        assert!(block::get_current_block_height() > details.time_lock, 2);
 
         smart_table::add(&mut bridge_store.aborted_transfers, bridge_transfer_id, details);
         event::emit(
@@ -177,7 +178,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         creator: &signer,
         moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
-        timestamp::set_time_has_started_for_testing(aptos_framework);
+        genesis::setup();
         moveth::init_for_test(moveth);
         let receiver_address = @0xcafe1;
         let initiator = b"0x123"; //In real world this would be an ethereum address
@@ -243,7 +244,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         creator: &signer,
         moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
-        timestamp::set_time_has_started_for_testing(aptos_framework);
+        genesis::setup();
         moveth::init_for_test(moveth);
         let receiver_address = @0xcafe1;
         let initiator = b"0x123"; //In real world this would be an ethereum address
@@ -299,4 +300,5 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.hash_lock == hash_lock, 3);
         assert!(transfer_details.initiator == initiator, 4);
     }
+    
 }
