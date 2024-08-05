@@ -4,11 +4,11 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-atomic_bridge = "0x4143f27fd7c76ed9e191968ebfe7f2a46ec188f815776678a8a4b80ccf4ffa45"
-moveth = "0x4143f27fd7c76ed9e191968ebfe7f2a46ec188f815776678a8a4b80ccf4ffa45"
-master_minter = "0x4143f27fd7c76ed9e191968ebfe7f2a46ec188f815776678a8a4b80ccf4ffa45"
-minter = "0x4143f27fd7c76ed9e191968ebfe7f2a46ec188f815776678a8a4b80ccf4ffa45"
-admin = "0x4143f27fd7c76ed9e191968ebfe7f2a46ec188f815776678a8a4b80ccf4ffa45"
+atomic_bridge = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+moveth = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+master_minter = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+minter = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+admin = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
 pauser = "0xdafe"
 denylister = "0xcade"
 
@@ -23,8 +23,8 @@ denylister = "0xcade"
 
 
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "devnet"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
