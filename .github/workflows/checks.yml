@@ -182,5 +182,5 @@ jobs:
       run: |
         nix develop --command bash -c "
           cd protocol-units/bridge/move-modules && \
-          aptos test
+          aptos move test
         "
