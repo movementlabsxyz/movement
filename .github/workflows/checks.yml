@@ -152,3 +152,34 @@ jobs:
           forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
 
+  move-modules-test:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Install Aptos CLI
+      run: nix develop --command bash -c "aptos-cli install"
+
+    - name: Update Move.toml with new addresses
+      run: |
+        chmod +x .github/scripts/update_move_toml.sh
+        ./.github/scripts/update_move_toml.sh
+
+    - name: Run Aptos Tests
+      run: |
+        nix develop --command bash -c "
+          cd protocol-units/bridge/move-modules && \
+          aptos test
+        "
