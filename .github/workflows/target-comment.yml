@@ -33,7 +33,7 @@ jobs:
         if: steps.check_pr.outputs.is_pr == 'true'
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: Handle Target Comment
+          workflow: handle-target-comment.yml
           token: ${{ secrets.GH_PAT }}
           inputs: >
             {

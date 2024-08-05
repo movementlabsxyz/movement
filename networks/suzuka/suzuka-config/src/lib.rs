@@ -6,7 +6,6 @@ use m1_da_light_node_util::config::M1DaLightNodeConfig;
 use maptos_execution_util::config::MaptosConfig;
 use mcr_settlement_config::Config as McrConfig;
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
 	#[serde(flatten)]

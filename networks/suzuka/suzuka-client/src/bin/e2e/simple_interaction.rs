@@ -1,14 +1,12 @@
-use suzuka_client::{
-	coin_client::CoinClient,
-	rest_client::{
-		Client, FaucetClient,
-	},
-	types::LocalAccount
-};
+use anyhow::Context;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
+use suzuka_client::{
+	coin_client::CoinClient,
+	rest_client::{Client, FaucetClient},
+	types::LocalAccount,
+};
 use url::Url;
-use anyhow::Context;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();

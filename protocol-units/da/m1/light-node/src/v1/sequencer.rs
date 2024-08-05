@@ -1,20 +1,26 @@
+use std::{
+	sync::{atomic::AtomicU64, Arc},
+	time::Duration,
+};
 use tokio_stream::Stream;
-use std::{sync::{atomic::AtomicU64, Arc}, time::Duration};
 use tracing::info;
 
-use std::{fmt::Debug, path::PathBuf};
 use celestia_rpc::HeaderClient;
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_util::config::Config;
+use std::{fmt::Debug, path::PathBuf};
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
-use tokio::{time::timeout, sync::mpsc::{Receiver, Sender}};
 use movement_types::Block;
+use tokio::{
+	sync::mpsc::{Receiver, Sender},
+	time::timeout,
+};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
-const LOGGING_UID : AtomicU64 = AtomicU64::new(0);
+const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
@@ -53,13 +59,10 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 		Ok(())
 	}
-
 }
 
 impl LightNodeV1 {
-
-	async fn tick_build_blocks(&self, sender : Sender<Block>) -> Result<(), anyhow::Error> {
-
+	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
 
 		// this has an internal timeout based on its building time
@@ -78,22 +81,22 @@ impl LightNodeV1 {
 				info!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
 				Ok(())
 			}
-			
 		}
-
 	}
 
-	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
-		
+	async fn tick_publish_blobs(
+		&self,
+		receiver: &mut Receiver<Block>,
+	) -> Result<(), anyhow::Error> {
 		let half_building_time = self.memseq.building_time_ms();
 		let start = std::time::Instant::now();
 		let mut blocks = Vec::new();
 
 		// select receive or timeout
 
-
 		loop {
-			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
+			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
+			{
 				Some(remaining) => remaining,
 				None => {
 					// we have exceeded the half building time
@@ -122,9 +125,7 @@ impl LightNodeV1 {
 			}
 		}
 
-
 		if blocks.len() > 0 {
-
 			let mut block_blobs = Vec::new();
 			let mut ids = Vec::new();
 			for block in blocks {
@@ -151,26 +152,28 @@ impl LightNodeV1 {
 			}
 			for block_id in &ids {
 				info!(target: "movement_timing", %block_id, "submitted_block");
-			}	
+			}
 		}
 		Ok(())
 	}
 
-	async fn run_block_builder(&self, sender : Sender<Block>) -> Result<(), anyhow::Error> {
+	async fn run_block_builder(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		loop {
 			self.tick_build_blocks(sender.clone()).await?;
 		}
 	}
 
-	async fn run_block_publisher(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
+	async fn run_block_publisher(
+		&self,
+		receiver: &mut Receiver<Block>,
+	) -> Result<(), anyhow::Error> {
 		loop {
 			self.tick_publish_blobs(receiver).await?;
 		}
 	}
 
-
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let (sender, mut receiver) = tokio::sync::mpsc::channel(2^10);
+		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
 
 		loop {
 			match futures::try_join!(
@@ -183,11 +186,10 @@ impl LightNodeV1 {
 				Err(e) => {
 					info!("block proposer failed: {:?}", e);
 				}
-			}	
+			}
 		}
 
 		Ok(())
-
 	}
 
 	pub fn to_sequenced_blob_block(
@@ -314,9 +316,10 @@ impl LightNodeService for LightNodeV1 {
 
 		// publish the transactions
 		let memseq = self.memseq.clone();
-		memseq.publish_many(transactions).await.map_err(
-			|e| tonic::Status::internal(e.to_string())
-		)?;
+		memseq
+			.publish_many(transactions)
+			.await
+			.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
 	}
