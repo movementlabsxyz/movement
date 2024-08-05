@@ -6,6 +6,7 @@ use alloy::{
 		k256::ecdsa::SigningKey,
 		local::{LocalSigner, PrivateKeySigner},
 	},
+	sol,
 };
 use alloy_network::EthereumWallet;
 use bridge_integration_tests::TestScaffold;
@@ -14,6 +15,13 @@ use bridge_shared::{
 	types::{Amount, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use ethereum_bridge::{types::EthAddress, AtomicBridgeInitiator};
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	WETH9,
+	"../chains/ethereum/abis/WETH9.json"
+);
 
 #[tokio::test]
 async fn test_client_should_build_and_fetch_accounts() {
@@ -61,6 +69,7 @@ async fn test_client_should_deploy_contract() {
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 	println!("Anvil running at `{}`", anvil.endpoint());
+
 	let signer = anvil.keys()[0].clone();
 	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
 	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
@@ -71,6 +80,29 @@ async fn test_client_should_deploy_contract() {
 
 	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
 	assert_eq!(contract.address(), &expected_address);
+}
+
+#[tokio::test]
+async fn test_client_should_successfully_call_initialize() {
+	let scaffold: TestScaffold = TestScaffold::new_only_eth().await;
+	if scaffold.eth_client.is_none() {
+		panic!("EthClient was not initialized properly.");
+	}
+
+	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
+	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
+	println!("Anvil running at `{}`", anvil.endpoint());
+
+	let signer = anvil.keys()[0].clone();
+	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
+	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
+	wallet.register_default_signer(LocalSigner::from(signer));
+	let _ = AtomicBridgeInitiator::deploy(&provider)
+		.await
+		.expect("Failed to deploy contract");
+
+	let weth_contract = WETH9::deploy(&provider).await.expect("Failed to deploy contract");
+	assert_eq!(weth_contract.address(), &address!("e7f1725e7734ce288f8367e1bb143e90bb3f0512"));
 }
 
 #[tokio::test]
