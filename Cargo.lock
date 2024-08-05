@@ -5399,6 +5399,7 @@ dependencies = [
  "futures",
  "hex",
  "keccak-hash",
+ "mcr-settlement-client",
  "poem",
  "serde",
  "serde_with",
