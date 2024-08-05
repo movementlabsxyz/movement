@@ -169,8 +169,15 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - name: Install Homebrew
+      run: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.profile
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
     - name: Install Aptos CLI
-      run: nix develop --command bash -c "brew install aptos"
+      run: |
+        brew install aptos
 
     - name: Update Move.toml with new addresses
       run: |
