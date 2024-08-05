@@ -166,23 +166,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Install Homebrew
-      run: |
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.profile
-        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-
     - name: Install Aptos CLI
       run: |
-        brew install aptos
+        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
 
     - name: Update Move.toml with new addresses
       run: |
         chmod +x .github/scripts/update_move_toml.sh
         ./.github/scripts/update_move_toml.sh
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
 
     - name: Run Aptos Tests
       run: |
