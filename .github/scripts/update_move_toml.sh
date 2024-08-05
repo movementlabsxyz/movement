@@ -2,9 +2,8 @@
 
 MOVE_TOML_PATH="protocol-units/bridge/move-modules/Move.toml"
 
-INIT_OUTPUT=$(aptos init)
+INIT_OUTPUT=$(aptos init 2>&1)
 
-echo "Aptos init output:"
 echo "$INIT_OUTPUT"
 
 ADDRESS=$(echo "$INIT_OUTPUT" | grep -oE '0x[a-f0-9]{64}' | head -1)
@@ -14,7 +13,7 @@ if [[ -z "$ADDRESS" ]]; then
     exit 1
 fi
 
-echo "Extracted Aptos Account Address: $ADDRESS"
+echo "$ADDRESS"
 
 sed -i "s/^atomic_bridge = \".*\"/atomic_bridge = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^moveth = \".*\"/moveth = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
