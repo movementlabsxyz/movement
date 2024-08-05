@@ -179,7 +179,7 @@ jobs:
     - name: Run Aptos Tests
       run: |
         nix develop --command bash -c "
-          chmod +x .github/scripts/update_move_toml.sh && \ 
+          chmod +x .github/scripts/update_move_toml.sh  
           ./.github/scripts/update_move_toml.sh && \
           cd protocol-units/bridge/move-modules && \
           aptos move test
