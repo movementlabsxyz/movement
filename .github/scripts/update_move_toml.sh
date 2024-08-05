@@ -2,7 +2,7 @@
 
 MOVE_TOML_PATH="protocol-units/bridge/move-modules/Move.toml"
 
-ADDRESS=$(aptos init | grep 'Aptos CLI is now set up for account' | awk '{print $9}')
+ADDRESS=$(aptos init | grep -oP 'Account \K0x[a-f0-9]{64}')
 
 sed -i "s/^atomic_bridge = \".*\"/atomic_bridge = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^moveth = \".*\"/moveth = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
