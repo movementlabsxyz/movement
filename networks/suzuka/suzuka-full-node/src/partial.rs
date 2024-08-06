@@ -311,7 +311,7 @@ where
 				if height > current_head_height {
 					// Nothing to revert
 				} else {
-					match executor.revert_block_head(height - 1) {
+					match executor.revert_block_head_to(height - 1) {
 						Ok(_) => {}
 						Err(e) => {
 							error!("Failed to revert to block height: {:?}", e);
