@@ -307,7 +307,14 @@ where
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
-				// TODO: block reversion
+				let current_head_height = executor.get_block_head_height().await?;
+				if height > current_head_height {
+					// Nothing to revert
+				} else {
+					executor
+						.revert_block_head_to(height - 1)
+						.context(format!("failed to revert to block height {}", height - 1))?;
+				}
 			}
 		}
 	}
