@@ -93,7 +93,7 @@ impl DynOptFinExecutor for Executor {
 		self.finality_view.set_finalized_block_height(height)
 	}
 
-	fn revert_block_head(&self, block_height: u64) -> Result<(), anyhow::Error> {
+	fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
 		if let Some(final_height) = self.finality_view.finalized_block_height() {
 			if block_height < final_height {
 				return Err(format_err!(
@@ -101,7 +101,7 @@ impl DynOptFinExecutor for Executor {
 				));
 			}
 		}
-		self.executor.revert_block_head(block_height)
+		self.executor.revert_block_head_to(block_height)
 	}
 
 	/// Sets the transaction channel.

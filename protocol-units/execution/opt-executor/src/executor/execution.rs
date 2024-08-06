@@ -100,7 +100,7 @@ impl Executor {
 		Ok(new_block_event.height)
 	}
 
-	pub fn revert_block_head(&self, block_height: u64) -> Result<(), anyhow::Error> {
+	pub fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
 		let (_start_ver, end_ver, block_event) =
 			self.db.reader.get_block_info_by_height(block_height)?;
 		let block_info = BlockInfo::new(
