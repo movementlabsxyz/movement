@@ -91,10 +91,7 @@ where
 		Ok((node, background_task))
 	}
 
-	async fn next_transaction_batch_write(
-		&self,
-		sender: Sender<BatchWriteRequest>,
-	) -> Result<(), anyhow::Error> {
+	async fn next_transaction_batch_write(&self) -> Result<(), anyhow::Error> {
 		// limit the total time batching transactions
 		let start = std::time::Instant::now();
 		let (_, half_building_time) = self
@@ -158,48 +155,29 @@ where
 				"built_batch_write"
 			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
-			sender.send(batch_write).await?;
+			let mut light_node_client = self.light_node_client.clone();
+			tokio::task::spawn(async move {
+				light_node_client.batch_write(batch_write).await?;
+				Ok::<(), anyhow::Error>(())
+			});
 		}
 
 		Ok(())
 	}
 
-	pub async fn send_transaction_batch_writes(
-		&self,
-		sender: Sender<BatchWriteRequest>,
-	) -> Result<(), anyhow::Error> {
+	async fn send_transaction_batch_writes(&self) -> Result<(), anyhow::Error> {
 		loop {
-			self.next_transaction_batch_write(sender.clone()).await?;
-		}
-	}
-
-	pub async fn submit_transaction_batch_writes(
-		&self,
-		receiver: Receiver<BatchWriteRequest>,
-	) -> Result<(), anyhow::Error> {
-		loop {
-			let batch_write = receiver.recv().await?;
-			let mut light_node_client = self.light_node_client.clone();
-			// batch_writes can be submitted in parallel without waiting for the previous one to finish
-			tokio::spawn(async move {
-				light_node_client.batch_write(batch_write).await?;
-				Ok::<(), anyhow::Error>(())
-			});
+			self.next_transaction_batch_write().await?;
 		}
 	}
 
 	pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		loop {
-			let (batch_sender, batch_receiver) = async_channel::unbounded();
-
 			// run send transaction batch writes and submit transaction batch writes concurrently
-			match tokio::try_join!(
-				self.send_transaction_batch_writes(batch_sender),
-				self.submit_transaction_batch_writes(batch_receiver)
-			) {
+			match self.send_transaction_batch_writes().await {
 				Ok(_) => {}
 				Err(e) => {
-					error!("Failed to write transactions to DA: {:?}", e);
+					error!("Failed to send transaction batch writes: {:?}", e);
 				}
 			}
 		}
