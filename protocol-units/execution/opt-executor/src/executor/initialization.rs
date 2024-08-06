@@ -30,7 +30,13 @@ use tokio::sync::RwLock;
 #[cfg(test)]
 use tempfile::TempDir;
 
-use std::{path::PathBuf, sync::{atomic::AtomicU64, Arc}};
+use std::{
+	path::PathBuf,
+	sync::{atomic::AtomicU64, Arc},
+};
+
+// executor channel size
+const EXECUTOR_CHANNEL_SIZE: usize = 2.pow(16);
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
@@ -156,12 +162,13 @@ impl Executor {
 	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
-			futures_mpsc::channel::<MempoolClientRequest>(2^16); // allow 2^16 transactions before apply backpressure given theoretical maximum TPS of 170k
+			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE); // allow 2^16 transactions before apply backpressure given theoretical maximum TPS of 170k
 		let mut node_config = NodeConfig::default();
 
 		node_config.indexer.enabled = true;
 		// indexer config
-		node_config.indexer.postgres_uri = Some(maptos_config.indexer_processor.postgres_connection_string.clone());
+		node_config.indexer.postgres_uri =
+			Some(maptos_config.indexer_processor.postgres_connection_string.clone());
 		node_config.indexer.processor = Some("default_processor".to_string());
 		node_config.indexer.check_chain_id = Some(false);
 		node_config.indexer.skip_migrations = Some(false);
