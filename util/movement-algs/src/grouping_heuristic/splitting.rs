@@ -3,6 +3,7 @@ use crate::grouping_heuristic::{
 };
 use itertools::Itertools;
 
+/// A heuristic that splits elements in the distribution into smaller chunks
 pub trait Splitable
 where
 	Self: Sized,
