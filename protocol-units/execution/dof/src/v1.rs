@@ -53,17 +53,13 @@ impl DynOptFinExecutor for Executor {
 		
 		tokio::try_join!(
 			self.executor.run_service(),
-			// self.executor.run_indexer_grpc_service(),
+			self.executor.run_indexer_grpc_service(),
 			self.finality_view.run_service(),
 		)?;
 		Ok(())
 	}
 
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
-		/*let mut node_config = NodeConfig::default();
-		node_config.indexer_table_info.enabled = true;
-		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
-		node_config.storage.set_data_dir(node_config.storage.dir.clone());*/
 		let mut core_mempool = CoreMempool::new(&self.executor.node_config);
 		let mut last_gc = std::time::Instant::now();
 		loop {

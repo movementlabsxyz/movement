@@ -1,20 +1,34 @@
+use std::{
+	sync::{
+		atomic::{AtomicU64, Ordering},
+		Arc,
+	},
+	time::Duration,
+};
 use tokio_stream::Stream;
-use std::{sync::{atomic::AtomicU64, Arc}, time::Duration};
-use tracing::{info, debug};
+use tracing::{debug, info};
 
-use std::{fmt::Debug, path::PathBuf};
 use celestia_rpc::HeaderClient;
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_util::config::Config;
+use std::{fmt::Debug, path::PathBuf};
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
-use tokio::{time::timeout, sync::mpsc::{Receiver, Sender}};
+use movement_algs::grouping_heuristic::{
+	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
+	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
+};
 use movement_types::Block;
+use std::boxed::Box;
+use tokio::{
+	sync::mpsc::{Receiver, Sender},
+	time::timeout,
+};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
-const LOGGING_UID : AtomicU64 = AtomicU64::new(0);
+const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 pub struct LightNodeV1 {
@@ -58,13 +72,10 @@ impl LightNodeV1Operations for LightNodeV1 {
 
 		Ok(())
 	}
-
 }
 
 impl LightNodeV1 {
-
-	async fn tick_build_blocks(&self, sender : Sender<Block>) -> Result<(), anyhow::Error> {
-
+	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
 
 		// this has an internal timeout based on its building time
@@ -83,78 +94,88 @@ impl LightNodeV1 {
 				debug!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
 				Ok(())
 			}
-			
 		}
-
 	}
 
-	/// Attempts to submit a batch of blobs according to the chunk size
-	async fn submit_and_resize(&self, block_blobs: &mut Vec<celestia_types::Blob>, chunk_size : usize) -> Result<usize, anyhow::Error> {
-	
-
-		// iter in chunks of 4
-		while !block_blobs.is_empty() {
-			let mut chunk: Vec<celestia_types::Blob> = Vec::with_capacity(chunk_size);
-			
-			for _ in 0..chunk_size {
-				if let Some(blob) = block_blobs.pop() {
-					chunk.push(blob);
-				} else {
-					break;
-				}
-			}
-			
-			match self.pass_through.submit_celestia_blobs(&chunk).await {
-				Ok(_) => {
-					info!(
-						target: "movement_timing",
-						batch_size = chunk.len(),
-						"submitted_blob_batch",
-					);
-				}
-				Err(e) => {
-					info!("failed to submit blocks: {:?}", e);
-					block_blobs.extend(chunk.into_iter());
-					return Ok(chunk_size - 1);
-				}
-			}
+	async fn submit_blocks(&self, blocks: &Vec<Block>) -> Result<(), anyhow::Error> {
+		let uid = LOGGING_UID.load(Ordering::SeqCst);
+		info!(
+			target: "movement_timing",
+			batch_size = blocks.len(),
+			uid = uid,
+			"inner_submitting_block_batch"
+		);
+		let mut block_blobs = Vec::new();
+		for block in blocks {
+			let block_blob = self.pass_through.create_new_celestia_blob(
+				bcs::to_bytes(block)
+					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
+			)?;
+			block_blobs.push(block_blob);
 		}
-	
-
-		Ok(chunk_size)
-
-	}
-
-	/// Submits block blobs in chunks, beginning with a chunk size of 4
-	async fn submit_block_blobs(&self, block_blobs: &mut Vec<celestia_types::Blob>) -> Result<(), anyhow::Error> {
-		if block_blobs.len() > 0 {
-
-			let mut chunk_size = 4;
-			loop {
-
-				let new_chunk_size = self.submit_and_resize(block_blobs, chunk_size).await?;			
-				if new_chunk_size == chunk_size {
-					// we have succeeded
-					info!(
-						target: "movement_timing",
-						"submitted_all_blob_batches",
-					);
-					break;
-				}
-				chunk_size = new_chunk_size;
-
-			}
+		for block in blocks {
+			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
+		}
+		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
+		for block in blocks {
+			info!(target: "movement_timing", block_id = %block.id(), "submitted_block");
 		}
 		Ok(())
 	}
 
+	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
+		let mut heuristic: GroupingHeuristicStack<Block> = GroupingHeuristicStack::new(vec![
+			DropSuccess::boxed(),
+			ToApply::boxed(),
+			SkipFor::boxed(1, Splitting::boxed(2)),
+			FirstFitBinpacking::boxed(1_700_000),
+		]);
+
+		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
+		let block_group_results = heuristic
+			.run_async_sequential_with_metadata(
+				start_distribution,
+				|index, grouping, mut flag| async move {
+					if index == 0 {
+						flag = false;
+					}
+
+					// if the flag is set then we are going to change this grouping outcome to failures and not run anything
+					if flag {
+						return Ok((grouping.to_failures_prefer_instrumental(), flag));
+					}
+
+					let blocks = grouping.into_original();
+					let outcome = match self.submit_blocks(&blocks).await {
+						Ok(_) => GroupingOutcome::new_all_success(blocks.len()),
+						Err(_) => {
+							flag = true;
+							GroupingOutcome::new_apply(blocks)
+						}
+					};
+
+					Ok((outcome, flag))
+				},
+				false,
+			)
+			.await?;
+
+		info!("block group results: {:?}", block_group_results);
+
+		Ok(())
+	}
+
 	/// Reads blobs from the receiver until the building time is exceeded
-	async fn read_blocks(&self, receiver : &mut Receiver<Block>)-> Result<Vec<Block>, anyhow::Error> {
+	async fn read_blocks(
+		&self,
+		receiver: &mut Receiver<Block>,
+	) -> Result<Vec<Block>, anyhow::Error> {
 		let half_building_time = self.memseq.building_time_ms();
 		let start = std::time::Instant::now();
 		let mut blocks = Vec::new();
 		loop {
-			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64) {
+			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
+			{
 				Some(remaining) => remaining,
 				None => {
 					// we have exceeded the half building time
@@ -186,34 +207,22 @@ impl LightNodeV1 {
 	}
 
 	/// Ticks the block proposer to build blocks and submit them
-	async fn tick_publish_blobs(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
-		
+	async fn tick_publish_blobs(
+		&self,
+		receiver: &mut Receiver<Block>,
+	) -> Result<(), anyhow::Error> {
 		// get some blocks in a batch
 		let blocks = self.read_blocks(receiver).await?;
-
-		// form blobs from the blocks
-		info!(
-			target: "movement_timing",
-			batch_size = blocks.len(),
-			"building_block_batch"
-		);
-		let mut block_blobs = Vec::new();
-		let mut ids = Vec::new();
-		for block in &blocks {
-			let block_blob = self.pass_through.create_new_celestia_blob(
-				serde_json::to_vec(&block)
-					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-			)?;
-			block_blobs.push(block_blob);
-			ids.push(block.id());
+		if blocks.is_empty() {
+			return Ok(());
 		}
-
+		let ids = blocks.iter().map(|b| b.id()).collect::<Vec<_>>();
 
 		// submit the blobs, resizing as needed
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitting_block_batch");
 		}
-		self.submit_block_blobs(&mut block_blobs).await?;
+		self.submit_with_heuristic(blocks).await?;
 		for block_id in &ids {
 			info!(target: "movement_timing", %block_id, "submitted_block_batch");
 		}
@@ -221,21 +230,23 @@ impl LightNodeV1 {
 		Ok(())
 	}
 
-	async fn run_block_builder(&self, sender : Sender<Block>) -> Result<(), anyhow::Error> {
+	async fn run_block_builder(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		loop {
 			self.tick_build_blocks(sender.clone()).await?;
 		}
 	}
 
-	async fn run_block_publisher(&self, receiver : &mut Receiver<Block>) -> Result<(), anyhow::Error> {
+	async fn run_block_publisher(
+		&self,
+		receiver: &mut Receiver<Block>,
+	) -> Result<(), anyhow::Error> {
 		loop {
 			self.tick_publish_blobs(receiver).await?;
 		}
 	}
 
-
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
-		let (sender, mut receiver) = tokio::sync::mpsc::channel(2^10);
+		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
 
 		loop {
 			match futures::try_join!(
@@ -248,11 +259,10 @@ impl LightNodeV1 {
 				Err(e) => {
 					info!("block proposer failed: {:?}", e);
 				}
-			}	
+			}
 		}
 
 		Ok(())
-
 	}
 
 	pub fn to_sequenced_blob_block(
@@ -379,9 +389,10 @@ impl LightNodeService for LightNodeV1 {
 
 		// publish the transactions
 		let memseq = self.memseq.clone();
-		memseq.publish_many(transactions).await.map_err(
-			|e| tonic::Status::internal(e.to_string())
-		)?;
+		memseq
+			.publish_many(transactions)
+			.await
+			.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
 	}

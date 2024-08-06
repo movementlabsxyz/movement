@@ -7403,6 +7403,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-stream",
+ "bcs 0.1.4",
  "celestia-rpc",
  "celestia-types",
  "chrono",
@@ -7414,6 +7415,7 @@ dependencies = [
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
  "memseq",
+ "movement-algs",
  "movement-tracing",
  "movement-types",
  "prost",
@@ -8623,6 +8625,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "movement-algs"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "itertools 0.12.1",
+ "movement-types",
+ "tokio",
+]
+
+[[package]]
 name = "movement-rest"
 version = "0.0.2"
 dependencies = [
@@ -8651,6 +8663,7 @@ dependencies = [
  "blake3",
  "serde",
  "serde_with",
+ "tokio",
 ]
 
 [[package]]
@@ -11879,6 +11892,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "async-channel 2.3.1",
+ "bcs 0.1.4",
  "console-subscriber",
  "dot-movement",
  "godfig",
