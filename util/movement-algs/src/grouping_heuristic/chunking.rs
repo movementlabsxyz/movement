@@ -1,4 +1,5 @@
 use crate::grouping_heuristic::{GroupingHeuristic, GroupingOutcome};
+use itertools::Itertools;
 
 pub struct Chunking {
 	pub size: usize,
@@ -26,11 +27,12 @@ impl<T> GroupingHeuristic<T> for Chunking {
 			.collect::<Vec<_>>();
 
 		// chunk the distribution
-		let mut chunks = Vec::new();
-		while !distribution.is_empty() {
-			let chunk = distribution.drain(0..self.size.min(distribution.len())).collect();
-			chunks.push(GroupingOutcome::new(chunk));
-		}
+		let chunks = distribution
+			.into_iter()
+			.chunks(self.size)
+			.into_iter()
+			.map(|chunk| GroupingOutcome::new(chunk.collect()))
+			.collect();
 
 		Ok(chunks)
 	}
