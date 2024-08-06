@@ -36,7 +36,7 @@ use std::{
 };
 
 // executor channel size
-const EXECUTOR_CHANNEL_SIZE: usize = 2.pow(16);
+const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 impl Executor {
 	pub fn genesis_change_set_and_validators(
