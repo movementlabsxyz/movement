@@ -38,7 +38,6 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 	pub fn building_time_ms(&self) -> u64 {
 		self.building_time_ms
 	}
-
 }
 
 impl Memseq<RocksdbMempool> {
@@ -60,7 +59,6 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
-
 	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
 		self.mempool.add_transactions(transactions).await?;
 		Ok(())
@@ -97,13 +95,12 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-
 			let new_block = {
 				let parent_block = self.parent_block.read().await.clone();
 				Block::new(Default::default(), parent_block.to_vec(), transactions)
 			};
-			
-			// update the parent block 
+
+			// update the parent block
 			{
 				let mut parent_block = self.parent_block.write().await;
 				*parent_block = new_block.id();
@@ -305,7 +302,7 @@ pub mod test {
 		let path = dir.path().to_path_buf();
 		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
 
-		let transaction : Transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0);
 		memseq.publish(transaction.clone()).await?;
 
 		let block = memseq.wait_for_next_block().await?;
@@ -324,7 +321,7 @@ pub mod test {
 
 		let mut transactions = Vec::new();
 		for i in 0..block_size * 2 {
-			let transaction : Transaction = Transaction::new( vec![i as u8], 0);
+			let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 			memseq.publish(transaction.clone()).await?;
 			transactions.push(transaction);
 		}
@@ -365,7 +362,7 @@ pub mod test {
 
 			// add half of the transactions
 			for i in 0..block_size / 2 {
-				let transaction : Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -373,7 +370,7 @@ pub mod test {
 
 			// add the rest of the transactions
 			for i in block_size / 2..block_size - 2 {
-				let transaction : Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 

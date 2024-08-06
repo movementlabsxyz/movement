@@ -2,12 +2,9 @@
 // pub mod indexer_stream;
 // use std::str::FromStr;
 // use url::Url;
-use once_cell::sync::Lazy;
-use aptos_protos::indexer::v1::{
-    GetTransactionsRequest,
-    raw_data_client::RawDataClient,
-};
+use aptos_protos::indexer::v1::{raw_data_client::RawDataClient, GetTransactionsRequest};
 use futures::StreamExt;
+use once_cell::sync::Lazy;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -35,32 +32,26 @@ static INDEXER_URL: Lazy<String> = Lazy::new(|| {
 	indexer_connection_url
 });
 
-
 #[tokio::test]
 async fn test_example_indexer_stream() -> Result<(), anyhow::Error> {
+	/*let channel = tonic::transport::Channel::from_shared(
+		INDEXER_URL.to_string(),
+	).expect(
+		"[Parser] Failed to build GRPC channel, perhaps because the data service URL is invalid",
+	);*/
 
-    /*let channel = tonic::transport::Channel::from_shared(
-        INDEXER_URL.to_string(),
-    ).expect(
-        "[Parser] Failed to build GRPC channel, perhaps because the data service URL is invalid",
-    );*/
-    
-    let mut client = RawDataClient::connect(
-        INDEXER_URL.as_str(),
-    ).await?;
+	let mut client = RawDataClient::connect(INDEXER_URL.as_str()).await?;
 
-    let request = GetTransactionsRequest {
-        starting_version : Some(1),
-        transactions_count : Some(10),
-        batch_size : Some(100),
-    }; 
+	let request = GetTransactionsRequest {
+		starting_version: Some(1),
+		transactions_count: Some(10),
+		batch_size: Some(100),
+	};
 
-    let mut stream = client.get_transactions(request).await?.into_inner();
+	let mut stream = client.get_transactions(request).await?.into_inner();
 
 	for _ in 1..10 {
-		let response = stream
-			.next()
-			.await;
+		let response = stream.next().await;
 		println!("{:?}", response);
 	}
 

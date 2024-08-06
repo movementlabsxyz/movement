@@ -22,7 +22,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info, info_span, warn, Instrument};
-
 pub struct SuzukaPartialNode<T> {
 	executor: T,
 	transaction_sender: Sender<SignedTransaction>,

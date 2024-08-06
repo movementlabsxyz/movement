@@ -82,7 +82,7 @@ env_default!(
 	default_maptos_indexer_grpc_listen_hostname,
 	"MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME",
 	String,
-	"0.0.0.0".to_string()	
+	"0.0.0.0".to_string()
 );
 
 env_default!(
@@ -112,7 +112,6 @@ env_default!(
 	String,
 	"postgresql://postgres:password@localhost:5432".to_string()
 );
-
 
 env_default!(
 	default_indexer_processor_auth_token,
