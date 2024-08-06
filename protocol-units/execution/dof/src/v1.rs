@@ -9,6 +9,10 @@ use movement_types::BlockCommitment;
 use anyhow::format_err;
 use async_channel::Sender;
 use async_trait::async_trait;
+use tokio::time::interval;
+use tokio::time::Duration;
+use tokio_stream::wrappers::IntervalStream;
+use tokio_stream::StreamExt;
 use tracing::{debug, info};
 
 use std::sync::atomic::Ordering;

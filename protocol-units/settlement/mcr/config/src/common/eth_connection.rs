@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use godfig::env_default;
+use serde::{Deserialize, Serialize};
 
 const DEFAULT_ETH_RPC_CONNECTION_HOSTNAME: &str = "ethereum-holesky-rpc.publicnode.com";
 const DEFAULT_ETH_RPC_CONNECTION_PORT: u16 = 443;
@@ -68,12 +68,7 @@ env_default!(
 	DEFAULT_ETH_WS_CONNECTION_PORT
 );
 
-env_default!(
-	default_eth_chain_id,
-	"ETH_CHAIN_ID",
-	u64,
-	0
-);
+env_default!(default_eth_chain_id, "ETH_CHAIN_ID", u64, 0);
 
 impl Default for Config {
 	fn default() -> Self {
@@ -91,7 +86,6 @@ impl Default for Config {
 }
 
 impl Config {
-
 	pub fn eth_rpc_connection_url(&self) -> String {
 		format!(
 			"{}://{}:{}",
@@ -109,5 +103,4 @@ impl Config {
 			self.eth_ws_connection_port
 		)
 	}
-
 }
