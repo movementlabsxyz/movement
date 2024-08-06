@@ -1,8 +1,5 @@
 use std::{
-	sync::{
-		atomic::{AtomicU64, Ordering},
-		Arc,
-	},
+	sync::{atomic::AtomicU64, Arc},
 	time::Duration,
 };
 use tokio_stream::Stream;
@@ -97,39 +94,47 @@ impl LightNodeV1 {
 		}
 	}
 
-	async fn submit_blocks(&self, blocks: &Vec<Block>) -> Result<(), anyhow::Error> {
-		let uid = LOGGING_UID.load(Ordering::SeqCst);
-		info!(
-			target: "movement_timing",
-			batch_size = blocks.len(),
-			uid = uid,
-			"inner_submitting_block_batch"
-		);
-		let mut block_blobs = Vec::new();
+	async fn submit_blocks(&self, blocks: &Vec<block::WrappedBlock>) -> Result<(), anyhow::Error> {
 		for block in blocks {
-			let block_blob = self.pass_through.create_new_celestia_blob(
-				bcs::to_bytes(block)
-					.map_err(|e| anyhow::anyhow!("Failed to serialize block: {}", e))?,
-			)?;
-			block_blobs.push(block_blob);
+			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitting_block");
 		}
-		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
-		}
+		// get references to celestia blobs in the wrapped blocks
+		let block_blobs = blocks
+			.iter()
+			.map(|wrapped_block| &wrapped_block.blob)
+			.cloned() // hopefully, the compiler optimizes this out
+			.collect::<Vec<_>>();
+		// use deref on the wrapped block to get the blob
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
 		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.id(), "submitted_block");
+			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitted_block");
 		}
 		Ok(())
 	}
 
 	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
-		let mut heuristic: GroupingHeuristicStack<Block> = GroupingHeuristicStack::new(vec![
-			DropSuccess::boxed(),
-			ToApply::boxed(),
-			SkipFor::boxed(1, Splitting::boxed(2)),
-			FirstFitBinpacking::boxed(1_700_000),
-		]);
+		for block in &blocks {
+			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
+		}
+
+		// wrap the blocks in a struct that can be split and compressed
+		// spawn blocking because the compression is blocking and could be slow
+		let namespace = self.pass_through.celestia_namespace.clone();
+		let blocks = tokio::task::spawn_blocking(move || {
+			blocks
+				.into_iter()
+				.map(|block| block::WrappedBlock::try_new(block, namespace))
+				.collect::<Result<Vec<_>, anyhow::Error>>()
+		})
+		.await??;
+
+		let mut heuristic: GroupingHeuristicStack<block::WrappedBlock> =
+			GroupingHeuristicStack::new(vec![
+				DropSuccess::boxed(),
+				ToApply::boxed(),
+				SkipFor::boxed(1, Splitting::boxed(2)),
+				FirstFitBinpacking::boxed(1_700_000),
+			]);
 
 		let start_distribution = GroupingOutcome::new_apply_distribution(blocks);
 		let block_group_results = heuristic
@@ -161,6 +166,9 @@ impl LightNodeV1 {
 			.await?;
 
 		info!("block group results: {:?}", block_group_results);
+		for block_group_result in &block_group_results {
+			info!(target: "movement_timing", block_group_result = ?block_group_result, "block_group_result");
+		}
 
 		Ok(())
 	}
@@ -203,6 +211,9 @@ impl LightNodeV1 {
 				}
 			}
 		}
+
+		info!(target: "movement_timing", block_count = blocks.len(), "read_blocks");
+
 		Ok(blocks)
 	}
 
@@ -402,5 +413,51 @@ impl LightNodeService for LightNodeV1 {
 		request: tonic::Request<UpdateVerificationParametersRequest>,
 	) -> std::result::Result<tonic::Response<UpdateVerificationParametersResponse>, tonic::Status> {
 		self.pass_through.update_verification_parameters(request).await
+	}
+}
+
+mod block {
+
+	use celestia_types::{nmt::Namespace, Blob};
+	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
+	use movement_types::Block;
+
+	#[derive(Debug)]
+	pub struct WrappedBlock {
+		pub block: Block,
+		pub blob: Blob,
+	}
+
+	impl WrappedBlock {
+		pub fn try_new(block: Block, namespace: Namespace) -> Result<Self, anyhow::Error> {
+			// first serialize the block
+			let block_bytes = bcs::to_bytes(&block)?;
+
+			// then compress the block bytes
+			let compressed_block_bytes = zstd::encode_all(block_bytes.as_slice(), 0)?;
+
+			// then create a blob from the compressed block bytes
+			let blob = Blob::new(namespace, compressed_block_bytes)?;
+
+			Ok(Self { block, blob })
+		}
+	}
+
+	impl Splitable for WrappedBlock {
+		fn split(self, factor: usize) -> Result<Vec<Self>, anyhow::Error> {
+			let split_blocks = self.block.split(factor)?;
+			let mut wrapped_blocks = Vec::new();
+			for block in split_blocks {
+				let wrapped_block = WrappedBlock { block, blob: self.blob.clone() };
+				wrapped_blocks.push(wrapped_block);
+			}
+			Ok(wrapped_blocks)
+		}
+	}
+
+	impl BinpackingWeighted for WrappedBlock {
+		fn weight(&self) -> usize {
+			self.blob.data.len()
+		}
 	}
 }

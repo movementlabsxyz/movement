@@ -35,6 +35,7 @@ console-subscriber = { workspace = true }
 rocksdb = { workspace = true }
 tracing = { workspace = true }
 bcs = { workspace = true }
+zstd = { workspace = true }
 
 [features]
 default = []
