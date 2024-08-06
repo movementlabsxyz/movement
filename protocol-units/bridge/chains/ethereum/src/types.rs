@@ -9,7 +9,7 @@ use alloy::transports::BoxTransport;
 use serde::{Deserialize, Serialize};
 
 pub type EthHash = [u8; 32];
-pub(crate) type AlloyProvider = FillProvider<
+pub type AlloyProvider = FillProvider<
 	JoinFill<
 		JoinFill<
 			JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,

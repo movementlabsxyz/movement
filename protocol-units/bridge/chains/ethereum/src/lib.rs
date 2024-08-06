@@ -1,3 +1,6 @@
+use alloy::signers::k256::elliptic_curve::SecretKey;
+use alloy::signers::k256::Secp256k1;
+use alloy::signers::local::LocalSigner;
 use alloy_rlp::Decodable;
 use serde_with::serde_as;
 use std::fmt::Debug;
@@ -140,8 +143,16 @@ impl EthClient {
 		self.config.signer_private_key.address()
 	}
 
-	pub fn rpc_provider(&self) -> types::AlloyProvider {
-		self.rpc_provider.clone()
+	pub fn set_signer_address(&mut self, key: SecretKey<Secp256k1>) {
+		self.config.signer_private_key = LocalSigner::from(key);
+	}
+
+	pub fn rpc_provider(&self) -> &types::AlloyProvider {
+		&self.rpc_provider
+	}
+
+	pub fn rpc_provider_mut(&mut self) -> &mut types::AlloyProvider {
+		&mut self.rpc_provider
 	}
 
 	pub fn rpc_port(&self) -> u16 {
