@@ -8,7 +8,13 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::transports::BoxTransport;
 use serde::{Deserialize, Serialize};
 
+use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
+
 pub type EthHash = [u8; 32];
+
+pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+
 pub type AlloyProvider = FillProvider<
 	JoinFill<
 		JoinFill<

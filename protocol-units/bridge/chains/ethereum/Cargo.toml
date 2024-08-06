@@ -40,5 +40,5 @@ bridge-shared = { workspace = true }
 serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }
 
-#To be removed once we refactor eth_tx functions into our own crate
+#To be removed after send_transaction refactor
 mcr-settlement-client = { workspace = true }

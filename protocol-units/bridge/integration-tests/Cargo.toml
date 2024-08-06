@@ -7,8 +7,13 @@ license = { workspace = true }
 repository = { workspace = true }
 
 version = { workspace = true }
+
 [lib]
 path = "src/lib.rs"
+
+[[tests]]
+name = "eth_movement"
+path = "tests/eth_movement.rs"
 
 [dependencies]
 aptos-sdk = { workspace = true }
@@ -26,4 +31,5 @@ ethereum-bridge = { workspace = true }
 movement-bridge = { workspace = true }
 
 [dev-dependencies]
+mcr-settlement-client = { workspace = true }
 tokio = { workspace = true }
