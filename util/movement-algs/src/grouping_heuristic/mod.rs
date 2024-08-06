@@ -224,18 +224,18 @@ impl<T> GroupingOutcome<T> {
 	/// Converts a grouping to a Vec<T>, i.e., a collection of the original type without outcome wrappers.
 	/// Drops success elemental outcomes.
 	pub fn into_original(self) -> Vec<T> {
-		let mut original = Vec::new();
-		for outcome in self.0 {
-			match outcome {
-				ElementalOutcome::Apply(t) => original.push(t),
-				ElementalOutcome::Success => (),
+		// Collect the outcomes
+		self.0
+			.into_iter()
+			.filter_map(|outcome| match outcome {
+				ElementalOutcome::Apply(t) => Some(t),
+				ElementalOutcome::Success => None,
 				ElementalOutcome::Failure(failure) => match failure {
-					ElementalFailure::Instrumental(t) => original.push(t),
-					ElementalFailure::Terminal(t) => original.push(t),
+					ElementalFailure::Instrumental(t) => Some(t),
+					ElementalFailure::Terminal(t) => Some(t),
 				},
-			}
-		}
-		original
+			})
+			.collect()
 	}
 }
 

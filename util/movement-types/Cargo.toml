@@ -1,8 +1,8 @@
 [package]
 name = "movement-types"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -16,10 +16,8 @@ aptos-types = { workspace = true }
 bcs = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
-# derivative = { workspace = true }
 anyhow = { workspace = true }
 blake3 = { workspace = true }
-itertools = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

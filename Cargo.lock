@@ -8661,7 +8661,6 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.4",
  "blake3",
- "itertools 0.12.1",
  "serde",
  "serde_with",
  "tokio",
