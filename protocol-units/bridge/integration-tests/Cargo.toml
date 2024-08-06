@@ -11,12 +11,14 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
 alloy = { workspace = true }
 reqwest = { workspace = true }
 alloy-network = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-contract = { workspace = true }
+rand = { workspace = true }
 serde_json = { workspace = true }
 
 bridge-shared = { workspace = true }

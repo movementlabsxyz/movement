@@ -9,12 +9,14 @@ use alloy::{
 	sol,
 };
 use alloy_network::EthereumWallet;
+use aptos_sdk::types::LocalAccount;
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
 	types::{Amount, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use ethereum_bridge::{types::EthAddress, AtomicBridgeInitiator};
+use rand::SeedableRng;
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -136,9 +138,11 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 
 	let (deployed, mut harness) = deploy_init_contracts(harness, anvil).await;
 
-	// Some basic data to set for the recipient.
-	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
-	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
+	// Gen an aptos account
+	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+	let movement_recipient = LocalAccount::generate(&mut rng);
+	let recipient_bytes: Vec<u8> = movement_recipient.public_key().to_bytes().to_vec();
+	println!("recipient_bytes length: {:?}", recipient_bytes.len());
 
 	let secret = "secret".to_string();
 	let hash_lock: [u8; 32] = keccak256(secret.as_bytes()).into();
