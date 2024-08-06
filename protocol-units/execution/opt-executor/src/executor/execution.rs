@@ -1,10 +1,8 @@
 use super::Executor;
-use aptos_api::Context;
 use aptos_crypto::HashValue;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
-	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
 	block_executor::{
 		config::BlockExecutorConfigFromOnchain,
@@ -18,15 +16,14 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::{BlockCommitment, Commitment, Id};
-use std::sync::Arc;
-use tracing::{debug, debug_span, info};
+use tracing::{debug, info};
 
 impl Executor {
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		let (block_metadata, block, senders_and_sequence_numbers) = {
+		let (block_metadata, block) = {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
@@ -41,32 +38,19 @@ impl Executor {
 				}
 			};
 
-			// senders and sequence numbers
-			let senders_and_sequence_numbers = metadata_access_transactions
-				.iter()
-				.map(|transaction| match transaction.clone().into_inner() {
-					Transaction::UserTransaction(transaction) => {
-						(transaction.sender(), transaction.sequence_number())
-					}
-					_ => (AccountAddress::ZERO, 0),
-				})
-				.collect::<Vec<(AccountAddress, u64)>>();
-
 			// reconstruct the block
 			let block = ExecutableBlock::new(
 				block.block_id.clone(),
 				ExecutableTransactions::Unsharded(metadata_access_transactions),
 			);
 
-			(block_metadata, block, senders_and_sequence_numbers)
+			(block_metadata, block)
 		};
 
-		let block_executor = self.block_executor.clone();
-
 		let block_id = block.block_id.clone();
-		let parent_block_id = block_executor.committed_block_id();
+		let parent_block_id = self.block_executor.committed_block_id();
 
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		let state_compute = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
@@ -90,7 +74,7 @@ impl Executor {
 			state_compute.root_hash(),
 			version,
 		);
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
 		})
@@ -115,12 +99,31 @@ impl Executor {
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
-		let ledger_info = self.context.get_latest_ledger_info_wrapped()?;
-		Ok(ledger_info.block_height.into())
+		let ledger_info = self.db.reader.get_latest_ledger_info()?;
+		let (_, _, new_block_event) =
+			self.db.reader.get_block_info_by_version(ledger_info.ledger_info().version())?;
+		Ok(new_block_event.height)
 	}
 
-	pub fn context(&self) -> Arc<Context> {
-		self.context.clone()
+	pub fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
+		let (_start_ver, end_ver, block_event) =
+			self.db.reader.get_block_info_by_height(block_height)?;
+		let block_info = BlockInfo::new(
+			block_event.epoch(),
+			block_event.round(),
+			block_event.hash()?,
+			self.db.reader.get_accumulator_root_hash(end_ver)?,
+			end_ver,
+			block_event.proposed_time(),
+			None,
+		);
+		let ledger_info = LedgerInfo::new(block_info, HashValue::zero());
+		let aggregate_signature = AggregateSignature::empty();
+		let ledger_info = LedgerInfoWithSignatures::new(ledger_info, aggregate_signature);
+		self.db.writer.revert_commit(&ledger_info)?;
+		// Reset the executor state to the reverted storage
+		self.block_executor.reset()?;
+		Ok(())
 	}
 
 	/// Gets the next epoch and round.
@@ -214,8 +217,8 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-
 	use super::*;
+	use crate::Service;
 	use aptos_api::accept_type::AcceptType;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
@@ -239,6 +242,7 @@ mod tests {
 		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
 	};
 	use rand::SeedableRng;
+	use tokio::sync::mpsc;
 
 	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
@@ -392,6 +396,9 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (tx_sender, _tx_receiver) = mpsc::channel(16);
+		let (context, _transaction_pipe) = executor.background(tx_sender);
+		let service = Service::new(&context);
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -455,7 +462,7 @@ mod tests {
 			executor.execute_block(block).await?;
 
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
-			let apis = executor.get_apis();
+			let apis = service.get_apis();
 			for hash in transaction_hashes {
 				let _ = apis
 					.transactions

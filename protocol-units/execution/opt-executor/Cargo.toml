@@ -34,7 +34,6 @@ rand = { workspace = true }
 rand_core = { workspace = true }
 bcs = { workspace = true }
 futures = { workspace = true }
-async-channel = { workspace = true }
 
 aptos-vm = { workspace = true }
 aptos-vm-validator = { workspace = true }

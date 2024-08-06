@@ -1,18 +1,55 @@
-use super::Executor;
+use crate::Context;
+
 use aptos_api::{
 	get_api_service,
 	runtime::{get_apis, root_handler, Apis},
 	set_failpoints,
 };
+use aptos_storage_interface::DbReaderWriter;
+
 use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
 use tracing::info;
 
-impl Executor {
+use std::sync::Arc;
+
+pub struct Service {
+	// API context
+	context: Arc<aptos_api::Context>,
+	// URL for the API endpoint
+	listen_url: String,
+}
+
+impl Service {
+	pub fn new(cx: &Context) -> Self {
+		let Context {
+			chain_config,
+			db: DbReaderWriter { reader, .. },
+			mempool_client_sender,
+			node_config,
+		} = cx;
+		let context = Arc::new(aptos_api::Context::new(
+			chain_config.maptos_chain_id.clone(),
+			reader.clone(),
+			mempool_client_sender.clone(),
+			node_config.clone(),
+			None,
+		));
+		let listen_url = format!(
+			"{}:{}",
+			chain_config.maptos_rest_listen_hostname, chain_config.maptos_rest_listen_port
+		);
+		Service { context, listen_url }
+	}
+
+	fn context(&self) -> Arc<aptos_api::Context> {
+		Arc::clone(&self.context)
+	}
+
 	pub fn get_apis(&self) -> Apis {
 		get_apis(self.context())
 	}
 
-	pub async fn run_service(&self) -> Result<(), anyhow::Error> {
+	pub async fn run(&self) -> Result<(), anyhow::Error> {
 		info!("Starting maptos-opt-executor services at: {:?}", self.listen_url);
 
 		let api_service =
@@ -38,7 +75,7 @@ impl Executor {
 			)
 			.with(cors);
 
-		Server::new(TcpListener::bind(self.listen_url.clone()))
+		Server::new(TcpListener::bind(&self.listen_url))
 			.run(app)
 			.await
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))?;
@@ -50,7 +87,7 @@ impl Executor {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use aptos_mempool::core_mempool::CoreMempool;
+	use crate::Executor;
 	use aptos_mempool::MempoolClientRequest;
 	use aptos_types::{
 		account_config, mempool_status::MempoolStatusCode, test_helpers::transaction_test_helpers,
@@ -60,6 +97,7 @@ mod tests {
 	use futures::channel::oneshot;
 	use futures::SinkExt;
 	use maptos_execution_util::config::Config;
+	use tokio::sync::mpsc;
 
 	fn create_signed_transaction(
 		sequence_number: u64,
@@ -77,29 +115,23 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
-		let (mut executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let server_executor = executor.clone();
-
-		let handle = tokio::spawn(async move {
-			server_executor.run_service().await?;
-			Ok(()) as Result<(), anyhow::Error>
-		});
+		let (executor, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
+		let (mut context, mut transaction_pipe) = executor.background(tx_sender);
+		let service = Service::new(&context);
+		let handle = tokio::spawn(async move { service.run().await });
 
 		let user_transaction = create_signed_transaction(0, &executor.maptos_config);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();
-		executor
+		context
 			.mempool_client_sender
 			.send(MempoolClientRequest::SubmitTransaction(user_transaction.clone(), req_sender))
 			.await?;
 
 		// tick the transaction pipe
-		let (tx, rx) = async_channel::unbounded();
-		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
-		executor
-			.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now())
-			.await?;
+		transaction_pipe.tick().await?;
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;
@@ -107,7 +139,7 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let received_transaction = rx.recv().await?;
+		let received_transaction = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, user_transaction);
 
 		handle.abort();
