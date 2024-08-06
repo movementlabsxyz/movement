@@ -104,6 +104,7 @@ impl LightNodeV1 {
 			.map(|wrapped_block| &wrapped_block.blob)
 			.cloned() // hopefully, the compiler optimizes this out
 			.collect::<Vec<_>>();
+		// use deref on the wrapped block to get the blob
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
 		for block in blocks {
 			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitted_block");
