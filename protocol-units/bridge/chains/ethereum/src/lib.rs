@@ -314,6 +314,9 @@ impl BridgeContractInitiator for EthClient {
 			.await
 			.map_err(|_| generic_error("could not find storage"))?;
 		let storage_bytes = storage.to_be_bytes::<32>();
+
+		println!("storage_bytes: {:?}", storage_bytes);
+
 		let mut storage_slice = &storage_bytes[..];
 		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
 			.map_err(|_| generic_error("could not decode storage"))?;

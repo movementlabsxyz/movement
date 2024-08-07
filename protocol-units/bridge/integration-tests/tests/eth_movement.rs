@@ -106,14 +106,34 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
+	let recipient = harness.gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+
 	// Set a funded signer
-	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
+	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
 
-	// let bridge_transfer_details = eth_client
-	// 	.get_bridge_transfer_details(BridgeTransferId([0u8; 32]))
-	// 	.await
-	// 	.expect("Failed to get bridge transfer details");
+	let bridge_transfer_id = harness
+		.eth_client_mut()
+		.expect("Failed to get EthClient")
+		.initiate_bridge_transfer(
+			InitiatorAddress(EthAddress(signer_address)),
+			RecipientAddress(recipient),
+			HashLock(EthHash(hash_lock)),
+			TimeLock(100),
+			Amount(1000), // Eth
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+
+	let bridge_transfer_details = harness
+		.eth_client_mut()
+		.expect("Failed to get EthClient")
+		.get_bridge_transfer_details(bridge_transfer_id)
+		.await
+		.expect("Failed to get bridge transfer details");
+
+	println!("Bridge transfer details: {:?}", bridge_transfer_details);
 }
 
 // #[tokio::test]
