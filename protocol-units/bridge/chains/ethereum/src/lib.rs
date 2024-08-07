@@ -133,7 +133,8 @@ impl EthClient {
 		weth: EthAddress,
 		owner: EthAddress,
 	) -> Result<(), anyhow::Error> {
-		let contract = self.initiator_contract()?;
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		println!("owner {:?}", owner.0);
 		let call = contract.initialize(weth.0, owner.0);
 		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
@@ -259,7 +260,6 @@ impl BridgeContractInitiator for EthClient {
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-		println!("call {:?}", call);
 		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");

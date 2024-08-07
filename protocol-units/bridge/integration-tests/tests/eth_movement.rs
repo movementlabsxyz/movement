@@ -86,6 +86,7 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 	// Gen an aptos account
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 	let movement_recipient = LocalAccount::generate(&mut rng);
+	println!("movement_recipient: {:?}", movement_recipient);
 	let recipient_bytes: Vec<u8> = movement_recipient.public_key().to_bytes().to_vec();
 	println!("recipient_bytes length: {:?}", recipient_bytes.len());
 
@@ -98,7 +99,6 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
-			// unused as the val is derived from msg.sender
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient_bytes),
 			HashLock(hash_lock),
@@ -235,6 +235,8 @@ async fn deploy_init_contracts(mut harness: TestHarness, anvil: AnvilInstance) -
 		.initialize_initiator_contract(EthAddress(weth_address), EthAddress(signer_address))
 		.await
 		.expect("Failed to initialize contract");
+
+	println!("initialized initiator contract");
 
 	harness
 }
