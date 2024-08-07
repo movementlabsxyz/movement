@@ -76,6 +76,7 @@ pub async fn send_transaction<
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<(), anyhow::Error> {
+	println!("base_call_builder: {:?}", base_call_builder);
 	println!("Sending transaction with gas limit: {}", gas_limit);
 	//validate gas price.
 	let mut estimate_gas = base_call_builder.estimate_gas().await.expect("Failed to estimate gas");

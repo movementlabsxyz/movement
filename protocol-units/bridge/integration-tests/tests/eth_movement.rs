@@ -18,18 +18,6 @@ use bridge_shared::{
 use ethereum_bridge::{types::EthAddress, AtomicBridgeInitiator};
 use rand::SeedableRng;
 
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	WETH9,
-	"../chains/ethereum/abis/WETH9.json"
-);
-
-struct DeployedContracts {
-	weth_contract: Address,
-	initiator_contract: Address,
-}
-
 #[tokio::test]
 async fn test_client_should_build_and_fetch_accounts() {
 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
@@ -83,54 +71,45 @@ async fn test_client_should_successfully_call_initialize() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	let (deployed, harness) = deploy_init_contracts(harness, anvil).await;
+	let harness = deploy_init_contracts(harness, anvil).await;
 	let signer_address = harness.eth_signer_address();
-
-	harness
-		.eth_client()
-		.expect("Failed to get EthClient")
-		.initialize_contract(EthAddress(deployed.weth_contract), EthAddress(signer_address))
-		.await
-		.expect("Failed to initialize contract");
 }
 
-//
-// #[tokio::test]
-// async fn test_client_should_successfully_call_initiate_transfer() {
-// 	let harness: TestHarness = TestHarness::new_only_eth().await;
-// 	if harness.eth_client.is_none() {
-// 		panic!("EthClient was not initialized properly.");
-// 	}
-//
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-// 	println!("Anvil running at `{}`", anvil.endpoint());
-//
-// 	let (deployed, mut harness) = deploy_init_contracts(harness, anvil).await;
-//
-// 	// Gen an aptos account
-// 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
-// 	let movement_recipient = LocalAccount::generate(&mut rng);
-// 	let recipient_bytes: Vec<u8> = movement_recipient.public_key().to_bytes().to_vec();
-// 	println!("recipient_bytes length: {:?}", recipient_bytes.len());
-//
-// 	let secret = "secret".to_string();
-// 	let hash_lock: [u8; 32] = keccak256(secret.as_bytes()).into();
-//
-// 	let _ = harness
-// 		.eth_client_mut()
-// 		.expect("Failed to get EthClient")
-// 		.initiate_bridge_transfer(
-// 			InitiatorAddress(EthAddress(deployed.initiator_contract)),
-// 			RecipientAddress(recipient_bytes),
-// 			HashLock(hash_lock),
-// 			TimeLock(100_000_000),
-// 			Amount(1), // Eth
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-//
-// 	//@TODO: Here we should assert on the event emitted by the contract
-// }
+#[tokio::test]
+async fn test_client_should_successfully_call_initiate_transfer() {
+	let harness: TestHarness = TestHarness::new_only_eth().await;
+	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+	println!("Anvil running at `{}`", anvil.endpoint());
+
+	let mut harness = deploy_init_contracts(harness, anvil).await;
+
+	// Gen an aptos account
+	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+	let movement_recipient = LocalAccount::generate(&mut rng);
+	let recipient_bytes: Vec<u8> = movement_recipient.public_key().to_bytes().to_vec();
+	println!("recipient_bytes length: {:?}", recipient_bytes.len());
+
+	let secret = "secret".to_string();
+	let hash_lock: [u8; 32] = keccak256(secret.as_bytes()).into();
+
+	let signer_address = harness.eth_signer_address();
+
+	let _ = harness
+		.eth_client_mut()
+		.expect("Failed to get EthClient")
+		.initiate_bridge_transfer(
+			// unused as the val is derived from msg.sender
+			InitiatorAddress(EthAddress(signer_address)),
+			RecipientAddress(recipient_bytes),
+			HashLock(hash_lock),
+			TimeLock(100),
+			Amount(1000), // Eth
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+
+	//@TODO: Here we should assert on the event emitted by the contract
+}
 
 // #[tokio::test]
 // async fn test_client_should_successfully_get_bridge_transfer_id() {
@@ -240,35 +219,22 @@ async fn test_client_should_successfully_call_initialize() {
 // }
 //
 
-async fn deploy_init_contracts(
-	mut harness: TestHarness,
-	anvil: AnvilInstance,
-) -> (DeployedContracts, TestHarness) {
+async fn deploy_init_contracts(mut harness: TestHarness, anvil: AnvilInstance) -> TestHarness {
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].to_owned());
-
-	// Separate the provider and contract deployment to avoid long-lived immutable borrows
 	let provider = harness.provider();
+
 	let initiator_address = harness.deploy_initiator_contract().await;
 	println!("deployed initiator contract at: {:?}", initiator_address);
 
-	let weth_contract = WETH9::deploy(harness.provider()).await.expect("Failed to deploy contract");
-
-	println!("deployed weth contract at: {:?}", weth_contract.address());
-
-	let expected_weth_address = address!("e7f1725e7734ce288f8367e1bb143e90bb3f0512");
+	let weth_address = harness.deploy_weth_contract().await;
+	println!("deployed weth contract at: {:?}", weth_address);
 
 	harness
 		.eth_client()
 		.expect("Failed to get EthClient")
-		.initialize_contract(EthAddress(expected_weth_address), EthAddress(signer_address))
+		.initialize_initiator_contract(EthAddress(weth_address), EthAddress(signer_address))
 		.await
 		.expect("Failed to initialize contract");
 
-	(
-		DeployedContracts {
-			weth_contract: expected_weth_address,
-			initiator_contract: initiator_address,
-		},
-		harness,
-	)
+	harness
 }

@@ -16,6 +16,12 @@ use ethereum_bridge::{
 };
 use movement_bridge::{Config as MovementConfig, MovementClient};
 
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	WETH9,
+	"../chains/ethereum/abis/WETH9.json"
+);
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
 	pub movement_client: Option<MovementClient>,
@@ -66,5 +72,11 @@ impl TestHarness {
 			.expect("Failed to deploy AtomicBridgeInitiator");
 		eth_client.set_initiator_contract(contract.with_cloned_provider());
 		eth_client.initiator_contract_address().expect("Initiator contract not set")
+	}
+
+	pub async fn deploy_weth_contract(&mut self) -> Address {
+		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		let weth = WETH9::deploy(eth_client.rpc_provider()).await.expect("Failed to deploy WETH9");
+		weth.address().to_owned()
 	}
 }

@@ -128,12 +128,13 @@ impl EthClient {
 		self.counterparty_contract = Some(contract);
 	}
 
-	pub async fn initialize_contract(
+	pub async fn initialize_initiator_contract(
 		&self,
 		weth: EthAddress,
 		owner: EthAddress,
 	) -> Result<(), anyhow::Error> {
 		let contract = self.initiator_contract()?;
+		println!("owner {:?}", owner.0);
 		let call = contract.initialize(weth.0, owner.0);
 		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
@@ -186,18 +187,18 @@ impl EthClient {
 		}
 	}
 
-	pub fn initiator_contract(&self) -> BridgeContractInitiatorResult<InitiatorContract> {
+	pub fn initiator_contract(&self) -> BridgeContractInitiatorResult<&InitiatorContract> {
 		match &self.initiator_contract {
-			Some(contract) => Ok(contract.to_owned()),
+			Some(contract) => Ok(contract),
 			None => Err(BridgeContractInitiatorError::GenericError(
 				"Initiator contract not set".to_string(),
 			)),
 		}
 	}
 
-	pub fn counterparty_contract(&self) -> BridgeContractCounterpartyResult<CounterpartyContract> {
+	pub fn counterparty_contract(&self) -> BridgeContractCounterpartyResult<&CounterpartyContract> {
 		match &self.counterparty_contract {
-			Some(contract) => Ok(contract.to_owned()),
+			Some(contract) => Ok(contract),
 			None => Err(BridgeContractCounterpartyError::GenericError(
 				"Counterparty contract not set".to_string(),
 			)),
@@ -219,15 +220,12 @@ impl BridgeContractInitiator for EthClient {
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		amount: Amount, // For now the ETH amount
+		amount: Amount, // the ETH amount
 	) -> BridgeContractInitiatorResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
-		println!("rpc_provider {:?}", self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-		let max_fee_per_gas: U256 = parse_units("50", "gwei").unwrap().into();
-		let max_priority_fee_per_gas: U256 = parse_units("0.1", "gwei").unwrap().into();
 		let call = contract
 			.initiateBridgeTransfer(
 				U256::from(0), // For now a 0 WETH amount
@@ -235,16 +233,10 @@ impl BridgeContractInitiator for EthClient {
 				FixedBytes(hash_lock.0),
 				U256::from(time_lock.0),
 			)
-			.max_fee_per_gas(max_fee_per_gas.to())
-			.max_priority_fee_per_gas(max_priority_fee_per_gas.to())
 			.value(U256::from(amount.0));
-		let pending_tx = call.send().await.expect("Failed to send transaction");
-		let reciept = pending_tx.get_receipt().await.expect("Failed to get receipt");
-		println!("reciept {:?}", reciept);
-
-		// send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
-		// 	.await
-		// 	.expect("Failed to send transaction");
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to send transaction");
 		Ok(())
 	}
 
