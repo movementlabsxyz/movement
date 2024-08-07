@@ -1,7 +1,7 @@
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{Address, U256},
-	providers::{Provider, ProviderBuilder, WalletProvider},
+	providers::{ProviderBuilder, WalletProvider},
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
 		local::{LocalSigner, PrivateKeySigner},

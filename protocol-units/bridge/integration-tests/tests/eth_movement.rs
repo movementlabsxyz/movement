@@ -68,8 +68,8 @@ async fn test_client_should_successfully_call_initialize() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	let (harness, anvil) = deploy_init_contracts(harness, &anvil).await;
-	let signer_address = harness.eth_signer_address();
+	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
+	harness.deploy_init_contracts().await;
 }
 
 #[tokio::test]
@@ -85,137 +85,79 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
-	let bridge_transfer_id = harness
+	harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(EthHash(hash_lock)),
+			HashLock(hash_lock),
 			TimeLock(100),
 			Amount(1000), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
-
-	println!("Bridge transfer id: {:?}", bridge_transfer_id);
 }
 
 #[tokio::test]
+#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
 async fn test_client_should_successfully_get_bridge_transfer_id() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-	let recipient = harness.gen_aptos_account();
-	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
 	// Set a funded signer
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
 
-	let bridge_transfer_id = harness
+	let recipient = harness.gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+
+	harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(EthHash(hash_lock)),
+			HashLock(hash_lock),
 			TimeLock(100),
 			Amount(1000), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-	let bridge_transfer_details = harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.get_bridge_transfer_details(bridge_transfer_id)
-		.await
-		.expect("Failed to get bridge transfer details");
-
-	println!("Bridge transfer details: {:?}", bridge_transfer_details);
+	//TODO: Here call get details with the captured event
 }
 
-// #[tokio::test]
-// async fn test_client_should_successfully_complete_transfer() {
-// 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
-// 	if scaffold.eth_client.is_none() {
-// 		panic!("EthClient was not initialized properly.");
-// 	}
-//
-// 	let mut eth_client = scaffold.eth_client().expect("Failed to get EthClient");
-// 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
-// 	println!("Anvil running at `{}`", anvil.endpoint());
-//
-// 	// set funded signer
-// 	let signer = anvil.keys()[0].clone();
-// 	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
-// 	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
-// 	wallet.register_default_signer(LocalSigner::from(signer));
-//
-// 	let contract = AtomicBridgeInitiator::deploy(&provider)
-// 		.await
-// 		.expect("Failed to deploy contract");
-//
-// 	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
-// 	assert_eq!(contract.address(), &expected_address);
-//
-// 	//some data to set for the recipient.
-// 	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
-// 	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
-//
-// 	let secret = "secret".to_string();
-// 	let hash_lock = keccak256(secret.as_bytes());
-// 	let hash_lock: [u8; 32] = hash_lock.into();
-//
-// 	let _ = eth_client
-// 		.initiate_bridge_transfer(
-// 			InitiatorAddress(EthAddress(expected_address)),
-// 			RecipientAddress(recipient_bytes),
-// 			HashLock(hash_lock),
-// 			TimeLock(1000),
-// 			Amount(42),
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-//
-// 	let bridge_transfer_details = eth_client
-// 		.get_bridge_transfer_details(BridgeTransferId([0u8; 32]))
-// 		.await
-// 		.expect("Failed to get bridge transfer details");
-//
-// 	let secret = "secret".to_string();
-// 	let hash_lock = keccak256(secret.as_bytes());
-// 	let hash_lock: [u8; 32] = hash_lock.into();
-//
-// 	// let _ = eth_client
-// 	// 	.complete_bridge_transfer()
-// 	// 	.await
-// 	// 	.expect
-// }
-//
+#[tokio::test]
+#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
+async fn test_client_should_successfully_complete_transfer() {
+	let mut harness: TestHarness = TestHarness::new_only_eth().await;
+	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-async fn deploy_init_contracts(
-	mut harness: TestHarness,
-	anvil: &AnvilInstance,
-) -> (TestHarness, &AnvilInstance) {
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].to_owned());
-	let provider = harness.provider();
+	// set funded signer
+	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
+	harness.deploy_init_contracts().await;
 
-	let initiator_address = harness.deploy_initiator_contract().await;
-	println!("deployed initiator contract at: {:?}", initiator_address);
+	//some data to set for the recipient.
+	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
+	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
 
-	let weth_address = harness.deploy_weth_contract().await;
-	println!("deployed weth contract at: {:?}", weth_address);
+	let secret = "secret".to_string();
+	let hash_lock = keccak256(secret.as_bytes());
+	let hash_lock: [u8; 32] = hash_lock.into();
 
-	harness
-		.eth_client()
+	let _ = harness
+		.eth_client_mut()
 		.expect("Failed to get EthClient")
-		.initialize_initiator_contract(EthAddress(weth_address), EthAddress(signer_address))
+		.initiate_bridge_transfer(
+			InitiatorAddress(EthAddress(signer_address)),
+			RecipientAddress(recipient_bytes),
+			HashLock(hash_lock),
+			TimeLock(1000),
+			Amount(42),
+		)
 		.await
-		.expect("Failed to initialize contract");
+		.expect("Failed to initiate bridge transfer");
 
-	println!("initialized initiator contract");
-
-	(harness, anvil)
+	//TODO: Here call complete with the id captured from the event
 }

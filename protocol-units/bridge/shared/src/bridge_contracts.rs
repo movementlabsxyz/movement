@@ -62,7 +62,7 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
-	) -> BridgeContractInitiatorResult<BridgeTransferId<Self::Hash>>;
+	) -> BridgeContractInitiatorResult<()>;
 
 	async fn complete_bridge_transfer(
 		&mut self,
