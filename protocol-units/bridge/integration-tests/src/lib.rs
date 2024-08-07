@@ -1,21 +1,20 @@
 use alloy::{
 	node_bindings::Anvil,
-	primitives::{Address, U256},
-	providers::{ProviderBuilder, WalletProvider},
+	primitives::Address,
+	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
-		local::{LocalSigner, PrivateKeySigner},
+		local::LocalSigner,
 	},
 };
 use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
-use alloy_sol_types::sol;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use aptos_sdk::types::LocalAccount;
 use ethereum_bridge::{
-	types::{AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, EthAddress},
+	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 	Config as EthConfig, EthClient,
 };
-use movement_bridge::{Config as MovementConfig, MovementClient};
+use movement_bridge::MovementClient;
 use rand::SeedableRng;
 
 alloy::sol!(

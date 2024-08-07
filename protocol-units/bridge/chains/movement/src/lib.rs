@@ -39,6 +39,7 @@ pub struct Config {
 	pub gas_limit: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct MovementClient {
 	///Address of the counterparty moduke

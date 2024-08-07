@@ -1,22 +1,14 @@
 use alloy::{
-	node_bindings::{Anvil, AnvilInstance},
-	primitives::{address, keccak256, Address},
-	providers::{Provider, WalletProvider},
-	signers::{
-		k256::ecdsa::{SigningKey, VerifyingKey},
-		local::{LocalSigner, PrivateKeySigner},
-	},
-	sol,
+	node_bindings::Anvil,
+	primitives::{address, keccak256},
+	providers::Provider,
 };
-use alloy_network::EthereumWallet;
-use aptos_sdk::types::LocalAccount;
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
-	types::{Amount, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
+	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
-use ethereum_bridge::types::{AtomicBridgeInitiator, EthAddress, EthHash};
-use rand::SeedableRng;
+use ethereum_bridge::types::EthAddress;
 
 #[tokio::test]
 async fn test_client_should_build_and_fetch_accounts() {
@@ -24,7 +16,7 @@ async fn test_client_should_build_and_fetch_accounts() {
 
 	// Start Anvil with the fixed port
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
-	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
+	let _anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 
 	let expected_accounts = vec![
 		address!("f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
@@ -55,7 +47,7 @@ async fn test_client_should_deploy_initiator_contract() {
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
 	// Set a funded signer
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
+	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	let initiator_address = harness.deploy_initiator_contract().await;
 	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
