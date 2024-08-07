@@ -10,7 +10,37 @@ use serde::{Deserialize, Serialize};
 
 use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
 
-pub type EthHash = [u8; 32];
+// Codegen from the abis
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiator,
+	"abis/AtomicBridgeInitiator.json"
+);
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeCounterparty,
+	"abis/AtomicBridgeCounterparty.json"
+);
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct EthHash(pub [u8; 32]);
+
+impl From<AtomicBridgeInitiator::initiateBridgeTransferReturn> for EthHash {
+	fn from(id: AtomicBridgeInitiator::initiateBridgeTransferReturn) -> Self {
+		let mut bytes = [0u8; 32];
+		bytes.copy_from_slice(id.bridgeTransferId.as_slice());
+		EthHash(bytes)
+	}
+}
+
+impl EthHash {
+	pub fn inner(&self) -> &[u8; 32] {
+		&self.0
+	}
+}
 
 pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
 pub type CounterpartyContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;

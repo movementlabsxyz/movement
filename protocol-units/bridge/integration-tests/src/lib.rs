@@ -10,11 +10,13 @@ use alloy::{
 use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy_sol_types::sol;
 use anyhow::{Error, Result};
+use aptos_sdk::types::LocalAccount;
 use ethereum_bridge::{
-	types::{AlloyProvider, EthAddress},
-	AtomicBridgeCounterparty, AtomicBridgeInitiator, Config as EthConfig, EthClient,
+	types::{AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, EthAddress},
+	Config as EthConfig, EthClient,
 };
 use movement_bridge::{Config as MovementConfig, MovementClient};
+use rand::SeedableRng;
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -91,5 +93,11 @@ impl TestHarness {
 			)
 			.await
 			.expect("Failed to initialize contract");
+	}
+
+	pub fn gen_aptos_account(&self) -> Vec<u8> {
+		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+		let movement_recipient = LocalAccount::generate(&mut rng);
+		movement_recipient.public_key().to_bytes().to_vec()
 	}
 }

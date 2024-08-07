@@ -15,21 +15,16 @@ use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
 	types::{Amount, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
-use ethereum_bridge::{types::EthAddress, AtomicBridgeInitiator};
+use ethereum_bridge::types::{AtomicBridgeInitiator, EthAddress, EthHash};
 use rand::SeedableRng;
 
 #[tokio::test]
 async fn test_client_should_build_and_fetch_accounts() {
 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
-	if scaffold.eth_client.is_none() {
-		panic!("EthClient was not initialized properly.");
-	}
 
 	// Start Anvil with the fixed port
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
-
-	println!("Anvil running at `{}`", anvil.endpoint());
 
 	let expected_accounts = vec![
 		address!("f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
@@ -58,6 +53,8 @@ async fn test_client_should_build_and_fetch_accounts() {
 async fn test_client_should_deploy_initiator_contract() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+
+	// Set a funded signer
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	let initiator_address = harness.deploy_initiator_contract().await;
@@ -79,101 +76,45 @@ async fn test_client_should_successfully_call_initialize() {
 async fn test_client_should_successfully_call_initiate_transfer() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-	println!("Anvil running at `{}`", anvil.endpoint());
 
-	//set a funded signer
-	harness.set_eth_signer(anvil.keys()[0].clone());
+	//Set a funded signer
+	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	harness.deploy_init_contracts().await;
-	let chain_id = anvil.chain_id();
-	println!("chain_id: {:?}", chain_id);
-	// harness
-	// 	.eth_client()
-	// 	.expect("Could not get client")
-	// 	.get_weth_initiator_contract()
-	// 	.await
-	// 	.expect("could not fetch weth contract");
 
-	// Gen an aptos account
-	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
-	let movement_recipient = LocalAccount::generate(&mut rng);
-	println!("movement_recipient: {:?}", movement_recipient);
-	let recipient_bytes: Vec<u8> = movement_recipient.public_key().to_bytes().to_vec();
-	println!("recipient_bytes length: {:?}", recipient_bytes.len());
+	let recipient = harness.gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
-	let secret = "secret".to_string();
-	let hash_lock: [u8; 32] = keccak256(secret.as_bytes()).into();
-
-	let signer_address = harness.eth_signer_address();
-	println!("signer_address: {:?}", signer_address);
-
-	//sleep for a bit to allow the contract to be mined
-	tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-
-	let _ = harness
+	let bridge_transfer_id = harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient_bytes),
-			HashLock(hash_lock),
+			RecipientAddress(recipient),
+			HashLock(EthHash(hash_lock)),
 			TimeLock(100),
 			Amount(1000), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-	//@TODO: Here we should assert on the event emitted by the contract
+	println!("Bridge transfer id: {:?}", bridge_transfer_id);
 }
 
-// #[tokio::test]
-// async fn test_client_should_successfully_get_bridge_transfer_id() {
-// 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
-// 	if scaffold.eth_client.is_none() {
-// 		panic!("EthClient was not initialized properly.");
-// 	}
-//
-// 	let mut eth_client = scaffold.eth_client().expect("Failed to get EthClient");
-// 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
-// 	println!("Anvil running at `{}`", anvil.endpoint());
-//
-// 	// set funded signer
-// 	let signer = anvil.keys()[0].clone();
-// 	let mut provider = scaffold.eth_client.unwrap().rpc_provider().clone();
-// 	let mut wallet: &mut EthereumWallet = provider.wallet_mut();
-// 	wallet.register_default_signer(LocalSigner::from(signer));
-//
-// 	let contract = AtomicBridgeInitiator::deploy(&provider)
-// 		.await
-// 		.expect("Failed to deploy contract");
-//
-// 	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
-// 	assert_eq!(contract.address(), &expected_address);
-//
-// 	//some data to set for the recipient.
-// 	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
-// 	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
-//
-// 	let secret = "secret".to_string();
-// 	let hash_lock = keccak256(secret.as_bytes());
-// 	let hash_lock: [u8; 32] = hash_lock.into();
-//
-// 	let _ = eth_client
-// 		.initiate_bridge_transfer(
-// 			InitiatorAddress(EthAddress(expected_address)),
-// 			RecipientAddress(recipient_bytes),
-// 			HashLock(hash_lock),
-// 			TimeLock(1000),
-// 			Amount(42),
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-//
-// 	let bridge_transfer_details = eth_client
-// 		.get_bridge_transfer_details(BridgeTransferId([0u8; 32]))
-// 		.await
-// 		.expect("Failed to get bridge transfer details");
-// }
+#[tokio::test]
+async fn test_client_should_successfully_get_bridge_transfer_id() {
+	let mut harness: TestHarness = TestHarness::new_only_eth().await;
+	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+
+	// Set a funded signer
+	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
+	harness.deploy_init_contracts().await;
+
+	// let bridge_transfer_details = eth_client
+	// 	.get_bridge_transfer_details(BridgeTransferId([0u8; 32]))
+	// 	.await
+	// 	.expect("Failed to get bridge transfer details");
+}
 
 // #[tokio::test]
 // async fn test_client_should_successfully_complete_transfer() {
