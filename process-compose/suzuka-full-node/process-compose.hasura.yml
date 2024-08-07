@@ -4,7 +4,7 @@ processes:
 
   hasura:
     command: |
-      EXTERNAL_IP=$POSTGRES_HOST_IP docker compose -f docker/compose/indexer/docker-compose.hasura.yml up --force-recreate
+      EXTERNAL_IP=$POSTGRES_HOST_IP docker compose -f docker/compose/suzuka-indexer/docker-compose.hasura.yml up --force-recreate
     env:
       RUST_LOG: info
     depends_on:

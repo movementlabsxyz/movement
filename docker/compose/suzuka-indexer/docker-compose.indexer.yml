@@ -1,0 +1,19 @@
+services:
+
+  suzuka-full-node:
+    image: ghcr.io/movementlabsxyz/suzuka-indexer:${CONTAINER_REV}
+    container_name: suzuka-indexer
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+      - EXTERNAL_IP=${EXTERNAL_IP}
+      - INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=postgresql://postgres:password@database:5432/postgres
+      - MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME=database
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    extra_hosts:
+        - "database:${EXTERNAL_IP}"
+    restart: on-failure:5
+
+volumes:
+  dot-movement:
+
