@@ -5,12 +5,10 @@ services:
     container_name: suzuka-indexer
     environment:
       - DOT_MOVEMENT_PATH=/.movement
-      - INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=postgresql://postgres:password@database:5432
-      - MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME=${SUZUKA_NODE_IP}
+      - MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME=${MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME}
+      - INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
-    extra_hosts:
-        - "database:${POSTGRES_IP}"
     restart: on-failure:5
 
 volumes:
