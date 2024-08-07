@@ -164,24 +164,10 @@ where
 		Ok(())
 	}
 
-	async fn send_transaction_batch_writes(&self) -> Result<(), anyhow::Error> {
+	async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		loop {
 			self.next_transaction_batch_write().await?;
 		}
-	}
-
-	pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
-		loop {
-			// run send transaction batch writes and submit transaction batch writes concurrently
-			match self.send_transaction_batch_writes().await {
-				Ok(_) => {}
-				Err(e) => {
-					error!("Failed to send transaction batch writes: {:?}", e);
-				}
-			}
-		}
-
-		Ok(())
 	}
 
 	// receive transactions from the transaction channel and send them to be executed
