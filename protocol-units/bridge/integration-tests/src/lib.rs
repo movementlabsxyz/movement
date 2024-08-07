@@ -11,8 +11,8 @@ use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use alloy_sol_types::sol;
 use anyhow::{Error, Result};
 use ethereum_bridge::{
-	types::AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, Config as EthConfig,
-	EthClient,
+	types::{AlloyProvider, EthAddress},
+	AtomicBridgeCounterparty, AtomicBridgeInitiator, Config as EthConfig, EthClient,
 };
 use movement_bridge::{Config as MovementConfig, MovementClient};
 
@@ -78,5 +78,18 @@ impl TestHarness {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		let weth = WETH9::deploy(eth_client.rpc_provider()).await.expect("Failed to deploy WETH9");
 		weth.address().to_owned()
+	}
+
+	pub async fn deploy_init_contracts(&mut self) {
+		let _ = self.deploy_initiator_contract().await;
+		let weth_address = self.deploy_weth_contract().await;
+		self.eth_client()
+			.expect("Failed to get EthClient")
+			.initialize_initiator_contract(
+				EthAddress(weth_address),
+				EthAddress(self.eth_signer_address()),
+			)
+			.await
+			.expect("Failed to initialize contract");
 	}
 }

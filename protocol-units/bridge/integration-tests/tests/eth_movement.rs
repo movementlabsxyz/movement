@@ -58,7 +58,7 @@ async fn test_client_should_build_and_fetch_accounts() {
 async fn test_client_should_deploy_initiator_contract() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-	harness.set_eth_signer(anvil.keys()[0].clone());
+	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	let initiator_address = harness.deploy_initiator_contract().await;
 	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
@@ -77,11 +77,14 @@ async fn test_client_should_successfully_call_initialize() {
 
 #[tokio::test]
 async fn test_client_should_successfully_call_initiate_transfer() {
-	let harness: TestHarness = TestHarness::new_only_eth().await;
+	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 	println!("Anvil running at `{}`", anvil.endpoint());
 
-	let (mut harness, _anvil) = deploy_init_contracts(harness, &anvil).await;
+	//set a funded signer
+	harness.set_eth_signer(anvil.keys()[0].clone());
+
+	harness.deploy_init_contracts().await;
 	let chain_id = anvil.chain_id();
 	println!("chain_id: {:?}", chain_id);
 	// harness
