@@ -38,9 +38,9 @@ pub async fn main() -> Result<(), anyhow::Error> {
 	howzit.build_and_publish().await?;
 
 	// fund the accounts in an orderly manner
-	let n = std::env::var("N").unwrap_or("64".to_string()).parse::<usize>()?;
-	let l = std::env::var("L").unwrap_or("3000".to_string()).parse::<u64>()?;
-	let k = std::env::var("K").unwrap_or("64".to_string()).parse::<u64>()?;
+	let n = std::env::var("HOWZIT_N").unwrap_or("64".to_string()).parse::<usize>()?;
+	let l = std::env::var("HOWZIT_L").unwrap_or("3000".to_string()).parse::<u64>()?;
+	let k = std::env::var("HOWZIT_K").unwrap_or("64".to_string()).parse::<u64>()?;
 
 	for epoch in 0..l {
 		let mut futures = Vec::with_capacity(n);
