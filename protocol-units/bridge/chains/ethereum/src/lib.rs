@@ -1,4 +1,3 @@
-use alloy::primitives::utils::parse_units;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
@@ -19,7 +18,7 @@ use bridge_shared::types::{
 	RecipientAddress, TimeLock,
 };
 use serde_with::serde_as;
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 use types::{CounterpartyContract, InitiatorContract};
 use url::Url;
 use utils::send_transaction;
@@ -46,6 +45,20 @@ alloy::sol!(
 	AtomicBridgeCounterparty,
 	"abis/AtomicBridgeCounterparty.json"
 );
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	WETH9,
+	"abis/WETH9.json"
+);
+
+impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		// Assuming the return type is an address, for example:
+		write!(f, "{:?}", self._0)
+	}
+}
 
 ///Configuration for the Ethereum Bridge Client
 #[serde_as]
@@ -133,9 +146,7 @@ impl EthClient {
 		weth: EthAddress,
 		owner: EthAddress,
 	) -> Result<(), anyhow::Error> {
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
-		println!("owner {:?}", owner.0);
+		let contract = self.initiator_contract().expect("Initiator contract not set");
 		let call = contract.initialize(weth.0, owner.0);
 		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
@@ -168,6 +179,17 @@ impl EthClient {
 
 	pub fn rpc_port(&self) -> u16 {
 		self.rpc_port
+	}
+
+	pub async fn get_weth_initiator_contract(&self) -> BridgeContractInitiatorResult<()> {
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
+		let AtomicBridgeInitiator::wethReturn { _0: address } =
+			contract.weth().call().await.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!("Failed to get weth: {}", e))
+			})?;
+		println!("weth_return: {:?}", address);
+		Ok(())
 	}
 
 	pub fn initiator_contract_address(&self) -> BridgeContractInitiatorResult<Address> {
@@ -237,7 +259,12 @@ impl BridgeContractInitiator for EthClient {
 			.value(U256::from(amount.0));
 		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!(
+					"Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 

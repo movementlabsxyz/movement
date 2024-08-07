@@ -71,7 +71,7 @@ async fn test_client_should_successfully_call_initialize() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	let harness = deploy_init_contracts(harness, anvil).await;
+	let (harness, anvil) = deploy_init_contracts(harness, &anvil).await;
 	let signer_address = harness.eth_signer_address();
 }
 
@@ -81,7 +81,15 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 	println!("Anvil running at `{}`", anvil.endpoint());
 
-	let mut harness = deploy_init_contracts(harness, anvil).await;
+	let (mut harness, _anvil) = deploy_init_contracts(harness, &anvil).await;
+	let chain_id = anvil.chain_id();
+	println!("chain_id: {:?}", chain_id);
+	// harness
+	// 	.eth_client()
+	// 	.expect("Could not get client")
+	// 	.get_weth_initiator_contract()
+	// 	.await
+	// 	.expect("could not fetch weth contract");
 
 	// Gen an aptos account
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
@@ -94,6 +102,10 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 	let hash_lock: [u8; 32] = keccak256(secret.as_bytes()).into();
 
 	let signer_address = harness.eth_signer_address();
+	println!("signer_address: {:?}", signer_address);
+
+	//sleep for a bit to allow the contract to be mined
+	tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
 	let _ = harness
 		.eth_client_mut()
@@ -219,7 +231,10 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 // }
 //
 
-async fn deploy_init_contracts(mut harness: TestHarness, anvil: AnvilInstance) -> TestHarness {
+async fn deploy_init_contracts(
+	mut harness: TestHarness,
+	anvil: &AnvilInstance,
+) -> (TestHarness, &AnvilInstance) {
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].to_owned());
 	let provider = harness.provider();
 
@@ -238,5 +253,5 @@ async fn deploy_init_contracts(mut harness: TestHarness, anvil: AnvilInstance) -
 
 	println!("initialized initiator contract");
 
-	harness
+	(harness, anvil)
 }
