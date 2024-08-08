@@ -23,7 +23,9 @@ IP_NET_MASK="$(echo $POSTGRES_HOST_IP | cut -d'.' -f1-3).0/24"
 echo -e "host    all             all             ${IP_NET_MASK}          trust" >> ./.data/pg_hba.conf 
 
 echo "Before db start"
-ls /run/postgresql
+ls -al /run/postgresql
+ls -al /run
+
 
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile start
