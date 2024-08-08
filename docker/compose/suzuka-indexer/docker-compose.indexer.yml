@@ -10,6 +10,9 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     restart: on-failure:5
+    depends_on:
+      - postgres
+      - suzuka-full-node
 
 volumes:
   dot-movement:
