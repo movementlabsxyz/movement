@@ -36,6 +36,36 @@ jobs:
           aptos move test
         "
 
+  solidity-bridge-tests:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Aptos CLI
+      run: |
+        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run foundry tests
+      run: |
+        cd protocol-units/bridge/contracts
+        forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
+        nix develop --command bash -c "
+          cd protocol-units/bridge/contracts && \
+          forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
+        "
+
   bridge-eth-movement:
     strategy:
       matrix:
