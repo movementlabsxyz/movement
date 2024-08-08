@@ -2,7 +2,7 @@ services:
 
   suzuka-faucet-service-replica-1:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-1
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -11,10 +11,10 @@ services:
     ports:
       - "31732:30732"
     depends_on:
-      suzuka-full-node:
+      suzuka-faucet-service:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 31732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -22,7 +22,7 @@ services:
 
   suzuka-faucet-service-replica-2:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-2
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -31,10 +31,10 @@ services:
     ports:
       - "32732:30732"
     depends_on:
-      suzuka-full-node-replica-1:
+      suzuka-faucet-service-replica-1:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 32732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -42,7 +42,7 @@ services:
 
   suzuka-faucet-service-replica-3:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-3
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -51,10 +51,10 @@ services:
     ports:
       - "33732:30732"
     depends_on:
-      suzuka-full-node-replica-2:
+      suzuka-faucet-service-replica-2:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 33732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -62,7 +62,7 @@ services:
 
   suzuka-faucet-service-replica-4:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-4
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -71,10 +71,10 @@ services:
     ports:
       - "34732:30732"
     depends_on:
-      suzuka-full-node-replica-4:
+      suzuka-faucet-service-replica-3:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 34732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -82,7 +82,7 @@ services:
 
   suzuka-faucet-service-replica-5:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-5
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -91,10 +91,10 @@ services:
     ports:
       - "35732:30732"
     depends_on:
-      suzuka-full-node-replica-4:
+      suzuka-faucet-service-replica-4:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 35732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -102,7 +102,7 @@ services:
 
   suzuka-faucet-service-replica-6:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-6
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -111,10 +111,10 @@ services:
     ports:
       - "36732:30732"
     depends_on:
-      suzuka-full-node-replica-5:
+      suzuka-faucet-service-replica-5:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 36732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s
@@ -122,7 +122,7 @@ services:
 
   suzuka-faucet-service-replica-7:
     image: ghcr.io/movementlabsxyz/suzuka-faucet-service:${CONTAINER_REV}
-    container_name: suzuka-faucet-service
+    container_name: suzuka-faucet-service-replica-7
     command: run-simple
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -131,10 +131,10 @@ services:
     ports:
       - "37732:30732"
     depends_on:
-      suzuka-full-node-replica-7:
+      suzuka-faucet-service-replica-6:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 37732" ]
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 30732" ]
       retries: 10
       interval: 10s
       timeout: 5s

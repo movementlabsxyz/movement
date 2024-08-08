@@ -1,15 +1,18 @@
 use super::Executor;
-use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
-use aptos_types::transaction::SignedTransaction;
-use futures::StreamExt;
-use thiserror::Error;
-use tracing::{info, warn, debug, info_span, Instrument};
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
+use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
+use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
+use aptos_types::transaction::{SignedTransaction, VMValidatorResult};
+use aptos_vm_validator::vm_validator::TransactionValidation;
+use aptos_vm_validator::vm_validator::VMValidator;
 use async_channel::Sender;
+use futures::StreamExt;
+use std::sync::Arc;
+use thiserror::Error;
+use tracing::{debug, info, info_span, warn, Instrument};
 
-const IN_FLIGHT_LIMIT : u64 =  2u64.pow(16);
+const IN_FLIGHT_LIMIT: u64 = 2u64.pow(16);
 
 #[derive(Debug, Clone, Error)]
 pub enum TransactionPipeError {
@@ -28,7 +31,6 @@ impl From<anyhow::Error> for TransactionPipeError {
 }
 
 impl Executor {
-
 	/// Pipes a batch of transactions from the mempool to the transaction channel.
 	/// todo: it may be wise to move the batching logic up a level to the consuming structs.
 	pub async fn tick_transaction_pipe(
@@ -46,7 +48,8 @@ impl Executor {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
-					let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::SeqCst);
+					let in_flight =
+						self.transactions_in_flight.load(std::sync::atomic::Ordering::SeqCst);
 					info!(
 						target: "movement_timing",
 						in_flight = %in_flight,
@@ -58,10 +61,13 @@ impl Executor {
 							"shedding_load"
 						);
 						let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
-						callback.send(Ok((status.clone(), None))).map_err(
-							|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
-						)?;
-						return Ok(())
+						callback.send(Ok((status.clone(), None))).map_err(|e| {
+							TransactionPipeError::InternalError(format!(
+								"Error sending transaction: {:?}",
+								e
+							))
+						})?;
+						return Ok(());
 					}
 
 					let span = info_span!(
@@ -76,21 +82,26 @@ impl Executor {
 						.instrument(span)
 						.await?;
 
-					callback.send(Ok(status)).map_err(
-						|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
-					)?;
-
+					callback.send(Ok(status)).map_err(|e| {
+						TransactionPipeError::InternalError(format!(
+							"Error sending transaction: {:?}",
+							e
+						))
+					})?;
 				}
 				MempoolClientRequest::GetTransactionByHash(hash, sender) => {
 					let mempool_result = core_mempool.get_by_hash(hash);
-					sender.send(mempool_result).map_err(
-						|e| TransactionPipeError::InternalError(format!("Error sending transaction: {:?}", e))
-					)?;
+					sender.send(mempool_result).map_err(|e| {
+						TransactionPipeError::InternalError(format!(
+							"Error sending transaction: {:?}",
+							e
+						))
+					})?;
 				}
 			}
 		}
 
-		if last_gc.elapsed().as_secs() > 30 {
+		if last_gc.elapsed().as_secs() > 120 {
 			core_mempool.gc();
 			*last_gc = std::time::Instant::now();
 		}
@@ -106,14 +117,15 @@ impl Executor {
 	) -> Result<SubmissionStatus, TransactionPipeError> {
 		// Pre-execute Tx to validate its content.
 		// Re-create the validator for each Tx because it uses a frozen version of the ledger.
-		// let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
-		// let tx_result = vm_validator.validate_transaction(transaction.clone())?;
-
-		// let status = if let Some(vm_status) = tx_result.status() {
-		// 	// If the verification failed, return the error status.
-		// 	let ms = MempoolStatus::new(MempoolStatusCode::VmError);
-		// 	(ms, Some(vm_status))
-		// } else {
+		let vm_validator = VMValidator::new(Arc::clone(&self.db.reader));
+		let tx_result = vm_validator.validate_transaction(transaction.clone())?;
+		match tx_result.status() {
+			Some(_) => {
+				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
+				return Ok((ms, tx_result.status()));
+			}
+			None => {}
+		}
 
 		debug!(
 			"Adding transaction to mempool: {:?} {:?}",
@@ -132,11 +144,13 @@ impl Executor {
 			MempoolStatusCode::Accepted => {
 				debug!("Transaction accepted: {:?}", transaction);
 				transaction_channel
-					.send(transaction)
+					.send(transaction.clone())
 					.await
 					.map_err(|e| anyhow::anyhow!("Error sending transaction: {:?}", e))?;
 				// increment transactions in flight
 				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+				core_mempool
+					.commit_transaction(&transaction.sender(), transaction.sequence_number());
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);
@@ -194,7 +208,9 @@ mod tests {
 		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
 		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
-		executor.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now()).await?;
+		executor
+			.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now())
+			.await?;
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;
@@ -226,7 +242,9 @@ mod tests {
 		// tick the transaction pipe, should succeed
 		let (tx, rx) = async_channel::unbounded();
 		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
-		executor.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now()).await?;
+		executor
+			.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now())
+			.await?;
 
 		Ok(())
 	}
@@ -247,7 +265,9 @@ mod tests {
 		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
 		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
-		executor.tick_transaction_pipe(&mut core_mempool, tx.clone(), &mut std::time::Instant::now()).await?;
+		executor
+			.tick_transaction_pipe(&mut core_mempool, tx.clone(), &mut std::time::Instant::now())
+			.await?;
 
 		// receive the callback
 		let (status, _vm_status_code) = callback.await??;
@@ -268,7 +288,9 @@ mod tests {
 		// tick the transaction pipe
 		let (tx, rx) = async_channel::unbounded();
 		let mut core_mempool = CoreMempool::new(&executor.node_config.clone());
-		executor.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now()).await?;
+		executor
+			.tick_transaction_pipe(&mut core_mempool, tx, &mut std::time::Instant::now())
+			.await?;
 		/*match executor.tick_transaction_pipe(tx).await {
 			Err(TransactionPipeError::TransactionNotAccepted(_)) => {}
 			Err(e) => return Err(anyhow::anyhow!("Unexpected error: {:?}", e)),
@@ -292,7 +314,13 @@ mod tests {
 		let mempool_handle = tokio::spawn(async move {
 			let mut core_mempool = CoreMempool::new(&mempool_executor.node_config.clone());
 			loop {
-				mempool_executor.tick_transaction_pipe(&mut core_mempool, tx.clone(), &mut std::time::Instant::now()).await?;
+				mempool_executor
+					.tick_transaction_pipe(
+						&mut core_mempool,
+						tx.clone(),
+						&mut std::time::Instant::now(),
+					)
+					.await?;
 			}
 			Ok(()) as Result<(), anyhow::Error>
 		});
@@ -320,7 +348,13 @@ mod tests {
 		let mempool_handle = tokio::spawn(async move {
 			let mut core_mempool = CoreMempool::new(&mempool_executor.node_config.clone());
 			loop {
-				mempool_executor.tick_transaction_pipe(&mut core_mempool, tx.clone(), &mut std::time::Instant::now()).await?;
+				mempool_executor
+					.tick_transaction_pipe(
+						&mut core_mempool,
+						tx.clone(),
+						&mut std::time::Instant::now(),
+					)
+					.await?;
 			}
 			Ok(()) as Result<(), anyhow::Error>
 		});

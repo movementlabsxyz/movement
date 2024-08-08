@@ -31,20 +31,19 @@ impl DotMovement {
 		match res {
 			Ok(file) => Ok(file),
 			Err(_e) => {
-
 				// create parent directories
 				tokio::fs::DirBuilder::new()
 					.recursive(true)
-					.create(config_path.parent().ok_or(
-						anyhow::anyhow!("Failed to get parent directory of config path")
-					)?)
+					.create(
+						config_path.parent().ok_or(anyhow::anyhow!(
+							"Failed to get parent directory of config path"
+						))?,
+					)
 					.await?;
 
-				
 				// create the file
-				let file = tokio::fs::File::create_new(config_path)
-				.await?;
-				
+				let file = tokio::fs::File::create_new(config_path).await?;
+
 				Ok(file)
 			}
 		}

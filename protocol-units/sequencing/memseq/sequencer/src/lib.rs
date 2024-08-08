@@ -38,16 +38,19 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 	pub fn building_time_ms(&self) -> u64 {
 		self.building_time_ms
 	}
-
 }
 
 impl Memseq<RocksdbMempool> {
-	pub fn try_move_rocks(path: PathBuf) -> Result<Self, anyhow::Error> {
+	pub fn try_move_rocks(
+		path: PathBuf,
+		block_size: u32,
+		building_time_ms: u64,	
+	) -> Result<Self, anyhow::Error> {
 		let mempool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
 		)?;
 		let parent_block = Arc::new(RwLock::new(Id::default()));
-		Ok(Self::new(mempool, 128, parent_block, 125))
+		Ok(Self::new(mempool, block_size, parent_block, building_time_ms))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
@@ -56,7 +59,6 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
-
 	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
 		self.mempool.add_transactions(transactions).await?;
 		Ok(())
@@ -93,13 +95,12 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-
 			let new_block = {
 				let parent_block = self.parent_block.read().await.clone();
 				Block::new(Default::default(), parent_block.to_vec(), transactions)
 			};
-			
-			// update the parent block 
+
+			// update the parent block
 			{
 				let mut parent_block = self.parent_block.write().await;
 				*parent_block = new_block.id();
@@ -123,7 +124,7 @@ pub mod test {
 	async fn test_wait_for_next_block_building_time_expires() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path)?.with_block_size(10).with_building_time_ms(500);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?.with_block_size(10).with_building_time_ms(500);
 
 		// Add some transactions
 		for i in 0..5 {
@@ -164,7 +165,7 @@ pub mod test {
 	async fn test_concurrent_access_spawn() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Arc::new(Memseq::try_move_rocks(path)?);
+		let memseq = Arc::new(Memseq::try_move_rocks(path, 128, 250)?);
 
 		let mut handles = vec![];
 
@@ -188,7 +189,7 @@ pub mod test {
 	async fn test_concurrent_access_futures() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Arc::new(Memseq::try_move_rocks(path)?);
+		let memseq = Arc::new(Memseq::try_move_rocks(path, 128, 250)?);
 
 		let futures = FuturesUnordered::new();
 
@@ -214,14 +215,22 @@ pub mod test {
 	async fn test_try_move_rocks() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path.clone())?;
+		let memseq = Memseq::try_move_rocks(
+			path.clone(),
+			1024,
+			500,
+		)?;
 
 		assert_eq!(memseq.block_size, 1024);
 		assert_eq!(memseq.building_time_ms, 500);
 
 		// Test invalid path
 		let invalid_path = PathBuf::from("");
-		let result = Memseq::try_move_rocks(invalid_path);
+		let result = Memseq::try_move_rocks(
+			invalid_path,
+			1024,
+			500,
+		);
 		assert!(result.is_err());
 
 		Ok(())
@@ -279,7 +288,7 @@ pub mod test {
 	async fn test_wait_for_next_block_no_transactions() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path)?.with_block_size(10).with_building_time_ms(500);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?.with_block_size(10).with_building_time_ms(500);
 
 		let block = memseq.wait_for_next_block().await?;
 		assert!(block.is_none());
@@ -291,9 +300,9 @@ pub mod test {
 	async fn test_memseq() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path)?;
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
 
-		let transaction : Transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0);
 		memseq.publish(transaction.clone()).await?;
 
 		let block = memseq.wait_for_next_block().await?;
@@ -308,11 +317,11 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 		let block_size = 100;
-		let memseq = Memseq::try_move_rocks(path)?.with_block_size(block_size);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?.with_block_size(block_size);
 
 		let mut transactions = Vec::new();
 		for i in 0..block_size * 2 {
-			let transaction : Transaction = Transaction::new( vec![i as u8], 0);
+			let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 			memseq.publish(transaction.clone()).await?;
 			transactions.push(transaction);
 		}
@@ -341,7 +350,7 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 		let block_size = 100;
-		let memseq = Memseq::try_move_rocks(path)?
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?
 			.with_block_size(block_size)
 			.with_building_time_ms(500);
 
@@ -353,7 +362,7 @@ pub mod test {
 
 			// add half of the transactions
 			for i in 0..block_size / 2 {
-				let transaction : Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -361,7 +370,7 @@ pub mod test {
 
 			// add the rest of the transactions
 			for i in block_size / 2..block_size - 2 {
-				let transaction : Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
