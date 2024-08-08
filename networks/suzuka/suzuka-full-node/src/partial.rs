@@ -17,7 +17,6 @@ use anyhow::Context;
 use async_channel::{Receiver, Sender};
 use core::sync::atomic::AtomicU64;
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
-use sha2::Digest;
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
@@ -91,68 +90,83 @@ where
 		Ok((node, background_task))
 	}
 
-	pub async fn tick_write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+	async fn next_transaction_batch_write(&self) -> Result<(), anyhow::Error> {
 		// limit the total time batching transactions
-		let start_time = std::time::Instant::now();
-		let end_time = start_time + std::time::Duration::from_millis(100);
+		let start = std::time::Instant::now();
+		let (_, half_building_time) = self
+			.config
+			.m1_da_light_node
+			.m1_da_light_node_config
+			.try_block_building_parameters()?;
 
 		let mut transactions = Vec::new();
 
 		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		while let Ok(transaction_result) =
-			tokio::time::timeout(Duration::from_millis(100), self.transaction_receiver.recv()).await
-		{
-			match transaction_result {
-				Ok(transaction) => {
-					info!(
-						target : "movement_timing",
-						batch_id = %batch_id,
-						tx_hash = %transaction.committed_hash(),
-						sender = %transaction.sender(),
-						sequence_number = transaction.sequence_number(),
-						"received transaction",
-					);
-					let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-					let movement_transaction = movement_types::Transaction::new(
-						serialized_aptos_transaction,
-						transaction.sequence_number(),
-					);
-					let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
-					transactions.push(BlobWrite { data: serialized_transaction });
+		loop {
+			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
+			{
+				Some(remaining) => remaining,
+				None => {
+					// we have exceeded the half building time
+					break;
 				}
+			};
+
+			match tokio::time::timeout(
+				Duration::from_millis(remaining),
+				self.transaction_receiver.recv(),
+			)
+			.await
+			{
+				Ok(transaction) => match transaction {
+					Ok(transaction) => {
+						info!(
+							target : "movement_timing",
+							batch_id = %batch_id,
+							tx_hash = %transaction.committed_hash(),
+							sender = %transaction.sender(),
+							sequence_number = transaction.sequence_number(),
+							"received transaction",
+						);
+						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
+						let movement_transaction = movement_types::Transaction::new(
+							serialized_aptos_transaction,
+							transaction.sequence_number(),
+						);
+						let serialized_transaction = serde_json::to_vec(&movement_transaction)?;
+						transactions.push(BlobWrite { data: serialized_transaction });
+					}
+					Err(_) => {
+						break;
+					}
+				},
 				Err(_) => {
 					break;
 				}
 			}
-
-			if std::time::Instant::now() > end_time {
-				break;
-			}
 		}
 
-		let length = transactions.len();
-		if length > 0 {
-			let mut light_node_client = self.light_node_client.clone();
-			let span = info_span!(
+		if transactions.len() > 0 {
+			info!(
 				target: "movement_timing",
-				"batch_write",
 				batch_id = %batch_id,
-				length = length
+				transaction_count = transactions.len(),
+				"built_batch_write"
 			);
-			light_node_client
-				.batch_write(BatchWriteRequest { blobs: transactions })
-				.instrument(span)
-				.await?;
-			// We now consider the transactions no longer in mempool flight.
-			self.executor.decrement_transactions_in_flight(length as u64);
+			let batch_write = BatchWriteRequest { blobs: transactions };
+			let mut light_node_client = self.light_node_client.clone();
+			tokio::task::spawn(async move {
+				light_node_client.batch_write(batch_write).await?;
+				Ok::<(), anyhow::Error>(())
+			});
 		}
 
 		Ok(())
 	}
 
-	pub async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
+	async fn write_transactions_to_da(&self) -> Result<(), anyhow::Error> {
 		loop {
-			self.tick_write_transactions_to_da().await?;
+			self.next_transaction_batch_write().await?;
 		}
 	}
 
@@ -189,7 +203,7 @@ where
 
 			// check if the block has already been executed
 			if self.has_executed_block(block_id.clone()).await? {
-				warn!("Block already executed: {:?}. It will be skipped", block_id);
+				warn!("Block already executed: {:#?}. It will be skipped", block_id);
 				continue;
 			}
 
@@ -198,12 +212,18 @@ where
 				anyhow::bail!("Invalid DA height: {:?}", da_height);
 			}
 
+			// decompress the block bytes
+			let block = tokio::task::spawn_blocking(move || {
+				let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
+				let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
+				Ok::<Block, anyhow::Error>(block)
+			})
+			.await??;
+
 			// get the transactions
 			let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
-			let commitment = self
-				.execute_block(block_bytes, block_id.clone(), block_timestamp)
-				.instrument(span)
-				.await?;
+			let commitment =
+				self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
 			// mark the da_height - 1 as synced
 			// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
@@ -229,18 +249,41 @@ where
 		Ok(())
 	}
 
+	/// Retries executing a block several times.
+	/// This can be valid behavior if the block timestamps are too tightly clustered for the full node execution.
+	/// However, this has to be deterministic, otherwise nodes will not be able to agree on the block commitment.
+	async fn execute_block_with_retries(
+		&self,
+		block: Block,
+		mut block_timestamp: u64,
+	) -> anyhow::Result<BlockCommitment> {
+		for _ in 0..5 {
+			// we have to clone here because the block is supposed to be consumed by the executor
+			match self.execute_block(block.clone(), block_timestamp).await {
+				Ok(commitment) => return Ok(commitment),
+				Err(e) => {
+					error!("Failed to execute block: {:?}. Retrying", e);
+					block_timestamp += 5000; // increase the timestamp by 5 ms (5000 microseconds)
+				}
+			}
+		}
+
+		anyhow::bail!("Failed to execute block after 5 retries")
+	}
+
 	async fn execute_block(
 		&self,
-		block_bytes: Vec<u8>,
-		block_id: String,
+		block: Block,
 		block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		let block: Block = serde_json::from_slice(&block_bytes)?;
+		let block_id = block.id();
+		let block_hash = HashValue::from_slice(block.id())?;
+
 		// get the transactions
 		let mut block_transactions = Vec::new();
 		let block_metadata = self
 			.executor
-			.build_block_metadata(HashValue::sha3_256_of(block_id.as_bytes()), block_timestamp)
+			.build_block_metadata(HashValue::sha3_256_of(block_id.0.as_slice()), block_timestamp)
 			.await?;
 		let block_metadata_transaction =
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
@@ -248,12 +291,6 @@ where
 
 		for transaction in block.transactions {
 			let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.data)?;
-			info!(
-				target: "movement_timing",
-				tx_hash = %signed_transaction.committed_hash(),
-				%block_id,
-				"transaction_in_block",
-			);
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),
 			);
@@ -262,12 +299,6 @@ where
 
 		// form the executable transactions vec
 		let block = ExecutableTransactions::Unsharded(block_transactions);
-
-		// hash the block bytes
-		let mut hasher = sha2::Sha256::new();
-		hasher.update(&block_bytes);
-		let slice = hasher.finalize();
-		let block_hash = HashValue::from_slice(slice.as_slice())?;
 
 		// form the executable block and execute it
 		let executable_block = ExecutableBlock::new(block_hash, block);
