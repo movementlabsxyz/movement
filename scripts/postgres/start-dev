@@ -14,6 +14,9 @@ echo "before"
 awk '{if($0 ~ /listen_addresses/) print "listen_addresses = '\''*'\''"; else print $0}' ./.data/postgresql.conf > ./.data/postgresql.temp.conf && mv ./.data/postgresql.temp.conf ./.data/postgresql.conf
 echo "listen addre done"
 
+#increase max connection for all indexer
+awk '{if($0 ~ /max_connections/) print "max_connections = 1000"; else print $0}' ./.data/postgresql.conf > ./.data/postgresql.temp.conf && mv ./.data/postgresql.temp.conf ./.data/postgresql.conf
+
 # For linux docker connection
 echo -e "host    all             all             172.0.0.0/8             trust" >> ./.data/pg_hba.conf 
 # For Mac docker connection
