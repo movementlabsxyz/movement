@@ -14,7 +14,6 @@ use ethereum_bridge::types::EthAddress;
 async fn test_client_should_build_and_fetch_accounts() {
 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
 
-	// Start Anvil with the fixed port
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let _anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 
@@ -46,7 +45,6 @@ async fn test_client_should_deploy_initiator_contract() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	// Set a funded signer
 	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	let initiator_address = harness.deploy_initiator_contract().await;
@@ -69,7 +67,6 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	//Set a funded signer
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	harness.deploy_init_contracts().await;
@@ -97,7 +94,6 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	// Set a funded signer
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
 
@@ -126,11 +122,9 @@ async fn test_client_should_successfully_complete_transfer() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	// set funded signer
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
 
-	//some data to set for the recipient.
 	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
 	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
 
