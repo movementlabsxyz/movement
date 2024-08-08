@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+echo toto:$CARGO_PROFILE_FLAGS
+echo "Building Indexer..."
+cargo build $CARGO_PROFILE_FLAGS -p suzuka-indexer-service
+echo "Built Indexer!"

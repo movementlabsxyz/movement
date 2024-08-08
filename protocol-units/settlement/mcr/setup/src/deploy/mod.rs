@@ -41,6 +41,11 @@ impl Deploy {
 		let mut solidity_path = std::env::current_dir()?;
 		solidity_path.push(deploy.mcr_deployment_working_directory.clone());
 
+		// Define Foundry config file.
+		let mut sol_config_path = solidity_path.clone();
+		sol_config_path.push("foundry.toml");
+		let sol_config_path = sol_config_path.to_string_lossy();
+
 		let solc_path = run_command("which", &["solc"])
 			.await
 			.context("Failed to get solc path")?
@@ -60,6 +65,8 @@ impl Deploy {
 				"DeployMCRDev",
 				"--root",
 				&solidity_path,
+				"--config-path",
+				&sol_config_path,
 				"--broadcast",
 				"--sender",
 				&wallet.address().to_string(),

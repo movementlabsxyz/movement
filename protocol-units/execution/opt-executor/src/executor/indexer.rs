@@ -32,14 +32,17 @@ impl Executor {
 		)
 		.ok_or(anyhow::anyhow!("Failed to bootstrap indexer grpc runtime"))?;
 
+		// Grpc stream works without the indexer.
+		// By default indexer is not started on Suzuka node.
 		// bootstrap indexer stream
-		let _indexer_stream = bootstrap_indexer_stream(
-			&self.node_config,
-			self.maptos_config.chain.maptos_chain_id.clone(),
-			self.db.reader.clone(),
-			self.mempool_client_sender.clone(),
-		)
-		.ok_or(anyhow::anyhow!("Failed to bootstrap indexer stream runtime"))?;
+		// let _indexer_stream = bootstrap_indexer_stream(
+		// 	&self.node_config,
+		// 	self.maptos_config.chain.maptos_chain_id.clone(),
+		// 	self.db.reader.clone(),
+		// 	self.mempool_client_sender.clone(),
+		// ).ok_or(
+		// 	anyhow::anyhow!("Failed to bootstrap indexer stream runtime"),
+		// )?;
 
 		// sleep forever
 		Ok(futures::future::pending::<()>().await)
