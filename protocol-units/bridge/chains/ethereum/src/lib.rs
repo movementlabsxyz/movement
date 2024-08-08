@@ -1,15 +1,15 @@
-use alloy_rlp::Decodable;
-use serde_with::serde_as;
-use std::fmt::Debug;
-use url::Url;
-
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
-use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
+use alloy::providers::{Provider, ProviderBuilder, RootProvider};
+use alloy::signers::k256::elliptic_curve::SecretKey;
+use alloy::signers::k256::Secp256k1;
+use alloy::signers::local::LocalSigner;
+use alloy::sol_types::SolCall;
 use alloy::{
 	network::EthereumWallet,
 	rlp::{RlpDecodable, RlpEncodable},
 };
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
+use alloy_rlp::Decodable;
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
@@ -18,26 +18,26 @@ use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
 	RecipientAddress, TimeLock,
 };
+use serde_with::serde_as;
+use std::fmt::{self, Debug};
+use types::{CounterpartyContract, InitiatorContract};
+use url::Url;
+use utils::send_transaction;
 
 pub mod types;
 pub mod utils;
 
-use crate::types::{EthAddress, EthHash};
+use crate::types::{AtomicBridgeCounterparty, AtomicBridgeInitiator, EthAddress, EthHash};
 
-// Codegen from the abis
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeInitiator,
-	"abis/AtomicBridgeInitiator.json"
-);
+const GAS_LIMIT: u128 = 10_000_000_000_000_000;
+const RETRIES: u32 = 6;
 
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeCounterparty,
-	"abis/AtomicBridgeCounterparty.json"
-);
+impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		// Assuming the return type is an address, for example:
+		write!(f, "{:?}", self._0)
+	}
+}
 
 ///Configuration for the Ethereum Bridge Client
 #[serde_as]
@@ -47,19 +47,19 @@ pub struct Config {
 	pub ws_url: Url,
 	#[serde_as(as = "serde_with::DisplayFromStr")]
 	pub signer_private_key: PrivateKeySigner,
-	pub initiator_contract: Address,
-	pub counterparty_contract: Address,
+	pub initiator_contract: Option<Address>,
+	pub counterparty_contract: Option<Address>,
 	pub gas_limit: u64,
 }
 
 impl Config {
-	fn build(initiator_contract: Address, counterparty_contract: Address) -> Self {
+	pub fn build_for_test() -> Self {
 		Config {
 			rpc_url: "http://localhost:8545".parse().unwrap(),
 			ws_url: "ws://localhost:8545".parse().unwrap(),
 			signer_private_key: PrivateKeySigner::random(),
-			initiator_contract,
-			counterparty_contract,
+			initiator_contract: None,
+			counterparty_contract: None,
 			gas_limit: 10_000_000_000,
 		}
 	}
@@ -75,11 +75,18 @@ struct EthBridgeTransferDetails {
 	pub state: u8,
 }
 
+// We need to be able to build the client and deploy the contracts
+// using that clients, therfore the `initiator_contract` and `counterparty_contract`
+// should be optional, as their values will be unknown at the time of building the client.
+// This is true for the integration tests.
+#[allow(dead_code)]
+#[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: utils::AlloyProvider,
-	ws_provider: RootProvider<PubSubFrontend>,
-	initiator_contract: Address,
-	counterparty_contract: Address,
+	rpc_provider: types::AlloyProvider,
+	rpc_port: u16,
+	ws_provider: Option<RootProvider<PubSubFrontend>>,
+	initiator_contract: Option<InitiatorContract>,
+	counterparty_contract: Option<CounterpartyContract>,
 	config: Config,
 }
 
@@ -91,15 +98,40 @@ impl EthClient {
 			.wallet(EthereumWallet::from(config.signer_private_key.clone()))
 			.on_builtin(config.rpc_url.as_str())
 			.await?;
-		let ws = WsConnect::new(config.ws_url.clone());
-		let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+
+		// let ws = WsConnect::new(ws_url);
+		// println!("ws {:?}", ws);
+		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
+		// println!("ws_provider {:?}", ws_provider);
 		Ok(EthClient {
 			rpc_provider,
-			ws_provider,
-			initiator_contract: config.initiator_contract,
-			counterparty_contract: config.counterparty_contract,
+			rpc_port: 8545,
+			ws_provider: None,
+			initiator_contract: None,
+			counterparty_contract: None,
 			config,
 		})
+	}
+
+	pub fn set_initiator_contract(&mut self, contract: InitiatorContract) {
+		self.initiator_contract = Some(contract);
+	}
+
+	pub fn set_counterparty_contract(&mut self, contract: CounterpartyContract) {
+		self.counterparty_contract = Some(contract);
+	}
+
+	pub async fn initialize_initiator_contract(
+		&self,
+		weth: EthAddress,
+		owner: EthAddress,
+	) -> Result<(), anyhow::Error> {
+		let contract = self.initiator_contract().expect("Initiator contract not set");
+		let call = contract.initialize(weth.0, owner.0);
+		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	pub async fn get_block_number(&self) -> Result<u64, anyhow::Error> {
@@ -111,6 +143,69 @@ impl EthClient {
 
 	pub fn get_signer_address(&self) -> Address {
 		self.config.signer_private_key.address()
+	}
+
+	pub fn set_signer_address(&mut self, key: SecretKey<Secp256k1>) {
+		self.config.signer_private_key = LocalSigner::from(key);
+	}
+
+	pub fn rpc_provider(&self) -> &types::AlloyProvider {
+		&self.rpc_provider
+	}
+
+	pub fn rpc_provider_mut(&mut self) -> &mut types::AlloyProvider {
+		&mut self.rpc_provider
+	}
+
+	pub fn rpc_port(&self) -> u16 {
+		self.rpc_port
+	}
+
+	pub async fn get_weth_initiator_contract(&self) -> BridgeContractInitiatorResult<()> {
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
+		let AtomicBridgeInitiator::wethReturn { _0: address } =
+			contract.weth().call().await.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!("Failed to get weth: {}", e))
+			})?;
+		println!("weth_return: {:?}", address);
+		Ok(())
+	}
+
+	pub fn initiator_contract_address(&self) -> BridgeContractInitiatorResult<Address> {
+		match &self.initiator_contract {
+			Some(contract) => Ok(contract.address().to_owned()),
+			None => Err(BridgeContractInitiatorError::GenericError(
+				"Initiator contract address not set".to_string(),
+			)),
+		}
+	}
+
+	pub fn counterparty_contract_address(&self) -> BridgeContractCounterpartyResult<Address> {
+		match &self.counterparty_contract {
+			Some(contract) => Ok(contract.address().to_owned()),
+			None => Err(BridgeContractCounterpartyError::GenericError(
+				"Counterparty contract address not set".to_string(),
+			)),
+		}
+	}
+
+	pub fn initiator_contract(&self) -> BridgeContractInitiatorResult<&InitiatorContract> {
+		match &self.initiator_contract {
+			Some(contract) => Ok(contract),
+			None => Err(BridgeContractInitiatorError::GenericError(
+				"Initiator contract not set".to_string(),
+			)),
+		}
+	}
+
+	pub fn counterparty_contract(&self) -> BridgeContractCounterpartyResult<&CounterpartyContract> {
+		match &self.counterparty_contract {
+			Some(contract) => Ok(contract),
+			None => Err(BridgeContractCounterpartyError::GenericError(
+				"Counterparty contract not set".to_string(),
+			)),
+		}
 	}
 }
 
@@ -128,22 +223,29 @@ impl BridgeContractInitiator for EthClient {
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		amount: Amount,
+		amount: Amount, // the ETH amount
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_contract, &self.rpc_provider);
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-		let call = contract.initiateBridgeTransfer(
-			U256::from(amount.0),
-			FixedBytes(recipient_bytes),
-			FixedBytes(hash_lock.0),
-			U256::from(time_lock.0),
-		);
-
-		utils::send_transaction(call)
+		let call = contract
+			.initiateBridgeTransfer(
+				U256::from(0), // For now a 0 WETH amount
+				FixedBytes(recipient_bytes),
+				FixedBytes(hash_lock.0),
+				U256::from(time_lock.0),
+			)
+			.value(U256::from(amount.0));
+		let _ = send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractInitiatorError::generic)
-			.map(|_| ())
+			.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!(
+					"Failed to send transaction: {}",
+					e
+				))
+			})?;
+		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
@@ -161,27 +263,27 @@ impl BridgeContractInitiator for EthClient {
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
 
-		let contract = AtomicBridgeInitiator::new(self.initiator_contract, &self.rpc_provider);
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractInitiatorError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn refund_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<()> {
-		let contract = AtomicBridgeInitiator::new(self.initiator_contract, &self.rpc_provider);
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractInitiatorError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
@@ -195,10 +297,12 @@ impl BridgeContractInitiator for EthClient {
 		let storage_slot = utils::calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
-			.get_storage_at(self.initiator_contract, storage_slot)
+			.get_storage_at(self.initiator_contract_address()?, storage_slot)
 			.await
 			.map_err(|_| generic_error("could not find storage"))?;
 		let storage_bytes = storage.to_be_bytes::<32>();
+
+		println!("storage_bytes: {:?}", storage_bytes);
 		let mut storage_slice = &storage_bytes[..];
 		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
 			.map_err(|_| generic_error("could not decode storage"))?;
@@ -229,21 +333,23 @@ impl BridgeContractCounterparty for EthClient {
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		let contract =
-			AtomicBridgeCounterparty::new(self.counterparty_contract, &self.rpc_provider);
+		let contract = AtomicBridgeCounterparty::new(
+			self.counterparty_contract_address()?,
+			&self.rpc_provider,
+		);
 		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
 		let call = contract.lockBridgeTransferAssets(
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
-			Address::from(recipient.0 .0),
+			recipient.0 .0,
 			U256::from(amount.0),
 		);
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractCounterpartyError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
@@ -251,28 +357,32 @@ impl BridgeContractCounterparty for EthClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		let contract =
-			AtomicBridgeCounterparty::new(self.counterparty_contract, &self.rpc_provider);
+		let contract = AtomicBridgeCounterparty::new(
+			self.counterparty_contract_address()?,
+			&self.rpc_provider,
+		);
 		let secret: [u8; 32] = secret.0.try_into().unwrap();
 		let call =
 			contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(secret));
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractCounterpartyError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
-		let contract =
-			AtomicBridgeCounterparty::new(self.counterparty_contract, &self.rpc_provider);
+		let contract = AtomicBridgeCounterparty::new(
+			self.counterparty_contract_address()?,
+			&self.rpc_provider,
+		);
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		utils::send_transaction(call)
+		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.map_err(BridgeContractCounterpartyError::generic)
-			.map(|_| ())
+			.expect("Failed to send transaction");
+		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
@@ -288,7 +398,7 @@ impl BridgeContractCounterparty for EthClient {
 		let storage_slot = utils::calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
-			.get_storage_at(self.counterparty_contract, storage_slot)
+			.get_storage_at(self.counterparty_contract_address()?, storage_slot)
 			.await
 			.map_err(|_| generic_error("could not find storage"))?;
 		let storage_bytes = storage.to_be_bytes::<32>();
@@ -305,12 +415,5 @@ impl BridgeContractCounterparty for EthClient {
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
 		}))
-	}
-}
-
-// See tracking issue: https://github.com/movementlabsxyz/movement/issues/250
-impl Clone for EthClient {
-	fn clone(&self) -> Self {
-		todo!()
 	}
 }

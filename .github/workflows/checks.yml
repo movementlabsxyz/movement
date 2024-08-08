@@ -35,3 +35,26 @@ jobs:
           cd protocol-units/bridge/move-modules && \
           aptos move test
         "
+
+  bridge-eth-movement:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run foundry tests
+      run: |
+        nix develop --command bash -c "
+          cargo test --test eth_movement -- --nocapture --test-threads=1 
+        "

@@ -35,6 +35,8 @@ pub enum BridgeContractCounterpartyError {
 	AbortTransferError,
 	#[error("Counterparty address not set")]
 	CounterpartyAddressNotSet,
+	#[error("Error getting the signer")]
+	SignerError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }

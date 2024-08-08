@@ -96,7 +96,7 @@ pub struct Indexed<T> {
 /// Send Aptos Transaction
 pub async fn send_aptos_transaction(
 	rest_client: &RestClient,
-	signer: &mut LocalAccount,
+	signer: &LocalAccount,
 	payload: TransactionPayload,
 ) -> Result<AptosTransaction> {
 	let state = rest_client

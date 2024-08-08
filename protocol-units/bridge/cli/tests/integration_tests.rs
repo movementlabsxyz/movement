@@ -7,7 +7,7 @@ use bridge_cli::{
 	clap::eth_to_movement::{self, EthSharedArgs},
 	eth_to_moveth,
 };
-use ethereum_bridge::{types::EthAddress, AtomicBridgeInitiator};
+use ethereum_bridge::types::{AtomicBridgeInitiator, EthAddress};
 use movement_bridge::utils::MovementAddress;
 use std::str::FromStr;
 use url::Url;

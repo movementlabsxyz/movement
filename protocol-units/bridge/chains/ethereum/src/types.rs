@@ -1,8 +1,47 @@
+use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::Address;
+use alloy::providers::fillers::{
+	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
+use alloy::transports::BoxTransport;
 use serde::{Deserialize, Serialize};
 
+use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
+
+// Codegen from the abis
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiator,
+	"abis/AtomicBridgeInitiator.json"
+);
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeCounterparty,
+	"abis/AtomicBridgeCounterparty.json"
+);
+
 pub type EthHash = [u8; 32];
+
+pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+
+pub type AlloyProvider = FillProvider<
+	JoinFill<
+		JoinFill<
+			JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,
+			ChainIdFiller,
+		>,
+		WalletFiller<EthereumWallet>,
+	>,
+	RootProvider<BoxTransport>,
+	BoxTransport,
+	Ethereum,
+>;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
 pub struct EthAddress(pub Address);
