@@ -1,10 +1,10 @@
 .DS_Store
 proc-compose.temp.log
 methods/guest/Cargo.lock
-protocol-units/bridge/move-modules/.aptos/*
-protocol-units/bridge/move-modules/build/*
-protocol-units/bridge/contracts/cache/*
 protocol-units/bridge/contracts/out/*
+protocol-units/bridge/contracts/cache/*
+protocol-units/bridge/move-modules/build/*
+protocol-units/bridge/move-modules/.aptos/*
 .idea/
 target/
 ledger_db/

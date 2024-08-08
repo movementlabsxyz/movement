@@ -7,7 +7,7 @@ use bridge_shared::{
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
 	bridge_service::{BridgeService, BridgeServiceConfig},
-	types::{Convert, GenUniqueHash, HashLockPreImage, RecipientAddress},
+	types::{Convert, GenUniqueHash, HashLockPreImage, InitiatorAddress, RecipientAddress},
 };
 
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -100,28 +100,70 @@ impl Debug for BC2Hash {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Address(pub &'static str);
 
-impl From<RecipientAddress> for BC1Address {
-	fn from(value: RecipientAddress) -> Self {
+impl From<Vec<u8>> for BC1Address {
+	fn from(value: Vec<u8>) -> Self {
+		Self(static_str_ops::staticize(&String::from_utf8(value).expect("Invalid UTF-8")))
+	}
+}
+
+impl From<BC1Address> for Vec<u8> {
+	fn from(address: BC1Address) -> Self {
+		address.0.as_bytes().to_vec()
+	}
+}
+
+impl From<RecipientAddress<BC1Address>> for BC1Address {
+	fn from(RecipientAddress(address): RecipientAddress<BC1Address>) -> Self {
+		address
+	}
+}
+
+impl From<RecipientAddress<Vec<u8>>> for BC1Address {
+	fn from(value: RecipientAddress<Vec<u8>>) -> Self {
 		Self(static_str_ops::staticize(&String::from_utf8(value.0).expect("Invalid UTF-8")))
 	}
 }
 
-impl From<BC1Address> for RecipientAddress {
+impl From<BC1Address> for RecipientAddress<Vec<u8>> {
 	fn from(value: BC1Address) -> Self {
 		RecipientAddress(value.0.as_bytes().to_vec())
+	}
+}
+
+impl From<BC1Address> for InitiatorAddress<Vec<u8>> {
+	fn from(address: BC1Address) -> Self {
+		InitiatorAddress(address.0.as_bytes().to_vec())
 	}
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC2Address(pub &'static str);
 
-impl From<RecipientAddress> for BC2Address {
-	fn from(value: RecipientAddress) -> Self {
+impl From<Vec<u8>> for BC2Address {
+	fn from(value: Vec<u8>) -> Self {
+		Self(static_str_ops::staticize(&String::from_utf8(value).expect("Invalid UTF-8")))
+	}
+}
+
+impl From<BC2Address> for Vec<u8> {
+	fn from(address: BC2Address) -> Self {
+		address.0.as_bytes().to_vec()
+	}
+}
+
+impl From<RecipientAddress<BC2Address>> for BC2Address {
+	fn from(RecipientAddress(address): RecipientAddress<BC2Address>) -> Self {
+		address
+	}
+}
+
+impl From<RecipientAddress<Vec<u8>>> for BC2Address {
+	fn from(value: RecipientAddress<Vec<u8>>) -> Self {
 		Self(static_str_ops::staticize(&String::from_utf8(value.0).expect("Invalid UTF-8")))
 	}
 }
 
-impl From<BC2Address> for RecipientAddress {
+impl From<BC2Address> for RecipientAddress<Vec<u8>> {
 	fn from(value: BC2Address) -> Self {
 		RecipientAddress(value.0.as_bytes().to_vec())
 	}
@@ -233,7 +275,7 @@ impl<A: Debug, H: Debug> BridgeContractCounterpartyMonitoring
 }
 
 impl<A: Debug, H: Debug> Stream for CounterpartyContractMonitoring<A, H> {
-	type Item = BridgeContractCounterpartyEvent<H>;
+	type Item = BridgeContractCounterpartyEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();

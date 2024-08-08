@@ -23,17 +23,35 @@ use crate::shared::testing::blockchain::{
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestAddress(pub &'static str);
 
+impl From<RecipientAddress<TestAddress>> for TestAddress {
+	fn from(value: RecipientAddress<TestAddress>) -> Self {
+		value.0.clone()
+	}
+}
+
+impl From<TestAddress> for Vec<u8> {
+	fn from(value: TestAddress) -> Self {
+		value.0.as_bytes().to_vec()
+	}
+}
+
+impl From<Vec<u8>> for TestAddress {
+	fn from(value: Vec<u8>) -> Self {
+		Self(static_str_ops::staticize(&String::from_utf8(value).expect("Invalid UTF-8")))
+	}
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct TestHash(pub &'static str);
 
-impl From<TestAddress> for RecipientAddress {
+impl From<TestAddress> for RecipientAddress<Vec<u8>> {
 	fn from(value: TestAddress) -> Self {
 		RecipientAddress(value.0.as_bytes().to_vec())
 	}
 }
 
-impl From<RecipientAddress> for TestAddress {
-	fn from(value: RecipientAddress) -> Self {
+impl From<RecipientAddress<Vec<u8>>> for TestAddress {
+	fn from(value: RecipientAddress<Vec<u8>>) -> Self {
 		Self(static_str_ops::staticize(&String::from_utf8(value.0).expect("Invalid UTF-8")))
 	}
 }
@@ -118,16 +136,19 @@ async fn test_lock_bridge_transfer() {
 	let bridge_transfer_id = BridgeTransferId(TestHash("unique_hash"));
 	let hash_lock = HashLock(TestHash("hash_lock"));
 	let time_lock = TimeLock(100);
-	let recipient_address = RecipientAddress::from(TestAddress("recipient"));
+	let initiator_adress = InitiatorAddress(vec![]);
+	let recipient_address = RecipientAddress(TestAddress("recipient"));
 	let amount = Amount(1000);
 
-	let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
-		bridge_transfer_id.clone(),
-		hash_lock.clone(),
-		time_lock.clone(),
-		recipient_address.clone(),
-		amount,
-	));
+	let transaction =
+		Transaction::Counterparty::<TestAddress, _>(CounterpartyCall::LockBridgeTransfer(
+			bridge_transfer_id.clone(),
+			hash_lock.clone(),
+			time_lock.clone(),
+			initiator_adress.clone(),
+			recipient_address.clone(),
+			amount,
+		));
 
 	blockchain.transaction_sender.unbounded_send(transaction).unwrap();
 
@@ -145,6 +166,7 @@ async fn test_lock_bridge_transfer() {
 				bridge_transfer_id: bridge_transfer_id.clone(),
 				hash_lock: hash_lock.clone(),
 				time_lock: time_lock.clone(),
+				initiator_address: InitiatorAddress(Vec::new()),
 				recipient_address: recipient_address.clone(),
 				amount,
 			})

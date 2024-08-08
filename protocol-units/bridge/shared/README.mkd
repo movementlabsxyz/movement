@@ -1,0 +1,55 @@
+# Bridge Service Based on Atomic Swaps
+
+This repository provides an abstract implementation of a bridge service designed to facilitate atomic swaps between two blockchains. This implementation can serve as the foundation for developing a robust bridge application for cross-chain asset transfers.
+
+## What is an Atomic Swap?
+
+An atomic swap, or cross-chain atomic swap, is a decentralized method of exchanging cryptocurrencies from different blockchains without relying on a trusted third party or centralized exchange. The term "atomic" signifies that the transaction is indivisible: it either completes entirely or not at all, ensuring both parties can securely exchange assets without the risk of fraud.
+
+### Key Concepts of Atomic Swaps:
+1. **Hash Time-Locked Contracts (HTLCs)**: A smart contract mechanism that requires the recipient to acknowledge receiving a payment before a deadline by generating cryptographic proof (hash lock). If the recipient fails to provide this proof, the funds are returned to the sender.
+2. **Hash Locks**: A cryptographic lock that requires a secret (pre-image) to unlock.
+3. **Time Locks**: A condition that defines the time frame in which the cryptographic proof must be provided.
+
+## Overview of the Implementation
+
+This implementation sets up a bridge service that handles the process of initiating and completing atomic swaps between two blockchains. The code is designed to be modular and extensible, allowing for easy integration with various blockchain clients and smart contracts.
+
+### Key Components:
+1. **BridgeServiceConfig**: Configuration for the bridge service, including settings for error handling and contract call timeouts.
+2. **ActiveSwapConfig**: Configuration for active swaps, defining the number of error attempts, delay between attempts, and contract call timeout duration.
+3. **BridgeContractInitiator & BridgeContractCounterparty**: Interfaces for the bridge contracts on the initiating and counterparty blockchains.
+4. **Event Handling**: The bridge service listens for specific contract events to progress through the stages of the swap.
+5. **Swap Stages**:
+   - **Initiation**: The initiator locks assets in a smart contract on Blockchain 1.
+   - **Locking on Counterparty**: The bridge service recognizes the initiation event and locks corresponding assets on Blockchain 2.
+   - **Completion by Client**: The client reveals the hash lock pre-image to complete the swap on Blockchain 2.
+   - **Completion by Bridge Service**: The bridge service completes the swap on Blockchain 1 using the revealed pre-image.
+
+### Usage
+
+To use this implementation, follow these steps:
+
+1. **Set Up Configuration**: Define the configurations for the bridge service and active swaps in `BridgeServiceConfig` and `ActiveSwapConfig`.
+2. **Implement Blockchain Clients**: Create implementations for the blockchain clients (`B1Client` and `B2Client`) to interact with the respective blockchains.
+3. **Deploy Smart Contracts**: Deploy the necessary HTLC smart contracts on both blockchains.
+4. **Run the Bridge Service**: Initialize and run the bridge service to start listening for events and handling swaps.
+
+### Example
+
+The provided integration tests demonstrate the complete workflow of an atomic swap between two blockchains. These tests can be used as a reference for implementing and testing your bridge service.
+
+```rust
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn test_bridge_service_integration_a_to_b() {
+    // Setup and test the bridge service for a swap from Blockchain A to Blockchain B
+}
+```
+
+## Contributing
+
+Contributions to enhance the functionality and compatibility of this bridge service are welcome. Please submit pull requests with clear descriptions and test cases.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.

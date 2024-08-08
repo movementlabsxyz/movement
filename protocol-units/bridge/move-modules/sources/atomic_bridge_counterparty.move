@@ -99,7 +99,8 @@ module atomic_bridge::atomic_bridge_counterparty {
     public fun complete_bridge_transfer(
         caller: &signer,
         bridge_transfer_id: vector<u8>,
-        pre_image: vector<u8>
+        pre_image: vector<u8>,
+        master_minter: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let bridge_store = borrow_global_mut<BridgeTransferStore>(config_address);
@@ -108,8 +109,14 @@ module atomic_bridge::atomic_bridge_counterparty {
         let computed_hash = keccak256(pre_image);
         assert!(computed_hash == details.hash_lock, 2);
 
-        // Mint moveth tokens to the recipient, caller must me a minter of moveth
+        // Make caller a minter of MovETH
+        moveth::add_minter(master_minter, signer::address_of(caller));
+
+        // Mint moveth tokens to the recipient
         moveth::mint(caller, details.recipient, details.amount);
+
+        // Remove caller from the minter list, now that minting is complete
+        moveth::remove_minter(master_minter, signer::address_of(caller));
 
         smart_table::add(&mut bridge_store.completed_transfers, bridge_transfer_id, details);
         event::emit(
@@ -162,11 +169,11 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, client = @0xface, master_minter = @0xbab)]
-    fun test_complete_transfer_assets(
-        aptos_framework: &signer,
-        master_minter: &signer,
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    fun test_complete_transfer_assets_non_minter(
         client: &signer,
+        aptos_framework: &signer,
+        master_minter: &signer, 
         creator: &signer,
         moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
@@ -177,15 +184,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         let recipient = @0xface; 
         let asset = moveth::metadata();
 
-        // the master minter sets client to be a minter
-        moveth::add_minter(master_minter, signer::address_of(client));
-
-        //client now mints themselves 100 moveth
-        moveth::mint(client, signer::address_of(client), 100);
-        assert!(primary_fungible_store::balance(signer::address_of(client), asset) == 100, 0);
-
-
-        // In this case the moveth_minter (2nd param) is also the creator.
         init_module(creator);
 
         let bridge_transfer_id = b"transfer1";
@@ -218,11 +216,11 @@ module atomic_bridge::atomic_bridge_counterparty {
        let msg:vector<u8> = b"secret";
         debug::print(&utf8(msg));
 
-       // Client must be a moveth minter, otherwise this will fail
        complete_bridge_transfer(
            client,
            bridge_transfer_id,
-           pre_image 
+           pre_image,
+           master_minter 
        );
 
         debug::print(&utf8(msg));
@@ -235,5 +233,70 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.hash_lock == hash_lock, 3);
         assert!(transfer_details.initiator == initiator, 4);
     }
-    
+
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
+    #[expected_failure]
+    fun test_complete_transfer_assets_minter(
+        client: &signer,
+        aptos_framework: &signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeTransferStore, BridgeConfig {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        moveth::init_for_test(moveth);
+        let receiver_address = @0xcafe1;
+        let initiator = b"0x123"; //In real world this would be an ethereum address
+        let recipient = @0xface; 
+        let asset = moveth::metadata();
+
+        init_module(creator);
+
+        let bridge_transfer_id = b"transfer1";
+        let pre_image = b"secret";
+        let hash_lock = keccak256(pre_image); // Compute the hash lock using keccak256
+        let time_lock = 3600;
+        let amount = 100;
+
+        let result = lock_bridge_transfer_assets(
+            creator,
+            initiator,
+            bridge_transfer_id,
+            hash_lock,
+            time_lock,
+            recipient,
+            amount
+        );
+
+        assert!(result, 1);
+
+        // Verify that the transfer is stored in pending_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
+        let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
+        assert!(transfer_details.recipient == recipient, 2);
+        assert!(transfer_details.initiator == initiator, 3);
+        assert!(transfer_details.amount == amount, 5);
+        assert!(transfer_details.hash_lock == hash_lock, 5);
+
+       let pre_image = b"secret"; 
+       let msg:vector<u8> = b"secret";
+        debug::print(&utf8(msg));
+
+       complete_bridge_transfer(
+           client,
+           bridge_transfer_id,
+           pre_image,
+           master_minter 
+       );
+
+        debug::print(&utf8(msg));
+
+        // Verify that the transfer is stored in completed_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
+        let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.completed_transfers, bridge_transfer_id);
+        assert!(transfer_details.recipient == recipient, 1);
+        assert!(transfer_details.amount == amount, 2);
+        assert!(transfer_details.hash_lock == hash_lock, 3);
+        assert!(transfer_details.initiator == initiator, 4);
+    }
 }

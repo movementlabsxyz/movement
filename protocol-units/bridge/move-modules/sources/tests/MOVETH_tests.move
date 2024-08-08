@@ -6,14 +6,14 @@ module moveth::moveth_tests{
     use moveth::moveth;
     use aptos_framework::object;
 
-    #[test(creator = @moveth, minter = @0xface, master_minter = @0xbab, denylister = @0xcade)]
-    fun test_basic_flow(creator: &signer, minter: &signer, master_minter: &signer, denylister: &signer) {
+    #[test(creator = @moveth, minter = @0xface, admin = @admin, master_minter = @master_minter, denylister = @0xcade)]
+    fun test_basic_flow(creator: &signer, minter: &signer, admin: &signer, master_minter: &signer, denylister: &signer) {
         moveth::init_for_test(creator);
         let receiver_address = @0xcafe1;
         let minter_address = signer::address_of(minter);
 
         // set minter and have minter call mint, check balance
-        moveth::add_minter(master_minter, minter_address);
+        moveth::add_minter(admin, minter_address);
         moveth::mint(minter, minter_address, 100);
         let asset = moveth::metadata();
         assert!(primary_fungible_store::balance(minter_address, asset) == 100, 0);
@@ -35,14 +35,14 @@ module moveth::moveth_tests{
     }
 
 
-    #[test(creator = @moveth, pauser = @0xdafe, minter = @0xface, master_minter = @0xbab)]
+    #[test(creator = @moveth, pauser = @0xdafe, minter = @0xface, admin = @admin, master_minter = @0xbab)]
     #[expected_failure(abort_code = 2, location = moveth::moveth)]
-    fun test_pause(creator: &signer, pauser: &signer, minter: &signer, master_minter: &signer) {
+    fun test_pause(creator: &signer, pauser: &signer, minter: &signer, admin: &signer, master_minter: &signer) {
         moveth::init_for_test(creator);
         let minter_address = signer::address_of(minter);
         moveth::set_pause(pauser, true);
-        moveth::add_minter(master_minter, minter_address);
-    }
+        moveth::add_minter(admin, minter_address);
+    } 
 
     //test the ability of a denylisted account to transfer out newly created store
     #[test(creator = @moveth, denylister = @0xcade, receiver = @0xdead)]
