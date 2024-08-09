@@ -9,24 +9,6 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
 
-  postgres:
-    image: postgres:15
-    user: postgres
-    command: postgres -c shared_buffers=256MB -c max_connections=200
-    container_name: postgres
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
-    ports:
-      - "5432:5432"
-    restart: on-failure:3
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
-      interval: 1s
-      timeout: 5s
-      retries: 10
-
 
   celestia-light-node:
     image: busybox
