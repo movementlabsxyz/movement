@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 set -e
-echo "Start Postgres server"
+
 # Remove old data directory
 rm -rf ./.data
 
 # Initialize the database cluster
 initdb -D ./.data --no-locale
-echo "Db inited"
 
 # allow docker connection to the db.
 # On Mac sed works differently than on lunux
@@ -19,19 +18,11 @@ echo -e "host    all             all             172.0.0.0/8             trust" 
 IP_NET_MASK="$(echo $POSTGRES_HOST_IP | cut -d'.' -f1-3).0/24"
 echo -e "host    all             all             ${IP_NET_MASK}          trust" >> ./.data/pg_hba.conf 
 
-echo "Before db start"
-ls -al /run/postgresql
-ls -al /run
-
-
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile start
-cat ./.data/logfile
-echo "Db started"
+
 # Wait a few seconds to ensure the server is fully started
 sleep 5
-cat ./.data/logfile
-echo "after cat"
 
 # Create the 'postgres' superuser
 psql -U "$USER" -d template1 -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'password';"
@@ -44,7 +35,3 @@ pg_ctl -D ./.data stop
 
 # Start the PostgreSQL server normally
 postgres -D ./.data -h 0.0.0.0 -p 5432
-
-cat ./.data/logfile
-
-echo "Postgres server started"
