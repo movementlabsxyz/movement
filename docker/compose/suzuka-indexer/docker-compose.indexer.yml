@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:15
     user: postgres
-    command: postgres -c shared_buffers=256MB -c max_connections=200
+    command: postgres -c shared_buffers=256MB -c max_connections=1000
     container_name: postgres
     environment:
       - POSTGRES_USER=postgres
