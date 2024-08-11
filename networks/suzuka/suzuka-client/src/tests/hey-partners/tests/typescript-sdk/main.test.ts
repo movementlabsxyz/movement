@@ -22,8 +22,8 @@ const bob = Account.generate();
 
 const amount = 100000000;
 
-async function transact(signer: any, func: `${string}::${string}::${string}`, typeArgs: string[], args: any[]) {
-    const transaction = await aptos.transaction.build.simple({
+async function buildTransaction(signer: any, func: `${string}::${string}::${string}`, typeArgs: string[], args: any[]) {
+    return await aptos.transaction.build.simple({
         sender: signer.accountAddress,
         data: {
             function: func,
@@ -31,8 +31,11 @@ async function transact(signer: any, func: `${string}::${string}::${string}`, ty
             functionArguments: [...args],
         },
     });
-    const committedTransaction = await aptos.signAndSubmitTransaction({ signer: signer, transaction });
-    return committedTransaction
+}
+
+async function transact(signer: any, func: `${string}::${string}::${string}`, typeArgs: string[], args: any[]) {
+    const transaction = await buildTransaction(signer, func, typeArgs, args);
+    return await aptos.signAndSubmitTransaction({ signer: signer, transaction });
 }
 
 async function main() {
