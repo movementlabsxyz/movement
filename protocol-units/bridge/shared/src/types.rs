@@ -129,7 +129,7 @@ pub struct BridgeTransferDetails<A, H> {
 	pub recipient_address: RecipientAddress<Vec<u8>>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: Amount,
+	pub amount: Amount(EthValue::Weth(u64)),
 }
 
 impl<A, H> Default for BridgeTransferDetails<A, H> {
@@ -145,7 +145,7 @@ pub struct LockDetails<A, H> {
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: Amount,
+	pub amount: Amount(EthValue::Weth(u64)),
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -155,7 +155,7 @@ pub struct CounterpartyCompletedDetails<A, H> {
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub secret: HashLockPreImage,
-	pub amount: Amount,
+	pub amount: Amount(EthValue::Weth(u64)),
 }
 
 impl<A, H> CounterpartyCompletedDetails<A, H>
