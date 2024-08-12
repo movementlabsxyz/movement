@@ -101,9 +101,12 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
-				let event = AbstractBlockainEvent::InitiatorContractEvent(Ok(
-					convert_log_to_event(EthAddress(initiator_address), log),
-				));
+				let event = decode_log_data(log)
+					.map_err(|e| {
+						tracing::error!("Failed to decode log data: {:?}", e);
+					})
+					.expect("Failed to decode log data");
+				let event = AbstractBlockainEvent::InitiatorContractEvent(Ok(event));
 				if sender.send(event).is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
@@ -153,118 +156,69 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 	}
 }
 
-fn convert_log_to_event(
-	address: EthAddress,
-	log: Log,
-) -> BridgeContractInitiatorEvent<EthAddress, EthHash> {
-	let initiated_log = AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
-	let completed_log = AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
-	let refunded_log = AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
-
-	// Extract details from the log and map to event type
-	let topics = log.topics();
-	let data = log.data().clone();
-
-	// Assuming the first topic is the event type identifier
-	let topic = topics.get(0).expect("Expected event type in topics");
-
-	match topic {
-		t if t == &initiated_log => {
-			// Decode the data for Initiated event
-			let event = decode_log_data(
-				address,
-				EventName::Initiated.as_str(),
-				data,
-				vec![
-					AlloyParam::BridgeTransferId.fill(),
-					AlloyParam::InitiatorAddress.fill(),
-					AlloyParam::RecipientAddress.fill(),
-					AlloyParam::HashLock.fill(),
-					AlloyParam::TimeLock.fill(),
-					AlloyParam::Amount.fill(),
-				],
-			)
-			.expect("Failed to decode log data");
-
-			match event {
-				BridgeContractInitiatorEvent::Initiated(details) => {}
-				_ => unimplemented!("Unexpected event type"), //Return proper error type here
-			}
-
-			let bridge_transfer_id =
-				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
-			let initiator_address = InitiatorAddress(EthAddress(FixedBytes(
-				tokens[1].clone().into_address().unwrap().0,
-			)));
-			let recipient_address = RecipientAddress(tokens[2].clone().into_fixed_bytes().unwrap());
-			let hash_lock = HashLock(EthHash::from(tokens[3].clone().into_fixed_bytes().unwrap()));
-			let time_lock = TimeLock(tokens[4].clone().into_uint().unwrap().as_u64());
-			let amount = Amount(tokens[5].clone().into_uint().unwrap().as_u64());
-
-			let details = BridgeTransferDetails {
-				bridge_transfer_id,
-				initiator_address,
-				recipient_address,
-				hash_lock,
-				time_lock,
-				amount,
-			};
-
-			BridgeContractInitiatorEvent::Initiated(details)
-		}
-		t if t == &completed_log => {
-			// Decode the data for Completed event
-			let tokens = decode_log_data(
-				address,
-				EventName::Completed.as_str(),
-				data,
-				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()],
-			);
-			let bridge_transfer_id =
-				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
-
-			BridgeContractInitiatorEvent::Completed(bridge_transfer_id)
-		}
-		t if t == &refunded_log => {
-			// Decode the data for Refunded event
-			let tokens = decode_log_data(
-				address,
-				EventName::Refunded.as_str(),
-				data,
-				vec![AlloyParam::BridgeTransferId.fill()],
-			);
-			let bridge_transfer_id =
-				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
-
-			BridgeContractInitiatorEvent::Refunded(bridge_transfer_id)
-		}
-		_ => unimplemented!("Unexpected event type"), //Return proper error type here
-	}
-}
-
 fn decode_log_data(
-	address: EthAddress,
-	name: &str,
-	data: Bytes,
-	params: Vec<Param>,
-	topics: Vec<FixedBytes<32>>,
+	log: Log,
 ) -> Result<BridgeContractInitiatorEvent<EthAddress, EthHash>, anyhow::Error> {
-	let event = Event {
-		name: name.to_string(),
-		inputs: params
-			.iter()
-			.map(|p| EventParam {
-				ty: p.to_string(),
-				name: p.name.clone(),
-				indexed: false,
-				components: vec![],
-				internal_type: None, // for now
-			})
-			.collect(),
-		anonymous: false,
-	};
+	let topics = log.topics().to_owned();
+	let log_data =
+		LogData::new(topics.clone(), log.data().data.clone()).expect("Failed to create log data");
 
-	let log_data = LogData::new(topics, data).expect("Failed to create log data");
+	// Build the event
+	let event = topics
+		.iter()
+		.find_map(|topic| {
+			match topic {
+				&INITIATED_SELECT => Some(Event {
+					name: EventName::Initiated.as_str().to_string(),
+					inputs: EventName::Initiated
+						.params()
+						.iter()
+						.map(|p| EventParam {
+							ty: p.to_string(),
+							name: EventName::Completed.as_str().to_string(),
+							indexed: true,
+							components: EventName::Initiated.params(),
+							internal_type: None, // for now
+						})
+						.collect(),
+					anonymous: false,
+				}),
+				&COMPLETED_SELECT => Some(Event {
+					name: EventName::Completed.as_str().to_string(),
+					inputs: EventName::Completed
+						.params()
+						.iter()
+						.map(|p| EventParam {
+							ty: p.to_string(),
+							name: p.name.clone(),
+							indexed: true,
+							components: EventName::Completed.params(),
+							internal_type: None, // for now
+						})
+						.collect(),
+					anonymous: false,
+				}),
+				&REFUNDED_SELECT => Some(Event {
+					name: EventName::Refunded.as_str().to_string(),
+					inputs: EventName::Refunded
+						.params()
+						.iter()
+						.map(|p| EventParam {
+							ty: p.to_string(),
+							name: p.name.clone(),
+							indexed: true,
+							components: EventName::Refunded.params(),
+							internal_type: None, // for now
+						})
+						.collect(),
+					anonymous: false,
+				}),
+
+				_ => None,
+			}
+		})
+		.ok_or_else(|| anyhow::anyhow!("Failed to find event"))?;
+
 	let decoded = event.decode_log(&log_data, true).expect("Failed to decode log");
 
 	let coerce_bytes = |(bytes, _): (&[u8], usize)| {

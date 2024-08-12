@@ -174,6 +174,24 @@ impl EventName {
 			EventName::Refunded => "BridgeTransferRefunded",
 		}
 	}
+
+	pub fn params(&self) -> Vec<Param> {
+		match self {
+			EventName::Initiated => vec![
+				AlloyParam::BridgeTransferId.fill(),
+				AlloyParam::InitiatorAddress.fill(),
+				AlloyParam::RecipientAddress.fill(),
+				AlloyParam::PreImage.fill(),
+				AlloyParam::HashLock.fill(),
+				AlloyParam::TimeLock.fill(),
+				AlloyParam::Amount.fill(),
+			],
+			EventName::Completed => {
+				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
+			}
+			EventName::Refunded => vec![AlloyParam::BridgeTransferId.fill()],
+		}
+	}
 }
 
 impl From<&str> for EventName {
