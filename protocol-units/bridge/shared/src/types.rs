@@ -113,8 +113,14 @@ impl HashLockPreImage {
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
+enum EthValue {
+	Weth(u64),
+	Eth(u64),
+	WethAndEth((u64, u64)),
+}
+
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Amount(pub u64);
+pub struct Amount(pub EthValue);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BridgeTransferDetails<A, H> {

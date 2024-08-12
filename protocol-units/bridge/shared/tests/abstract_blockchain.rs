@@ -77,7 +77,7 @@ async fn test_initiate_bridge_transfer() {
 
 	let initiator_address = InitiatorAddress(TestAddress("initiator"));
 	let recipient_address = RecipientAddress::from(TestAddress("recipient"));
-	let amount = Amount(1000);
+	let amount = Amount(EthValue::Eth(1000));
 	let time_lock = TimeLock(100);
 	let hash_lock = HashLock(TestHash("hash_lock"));
 
@@ -138,7 +138,7 @@ async fn test_lock_bridge_transfer() {
 	let time_lock = TimeLock(100);
 	let initiator_adress = InitiatorAddress(vec![]);
 	let recipient_address = RecipientAddress(TestAddress("recipient"));
-	let amount = Amount(1000);
+	let amount = Amount(EthValue::Eth(1000));
 
 	let transaction =
 		Transaction::Counterparty::<TestAddress, _>(CounterpartyCall::LockBridgeTransfer(

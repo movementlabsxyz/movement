@@ -213,6 +213,7 @@ impl EthClient {
 impl BridgeContractInitiator for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
+	type Value = EthValue;
 
 	// `_initiator_address`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
@@ -223,20 +224,40 @@ impl BridgeContractInitiator for EthClient {
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		amount: Amount, // the ETH amount
+		amount: Amount, // the amount
 	) -> BridgeContractInitiatorResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-		let call = contract
-			.initiateBridgeTransfer(
-				U256::from(0), // For now a 0 WETH amount
-				FixedBytes(recipient_bytes),
-				FixedBytes(hash_lock.0),
-				U256::from(time_lock.0),
-			)
-			.value(U256::from(amount.0));
+		let call = 	match amount.0 {
+				EthValue::Weth (val) => {
+					contract.initiateBridgeTransfer(
+						U256::from(val), 
+						FixedBytes(recipient_bytes),
+						FixedBytes(hash_lock.0),
+						U256::from(time_lock.0),
+					)
+				},
+				EthValue::Eth (val) => {
+					contract.initiateBridgeTransfer(
+						U256::from(0), 
+						FixedBytes(recipient_bytes),
+						FixedBytes(hash_lock.0),
+						U256::from(time_lock.0),
+					)
+					.value(U256::from(val))
+				},
+				EthValue::WethAndEth ((weth, eth)) => {
+				   contract.initiateBridgeTransfer(
+							 U256::from(weth), 
+							 FixedBytes(recipient_bytes),
+							 FixedBytes(hash_lock.0),
+							 U256::from(time_lock.0),
+						 )
+						 .value(U256::from(eth))
+				}
+			};
 		let _ = send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.map_err(|e| {
@@ -314,7 +335,7 @@ impl BridgeContractInitiator for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			amount: Amount(EthValue::Eth(eth_details.amount.wrapping_to::<u64>())),
 		}))
 	}
 }
@@ -413,7 +434,7 @@ impl BridgeContractCounterparty for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			amount: Amount(EthValue::Weth(eth_details.amount.wrapping_to::<u64>())),
 		}))
 	}
 }

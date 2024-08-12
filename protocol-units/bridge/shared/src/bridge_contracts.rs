@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock, Value
 };
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -54,6 +54,7 @@ pub type BridgeContractCounterpartyResult<T> = Result<T, BridgeContractCounterpa
 pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
+	type Value: EthValue;
 
 	async fn initiate_bridge_transfer(
 		&mut self,

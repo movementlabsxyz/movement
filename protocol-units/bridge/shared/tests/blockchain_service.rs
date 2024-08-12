@@ -23,7 +23,7 @@ async fn test_bridge_transfer_initiated() {
 			RecipientAddress::from("recipient"),
 			HashLock("hash_lock"),
 			TimeLock(100),
-			Amount(1000),
+			Amount(EthValue::Eth(1000)),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -40,7 +40,7 @@ async fn test_bridge_transfer_initiated() {
 				recipient_address: RecipientAddress::from("recipient"),
 				hash_lock: HashLock("hash_lock"),
 				time_lock: TimeLock(100),
-				amount: Amount(1000),
+				amount: Amount(EthValue::Eth(1000)),
 			}
 		))))
 	);

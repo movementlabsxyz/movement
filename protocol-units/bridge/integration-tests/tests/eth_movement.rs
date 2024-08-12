@@ -82,7 +82,8 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
 			TimeLock(100),
-			Amount(1000), // Eth
+			// value has to be > 0
+			Amount(EthValue::Eth(1)), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -108,7 +109,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
 			TimeLock(100),
-			Amount(1000), // Eth
+			Amount(EthValue::Eth(1000)), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -140,7 +141,7 @@ async fn test_client_should_successfully_complete_transfer() {
 			RecipientAddress(recipient_bytes),
 			HashLock(hash_lock),
 			TimeLock(1000),
-			Amount(42),
+			Amount(EthValue::Eth(42)),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
