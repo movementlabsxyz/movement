@@ -1,11 +1,12 @@
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
-use alloy::primitives::Address;
+use alloy::primitives::{Address, FixedBytes};
 use alloy::providers::fillers::{
 	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
+use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails,
@@ -18,6 +19,13 @@ use bridge_shared::{
 use serde::{Deserialize, Serialize};
 
 use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
+
+pub const INITIATED_SELECT: FixedBytes<32> =
+	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
+pub const COMPLETED_SELECT: FixedBytes<32> =
+	AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
+pub const REFUNDED_SELECT: FixedBytes<32> =
+	AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
 
 // Codegen from the abis
 alloy::sol!(

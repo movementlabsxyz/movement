@@ -1,8 +1,10 @@
 use crate::types::{EthAddress, EventName, SCCResult, SCIResult};
+use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
-use alloy::primitives::{address, FixedBytes, LogData};
+use alloy::primitives::{address, Bytes, FixedBytes, LogData};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
-use alloy::rpc::types::{Filter, Log};
+use alloy::rpc::types::{Filter, Log, RawLog};
+use alloy::sol_types::sol_data::FixedBytes;
 use alloy::{
 	json_abi::{Event, EventParam, Param},
 	pubsub::PubSubFrontend,
@@ -20,7 +22,10 @@ use std::{fmt::Debug, pin::Pin, task::Poll};
 use thiserror::Error;
 
 use crate::{
-	types::{AlloyParam, AtomicBridgeInitiator, CompletedDetails},
+	types::{
+		AlloyParam, AtomicBridgeInitiator, CompletedDetails, COMPLETED_SELECT, INITIATED_SELECT,
+		REFUNDED_SELECT,
+	},
 	EthHash,
 };
 
@@ -42,6 +47,7 @@ pub enum MoveCounterpartyError {
 pub enum EthInitiatorEvent<A, H> {
 	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
 	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+	RefundedBridgeTransfer(BridgeTransferId<H>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -165,7 +171,7 @@ fn convert_log_to_event(
 	match topic {
 		t if t == &initiated_log => {
 			// Decode the data for Initiated event
-			let tokens = decode_log_data(
+			let event = decode_log_data(
 				address,
 				EventName::Initiated.as_str(),
 				data,
@@ -177,7 +183,13 @@ fn convert_log_to_event(
 					AlloyParam::TimeLock.fill(),
 					AlloyParam::Amount.fill(),
 				],
-			);
+			)
+			.expect("Failed to decode log data");
+
+			match event {
+				BridgeContractInitiatorEvent::Initiated(details) => {}
+				_ => unimplemented!("Unexpected event type"), //Return proper error type here
+			}
 
 			let bridge_transfer_id =
 				BridgeTransferId(EthHash::from(tokens[0].clone().into_fixed_bytes().unwrap()));
@@ -233,8 +245,9 @@ fn convert_log_to_event(
 fn decode_log_data(
 	address: EthAddress,
 	name: &str,
-	data: LogData,
+	data: Bytes,
 	params: Vec<Param>,
+	topics: Vec<FixedBytes<32>>,
 ) -> Result<BridgeContractInitiatorEvent<EthAddress, EthHash>, anyhow::Error> {
 	let event = Event {
 		name: name.to_string(),
@@ -242,7 +255,7 @@ fn decode_log_data(
 			.iter()
 			.map(|p| EventParam {
 				ty: p.to_string(),
-				name: p.name,
+				name: p.name.clone(),
 				indexed: false,
 				components: vec![],
 				internal_type: None, // for now
@@ -251,45 +264,81 @@ fn decode_log_data(
 		anonymous: false,
 	};
 
-	let raw_log = RawLog { address, topics: vec![], data: data.clone() };
-	let decoded = event.parse_log(raw_log)?.params;
+	let log_data = LogData::new(topics, data).expect("Failed to create log data");
+	let decoded = event.decode_log(&log_data, true).expect("Failed to decode log");
 
-	let event_name = EventName::from(name);
-	match event_name {
-		EventName::Completed => {
-			let bridge_transfer_id =
-				BridgeTransferId(EthHash::from(decoded[0].value.clone().into_fixed_bytes()?));
-			let initiator_address = InitiatorAddress(EthAddress(FixedBytes(
-				decoded[1].value.clone().into_address()?.0,
-			)));
-			let recipient_address = RecipientAddress(decoded[2].value.clone().into_fixed_bytes()?);
-			let hash_lock = HashLock(EthHash::from(decoded[3].value.clone().into_fixed_bytes()?));
-			let time_lock = TimeLock(decoded[4].value.clone().into_uint()?.as_u64());
-			let amount = Amount(decoded[5].value.clone().into_uint()?.as_u64());
+	let coerce_bytes = |(bytes, _): (&[u8], usize)| {
+		let mut array = [0u8; 32];
+		array.copy_from_slice(bytes);
+		array
+	};
 
-			let details = BridgeTransferDetails {
-				bridge_transfer_id,
-				initiator_address,
-				recipient_address,
-				hash_lock,
-				time_lock,
-				amount,
-			};
+	if let Some(selector) = decoded.selector {
+		match selector {
+			INITIATED_SELECT => {
+				let bridge_transfer_id = decoded.indexed[0]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
+				let initiator_address = decoded.indexed[1]
+					.as_address()
+					.map(|a| EthAddress(a))
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode InitiatorAddress"))?;
+				let recipient_address = decoded.indexed[2]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode RecipientAddress"))?;
+				let amount = decoded.indexed[3]
+					.as_uint()
+					.map(|(u, _)| u.into())
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode Amount"))?;
+				let hash_lock = decoded.indexed[4]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode HashLock"))?;
+				let time_lock = decoded.indexed[5]
+					.as_uint()
+					.map(|(u, _)| u.into())
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
 
-			Ok(BridgeContractInitiatorEvent::Initiated(details))
-		}
-		EventName::Completed => {
-			let bridge_transfer_id =
-				BridgeTransferId(EthHash::from(decoded[0].value.clone().into_fixed_bytes()?));
+				let details: BridgeTransferDetails<EthAddress, EthHash> = BridgeTransferDetails {
+					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
+					initiator_address: InitiatorAddress(initiator_address),
+					recipient_address: RecipientAddress(recipient_address.to_vec()),
+					hash_lock: HashLock(hash_lock),
+					time_lock,
+					amount,
+				};
 
-			Ok(BridgeContractInitiatorEvent::Completed(bridge_transfer_id))
-		}
-		EventName::Refunded => {
-			let bridge_transfer_id =
-				BridgeTransferId(EthHash::from(decoded[0].value.clone().into_fixed_bytes()?));
+				return Ok(BridgeContractInitiatorEvent::Initiated(details));
+			}
+			COMPLETED_SELECT => {
+				let bridge_transfer_id = decoded.indexed[0]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
 
-			Ok(BridgeContractInitiatorEvent::Refunded(bridge_transfer_id))
-		}
-		_ => Err(anyhow::anyhow!("Unexpected event type")),
+				// We do nothing with the secret in the event here
+				return Ok(BridgeContractInitiatorEvent::Completed(BridgeTransferId(
+					bridge_transfer_id,
+				)));
+			}
+			REFUNDED_SELECT => {
+				let bridge_transfer_id = decoded.indexed[0]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
+				return Ok(BridgeContractInitiatorEvent::Refunded(BridgeTransferId(
+					bridge_transfer_id,
+				)));
+			}
+			_ => {
+				tracing::error!("Unknown event selector: {:x}", selector);
+				return Err(anyhow::anyhow!("failed to devode event selector"));
+			}
+		};
+	} else {
+		tracing::error!("Failed to decode event selector");
+		return Err(anyhow::anyhow!("Failed to decode event selector"));
 	}
 }

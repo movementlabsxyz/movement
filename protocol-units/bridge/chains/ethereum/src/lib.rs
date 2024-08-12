@@ -3,7 +3,6 @@ use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
 use alloy::signers::k256::Secp256k1;
 use alloy::signers::local::LocalSigner;
-use alloy::sol_types::SolCall;
 use alloy::{
 	network::EthereumWallet,
 	rlp::{RlpDecodable, RlpEncodable},
