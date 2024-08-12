@@ -68,10 +68,13 @@ pub async fn send_transaction<
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<(), anyhow::Error> {
+	println!("Sending transaction with gas limit: {}", gas_limit);
 	//validate gas price.
-	let mut estimate_gas = base_call_builder.estimate_gas().await?;
+	let mut estimate_gas = base_call_builder.estimate_gas().await.expect("Failed to estimate gas");
 	// Add 20% because initial gas estimate are too low.
 	estimate_gas += (estimate_gas * 20) / 100;
+
+	println!("estimated_gas: {}", estimate_gas);
 
 	// Sending Transaction automatically can lead to errors that depend on the state for Eth.
 	// It's convenient to manage some of them automatically to avoid to fail commitment Transaction.
@@ -85,6 +88,8 @@ pub async fn send_transaction<
 		if transaction_fee_wei > gas_limit {
 			return Err(McrEthConnectorError::GasLimitExceed(transaction_fee_wei, gas_limit).into());
 		}
+
+		println!("Sending transaction with gas: {}", estimate_gas);
 
 		//send the Transaction and detect send error.
 		let pending_transaction = match call_builder.send().await {
@@ -113,9 +118,12 @@ pub async fn send_transaction<
 					"transaction_receipt.gas_used: {} / estimate_gas: {estimate_gas}",
 					transaction_receipt.gas_used
 				);
-				if transaction_receipt.gas_used == estimate_gas {
-					tracing::warn!("Send commitment Transaction  fail because of insufficient gas, receipt:{transaction_receipt:?} ");
-					estimate_gas += (estimate_gas * 10) / 100;
+				// Some valid Tx can abort cause of insufficient gas without consuming all its gas.
+				// Define a threshold a little less than estimated gas to detect them.
+				let tx_gas_consumption_threshold = estimate_gas - (estimate_gas * 10) / 100;
+				if transaction_receipt.gas_used >= tx_gas_consumption_threshold {
+					tracing::info!("Send commitment Transaction  fail because of insufficient gas, receipt:{transaction_receipt:?} ");
+					estimate_gas += (estimate_gas * 30) / 100;
 					continue;
 				} else {
 					return Err(McrEthConnectorError::RpcTransactionExecution(format!(

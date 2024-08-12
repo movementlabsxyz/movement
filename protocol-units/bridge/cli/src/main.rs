@@ -1,40 +1,20 @@
-use anyhow::Result;
-use clap::{Parser, Subcommand};
-
-mod eth;
-mod movement;
-
-#[derive(Parser)]
-#[command(name = "bridge-cli")]
-#[command(about = "A CLI for interacting with various bridge clients", long_about = None)]
-struct Cli {
-	#[command(subcommand)]
-	command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-	Eth {
-		#[command(subcommand)]
-		eth_command: eth::EthCommands,
-	},
-
-	Movement {
-		#[command(subcommand)]
-		movement_command: movement::MovementCommands,
-	},
-}
+use bridge_cli::clap::{CliOptions, Commands};
+use clap::Parser;
+use eyre::Result;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-	let cli = Cli::parse();
+	inner_main().await.map_err(|e| eyre::eyre!(e))
+}
+
+async fn inner_main() -> anyhow::Result<()> {
+	tracing_subscriber::fmt::init();
+
+	let cli = CliOptions::parse();
 
 	match &cli.command {
-		Commands::Eth { eth_command } => {
-			eth::run(eth_command).await?;
-		}
-		Commands::Movement { movement_command } => {
-			todo!()
+		Commands::BridgeEthToMovETH(command) => {
+			bridge_cli::eth_to_moveth::execute(command).await?;
 		}
 	}
 

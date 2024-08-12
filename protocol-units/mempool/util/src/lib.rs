@@ -6,6 +6,11 @@ use std::cmp::Ordering;
 pub trait MempoolTransactionOperations {
 	// todo: move mempool_transaction methods into separate trait
 
+	async fn add_mempool_transactions(
+		&self,
+		transactions: Vec<MempoolTransaction>,
+	) -> Result<(), anyhow::Error>;
+
 	/// Checks whether a mempool transaction exists in the mempool.
 	async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, anyhow::Error>;
 
@@ -43,6 +48,12 @@ pub trait MempoolTransactionOperations {
 	/// Checks whether the mempool has the transaction.
 	async fn has_transaction(&self, transaction_id: Id) -> Result<bool, anyhow::Error> {
 		self.has_mempool_transaction(transaction_id).await
+	}
+
+	async fn add_transactions(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
+		let mempool_transactions =
+			transactions.into_iter().map(MempoolTransaction::slot_now).collect();
+		self.add_mempool_transactions(mempool_transactions).await
 	}
 
 	/// Adds a transaction to the mempool.

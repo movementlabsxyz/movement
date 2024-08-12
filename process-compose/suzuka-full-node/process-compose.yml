@@ -1,7 +1,5 @@
 version: "3"
 
-environment:
-
 processes:
 
   build:
@@ -41,22 +39,31 @@ processes:
     readiness_probe:
       initial_delay_seconds: 3
       exec:
-        command: echo "true"
-    liveness_probe:
-      initial_delay_seconds: 3
+        command: grpcurl -plaintext 0.0.0.0:30730 list
+
+  postgres:
+    command: |
+      ./scripts/postgres/start-dev
+
+    readiness_probe:
+      initial_delay_seconds: 10
       exec:
         command: echo "true"
-
+    
   suzuka-full-node:
     command: |
       suzuka-full-node
+    env:
+      RUST_LOG: info,aptos-indexer=debug
     depends_on:
       m1-da-light-node:
         condition: process_healthy
+      postgres:
+        condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:30731
 
   suzuka-faucet:
   
@@ -68,5 +75,5 @@ processes:
     readiness_probe:
       initial_delay_seconds: 30
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:30732
 

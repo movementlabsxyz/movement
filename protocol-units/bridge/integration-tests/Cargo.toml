@@ -1,0 +1,30 @@
+[package]
+name = "bridge-integration-tests"
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+version = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+aptos-sdk = { workspace = true }
+anyhow = { workspace = true }
+alloy = { workspace = true }
+reqwest = { workspace = true }
+alloy-network = { workspace = true }
+alloy-sol-types = { workspace = true }
+alloy-contract = { workspace = true }
+rand = { workspace = true }
+serde_json = { workspace = true }
+
+bridge-shared = { workspace = true }
+ethereum-bridge = { workspace = true }
+movement-bridge = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -11,6 +11,10 @@ pub enum BridgeContractInitiatorError {
 	InitiateTransferError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
+	#[error("Failed to parse preimage")]
+	ParsePreimageError,
+	#[error("Initiator address not set")]
+	InitiatorAddressNotSet,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
@@ -29,6 +33,10 @@ pub enum BridgeContractCounterpartyError {
 	CompleteTransferError,
 	#[error("Failed to abort bridge transfer")]
 	AbortTransferError,
+	#[error("Counterparty address not set")]
+	CounterpartyAddressNotSet,
+	#[error("Error getting the signer")]
+	SignerError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
@@ -50,7 +58,7 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress,
+		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
@@ -83,7 +91,8 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		recipient: RecipientAddress,
+		initiator: InitiatorAddress<Vec<u8>>,
+		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()>;
 
@@ -101,5 +110,5 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>;
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
 }

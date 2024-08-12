@@ -1,12 +1,19 @@
 use crate::{BlockMetadata, DynOptFinExecutor, ExecutableBlock, HashValue, SignedTransaction};
 use aptos_api::runtime::Apis;
-use maptos_fin_view::FinalityView;
-use maptos_opt_executor::Executor as OptExecutor;
-use movement_types::BlockCommitment;
-
+use aptos_config::config::NodeConfig;
+use aptos_mempool::core_mempool::CoreMempool;
 use async_channel::Sender;
 use async_trait::async_trait;
-use tracing::debug;
+use maptos_fin_view::FinalityView;
+use maptos_opt_executor::transaction_pipe::TransactionPipeError;
+use maptos_opt_executor::Executor as OptExecutor;
+use movement_types::BlockCommitment;
+use std::sync::atomic::Ordering;
+use tokio::time::interval;
+use tokio::time::Duration;
+use tokio_stream::wrappers::IntervalStream;
+use tokio_stream::StreamExt;
+use tracing::{debug, info};
 
 #[derive(Clone)]
 pub struct Executor {
@@ -42,15 +49,38 @@ impl Executor {
 impl DynOptFinExecutor for Executor {
 	/// Runs the service.
 	async fn run_service(&self) -> Result<(), anyhow::Error> {
-		tokio::try_join!(self.executor.run_service(), self.finality_view.run_service(),)?;
+		tokio::try_join!(
+			self.executor.run_service(),
+			self.executor.run_indexer_grpc_service(),
+			self.finality_view.run_service(),
+		)?;
 		Ok(())
 	}
 
-	/// Runs the necessary background tasks.
 	async fn run_background_tasks(&self) -> Result<(), anyhow::Error> {
+		let mut core_mempool = CoreMempool::new(&self.executor.node_config);
+		let mut last_gc = std::time::Instant::now();
 		loop {
 			// readers should be able to run concurrently
-			self.executor.tick_transaction_pipe(self.transaction_channel.clone()).await?;
+			match self
+				.executor
+				.tick_transaction_pipe(
+					&mut core_mempool,
+					self.transaction_channel.clone(),
+					&mut last_gc,
+				)
+				.await
+			{
+				Ok(_) => {}
+				Err(e) => match e {
+					TransactionPipeError::TransactionNotAccepted(e) => {
+						// allow the transaction not to be accepted by the mempool
+						// because the client may have sent a bad sequence number
+						tracing::warn!("Transaction not accepted: {:?}", e);
+					}
+					_ => anyhow::bail!("Server error: {:?}", e),
+				},
+			}
 		}
 	}
 
@@ -100,6 +130,23 @@ impl DynOptFinExecutor for Executor {
 	/// Rollover the genesis block
 	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error> {
 		self.executor.rollover_genesis_now().await
+	}
+
+	fn decrement_transactions_in_flight(&self, count: u64) {
+		// fetch sub mind the underflow
+		// a semaphore might be better here as this will rerun until the value does not change during the operation
+		self.executor
+			.transactions_in_flight
+			.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
+				info!(
+					target: "movement_timing",
+					count,
+					current,
+					"decrementing_transactions_in_flight",
+				);
+				Some(current.saturating_sub(count))
+			})
+			.unwrap_or_else(|_| 0);
 	}
 }
 
@@ -357,7 +404,7 @@ mod tests {
 
 		let latest_version = {
 			let db_reader = executor.executor.db.reader.clone();
-			db_reader.get_latest_version()?
+			db_reader.get_synced_version()?
 		};
 		assert_eq!(latest_version, version_to_revert_to);
 
@@ -410,7 +457,7 @@ mod tests {
 				let user_account_creation_tx = root_account.sign_with_transaction_builder(
 					tx_factory.create_user_account(new_account.public_key()),
 				);
-				let tx_hash = user_account_creation_tx.clone().committed_hash();
+				let tx_hash = user_account_creation_tx.committed_hash();
 				transaction_hashes.push(tx_hash);
 				transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 			}
@@ -476,7 +523,7 @@ mod tests {
 			let user_account_creation_tx = root_account.sign_with_transaction_builder(
 				tx_factory.create_user_account(new_account.public_key()),
 			);
-			let tx_hash = user_account_creation_tx.clone().committed_hash();
+			let tx_hash = user_account_creation_tx.committed_hash();
 			transaction_hashes.push(tx_hash);
 			transactions.push(Transaction::UserTransaction(user_account_creation_tx));
 

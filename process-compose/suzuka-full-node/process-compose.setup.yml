@@ -14,4 +14,3 @@ processes:
       initial_delay_seconds: 3
       exec:
         command: echo "true"
-    

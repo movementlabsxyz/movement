@@ -4,24 +4,27 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-atomic_bridge = "_"
-moveth = "_"
-master_minter = "_"
-minter = "_"
-pauser = "_"
-denylister = "_"
-
-[dev-addresses]
-moveth = "0xbeef"
-atomic_bridge = "0xfeef"
-master_minter = "0xbab"
-minter = "0xface"
+atomic_bridge = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+moveth = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+master_minter = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+minter = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
+admin = "0xc8d39501a74b964b169845e1fe733fae91890437d3e0af6328987b668e97ad8a"
 pauser = "0xdafe"
 denylister = "0xcade"
 
+[dev-addresses]
+# moveth = "0xbeef"
+# atomic_bridge = "0xfeef"
+# master_minter = "0xbab"
+# minter = "0xface"
+# admin = "0xad"
+# pauser = "_"
+# denylister = "_"
+
+
 [dependencies.AptosFramework]
-git = "https://github.com/aptos-labs/aptos-core.git"
-rev = "devnet"
+git = "https://github.com/movementlabsxyz/aptos-core.git"
+rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

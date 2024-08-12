@@ -4,30 +4,7 @@ on:
   push:
 
 jobs:
-  cargo-check:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
-          - os: macos-13-latest
-            arch: arm64
-            runs-on: macos-13-xlarge
-
-    runs-on: ${{ matrix.runs-on }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo check --all-targets"  
-
-  suzuka-full-node:
+  move-modules-test:
     strategy:
       matrix:
         include:
@@ -41,22 +18,25 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run Suzuka Full Node tests in nix environment
-      env:
-        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+    - name: Install Aptos CLI
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
-        # kill the process on port 8090
-        lsof -ti:8090 | xargs kill -9
-        sleep 10
-        # see if restarts are graceful
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.test.local -t=false"  
+        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
 
-  m1-da-light-node:
-    if: false # this is effectively tested by the above
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run Aptos Tests
+      run: |
+        nix develop --command bash -c "
+          set -e
+          set -x
+          chmod +x .github/scripts/update_move_toml.sh && \
+          ./.github/scripts/update_move_toml.sh && \
+          cd protocol-units/bridge/move-modules && \
+          aptos move test
+        "
+
+  solidity-bridge-tests:
     strategy:
       matrix:
         include:
@@ -70,19 +50,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install Aptos CLI
+      run: |
+        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run M1 DA Light Node tests in nix environment
-      # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just m1-da-light-node native build.setup.test.local -t=false"  
 
     - name: Run foundry tests
-      # Run the foundry solidity contracts using the WETH9 contract on sepolia
-      run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv  
+      run: |
+        nix develop --command bash -c "
+          cd protocol-units/bridge/contracts && \
+          forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
+        "
 
-  mcr:
-    if: false
+  bridge-eth-movement:
     strategy:
       matrix:
         include:
@@ -99,6 +81,8 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run MCR tests in nix environment
-      # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just mcr native test.local -t=false"  
+    - name: Run foundry tests
+      run: |
+        nix develop --command bash -c "
+          cargo test --test eth_movement -- --nocapture --test-threads=1 
+        "

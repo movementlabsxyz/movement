@@ -1,7 +1,7 @@
 use crate::{
 	blockchain_service::BlockchainService,
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::{BridgeTransferDetails, BridgeTransferId, CompletedDetails},
+	types::{BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails},
 };
 
 use super::active_swap::LockBridgeTransferAssetsError;
@@ -36,28 +36,28 @@ impl<A, H> IEvent<A, H> {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum CWarn<H> {
+pub enum CWarn<A, H> {
 	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
-	CannotCompleteUnexistingSwap(CompletedDetails<H>),
+	CannotCompleteUnexistingSwap(CounterpartyCompletedDetails<A, H>),
 	LockingAbortedTooManyAttempts(BridgeTransferId<H>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum CEvent<H> {
+pub enum CEvent<A, H> {
 	RetryLockingAssets(BridgeTransferId<H>),
-	ContractEvent(BridgeContractCounterpartyEvent<H>),
-	Warn(CWarn<H>),
+	ContractEvent(BridgeContractCounterpartyEvent<A, H>),
+	Warn(CWarn<A, H>),
 }
 
-impl<H> CEvent<H> {
-	pub fn contract_event(&self) -> Option<&BridgeContractCounterpartyEvent<H>> {
+impl<A, H> CEvent<A, H> {
+	pub fn contract_event(&self) -> Option<&BridgeContractCounterpartyEvent<A, H>> {
 		match self {
 			CEvent::ContractEvent(event) => Some(event),
 			_ => None,
 		}
 	}
 
-	pub fn warn(&self) -> Option<&CWarn<H>> {
+	pub fn warn(&self) -> Option<&CWarn<A, H>> {
 		match self {
 			CEvent::Warn(warn) => Some(warn),
 			_ => None,
@@ -72,9 +72,9 @@ where
 	B2: BlockchainService,
 {
 	B1I(IEvent<B1::Address, B1::Hash>),
-	B1C(CEvent<B1::Hash>),
+	B1C(CEvent<B1::Address, B1::Hash>),
 	B2I(IEvent<B2::Address, B2::Hash>),
-	B2C(CEvent<B2::Hash>),
+	B2C(CEvent<B2::Address, B2::Hash>),
 }
 
 #[allow(non_snake_case)]
@@ -91,14 +91,16 @@ impl<B1: BlockchainService, B2: BlockchainService> Event<B1, B2> {
 		self.B1I()?.contract_event()
 	}
 
-	pub fn B1C(&self) -> Option<&CEvent<B1::Hash>> {
+	pub fn B1C(&self) -> Option<&CEvent<B1::Address, B1::Hash>> {
 		match self {
 			Event::B1C(event) => Some(event),
 			_ => None,
 		}
 	}
 
-	pub fn B1C_ContractEvent(&self) -> Option<&BridgeContractCounterpartyEvent<B1::Hash>> {
+	pub fn B1C_ContractEvent(
+		&self,
+	) -> Option<&BridgeContractCounterpartyEvent<B1::Address, B1::Hash>> {
 		self.B1C()?.contract_event()
 	}
 
@@ -114,14 +116,16 @@ impl<B1: BlockchainService, B2: BlockchainService> Event<B1, B2> {
 		self.B2I()?.contract_event()
 	}
 
-	pub fn B2C(&self) -> Option<&CEvent<B2::Hash>> {
+	pub fn B2C(&self) -> Option<&CEvent<B2::Address, B2::Hash>> {
 		match self {
 			Event::B2C(event) => Some(event),
 			_ => None,
 		}
 	}
 
-	pub fn B2C_ContractEvent(&self) -> Option<&BridgeContractCounterpartyEvent<B2::Hash>> {
+	pub fn B2C_ContractEvent(
+		&self,
+	) -> Option<&BridgeContractCounterpartyEvent<B2::Address, B2::Hash>> {
 		self.B2C()?.contract_event()
 	}
 }

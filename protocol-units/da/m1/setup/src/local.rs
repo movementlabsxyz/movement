@@ -1,9 +1,8 @@
+use crate::common;
 use anyhow::Context;
-use celestia_types::nmt::Namespace;
 use commander::run_command;
 use dot_movement::DotMovement;
 use m1_da_light_node_util::config::local::Config;
-use rand::Rng;
 use tokio::fs;
 use tracing::info;
 
@@ -15,137 +14,16 @@ impl Local {
 		Self
 	}
 
-	fn random_hex(bytes: usize) -> String {
-		let mut rng = rand::thread_rng();
-		let random_bytes: Vec<u8> = (0..bytes).map(|_| rng.gen()).collect();
-		hex::encode(random_bytes)
-	}
-
-	fn random_chain_id() -> String {
-		Self::random_hex(10)
-	}
-
-	fn random_namespace() -> Namespace {
-		let namespace_bytes = Self::random_hex(10);
-		Namespace::new_v0(&hex::decode(namespace_bytes).unwrap()).unwrap()
-	}
-
-	async fn initialize_celestia_config(
-		&self,
-		dot_movement: DotMovement,
-		mut config: Config,
-	) -> Result<Config, anyhow::Error> {
-		// use the dot movement path to set up the celestia app and node paths
-		let dot_movement_path = dot_movement.get_path();
-
-		let celestia_chain_id = if config.celestia_force_new_chain {
-			// if forced just replace the chain id with a random one
-
-			config.appd.celestia_chain_id = Self::random_chain_id();
-			config.appd.celestia_namespace = Self::random_namespace();
-			config.appd.celestia_chain_id.clone()
-		} else {
-			// if new chain is not forced, use the one in the config
-			config.appd.celestia_chain_id.clone()
-		};
-
-		// update the app path with the chain id
-		config.appd.celestia_path.replace(
-			dot_movement_path
-				.join("celestia")
-				.join(celestia_chain_id.clone())
-				.join(".celestia-app")
-				.to_str()
-				.ok_or(anyhow::anyhow!("Failed to convert path to string."))?
-				.to_string(),
-		);
-
-		// update the node path with the chain id
-		config.bridge.celestia_bridge_path.replace(
-			dot_movement_path
-				.join("celestia")
-				.join(celestia_chain_id.clone())
-				.join(".celestia-node")
-				.to_str()
-				.ok_or(anyhow::anyhow!("Failed to convert path to string."))?
-				.to_string(),
-		);
-
-		Ok(config)
-	}
-
-	async fn initialize_memseq_config(
-		&self,
-		dot_movement: DotMovement,
-		mut config: Config,
-	) -> Result<Config, anyhow::Error> {
-		info!("Initializing MemSeq Config.");
-		// use the dot movement path to set up the memseq database path
-		let dot_movement_path = dot_movement.get_path();
-
-		// use the chain id from the celestia config to set up the memseq database path
-		let chain_id = config.appd.celestia_chain_id.clone();
-
-		// update the memseq database path with the chain id
-		let path = dot_movement_path
-			.join("memseq")
-			.join(chain_id.clone())
-			.join(".memseq")
-			.to_str()
-			.ok_or(anyhow::anyhow!("Failed to convert path to string."))?
-			.to_string();
-		config.memseq.sequencer_chain_id = Some(chain_id.clone());
-		config.memseq.sequencer_database_path = Some(path.clone());
-
-		Ok(config)
-	}
-
-	async fn make_parent_dirs(&self, path: &str) -> Result<(), anyhow::Error> {
-		let parent = std::path::Path::new(path)
-			.parent()
-			.ok_or(anyhow::anyhow!("Failed to get parent directory."))?;
-		fs::create_dir_all(parent).await?;
-		Ok(())
-	}
-
-	async fn make_dirs(
-		&self,
-		dot_movement: DotMovement,
-		config: Config,
-	) -> Result<Config, anyhow::Error> {
-		// make the celestia app directory
-		let app_path = config.appd.celestia_path.clone().context(
-			"Failed to get Celestia App path from config. This is required for creating the Celestia App directory.",
-		)?;
-		info!("Creating Celestia App Path: {}", app_path.as_str());
-		self.make_parent_dirs(app_path.as_str()).await?;
-
-		// make the celestia node directory
-		let node_path = config.bridge.celestia_bridge_path.clone().context(
-			"Failed to get Celestia Node path from config. This is required for creating the Celestia Node directory.",
-		)?;
-		info!("Creating Celestia Node Path: {}", node_path.as_str());
-		self.make_parent_dirs(node_path.as_str()).await?;
-
-		// make the memseq database directory
-		let database_path = config.memseq.sequencer_database_path.clone().context(
-			"Failed to get MemSeq database path from config. This is required for creating the MemSeq database directory.",
-		)?;
-		info!("Creating MemSeq Database Path: {}", database_path.as_str());
-		self.make_parent_dirs(database_path.as_str()).await?;
-
-		Ok(config)
-	}
-
 	async fn setup_celestia(
 		&self,
 		dot_movement: DotMovement,
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
 		info!("Setting up Celestia.");
-		let mut config = self.initialize_celestia_config(dot_movement.clone(), config).await?;
-		let mut config = self.initialize_memseq_config(dot_movement.clone(), config).await?;
-		let mut config = self.make_dirs(dot_movement.clone(), config).await?;
+		let mut config =
+			common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
+		let mut config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
+		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 		info!("Setup config for Memseq and Celestia: {:?}", config);
 
 		// unpack some of the config values
@@ -306,7 +184,6 @@ impl Local {
 		dot_movement: DotMovement,
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
-
 		// By default the M1 DA Light Node is not initialized.
 		if !config.m1_da_light_node_is_initial {
 			info!("M1 DA Light Node is already initialized.");

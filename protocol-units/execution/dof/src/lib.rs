@@ -53,4 +53,7 @@ pub trait DynOptFinExecutor {
 
 	/// Rollover the genesis block
 	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error>;
+
+	/// Decrements transactions in flight on the transaction channel.
+	fn decrement_transactions_in_flight(&self, count: u64);
 }

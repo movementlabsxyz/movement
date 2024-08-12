@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -e
+
+# Remove old data directory
+rm -rf ./.data
+
+# Initialize the database cluster
+initdb -D ./.data --no-locale
+
+# Start the PostgreSQL server
+pg_ctl -D ./.data -l ./.data/logfile start
+
+# Wait a few seconds to ensure the server is fully started
+sleep 5
+
+# Create the 'postgres' superuser
+psql -U "$USER" -d template1 -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'password';"
+
+# Change ownership of the 'postgres' database
+psql -U "$USER" -d template1 -c "ALTER DATABASE postgres OWNER TO postgres;"
+
+# Stop the PostgreSQL server
+pg_ctl -D ./.data stop
+
+# Start the PostgreSQL server normally
+postgres -D ./.data -h 0.0.0.0 -p 5432

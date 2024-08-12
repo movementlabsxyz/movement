@@ -9,20 +9,26 @@ homepage.workspace = true
 publish.workspace = true
 rust-version.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-anyhow = { workspace = true }
-clap = { workspace = true }
-hex = { workspace = true }
-tokio = { workspace = true }
-serde_json = { workspace = true }
+bridge-shared.workspace = true
+ethereum-bridge.workspace = true
+movement-bridge.workspace = true
 
-bridge-shared = { workspace = true }
-ethereum-bridge = { workspace = true }
-movement-bridge = { workspace = true }
+clap.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+serde.workspace = true
+tracing-subscriber.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
 
-alloy-primitives = { workspace = true }
+alloy.workspace = true
+
+directories = "5.0"
+url.workspace = true
+eyre = "0.6.12"
+
 
 [lints]
 workspace = true

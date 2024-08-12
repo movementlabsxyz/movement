@@ -1,34 +1,33 @@
-use std::{fmt::Debug, pin::Pin, task::Poll};
-
-use crate::types::{EventName, SCCResult, SCIResult};
+use crate::types::{EthAddress, EventName, SCCResult, SCIResult};
+use alloy::eips::BlockNumberOrTag;
+use alloy::primitives::{address, FixedBytes, LogData};
+use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
+use alloy::rpc::types::{Filter, Log};
 use alloy::{
 	json_abi::{Event, EventParam, Param},
 	pubsub::PubSubFrontend,
-};
-use alloy_eips::BlockNumberOrTag;
-use alloy_primitives::{address, Address as EthAddress, FixedBytes, LogData};
-use alloy_provider::{Provider, ProviderBuilder, RootProvider, WsConnect};
-use alloy_rpc_types::{Filter, Log};
-use alloy_sol_types::{
-	abi::{self, Token},
-	sol, SolEvent,
+	sol_types::SolEvent,
 };
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, CompletedDetails, HashLock,
-		HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+		InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use std::{fmt::Debug, pin::Pin, task::Poll};
 use thiserror::Error;
 
-use crate::{types::AlloyParam, EthHash};
+use crate::{
+	types::{AlloyParam, AtomicBridgeInitiator, CompletedDetails},
+	EthHash,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<H> {
-	LockedBridgeTransfer(LockDetails<H>),
-	CompletedBridgeTransfer(CompletedDetails<H>),
+pub enum MoveCounterpartyEvent<A, H> {
+	LockedBridgeTransfer(LockDetails<A, H>),
+	CompletedBridgeTransfer(CompletedDetails<A, H>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -58,17 +57,9 @@ pub enum EthInitiatorError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<H>),
+	CounterpartyContractEvent(SCCResult<A, H>),
 	Noop,
 }
-
-// Codegen from the abi
-sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	AtomicBridgeInitiator,
-	"abis/AtomicBridgeInitiator.json"
-);
 
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
@@ -105,7 +96,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
 				let event = AbstractBlockainEvent::InitiatorContractEvent(Ok(
-					convert_log_to_event(initiator_address, log),
+					convert_log_to_event(EthAddress(initiator_address), log),
 				));
 				if sender.send(event).is_err() {
 					tracing::error!("Failed to send event to listener channel");
@@ -156,7 +147,6 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 	}
 }
 
-// Utility functions
 fn convert_log_to_event(
 	address: EthAddress,
 	log: Log,

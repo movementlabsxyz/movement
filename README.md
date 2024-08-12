@@ -34,7 +34,7 @@ classical semantic versioning.
 ## Prerequisites
 ### Prerequisites - Just command
 `just` is a handy way to save and run project-specific commands. Please install it
-[following just install instructioins](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
+[following just install instructions](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
 
 ### Just command - macOS
 ```bash 
@@ -127,8 +127,8 @@ Under the hood, `just` runs
 GIT_ROOT=$(git rev-parse --show-toplevel)
 docker compose --env-file .env \
                --file docker/compose/suzuka-full-node/docker-compose.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.setup.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.local.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
                up
 ```
 

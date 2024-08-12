@@ -15,7 +15,7 @@ RUN rust_binary="./target/release/suzuka-full-node"; dest_dir="/tmp/runtime"; \
     grep '^/' | xargs -I {} dirname {} | sort | uniq | xargs -I {} \
     bash -c 'mkdir -p "$0/$1" && rsync -a --copy-links "$1/" "$0/$1/"' "$dest_dir" {}
 
-FROM scratch
+FROM alpine:latest
 
 # Copy the build artifact from the builder stage
 COPY --from=builder /tmp/build/target/release/suzuka-full-node /app/suzuka-full-node

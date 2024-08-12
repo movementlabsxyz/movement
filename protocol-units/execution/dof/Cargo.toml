@@ -23,11 +23,15 @@ aptos-crypto = { workspace = true }
 aptos-api = { workspace = true }
 aptos-types = { workspace = true }
 aptos-sdk = { workspace = true }
+aptos-mempool = { workspace = true }
+aptos-config = { workspace = true }
 
 maptos-opt-executor = { workspace = true }
 maptos-fin-view = { workspace = true }
 maptos-execution-util = { workspace = true }
 movement-types = { workspace = true }
+futures = { workspace = true }
+tokio-stream = { workspace = true }
 
 [dev-dependencies]
 chrono = { workspace = true }

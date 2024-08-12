@@ -1,3 +1,5 @@
+// pub mod alice_bob;
+pub mod indexer_stream;
 use crate::load_soak_testing::{execute_test, init_test, ExecutionConfig, Scenario, TestKind};
 use crate::{
 	coin_client::CoinClient,
@@ -5,6 +7,7 @@ use crate::{
 		aptos_api_types::{TransactionOnChainData, ViewFunction},
 		Client, FaucetClient,
 	},
+	transaction_builder::TransactionBuilder,
 	types::{chain_id::ChainId, LocalAccount},
 };
 use anyhow::Context;
@@ -12,7 +15,6 @@ use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::ValidCryptoMaterialStringExt;
 use aptos_sdk::move_types::identifier::Identifier;
 use aptos_sdk::move_types::language_storage::ModuleId;
-use aptos_sdk::transaction_builder::TransactionBuilder;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::transaction::authenticator::AuthenticationKey;
 use aptos_sdk::types::transaction::EntryFunction;
@@ -532,11 +534,8 @@ async fn test_complex_alice_internal() -> Result<(), anyhow::Error> {
 	// 	&vec![MoveValue::Address(multisig_account.clone()), MoveValue::U64(1)]
 	// 	).await?;
 
-	
-
 	Ok(())
 }
-
 
 #[test]
 fn hey_partners_load() {
@@ -566,7 +565,6 @@ fn hey_partners_soak() {
 	tracing::info!("Hey Partners Soak Test result: {:?}", result);
 }
 
-
 fn create_hey_partners_scenario(_id: usize) -> Box<dyn Scenario> {
 	Box::new(HeyPartnersScenario)
 }
@@ -585,15 +583,14 @@ pub async fn test_hey_partners() -> Result<(), anyhow::Error> {
 }
 
 async fn test_hey_partners_internal() -> Result<(), anyhow::Error> {
-    let root: PathBuf = cargo_workspace()?;
+	let root: PathBuf = cargo_workspace()?;
 	let additional_path = "networks/suzuka/suzuka-client/src/tests/hey-partners/";
 	let combined_path = root.join(additional_path);
 
 	let test = combined_path.to_string_lossy();
 	println!("{}", test);
 
-    let output =
-		run_command("/bin/bash", &[format!("{}{}", test, "test.sh").as_str()]).await?;
-    println!("Output: {}", output);
-    Ok(())
+	let output = run_command("/bin/bash", &[format!("{}{}", test, "test.sh").as_str()]).await?;
+	println!("Output: {}", output);
+	Ok(())
 }

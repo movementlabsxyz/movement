@@ -1,4 +1,5 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
+use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
@@ -6,7 +7,7 @@ use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
 
 #[derive(Clone)]
-pub struct MockMcrSettlementClient {
+pub struct McrSettlementClient {
 	commitments: Arc<RwLock<BTreeMap<u64, BlockCommitment>>>,
 	stream_sender: mpsc::Sender<Result<BlockCommitment, anyhow::Error>>,
 	stream_receiver: Arc<Mutex<Option<mpsc::Receiver<Result<BlockCommitment, anyhow::Error>>>>>,
@@ -15,10 +16,10 @@ pub struct MockMcrSettlementClient {
 	paused_at_height: Arc<RwLock<Option<u64>>>,
 }
 
-impl MockMcrSettlementClient {
+impl McrSettlementClient {
 	pub fn new() -> Self {
 		let (stream_sender, receiver) = mpsc::channel(10);
-		MockMcrSettlementClient {
+		McrSettlementClient {
 			commitments: Arc::new(RwLock::new(BTreeMap::new())),
 			stream_sender,
 			stream_receiver: Arc::new(Mutex::new(Some(receiver))),
@@ -26,6 +27,10 @@ impl MockMcrSettlementClient {
 			block_lead_tolerance: 16,
 			paused_at_height: Arc::new(RwLock::new(None)),
 		}
+	}
+
+	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
+		Ok(Self::new())
 	}
 
 	/// Overrides the commitment to settle on at given height.
@@ -64,7 +69,7 @@ impl MockMcrSettlementClient {
 }
 
 #[async_trait::async_trait]
-impl McrSettlementClientOperations for MockMcrSettlementClient {
+impl McrSettlementClientOperations for McrSettlementClient {
 	async fn post_block_commitment(
 		&self,
 		block_commitment: BlockCommitment,
@@ -140,7 +145,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_post_block_commitment() -> Result<(), anyhow::Error> {
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -158,7 +163,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_post_block_commitment_batch() -> Result<(), anyhow::Error> {
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -181,7 +186,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_stream_block_commitments() -> Result<(), anyhow::Error> {
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -195,7 +200,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_override_block_commitments() -> Result<(), anyhow::Error> {
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -217,7 +222,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_pause() -> Result<(), anyhow::Error> {
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),
@@ -243,7 +248,7 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_resume() -> Result<(), anyhow::Error> {
-		let client = MockMcrSettlementClient::new();
+		let client = McrSettlementClient::new();
 		let commitment = BlockCommitment {
 			height: 1,
 			block_id: Default::default(),

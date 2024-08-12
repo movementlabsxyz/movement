@@ -1,58 +1,97 @@
 use alloy::json_abi::Param;
+use alloy::network::{Ethereum, EthereumWallet};
+use alloy::primitives::Address;
+use alloy::providers::fillers::{
+	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+};
+use alloy::providers::RootProvider;
+use alloy::rlp::{RlpDecodable, RlpEncodable};
+use alloy::transports::BoxTransport;
+use bridge_shared::types::{
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails,
+	RecipientAddress,
+};
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 };
+use serde::{Deserialize, Serialize};
 
-pub(crate) enum EventName {
-	Initiated,
-	Completed,
-	Refunded,
-}
+use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
 
-impl EventName {
-	pub fn as_str(&self) -> &str {
-		match self {
-			EventName::Initiated => "BridgeTransferInitiated",
-			EventName::Completed => "BridgeTransferCompleted",
-			EventName::Refunded => "BridgeTransferRefunded",
-		}
+// Codegen from the abis
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiator,
+	"abis/AtomicBridgeInitiator.json"
+);
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeCounterparty,
+	"abis/AtomicBridgeCounterparty.json"
+);
+
+pub type EthHash = [u8; 32];
+
+pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+
+pub type AlloyProvider = FillProvider<
+	JoinFill<
+		JoinFill<
+			JoinFill<JoinFill<alloy::providers::Identity, GasFiller>, NonceFiller>,
+			ChainIdFiller,
+		>,
+		WalletFiller<EthereumWallet>,
+	>,
+	RootProvider<BoxTransport>,
+	BoxTransport,
+	Ethereum,
+>;
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
+pub struct EthAddress(pub Address);
+
+impl std::ops::Deref for EthAddress {
+	type Target = Address;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
 	}
 }
 
-impl From<&str> for EventName {
-	fn from(s: &str) -> Self {
-		match s {
-			"BridgeTransferInitiated" => EventName::Initiated,
-			"BridgeTransferCompleted" => EventName::Completed,
-			"BridgeTransferRefunded" => EventName::Refunded,
-			_ => panic!("Invalid event name"),
-		}
+impl From<String> for EthAddress {
+	fn from(s: String) -> Self {
+		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
 	}
 }
 
-#[derive(Debug, Clone, Copy, Default, Hash, Eq, PartialEq)]
-pub(crate) struct EthHash(pub(crate) [u8; 32]);
-
-impl From<Vec<u8>> for EthHash {
+impl From<Vec<u8>> for EthAddress {
 	fn from(vec: Vec<u8>) -> Self {
-		let mut array = [0u8; 32];
-		let bytes = &vec[..std::cmp::min(vec.len(), 32)];
-		array[..bytes.len()].copy_from_slice(bytes);
-		EthHash(array)
+		// Ensure the vector has the correct length
+		assert_eq!(vec.len(), 20);
+
+		let mut bytes = [0u8; 20];
+		bytes.copy_from_slice(&vec);
+		EthAddress(Address(bytes.into()))
 	}
 }
 
-impl EthHash {
-	pub fn as_bytes(&self) -> [u8; 32] {
-		self.0
+impl From<[u8; 32]> for EthAddress {
+	fn from(bytes: [u8; 32]) -> Self {
+		let mut address_bytes = [0u8; 20];
+		address_bytes.copy_from_slice(&bytes[0..20]);
+		EthAddress(Address(address_bytes.into()))
 	}
 }
 
 pub(crate) type SCIResult<A, H> =
 	Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
-pub(crate) type SCCResult<H> =
-	Result<BridgeContractCounterpartyEvent<H>, BridgeContractCounterpartyError>;
+pub(crate) type SCCResult<A, H> =
+	Result<BridgeContractCounterpartyEvent<A, H>, BridgeContractCounterpartyError>;
 
 pub(crate) enum AlloyParam {
 	BridgeTransferId,
@@ -109,6 +148,72 @@ impl AlloyParam {
 				components: vec![],
 				internal_type: None,
 			},
+		}
+	}
+}
+
+pub(crate) enum EventName {
+	Initiated,
+	Completed,
+	Refunded,
+}
+
+impl EventName {
+	pub fn as_str(&self) -> &str {
+		match self {
+			EventName::Initiated => "BridgeTransferInitiated",
+			EventName::Completed => "BridgeTransferCompleted",
+			EventName::Refunded => "BridgeTransferRefunded",
+		}
+	}
+}
+
+impl From<&str> for EventName {
+	fn from(s: &str) -> Self {
+		match s {
+			"BridgeTransferInitiated" => EventName::Initiated,
+			"BridgeTransferCompleted" => EventName::Completed,
+			"BridgeTransferRefunded" => EventName::Refunded,
+			_ => panic!("Invalid event name"),
+		}
+	}
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct CompletedDetails<A, H> {
+	pub bridge_transfer_id: BridgeTransferId<H>,
+	pub recipient_address: RecipientAddress<A>,
+	pub hash_lock: HashLock<H>,
+	pub secret: HashLockPreImage,
+	pub amount: Amount,
+}
+
+impl<A, H> CompletedDetails<A, H>
+where
+	A: From<Vec<u8>>,
+{
+	pub fn from_bridge_transfer_details(
+		bridge_transfer_details: BridgeTransferDetails<Vec<u8>, H>,
+		secret: HashLockPreImage,
+	) -> Self {
+		CompletedDetails {
+			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
+			recipient_address: RecipientAddress(A::from(
+				bridge_transfer_details.recipient_address.0,
+			)),
+			hash_lock: bridge_transfer_details.hash_lock,
+			secret,
+			amount: bridge_transfer_details.amount,
+		}
+	}
+
+	pub fn from_lock_details(lock_details: LockDetails<A, H>, secret: HashLockPreImage) -> Self {
+		CompletedDetails {
+			bridge_transfer_id: lock_details.bridge_transfer_id,
+			recipient_address: lock_details.recipient_address,
+			hash_lock: lock_details.hash_lock,
+			secret,
+			amount: lock_details.amount,
 		}
 	}
 }
