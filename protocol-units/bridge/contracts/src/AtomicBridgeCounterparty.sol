@@ -73,7 +73,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function abortBridgeTransfer(bytes32 bridgeTransferId) external {
+    function abortBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         if (block.number <= details.timeLock) revert TimeLockNotExpired();

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "./base/MintableToken.sol";
+import {MintableToken} from "./base/MintableToken.sol";
 
 contract MOVEToken is MintableToken {
     /**
