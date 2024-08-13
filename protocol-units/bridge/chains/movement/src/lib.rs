@@ -167,51 +167,51 @@ impl MovementClient {
 
 	pub async fn new_for_test(config: Config) -> Result<Self, anyhow::Error> {
 
-		let mut child = TokioCommand::new("aptos")
-		.args(&["node", "run-local-testnet"])
-		.stdout(Stdio::piped())
-		.stderr(Stdio::piped())
-		.spawn()?;
-
-		let stdout = child.stdout.take().expect("Failed to capture stdout");
-		let stderr = child.stderr.take().expect("Failed to capture stderr");
-
-		let mut stdout_reader = BufReader::new(stdout).lines();
-		let mut stderr_reader = BufReader::new(stderr).lines();
-
-
-		loop {
-			tokio::select! {
-				line = stdout_reader.next_line() => {
-					match line {
-						Ok(Some(line)) => {
-							println!("STDOUT: {}", line);
-							if line.contains("Setup is complete") {
-								println!("Testnet is up and running!");
-								break;
-							}
-						},
-						Ok(None) => break, // End of stream
-						Err(e) => {
-							eprintln!("Error reading stdout: {}", e);
-							break;
-						}
-					}
-				},
-				line = stderr_reader.next_line() => {
-					match line {
-						Ok(Some(line)) => {
-							println!("STDERR: {}", line);
-						},
-						Ok(None) => break, // End of stream
-						Err(e) => {
-							eprintln!("Error reading stderr: {}", e);
-							break;
-						}
-					}
-				}
-			}
-		}
+		//let mut child = TokioCommand::new("aptos")
+		//.args(&["node", "run-local-testnet"])
+		//.stdout(Stdio::piped())
+		//.stderr(Stdio::piped())
+		//.spawn()?;
+//
+		//let stdout = child.stdout.take().expect("Failed to capture stdout");
+		//let stderr = child.stderr.take().expect("Failed to capture stderr");
+//
+		//let mut stdout_reader = BufReader::new(stdout).lines();
+		//let mut stderr_reader = BufReader::new(stderr).lines();
+//
+//
+		//loop {
+		//	tokio::select! {
+		//		line = stdout_reader.next_line() => {
+		//			match line {
+		//				Ok(Some(line)) => {
+		//					println!("STDOUT: {}", line);
+		//					if line.contains("Setup is complete") {
+		//						println!("Testnet is up and running!");
+		//						break;
+		//					}
+		//				},
+		//				Ok(None) => break, // End of stream
+		//				Err(e) => {
+		//					eprintln!("Error reading stdout: {}", e);
+		//					break;
+		//				}
+		//			}
+		//		},
+		//		line = stderr_reader.next_line() => {
+		//			match line {
+		//				Ok(Some(line)) => {
+		//					println!("STDERR: {}", line);
+		//				},
+		//				Ok(None) => break, // End of stream
+		//				Err(e) => {
+		//					eprintln!("Error reading stderr: {}", e);
+		//					break;
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 
 		let node_connection_url = format!("https://aptos.devnet.suzuka.movementlabs.xyz/v1");
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
