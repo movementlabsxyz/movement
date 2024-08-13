@@ -6,7 +6,7 @@ use alloy::{
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
-	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
+	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock, BridgedToken},
 };
 use ethereum_bridge::types::EthAddress;
 
@@ -83,7 +83,7 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 			HashLock(hash_lock),
 			TimeLock(100),
 			// value has to be > 0
-			Amount(EthValue::Eth(1)), // Eth
+			Amount(BridgedToken::Eth(1)), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -109,7 +109,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
 			TimeLock(100),
-			Amount(EthValue::Eth(1000)), // Eth
+			Amount(BridgedToken::Eth(1000)), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -141,7 +141,7 @@ async fn test_client_should_successfully_complete_transfer() {
 			RecipientAddress(recipient_bytes),
 			HashLock(hash_lock),
 			TimeLock(1000),
-			Amount(EthValue::Eth(42)),
+			Amount(BridgedToken::Eth(42)),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

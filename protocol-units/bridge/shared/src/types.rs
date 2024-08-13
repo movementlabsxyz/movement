@@ -113,14 +113,32 @@ impl HashLockPreImage {
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
-enum EthValue {
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+pub enum BridgedToken {
 	Weth(u64),
 	Eth(u64),
 	WethAndEth((u64, u64)),
 }
 
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Amount(pub EthValue);
+pub struct Amount(pub BridgedToken);
+
+impl Amount {
+    pub fn weth(&self) -> u64 {
+        match self.0 {
+            BridgedToken::Weth(value) => value,
+            BridgedToken::WethAndEth((weth_value, eth_value)) => weth_value,
+			_ => 0, 
+        }
+	}
+	pub fn eth(&self) -> u64 {
+		match self.0 {
+			BridgedToken::Eth(value) => value,
+			BridgedToken::WethAndEth((weth_value, eth_value)) => eth_value,
+			_ => 0, 
+		}
+	}
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BridgeTransferDetails<A, H> {
@@ -129,7 +147,7 @@ pub struct BridgeTransferDetails<A, H> {
 	pub recipient_address: RecipientAddress<Vec<u8>>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: Amount(EthValue::Weth(u64)),
+	pub amount: Amount,
 }
 
 impl<A, H> Default for BridgeTransferDetails<A, H> {
@@ -145,7 +163,7 @@ pub struct LockDetails<A, H> {
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: Amount(EthValue::Weth(u64)),
+	pub amount: Amount,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -155,7 +173,7 @@ pub struct CounterpartyCompletedDetails<A, H> {
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub secret: HashLockPreImage,
-	pub amount: Amount(EthValue::Weth(u64)),
+	pub amount: Amount,
 }
 
 impl<A, H> CounterpartyCompletedDetails<A, H>

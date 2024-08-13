@@ -16,7 +16,7 @@ use bridge_shared::bridge_contracts::{
 };
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	RecipientAddress, TimeLock, BridgedToken
 };
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
@@ -213,7 +213,6 @@ impl EthClient {
 impl BridgeContractInitiator for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
-	type Value = EthValue;
 
 	// `_initiator_address`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
@@ -230,34 +229,14 @@ impl BridgeContractInitiator for EthClient {
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-		let call = 	match amount.0 {
-				EthValue::Weth (val) => {
+		let call = 	
 					contract.initiateBridgeTransfer(
-						U256::from(val), 
+						U256::from(amount.weth()), 
 						FixedBytes(recipient_bytes),
 						FixedBytes(hash_lock.0),
 						U256::from(time_lock.0),
-					)
-				},
-				EthValue::Eth (val) => {
-					contract.initiateBridgeTransfer(
-						U256::from(0), 
-						FixedBytes(recipient_bytes),
-						FixedBytes(hash_lock.0),
-						U256::from(time_lock.0),
-					)
-					.value(U256::from(val))
-				},
-				EthValue::WethAndEth ((weth, eth)) => {
-				   contract.initiateBridgeTransfer(
-							 U256::from(weth), 
-							 FixedBytes(recipient_bytes),
-							 FixedBytes(hash_lock.0),
-							 U256::from(time_lock.0),
-						 )
-						 .value(U256::from(eth))
-				}
-			};
+					).value(U256::from(amount.eth()));
+
 		let _ = send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.map_err(|e| {
@@ -335,7 +314,7 @@ impl BridgeContractInitiator for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(EthValue::Eth(eth_details.amount.wrapping_to::<u64>())),
+			amount: Amount(BridgedToken::Eth(eth_details.amount.wrapping_to::<u64>())),
 		}))
 	}
 }
@@ -365,7 +344,7 @@ impl BridgeContractCounterparty for EthClient {
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 			recipient.0 .0,
-			U256::from(amount.0),
+			U256::from(amount.weth()),
 		);
 		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
@@ -434,7 +413,7 @@ impl BridgeContractCounterparty for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(EthValue::Weth(eth_details.amount.wrapping_to::<u64>())),
+			amount: Amount(BridgedToken::Weth(eth_details.amount.wrapping_to::<u64>())),
 		}))
 	}
 }
