@@ -18,8 +18,7 @@ use aptos_sdk::{
 use rand::{rngs::StdRng, SeedableRng}; 
 use anyhow::Result; 
 use tokio;
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command as TokioCommand;
+
 use aptos_logger::Logger;
 use aptos_language_e2e_tests::{
 	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
@@ -41,40 +40,7 @@ use url::Url;
 async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), anyhow::Error> {
 	let scaffold: TestHarness = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
-// Todo: Local testnet rather than devnet
 
-	//let mut child = TokioCommand::new("aptos")
-        //.args(&["node", "run-local-testnet"])
-        //.stdout(Stdio::piped())
-        //.stderr(Stdio::piped())
-        //.spawn()?;
-//
-    	//let stdout = child.stdout.take().expect("Failed to capture stdout");
-    	//let mut reader = BufReader::new(stdout).lines();
-//
-    	//while let Some(line) = reader.next_line().await? {
-        //	println!("Output: {}", line);
-//
-        //	if line.contains("Setup is complete") {
-      	//      		println!("Testnet is up and running!");
-        //		break;
-        //	}
-	//}
-
-	// let output = Command::new("aptos")
-        // .arg("node")
-        // .arg("run-local-testnet")
-        // .stdout(Stdio::piped())  
-        // .spawn()?;  
-// 
-	// println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-
-	//let rest_client = &movement_client.rest_client;
-
-	let node_url = format!("https://aptos.devnet.suzuka.movementlabs.xyz/v1/");
-	let node_url = Url::from_str(node_url.as_str()).unwrap();
-	let faucet_url = format!("https://faucet.devnet.suzuka.movementlabs.xyz");
-	let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client();	
@@ -111,7 +77,6 @@ async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), an
 			.await
 			.context("Failed to get Bob's account balance")?
 	);
-
 	Ok(())
 }
 

@@ -15,13 +15,16 @@ use bridge_shared::{
 		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
+use crate::utils::MovementAddress;
 use rand::prelude::*;
 use serde::Serialize;
+use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
-use url::Url;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command as TokioCommand;
 
-use crate::utils::MovementAddress;
+use url::Url;
 
 pub mod utils;
 
@@ -61,6 +64,36 @@ impl Config {
 		}
 	}
 }
+
+// Todo: Local testnet rather than devnet
+
+	//let mut child = TokioCommand::new("aptos")
+        //.args(&["node", "run-local-testnet"])
+        //.stdout(Stdio::piped())
+        //.stderr(Stdio::piped())
+        //.spawn()?;
+//
+    	//let stdout = child.stdout.take().expect("Failed to capture stdout");
+    	//let mut reader = BufReader::new(stdout).lines();
+//
+    	//while let Some(line) = reader.next_line().await? {
+        //	println!("Output: {}", line);
+//
+        //	if line.contains("Setup is complete") {
+      	//      		println!("Testnet is up and running!");
+        //		break;
+        //	}
+	//}
+
+	// let output = Command::new("aptos")
+        // .arg("node")
+        // .arg("run-local-testnet")
+        // .stdout(Stdio::piped())  
+        // .spawn()?;  
+// 
+	// println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+
+	//let rest_client = &movement_client.rest_client;
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -133,6 +166,53 @@ impl MovementClient {
 	}
 
 	pub async fn new_for_test(config: Config) -> Result<Self, anyhow::Error> {
+
+		let mut child = TokioCommand::new("aptos")
+		.args(&["node", "run-local-testnet"])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()?;
+
+		let stdout = child.stdout.take().expect("Failed to capture stdout");
+		let stderr = child.stderr.take().expect("Failed to capture stderr");
+
+		let mut stdout_reader = BufReader::new(stdout).lines();
+		let mut stderr_reader = BufReader::new(stderr).lines();
+
+
+		loop {
+			tokio::select! {
+				line = stdout_reader.next_line() => {
+					match line {
+						Ok(Some(line)) => {
+							println!("STDOUT: {}", line);
+							if line.contains("Setup is complete") {
+								println!("Testnet is up and running!");
+								break;
+							}
+						},
+						Ok(None) => break, // End of stream
+						Err(e) => {
+							eprintln!("Error reading stdout: {}", e);
+							break;
+						}
+					}
+				},
+				line = stderr_reader.next_line() => {
+					match line {
+						Ok(Some(line)) => {
+							println!("STDERR: {}", line);
+						},
+						Ok(None) => break, // End of stream
+						Err(e) => {
+							eprintln!("Error reading stderr: {}", e);
+							break;
+						}
+					}
+				}
+			}
+		}
+
 		let node_connection_url = format!("https://aptos.devnet.suzuka.movementlabs.xyz/v1");
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 		let rest_client = Client::new(node_connection_url.clone());

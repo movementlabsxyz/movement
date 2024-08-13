@@ -143,3 +143,4 @@ impl TestHarness {
 		movement_recipient.public_key().to_bytes().to_vec()
 	}
 }
+
