@@ -9,8 +9,6 @@ use crate::types::{
 };
 
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
-pub type SCCResult<A, H> =
-	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorEvent<A, H> {

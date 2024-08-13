@@ -1,5 +1,5 @@
 use crate::types::{EthAddress, EventName};
-use crate::EthChainEvent;
+use crate::{EthChainEvent, Transaction};
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::{address, LogData};
@@ -9,6 +9,7 @@ use alloy::{
 	json_abi::{Event, EventParam},
 	pubsub::PubSubFrontend,
 };
+use bridge_shared::initiator_contract::SmartContractInitiatorEvent;
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
@@ -33,7 +34,7 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
 	async fn run(
 		rpc_url: &str,
-		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
+		listener: UnboundedReceiver<Transaction<EthAddress, EthHash>>,
 	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
@@ -90,14 +91,13 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 			// Only listen to the initiator contract events
 			match contract_result {
 				Ok(contract_event) => match contract_event {
-					BridgeContractInitiatorEvent::Initiated(details) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)));
+					SmartContractInitiatorEvent::InitiatedBridgeTransfer(details) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
 					}
-					BridgeContractInitiatorEvent::Completed(id) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(id)))
-					}
-					BridgeContractInitiatorEvent::Refunded(id) => {
-						return Poll::Ready(Some(BridgeContractInitiatorEvent::Refunded(id)))
+					SmartContractInitiatorEvent::CompletedBridgeTransfer(bridge_transfer_id, _) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
+							bridge_transfer_id,
+						)))
 					}
 				},
 				Err(e) => {

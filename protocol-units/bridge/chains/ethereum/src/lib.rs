@@ -6,7 +6,8 @@ use std::{
 };
 
 use bridge_shared::{
-	initiator_contract::{SCIResult, SmartContractInitiator},
+	counterparty_contract::{SCCResult, SmartContractCounterparty},
+	initiator_contract::{InitiatorCall, SCIResult, SmartContractInitiator},
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
 		RecipientAddress,
@@ -34,6 +35,7 @@ pub enum EthChainEvent<A, H> {
 	Noop,
 }
 
+/// A Bridge Transaction that can occur on any supported network.
 #[derive(Debug)]
 pub enum Transaction<A, H> {
 	Initiator(InitiatorCall<A, H>),
@@ -49,10 +51,10 @@ pub struct EthereumChain<A, H, R> {
 	pub initiator_contract: SmartContractInitiator<A, H, R>,
 	pub counterparty_contract: SmartContractCounterparty<A, H>,
 
-	pub transaction_sender: mpsc::UnboundedSender<EthTransaction<A, H>>,
-	pub transaction_receiver: mpsc::UnboundedReceiver<EthTransaction<A, H>>,
+	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
+	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
 
-	pub event_listeners: Vec<mpsc::UnboundedSender<EthTransaction<A, H>>>,
+	pub event_listeners: Vec<mpsc::UnboundedSender<Transaction<A, H>>>,
 
 	waker: AtomicWaker,
 
@@ -87,7 +89,7 @@ where
 		}
 	}
 
-	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<EthTransaction<A, H>> {
+	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<Transaction<A, H>> {
 		let (sender, receiver) = mpsc::unbounded();
 		self.event_listeners.push(sender);
 		receiver
@@ -101,7 +103,7 @@ where
 		self.accounts.get(address)
 	}
 
-	pub fn connection(&self) -> mpsc::UnboundedSender<EthTransaction<A, H>> {
+	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<A, H>> {
 		self.transaction_sender.clone()
 	}
 }
@@ -150,7 +152,7 @@ where
 					transaction
 				);
 				match transaction {
-					EthTransaction::Initiator(call) => match call {
+					Transaction::Initiator(call) => match call {
 						InitiatorCall::InitiateBridgeTransfer(
 							initiator_address,
 							recipient_address,

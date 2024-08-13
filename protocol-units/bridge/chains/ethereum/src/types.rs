@@ -256,9 +256,3 @@ pub enum CounterpartyCall<A, H> {
 		Amount,
 	),
 }
-
-#[derive(Debug)]
-pub enum Transaction<A, H> {
-	Initiator(InitiatorCall<A, H>),
-	Counterparty(CounterpartyCall<A, H>),
-}
