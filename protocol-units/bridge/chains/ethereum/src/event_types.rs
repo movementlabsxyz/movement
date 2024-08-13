@@ -1,6 +1,11 @@
-use bridge_shared::types::LockDetails;
+use bridge_shared::{
+	bridge_monitoring::BridgeContractInitiatorEvent,
+	counterparty_contract::SCCResult,
+	initiator_contract::{SCIResult, SmartContractInitiatorEvent},
+	types::LockDetails,
+};
 
-use crate::types::{CompletedDetails, SCCResult, SCIResult};
+use crate::types::{CompletedDetails, EthAddress};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,4 +30,29 @@ pub enum EthInitiatorError {
 	TransferNotFound,
 	#[error("Invalid hash lock pre image (secret)")]
 	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EthChainEvent<A, H> {
+	InitiatorContractEvent(SCIResult<A, H>),
+	CounterpartyContractEvent(SCCResult<A, H>),
+	Noop,
+}
+
+impl From<BridgeContractInitiatorEvent<EthAddress, [u8; 32]>>
+	for EthChainEvent<EthAddress, [u8; 32]>
+{
+	fn from(event: BridgeContractInitiatorEvent<EthAddress, [u8; 32]>) -> Self {
+		match event {
+			BridgeContractInitiatorEvent::Initiated(details) => {
+				EthChainEvent::InitiatorContractEvent(Ok(
+					SmartContractInitiatorEvent::InitiatedBridgeTransfer(details),
+				))
+			}
+			BridgeContractInitiatorEvent::Completed(id) => EthChainEvent::InitiatorContractEvent(
+				Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(id)),
+			),
+			_ => unimplemented!(), // Refunded variant
+		}
+	}
 }

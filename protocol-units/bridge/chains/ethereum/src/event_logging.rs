@@ -34,11 +34,12 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
 	async fn run(
 		rpc_url: &str,
-		listener: UnboundedReceiver<Transaction<EthAddress, EthHash>>,
+		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
 	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
 
+		//TODO: this should be an arg
 		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 		let filter = Filter::new()
 			.address(initiator_address)
@@ -60,7 +61,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 						tracing::error!("Failed to decode log data: {:?}", e);
 					})
 					.expect("Failed to decode log data");
-				let event = EthChainEvent::InitiatorContractEvent(Ok(event));
+				let event = EthChainEvent::InitiatorContractEvent(Ok(event.into()));
 				if sender.send(event).is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
@@ -94,7 +95,7 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 					SmartContractInitiatorEvent::InitiatedBridgeTransfer(details) => {
 						return Poll::Ready(Some(BridgeContractInitiatorEvent::Initiated(details)))
 					}
-					SmartContractInitiatorEvent::CompletedBridgeTransfer(bridge_transfer_id, _) => {
+					SmartContractInitiatorEvent::CompletedBridgeTransfer(bridge_transfer_id) => {
 						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
 							bridge_transfer_id,
 						)))

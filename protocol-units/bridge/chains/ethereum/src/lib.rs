@@ -1,38 +1,31 @@
+use bridge_shared::{
+	counterparty_contract::SmartContractCounterparty,
+	initiator_contract::{InitiatorCall, SmartContractInitiator},
+	types::{
+		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
+		RecipientAddress,
+	},
+};
+use event_types::EthChainEvent;
+use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{
 	collections::HashMap,
 	future::Future,
 	pin::Pin,
 	task::{Context, Poll},
 };
-
-use bridge_shared::{
-	counterparty_contract::{SCCResult, SmartContractCounterparty},
-	initiator_contract::{InitiatorCall, SCIResult, SmartContractInitiator},
-	types::{
-		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
-		RecipientAddress,
-	},
-};
-use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use types::CounterpartyCall;
 use utils::RngSeededClone;
 
-mod client;
+pub mod client;
 mod event_logging;
 mod event_types;
-mod types;
+pub mod types;
 mod utils;
 
 pub enum SmartContractCall<A, H> {
 	Initiator(),
 	Counterparty(CounterpartyCall<A, H>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EthChainEvent<A, H> {
-	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<A, H>),
-	Noop,
 }
 
 /// A Bridge Transaction that can occur on any supported network.
@@ -54,7 +47,7 @@ pub struct EthereumChain<A, H, R> {
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
 
-	pub event_listeners: Vec<mpsc::UnboundedSender<Transaction<A, H>>>,
+	pub event_listeners: Vec<mpsc::UnboundedSender<EthChainEvent<A, H>>>,
 
 	waker: AtomicWaker,
 
@@ -89,7 +82,7 @@ where
 		}
 	}
 
-	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<Transaction<A, H>> {
+	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<EthChainEvent<A, H>> {
 		let (sender, receiver) = mpsc::unbounded();
 		self.event_listeners.push(sender);
 		receiver

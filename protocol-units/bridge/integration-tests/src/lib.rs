@@ -11,8 +11,8 @@ use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
 use aptos_sdk::types::LocalAccount;
 use ethereum_bridge::{
+	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
-	Config as EthConfig, EthClient,
 };
 use movement_bridge::MovementClient;
 use rand::SeedableRng;

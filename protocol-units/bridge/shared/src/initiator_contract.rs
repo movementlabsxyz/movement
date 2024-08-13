@@ -3,9 +3,12 @@ use thiserror::Error;
 
 use rand::Rng;
 
-use crate::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+use crate::{
+	bridge_monitoring::BridgeContractInitiatorEvent,
+	types::{
+		Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+		GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+	},
 };
 
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
@@ -13,7 +16,21 @@ pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContra
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorEvent<A, H> {
 	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
-	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+	CompletedBridgeTransfer(BridgeTransferId<H>),
+}
+
+impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEvent<A, H> {
+	fn from(event: BridgeContractInitiatorEvent<A, H>) -> Self {
+		match event {
+			BridgeContractInitiatorEvent::Initiated(details) => {
+				SmartContractInitiatorEvent::InitiatedBridgeTransfer(details)
+			}
+			BridgeContractInitiatorEvent::Completed(id) => {
+				SmartContractInitiatorEvent::CompletedBridgeTransfer(id)
+			}
+			_ => unimplemented!(), // Refunded variant
+		}
+	}
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -128,6 +145,6 @@ where
 			return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
 		}
 
-		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id, pre_image))
+		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id))
 	}
 }
