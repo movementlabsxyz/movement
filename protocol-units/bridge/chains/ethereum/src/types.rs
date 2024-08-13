@@ -7,20 +7,21 @@ use alloy::providers::fillers::{
 	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::RootProvider;
+use alloy::pubsub::PubSubFrontend;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	LockDetails, RecipientAddress, TimeLock,
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress,
+	TimeLock,
 };
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 };
+use futures::channel::mpsc::UnboundedReceiver;
 use serde::{Deserialize, Serialize};
-
-use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
 
 pub const INITIATED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
@@ -46,8 +47,10 @@ alloy::sol!(
 
 pub type EthHash = [u8; 32];
 
-pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type InitiatorContract =
+	AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract =
+	AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
@@ -246,15 +249,43 @@ where
 	}
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum EthInitiatorEvent<A, H> {
+	Initiated(BridgeTransferDetails<A, H>),
+	Completed(BridgeTransferId<H>),
+	Refunded(BridgeTransferId<H>),
+}
+
 #[derive(Debug)]
 pub struct SmartContractInitiator<A, H> {
 	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
 	pub accounts: HashMap<A, Amount>,
 }
 
+impl<A, H> SmartContractInitiator<A, H>
+where
+	A: BridgeAddressType,
+	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
+{
+	pub fn new() -> Self {
+		Self { initiated_transfers: HashMap::new(), accounts: HashMap::default() }
+	}
+}
+
 #[derive(Debug)]
 pub struct SmartContractCounterparty<A, H> {
 	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
+}
+
+impl<A, H> SmartContractCounterparty<A, H>
+where
+	A: BridgeAddressType + From<RecipientAddress<A>>,
+	H: BridgeHashType + GenUniqueHash,
+	H: From<HashLockPreImage>,
+{
+	pub fn new() -> Self {
+		Self { locked_transfers: HashMap::new() }
+	}
 }
 
 #[derive(Debug)]

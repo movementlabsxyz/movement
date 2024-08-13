@@ -1,3 +1,4 @@
+use crate::utils::send_transaction;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
@@ -19,14 +20,13 @@ use bridge_shared::types::{
 };
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
-use types::{CounterpartyContract, InitiatorContract};
 use url::Url;
-use utils::send_transaction;
 
-mod event_logging;
-pub mod types;
-pub mod utils;
-use crate::types::{AtomicBridgeCounterparty, AtomicBridgeInitiator, EthAddress, EthHash};
+use crate::types::{
+	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
+	EthAddress, EthHash, InitiatorContract,
+};
+use crate::utils::{calculate_storage_slot, send_tx_rules};
 
 const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 const RETRIES: u32 = 6;
@@ -81,7 +81,7 @@ struct EthBridgeTransferDetails {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: types::AlloyProvider,
+	rpc_provider: AlloyProvider,
 	rpc_port: u16,
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<InitiatorContract>,
@@ -127,7 +127,7 @@ impl EthClient {
 	) -> Result<(), anyhow::Error> {
 		let contract = self.initiator_contract().expect("Initiator contract not set");
 		let call = contract.initialize(weth.0, owner.0);
-		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call.to_owned(), &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
 		Ok(())
@@ -148,11 +148,11 @@ impl EthClient {
 		self.config.signer_private_key = LocalSigner::from(key);
 	}
 
-	pub fn rpc_provider(&self) -> &types::AlloyProvider {
+	pub fn rpc_provider(&self) -> &AlloyProvider {
 		&self.rpc_provider
 	}
 
-	pub fn rpc_provider_mut(&mut self) -> &mut types::AlloyProvider {
+	pub fn rpc_provider_mut(&mut self) -> &mut AlloyProvider {
 		&mut self.rpc_provider
 	}
 
@@ -236,14 +236,15 @@ impl BridgeContractInitiator for EthClient {
 				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.0));
-		let _ = send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.map_err(|e| {
-				BridgeContractInitiatorError::GenericError(format!(
-					"Failed to send transaction: {}",
-					e
-				))
-			})?;
+		let _ =
+			send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
+				.await
+				.map_err(|e| {
+					BridgeContractInitiatorError::GenericError(format!(
+						"Failed to send transaction: {}",
+						e
+					))
+				})?;
 		Ok(())
 	}
 
@@ -266,7 +267,7 @@ impl BridgeContractInitiator for EthClient {
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
-		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
 		Ok(())
@@ -279,7 +280,7 @@ impl BridgeContractInitiator for EthClient {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
 		Ok(())
@@ -293,7 +294,7 @@ impl BridgeContractInitiator for EthClient {
 
 		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
 		let key = bridge_transfer_id.0;
-		let storage_slot = utils::calculate_storage_slot(key, mapping_slot);
+		let storage_slot = calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
 			.get_storage_at(self.initiator_contract_address()?, storage_slot)
@@ -345,7 +346,7 @@ impl BridgeContractCounterparty for EthClient {
 			recipient.0 .0,
 			U256::from(amount.0),
 		);
-		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
 		Ok(())
@@ -363,7 +364,7 @@ impl BridgeContractCounterparty for EthClient {
 		let secret: [u8; 32] = secret.0.try_into().unwrap();
 		let call =
 			contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(secret));
-		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
 		Ok(())
@@ -378,7 +379,7 @@ impl BridgeContractCounterparty for EthClient {
 			&self.rpc_provider,
 		);
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
-		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
 		Ok(())
@@ -394,7 +395,7 @@ impl BridgeContractCounterparty for EthClient {
 
 		let mapping_slot = U256::from(1); // the mapping is the 1st slot in the contract
 		let key = bridge_transfer_id.0;
-		let storage_slot = utils::calculate_storage_slot(key, mapping_slot);
+		let storage_slot = calculate_storage_slot(key, mapping_slot);
 		let storage: U256 = self
 			.rpc_provider
 			.get_storage_at(self.counterparty_contract_address()?, storage_slot)

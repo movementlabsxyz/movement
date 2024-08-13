@@ -5404,6 +5404,7 @@ dependencies = [
  "keccak-hash",
  "mcr-settlement-client",
  "poem",
+ "rand 0.7.3",
  "serde",
  "serde_with",
  "thiserror",

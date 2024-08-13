@@ -1,4 +1,5 @@
-use crate::types::{EthAddress, EventName, SCCResult, SCIResult};
+use crate::types::{EthAddress, EventName};
+use crate::EthChainEvent;
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::{address, LogData};
@@ -11,56 +12,13 @@ use alloy::{
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
-		BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-		LockDetails, RecipientAddress,
+		BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
-use std::{fmt::Debug, pin::Pin, task::Poll};
-use thiserror::Error;
+use std::{pin::Pin, task::Poll};
 
-use crate::{
-	types::{CompletedDetails, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT},
-	EthHash,
-};
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CompletedDetails<A, H>),
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyError {
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EthInitiatorEvent<A, H> {
-	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
-	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
-	RefundedBridgeTransfer(BridgeTransferId<H>),
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum EthInitiatorError {
-	#[error("Failed to initiate bridge transfer")]
-	InitiateTransferError,
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum EthChainEvent<A, H> {
-	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<A, H>),
-	Noop,
-}
+use crate::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
 
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
@@ -92,7 +50,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 
 		// Spawn a task to forward events to the listener channel
 		let (sender, _) =
-			tokio::sync::mpsc::unbounded_channel::<AbstractBlockainEvent<EthAddress, EthHash>>();
+			tokio::sync::mpsc::unbounded_channel::<EthChainEvent<EthAddress, EthHash>>();
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
@@ -101,7 +59,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 						tracing::error!("Failed to decode log data: {:?}", e);
 					})
 					.expect("Failed to decode log data");
-				let event = AbstractBlockainEvent::InitiatorContractEvent(Ok(event));
+				let event = EthChainEvent::InitiatorContractEvent(Ok(event));
 				if sender.send(event).is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
@@ -121,7 +79,7 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
-		if let Poll::Ready(Some(AbstractBlockainEvent::InitiatorContractEvent(contract_result))) =
+		if let Poll::Ready(Some(EthChainEvent::InitiatorContractEvent(contract_result))) =
 			this.listener.poll_next_unpin(cx)
 		{
 			tracing::trace!(
