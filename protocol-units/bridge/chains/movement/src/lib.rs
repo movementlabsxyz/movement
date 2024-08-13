@@ -1,4 +1,8 @@
-use aptos_sdk::{move_types::language_storage::TypeTag, rest_client::Client, types::LocalAccount};
+use aptos_sdk::{
+	move_types::language_storage::TypeTag, 
+	rest_client::{Client, FaucetClient}, 
+	types::LocalAccount
+};
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
@@ -13,7 +17,7 @@ use bridge_shared::{
 use rand::prelude::*;
 use serde::Serialize;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use url::Url;
 
 use crate::utils::MovementAddress;
@@ -47,8 +51,8 @@ impl Config {
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 
 		Config {
-			rpc_url: Some("http://localhost:8546".parse().unwrap()),
-			ws_url: Some("ws://localhost:8546".parse().unwrap()),
+			rpc_url: Some("http://localhost:8080".parse().unwrap()),
+			ws_url: Some("ws://localhost:8080".parse().unwrap()),
 			chain_id: 4.to_string(),
 			signer_private_key: Arc::new(LocalAccount::generate(&mut rng)),
 			initiator_contract: None,
@@ -65,7 +69,9 @@ pub struct MovementClient {
 	///Address of the initiator module
 	initiator_address: Vec<u8>,
 	///The Apotos Rest Client
-	rest_client: Client,
+	pub rest_client: Client,
+	///The Apotos Rest Client
+	pub faucet_client: Arc<RwLock<FaucetClient>>,
 	///The signer account
 	signer: Arc<LocalAccount>,
 }
@@ -80,8 +86,11 @@ impl MovementClient {
 			.maptos_config
 			.client
 			.maptos_rest_connection_hostname;
-		let node_connection_port =
-			suzuka_config.execution_config.maptos_config.client.maptos_rest_connection_port;
+		let node_connection_port = suzuka_config
+			.execution_config
+			.maptos_config
+			.client
+			.maptos_rest_connection_port;
 
 		let node_connection_url =
 			format!("http://{}:{}", node_connection_address, node_connection_port);
@@ -89,27 +98,54 @@ impl MovementClient {
 
 		let rest_client = Client::new(node_connection_url.clone());
 
+		let faucet_listen_address = suzuka_config
+			.execution_config
+			.maptos_config
+			.client
+			.maptos_faucet_rest_connection_hostname
+			.clone();
+		let faucet_listen_port = suzuka_config
+			.execution_config
+			.maptos_config
+			.client
+			.maptos_faucet_rest_connection_port
+			.clone();
+
+		let faucet_connection_url = format!("http://{}:{}", node_connection_address, node_connection_port);
+		let faucet_listen_url = Url::from_str(faucet_connection_url.as_str()).unwrap();
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_listen_url.clone(),
+			node_connection_url.clone()
+		)));
+
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
 
 		Ok(MovementClient {
+			counterparty_address: DUMMY_ADDRESS,
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
-			counterparty_address: DUMMY_ADDRESS,
+			faucet_client,
 			signer: Arc::new(signer),
 		})
 	}
 
 	pub async fn new_for_test(config: Config) -> Result<Self, anyhow::Error> {
-		let node_connection_url = format!("http://localhost:8546");
+		let node_connection_url = format!("https://aptos.devnet.suzuka.movementlabs.xyz/v1");
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = format!("https://faucet.devnet.suzuka.movementlabs.xyz");
+		let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(faucet_url.clone(), node_connection_url.clone())));
+
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok(MovementClient {
+			counterparty_address: DUMMY_ADDRESS,
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
-			counterparty_address: DUMMY_ADDRESS,
+			faucet_client,
 			signer: Arc::new(LocalAccount::generate(&mut rng)),
 		})
 	}

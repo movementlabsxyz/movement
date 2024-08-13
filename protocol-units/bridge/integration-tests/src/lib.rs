@@ -40,10 +40,9 @@ pub struct TestHarness {
 impl TestHarness {
 
 	pub async fn new_with_movement() -> Self {
-		std::env::set_var("DOT_MOVEMENT_PATH", ".");
 		let movement_client = MovementClient::new_for_test(MovementConfig::build_for_test())
 			.await
-			.expect("Failed to create EthClient");
+			.expect("Failed to create MovementClient");
 		Self { eth_client: None, movement_client: Some(movement_client) }
 	}
 	
