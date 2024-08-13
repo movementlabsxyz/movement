@@ -1,3 +1,4 @@
+use anyhow::Error;
 use aptos_sdk::{
 	move_types::language_storage::TypeTag, 
 	rest_client::{Client, FaucetClient}, 
@@ -149,6 +150,15 @@ impl MovementClient {
 			signer: Arc::new(LocalAccount::generate(&mut rng)),
 		})
 	}
+
+	pub fn rest_client(&self) -> &Client {
+		&self.rest_client
+	}
+
+	pub fn faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+		&self.faucet_client
+	}
+
 }
 
 #[async_trait::async_trait]

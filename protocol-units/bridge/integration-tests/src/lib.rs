@@ -20,11 +20,14 @@ use aptos_logger::Logger;
 use aptos_language_e2e_tests::{
 	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
 };
+use aptos_sdk::{
+	rest_client::{Client, FaucetClient}
+};
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
 	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
 };
-use std::{convert::TryFrom, time::Instant};
+use std::{convert::TryFrom, time::Instant, sync::{Arc, RwLock}};
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -47,6 +50,14 @@ impl TestHarness {
 			.await
 			.expect("Failed to create MovementClient");
 		Self { eth_client: Some(eth_client), movement_client: Some(movement_client) }
+	}
+
+	pub fn movement_rest_client(&self) -> &Client {
+		self.movement_client().expect("Could not fetch Movement client").rest_client()
+	}
+
+	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+		self.movement_client().expect("Could not fetch Movement client").faucet_client()
 	}
 	
 	pub fn movement_client(&self) -> Result<&MovementClient> {

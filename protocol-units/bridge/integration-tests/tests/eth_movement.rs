@@ -75,9 +75,9 @@ async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), an
 	let node_url = Url::from_str(node_url.as_str()).unwrap();
 	let faucet_url = format!("https://faucet.devnet.suzuka.movementlabs.xyz");
 	let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
-	let rest_client = Client::new(node_url.clone());
+	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone());	
+	let faucet_client = movement_client.faucet_client();	
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); 
 
@@ -85,7 +85,7 @@ async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), an
 	println!("\n=== Addresses ===");
 	println!("Alice: {}", alice.address().to_hex_literal());
 	println!("Bob: {}", bob.address().to_hex_literal());
-	
+	let faucet_client = faucet_client.write().unwrap();
 	faucet_client
 		.fund(alice.address(), 100_000_000)
 		.await
