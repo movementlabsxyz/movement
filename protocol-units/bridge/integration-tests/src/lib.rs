@@ -14,7 +14,7 @@ use ethereum_bridge::{
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 	Config as EthConfig, EthClient,
 };
-use movement_bridge::MovementClient;
+use movement_bridge::{MovementClient, Config as MovementConfig};
 use rand::SeedableRng;
 use aptos_logger::Logger;
 use aptos_language_e2e_tests::{
@@ -43,7 +43,7 @@ impl TestHarness {
 		let movement_client = MovementClient::new(MovementConfig::build_for_test())
 			.await
 			.expect("Failed to create EthClient");
-		Self { movement_client: eth_client: None, Some(movement_client) }
+		Self { eth_client: None, movement_client: Some(movement_client) }
 	}
 	
 	pub fn movement_client(&self) -> Result<&MovementClient> {
