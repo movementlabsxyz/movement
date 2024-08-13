@@ -1,20 +1,18 @@
 use crate::types::{EthAddress, EventName, SCCResult, SCIResult};
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
-use alloy::primitives::{address, Bytes, FixedBytes, LogData};
+use alloy::primitives::{address, LogData};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
-use alloy::rpc::types::{Filter, Log, RawLog};
-use alloy::sol_types::sol_data::FixedBytes;
+use alloy::rpc::types::{Filter, Log};
 use alloy::{
-	json_abi::{Event, EventParam, Param},
+	json_abi::{Event, EventParam},
 	pubsub::PubSubFrontend,
-	sol_types::SolEvent,
 };
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
+		BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+		LockDetails, RecipientAddress,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -22,10 +20,7 @@ use std::{fmt::Debug, pin::Pin, task::Poll};
 use thiserror::Error;
 
 use crate::{
-	types::{
-		AlloyParam, AtomicBridgeInitiator, CompletedDetails, COMPLETED_SELECT, INITIATED_SELECT,
-		REFUNDED_SELECT,
-	},
+	types::{CompletedDetails, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT},
 	EthHash,
 };
 
@@ -61,14 +56,14 @@ pub enum EthInitiatorError {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum AbstractBlockainEvent<A, H> {
+pub enum EthChainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
 	CounterpartyContractEvent(SCCResult<A, H>),
 	Noop,
 }
 
 pub struct EthInitiatorMonitoring<A, H> {
-	listener: UnboundedReceiver<AbstractBlockainEvent<A, H>>,
+	listener: UnboundedReceiver<EthChainEvent<A, H>>,
 	ws: RootProvider<PubSubFrontend>,
 }
 
@@ -80,7 +75,7 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
 	async fn run(
 		rpc_url: &str,
-		listener: UnboundedReceiver<AbstractBlockainEvent<EthAddress, EthHash>>,
+		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
 	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
@@ -167,8 +162,8 @@ fn decode_log_data(
 	let event = topics
 		.iter()
 		.find_map(|topic| {
-			match topic {
-				&INITIATED_SELECT => Some(Event {
+			match *topic {
+				INITIATED_SELECT => Some(Event {
 					name: EventName::Initiated.as_str().to_string(),
 					inputs: EventName::Initiated
 						.params()
@@ -183,7 +178,7 @@ fn decode_log_data(
 						.collect(),
 					anonymous: false,
 				}),
-				&COMPLETED_SELECT => Some(Event {
+				COMPLETED_SELECT => Some(Event {
 					name: EventName::Completed.as_str().to_string(),
 					inputs: EventName::Completed
 						.params()
@@ -198,7 +193,7 @@ fn decode_log_data(
 						.collect(),
 					anonymous: false,
 				}),
-				&REFUNDED_SELECT => Some(Event {
+				REFUNDED_SELECT => Some(Event {
 					name: EventName::Refunded.as_str().to_string(),
 					inputs: EventName::Refunded
 						.params()

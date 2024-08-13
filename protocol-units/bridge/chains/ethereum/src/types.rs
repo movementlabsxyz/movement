@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes};
@@ -9,8 +11,8 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails,
-	RecipientAddress,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	LockDetails, RecipientAddress, TimeLock,
 };
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
@@ -242,4 +244,46 @@ where
 			amount: lock_details.amount,
 		}
 	}
+}
+
+#[derive(Debug)]
+pub struct SmartContractInitiator<A, H> {
+	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
+	pub accounts: HashMap<A, Amount>,
+}
+
+#[derive(Debug)]
+pub struct SmartContractCounterparty<A, H> {
+	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
+}
+
+#[derive(Debug)]
+pub enum InitiatorCall<A, H> {
+	InitiateBridgeTransfer(
+		InitiatorAddress<A>,
+		RecipientAddress<Vec<u8>>,
+		Amount,
+		TimeLock,
+		HashLock<H>,
+	),
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+}
+
+#[derive(Debug)]
+pub enum CounterpartyCall<A, H> {
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+	LockBridgeTransfer(
+		BridgeTransferId<H>,
+		HashLock<H>,
+		TimeLock,
+		InitiatorAddress<Vec<u8>>,
+		RecipientAddress<A>,
+		Amount,
+	),
+}
+
+#[derive(Debug)]
+pub enum EthTransaction<A, H> {
+	Initiator(InitiatorCall<A, H>),
+	Counterparty(CounterpartyCall<A, H>),
 }
