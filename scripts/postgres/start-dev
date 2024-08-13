@@ -36,6 +36,6 @@ psql -U "$USER" -d template1 -c "ALTER DATABASE postgres OWNER TO postgres;"
 pg_ctl -D ./.data stop
 
 # Start the PostgreSQL server normally
-postgres -D ./.data -h 0.0.0.0 -p 5432
+postgres -D ./.data -h 0.0.0.0 -p 5432 -c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'
 
 cat ./.data/logfile
