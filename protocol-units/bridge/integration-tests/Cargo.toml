@@ -12,6 +12,9 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+aptos-language-e2e-tests = { workspace = true }
+aptos-logger = { workspace = true }
+aptos-types = { workspace = true }
 aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
 alloy = { workspace = true }

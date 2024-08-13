@@ -16,6 +16,15 @@ use ethereum_bridge::{
 };
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
+use aptos_logger::Logger;
+use aptos_language_e2e_tests::{
+	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
+};
+use aptos_types::{
+	account_config::{DepositEvent, WithdrawEvent},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
+};
+use std::{convert::TryFrom, time::Instant};
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -29,6 +38,26 @@ pub struct TestHarness {
 }
 
 impl TestHarness {
+
+	pub async fn new_with_movement() -> Self {
+		let movement_client = MovementClient::new(MovementConfig::build_for_test())
+			.await
+			.expect("Failed to create EthClient");
+		Self { movement_client: eth_client: None, Some(movement_client) }
+	}
+	
+	pub fn movement_client(&self) -> Result<&MovementClient> {
+		self.movement_client
+		    .as_ref()
+		    .ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	}
+	
+	pub fn movement_client_mut(&mut self) -> Result<&mut MovementClient> {
+		self.movement_client
+		    .as_mut()
+		    .ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	}
+
 	pub async fn new_only_eth() -> Self {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 			.await
