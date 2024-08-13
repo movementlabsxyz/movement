@@ -57,7 +57,7 @@ impl Config {
 		Config {
 			rpc_url: "http://localhost:8545".parse().unwrap(),
 			ws_url: "ws://localhost:8545".parse().unwrap(),
-			signer_private_key: PrivateKeySigner::random(),
+			signer_private_key: LocalAccount::generate(&mut rng),
 			initiator_contract: None,
 			counterparty_contract: None,
 			gas_limit: 10_000_000_000,

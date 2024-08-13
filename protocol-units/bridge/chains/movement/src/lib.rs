@@ -15,6 +15,7 @@ use serde::Serialize;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use url::Url;
+use aptos_sdk::types::LocalAccount;
 
 use crate::utils::MovementAddress;
 
@@ -37,6 +38,19 @@ pub struct Config {
 	pub signer_private_key: String,
 	pub initiator_contract: MovementAddress,
 	pub gas_limit: u64,
+}
+
+impl Config {
+	pub fn build_for_test() -> Self {
+		Config {
+			rpc_url: "http://localhost:8546".parse().unwrap(),
+			ws_url: "ws://localhost:8546".parse().unwrap(),
+			chain_id: 4.to_string(),
+			signer_private_key: PrivateKeySigner::random(),
+			initiator_contract: None,
+			gas_limit: 10_000_000_000,
+		}
+	}
 }
 
 #[allow(dead_code)]
