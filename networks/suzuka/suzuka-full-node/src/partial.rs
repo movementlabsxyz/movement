@@ -298,12 +298,10 @@ where
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
-				match executor.set_finalized_block_height(commitment.height) {
-					Ok(_) => {}
-					Err(e) => {
-						error!("Failed to set finalized block height: {:?}", e);
-					}
-				}
+				executor.set_finalized_block_height(commitment.height).context(format!(
+					"failed to set finalized block height {}",
+					commitment.height
+				))?;
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
