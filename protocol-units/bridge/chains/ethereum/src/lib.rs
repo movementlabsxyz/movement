@@ -5,14 +5,16 @@ use std::{
 	task::{Context, Poll},
 };
 
-use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage, RecipientAddress,
+use bridge_shared::{
+	initiator_contract::{SCIResult, SmartContractInitiator},
+	types::{
+		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
+		RecipientAddress,
+	},
 };
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
-use types::{
-	CounterpartyCall, EthTransaction, InitiatorCall, SCCResult, SCIResult,
-	SmartContractCounterparty, SmartContractInitiator,
-};
+use types::CounterpartyCall;
+use utils::RngSeededClone;
 
 mod client;
 mod event_logging;
@@ -38,13 +40,13 @@ pub enum Transaction<A, H> {
 	Counterparty(CounterpartyCall<A, H>),
 }
 
-pub struct EthereumChain<A, H> {
+pub struct EthereumChain<A, H, R> {
 	pub name: String,
 	pub time: u64,
 	pub accounts: HashMap<A, Amount>,
 	pub events: Vec<EthChainEvent<A, H>>,
 
-	pub initiator_contract: SmartContractInitiator<A, H>,
+	pub initiator_contract: SmartContractInitiator<A, H, R>,
 	pub counterparty_contract: SmartContractCounterparty<A, H>,
 
 	pub transaction_sender: mpsc::UnboundedSender<EthTransaction<A, H>>,
@@ -57,13 +59,14 @@ pub struct EthereumChain<A, H> {
 	pub _phantom: std::marker::PhantomData<H>,
 }
 
-impl<A, H> EthereumChain<A, H>
+impl<A, H, R> EthereumChain<A, H, R>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
+	R: RngSeededClone,
 	H: From<HashLockPreImage>,
 {
-	pub fn new(name: impl Into<String>) -> Self {
+	pub fn new(mut rng: R, name: impl Into<String>) -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
 		let (event_sender, event_receiver) = mpsc::unbounded();
@@ -74,7 +77,7 @@ where
 			time: 0,
 			accounts,
 			events,
-			initiator_contract: SmartContractInitiator::new(),
+			initiator_contract: SmartContractInitiator::new(rng.seeded_clone()),
 			counterparty_contract: SmartContractCounterparty::new(),
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
@@ -103,10 +106,11 @@ where
 	}
 }
 
-impl<A, H> Future for EthereumChain<A, H>
+impl<A, H, R> Future for EthereumChain<A, H, R>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
+	R: RngSeededClone + Unpin,
 	H: From<HashLockPreImage>,
 {
 	type Output = ();
@@ -126,11 +130,11 @@ where
 	}
 }
 
-impl<A, H> Stream for EthereumChain<A, H>
+impl<A, H, R> Stream for EthereumChain<A, H, R>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
-	H: BridgeHashType + GenUniqueHash,
-	H: From<HashLockPreImage>,
+	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
+	R: RngSeededClone + Unpin,
 {
 	type Item = EthChainEvent<A, H>;
 
@@ -165,7 +169,7 @@ where
 							));
 						}
 						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-							this.events.push(AbstractBlockchainEvent::InitiatorContractEvent(
+							this.events.push(EthChainEvent::InitiatorContractEvent(
 								this.initiator_contract.complete_bridge_transfer(
 									&mut this.accounts,
 									bridge_transfer_id.clone(),
@@ -183,7 +187,7 @@ where
 							recipient_address,
 							amount,
 						) => {
-							this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
+							this.events.push(EthChainEvent::CounterpartyContractEvent(
 								this.counterparty_contract.lock_bridge_transfer(
 									bridge_transfer_id.clone(),
 									hash_lock.clone(),
@@ -195,7 +199,7 @@ where
 							));
 						}
 						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-							this.events.push(AbstractBlockchainEvent::CounterpartyContractEvent(
+							this.events.push(EthChainEvent::CounterpartyContractEvent(
 								this.counterparty_contract.complete_bridge_transfer(
 									&mut this.accounts,
 									&bridge_transfer_id,

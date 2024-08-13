@@ -101,11 +101,6 @@ impl From<[u8; 32]> for EthAddress {
 	}
 }
 
-pub(crate) type SCIResult<A, H> =
-	Result<BridgeContractInitiatorEvent<A, H>, BridgeContractInitiatorError>;
-pub(crate) type SCCResult<A, H> =
-	Result<BridgeContractCounterpartyEvent<A, H>, BridgeContractCounterpartyError>;
-
 pub(crate) enum AlloyParam {
 	BridgeTransferId,
 	InitiatorAddress,
@@ -249,57 +244,6 @@ where
 	}
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EthInitiatorEvent<A, H> {
-	Initiated(BridgeTransferDetails<A, H>),
-	Completed(BridgeTransferId<H>),
-	Refunded(BridgeTransferId<H>),
-}
-
-#[derive(Debug)]
-pub struct SmartContractInitiator<A, H> {
-	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
-	pub accounts: HashMap<A, Amount>,
-}
-
-impl<A, H> SmartContractInitiator<A, H>
-where
-	A: BridgeAddressType,
-	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
-{
-	pub fn new() -> Self {
-		Self { initiated_transfers: HashMap::new(), accounts: HashMap::default() }
-	}
-}
-
-#[derive(Debug)]
-pub struct SmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
-}
-
-impl<A, H> SmartContractCounterparty<A, H>
-where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
-	H: BridgeHashType + GenUniqueHash,
-	H: From<HashLockPreImage>,
-{
-	pub fn new() -> Self {
-		Self { locked_transfers: HashMap::new() }
-	}
-}
-
-#[derive(Debug)]
-pub enum InitiatorCall<A, H> {
-	InitiateBridgeTransfer(
-		InitiatorAddress<A>,
-		RecipientAddress<Vec<u8>>,
-		Amount,
-		TimeLock,
-		HashLock<H>,
-	),
-	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
-}
-
 #[derive(Debug)]
 pub enum CounterpartyCall<A, H> {
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
@@ -314,7 +258,7 @@ pub enum CounterpartyCall<A, H> {
 }
 
 #[derive(Debug)]
-pub enum EthTransaction<A, H> {
+pub enum Transaction<A, H> {
 	Initiator(InitiatorCall<A, H>),
 	Counterparty(CounterpartyCall<A, H>),
 }

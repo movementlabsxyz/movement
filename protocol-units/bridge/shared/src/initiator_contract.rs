@@ -8,8 +8,9 @@ use crate::types::{
 	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
-pub(crate) type SCIResult<A, H> =
-	Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+pub type SCCResult<A, H> =
+	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorEvent<A, H> {
@@ -25,6 +26,25 @@ pub enum SmartContractInitiatorError {
 	TransferNotFound,
 	#[error("Invalid hash lock pre image (secret)")]
 	InvalidHashLockPreImage,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum InitiatorEvent<A, H> {
+	Initiated(BridgeTransferDetails<A, H>),
+	Completed(BridgeTransferId<H>),
+	Refunded(BridgeTransferId<H>),
+}
+
+#[derive(Debug)]
+pub enum InitiatorCall<A, H> {
+	InitiateBridgeTransfer(
+		InitiatorAddress<A>,
+		RecipientAddress<Vec<u8>>,
+		Amount,
+		TimeLock,
+		HashLock<H>,
+	),
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
 #[derive(Debug)]
