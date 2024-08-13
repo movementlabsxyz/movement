@@ -98,7 +98,7 @@
               # build dependencies
               llvmPackages.bintools openssl openssl.dev libiconv pkg-config
               libclang.lib libz clang pkg-config protobuf rustPlatform.bindgenHook
-              lld mold coreutils postgresql libelf elfutils
+              lld mold coreutils postgresql
 
               # test dependencies
               python311 poetry just foundry-bin process-compose jq docker solc
@@ -112,7 +112,6 @@
               udev systemd snappy bzip2
             ]);
 
-            LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
 
             shellHook = ''
               #!/usr/bin/env ${pkgs.bash}
