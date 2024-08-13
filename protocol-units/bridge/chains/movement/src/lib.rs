@@ -15,7 +15,6 @@ use serde::Serialize;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use url::Url;
-use aptos_sdk::types::LocalAccount;
 
 use crate::utils::MovementAddress;
 
@@ -35,18 +34,23 @@ pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: String,
-	pub initiator_contract: MovementAddress,
+	pub signer_private_key: Arc<LocalAccount>,
+	pub initiator_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
 }
 
 impl Config {
+
 	pub fn build_for_test() -> Self {
+
+		let seed = [3u8; 32];
+		let mut rng = rand::rngs::StdRng::from_seed(seed);
+
 		Config {
-			rpc_url: "http://localhost:8546".parse().unwrap(),
-			ws_url: "ws://localhost:8546".parse().unwrap(),
+			rpc_url: Some("http://localhost:8546".parse().unwrap()),
+			ws_url: Some("ws://localhost:8546".parse().unwrap()),
 			chain_id: 4.to_string(),
-			signer_private_key: PrivateKeySigner::random(),
+			signer_private_key: Arc::new(LocalAccount::generate(&mut rng)),
 			initiator_contract: None,
 			gas_limit: 10_000_000_000,
 		}
