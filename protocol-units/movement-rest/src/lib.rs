@@ -1,5 +1,7 @@
-use anyhow::Error;
 use aptos_api::Context;
+
+use anyhow::Error;
+use futures::prelude::*;
 use poem::listener::TcpListener;
 use poem::{
 	get, handler,
@@ -7,9 +9,11 @@ use poem::{
 	web::{Data, Path},
 	EndpointExt, IntoResponse, Response, Route, Server,
 };
-use std::env;
-use std::sync::Arc;
 use tracing::info;
+
+use std::env;
+use std::future::Future;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct MovementRest {
@@ -32,11 +36,12 @@ impl MovementRest {
 		self.context = Some(context);
 	}
 
-	pub async fn run_service(&self) -> Result<(), Error> {
+	pub fn run_service(&self) -> impl Future<Output = Result<(), Error>> + Send {
 		info!("Starting movement rest service at {}", self.url);
 		let movement_rest = self.create_routes();
-		Server::new(TcpListener::bind(&self.url)).run(movement_rest).await?;
-		Ok(())
+		Server::new(TcpListener::bind(self.url.clone()))
+			.run(movement_rest)
+			.map_err(Into::into)
 	}
 
 	pub fn create_routes(&self) -> impl EndpointExt {
