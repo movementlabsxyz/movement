@@ -246,6 +246,7 @@ where
 {
 	type Address = A;
 	type Hash = H;
+	type Value = V;
 
 	async fn initiate_bridge_transfer(
 		&mut self,
