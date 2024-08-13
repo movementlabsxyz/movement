@@ -100,6 +100,19 @@ impl MovementClient {
 			signer: Arc::new(signer),
 		})
 	}
+
+	pub async fn new_for_test(config: Config) -> Result<Self, anyhow::Error> {
+		let node_connection_url = format!("http://localhost:8546");
+		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
+		let rest_client = Client::new(node_connection_url.clone());
+		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+		Ok(MovementClient {
+			initiator_address: Vec::new(), //dummy for now
+			rest_client,
+			counterparty_address: DUMMY_ADDRESS,
+			signer: Arc::new(LocalAccount::generate(&mut rng)),
+		})
+	}
 }
 
 #[async_trait::async_trait]
