@@ -1,16 +1,15 @@
+use crate::common;
+use anyhow::Context;
 use commander::run_command;
 use dot_movement::DotMovement;
 use m1_da_light_node_util::config::local::Config;
 use tokio::fs;
 use tracing::info;
-use crate::common;
-use anyhow::Context;
 
 #[derive(Debug, Clone)]
 pub struct Local;
 
 impl Local {
-
 	pub fn new() -> Self {
 		Self
 	}
@@ -21,7 +20,8 @@ impl Local {
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
 		info!("Setting up Celestia.");
-		let mut config = common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
+		let mut config =
+			common::celestia::initialize_celestia_config(dot_movement.clone(), config)?;
 		let mut config = common::memseq::initialize_memseq_config(dot_movement.clone(), config)?;
 		let mut config = common::celestia::make_dirs(dot_movement.clone(), config).await?;
 		info!("Setup config for Memseq and Celestia: {:?}", config);
@@ -184,7 +184,6 @@ impl Local {
 		dot_movement: DotMovement,
 		config: Config,
 	) -> Result<Config, anyhow::Error> {
-
 		// By default the M1 DA Light Node is not initialized.
 		if !config.m1_da_light_node_is_initial {
 			info!("M1 DA Light Node is already initialized.");

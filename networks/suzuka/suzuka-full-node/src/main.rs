@@ -8,7 +8,6 @@ const TIMING_LOG_ENV: &str = "SUZUKA_TIMING_LOG";
 
 #[tokio::main]
 async fn main() -> Result<ExitCode, anyhow::Error> {
-
 	let tracing_config =
 		movement_tracing::Config { timing_log_path: env::var_os(TIMING_LOG_ENV).map(Into::into) };
 	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);

@@ -18,6 +18,7 @@ node_modules/
 .env
 .aptos
 profile.json
+./docker/compose/grafana-alloy/.env
 *.dat
 *.log
 venv

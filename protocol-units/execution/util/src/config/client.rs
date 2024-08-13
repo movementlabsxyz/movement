@@ -1,7 +1,7 @@
 use super::common::{
 	default_maptos_faucet_rest_connection_hostname, default_maptos_faucet_rest_connection_port,
-	default_maptos_rest_connection_hostname, default_maptos_rest_connection_port,
 	default_maptos_indexer_grpc_connection_hostname, default_maptos_indexer_grpc_connection_port,
+	default_maptos_rest_connection_hostname, default_maptos_rest_connection_port,
 };
 use serde::{Deserialize, Serialize};
 
@@ -30,8 +30,6 @@ pub struct Config {
 	/// The port of the Aptos gRPC indexer server
 	#[serde(default = "default_maptos_indexer_grpc_connection_port")]
 	pub maptos_indexer_grpc_connection_port: u16,
-
-
 }
 
 impl Default for Config {
@@ -42,7 +40,8 @@ impl Default for Config {
 			maptos_faucet_rest_connection_hostname: default_maptos_faucet_rest_connection_hostname(
 			),
 			maptos_faucet_rest_connection_port: default_maptos_faucet_rest_connection_port(),
-			maptos_indexer_grpc_connection_hostname: default_maptos_indexer_grpc_connection_hostname(),
+			maptos_indexer_grpc_connection_hostname:
+				default_maptos_indexer_grpc_connection_hostname(),
 			maptos_indexer_grpc_connection_port: default_maptos_indexer_grpc_connection_port(),
 		}
 	}

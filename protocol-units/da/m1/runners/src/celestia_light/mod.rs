@@ -16,15 +16,15 @@ impl Runner for CelestiaLight {
 		match config.m1_da_light_node_config {
 			m1_da_light_node_util::config::Config::Local(config) => {
 				Err(anyhow::anyhow!("Local not implemented"))?;
-			},
+			}
 			m1_da_light_node_util::config::Config::Arabica(config) => {
 				let arabica = arabica::Arabica::new();
 				arabica.run(dot_movement, config).await?;
-			},
+			}
 			m1_da_light_node_util::config::Config::Mocha(config) => {
 				let mocha = mocha::Mocha::new();
 				mocha.run(dot_movement, config).await?;
-			},
+			}
 		}
 		Ok(())
 	}

@@ -124,9 +124,4 @@ pub fn default_celestia_bridge_replace_args() -> Vec<String> {
 }
 
 // Whether to use replace args for Celestia bridge
-env_default!(
-	default_m1_da_light_node_is_initial,
-	"M1_DA_LIGHT_NODE_IS_INITIAL",
-	bool,
-	true
-);
+env_default!(default_m1_da_light_node_is_initial, "M1_DA_LIGHT_NODE_IS_INITIAL", bool, true);
