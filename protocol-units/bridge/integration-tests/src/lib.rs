@@ -40,10 +40,13 @@ pub struct TestHarness {
 impl TestHarness {
 
 	pub async fn new_with_movement() -> Self {
+		let eth_client = EthClient::new(EthConfig::build_for_test())
+		.await
+		.expect("Failed to create EthClient");
 		let movement_client = MovementClient::new_for_test(MovementConfig::build_for_test())
 			.await
 			.expect("Failed to create MovementClient");
-		Self { eth_client: None, movement_client: Some(movement_client) }
+		Self { eth_client: Some(eth_client), movement_client: Some(movement_client) }
 	}
 	
 	pub fn movement_client(&self) -> Result<&MovementClient> {

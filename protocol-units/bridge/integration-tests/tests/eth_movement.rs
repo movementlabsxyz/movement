@@ -41,6 +41,7 @@ use url::Url;
 async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), anyhow::Error> {
 	let scaffold: TestHarness = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
+// Todo: Local testnet rather than devnet
 
 	//let mut child = TokioCommand::new("aptos")
         //.args(&["node", "run-local-testnet"])
@@ -69,6 +70,7 @@ async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), an
 	// println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
 
 	//let rest_client = &movement_client.rest_client;
+
 	let node_url = format!("https://aptos.devnet.suzuka.movementlabs.xyz/v1/");
 	let node_url = Url::from_str(node_url.as_str()).unwrap();
 	let faucet_url = format!("https://faucet.devnet.suzuka.movementlabs.xyz");
