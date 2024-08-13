@@ -63,7 +63,7 @@ async fn test_client_should_successfully_call_initialize() {
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
+async fn test_client_should_successfully_call_initiate_transfer_only_eth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -74,12 +74,6 @@ async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
-	harness.eth_client_mut()
-	.expect("Failed to get EthClient")
-	.deposit_weth_and_approve(U256::from(1))
-	.await
-	.expect("Failed to deposit WETH");
-
 	harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
@@ -88,14 +82,15 @@ async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
 			TimeLock(100),
-			Amount(BridgedToken::Weth(1)), // Eth
+			// value has to be > 0
+			Amount(BridgedToken::Eth(1)), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initiate_transfer_only_eth() {
+async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -118,8 +113,7 @@ async fn test_client_should_successfully_call_initiate_transfer_only_eth() {
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
 			TimeLock(100),
-			// value has to be > 0
-			Amount(BridgedToken::Eth(1)), // Eth
+			Amount(BridgedToken::Weth(1)), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -136,6 +130,12 @@ async fn test_client_should_successfully_call_initiate_transfer_eth_and_weth() {
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+
+	harness
+	.eth_client_mut()
+	.expect("Failed to get EthClient")
+	.deposit_weth_and_approve(U256::from(1))
+	.await;
 
 	harness
 		.eth_client_mut()
