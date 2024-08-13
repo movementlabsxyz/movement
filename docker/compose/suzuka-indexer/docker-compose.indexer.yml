@@ -38,10 +38,9 @@ services:
     restart: always
     environment:
       HASURA_GRAPHQL_SERVER_PORT: 8085
-      EXTERNAL_IP: ${EXTERNAL_IP}
       ## postgres database to store Hasura metadata
-      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgresql://postgres:password@database:5432/postgres
-      HASURA_GRAPHQL_DATABASE_URL: postgresql://postgres:password@database:5432/postgres
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgresql://postgres:password@postgres:5432/postgres
+      HASURA_GRAPHQL_DATABASE_URL: postgresql://postgres:password@postgres:5432/postgres
       ## this env var can be used to add the above postgres database to Hasura as a data source. this can be removed/updated based on your needs
       PG_DATABASE_URL: postgres://postgres:postgres:password@postgres:5432/postgres
       ## enable the console served by server
@@ -57,8 +56,7 @@ services:
     depends_on:
       data-connector-agent:
         condition: service_healthy
-    extra_hosts:
-        - "database:${EXTERNAL_IP}"
+
   data-connector-agent:
     image: hasura/graphql-data-connector:v2.40.0
     restart: always
