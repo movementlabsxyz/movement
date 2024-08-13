@@ -26,8 +26,6 @@ services:
     depends_on:
       data-connector-agent:
         condition: service_healthy
-    # extra_hosts:
-    #     - "database:postgres"
 
   data-connector-agent:
     image: hasura/graphql-data-connector:v2.40.0
