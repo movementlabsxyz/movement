@@ -13,6 +13,7 @@ use alloy_rlp::Decodable;
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
+	BridgeContractWETH9, BridgeContractWETH9Error, BridgeContractWETH9Result
 };
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
@@ -20,14 +21,14 @@ use bridge_shared::types::{
 };
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
-use types::{CounterpartyContract, InitiatorContract};
+use types::{CounterpartyContract, InitiatorContract, WETH9Contract};
 use url::Url;
 use utils::send_transaction;
 
 pub mod types;
 pub mod utils;
 
-use crate::types::{AtomicBridgeCounterparty, AtomicBridgeInitiator, EthAddress, EthHash};
+use crate::types::{AtomicBridgeCounterparty, AtomicBridgeInitiator, WETH9, EthAddress, EthHash};
 
 const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 const RETRIES: u32 = 6;
@@ -49,6 +50,7 @@ pub struct Config {
 	pub signer_private_key: PrivateKeySigner,
 	pub initiator_contract: Option<Address>,
 	pub counterparty_contract: Option<Address>,
+	pub weth_contract: Option<Address>,
 	pub gas_limit: u64,
 }
 
@@ -60,6 +62,7 @@ impl Config {
 			signer_private_key: PrivateKeySigner::random(),
 			initiator_contract: None,
 			counterparty_contract: None,
+			weth_contract: None,
 			gas_limit: 10_000_000_000,
 		}
 	}
@@ -76,7 +79,7 @@ struct EthBridgeTransferDetails {
 }
 
 // We need to be able to build the client and deploy the contracts
-// using that clients, therfore the `initiator_contract` and `counterparty_contract`
+// using that clients, therefore the `initiator_contract` and `counterparty_contract`
 // should be optional, as their values will be unknown at the time of building the client.
 // This is true for the integration tests.
 #[allow(dead_code)]
@@ -87,6 +90,7 @@ pub struct EthClient {
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<InitiatorContract>,
 	counterparty_contract: Option<CounterpartyContract>,
+	weth_contract: Option<WETH9Contract>,
 	config: Config,
 }
 
@@ -109,6 +113,7 @@ impl EthClient {
 			ws_provider: None,
 			initiator_contract: None,
 			counterparty_contract: None,
+			weth_contract: None,
 			config,
 		})
 	}
@@ -121,6 +126,10 @@ impl EthClient {
 		self.counterparty_contract = Some(contract);
 	}
 
+	pub fn set_weth_contract(&mut self, contract: WETH9Contract) {
+		self.weth_contract = Some(contract);
+	}
+
 	pub async fn initialize_initiator_contract(
 		&self,
 		weth: EthAddress,
@@ -131,6 +140,19 @@ impl EthClient {
 		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
+		Ok(())
+	}
+
+	pub async fn deposit_weth_and_approve(&self, amount: U256) -> Result<(), anyhow::Error> {
+		let contract = self.weth_contract().expect("WETH contract not set");
+		let call = contract.deposit().value(amount);
+		send_transaction(call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to deposit eth to weth contract");
+		let approve_call = contract.approve(self.initiator_contract_address()?, amount);
+		send_transaction(approve_call.to_owned(), &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to aprove");
 		Ok(())
 	}
 
@@ -190,10 +212,29 @@ impl EthClient {
 		}
 	}
 
+	pub fn weth_contract_address(&self) -> BridgeContractWETH9Result<Address> {
+		match &self.weth_contract {
+			Some(contract) => Ok(contract.address().to_owned()),
+			None => Err(BridgeContractWETH9Error::GenericError(
+				"WETH9 contract address not set".to_string(),
+			)),
+		}
+	}
+	
+
 	pub fn initiator_contract(&self) -> BridgeContractInitiatorResult<&InitiatorContract> {
 		match &self.initiator_contract {
 			Some(contract) => Ok(contract),
 			None => Err(BridgeContractInitiatorError::GenericError(
+				"Initiator contract not set".to_string(),
+			)),
+		}
+	}
+
+	pub fn weth_contract(&self) -> BridgeContractWETH9Result<&WETH9Contract> {
+		match &self.weth_contract {
+			Some(contract) => Ok(contract),
+			None => Err(BridgeContractWETH9Error::GenericError(
 				"Initiator contract not set".to_string(),
 			)),
 		}

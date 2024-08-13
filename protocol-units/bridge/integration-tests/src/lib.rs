@@ -1,6 +1,6 @@
 use alloy::{
 	node_bindings::Anvil,
-	primitives::Address,
+	primitives::{Address, U256},
 	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
@@ -11,18 +11,12 @@ use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
 use aptos_sdk::types::LocalAccount;
 use ethereum_bridge::{
-	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
+	types::{AlloyProvider, AtomicBridgeInitiator, WETH9, EthAddress},
 	Config as EthConfig, EthClient,
 };
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
 
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	WETH9,
-	"../chains/ethereum/abis/WETH9.json"
-);
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
 	pub movement_client: Option<MovementClient>,
@@ -78,7 +72,8 @@ impl TestHarness {
 	pub async fn deploy_weth_contract(&mut self) -> Address {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		let weth = WETH9::deploy(eth_client.rpc_provider()).await.expect("Failed to deploy WETH9");
-		weth.address().to_owned()
+		eth_client.set_weth_contract(weth.with_cloned_provider());
+		eth_client.weth_contract_address().expect("WETH contract not set")
 	}
 
 	pub async fn deploy_init_contracts(&mut self) {
@@ -92,6 +87,11 @@ impl TestHarness {
 			)
 			.await
 			.expect("Failed to initialize contract");
+	}
+
+	pub async fn deposit_weth(&mut self, amount: U256) {
+		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		eth_client.deposit_weth_and_approve(amount).await.expect("Failed to deposit WETH");
 	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {

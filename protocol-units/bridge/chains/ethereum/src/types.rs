@@ -9,6 +9,8 @@ use alloy::transports::BoxTransport;
 use serde::{Deserialize, Serialize};
 
 use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
+use crate::AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance;
+use crate::WETH9::WETH9Instance;
 
 // Codegen from the abis
 alloy::sol!(
@@ -25,10 +27,18 @@ alloy::sol!(
 	"abis/AtomicBridgeCounterparty.json"
 );
 
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	WETH9,
+	"abis/WETH9.json"
+);
+
 pub type EthHash = [u8; 32];
 
 pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract = AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
+pub type WETH9Contract = WETH9Instance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
