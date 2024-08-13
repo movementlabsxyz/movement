@@ -24,6 +24,8 @@ echo -e "host    all             all             ${IP_NET_MASK}          trust" 
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile start
 
+cat ./.data/logfile
+
 # Wait a few seconds to ensure the server is fully started
 sleep 5
 
@@ -38,3 +40,5 @@ pg_ctl -D ./.data stop
 
 # Start the PostgreSQL server normally
 postgres -D ./.data -h 0.0.0.0 -p 5432
+
+cat ./.data/logfile
