@@ -21,7 +21,7 @@ echo -e "host    all             all             ${IP_NET_MASK}          trust" 
 echo "before qstart server 1"
 
 # Start the PostgreSQL server
-pg_ctl -D ./.data -l ./.data/logfile start
+pg_ctl -D ./.data -l ./.data/logfile -o "-c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'" start
 
 echo "after start server 1"
 cat ./.data/logfile
