@@ -13,5 +13,5 @@ pub struct CliOptions {
 pub enum Commands {
 	/// Ethereum to Movement Labs bridge commands
 	#[command(subcommand)]
-	BridgeEthToMovETH(eth_to_movement::Commands),
+	BridgeETHtoMOVETH(eth_to_movement::Commands),
 }
