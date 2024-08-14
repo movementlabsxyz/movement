@@ -1,3 +1,3 @@
 pub mod celestia;
-pub mod memseq;
 pub mod file;
+pub mod memseq;

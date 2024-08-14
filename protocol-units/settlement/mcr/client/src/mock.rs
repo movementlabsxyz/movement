@@ -1,10 +1,10 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
+use mcr_settlement_config::Config;
 use movement_types::BlockCommitment;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
 use tokio_stream::wrappers::ReceiverStream;
-use mcr_settlement_config::Config;
 
 #[derive(Clone)]
 pub struct McrSettlementClient {

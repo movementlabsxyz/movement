@@ -83,7 +83,10 @@ impl LightNodeV1 {
 	}
 
 	/// Submits Celestia blobs to the Celestia node.
-	pub async fn submit_celestia_blobs(&self, blobs: &[CelestiaBlob]) -> Result<u64, anyhow::Error> {
+	pub async fn submit_celestia_blobs(
+		&self,
+		blobs: &[CelestiaBlob],
+	) -> Result<u64, anyhow::Error> {
 		let height = self
 			.default_client
 			.blob_submit(blobs, GasPrice::default())

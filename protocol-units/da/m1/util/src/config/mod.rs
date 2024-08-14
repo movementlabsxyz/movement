@@ -17,18 +17,14 @@ impl Default for Config {
 	fn default() -> Self {
 		std::env::var("CELESTIA_NETWORK").map_or_else(
 			|_| Config::Local(local::Config::default()),
-			|network| {
-				match network.as_str() {
-					"arabica" => Config::Arabica(local::Config::default()),
-					"mocha" => Config::Mocha(local::Config::default()),
-					_ => Config::Local(local::Config::default()),
-				}
+			|network| match network.as_str() {
+				"arabica" => Config::Arabica(local::Config::default()),
+				"mocha" => Config::Mocha(local::Config::default()),
+				_ => Config::Local(local::Config::default()),
 			},
 		)
 	}
 }
-
-
 
 impl Config {
 	/// Connects to a Celestia node using the config
@@ -56,7 +52,8 @@ impl Config {
 
 				Ok(client)
 			}
-			Config::Arabica(local) => { // arabica is also local for now
+			Config::Arabica(local) => {
+				// arabica is also local for now
 				let celestia_node_url = format!(
 					"ws://{}:{}",
 					local.appd.celestia_websocket_connection_hostname,
@@ -77,8 +74,9 @@ impl Config {
 					})?;
 
 				Ok(client)
-			},
-			Config::Mocha(local) => { // mocha is also local for now
+			}
+			Config::Mocha(local) => {
+				// mocha is also local for now
 				let celestia_node_url = format!(
 					"ws://{}:{}",
 					local.appd.celestia_websocket_connection_hostname,
@@ -99,7 +97,7 @@ impl Config {
 					})?;
 
 				Ok(client)
-			},
+			}
 		}
 	}
 
@@ -116,7 +114,9 @@ impl Config {
 	pub fn m1_da_light_node_listen_hostname(&self) -> String {
 		match self {
 			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
-			Config::Arabica(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
+			Config::Arabica(local) => {
+				local.m1_da_light_node.m1_da_light_node_listen_hostname.clone()
+			}
 			Config::Mocha(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
 		}
 	}
@@ -142,13 +142,13 @@ impl Config {
 		match self {
 			Config::Local(local) => {
 				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
-			},
+			}
 			Config::Arabica(local) => {
 				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
-			},
+			}
 			Config::Mocha(local) => {
 				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
-			},
+			}
 		}
 	}
 
@@ -175,6 +175,15 @@ impl Config {
 			),
 		}
 	}
+
+	pub fn try_block_building_parameters(&self) -> Result<(u32, u64), anyhow::Error> {
+		match self {
+			Config::Local(local) => Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time)),
+			Config::Arabica(local) => Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time)),
+			Config::Mocha(local) => Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time)),
+		}
+	}
+
 }
 
 /// The M1 DA Light Node configuration as should be read from file.
