@@ -1,6 +1,6 @@
-use regex::Regex;
+use glob::Pattern;
 
 #[derive(Debug, Clone)]
 pub struct Glob {
-	pub pattern: Regex,
+	pub pattern: Pattern,
 }

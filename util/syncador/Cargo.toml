@@ -28,7 +28,7 @@ async-trait = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
 clap = { workspace = true }
-regex = { workspace = true }
+glob = { workspace = true }
 
 [dev-dependencies]
 uuid = { workspace = true }
