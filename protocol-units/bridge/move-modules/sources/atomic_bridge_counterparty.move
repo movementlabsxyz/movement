@@ -234,9 +234,9 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.initiator == initiator, 4);
     }
 
-     #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
     #[expected_failure]
-    fun test_abort_transfer_assets_minter(
+    fun test_abort_transfer_assets_malicious(
         client: &signer,
         aptos_framework: &signer,
         master_minter: &signer, 
@@ -287,6 +287,54 @@ module atomic_bridge::atomic_bridge_counterparty {
            client,
            bridge_transfer_id,
        );
+        debug::print(&utf8(msg));
+    }
+
+    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
+    fun test_abort_transfer_assets_minter(
+        client: &signer,
+        aptos_framework: &signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeTransferStore, BridgeConfig {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        moveth::init_for_test(moveth);
+        let receiver_address = @0xcafe1;
+        let initiator = b"0x123"; //In real world this would be an ethereum address
+        let recipient = @0xface; 
+        let asset = moveth::metadata();
+
+        init_module(creator);
+
+        let bridge_transfer_id = b"transfer1";
+        let pre_image = b"secret";
+        let hash_lock = keccak256(pre_image); // Compute the hash lock using keccak256
+        let time_lock = 3600;
+        let amount = 100;
+
+        let result = lock_bridge_transfer_assets(
+            creator,
+            initiator,
+            bridge_transfer_id,
+            hash_lock,
+            time_lock,
+            recipient,
+            amount
+        );
+
+        assert!(result, 1);
+
+        // Verify that the transfer is stored in pending_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
+        let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
+        assert!(transfer_details.recipient == recipient, 2);
+        assert!(transfer_details.initiator == initiator, 3);
+        assert!(transfer_details.amount == amount, 5);
+        assert!(transfer_details.hash_lock == hash_lock, 5);
+
+       let pre_image = b"secret"; 
+       let msg:vector<u8> = b"secret";
         debug::print(&utf8(msg));
 
         abort_bridge_transfer(
