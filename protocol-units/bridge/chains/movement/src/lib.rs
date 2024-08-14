@@ -46,7 +46,7 @@ pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: Arc<LocalAccount>,
+	pub signer_private_key: Arc<RwLock<LocalAccount>>
 	pub initiator_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
 }
