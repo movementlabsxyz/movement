@@ -1,5 +1,4 @@
 use aptos_types::state_proof::StateProof;
-
 use core::fmt;
 use serde::{Deserialize, Serialize};
 
