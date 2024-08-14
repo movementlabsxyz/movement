@@ -5,6 +5,10 @@ use std::path::{Path, PathBuf};
 pub struct Package(pub Vec<PackageElement>);
 
 impl Package {
+	pub fn null() -> Self {
+		Self(Vec::new())
+	}
+
 	/// Returns references to all of the package manifests in the package.
 	pub fn as_manifests(&self) -> Vec<&PackageElement> {
 		self.0.iter().collect()
