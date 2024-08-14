@@ -4,7 +4,7 @@
     },
   "maptos_config": {
     "indexer": {
-      "maptos_indexer_grpc_listen_hostname": "suzuka-full-node,
+      "maptos_indexer_grpc_listen_hostname": "suzuka-full-node",
       "maptos_indexer_grpc_listen_port": 30734,
       "maptos_indexer_grpc_inactivity_timeout": 60,
       "maptos_indexer_grpc_inactivity_ping_interval": 10
@@ -18,7 +18,7 @@
       "maptos_rest_connection_port": 30731,
       "maptos_faucet_rest_connection_hostname": "suzuka-faucet-service",
       "maptos_faucet_rest_connection_port": 30732,
-      "maptos_indexer_grpc_connection_hostname": "suzuka-full-node"",
+      "maptos_indexer_grpc_connection_hostname": "suzuka-full-node",
       "maptos_indexer_grpc_connection_port": 30734
     }
 }
