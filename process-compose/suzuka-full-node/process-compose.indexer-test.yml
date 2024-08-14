@@ -1,0 +1,23 @@
+version: "3"
+
+environment:
+
+processes:
+
+  indexer-test:
+    command: |
+      sleep 10
+      result=$(PGPASSWORD=password psql -h $POSTGRES_HOST_IP -U postgres -d postgres -t -c "SELECT COUNT(*) FROM public.transactions;")
+      result=$(echo $result | xargs)
+      if (( result >= 1 )); then
+          exit curl http://localhost:8085/console
+      else
+          exit 1
+      fi
+    depends_on:
+      indexer:
+        condition: process_healthy
+      hasura:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

@@ -18,7 +18,13 @@ export PATH="$PATH:$(pwd)/target/$CARGO_PROFILE"
 export DOT_MOVEMENT_PATH="$(pwd)/.movement"
 # IP needed by docker container to connect to the database
 # By default use the host ip.
-export POSTGRES_HOST_IP=$(hostname -I | awk '{print $1}')
+# Detect the OS and call the appropriate function
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    IP=$(hostname -I | awk '{print $1}')
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    IP=$(ifconfig | awk '/inet / {print $2}' | grep -v '127.0.0.1')
+fi
+export POSTGRES_HOST_IP=$IP
 
 # Call the runtime script, passing all arguments
 ./scripts/movement/$RUNTIME "$@"

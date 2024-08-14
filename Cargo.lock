@@ -12634,6 +12634,7 @@ dependencies = [
  "maptos-execution-util",
  "num_cpus",
  "processor",
+ "reqwest 0.12.5",
  "server-framework",
  "tokio",
  "tracing",

@@ -4,9 +4,13 @@ processes:
 
   hasura:
     command: |
-      EXTERNAL_IP=$POSTGRES_HOST_IP docker compose -f docker/compose/indexer/docker-compose.hasura.yml up --force-recreate --renew-anon-volumes
+      POSTGRES_DB_HOST=$POSTGRES_HOST_IP docker compose -f docker/compose/suzuka-indexer/docker-compose.hasura.yml up --force-recreate
     env:
       RUST_LOG: info
     depends_on:
       indexer:
         condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 20
+      exec:
+        command: curl http://localhost:8085/console/
