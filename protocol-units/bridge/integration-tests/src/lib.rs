@@ -44,9 +44,6 @@ pub struct TestHarness {
 impl TestHarness {
 
 	pub async fn new_with_movement() -> (Self, tokio::process::Child) {
-		let eth_client = EthClient::new(EthConfig::build_for_test())
-		.await
-		.expect("Failed to create EthClient");
 		let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test())
 			.await
 			.expect("Failed to create MovementClient");

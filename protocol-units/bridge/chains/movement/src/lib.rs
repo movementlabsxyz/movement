@@ -64,36 +64,6 @@ impl Config {
 	}
 }
 
-// Todo: Local testnet rather than devnet
-
-	//let mut child = TokioCommand::new("aptos")
-        //.args(&["node", "run-local-testnet"])
-        //.stdout(Stdio::piped())
-        //.stderr(Stdio::piped())
-        //.spawn()?;
-//
-    	//let stdout = child.stdout.take().expect("Failed to capture stdout");
-    	//let mut reader = BufReader::new(stdout).lines();
-//
-    	//while let Some(line) = reader.next_line().await? {
-        //	println!("Output: {}", line);
-//
-        //	if line.contains("Setup is complete") {
-      	//      		println!("Testnet is up and running!");
-        //		break;
-        //	}
-	//}
-
-	// let output = Command::new("aptos")
-        // .arg("node")
-        // .arg("run-local-testnet")
-        // .stdout(Stdio::piped())  
-        // .spawn()?;  
-// 
-	// println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-
-	//let rest_client = &movement_client.rest_client;
-
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct MovementClient {
