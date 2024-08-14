@@ -51,7 +51,7 @@ impl TestHarness {
 			.await
 			.expect("Failed to create MovementClient");
 		(
-			Self { eth_client: Some(eth_client), movement_client: Some(movement_client) 
+			Self { eth_client: None, movement_client: Some(movement_client) 
 			}, 
 			child,
 		)

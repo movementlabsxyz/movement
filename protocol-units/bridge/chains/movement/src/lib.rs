@@ -22,11 +22,11 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::mpsc;
-use std::thread;
+use std::{sync::{Arc, Mutex, RwLock, mpsc}, thread};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command as TokioCommand;
 use tokio::sync::oneshot;
-use tokio::task;
+use tokio::{io::{AsyncBufReadExt, BufReader}, process::Command as TokioCommand, sync::oneshot, task};
 
 use url::Url;
 
@@ -46,7 +46,7 @@ pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: Arc<LocalAccount>,
+	pub signer_private_key: Arc<RwLock<LocalAccount>>
 	pub initiator_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
 }
