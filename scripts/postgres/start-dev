@@ -18,31 +18,21 @@ echo -e "host    all             all             172.0.0.0/8             trust" 
 IP_NET_MASK="$(echo $POSTGRES_HOST_IP | cut -d'.' -f1-3).0/24"
 echo -e "host    all             all             ${IP_NET_MASK}          trust" >> ./.data/pg_hba.conf 
 
-echo "before qstart server 1"
 
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile -o "-c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'" start
-
-echo "after start server 1"
-cat ./.data/logfile
-echo "after start server 1 cat"
 
 # Wait a few seconds to ensure the server is fully started
 sleep 5
 
 # Create the 'postgres' superuser
-psql -U "$USER" -d template1 -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'password';"
+psql -U "$USER" -d template1 -h '/tmp' -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'password';"
 
 # Change ownership of the 'postgres' database
-psql -U "$USER" -d template1 -c "ALTER DATABASE postgres OWNER TO postgres;"
+psql -U "$USER" -d template1 -h '/tmp' -c "ALTER DATABASE postgres OWNER TO postgres;"
 
 # Stop the PostgreSQL server
-pg_ctl -D ./.data stop
-
-echo "before start server 2"
+pg_ctl -D ./.data -o "-c unix_socket_directories='/tmp'" stop
 
 # Start the PostgreSQL server normally
 postgres -D ./.data -h 0.0.0.0 -p 5432 -c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'
-echo "after start server 2"
-
-cat ./.data/logfile
