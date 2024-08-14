@@ -3,7 +3,6 @@
 sleep 10
 result=$(PGPASSWORD=password psql -h $POSTGRES_HOST_IP -U postgres -d postgres -t -c "SELECT COUNT(*) FROM public.transactions;")
 result=$(echo $result | xargs)
-echo "Result: '$result'"
 if (( result >= 1 )); then
   http_status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8085/console")
   if [ "$http_status" -eq 200 ]; then
