@@ -9,6 +9,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=postgres
+      - POSTGRES_DB_HOST=${POSTGRES_DB_HOST}
     ports:
       - "5432:5432"
     restart: on-failure:3
@@ -20,6 +21,7 @@ services:
 
   suzuka-indexer:
     image: ghcr.io/movementlabsxyz/suzuka-indexer:${CONTAINER_REV}
+    # entrypoint: '/bin/sh -c "tail -f /dev/null"'
     container_name: suzuka-indexer
     environment:
       - DOT_MOVEMENT_PATH=/.movement
@@ -39,10 +41,10 @@ services:
     environment:
       HASURA_GRAPHQL_SERVER_PORT: 8085
       ## postgres database to store Hasura metadata
-      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgresql://postgres:password@postgres:5432/postgres
-      HASURA_GRAPHQL_DATABASE_URL: postgresql://postgres:password@postgres:5432/postgres
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgresql://postgres:password@${POSTGRES_DB_HOST}:5432/postgres
+      HASURA_GRAPHQL_DATABASE_URL: postgresql://postgres:password@${POSTGRES_DB_HOST}:5432/postgres
       ## this env var can be used to add the above postgres database to Hasura as a data source. this can be removed/updated based on your needs
-      PG_DATABASE_URL: postgres://postgres:postgres:password@postgres:5432/postgres
+      PG_DATABASE_URL: postgres://postgres:postgres:password@${POSTGRES_DB_HOST}:5432/postgres
       ## enable the console served by server
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
       ## enable debugging mode. It is recommended to disable this in production
