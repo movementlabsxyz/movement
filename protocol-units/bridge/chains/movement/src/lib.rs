@@ -26,7 +26,7 @@ use std::{sync::{Arc, Mutex, RwLock, mpsc}, thread};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command as TokioCommand;
 use tokio::sync::oneshot;
-use tokio::task;
+use tokio::{io::{AsyncBufReadExt, BufReader}, process::Command as TokioCommand, sync::oneshot, task};
 
 use url::Url;
 
