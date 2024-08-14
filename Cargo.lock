@@ -3607,7 +3607,10 @@ dependencies = [
  "alloy-network",
  "alloy-sol-types",
  "anyhow",
+ "aptos-language-e2e-tests",
+ "aptos-logger",
  "aptos-sdk",
+ "aptos-types",
  "bridge-shared",
  "ethereum-bridge",
  "movement-bridge",
@@ -3615,6 +3618,7 @@ dependencies = [
  "reqwest 0.12.5",
  "serde_json",
  "tokio",
+ "url",
 ]
 
 [[package]]

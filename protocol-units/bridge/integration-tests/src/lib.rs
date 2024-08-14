@@ -14,8 +14,21 @@ use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 };
-use movement_bridge::MovementClient;
+use movement_bridge::{MovementClient, Config as MovementConfig};
 use rand::SeedableRng;
+use aptos_logger::Logger;
+use aptos_language_e2e_tests::{
+	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
+};
+use aptos_sdk::{
+	rest_client::{Client, FaucetClient}
+};
+use aptos_types::{
+	account_config::{DepositEvent, WithdrawEvent},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
+};
+use std::{convert::TryFrom, time::Instant, sync::{Arc, RwLock}};
+use tokio::task;
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -29,6 +42,38 @@ pub struct TestHarness {
 }
 
 impl TestHarness {
+
+	pub async fn new_with_movement() -> (Self, tokio::process::Child) {
+		let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test())
+			.await
+			.expect("Failed to create MovementClient");
+		(
+			Self { eth_client: None, movement_client: Some(movement_client) 
+			}, 
+			child,
+		)
+	}
+
+	pub fn movement_rest_client(&self) -> &Client {
+		self.movement_client().expect("Could not fetch Movement client").rest_client()
+	}
+
+	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+		self.movement_client().expect("Could not fetch Movement client").faucet_client()
+	}
+	
+	pub fn movement_client(&self) -> Result<&MovementClient> {
+		self.movement_client
+		    .as_ref()
+		    .ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	}
+	
+	pub fn movement_client_mut(&mut self) -> Result<&mut MovementClient> {
+		self.movement_client
+		    .as_mut()
+		    .ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	}
+
 	pub async fn new_only_eth() -> Self {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 			.await
@@ -100,3 +145,4 @@ impl TestHarness {
 		movement_recipient.public_key().to_bytes().to_vec()
 	}
 }
+

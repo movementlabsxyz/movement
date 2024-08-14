@@ -9,9 +9,80 @@ use bridge_shared::{
 	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use ethereum_bridge::types::EthAddress;
+use anyhow::Context;
+use aptos_sdk::{
+	types::LocalAccount,
+	rest_client::{Client, FaucetClient},
+	coin_client::CoinClient
+}; 
+use rand::{rngs::StdRng, SeedableRng}; 
+use anyhow::Result; 
+use tokio;
+
+use aptos_logger::Logger;
+use aptos_language_e2e_tests::{
+	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
+};
+use aptos_types::{
+	account_config::{DepositEvent, WithdrawEvent},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
+};
+use std::{
+	convert::TryFrom, 
+	time::Instant,
+	str::FromStr,
+	process::{Command, Stdio}
+};
+
+use url::Url;
 
 #[tokio::test]
-async fn test_client_should_build_and_fetch_accounts() {
+async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), anyhow::Error> {
+	let (scaffold, mut child) = TestHarness::new_with_movement().await;
+	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
+
+	let rest_client = movement_client.rest_client();
+	let coin_client = CoinClient::new(&rest_client);
+	let faucet_client = movement_client.faucet_client();	
+	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); 
+
+	// Print account addresses.
+	println!("\n=== Addresses ===");
+	println!("Alice: {}", alice.address().to_hex_literal());
+	println!("Bob: {}", bob.address().to_hex_literal());
+	let faucet_client = faucet_client.write().unwrap();
+	faucet_client
+		.fund(alice.address(), 100_000_000)
+		.await
+		.context("Failed to fund Alice's account")?;
+	faucet_client
+		.create_account(bob.address())
+		.await
+		.context("Failed to fund Bob's account")?; 
+
+	// Print initial balances.
+	println!("\n=== Initial Balances ===");
+	println!(
+		"Alice: {:?}",
+		coin_client
+			.get_account_balance(&alice.address())
+			.await
+			.context("Failed to get Alice's account balance")?
+	);
+	println!(
+		"Bob: {:?}",
+		coin_client
+			.get_account_balance(&bob.address())
+			.await
+			.context("Failed to get Bob's account balance")?
+	);
+	child.kill().await.context("Failed to kill the child process")?;
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_eth_client_should_build_and_fetch_accounts() {
 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
 
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
