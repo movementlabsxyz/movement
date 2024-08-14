@@ -1,4 +1,9 @@
-use aptos_sdk::{move_types::language_storage::TypeTag, rest_client::Client, types::LocalAccount};
+use anyhow::Error;
+use aptos_sdk::{
+	move_types::language_storage::TypeTag, 
+	rest_client::{Client, FaucetClient}, 
+	types::LocalAccount
+};
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
@@ -10,13 +15,15 @@ use bridge_shared::{
 		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
+use crate::utils::MovementAddress;
 use rand::prelude::*;
 use serde::Serialize;
+use std::process::{Command, Stdio};
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use url::Url;
+use std::{sync::{Arc, Mutex, RwLock, mpsc}, thread};
+use tokio::{io::{AsyncBufReadExt, BufReader}, process::Command as TokioCommand, sync::oneshot, task};
 
-use crate::utils::MovementAddress;
+use url::Url;
 
 pub mod utils;
 
@@ -34,9 +41,27 @@ pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: String,
-	pub initiator_contract: MovementAddress,
+	pub signer_private_key: Arc<RwLock<LocalAccount>>,
+	pub initiator_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
+}
+
+impl Config {
+
+	pub fn build_for_test() -> Self {
+
+		let seed = [3u8; 32];
+		let mut rng = rand::rngs::StdRng::from_seed(seed);
+
+		Config {
+			rpc_url: Some("http://localhost:8080".parse().unwrap()),
+			ws_url: Some("ws://localhost:8080".parse().unwrap()),
+			chain_id: 4.to_string(),
+			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
+			initiator_contract: None,
+			gas_limit: 10_000_000_000,
+		}
+	}
 }
 
 #[allow(dead_code)]
@@ -47,7 +72,9 @@ pub struct MovementClient {
 	///Address of the initiator module
 	initiator_address: Vec<u8>,
 	///The Apotos Rest Client
-	rest_client: Client,
+	pub rest_client: Client,
+	///The Apotos Rest Client
+	pub faucet_client: Arc<RwLock<FaucetClient>>,
 	///The signer account
 	signer: Arc<LocalAccount>,
 }
@@ -62,8 +89,11 @@ impl MovementClient {
 			.maptos_config
 			.client
 			.maptos_rest_connection_hostname;
-		let node_connection_port =
-			suzuka_config.execution_config.maptos_config.client.maptos_rest_connection_port;
+		let node_connection_port = suzuka_config
+			.execution_config
+			.maptos_config
+			.client
+			.maptos_rest_connection_port;
 
 		let node_connection_url =
 			format!("http://{}:{}", node_connection_address, node_connection_port);
@@ -71,17 +101,127 @@ impl MovementClient {
 
 		let rest_client = Client::new(node_connection_url.clone());
 
+		let faucet_listen_address = suzuka_config
+			.execution_config
+			.maptos_config
+			.client
+			.maptos_faucet_rest_connection_hostname
+			.clone();
+		let faucet_listen_port = suzuka_config
+			.execution_config
+			.maptos_config
+			.client
+			.maptos_faucet_rest_connection_port
+			.clone();
+
+		let faucet_connection_url = format!("http://{}:{}", node_connection_address, node_connection_port);
+		let faucet_listen_url = Url::from_str(faucet_connection_url.as_str()).unwrap();
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_listen_url.clone(),
+			node_connection_url.clone()
+		)));
+
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
 
 		Ok(MovementClient {
+			counterparty_address: DUMMY_ADDRESS,
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
-			counterparty_address: DUMMY_ADDRESS,
+			faucet_client,
 			signer: Arc::new(signer),
 		})
 	}
+
+	pub async fn new_for_test(config: Config) -> Result<(Self, tokio::process::Child), anyhow::Error> {
+
+		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let mut child = TokioCommand::new("aptos")
+		    .args(&["node", "run-local-testnet"])
+		    .stdout(Stdio::piped())
+		    .stderr(Stdio::piped())
+		    .spawn()?;
+	    
+		let stdout = child.stdout.take().expect("Failed to capture stdout");
+		let stderr = child.stderr.take().expect("Failed to capture stderr");
+	    
+		let node_handle = task::spawn(async move {
+		    let mut stdout_reader = BufReader::new(stdout).lines();
+		    let mut stderr_reader = BufReader::new(stderr).lines();
+
+
+			loop {
+				tokio::select! {
+					line = stdout_reader.next_line() => {
+						match line {
+							Ok(Some(line)) => {
+								println!("STDOUT: {}", line);
+								if line.contains("Setup is complete") {
+									println!("Testnet is up and running!");
+									let _ = setup_complete_tx.send(());
+                                                                	return Ok(());
+								}
+							},
+							Ok(None) => {
+								return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
+							},
+							Err(e) => {
+								return Err(anyhow::anyhow!("Error reading stdout: {}", e));
+							}
+						}
+					},
+					line = stderr_reader.next_line() => {
+						match line {
+							Ok(Some(line)) => {
+								println!("STDERR: {}", line);
+								if line.contains("Setup is complete") {
+									println!("Testnet is up and running!");
+									let _ = setup_complete_tx.send(());
+                                                                	return Ok(());
+								}
+							},
+							Ok(None) => {
+								return Err(anyhow::anyhow!("Unexpected end of stderr stream"));
+							} 
+							Err(e) => {
+								return Err(anyhow::anyhow!("Error reading stderr: {}", e));
+							}
+						}
+					}
+				}
+			}
+		});
+
+		setup_complete_rx.await.expect("Failed to receive setup completion signal");
+		println!("Setup complete message received.");
+
+		let node_connection_url = format!("http://127.0.0.1:8080");
+		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
+		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = format!("http://127.0.0.1:8081");
+		let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(faucet_url.clone(), node_connection_url.clone())));
+
+		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+		Ok((MovementClient {
+			counterparty_address: DUMMY_ADDRESS,
+			initiator_address: Vec::new(), // dummy for now
+			rest_client,
+			faucet_client,
+			signer: Arc::new(LocalAccount::generate(&mut rng)),
+		    }, child))
+	}
+
+	pub fn rest_client(&self) -> &Client {
+		&self.rest_client
+	}
+
+	pub fn faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+		&self.faucet_client
+	}
+
 }
 
 #[async_trait::async_trait]
