@@ -16,7 +16,7 @@ processes:
       ./scripts/postgres/start-dev
 
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: echo "true"
     
@@ -26,7 +26,7 @@ processes:
     env:
       RUST_LOG: info
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 5
       exec:
         command: echo "true"
     depends_on:
