@@ -89,9 +89,9 @@ impl TestHarness {
 			.expect("Failed to initialize contract");
 	}
 
-	pub async fn deposit_weth(&mut self, amount: U256) {
+	pub async fn deposit_weth(&mut self, signer: Address, amount: U256) {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client.deposit_weth_and_approve(amount).await.expect("Failed to deposit WETH");
+		eth_client.deposit_weth_and_approve(signer, amount).await.expect("Failed to deposit WETH");
 	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {
