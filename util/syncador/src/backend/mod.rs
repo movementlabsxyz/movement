@@ -1,6 +1,7 @@
 // pub mod archive;
 // pub mod copy;
 pub mod archive;
+pub mod constant;
 pub mod glob;
 pub mod pipeline;
 pub mod s3;

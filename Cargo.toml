@@ -91,6 +91,8 @@ flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
 
+syncador = { path = "util/syncador" }
+
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
 serde = "1.0"

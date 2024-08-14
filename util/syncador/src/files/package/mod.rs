@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 /// A package is a collection of file system locations that are synced together, either publicly or privately.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Package(pub Vec<PackageElement>);
 
 impl Package {
