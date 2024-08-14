@@ -21,6 +21,7 @@ services:
 
   suzuka-indexer:
     image: ghcr.io/movementlabsxyz/suzuka-indexer:${CONTAINER_REV}
+    # entrypoint: '/bin/sh -c "tail -f /dev/null"'
     container_name: suzuka-indexer
     environment:
       - DOT_MOVEMENT_PATH=/.movement
