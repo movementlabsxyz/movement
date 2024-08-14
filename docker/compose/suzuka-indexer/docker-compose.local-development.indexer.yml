@@ -32,6 +32,7 @@ services:
     restart: on-failure:5
     depends_on:
       - postgres
+      - suzuka-full-node
   graphql-engine:
     image: hasura/graphql-engine:v2.40.0
     ports:

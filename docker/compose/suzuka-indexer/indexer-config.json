@@ -1,4 +1,5 @@
 {
+  "maptos_config": {
     "chain": {
       "maptos_chain_id": 27
     },
@@ -10,7 +11,7 @@
       "maptos_indexer_grpc_inactivity_ping_interval": 10
     },
     "indexer_processor": {
-      "postgres_connection_string": "postgres://postgres:password@postgres:5432/postgres",
+      "postgres_connection_string": "postgres://postgres:password@postgres:5432",
       "indexer_processor_auth_token": "auth_token"
     },
     "client": {
@@ -21,4 +22,6 @@
       "maptos_indexer_grpc_connection_hostname": "suzuka-full-node",
       "maptos_indexer_grpc_connection_port": 30734
     }
+	}
+	}
 }
