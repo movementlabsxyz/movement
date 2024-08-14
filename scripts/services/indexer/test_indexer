@@ -7,12 +7,13 @@ echo "Result: '$result'"
 if (( result >= 1 )); then
   http_status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:8085/console")
   if [ "$http_status" -eq 200 ]; then
-    echo "Indexer test OK"
+    echo "Indexer test OK."
     exit 0
   else
-      echo "Indexer test Failed"
+      echo "Indexer test Failed."
       exit 1
   fi
 else
+  echo "Indexer test Failed, db not populated."
   exit 1
 fi
