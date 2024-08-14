@@ -18,7 +18,7 @@ use types::CounterpartyCall;
 use utils::RngSeededClone;
 
 pub mod client;
-pub mod event_logging;
+pub mod event_monitoring;
 mod event_types;
 pub mod types;
 mod utils;

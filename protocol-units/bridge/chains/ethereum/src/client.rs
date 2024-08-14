@@ -90,20 +90,11 @@ pub struct EthClient {
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<InitiatorContract>,
 	counterparty_contract: Option<CounterpartyContract>,
-	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
-	pub failure_rate: f64,
-	pub false_positive_rate: f64,
-	pub call_configs: Arc<DashMap<MethodName, Vec<(usize, CallConfig)>>>,
 	config: Config,
 }
 
 impl EthClient {
-	pub async fn new(
-		transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
-		failure_rate: f64,
-		false_positive_rate: f64,
-		config: impl Into<Config>,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
 		let config = config.into();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
@@ -124,10 +115,6 @@ impl EthClient {
 			ws_provider: None,
 			initiator_contract: None,
 			counterparty_contract: None,
-			transaction_sender,
-			failure_rate,
-			false_positive_rate,
-			call_configs: Default::default(),
 			config,
 		})
 	}
