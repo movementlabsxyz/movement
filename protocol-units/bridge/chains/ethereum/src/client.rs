@@ -1,4 +1,5 @@
 use crate::utils::send_transaction;
+use crate::Transaction;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
@@ -15,11 +16,14 @@ use bridge_shared::bridge_contracts::{
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
 };
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, CallConfig, HashLock, HashLockPreImage,
+	InitiatorAddress, MethodName, RecipientAddress, TimeLock,
 };
+use dashmap::DashMap;
+use futures::channel::mpsc;
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
+use std::sync::Arc;
 use url::Url;
 
 use crate::types::{
@@ -86,11 +90,20 @@ pub struct EthClient {
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<InitiatorContract>,
 	counterparty_contract: Option<CounterpartyContract>,
+	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
+	pub failure_rate: f64,
+	pub false_positive_rate: f64,
+	pub call_configs: Arc<DashMap<MethodName, Vec<(usize, CallConfig)>>>,
 	config: Config,
 }
 
 impl EthClient {
-	pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
+	pub async fn new(
+		transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
+		failure_rate: f64,
+		false_positive_rate: f64,
+		config: impl Into<Config>,
+	) -> Result<Self, anyhow::Error> {
 		let config = config.into();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
@@ -98,16 +111,23 @@ impl EthClient {
 			.on_builtin(config.rpc_url.as_str())
 			.await?;
 
+		//TODO: initialise / monitoring here which should setup the ws connection
+
 		// let ws = WsConnect::new(ws_url);
 		// println!("ws {:?}", ws);
 		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
 		// println!("ws_provider {:?}", ws_provider);
+
 		Ok(EthClient {
 			rpc_provider,
 			rpc_port: 8545,
 			ws_provider: None,
 			initiator_contract: None,
 			counterparty_contract: None,
+			transaction_sender,
+			failure_rate,
+			false_positive_rate,
+			call_configs: Default::default(),
 			config,
 		})
 	}

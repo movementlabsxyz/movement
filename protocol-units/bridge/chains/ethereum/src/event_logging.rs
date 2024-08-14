@@ -21,6 +21,7 @@ use std::{pin::Pin, task::Poll};
 
 use crate::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
 
+#[allow(unused)]
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
 	ws: RootProvider<PubSubFrontend>,
@@ -31,6 +32,7 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 	type Hash = EthHash;
 }
 
+#[allow(dead_code)]
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
 	async fn run(
 		rpc_url: &str,

@@ -3,6 +3,9 @@ use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
 use std::{fmt::Debug, hash::Hash};
+use thiserror::Error;
+
+use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
@@ -212,6 +215,39 @@ impl<A, H> CounterpartyCompletedDetails<A, H> {
 			amount: lock_details.amount,
 		}
 	}
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum MethodName {
+	InitiateBridgeTransfer,
+	CompleteBridgeTransferInitiator,
+	CompleteBridgeTransferCounterparty,
+	RefundBridgeTransfer,
+	GetBridgeTransferDetails,
+	LockBridgeTransferAssets,
+	AbortBridgeTransfer,
+}
+
+#[derive(Debug, Error, Clone)]
+pub enum AbstractBlockchainClientError {
+	#[error("Failed to send transaction")]
+	SendError,
+	#[error("Random failure occurred")]
+	RandomFailure,
+}
+
+#[derive(Clone, Debug)]
+pub enum ErrorConfig {
+	None,
+	InitiatorError(BridgeContractInitiatorError),
+	CounterpartyError(BridgeContractCounterpartyError),
+	CustomError(AbstractBlockchainClientError),
+}
+
+#[derive(Debug, Clone)]
+pub struct CallConfig {
+	pub error: ErrorConfig,
+	pub delay: Option<std::time::Duration>,
 }
 
 // Types

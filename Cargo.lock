@@ -3620,6 +3620,23 @@ dependencies = [
 [[package]]
 name = "bridge-service"
 version = "0.0.2"
+dependencies = [
+ "alloy",
+ "async-trait",
+ "bridge-shared",
+ "delegate",
+ "derive_more",
+ "ethereum-bridge",
+ "futures",
+ "futures-time",
+ "futures-timer",
+ "hex",
+ "movement-bridge",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "thiserror",
+ "tracing",
+]
 
 [[package]]
 name = "bridge-shared"
@@ -5399,6 +5416,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bridge-shared",
+ "dashmap 6.0.1",
  "futures",
  "hex",
  "keccak-hash",

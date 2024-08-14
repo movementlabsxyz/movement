@@ -33,7 +33,7 @@ alloy = { workspace = true, features = [
   "sol-types",
 ] }
 [dev-dependencies]
-dashmap = "6.0.1"
+dashmap.workspace = true
 static_str_ops = "0.1.2"
 test-log = { version = "0.2.16", features = ["trace"] }
 tokio.workspace = true
