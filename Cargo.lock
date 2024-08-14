@@ -3625,6 +3625,7 @@ version = "0.0.2"
 name = "bridge-shared"
 version = "0.0.2"
 dependencies = [
+ "alloy",
  "async-trait",
  "dashmap 6.0.1",
  "delegate",
@@ -5403,6 +5404,8 @@ dependencies = [
  "keccak-hash",
  "mcr-settlement-client",
  "poem",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
  "serde",
  "serde_with",
  "thiserror",

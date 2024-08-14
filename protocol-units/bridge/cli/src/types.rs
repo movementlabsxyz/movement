@@ -1,5 +1,5 @@
 use crate::clap::eth_to_movement::EthSharedArgs;
-use ethereum_bridge::Config;
+use ethereum_bridge::client::Config;
 
 impl From<EthSharedArgs> for Config {
 	fn from(args: EthSharedArgs) -> Self {
