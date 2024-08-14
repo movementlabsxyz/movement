@@ -27,8 +27,8 @@ docker compose    \
 Run the `suzuka-full-node`, `suzuka-indexer` and `suzuka-hasura` locally
 ```bash
 rm -rf  ~/.movement/*  \
-      ; docker volume rm $(docker volume ls -q)
-      && docker compose    \
+      ; docker volume rm $(docker volume ls -q) \
+      ; docker compose    \
             --env-file docker/compose/suzuka-indexer/.env  \
             -f docker/compose/suzuka-full-node/docker-compose.yml       \
             -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml      \
