@@ -20,12 +20,7 @@ use rand::prelude::*;
 use serde::Serialize;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
-use std::sync::{Arc, Mutex, RwLock};
-use std::sync::mpsc;
 use std::{sync::{Arc, Mutex, RwLock, mpsc}, thread};
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command as TokioCommand;
-use tokio::sync::oneshot;
 use tokio::{io::{AsyncBufReadExt, BufReader}, process::Command as TokioCommand, sync::oneshot, task};
 
 use url::Url;
@@ -46,7 +41,7 @@ pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: Arc<RwLock<LocalAccount>>
+	pub signer_private_key: Arc<RwLock<LocalAccount>>,
 	pub initiator_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
 }
@@ -62,7 +57,7 @@ impl Config {
 			rpc_url: Some("http://localhost:8080".parse().unwrap()),
 			ws_url: Some("ws://localhost:8080".parse().unwrap()),
 			chain_id: 4.to_string(),
-			signer_private_key: Arc::new(LocalAccount::generate(&mut rng)),
+			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
 			initiator_contract: None,
 			gas_limit: 10_000_000_000,
 		}
