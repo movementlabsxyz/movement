@@ -277,6 +277,7 @@ uuid = { version = "1.10.0", features = ["v4"] }
 tar = "0.4.41"
 flate2 = "1.0.31"
 blake-3 = "1.4.0"
+regex = "1.10.6"
 
 # trying to pin diesel
 # diesel = "=2.1.1"

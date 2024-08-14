@@ -1,6 +1,7 @@
 // pub mod archive;
 // pub mod copy;
 pub mod archive;
+pub mod glob;
 pub mod pipeline;
 pub mod s3;
 use crate::files::package::Package;
