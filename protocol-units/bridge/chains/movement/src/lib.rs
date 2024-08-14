@@ -22,7 +22,7 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::mpsc;
-use std::thread;
+use std::{sync::{Arc, Mutex, RwLock, mpsc}, thread};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command as TokioCommand;
 use tokio::sync::oneshot;
