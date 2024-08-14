@@ -21,8 +21,12 @@ use serde::Serialize;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
+use std::sync::mpsc;
+use std::thread;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command as TokioCommand;
+use tokio::sync::oneshot;
+use tokio::task;
 
 use url::Url;
 
@@ -166,58 +170,71 @@ impl MovementClient {
 	}
 
 	pub async fn new_for_test(config: Config) -> Result<Self, anyhow::Error> {
+		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let node_handle = task::spawn(async move {
+			let mut child = TokioCommand::new("aptos")
+			.args(&["node", "run-local-testnet"])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()?;
 
-		//let mut child = TokioCommand::new("aptos")
-		//.args(&["node", "run-local-testnet"])
-		//.stdout(Stdio::piped())
-		//.stderr(Stdio::piped())
-		//.spawn()?;
-//
-		//let stdout = child.stdout.take().expect("Failed to capture stdout");
-		//let stderr = child.stderr.take().expect("Failed to capture stderr");
-//
-		//let mut stdout_reader = BufReader::new(stdout).lines();
-		//let mut stderr_reader = BufReader::new(stderr).lines();
-//
-//
-		//loop {
-		//	tokio::select! {
-		//		line = stdout_reader.next_line() => {
-		//			match line {
-		//				Ok(Some(line)) => {
-		//					println!("STDOUT: {}", line);
-		//					if line.contains("Setup is complete") {
-		//						println!("Testnet is up and running!");
-		//						break;
-		//					}
-		//				},
-		//				Ok(None) => break, // End of stream
-		//				Err(e) => {
-		//					eprintln!("Error reading stdout: {}", e);
-		//					break;
-		//				}
-		//			}
-		//		},
-		//		line = stderr_reader.next_line() => {
-		//			match line {
-		//				Ok(Some(line)) => {
-		//					println!("STDERR: {}", line);
-		//				},
-		//				Ok(None) => break, // End of stream
-		//				Err(e) => {
-		//					eprintln!("Error reading stderr: {}", e);
-		//					break;
-		//				}
-		//			}
-		//		}
-		//	}
-		//}
+			let stdout = child.stdout.take().expect("Failed to capture stdout");
+			let stderr = child.stderr.take().expect("Failed to capture stderr");
 
-		let node_connection_url = format!("https://aptos.devnet.suzuka.movementlabs.xyz/v1");
+			let mut stdout_reader = BufReader::new(stdout).lines();
+			let mut stderr_reader = BufReader::new(stderr).lines();
+
+
+			loop {
+				tokio::select! {
+					line = stdout_reader.next_line() => {
+						match line {
+							Ok(Some(line)) => {
+								println!("STDOUT: {}", line);
+								if line.contains("Setup is complete") {
+									println!("Testnet is up and running!");
+									let _ = setup_complete_tx.send(());
+                                                                	return Ok(());
+								}
+							},
+							Ok(None) => {
+								return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
+							},
+							Err(e) => {
+								return Err(anyhow::anyhow!("Error reading stdout: {}", e));
+							}
+						}
+					},
+					line = stderr_reader.next_line() => {
+						match line {
+							Ok(Some(line)) => {
+								println!("STDERR: {}", line);
+								if line.contains("Setup is complete") {
+									println!("Testnet is up and running!");
+									let _ = setup_complete_tx.send(());
+                                                                	return Ok(());
+								}
+							},
+							Ok(None) => {
+								return Err(anyhow::anyhow!("Unexpected end of stderr stream"));
+							} 
+							Err(e) => {
+								return Err(anyhow::anyhow!("Error reading stderr: {}", e));
+							}
+						}
+					}
+				}
+			}
+		});
+
+		setup_complete_rx.await.expect("Failed to receive setup completion signal");
+		println!("Setup complete message received.");
+
+		let node_connection_url = format!("http://127.0.0.1:8080");
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let faucet_url = format!("https://faucet.devnet.suzuka.movementlabs.xyz");
+		let faucet_url = format!("http://127.0.0.1:8081");
 		let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
 		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(faucet_url.clone(), node_connection_url.clone())));
 
