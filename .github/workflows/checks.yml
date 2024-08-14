@@ -4,13 +4,6 @@ on:
   push:
 
 jobs:
-
-name: Checks
-
-on:
-  push:
-
-jobs:
   cargo-check:
     strategy:
       matrix:
