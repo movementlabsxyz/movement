@@ -1,0 +1,92 @@
+use aws_sdk_s3::types::{BucketLocationConstraint, CreateBucketConfiguration};
+
+#[derive(Debug, Clone)]
+pub struct BucketConnection {
+	pub client: aws_sdk_s3::Client,
+	pub bucket: String,
+}
+
+impl BucketConnection {
+	pub fn new(client: aws_sdk_s3::Client, bucket: String) -> Self {
+		Self { client, bucket }
+	}
+
+	pub(crate) async fn create_bucket_if_not_exists(&self) -> Result<(), anyhow::Error> {
+		let region = self.client.config().region().ok_or(anyhow::anyhow!(
+			"region not found in client configuration, please set the region"
+		))?;
+
+		let bucket = self.bucket.clone();
+		let bucket_exists = self.client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		if !bucket_exists {
+			let constraint = BucketLocationConstraint::from(region.as_ref());
+			let bucket_configuration =
+				CreateBucketConfiguration::builder().location_constraint(constraint).build();
+			self.client
+				.create_bucket()
+				.create_bucket_configuration(bucket_configuration)
+				.bucket(bucket)
+				.send()
+				.await?;
+		}
+		Ok(())
+	}
+
+	pub(crate) async fn empty_bucket_if_exists(&self) -> Result<(), anyhow::Error> {
+		let bucket = self.bucket.clone();
+		let bucket_exists = self.client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		if bucket_exists {
+			let mut continuation_token = None;
+			loop {
+				let list_objects_output = self
+					.client
+					.list_objects_v2()
+					.bucket(bucket.clone())
+					.set_continuation_token(continuation_token)
+					.send()
+					.await?;
+				if let Some(contents) = list_objects_output.contents {
+					for object in contents {
+						if let Some(key) = object.key {
+							self.client
+								.delete_object()
+								.bucket(bucket.clone())
+								.key(key)
+								.send()
+								.await?;
+						}
+					}
+				}
+				if let Some(token) = list_objects_output.next_continuation_token {
+					continuation_token = Some(token);
+				} else {
+					break;
+				}
+			}
+		}
+		Ok(())
+	}
+
+	pub(crate) async fn destroy_if_exists(&self) -> Result<(), anyhow::Error> {
+		let bucket = self.bucket.clone();
+		let bucket_exists = self.client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		if bucket_exists {
+			self.client.delete_bucket().bucket(bucket).send().await?;
+		}
+		Ok(())
+	}
+
+	pub async fn create(client: aws_sdk_s3::Client, bucket: String) -> Result<Self, anyhow::Error> {
+		let connection = Self::new(client, bucket);
+		connection.create_bucket_if_not_exists().await?;
+		Ok(connection)
+	}
+
+	pub async fn destroy(self, force: bool) -> Result<(), anyhow::Error> {
+		if force {
+			self.empty_bucket_if_exists().await?;
+		}
+		self.destroy_if_exists().await?;
+		Ok(())
+	}
+}

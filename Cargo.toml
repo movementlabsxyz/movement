@@ -25,6 +25,7 @@ members = [
     "util/movement-algs",
     "util/movement-types",
     "util/tracing",
+    "util/syncador",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
@@ -273,6 +274,8 @@ inotify = "0.10.2"
 rustix = "0.38.34"
 paste = "1.0.15"
 uuid = { version = "1.10.0", features = ["v4"] }
+tar = "0.4.41"
+flate2 = "1.0.31"
 blake-3 = "1.4.0"
 
 # trying to pin diesel
@@ -280,6 +283,9 @@ blake-3 = "1.4.0"
 # migrations_internals = "=2.1.1"
 num_cpus = "=1.16.0"
 ahash = "=0.8.11"
+
+aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.42.0"
 
 [workspace.lints.rust]
 dead_code = "deny"

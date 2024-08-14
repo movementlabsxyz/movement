@@ -1,5 +1,5 @@
 [package]
-name = "movement-types"
+name = "syncador"
 version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
@@ -12,17 +12,25 @@ rust-version = { workspace = true }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aptos-types = { workspace = true }
-bcs = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_with = { workspace = true }
 anyhow = { workspace = true }
-sha2 = { workspace = true }
-rand = { workspace = true }
-blake3 = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+flocks = { workspace = true }
+async-stream = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+thiserror = { workspace = true }
+aws-config = { workspace = true }
+aws-sdk-s3 = { workspace = true }
+movement-types = { workspace = true }
+async-trait = { workspace = true }
+tar = { workspace = true }
+flate2 = { workspace = true }
+clap = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true }
+uuid = { workspace = true }
 
 [lints]
 workspace = true

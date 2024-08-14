@@ -1,4 +1,8 @@
 use aptos_types::state_proof::StateProof;
+
+use rand::RngCore;
+use sha2::Digest;
+
 use core::fmt;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +20,12 @@ impl Id {
 
 	pub fn genesis_block() -> Self {
 		Self([0; 32])
+	}
+
+	pub fn random() -> Self {
+		let mut bytes = [0; 32];
+		rand::thread_rng().fill_bytes(&mut bytes);
+		Self(bytes)
 	}
 }
 
