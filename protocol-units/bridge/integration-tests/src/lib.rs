@@ -28,6 +28,7 @@ use aptos_types::{
 	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
 };
 use std::{convert::TryFrom, time::Instant, sync::{Arc, RwLock}};
+use tokio::task;
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -42,14 +43,18 @@ pub struct TestHarness {
 
 impl TestHarness {
 
-	pub async fn new_with_movement() -> Self {
+	pub async fn new_with_movement() -> (Self, tokio::process::Child) {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 		.await
 		.expect("Failed to create EthClient");
-		let movement_client = MovementClient::new_for_test(MovementConfig::build_for_test())
+		let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test())
 			.await
 			.expect("Failed to create MovementClient");
-		Self { eth_client: Some(eth_client), movement_client: Some(movement_client) }
+		(
+			Self { eth_client: Some(eth_client), movement_client: Some(movement_client) 
+			}, 
+			child,
+		)
 	}
 
 	pub fn movement_rest_client(&self) -> &Client {

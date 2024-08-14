@@ -37,8 +37,8 @@ use std::{
 use url::Url;
 
 #[tokio::test]
-async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), anyhow::Error> {
-	let scaffold: TestHarness = TestHarness::new_with_movement().await;
+async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), anyhow::Error> {
+	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
 
 	let rest_client = movement_client.rest_client();
@@ -77,6 +77,7 @@ async fn test_movement_client_should_build_and_fetch_accounts() -> Result<(), an
 			.await
 			.context("Failed to get Bob's account balance")?
 	);
+	child.kill().await.context("Failed to kill the child process")?;
 	Ok(())
 }
 

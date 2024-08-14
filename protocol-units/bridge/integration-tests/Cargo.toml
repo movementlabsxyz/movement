@@ -28,6 +28,7 @@ url = { workspace = true }
 bridge-shared = { workspace = true }
 ethereum-bridge = { workspace = true }
 movement-bridge = { workspace = true }
+tokio = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

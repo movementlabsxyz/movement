@@ -169,20 +169,21 @@ impl MovementClient {
 		})
 	}
 
-	pub async fn new_for_test(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn new_for_test(config: Config) -> Result<(Self, tokio::process::Child), anyhow::Error> {
+
 		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let mut child = TokioCommand::new("aptos")
+		    .args(&["node", "run-local-testnet"])
+		    .stdout(Stdio::piped())
+		    .stderr(Stdio::piped())
+		    .spawn()?;
+	    
+		let stdout = child.stdout.take().expect("Failed to capture stdout");
+		let stderr = child.stderr.take().expect("Failed to capture stderr");
+	    
 		let node_handle = task::spawn(async move {
-			let mut child = TokioCommand::new("aptos")
-			.args(&["node", "run-local-testnet"])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.spawn()?;
-
-			let stdout = child.stdout.take().expect("Failed to capture stdout");
-			let stderr = child.stderr.take().expect("Failed to capture stderr");
-
-			let mut stdout_reader = BufReader::new(stdout).lines();
-			let mut stderr_reader = BufReader::new(stderr).lines();
+		    let mut stdout_reader = BufReader::new(stdout).lines();
+		    let mut stderr_reader = BufReader::new(stderr).lines();
 
 
 			loop {
@@ -239,13 +240,13 @@ impl MovementClient {
 		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(faucet_url.clone(), node_connection_url.clone())));
 
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
-		Ok(MovementClient {
+		Ok((MovementClient {
 			counterparty_address: DUMMY_ADDRESS,
-			initiator_address: Vec::new(), //dummy for now
+			initiator_address: Vec::new(), // dummy for now
 			rest_client,
 			faucet_client,
 			signer: Arc::new(LocalAccount::generate(&mut rng)),
-		})
+		    }, child))
 	}
 
 	pub fn rest_client(&self) -> &Client {
