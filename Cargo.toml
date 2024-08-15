@@ -10,6 +10,7 @@ members = [
     "protocol-units/da/m1/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
+    "protocol-units/syncing/*",
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",

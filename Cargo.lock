@@ -12609,6 +12609,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "syncup"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "async-stream",
+ "async-trait",
+ "futures",
+ "syncador",
+ "tokio",
+]
+
+[[package]]
 name = "sysinfo"
 version = "0.28.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

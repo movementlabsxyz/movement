@@ -16,6 +16,11 @@ pub struct Pull {
 }
 
 impl Pull {
+	/// Creates a new Pull instance.
+	pub fn new(destination_dir: PathBuf) -> Self {
+		Self { destination_dir }
+	}
+
 	/// Iteratively collects all files (not directories) in the specified directory using BFS.
 	async fn collect_files(dir: &Path, entries: &mut Vec<PathBuf>) -> Result<(), anyhow::Error> {
 		let mut queue = VecDeque::new();

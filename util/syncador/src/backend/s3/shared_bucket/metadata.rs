@@ -25,8 +25,8 @@ impl Metadata {
 		Self {
 			application_id: Id::random(),
 			syncer_id: Id::random(),
-			sync_epoch_duration: 1000 * 60 * 60 * 24,
-			retain_epochs_count: 7,
+			sync_epoch_duration: 1000 * 60,
+			retain_epochs_count: 16,
 		}
 	}
 

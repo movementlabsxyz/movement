@@ -4,6 +4,12 @@ pub mod metadata;
 pub mod pull;
 pub mod push;
 
+pub async fn create_random(bucket: String) -> Result<(push::Push, pull::Pull), anyhow::Error> {
+	let config = aws_config::load_from_env().await;
+	let client = aws_sdk_s3::Client::new(&config);
+	create(client, bucket, metadata::Metadata::random()).await
+}
+
 pub async fn create(
 	client: aws_sdk_s3::Client,
 	bucket: String,
