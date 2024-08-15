@@ -1,0 +1,36 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${CONTAINER_REV}
+    container_name: setup
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      # By default, all the listener hostnames and ports are reasonable.
+      # However, for container networking, we need to specify the hostnames on the connection.
+      # You can also use host.docker.internal for the host machine as all of these ports should be exposed.
+      CELESTIA_RPC_CONNECTION_HOSTNAME: ${CELESTIA_RPC_CONNECTION_HOSTNAME:?CELESTIA_RPC_CONNECTION_HOSTNAME is not set}
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: ${CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME:?CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME is not set}
+      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-node
+      FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
+      ETH_RPC_CONNECTION_HOSTNAME: ${ETH_RPC_CONNECTION_HOSTNAME:?ETH_RPC_CONNECTION_HOSTNAME is not set}
+      ETH_RPC_CONNECTION_PROTOCOL: ${ETH_RPC_CONNECTION_PROTOCOL:?ETH_RPC_CONNECTION_PROTOCOL is not set}
+      ETH_RPC_CONNECTION_PORT: ${ETH_RPC_CONNECTION_PORT:?ETH_RPC_CONNECTION_PORT is not set}
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is not set}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY is not set}
+      AWS_REGION: ${AWS_DEFAULT_REGION:?AWS_DEFAULT_REGION is not set}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+
+  celestia-light-node:
+    image: busybox
+    container_name: celestia-light-node
+    command: sh -c 'echo "Starting Celestia light-node services." && sleep infinity'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      setup:
+        condition: service_healthy
