@@ -32,9 +32,7 @@ alloy = { workspace = true, features = [
   "sol-types",
 ] }
 
-bridge-shared.workspace = true
-ethereum-bridge.workspace = true
-movement-bridge.workspace = true
+bridge-supported-chains.workspace = true
 
 [lints]
 workspace = true

@@ -1,3 +1,6 @@
+use crate::ethereum::event_types::EthChainEvent;
+use crate::ethereum::types::CounterpartyCall;
+use crate::ethereum::utils::RngSeededClone;
 use bridge_shared::{
 	counterparty_contract::SmartContractCounterparty,
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
@@ -6,7 +9,6 @@ use bridge_shared::{
 		RecipientAddress,
 	},
 };
-use event_types::EthChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{
 	collections::HashMap,
@@ -14,14 +16,6 @@ use std::{
 	pin::Pin,
 	task::{Context, Poll},
 };
-use types::CounterpartyCall;
-use utils::RngSeededClone;
-
-pub mod client;
-pub mod event_monitoring;
-mod event_types;
-pub mod types;
-mod utils;
 
 pub enum SmartContractCall<A, H> {
 	Initiator(),

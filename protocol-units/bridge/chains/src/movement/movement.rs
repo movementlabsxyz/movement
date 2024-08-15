@@ -1,4 +1,4 @@
-use crate::utils::MovementAddress;
+use crate::movement::utils::MovementAddress;
 use anyhow::Error;
 use aptos_sdk::{
 	move_types::language_storage::TypeTag,
@@ -31,11 +31,9 @@ use tokio::{
 	task,
 };
 
-use url::Url;
+use crate::movement::utils;
 
-mod event_monitoring;
-mod event_types;
-mod utils;
+use url::Url;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";

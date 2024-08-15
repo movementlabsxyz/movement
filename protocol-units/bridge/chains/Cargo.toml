@@ -1,6 +1,6 @@
 [package]
-name = "ethereum-bridge"
-description = "bridge components for the ethereum bridge"
+name = "bridge-supported-chains"
+description = "bridge components for the supported networks"
 authors = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -13,8 +13,12 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+aptos-sdk.workspace = true
+aptos-types.workspace = true
+bcs = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
+derive-new = { workspace = true }
 futures = { workspace = true }
 dashmap = { workspace = true }
 poem = { workspace = true }
@@ -24,6 +28,7 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 rand_chacha = "0.2.2"
 rand = { workspace = true }
 thiserror = { workspace = true }
@@ -39,8 +44,10 @@ alloy = { workspace = true, features = [
 ] }
 alloy-rlp.workspace = true
 
+dot-movement = { workspace = true }
+suzuka-config = { workspace = true }
 bridge-shared = { workspace = true }
-serde_with.workspace = true
+serde_with = { workspace = true }
 url = { workspace = true, features = ["serde"] }
 
 #To be removed after send_transaction refactor

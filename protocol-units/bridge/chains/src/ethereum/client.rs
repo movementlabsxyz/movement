@@ -1,5 +1,4 @@
-use crate::utils::send_transaction;
-use crate::Transaction;
+use crate::ethereum::utils::send_transaction;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
@@ -16,21 +15,18 @@ use bridge_shared::bridge_contracts::{
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
 };
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, CallConfig, HashLock, HashLockPreImage,
-	InitiatorAddress, MethodName, RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	RecipientAddress, TimeLock,
 };
-use dashmap::DashMap;
-use futures::channel::mpsc;
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
-use std::sync::Arc;
 use url::Url;
 
-use crate::types::{
+use crate::ethereum::types::{
 	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
 	EthAddress, EthHash, InitiatorContract,
 };
-use crate::utils::{calculate_storage_slot, send_tx_rules};
+use crate::ethereum::utils::{calculate_storage_slot, send_tx_rules};
 
 const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 const RETRIES: u32 = 6;

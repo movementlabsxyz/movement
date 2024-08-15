@@ -1,5 +1,5 @@
-use crate::types::{EthAddress, EventName};
-use crate::{EthChainEvent, Transaction};
+use crate::ethereum::event_types::EthChainEvent;
+use crate::ethereum::types::{EthAddress, EventName};
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::{address, LogData};
@@ -19,7 +19,7 @@ use bridge_shared::{
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
 
-use crate::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
+use crate::ethereum::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
 
 #[allow(unused)]
 pub struct EthInitiatorMonitoring<A, H> {

@@ -19,11 +19,11 @@ use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
 	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
 };
-use ethereum_bridge::{
+use bridge_supported_chains::ethereum::{
 	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 };
-use movement_bridge::{Config as MovementConfig, MovementClient};
+use bridge_supported_chains::movement::movement::{Config as MovementConfig, MovementClient};
 use rand::SeedableRng;
 use std::{
 	convert::TryFrom,
@@ -36,7 +36,7 @@ alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	WETH9,
-	"../chains/ethereum/abis/WETH9.json"
+	"../chains/abis/WETH9.json"
 );
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,

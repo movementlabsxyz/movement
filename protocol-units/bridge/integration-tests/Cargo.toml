@@ -26,8 +26,7 @@ rand = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
 bridge-shared = { workspace = true }
-ethereum-bridge = { workspace = true }
-movement-bridge = { workspace = true }
+bridge-supported-chains = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]

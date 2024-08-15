@@ -3591,8 +3591,7 @@ dependencies = [
  "aptos-sdk",
  "aptos-types",
  "bridge-shared",
- "ethereum-bridge",
- "movement-bridge",
+ "bridge-supported-chains",
  "rand 0.7.3",
  "reqwest 0.12.5",
  "serde_json",
@@ -3606,15 +3605,13 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "async-trait",
- "bridge-shared",
+ "bridge-supported-chains",
  "delegate",
  "derive_more",
- "ethereum-bridge",
  "futures",
  "futures-time",
  "futures-timer",
  "hex",
- "movement-bridge",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
  "thiserror",
@@ -3641,6 +3638,39 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "bridge-supported-chains"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "alloy-rlp",
+ "anyhow",
+ "aptos-sdk",
+ "aptos-types",
+ "async-trait",
+ "bcs 0.1.4",
+ "bridge-shared",
+ "dashmap 6.0.1",
+ "derive-new",
+ "dot-movement",
+ "futures",
+ "hex",
+ "keccak-hash",
+ "mcr-settlement-client",
+ "poem",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "suzuka-config",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
 ]
 
 [[package]]
@@ -5370,32 +5400,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethereum-bridge"
-version = "0.0.2"
-dependencies = [
- "alloy",
- "alloy-rlp",
- "anyhow",
- "async-trait",
- "bridge-shared",
- "dashmap 6.0.1",
- "futures",
- "hex",
- "keccak-hash",
- "mcr-settlement-client",
- "poem",
- "rand 0.7.3",
- "rand_chacha 0.2.2",
- "serde",
- "serde_with",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
-]
-
-[[package]]
 name = "ethnum"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5561,7 +5565,7 @@ checksum = "2fc715d38bea7b5bf487fcd79bcf8c209f0b58014f3018a7a19c2b855f472048"
 dependencies = [
  "az",
  "bytemuck",
- "half 1.8.3",
+ "half 2.4.1",
  "typenum",
 ]
 
@@ -8812,34 +8816,6 @@ dependencies = [
  "itertools 0.12.1",
  "movement-types",
  "tokio",
-]
-
-[[package]]
-name = "movement-bridge"
-version = "0.0.2"
-dependencies = [
- "anyhow",
- "aptos-api",
- "aptos-sdk",
- "aptos-types",
- "async-trait",
- "bcs 0.1.4",
- "bridge-shared",
- "derive-new",
- "dot-movement",
- "hex",
- "keccak-hash",
- "once_cell",
- "poem",
- "rand 0.7.3",
- "serde",
- "serde_json",
- "suzuka-config",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
 ]
 
 [[package]]

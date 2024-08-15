@@ -5,7 +5,7 @@ use bridge_shared::{
 	types::LockDetails,
 };
 
-use crate::types::{CompletedDetails, EthAddress};
+use crate::ethereum::types::{CompletedDetails, EthAddress};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

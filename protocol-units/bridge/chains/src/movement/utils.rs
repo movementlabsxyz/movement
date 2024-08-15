@@ -1,4 +1,3 @@
-use crate::MovementClient;
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
@@ -26,6 +25,8 @@ use derive_new::new;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
+
+use crate::movement::movement::MovementClient;
 
 #[derive(Debug, Error)]
 pub enum MovementAddressError {

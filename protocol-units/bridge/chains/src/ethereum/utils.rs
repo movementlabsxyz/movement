@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::types::EthAddress;
+use crate::ethereum::types::EthAddress;
 use alloy::contract::{CallBuilder, CallDecoder};
 use alloy::network::Ethereum;
 use alloy::primitives::U256;
