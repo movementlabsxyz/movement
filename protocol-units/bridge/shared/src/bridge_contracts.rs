@@ -130,13 +130,14 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash, Self::Value>>>;
 }
 
 #[async_trait::async_trait]
 pub trait BridgeContractWETH9: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
+	type Value: BridgeValueType;
 
-	async fn deposit_weth(&mut self, amount: Amount) -> BridgeContractWETH9Result<()>;
+	async fn deposit_weth(&mut self, amount: Amount<Self::Value>) -> BridgeContractWETH9Result<()>;
 }

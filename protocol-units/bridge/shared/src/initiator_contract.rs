@@ -11,7 +11,7 @@ use crate::{
 	},
 };
 
-pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+pub type SCIResult<A, H, V> = Result<SmartContractInitiatorEvent<A, H, V>, SmartContractInitiatorError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorEvent<A, H, V> {
@@ -19,8 +19,8 @@ pub enum SmartContractInitiatorEvent<A, H, V> {
 	CompletedBridgeTransfer(BridgeTransferId<H>),
 }
 
-impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEvent<A, H> {
-	fn from(event: BridgeContractInitiatorEvent<A, H>) -> Self {
+impl<A, H, V> From<BridgeContractInitiatorEvent<A, H, V>> for SmartContractInitiatorEvent<A, H, V> {
+	fn from(event: BridgeContractInitiatorEvent<A, H, V>) -> Self {
 		match event {
 			BridgeContractInitiatorEvent::Initiated(details) => {
 				SmartContractInitiatorEvent::InitiatedBridgeTransfer(details)
@@ -44,18 +44,18 @@ pub enum SmartContractInitiatorError {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum InitiatorEvent<A, H> {
-	Initiated(BridgeTransferDetails<A, H>),
+pub enum InitiatorEvent<A, H, V> {
+	Initiated(BridgeTransferDetails<A, H, V>),
 	Completed(BridgeTransferId<H>),
 	Refunded(BridgeTransferId<H>),
 }
 
 #[derive(Debug)]
-pub enum InitiatorCall<A, H> {
+pub enum InitiatorCall<A, H, V> {
 	InitiateBridgeTransfer(
 		InitiatorAddress<A>,
 		RecipientAddress<Vec<u8>>,
-		Amount,
+		Amount<V>,
 		TimeLock,
 		HashLock<H>,
 	),
@@ -63,17 +63,18 @@ pub enum InitiatorCall<A, H> {
 }
 
 #[derive(Debug)]
-pub struct SmartContractInitiator<A, H, R> {
-	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
-	pub accounts: HashMap<A, Amount>,
+pub struct SmartContractInitiator<A, H, R, V> {
+	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H, V>>,
+	pub accounts: HashMap<A, Amount<V>>,
 	pub rng: R,
 }
 
-impl<A, H, R> SmartContractInitiator<A, H, R>
+impl<A, H, R, V> SmartContractInitiator<A, H, R, V>
 where
 	A: BridgeAddressType,
 	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
 	R: Rng,
+	V: Clone + Copy,
 {
 	pub fn new(rng: R) -> Self {
 		Self { initiated_transfers: HashMap::new(), accounts: HashMap::default(), rng }
@@ -83,10 +84,10 @@ where
 		&mut self,
 		initiator: InitiatorAddress<A>,
 		recipient: RecipientAddress<Vec<u8>>,
-		amount: Amount,
+		amount: Amount<V>,
 		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
-	) -> SCIResult<A, H> {
+	) -> SCIResult<A, H, V> {
 		let bridge_transfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
 
 		tracing::trace!(
@@ -123,10 +124,10 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		_accounts: &mut HashMap<A, Amount>,
+		_accounts: &mut HashMap<A, Amount<V>>,
 		transfer_id: BridgeTransferId<H>,
 		pre_image: HashLockPreImage,
-	) -> SCIResult<A, H> {
+	) -> SCIResult<A, H, V> {
 		tracing::trace!("SmartContractInitiator: Completing bridge transfer: {:?}", transfer_id);
 
 		// complete bridge transfer

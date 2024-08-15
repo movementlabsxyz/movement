@@ -26,9 +26,10 @@ pub struct EthInitiatorMonitoring<A, H> {
 	ws: RootProvider<PubSubFrontend>,
 }
 
-impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, EthHash> {
+impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, EthHash, EthValue> {
 	type Address = EthAddress;
 	type Hash = EthHash;
+	type Value = EthValue;
 }
 
 impl EthInitiatorMonitoring<EthAddress, EthHash> {

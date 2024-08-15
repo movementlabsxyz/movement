@@ -1,17 +1,18 @@
 use std::collections::HashMap;
-
+use std::ops::{AddAssign};
 use crate::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferId, BridgedToken, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
 };
+use std::fmt::Debug;
 use thiserror::Error;
 
-pub type SCCResult<A, H> =
-	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
+pub type SCCResult<A, H, V> =
+	Result<SmartContractCounterpartyEvent<A, H, V>, SmartContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmartContractCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
+pub enum SmartContractCounterpartyEvent<A, H, V> {
+	LockedBridgeTransfer(LockDetails<A, H, V>),
+	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H, V>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -23,7 +24,7 @@ pub enum SmartContractCounterpartyError {
 }
 
 #[derive(Debug)]
-pub enum CounterpartyCall<A, H> {
+pub enum CounterpartyCall<A, H, V> {
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 	LockBridgeTransfer(
 		BridgeTransferId<H>,
@@ -31,20 +32,21 @@ pub enum CounterpartyCall<A, H> {
 		TimeLock,
 		InitiatorAddress<Vec<u8>>,
 		RecipientAddress<A>,
-		Amount,
+		Amount<V>,
 	),
 }
 
 #[derive(Debug)]
-pub struct SmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
+pub struct SmartContractCounterparty<A, H, V> {
+	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H, V>>,
 }
 
-impl<A, H> SmartContractCounterparty<A, H>
+impl<A, H, V> SmartContractCounterparty<A, H, V>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	H: From<HashLockPreImage>,
+	V: Copy + Clone + Debug + AddAssign<V>,
 {
 	pub fn new() -> Self {
 		Self { locked_transfers: HashMap::new() }
@@ -58,8 +60,8 @@ where
 		time_lock: TimeLock,
 		initiator_address: InitiatorAddress<Vec<u8>>,
 		recipient_address: RecipientAddress<A>,
-		amount: Amount,
-	) -> SCCResult<A, H> {
+		amount: Amount<V>,
+	) -> SCCResult<A, H, V> {
 		tracing::trace!(
 			"SmartContractCounterparty: Locking bridge transfer: {:?}",
 			bridge_transfer_id
@@ -88,10 +90,10 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		accounts: &mut HashMap<A, Amount>,
+		accounts: &mut HashMap<A, Amount<V>>,
 		bridge_transfer_id: &BridgeTransferId<H>,
 		pre_image: HashLockPreImage,
-	) -> SCCResult<A, H> {
+	) -> SCCResult<A, H, V> {
 		let transfer = self
 			.locked_transfers
 			.remove(bridge_transfer_id)
@@ -111,16 +113,18 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
-		let balance = accounts.entry(account).or_insert(0u64);
-		match transfer.amount.0 {
-			BridgedToken::Eth(v) => **balance += v,
-			BridgedToken::Weth(v) => **balance += v,
-			BridgedToken::WethAndEth((w, v)) => {
-				todo!();
-				// **balance += weth_amount;
-				// **balance += eth_amount;
-			}
-		}
+		// let balance = accounts.entry(account).or_insert(Amount(0));
+		
+		// match transfer.amount.0 {
+		// 	_ => balance += transfer.amount.0,
+		// 	// BridgedToken::Eth(v) => **balance += v,
+		// 	// BridgedToken::Weth(v) => **balance += v,
+		// 	// BridgedToken::WethAndEth((w, v)) => {
+		// 	// 	todo!();
+		// 	// 	// **balance += weth_amount;
+		// 	// 	// **balance += eth_amount;
+		// 	// }
+		// }
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
 			CounterpartyCompletedDetails::from_lock_details(transfer, pre_image),

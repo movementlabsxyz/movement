@@ -154,7 +154,7 @@ impl TestHarness {
 		println!("Initiator address: {:?}", initiator_address);
 		let caller: Address = initiator_address.0 .0;
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client.deposit_weth_and_approve(U256::from(amount.weth())).await.expect("Failed to deposit WETH");
+		eth_client.deposit_weth_and_approve(initiator_address.0.0, U256::from(amount.weth())).await.expect("Failed to deposit WETH");
 		eth_client.initiate_bridge_transfer(
 			initiator_address,
 			recipient_address,

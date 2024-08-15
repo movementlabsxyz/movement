@@ -142,7 +142,7 @@ impl From<Uint<256, 4>> for TimeLock {
 
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Amount<V>(pub V);
-
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EthValue {
 	Weth(u64),
 	Eth(u64),

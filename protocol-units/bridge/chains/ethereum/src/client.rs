@@ -287,7 +287,7 @@ impl BridgeContractInitiator for EthClient {
 				FixedBytes(hash_lock.0),
 				U256::from(time_lock.0),
 			)
-			.value(U256::from(amount.0));
+			.value(U256::from(amount.0)).from(_initiator_address.0.0);
 		let _ =
 			send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 				.await
