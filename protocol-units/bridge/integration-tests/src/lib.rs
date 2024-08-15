@@ -14,8 +14,10 @@ use ethereum_bridge::{
 	types::{AlloyProvider, AtomicBridgeInitiator, WETH9, EthAddress},
 	Config as EthConfig, EthClient,
 };
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
+use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
 
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
@@ -89,9 +91,24 @@ impl TestHarness {
 			.expect("Failed to initialize contract");
 	}
 
-	pub async fn deposit_weth(&mut self, amount: U256) {
+	pub async fn initiate_bridge_transfer_weth(&mut self,
+		initiator_address: InitiatorAddress<EthAddress>,
+		recipient_address: RecipientAddress<Vec<u8>>,
+		hash_lock: HashLock<[u8; 32]>,
+		time_lock: TimeLock,
+		amount: Amount // the amount
+	) -> BridgeContractInitiatorResult<()> {
+		println!("Initiator address: {:?}", initiator_address);
+		let caller: Address = initiator_address.0 .0;
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client.deposit_weth_and_approve(amount).await.expect("Failed to deposit WETH");
+		eth_client.deposit_weth_and_approve(U256::from(amount.weth())).await.expect("Failed to deposit WETH");
+		eth_client.initiate_bridge_transfer(
+			initiator_address,
+			recipient_address,
+			hash_lock,
+			time_lock,
+			amount,
+		).await
 	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {

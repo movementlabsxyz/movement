@@ -30,6 +30,8 @@ pub mod utils;
 
 use crate::types::{AtomicBridgeCounterparty, AtomicBridgeInitiator, WETH9, EthAddress, EthHash};
 
+use alloy::providers::WalletProvider;
+
 const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 const RETRIES: u32 = 6;
 
@@ -56,11 +58,12 @@ pub struct Config {
 
 impl Config {
 	pub fn build_for_test() -> Self {
+		let signer_private_key = PrivateKeySigner::random();
 		Config {
 			rpc_url: "http://localhost:8545".parse().unwrap(),
 			ws_url: "ws://localhost:8545".parse().unwrap(),
 			// This has to be the same as the one in the `alloy` config
-			signer_private_key: PrivateKeySigner::random(),
+			signer_private_key,
 			initiator_contract: None,
 			counterparty_contract: None,
 			weth_contract: None,
@@ -144,19 +147,20 @@ impl EthClient {
 		Ok(())
 	}
 
-	pub async fn deposit_weth_and_approve(&mut self, amount: U256) -> Result<(), anyhow::Error> {
+
+	pub async fn deposit_weth_and_approve(&mut self, caller: Address, amount: U256) -> Result<(), anyhow::Error> {
+		let provider_signer = self.rpc_provider.default_signer_address();
+		let deposit_weth_signer = self.get_signer_address();
+		println!("provider_signer: {:?}", provider_signer);
+		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
 		let contract = self.weth_contract().expect("WETH contract not set");
-		let call = contract.deposit().value(amount);
+		let call = contract.deposit().value(amount).from(caller);
 		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to deposit eth to weth contract");
-		// Trying to determine the deposit-weth_signer in another way
-		let wallet: &mut EthereumWallet = self.rpc_provider_mut().wallet_mut();
-		wallet.register_default_signer(LocalSigner::from(signer));
-		let deposit_weth_signer =  <EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet);
-		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
+		
 	
-		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract.approve(self.initiator_contract_address()?, amount);
+		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract.approve(self.initiator_contract_address()?, amount).from(deposit_weth_signer);
 		let WETH9::balanceOfReturn { _0: balance } = contract.balanceOf(deposit_weth_signer).call().await.expect("Failed to get balance");
 		println!("balance: {}", balance);
 	
@@ -276,11 +280,12 @@ impl BridgeContractInitiator for EthClient {
 		time_lock: TimeLock,
 		amount: Amount // the amount
 	) -> BridgeContractInitiatorResult<()> {
+		let initiate_bridge_signer = self.get_signer_address();
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
-		let initiate_bridge_signer = self.get_signer_address();
+		
 		println!("initiate_bridge_signer: {:?}", initiate_bridge_signer);
 		// println!("signer: {:?}", signer);
 		let call = 	
@@ -289,7 +294,7 @@ impl BridgeContractInitiator for EthClient {
 						FixedBytes(recipient_bytes),
 						FixedBytes(hash_lock.0),
 						U256::from(time_lock.0),
-					).value(U256::from(amount.eth()));
+					).value(U256::from(amount.eth())).from(initiate_bridge_signer);
 
 		let _ = send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await

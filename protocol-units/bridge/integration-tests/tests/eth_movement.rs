@@ -95,31 +95,25 @@ async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
+	let matching_signer_address = harness.eth_signer_address();
 
-	println!("signer_address: {:?}", signer_address);
+	assert_eq!(signer_address, matching_signer_address, "Signer address mismatch");
+
 	harness.deploy_init_contracts().await;
-
-	harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.deposit_weth_and_approve(U256::from(1))
-		.await;
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
 	harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
-			HashLock(hash_lock),
-			TimeLock(100),
-			Amount(BridgedToken::Weth(1)), // Eth
-		)
-		.await
+		.initiate_bridge_transfer_weth(
+		InitiatorAddress(EthAddress(signer_address)),
+		RecipientAddress(recipient),
+		HashLock(hash_lock),
+		TimeLock(100),
+		Amount(BridgedToken::Weth(1)),
+		).await
 		.expect("Failed to initiate bridge transfer");
+		
 }
 
 // #[tokio::test]
