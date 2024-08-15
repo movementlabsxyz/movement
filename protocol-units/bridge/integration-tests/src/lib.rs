@@ -57,7 +57,10 @@ impl TestHarness {
 	}
 
 	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
-		self.movement_client().expect("Could not fetch Movement client").faucet_client()
+		self.movement_client()
+			.expect("Could not fetch Movement client")
+			.faucet_client()
+			.expect("Faucet client not initialized")
 	}
 
 	pub fn movement_client(&self) -> Result<&MovementClient> {

@@ -3,35 +3,35 @@ use alloy::{
 	primitives::{address, keccak256},
 	providers::Provider,
 };
+use anyhow::Context;
+use anyhow::Result;
+use aptos_sdk::{
+	coin_client::CoinClient,
+	rest_client::{Client, FaucetClient},
+	types::LocalAccount,
+};
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
 	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use ethereum_bridge::types::EthAddress;
-use anyhow::Context;
-use aptos_sdk::{
-	types::LocalAccount,
-	rest_client::{Client, FaucetClient},
-	coin_client::CoinClient
-}; 
-use rand::{rngs::StdRng, SeedableRng}; 
-use anyhow::Result; 
+use rand::{rngs::StdRng, SeedableRng};
 use tokio;
 
-use aptos_logger::Logger;
 use aptos_language_e2e_tests::{
 	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
 };
+use aptos_logger::Logger;
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
 	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
 };
 use std::{
-	convert::TryFrom, 
-	time::Instant,
+	convert::TryFrom,
+	process::{Command, Stdio},
 	str::FromStr,
-	process::{Command, Stdio}
+	time::Instant,
 };
 
 use url::Url;
@@ -43,9 +43,9 @@ async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), any
 
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client.faucet_client();	
+	let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng); 
+	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
 	// Print account addresses.
 	println!("\n=== Addresses ===");
@@ -59,7 +59,7 @@ async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), any
 	faucet_client
 		.create_account(bob.address())
 		.await
-		.context("Failed to fund Bob's account")?; 
+		.context("Failed to fund Bob's account")?;
 
 	// Print initial balances.
 	println!("\n=== Initial Balances ===");

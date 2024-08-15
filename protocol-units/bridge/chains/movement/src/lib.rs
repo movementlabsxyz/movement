@@ -1,5 +1,9 @@
 use crate::utils::MovementAddress;
+<<<<<<< HEAD
 use anyhow::Error;
+=======
+use anyhow::{Error, Result};
+>>>>>>> eng-546-atomic-bridge
 use aptos_sdk::{
 	move_types::language_storage::TypeTag,
 	rest_client::{Client, FaucetClient},
@@ -82,13 +86,14 @@ pub struct MovementClient {
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The Apotos Rest Client
-	pub faucet_client: Arc<RwLock<FaucetClient>>,
+	pub faucet_client: Option<Arc<RwLock<FaucetClient>>>,
 	///The signer account
 	signer: Arc<LocalAccount>,
 }
 
 impl MovementClient {
 	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
+<<<<<<< HEAD
 		let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
 		let suzuka_config =
 			dot_movement.try_get_config_from_json::<suzuka_config::Config>().unwrap();
@@ -102,10 +107,14 @@ impl MovementClient {
 
 		let node_connection_url =
 			format!("http://{}:{}", node_connection_address, node_connection_port);
+=======
+		let node_connection_url = format!("http://127.0.0.1:8080");
+>>>>>>> eng-546-atomic-bridge
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 
 		let rest_client = Client::new(node_connection_url.clone());
 
+<<<<<<< HEAD
 		let faucet_listen_address = suzuka_config
 			.execution_config
 			.maptos_config
@@ -127,6 +136,8 @@ impl MovementClient {
 			node_connection_url.clone(),
 		)));
 
+=======
+>>>>>>> eng-546-atomic-bridge
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
@@ -135,7 +146,7 @@ impl MovementClient {
 			counterparty_address: DUMMY_ADDRESS,
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
-			faucet_client,
+			faucet_client: None,
 			signer: Arc::new(signer),
 		})
 	}
@@ -219,7 +230,7 @@ impl MovementClient {
 				counterparty_address: DUMMY_ADDRESS,
 				initiator_address: Vec::new(), // dummy for now
 				rest_client,
-				faucet_client,
+				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},
 			child,
@@ -230,8 +241,12 @@ impl MovementClient {
 		&self.rest_client
 	}
 
-	pub fn faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
-		&self.faucet_client
+	pub fn faucet_client(&self) -> Result<&Arc<RwLock<FaucetClient>>> {
+		if let Some(faucet_client) = &self.faucet_client {
+			Ok(faucet_client)
+		} else {
+			Err(anyhow::anyhow!("Faucet client not initialized"))
+		}
 	}
 }
 
