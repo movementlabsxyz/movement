@@ -3607,7 +3607,10 @@ dependencies = [
  "alloy-network",
  "alloy-sol-types",
  "anyhow",
+ "aptos-language-e2e-tests",
+ "aptos-logger",
  "aptos-sdk",
+ "aptos-types",
  "bridge-shared",
  "ethereum-bridge",
  "movement-bridge",
@@ -3615,6 +3618,7 @@ dependencies = [
  "reqwest 0.12.5",
  "serde_json",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -3625,6 +3629,7 @@ version = "0.0.2"
 name = "bridge-shared"
 version = "0.0.2"
 dependencies = [
+ "alloy",
  "async-trait",
  "dashmap 6.0.1",
  "delegate",
@@ -5403,6 +5408,8 @@ dependencies = [
  "keccak-hash",
  "mcr-settlement-client",
  "poem",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
  "serde",
  "serde_with",
  "thiserror",
@@ -8843,7 +8850,6 @@ dependencies = [
  "bcs 0.1.4",
  "bridge-shared",
  "derive-new",
- "dot-movement",
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
@@ -8852,7 +8858,6 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "serde_json",
- "suzuka-config",
  "thiserror",
  "tokio",
  "tracing",

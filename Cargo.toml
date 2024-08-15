@@ -182,6 +182,7 @@ alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev 
     "node-bindings",
     "rpc-types-trace",
     "json-rpc",
+    "json-abi",
     "rpc-client",
     "signers",
     "signer-yubihsm",
