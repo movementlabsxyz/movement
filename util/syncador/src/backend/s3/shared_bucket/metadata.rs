@@ -3,6 +3,8 @@ use movement_types::Id;
 use std::collections::HashSet;
 use std::time;
 
+pub const DEFAULT_SYNC_EPOCH_DURATION: u64 = 1000 * 60;
+
 #[derive(Debug, Clone)]
 pub struct Metadata {
 	pub application_id: Id,
@@ -25,7 +27,7 @@ impl Metadata {
 		Self {
 			application_id: Id::random(),
 			syncer_id: Id::random(),
-			sync_epoch_duration: 1000 * 60,
+			sync_epoch_duration: DEFAULT_SYNC_EPOCH_DURATION,
 			retain_epochs_count: 16,
 		}
 	}

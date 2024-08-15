@@ -5498,6 +5498,7 @@ dependencies = [
  "anyhow",
  "serde",
  "serde_json",
+ "syncup",
  "tokio",
 ]
 
@@ -12509,6 +12510,7 @@ dependencies = [
  "celestia-types",
  "commander",
  "dot-movement",
+ "futures",
  "godfig",
  "hex",
  "m1-da-light-node-setup",
@@ -12519,6 +12521,7 @@ dependencies = [
  "serde",
  "serde_json",
  "suzuka-config",
+ "syncup",
  "tempfile",
  "tokio",
  "tokio-stream",

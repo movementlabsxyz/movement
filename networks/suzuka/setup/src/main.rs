@@ -1,5 +1,7 @@
 use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use std::future::Future;
+use std::pin::Pin;
 use suzuka_config::Config;
 use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
 use tokio::signal::unix::signal;
@@ -39,6 +41,24 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+
+	// check if the MOVEMENT_SYNC environment variable is set
+	let sync_task: Pin<Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>> =
+		if let Ok(bucket_comma_glob) = std::env::var("MOVEMENT_SYNC") {
+			let mut bucket_comma_glob = bucket_comma_glob.split(',');
+			let bucket = bucket_comma_glob.next().context(
+				"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
+			)?;
+			let glob = bucket_comma_glob.next().context(
+				"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
+			)?;
+
+			let sync_task = dot_movement.sync(glob, bucket.to_string()).await?;
+			Box::pin(async { sync_task.await })
+		} else {
+			Box::pin(async { futures::future::pending::<Result<(), anyhow::Error>>().await })
+		};
+
 	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
 
 	// get a matching godfig object
@@ -65,6 +85,10 @@ async fn main() -> Result<(), anyhow::Error> {
 		}
 		_ = stop_rx.changed() => {
 			tracing::info!("Cancellation received, killing anvil task.");
+		}
+		// sync task
+		_ = sync_task => {
+			tracing::info!("Sync task finished.");
 		}
 	}
 

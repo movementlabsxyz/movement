@@ -91,7 +91,7 @@ monza-config = { path = "networks/monza/monza-config" }
 flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
-
+syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
 
 # Serialization and Deserialization

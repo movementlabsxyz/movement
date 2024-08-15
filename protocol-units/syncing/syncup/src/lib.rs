@@ -71,8 +71,7 @@ pub async fn syncup(
 	root_dir: PathBuf,
 	glob: &str,
 	target: Target,
-	upsync_period: std::time::Duration,
-) -> Result<(impl std::future::Future<Output = Result<(), anyhow::Error>>), anyhow::Error> {
+) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
 	// create the pipelines for the target
 	let (push_pipeline, pull_pipeline) =
 		target.create_pipelines(root_dir.clone(), glob, Notifier::new(1).0).await?;
@@ -82,7 +81,9 @@ pub async fn syncup(
 
 	// Create the upsync task using tokio::time::interval
 	let upsync_task = async move {
-		let mut interval = interval(upsync_period);
+		let mut interval = interval(std::time::Duration::from_millis(
+			s3::shared_bucket::metadata::DEFAULT_SYNC_EPOCH_DURATION,
+		));
 		loop {
 			interval.tick().await;
 			push_pipeline.push(syncador::Package::null()).await?;
