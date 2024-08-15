@@ -19,9 +19,9 @@ use utils::RngSeededClone;
 
 pub mod client;
 pub mod event_monitoring;
-mod event_types;
+pub mod event_types;
 pub mod types;
-mod utils;
+pub mod utils;
 
 pub enum SmartContractCall<A, H> {
 	Initiator(),

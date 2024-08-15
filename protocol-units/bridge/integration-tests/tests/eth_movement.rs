@@ -1,7 +1,7 @@
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
-	providers::Provider,
+	providers::{Provider, WalletProvider},
 };
 use anyhow::Context;
 use anyhow::Result;
@@ -102,7 +102,6 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 	];
 
 	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
-	println!("provider: {:?}", provider);
 	let accounts = provider.get_accounts().await.expect("Failed to get accounts");
 	assert_eq!(accounts.len(), expected_accounts.len());
 

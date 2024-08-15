@@ -20,6 +20,7 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 derive-new = { workspace = true }
+futures = { workspace = true }
 hex = { workspace = true }
 poem = { workspace = true }
 keccak-hash = { workspace = true }

@@ -1,9 +1,5 @@
 use crate::utils::MovementAddress;
-<<<<<<< HEAD
-use anyhow::Error;
-=======
-use anyhow::{Error, Result};
->>>>>>> eng-546-atomic-bridge
+use anyhow::Result;
 use aptos_sdk::{
 	move_types::language_storage::TypeTag,
 	rest_client::{Client, FaucetClient},
@@ -22,12 +18,9 @@ use bridge_shared::{
 };
 use rand::prelude::*;
 use serde::Serialize;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::str::FromStr;
-use std::{
-	sync::{mpsc, Arc, Mutex, RwLock},
-	thread,
-};
+use std::sync::{Arc, RwLock};
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::Command as TokioCommand,
@@ -39,7 +32,8 @@ use url::Url;
 
 mod event_monitoring;
 mod event_types;
-mod utils;
+mod types;
+pub mod utils;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
@@ -93,51 +87,11 @@ pub struct MovementClient {
 
 impl MovementClient {
 	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
-<<<<<<< HEAD
-		let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
-		let suzuka_config =
-			dot_movement.try_get_config_from_json::<suzuka_config::Config>().unwrap();
-		let node_connection_address = suzuka_config
-			.execution_config
-			.maptos_config
-			.client
-			.maptos_rest_connection_hostname;
-		let node_connection_port =
-			suzuka_config.execution_config.maptos_config.client.maptos_rest_connection_port;
-
-		let node_connection_url =
-			format!("http://{}:{}", node_connection_address, node_connection_port);
-=======
 		let node_connection_url = format!("http://127.0.0.1:8080");
->>>>>>> eng-546-atomic-bridge
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 
 		let rest_client = Client::new(node_connection_url.clone());
 
-<<<<<<< HEAD
-		let faucet_listen_address = suzuka_config
-			.execution_config
-			.maptos_config
-			.client
-			.maptos_faucet_rest_connection_hostname
-			.clone();
-		let faucet_listen_port = suzuka_config
-			.execution_config
-			.maptos_config
-			.client
-			.maptos_faucet_rest_connection_port
-			.clone();
-
-		let faucet_connection_url =
-			format!("http://{}:{}", node_connection_address, node_connection_port);
-		let faucet_listen_url = Url::from_str(faucet_connection_url.as_str()).unwrap();
-		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
-			faucet_listen_url.clone(),
-			node_connection_url.clone(),
-		)));
-
-=======
->>>>>>> eng-546-atomic-bridge
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
