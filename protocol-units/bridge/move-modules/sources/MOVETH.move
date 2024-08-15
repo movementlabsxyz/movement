@@ -8,6 +8,7 @@ module moveth::moveth {
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset, FungibleStore};
     use aptos_framework::object::{Self, Object, ExtendRef};
     use aptos_framework::primary_fungible_store;
+    use aptos_framework::resource_account;
     use std::option;
     use std::signer;
     use std::string::{Self, utf8};
@@ -101,9 +102,9 @@ module moveth::moveth {
     /// Ensure any stores for the stablecoin are untransferable.
     /// Store Roles, Management and State resources in the Metadata object.
     /// Override deposit and withdraw functions of the newly created asset/token to add custom denylist logic.
-    fun init_module(moveth_signer: &signer) {
+    fun init_module(resource_account: &signer) {
         // Create the stablecoin with primary store support.
-        let constructor_ref = &object::create_named_object(moveth_signer, ASSET_SYMBOL);
+        let constructor_ref = &object::create_named_object(resource_account, ASSET_SYMBOL);
         primary_fungible_store::create_primary_store_enabled_fungible_asset(
             constructor_ref,
             option::none(),
@@ -147,12 +148,12 @@ module moveth::moveth {
         // This ensures all transfer will call withdraw and deposit functions in this module and perform the necessary
         // checks.
         let deposit = function_info::new_function_info(
-            moveth_signer,
+            resource_account,
             string::utf8(b"moveth"),
             string::utf8(b"deposit"),
         );
         let withdraw = function_info::new_function_info(
-            moveth_signer,
+            resource_account,
             string::utf8(b"moveth"),
             string::utf8(b"withdraw"),
         );

@@ -2,6 +2,10 @@ module atomic_bridge::atomic_bridge_counterparty {
     use std::signer;
     use std::event;
     use std::vector;
+    use aptos_framework::account;
+    #[test_only]
+    use aptos_framework::account::create_account_for_test;
+    use aptos_framework::resource_account;
     use aptos_framework::timestamp;
     use aptos_framework::aptos_hash::keccak256;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -25,6 +29,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     struct BridgeConfig has key {
         moveth_minter: address,
         bridge_module_deployer: address,
+        signer_cap: account::SignerCapability,
     }
 
     #[event]
@@ -51,6 +56,10 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
     
     entry fun init_module(deployer: &signer) {
+
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(deployer, @source_account);
+        let resource_signer = account::create_signer_with_capability(&resource_signer_cap);
+
         let bridge_transfer_store = BridgeTransferStore {
             pending_transfers: smart_table::new(),
             completed_transfers: smart_table::new(),
@@ -59,6 +68,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let bridge_config = BridgeConfig {
             moveth_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
+            signer_cap: resource_signer_cap
         };
         move_to(deployer, bridge_transfer_store);
         move_to(deployer, bridge_config);
@@ -100,9 +110,9 @@ module atomic_bridge::atomic_bridge_counterparty {
         caller: &signer,
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
-        master_minter: &signer,
-    ) acquires BridgeTransferStore, BridgeConfig {
+    ) acquires BridgeTransferStore, BridgeConfig, {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+        let resource_signer = account::create_signer_with_capability(&borrow_global<BridgeConfig>(@atomic_bridge).signer_cap);
         let bridge_store = borrow_global_mut<BridgeTransferStore>(config_address);
         let details: BridgeTransferDetails = smart_table::remove(&mut bridge_store.pending_transfers, bridge_transfer_id);
         // Check secret against details.hash_lock
@@ -110,13 +120,13 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(computed_hash == details.hash_lock, 2);
 
         // Make caller a minter of MovETH
-        moveth::add_minter(master_minter, signer::address_of(caller));
+        moveth::add_minter(&resource_signer, signer::address_of(caller));
 
         // Mint moveth tokens to the recipient
         moveth::mint(caller, details.recipient, details.amount);
 
         // Remove caller from the minter list, now that minting is complete
-        moveth::remove_minter(master_minter, signer::address_of(caller));
+        moveth::remove_minter(&resource_signer, signer::address_of(caller));
 
         smart_table::add(&mut bridge_store.completed_transfers, bridge_transfer_id, details);
         event::emit(
@@ -154,7 +164,10 @@ module atomic_bridge::atomic_bridge_counterparty {
     ) acquires BridgeTransferStore, BridgeConfig {
         let owner = signer::address_of(creator);
         let moveth_minter = @0x1; 
-        init_module(creator);
+        create_account_for_test(signer::address_of(creator));
+        let resource_account = resource_account::create_resource_account(creator, b"123456", vector::empty<u8>());
+
+        init_module(resource_account);
 
         // Verify that the BridgeTransferStore and BridgeConfig have been init_moduled
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
@@ -219,8 +232,7 @@ module atomic_bridge::atomic_bridge_counterparty {
        complete_bridge_transfer(
            client,
            bridge_transfer_id,
-           pre_image,
-           master_minter 
+           pre_image, 
        );
 
         debug::print(&utf8(msg));
@@ -286,7 +298,6 @@ module atomic_bridge::atomic_bridge_counterparty {
            client,
            bridge_transfer_id,
            pre_image,
-           master_minter 
        );
 
         debug::print(&utf8(msg));
