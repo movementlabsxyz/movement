@@ -7,7 +7,7 @@ rm -rf  ~/.movement/*  \
             -f docker/compose/suzuka-full-node/docker-compose.yml       \
             -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml      \
             -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml  \
-            -f docker/compose/suzuka-indexer/docker-compose.indexer.yml  \
+            -f docker/compose/suzuka-indexer/docker-compose.local-development.indexer.yml  \
            up
 ```
 
@@ -18,7 +18,7 @@ docker compose    \
             -f docker/compose/suzuka-full-node/docker-compose.yml       \
             -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml      \
             -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml  \
-            -f docker/compose/suzuka-indexer/docker-compose.indexer.yml  \
+            -f docker/compose/suzuka-indexer/docker-compose.local-development.indexer.yml  \
            logs suzuka-indexer
 ```
 
@@ -33,6 +33,6 @@ rm -rf  ~/.movement/*  \
             -f docker/compose/suzuka-full-node/docker-compose.yml       \
             -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml      \
             -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml  \
-            -f docker/compose/suzuka-indexer/docker-compose.indexer.yml  \
+            -f docker/compose/suzuka-indexer/docker-compose.local-development.indexer.yml  \
            up
 ```
