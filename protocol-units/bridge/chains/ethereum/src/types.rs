@@ -23,8 +23,8 @@ use bridge_shared::{
 use futures::channel::mpsc::UnboundedReceiver;
 use serde::{Deserialize, Serialize};
 
-use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
 use crate::AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance;
+use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
 use crate::WETH9::WETH9Instance;
 pub const INITIATED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;

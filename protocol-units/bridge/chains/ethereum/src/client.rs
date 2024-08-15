@@ -15,8 +15,8 @@ use bridge_shared::bridge_contracts::{
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
 };
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, EthValue, HashLock, HashLockPreImage,
+	InitiatorAddress, RecipientAddress, TimeLock,
 };
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
@@ -135,7 +135,11 @@ impl EthClient {
 		Ok(())
 	}
 
-	pub async fn deposit_weth_and_approve(&mut self, caller: Address, amount: U256) -> Result<(), anyhow::Error> {
+	pub async fn deposit_weth_and_approve(
+		&mut self,
+		caller: Address,
+		amount: U256,
+	) -> Result<(), anyhow::Error> {
 		let provider_signer = self.rpc_provider.default_signer_address();
 		let deposit_weth_signer = self.get_signer_address();
 		println!("provider_signer: {:?}", provider_signer);
@@ -145,12 +149,17 @@ impl EthClient {
 		send_transaction(call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to deposit eth to weth contract");
-		
-	
-		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract.approve(self.initiator_contract_address()?, amount).from(deposit_weth_signer);
-		let WETH9::balanceOfReturn { _0: balance } = contract.balanceOf(deposit_weth_signer).call().await.expect("Failed to get balance");
+
+		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract
+			.approve(self.initiator_contract_address()?, amount)
+			.from(deposit_weth_signer);
+		let WETH9::balanceOfReturn { _0: balance } = contract
+			.balanceOf(deposit_weth_signer)
+			.call()
+			.await
+			.expect("Failed to get balance");
 		println!("balance: {}", balance);
-	
+
 		send_transaction(approve_call, &utils::send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to approve");
@@ -212,7 +221,7 @@ impl EthClient {
 			)),
 		}
 	}
-	
+
 	pub fn weth_contract(&self) -> BridgeContractWETH9Result<&WETH9Contract> {
 		match &self.weth_contract {
 			Some(contract) => Ok(contract),
@@ -221,7 +230,6 @@ impl EthClient {
 			)),
 		}
 	}
-
 
 	pub fn counterparty_contract_address(&self) -> BridgeContractCounterpartyResult<Address> {
 		match &self.counterparty_contract {
@@ -255,6 +263,7 @@ impl EthClient {
 impl BridgeContractInitiator for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
+	type Value = EthValue;
 
 	// `_initiator_address`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
@@ -366,6 +375,7 @@ impl BridgeContractInitiator for EthClient {
 impl BridgeContractCounterparty for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
+	type Value = EthValue;
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,

@@ -14,8 +14,8 @@ use crate::{
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmartContractInitiatorEvent<A, H> {
-	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
+pub enum SmartContractInitiatorEvent<A, H, V> {
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H, V>),
 	CompletedBridgeTransfer(BridgeTransferId<H>),
 }
 

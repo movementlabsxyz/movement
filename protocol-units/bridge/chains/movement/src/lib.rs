@@ -33,6 +33,7 @@ use tokio::{
 
 use url::Url;
 
+mod types;
 pub mod utils;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
@@ -208,6 +209,7 @@ impl MovementClient {
 impl BridgeContractCounterparty for MovementClient {
 	type Address = MovementAddress;
 	type Hash = [u8; 32];
+	type Value = MovementValue;
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,

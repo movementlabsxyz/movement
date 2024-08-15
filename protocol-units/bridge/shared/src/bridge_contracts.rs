@@ -1,8 +1,8 @@
 use thiserror::Error;
 
 use crate::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
+	BridgeValueType, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -70,6 +70,7 @@ pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
 pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
+	type Value: BridgeValueType;
 
 	async fn initiate_bridge_transfer(
 		&mut self,
@@ -77,7 +78,7 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
-		amount: Amount,
+		amount: Amount<Self::Value>,
 	) -> BridgeContractInitiatorResult<()>;
 
 	async fn complete_bridge_transfer(
@@ -94,13 +95,16 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
+	) -> BridgeContractInitiatorResult<
+		Option<BridgeTransferDetails<Self::Address, Self::Hash, Self::Value>>,
+	>;
 }
 
 #[async_trait::async_trait]
 pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
+	type Value: BridgeValueType;
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,
@@ -109,7 +113,7 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
-		amount: Amount,
+		amount: Amount<Self::Value>,
 	) -> BridgeContractCounterpartyResult<()>;
 
 	async fn complete_bridge_transfer(
@@ -134,8 +138,5 @@ pub trait BridgeContractWETH9: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
 
-	async fn deposit_weth(
-		&mut self,
-		amount: Amount,
-	) -> BridgeContractWETH9Result<()>;
+	async fn deposit_weth(&mut self, amount: Amount) -> BridgeContractWETH9Result<()>;
 }
