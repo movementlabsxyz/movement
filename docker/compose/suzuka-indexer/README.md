@@ -97,10 +97,14 @@ docker compose  \
 ```
 
 check if indexer can reach remote rpc
-
 ```bash
 docker compose  \
    --env-file docker/compose/suzuka-indexer/.remote-suzuka-node.env \
    -f docker/compose/suzuka-indexer/docker-compose.indexer.yml\
    exec -it suzuka-indexer nc -vz host.docker.internal 30734
+```
+
+check size of local DB on disk
+```bash
+docker run --rm -v suzuka-indexer_postgres_data:/volume alpine sh -c "du -sh /volume"
 ```
