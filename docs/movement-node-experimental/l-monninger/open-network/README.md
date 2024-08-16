@@ -55,3 +55,6 @@ If you encounter an error reported by the `setup` service for an invalid Aptos s
 1. Does the directory indicated by the `DOT_MOVEMENT_PATH` contain folders for `maptos`, `maptos-storage`, and `suzuka-da-db`?
 2. Does each of these folders have successfully unarchived files? There should be no archives in these folders.
 3. Is the host volume mounted correctly? Check the `volumes` section of your Docker Compose file.
+
+### Forceful Writes
+Most other bugs that emerged in early development should be handled by the forceful writes made by `syncador-v2`. However, this also means that if your application is not configured to allow for writes from the user running the Suzuka Full Follower servicer, then you will likely encounter errors. 
