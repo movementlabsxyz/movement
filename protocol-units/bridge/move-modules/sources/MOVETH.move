@@ -122,7 +122,7 @@ module moveth::moveth {
         let metadata_object_signer = &object::generate_signer(constructor_ref);
 
         let minters = vector::empty<address>();
-        vector::push_back(&mut minters, @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5);
+        vector::push_back(&mut minters, @resource_addr);
 
         move_to(metadata_object_signer, Roles {
             master_minter: @master_minter,

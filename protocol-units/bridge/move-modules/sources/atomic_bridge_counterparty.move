@@ -57,8 +57,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     
     entry fun init_module(resource: &signer) {
 
-        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource, @0xcafe);
-        let resource_signer = account::create_signer_with_capability(&resource_signer_cap);
+        let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource, @origin_addr);
 
         let bridge_transfer_store = BridgeTransferStore {
             pending_transfers: smart_table::new(),
@@ -111,8 +110,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
     ) acquires BridgeTransferStore, BridgeConfig, {
-        let config_address = borrow_global<BridgeConfig>(@0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5).bridge_module_deployer;
-        let resource_signer = account::create_signer_with_capability(&borrow_global<BridgeConfig>(@0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5).signer_cap);
+        let config_address = borrow_global<BridgeConfig>(@resource_addr).bridge_module_deployer;
+        let resource_signer = account::create_signer_with_capability(&borrow_global<BridgeConfig>(@resource_addr).signer_cap);
         let bridge_store = borrow_global_mut<BridgeTransferStore>(config_address);
         let details: BridgeTransferDetails = smart_table::remove(&mut bridge_store.pending_transfers, bridge_transfer_id);
 
@@ -162,7 +161,7 @@ module atomic_bridge::atomic_bridge_counterparty {
 
     }
 
-    #[test (origin_account = @0xcafe, resource = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, aptos_framework = @0x1)]
+    #[test (origin_account = @origin_addr, resource = @resource_addr, aptos_framework = @0x1)]
     public entry fun test_set_up_test(origin_account: signer, resource: signer, aptos_framework: signer) {
         set_up_test(origin_account, &resource);
     }
@@ -172,7 +171,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(origin_account = @0xcafe, resource = @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[test(origin_account = @origin_addr, resource = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_complete_bridge_transfer(
         origin_account: signer,
         resource: signer,
