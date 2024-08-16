@@ -82,6 +82,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         recipient: address,
         amount: u64
     ): bool acquires BridgeTransferStore {
+        assert!(signer::address_of(caller) == @resource_addr, 1);
         let bridge_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(caller));
         let details = BridgeTransferDetails {
             recipient,
