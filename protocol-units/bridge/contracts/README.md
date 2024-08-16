@@ -19,7 +19,7 @@ https://book.getfoundry.sh/
 
 ```shell
 $ forge build
-```
+```d
 
 ### Test
 
