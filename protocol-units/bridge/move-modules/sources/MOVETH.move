@@ -313,24 +313,6 @@ module moveth::moveth {
         });
     }
 
-    /// Add a new minter. This checks that the caller is the master minter and the account is not already a minter.
-    public entry fun add_minter(admin: &signer, minter: address) acquires Roles, State {
-        assert_not_paused();
-        let roles = borrow_global_mut<Roles>(moveth_address());
-        assert!(signer::address_of(admin) == roles.admin, EUNAUTHORIZED);
-        assert!(!vector::contains(&roles.minters, &minter), EALREADY_MINTER);
-        vector::push_back(&mut roles.minters, minter);
-    }
-
-    /// Remove the minter at the end of roles.minters. This checks that the caller is the master minter and the account is the most recently added minter.
-    public entry fun remove_minter(admin: &signer, minter: address) acquires Roles, State {
-        assert_not_paused();
-        let roles = borrow_global_mut<Roles>(moveth_address());
-        assert!(signer::address_of(admin) == roles.admin || signer::address_of(admin) == roles.master_minter, EUNAUTHORIZED);
-        assert!(vector::contains(&roles.minters, &minter), ENOT_MINTER);
-        vector::pop_back(&mut roles.minters);
-    }
-
     fun assert_is_minter(minter: &signer) acquires Roles {
         if (exists<Roles>(moveth_address())) {
         let roles = borrow_global<Roles>(moveth_address());
