@@ -12,6 +12,14 @@ env_default!(
 // The default port for the Celestia RPC
 env_default!(default_celestia_rpc_listen_port, "CELESTIA_RPC_LISTEN_PORT", u16, 26657);
 
+// The default Celestia RPC connection protocol
+env_default!(
+	default_celestia_rpc_connection_protocol,
+	"CELESTIA_RPC_CONNECTION_PROTOCOL",
+	String,
+	"http".to_string()
+);
+
 // The default Celestia RPC connection hostname
 env_default!(
 	default_celestia_rpc_connection_hostname,
@@ -33,6 +41,14 @@ env_default!(
 
 // The default port for the Celestia Node websocket
 env_default!(default_celestia_websocket_listen_port, "CELESTIA_WEBSOCKET_LISTEN_PORT", u16, 26658);
+
+// the default Celestia Node websocket connection protocol
+env_default!(
+	default_celestia_websocket_connection_protocol,
+	"CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL",
+	String,
+	"ws".to_string()
+);
 
 // The default Celestia Node websocket connection hostname
 env_default!(
