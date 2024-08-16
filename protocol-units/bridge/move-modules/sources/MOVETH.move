@@ -122,11 +122,11 @@ module moveth::moveth {
         let metadata_object_signer = &object::generate_signer(constructor_ref);
 
         let minters = vector::empty<address>();
-        vector::push_back(&mut minters, @minter);
+        vector::push_back(&mut minters, @0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5);
 
         move_to(metadata_object_signer, Roles {
             master_minter: @master_minter,
-            admin: @admin,
+            admin: signer::address_of(resource_account),
             minters,
             pauser: @pauser,
             denylister: @denylister,
@@ -317,7 +317,7 @@ module moveth::moveth {
     public entry fun add_minter(admin: &signer, minter: address) acquires Roles, State {
         assert_not_paused();
         let roles = borrow_global_mut<Roles>(moveth_address());
-        assert!(signer::address_of(admin) == roles.admin || signer::address_of(admin) == roles.master_minter, EUNAUTHORIZED);
+        assert!(signer::address_of(admin) == roles.admin, EUNAUTHORIZED);
         assert!(!vector::contains(&roles.minters, &minter), EALREADY_MINTER);
         vector::push_back(&mut roles.minters, minter);
     }
@@ -335,7 +335,7 @@ module moveth::moveth {
         if (exists<Roles>(moveth_address())) {
         let roles = borrow_global<Roles>(moveth_address());
         let minter_addr = signer::address_of(minter);
-        assert!(minter_addr == roles.master_minter || vector::contains(&roles.minters, &minter_addr), EUNAUTHORIZED);
+        assert!(minter_addr == roles.admin || vector::contains(&roles.minters, &minter_addr), EUNAUTHORIZED);
         } else {
             assert!(false, ENOT_MINTER);
         }
