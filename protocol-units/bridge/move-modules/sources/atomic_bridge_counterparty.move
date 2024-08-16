@@ -82,8 +82,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         recipient: address,
         amount: u64
     ): bool acquires BridgeTransferStore {
-        assert!(signer::address_of(caller) == @resource_addr, 1);
-        let bridge_store = borrow_global_mut<BridgeTransferStore>(signer::address_of(caller));
+        assert!(signer::address_of(caller) == @bridge_signer, 1);
+        let bridge_store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
         let details = BridgeTransferDetails {
             recipient,
             initiator,
@@ -151,14 +151,14 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
     
     #[test_only]
-    public fun set_up_test(origin_account: signer, fa_minter: &signer) {
+    public fun set_up_test(origin_account: signer, resource_addr: &signer) {
 
         create_account_for_test(signer::address_of(&origin_account));
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(&origin_account, vector::empty<u8>(), vector::empty<u8>());
 
-        init_module(fa_minter);
+        init_module(resource_addr);
 
     }
 
@@ -172,10 +172,11 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(origin_account = @origin_addr, fa_minter = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[test(bridge_signer = @bridge_signer, origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_complete_bridge_transfer(
+        bridge_signer: signer,
         origin_account: signer,
-        fa_minter: signer,
+        resource_addr: signer,
         client: &signer,
         aptos_framework: signer,
         master_minter: &signer, 
@@ -183,7 +184,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         moveth: &signer,
         source_account: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
-        set_up_test(origin_account, &fa_minter);
+        set_up_test(origin_account, &resource_addr);
 
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         moveth::init_for_test(moveth);
@@ -198,7 +199,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let time_lock = 3600;
         let amount = 100;
         let result = lock_bridge_transfer_assets(
-            &fa_minter,
+            &bridge_signer,
             initiator,
             bridge_transfer_id,
             hash_lock,
@@ -208,7 +209,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
         assert!(result, 1);
         // Verify that the transfer is stored in pending_transfers
-        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(&fa_minter));
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
         assert!(transfer_details.recipient == recipient, 2);
         assert!(transfer_details.initiator == initiator, 3);
@@ -224,7 +225,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
         debug::print(&utf8(msg));
         // Verify that the transfer is stored in completed_transfers
-        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(&fa_minter));
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store. completed_transfers, bridge_transfer_id);
         assert!(transfer_details.recipient == recipient, 1);
         assert!(transfer_details.amount == amount, 2);
