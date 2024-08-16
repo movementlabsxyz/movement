@@ -44,12 +44,12 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// check if the MOVEMENT_SYNC environment variable is set
 	let sync_task: Pin<Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>> =
-		if let Ok(bucket_comma_glob) = std::env::var("MOVEMENT_SYNC") {
-			let mut bucket_comma_glob = bucket_comma_glob.split(',');
-			let bucket = bucket_comma_glob.next().context(
+		if let Ok(bucket_arrow_glob) = std::env::var("MOVEMENT_SYNC") {
+			let mut bucket_arrow_glob = bucket_arrow_glob.split("<=>");
+			let bucket = bucket_arrow_glob.next().context(
 				"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
 			)?;
-			let glob = bucket_comma_glob.next().context(
+			let glob = bucket_arrow_glob.next().context(
 				"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
 			)?;
 

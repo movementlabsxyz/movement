@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run the command and capture the output
-STATUS=$(timeout 4m just suzuka-full-node docker-compose setup-local.celestia-local.faucet-replicas.test --abort-on-container-failure)
+STATUS=$(timeout 4m just suzuka-full-node docker-compose local.faucet-replicas.test --abort-on-container-failure)
 EXIT_CODE=$?
 
 # Check the exit code and act accordingly
