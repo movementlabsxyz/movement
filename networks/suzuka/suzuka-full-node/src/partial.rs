@@ -331,16 +331,21 @@ where
 		match event {
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
-				match executor.set_finalized_block_height(commitment.height) {
-					Ok(_) => {}
-					Err(e) => {
-						error!("Failed to set finalized block height: {:?}", e);
-					}
-				}
+				executor.set_finalized_block_height(commitment.height).context(format!(
+					"failed to set finalized block height {}",
+					commitment.height
+				))?;
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {
 				debug!("Commitment rejected: {:?} {:?}", height, reason);
-				// TODO: block reversion
+				let current_head_height = executor.get_block_head_height().await?;
+				if height > current_head_height {
+					// Nothing to revert
+				} else {
+					executor
+						.revert_block_head_to(height - 1)
+						.context(format!("failed to revert to block height {}", height - 1))?;
+				}
 			}
 		}
 	}

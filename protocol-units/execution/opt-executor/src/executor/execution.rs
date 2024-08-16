@@ -61,12 +61,10 @@ impl Executor {
 			(block_metadata, block, senders_and_sequence_numbers)
 		};
 
-		let block_executor = self.block_executor.clone();
-
 		let block_id = block.block_id.clone();
-		let parent_block_id = block_executor.committed_block_id();
+		let parent_block_id = self.block_executor.committed_block_id();
 
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		let state_compute = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
@@ -90,7 +88,7 @@ impl Executor {
 			state_compute.root_hash(),
 			version,
 		);
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
 		})
@@ -117,6 +115,27 @@ impl Executor {
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
 		let ledger_info = self.context.get_latest_ledger_info_wrapped()?;
 		Ok(ledger_info.block_height.into())
+	}
+
+	pub fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
+		let (_start_ver, end_ver, block_event) =
+			self.db.reader.get_block_info_by_height(block_height)?;
+		let block_info = BlockInfo::new(
+			block_event.epoch(),
+			block_event.round(),
+			block_event.hash()?,
+			self.db.reader.get_accumulator_root_hash(end_ver)?,
+			end_ver,
+			block_event.proposed_time(),
+			None,
+		);
+		let ledger_info = LedgerInfo::new(block_info, HashValue::zero());
+		let aggregate_signature = AggregateSignature::empty();
+		let ledger_info = LedgerInfoWithSignatures::new(ledger_info, aggregate_signature);
+		self.db.writer.revert_commit(&ledger_info)?;
+		// Reset the executor state to the reverted storage
+		self.block_executor.reset()?;
+		Ok(())
 	}
 
 	pub fn context(&self) -> Arc<Context> {
