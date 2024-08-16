@@ -82,7 +82,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         recipient: address,
         amount: u64
     ): bool acquires BridgeTransferStore {
-        assert!(signer::address_of(caller) == @bridge_signer, 1);
+        assert!(signer::address_of(caller) == @origin_addr, 1);
         let bridge_store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
         let details = BridgeTransferDetails {
             recipient,
@@ -151,19 +151,18 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
     
     #[test_only]
-    public fun set_up_test(origin_account: signer, resource_addr: &signer) {
+    public fun set_up_test(origin_account: &signer, resource_addr: &signer) {
 
-        create_account_for_test(signer::address_of(&origin_account));
+        create_account_for_test(signer::address_of(origin_account));
 
         // create a resource account from the origin account, mocking the module publishing process
-        resource_account::create_resource_account(&origin_account, vector::empty<u8>(), vector::empty<u8>());
+        resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
 
         init_module(resource_addr);
-
     }
 
     #[test (origin_account = @origin_addr, resource = @resource_addr, aptos_framework = @0x1)]
-    public entry fun test_set_up_test(origin_account: signer, resource: signer, aptos_framework: signer) {
+    public entry fun test_set_up_test(origin_account: &signer, resource: signer, aptos_framework: signer) {
         set_up_test(origin_account, &resource);
     }
 
@@ -172,10 +171,9 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(bridge_signer = @bridge_signer, origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_complete_bridge_transfer(
-        bridge_signer: signer,
-        origin_account: signer,
+        origin_account: &signer,
         resource_addr: signer,
         client: &signer,
         aptos_framework: signer,
@@ -199,7 +197,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let time_lock = 3600;
         let amount = 100;
         let result = lock_bridge_transfer_assets(
-            &bridge_signer,
+            origin_account,
             initiator,
             bridge_transfer_id,
             hash_lock,
