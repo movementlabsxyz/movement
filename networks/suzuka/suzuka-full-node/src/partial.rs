@@ -254,18 +254,21 @@ where
 	/// Retries executing a block several times.
 	/// This can be valid behavior if the block timestamps are too tightly clustered for the full node execution.
 	/// However, this has to be deterministic, otherwise nodes will not be able to agree on the block commitment.
+	///
+	/// This protocol has a bit of a cascading effect, whereby increasing the timestamp of a block will mean that the next block has a greater likelihood of also needing to have its timestamp increased and with a greater number of retries. This will generally reset so long as the retry increment and count do not increases the timestamp beyond the block building time.
 	async fn execute_block_with_retries(
 		&self,
 		block: Block,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		for _ in 0..5 {
+		for _ in 0..self.config.execution_extension.block_retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_timestamp).await {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					error!("Failed to execute block: {:?}. Retrying", e);
-					block_timestamp += 5000; // increase the timestamp by 5 ms (5000 microseconds)
+					block_timestamp +=
+						self.config.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}
