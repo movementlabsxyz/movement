@@ -36,6 +36,12 @@ where
 	}
 }
 
+impl Into<BridgeTransferId> for u64 {
+    fn into(self) -> BridgeTransferId {
+        BridgeTransferId(self)
+    }
+}
+
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddress<A>(pub A);
 
@@ -50,6 +56,12 @@ impl From<&str> for RecipientAddress {
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
+
+impl Into<HashLock> for Vec<u8> {
+    fn into(self) -> HashLock {
+        HashLock(self)
+    }
+}
 
 pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
 	HashLock(From::from(other.0))
