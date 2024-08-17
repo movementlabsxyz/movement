@@ -88,7 +88,7 @@ contract MovementStakingTest is Test {
         staking.stake(domain, moveToken, 100);
         assertEq(moveToken.balanceOf(staker), 0);
         assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), staker),
+            staking.getAllStakeAtEpoch(domain, 0, address(moveToken), staker),
             100
         );
     }
@@ -119,7 +119,7 @@ contract MovementStakingTest is Test {
         staking.acceptGenesisCeremony();
         assertNotEq(staking.currentEpochByDomain(domain), 0);
         assertEq(
-            staking.getCurrentEpochStake(domain, address(moveToken), staker),
+            staking.getAllCurrentEpochStake(domain, address(moveToken), staker),
             100
         );
     }
@@ -159,7 +159,7 @@ contract MovementStakingTest is Test {
             uint256 epochAfter = staking.getCurrentEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -202,7 +202,7 @@ contract MovementStakingTest is Test {
             vm.prank(staker);
             staking.unstake(domain, address(moveToken), 10);
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -260,7 +260,7 @@ contract MovementStakingTest is Test {
 
             // check stake
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -321,7 +321,7 @@ contract MovementStakingTest is Test {
 
             // check stake
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -343,11 +343,17 @@ contract MovementStakingTest is Test {
             amounts1[0] = 1;
             uint256[] memory refundAmounts1 = new uint256[](1);
             refundAmounts1[0] = 0;
-            staking.slash(custodians1, attesters1, amounts1, refundAmounts1);
+            staking.slash(
+                custodians1,
+                attesters1,
+                attesters1, // use attesters as delegates
+                amounts1,
+                refundAmounts1
+            );
 
             // slash immediately takes effect
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -404,11 +410,11 @@ contract MovementStakingTest is Test {
             1100
         );
         assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), alice),
+            staking.getAllStakeAtEpoch(domain, 0, address(moveToken), alice),
             1000
         );
         assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), bob),
+            staking.getAllStakeAtEpoch(domain, 0, address(moveToken), bob),
             100
         );
 

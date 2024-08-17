@@ -29,11 +29,11 @@ contract MovementStakingStorage {
         internal attestersByDelegatorByDomain;
 
     // preserved records of stake by address per epoch
-    mapping(address domain => mapping(uint256 epoch => mapping(address custodian => mapping(address attester => mapping(delegator => uint256 stake)))))
+    mapping(address domain => mapping(uint256 epoch => mapping(address custodian => mapping(address attester => mapping(address delegator => uint256 stake)))))
         public epochStakesByDomain;
 
     // preserved records of unstake by address per epoch
-    mapping(address domain => mapping(uint256 epoch => mapping(address custodian => mapping(address attester => mapping(delegator => uint256 stake)))))
+    mapping(address domain => mapping(uint256 epoch => mapping(address custodian => mapping(address attester => mapping(address delegator => uint256 stake)))))
         public epochUnstakesByDomain;
 
     // track the total stake of the epoch (computed at rollover)

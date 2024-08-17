@@ -70,58 +70,37 @@ contract MovementStaking is
             for (uint256 j = 0; j < custodiansByDomain[domain].length(); j++) {
                 address custodian = custodiansByDomain[domain].at(j);
 
-                // get the genesis stake for the attester
-                uint256 attesterStake = getStakeAtEpoch(
-                    domain,
-                    0,
-                    custodian,
-                    attester
-                );
+                // for every delegatee of the attester
+                for (
+                    uint256 k = 0;
+                    k < delegatorsByAttesterByDomain[domain][attester].length();
+                    k++
+                ) {
+                    // todo: can this be replaced with _rollOverAttester?
+                    address delegatee = delegatorsByAttesterByDomain[domain][
+                        attester
+                    ].at(k);
 
-                // roll over the genesis stake to the current epoch
-                _addStake(
-                    domain,
-                    getCurrentEpoch(domain),
-                    custodian,
-                    attester,
-                    attesterStake
-                );
+                    // get the genesis stake for the attester
+                    uint256 attesterStake = getStakeAtEpoch(
+                        domain,
+                        0,
+                        custodian,
+                        delegatee,
+                        attester
+                    );
+
+                    // roll over the genesis stake to the current epoch
+                    _addStake(
+                        domain,
+                        getCurrentEpoch(domain),
+                        custodian,
+                        delegatee,
+                        attester,
+                        attesterStake
+                    );
+                }
             }
-        }
-    }
-
-    function setGenesisCeremony(
-        address[] calldata custodians,
-        address[] calldata attesters,
-        uint256[] calldata stakes
-    ) public {
-        address domain = msg.sender;
-        currentEpochByDomain[domain] = getEpochByBlockTime(domain);
-
-        for (uint256 i = 0; i < attesters.length; i++) {
-            address custodian = custodians[i];
-
-            // get the genesis stake for the attester
-            uint256 attesterStake = getStakeAtEpoch(
-                domain,
-                0,
-                custodian,
-                attesters[i]
-            );
-
-            // require that the stake being set is leq the genesis stake
-            if (attesterStake > stakes[i]) revert StakeExceedsGenesisStake();
-
-            // add the attester to the set
-            attestersByDomain[domain].add(attesters[i]);
-            epochStakesByDomain[domain][getCurrentEpoch(domain)][custodian][
-                attesters[i]
-            ] = stakes[i];
-            epochTotalStakeByDomain[domain][0][custodian] += stakes[i];
-
-            // transfer the outstanding stake back to the attester
-            uint256 refundAmount = stakes[i] - attesterStake;
-            _payAttester(address(this), attesters[i], custodian, refundAmount);
         }
     }
 
@@ -246,7 +225,7 @@ contract MovementStaking is
     }
 
     // get all attester weight for a given epoch
-    function getAllStakeWeightAtEpoch(
+    function getAllStakeAtEpoch(
         address domain,
         uint256 epoch,
         address custodian,
@@ -279,7 +258,7 @@ contract MovementStaking is
         address delegator
     ) public view returns (uint256) {
         return
-            getStakeAtEpoch(
+            getAllStakeAtEpoch(
                 domain,
                 getCurrentEpoch(domain),
                 custodian,
@@ -288,13 +267,13 @@ contract MovementStaking is
     }
 
     // gets all the attester stakes for the current epoch
-    function getAllCurrentEpochStakeWeight(
+    function getAllCurrentEpochStake(
         address domain,
         address custodian,
         address attester
     ) public view returns (uint256) {
         return
-            getStakeAtEpoch(
+            getAllStakeAtEpoch(
                 domain,
                 getCurrentEpoch(domain),
                 custodian,
@@ -354,7 +333,8 @@ contract MovementStaking is
                 domain,
                 getCurrentEpoch(domain),
                 custodian,
-                attester
+                attester,
+                delegator
             );
     }
 
@@ -365,7 +345,7 @@ contract MovementStaking is
         address attester
     ) public view returns (uint256) {
         return
-            getUnstakeAtEpoch(
+            getAllUnstakeAtEpoch(
                 domain,
                 getCurrentEpoch(domain),
                 custodian,
@@ -394,16 +374,25 @@ contract MovementStaking is
     // stakes for the next epoch
     function stake(address domain, IERC20 custodian, uint256 amount) external {
         // stake delegatee is the attester itself
-        stakeWithDelegate(domain, custodian, amount, msg.sender);
+        _stakeWithDelegate(domain, custodian, amount, msg.sender);
     }
 
-    // stakes for the next epoch
     function stakeWithDelegate(
         address domain,
         IERC20 custodian,
         uint256 amount,
         address delegatee
-    ) external onlyRole(WHITELIST_ROLE) {
+    ) external {
+        _stakeWithDelegate(domain, custodian, amount, delegatee);
+    }
+
+    // stakes for the next epoch
+    function _stakeWithDelegate(
+        address domain,
+        IERC20 custodian,
+        uint256 amount,
+        address delegatee
+    ) internal onlyRole(WHITELIST_ROLE) {
         // add the attester to the list of attesters
         attestersByDomain[domain].add(msg.sender);
 
@@ -451,16 +440,25 @@ contract MovementStaking is
         uint256 amount
     ) external {
         // unstake delegatee is the attester itself
-        unstakeWithDelegate(domain, custodian, amount, msg.sender);
+        _unstakeWithDelegate(domain, custodian, amount, msg.sender);
     }
 
-    // unstakes an amount for the next epoch
     function unstakeWithDelegate(
         address domain,
         address custodian,
         uint256 amount,
         address delegatee
-    ) external onlyRole(WHITELIST_ROLE) {
+    ) external {
+        _unstakeWithDelegate(domain, custodian, amount, delegatee);
+    }
+
+    // unstakes an amount for the next epoch
+    function _unstakeWithDelegate(
+        address domain,
+        address custodian,
+        uint256 amount,
+        address delegatee
+    ) internal onlyRole(WHITELIST_ROLE) {
         // indicate that we are going to unstake this amount in the next epoch
         // ! this doesn't actually happen until we roll over the epoch
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
@@ -584,6 +582,7 @@ contract MovementStaking is
         uint256 epoch,
         address custodian,
         address attester,
+        address delegator,
         uint256 amount
     ) internal {
         // stake slash will always target this epoch
@@ -592,6 +591,7 @@ contract MovementStaking is
             domain,
             targetEpoch,
             custodian,
+            delegator,
             attester
         );
 
@@ -602,10 +602,18 @@ contract MovementStaking is
                 targetEpoch,
                 custodian,
                 attester,
+                delegator,
                 stakeForEpoch
             );
         } else {
-            _removeStake(domain, targetEpoch, custodian, attester, amount);
+            _removeStake(
+                domain,
+                targetEpoch,
+                custodian,
+                attester,
+                delegator,
+                amount
+            );
         }
     }
 
@@ -620,21 +628,24 @@ contract MovementStaking is
         address domain,
         uint256 epoch,
         address custodian,
-        address attester
+        address attester,
+        address delegator
     ) internal {
         // unstake slash will always target the next epoch
         uint256 stakeForEpoch = getStakeAtEpoch(
             domain,
             epoch,
             custodian,
-            attester
+            attester,
+            delegator
         );
         uint256 targetEpoch = epoch + 1;
         uint256 unstakeForEpoch = getUnstakeAtEpoch(
             domain,
             targetEpoch,
             custodian,
-            attester
+            attester,
+            delegator
         );
 
         if (unstakeForEpoch > stakeForEpoch) {
@@ -646,6 +657,7 @@ contract MovementStaking is
                 targetEpoch,
                 custodian,
                 attester,
+                delegator,
                 stakeForEpoch
             );
         }
@@ -654,6 +666,7 @@ contract MovementStaking is
     function slash(
         address[] calldata custodians,
         address[] calldata attesters,
+        address[] calldata delegators,
         uint256[] calldata amounts,
         uint256[] calldata refundAmounts
     ) public {
@@ -665,7 +678,8 @@ contract MovementStaking is
                     msg.sender,
                     getCurrentEpoch(attesters[i]),
                     custodians[i],
-                    attesters[i]
+                    attesters[i],
+                    delegators[i]
                 ),
                 Math.min(amounts[i], refundAmounts[i])
             );
@@ -682,6 +696,7 @@ contract MovementStaking is
                 getCurrentEpoch(msg.sender),
                 custodians[i],
                 attesters[i],
+                delegators[i],
                 amounts[i]
             );
 
@@ -689,6 +704,7 @@ contract MovementStaking is
                 msg.sender,
                 getCurrentEpoch(msg.sender),
                 custodians[i],
+                attesters[i],
                 attesters[i]
             );
         }

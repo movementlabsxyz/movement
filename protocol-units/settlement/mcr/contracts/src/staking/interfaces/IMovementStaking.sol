@@ -9,11 +9,6 @@ interface IMovementStaking {
         address[] calldata custodians
     ) external;
     function acceptGenesisCeremony() external;
-    function setGenesisCeremony(
-        address[] calldata,
-        address[] calldata,
-        uint256[] calldata
-    ) external;
     function getEpochByBlockTime(address) external view returns (uint256);
     function getCurrentEpoch(address) external view returns (uint256);
     function getNextEpoch(address) external view returns (uint256);
@@ -30,6 +25,12 @@ interface IMovementStaking {
         address custodian,
         address attester,
         address delegator
+    ) external view returns (uint256);
+    function getAllStakeAtEpoch(
+        address domain,
+        uint256 epoch,
+        address custodian,
+        address attester
     ) external view returns (uint256);
     function getUnstakeAtEpoch(
         address domain,
@@ -81,6 +82,7 @@ interface IMovementStaking {
     function slash(
         address[] calldata custodians,
         address[] calldata attesters,
+        address[] calldata delegators,
         uint256[] calldata amounts,
         uint256[] calldata refundAmounts
     ) external;
