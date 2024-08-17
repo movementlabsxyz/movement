@@ -22,23 +22,27 @@ interface IMovementStaking {
         address domain,
         uint256 epoch,
         address custodian,
-        address attester
+        address attester,
+        address delegator
     ) external view returns (uint256);
     function getCurrentEpochStake(
         address domain,
         address custodian,
-        address attester
+        address attester,
+        address delegator
     ) external view returns (uint256);
     function getUnstakeAtEpoch(
         address domain,
         uint256 epoch,
         address custodian,
-        address attester
+        address attester,
+        address delegator
     ) external view returns (uint256);
     function getCurrentEpochUnstake(
         address domain,
         address custodian,
-        address attester
+        address attester,
+        address delegator
     ) external view returns (uint256);
     function getTotalStakeForEpoch(
         address domain,
@@ -50,10 +54,22 @@ interface IMovementStaking {
         address custodian
     ) external view returns (uint256);
     function stake(address domain, IERC20 custodian, uint256 amount) external;
+    function stakeWithDelegate(
+        address domain,
+        IERC20 custodian,
+        uint256 amount,
+        address delegatee
+    ) external;
     function unstake(
         address domain,
         address custodian,
         uint256 amount
+    ) external;
+    function unstakeWithDelegate(
+        address domain,
+        address custodian,
+        uint256 amount,
+        address delegatee
     ) external;
     function getCustodiansByDomain(
         address domain
@@ -77,6 +93,7 @@ interface IMovementStaking {
         uint256 indexed epoch,
         address indexed custodian,
         address attester,
+        address delegatee,
         uint256 stake
     );
 
@@ -85,11 +102,13 @@ interface IMovementStaking {
         uint256 indexed epoch,
         address indexed custodian,
         address attester,
+        address delegatee,
         uint256 stake
     );
 
     event AttesterEpochRolledOver(
         address indexed attester,
+        address delegatee,
         uint256 indexed epoch,
         address indexed custodian,
         uint256 stake,
