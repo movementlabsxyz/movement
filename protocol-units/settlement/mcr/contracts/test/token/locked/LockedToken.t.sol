@@ -128,4 +128,213 @@ contract LockedTokenTest is Test {
         assert(underlyingToken.balanceOf(alice) == 150);
     }
 
+    function testLockMultiple() public {
+        
+        MintableToken underlyingToken = new MintableToken();
+        underlyingToken.initialize("Underlying Token", "UNDERLYING");
+
+        LockedToken token = new LockedToken();
+        token.initialize("Locked Token", "LOCKED", underlyingToken);
+
+        underlyingToken.grantMinterRole(address(token));
+
+        // signers
+        address payable alice = payable(vm.addr(1));
+
+        // mint locked tokens
+        address[] memory addresses = new address[](3);
+        addresses[0] = alice;
+        addresses[1] = alice;
+        addresses[2] = alice;
+        uint256[] memory mintAmounts = new uint256[](3);
+        mintAmounts[0] = 100;
+        mintAmounts[1] = 50;
+        mintAmounts[2] = 25;
+        uint256[] memory lockAmounts = new uint256[](3);
+        lockAmounts[0] = 100;
+        lockAmounts[1] = 50;
+        lockAmounts[2] = 25;
+        uint256[] memory locks = new uint256[](3);
+        locks[0] = block.timestamp + 100;
+        locks[1] = block.timestamp + 200;
+        locks[2] = block.timestamp + 300;
+        token.mintAndLock(
+            addresses,
+            mintAmounts,
+            lockAmounts,
+            locks
+        );
+        assert(token.balanceOf(alice) == 175);
+        assert(underlyingToken.balanceOf(address(token)) == 175);
+        assert(underlyingToken.balanceOf(alice) == 0);
+
+        // cannot release locked tokens
+        vm.warp(block.timestamp + 1);
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 175);
+        assert(underlyingToken.balanceOf(address(token)) == 175);
+        assert(underlyingToken.balanceOf(alice) == 0);
+
+        // tick forward
+        vm.warp(block.timestamp + 301);
+
+        // release locked tokens
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 0);
+        assert(underlyingToken.balanceOf(address(token)) == 0);
+        assert(underlyingToken.balanceOf(alice) == 175);
+    }
+
+    function testLockMultiplePrematureClaim() public {
+        
+        MintableToken underlyingToken = new MintableToken();
+        underlyingToken.initialize("Underlying Token", "UNDERLYING");
+
+        LockedToken token = new LockedToken();
+        token.initialize("Locked Token", "LOCKED", underlyingToken);
+
+        underlyingToken.grantMinterRole(address(token));
+
+        // signers
+        address payable alice = payable(vm.addr(1));
+
+        // mint locked tokens
+        address[] memory addresses = new address[](3);
+        addresses[0] = alice;
+        addresses[1] = alice;
+        addresses[2] = alice;
+        uint256[] memory mintAmounts = new uint256[](3);
+        mintAmounts[0] = 100;
+        mintAmounts[1] = 50;
+        mintAmounts[2] = 25;
+        uint256[] memory lockAmounts = new uint256[](3);
+        lockAmounts[0] = 100;
+        lockAmounts[1] = 50;
+        lockAmounts[2] = 25;
+        uint256[] memory locks = new uint256[](3);
+        locks[0] = block.timestamp + 100;
+        locks[1] = block.timestamp + 200;
+        locks[2] = block.timestamp + 400;
+        token.mintAndLock(
+            addresses,
+            mintAmounts,
+            lockAmounts,
+            locks
+        );
+        assert(token.balanceOf(alice) == 175);
+        assert(underlyingToken.balanceOf(address(token)) == 175);
+        assert(underlyingToken.balanceOf(alice) == 0);
+
+        // cannot release locked tokens
+        vm.warp(block.timestamp + 1);
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 175);
+        assert(underlyingToken.balanceOf(address(token)) == 175);
+        assert(underlyingToken.balanceOf(alice) == 0);
+
+        // tick forward
+        vm.warp(block.timestamp + 301);
+
+        // release locked tokens
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 25);
+        assert(underlyingToken.balanceOf(address(token)) == 25);
+        assert(underlyingToken.balanceOf(alice) == 150);
+        // two releases occurred, alice lock index 0 should still be present
+        (uint256 lock1,) = token.locks(alice, 0);
+        assert(lock1 == 25);
+
+        // tick forward
+        vm.warp(block.timestamp + 101);
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 0);
+        assert(underlyingToken.balanceOf(address(token)) == 0);
+        assert(underlyingToken.balanceOf(alice) == 175);
+        // call should revert with no locks existent
+        vm.expectRevert();
+        (uint256 lock2,) = token.locks(alice, 0);
+    }
+
+
+     function testTransferLockedAsset() public {
+        
+        MintableToken underlyingToken = new MintableToken();
+        underlyingToken.initialize("Underlying Token", "UNDERLYING");
+
+        LockedToken token = new LockedToken();
+        token.initialize("Locked Token", "LOCKED", underlyingToken);
+
+        underlyingToken.grantMinterRole(address(token));
+
+        // signers
+        address payable alice = payable(vm.addr(1));
+
+        // mint locked tokens
+        address[] memory addresses = new address[](3);
+        addresses[0] = alice;
+        addresses[1] = alice;
+        addresses[2] = alice;
+        uint256[] memory mintAmounts = new uint256[](3);
+        mintAmounts[0] = 100;
+        mintAmounts[1] = 50;
+        mintAmounts[2] = 25;
+        uint256[] memory lockAmounts = new uint256[](3);
+        lockAmounts[0] = 100;
+        lockAmounts[1] = 50;
+        lockAmounts[2] = 25;
+        uint256[] memory locks = new uint256[](3);
+        locks[0] = block.timestamp + 100;
+        locks[1] = block.timestamp + 200;
+        locks[2] = block.timestamp + 400;
+        token.mintAndLock(
+            addresses,
+            mintAmounts,
+            lockAmounts,
+            locks
+        );
+        assert(token.balanceOf(alice) == 175);
+        assert(underlyingToken.balanceOf(address(token)) == 175);
+        assert(underlyingToken.balanceOf(alice) == 0);
+
+        // cannot release locked tokens
+        vm.warp(block.timestamp + 1);
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 175);
+        assert(underlyingToken.balanceOf(address(token)) == 175);
+        assert(underlyingToken.balanceOf(alice) == 0);
+
+        // tick forward
+        vm.warp(block.timestamp + 301);
+
+        // release locked tokens
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 25);
+        assert(underlyingToken.balanceOf(address(token)) == 25);
+        assert(underlyingToken.balanceOf(alice) == 150);
+        // two releases occurred, alice lock index 0 should still be present
+        (uint256 lock1,) = token.locks(alice, 0);
+        assert(lock1 == 25);
+
+        vm.prank(alice);
+        token.transfer(address(0x1337), 20);
+        // tick forward
+        vm.warp(block.timestamp + 101);
+        vm.prank(alice);
+        token.release();
+        assert(token.balanceOf(alice) == 0);
+        assert(underlyingToken.balanceOf(address(token)) == 20);
+        assert(underlyingToken.balanceOf(alice) == 155);
+        // call should revert with no locks existent
+        (uint256 lock2,) = token.locks(alice, 0);
+        assert(lock2 == 20);
+    }
+
+
 }

@@ -32,6 +32,9 @@ pub trait DynOptFinExecutor {
 	/// Update the height of the latest finalized block
 	fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;
 
+	/// Revert the chain to the specified height
+	fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error>;
+
 	/// Sets the transaction channel.
 	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>);
 
