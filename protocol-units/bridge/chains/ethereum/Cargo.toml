@@ -23,6 +23,8 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
+rand_chacha = "0.2.2"
+rand = { workspace = true }
 thiserror = { workspace = true }
 
 alloy = { workspace = true, features = [

@@ -1,5 +1,4 @@
 use alloy::{
-	node_bindings::Anvil,
 	primitives::Address,
 	providers::WalletProvider,
 	signers::{
@@ -9,13 +8,15 @@ use alloy::{
 };
 use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
+use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
 use ethereum_bridge::{
+	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
-	Config as EthConfig, EthClient,
 };
-use movement_bridge::MovementClient;
+use movement_bridge::{Config as MovementConfig, MovementClient};
 use rand::SeedableRng;
+use std::sync::{Arc, RwLock};
 
 alloy::sol!(
 	#[allow(missing_docs)]
@@ -29,6 +30,37 @@ pub struct TestHarness {
 }
 
 impl TestHarness {
+	pub async fn new_with_movement() -> (Self, tokio::process::Child) {
+		let (movement_client, child) =
+			MovementClient::new_for_test(MovementConfig::build_for_test())
+				.await
+				.expect("Failed to create MovementClient");
+		(Self { eth_client: None, movement_client: Some(movement_client) }, child)
+	}
+
+	pub fn movement_rest_client(&self) -> &Client {
+		self.movement_client().expect("Could not fetch Movement client").rest_client()
+	}
+
+	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+		self.movement_client()
+			.expect("Could not fetch Movement client")
+			.faucet_client()
+			.expect("Faucet client not initialized")
+	}
+
+	pub fn movement_client(&self) -> Result<&MovementClient> {
+		self.movement_client
+			.as_ref()
+			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	}
+
+	pub fn movement_client_mut(&mut self) -> Result<&mut MovementClient> {
+		self.movement_client
+			.as_mut()
+			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	}
+
 	pub async fn new_only_eth() -> Self {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 			.await

@@ -34,7 +34,5 @@ rand = { workspace = true }
 url = { workspace = true }
 once_cell = { workspace = true }
 
-dot-movement = { workspace = true }
-suzuka-config = { workspace = true }
 bridge-shared = { workspace = true }
 mcr-settlement-client = { workspace = true }

@@ -11,13 +11,13 @@ use bridge_shared::{
 use ethereum_bridge::types::EthAddress;
 
 #[tokio::test]
-async fn test_client_should_build_and_fetch_accounts() {
+async fn test_eth_client_should_build_and_fetch_accounts() {
 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
 
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let _anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 
-	let expected_accounts = vec![
+	let expected_accounts = [
 		address!("f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
 		address!("70997970c51812dc3a010c7d01b50e0d17dc79c8"),
 		address!("3c44cdddb6a900fa2b585dd299e03d12fa4293bc"),
@@ -86,64 +86,4 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
-}
-
-#[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_client_should_successfully_get_bridge_transfer_id() {
-	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-	harness.deploy_init_contracts().await;
-
-	let recipient = harness.gen_aptos_account();
-	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-
-	harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
-			HashLock(hash_lock),
-			TimeLock(100),
-			Amount(1000), // Eth
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	//TODO: Here call get details with the captured event
-}
-
-#[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_client_should_successfully_complete_transfer() {
-	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-	harness.deploy_init_contracts().await;
-
-	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
-	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
-
-	let secret = "secret".to_string();
-	let hash_lock = keccak256(secret.as_bytes());
-	let hash_lock: [u8; 32] = hash_lock.into();
-
-	let _ = harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient_bytes),
-			HashLock(hash_lock),
-			TimeLock(1000),
-			Amount(42),
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	//TODO: Here call complete with the id captured from the event
 }

@@ -23,7 +23,15 @@ tracing.workspace = true
 rand.workspace = true
 rand_chacha = "0.2.2"
 futures-time = "3.0.0"
-
+alloy = { workspace = true, features = [
+  "full",
+  "rpc",
+  "rpc-types",
+  "serde",
+  "rlp",
+  "contract",
+  "sol-types",
+] }
 [dev-dependencies]
 dashmap = "6.0.1"
 static_str_ops = "0.1.2"

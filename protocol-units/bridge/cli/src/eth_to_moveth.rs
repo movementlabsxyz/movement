@@ -1,9 +1,11 @@
 use crate::clap::eth_to_movement::{Commands, EthSharedArgs, MoveSharedArgs};
 use alloy::primitives::keccak256;
 use anyhow::Result;
-use bridge_shared::types::{Amount, HashLock, HashLockPreImage, RecipientAddress, TimeLock};
-use bridge_shared::{types::InitiatorAddress};
-use ethereum_bridge::{types::EthAddress, EthClient};
+use bridge_shared::bridge_contracts::BridgeContractInitiator;
+use bridge_shared::types::{
+	Amount, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+};
+use ethereum_bridge::{client::EthClient, types::EthAddress};
 use movement_bridge::utils::MovementAddress;
 use movement_bridge::MovementClient;
 use bridge_shared::bridge_contracts::BridgeContractInitiator;
