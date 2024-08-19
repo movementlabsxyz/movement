@@ -1,15 +1,19 @@
 use std::{pin::Pin, task::Poll};
 
 use crate::MovementClient;
-use crate::{event_types::MovementChainEvent, types::MovementHash, utils::MovementAddress};
+use crate::{
+	event_types::{CounterpartyEventKind, MovementChainEvent},
+	types::MovementHash,
+	utils::MovementAddress,
+};
 use anyhow::Result;
 use aptos_sdk::rest_client::Response;
-use aptos_types::contract_event::{ContractEvent, ContractEventV1, EventWithVersion};
+use aptos_types::contract_event::EventWithVersion;
 use async_stream::try_stream;
 use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
-use bridge_shared::types::CounterpartyCompletedDetails;
+use bridge_shared::types::{CounterpartyCompletedDetails, LockDetails};
 use futures::{FutureExt, Stream, StreamExt};
 use tokio::sync::mpsc::UnboundedReceiver;
 
@@ -51,7 +55,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 						"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
 						client.counterparty_address.to_hex_literal()
 				);
-				let response = rest_client
+				let locked_response = rest_client
 								.get_account_events_bcs(
 										client.counterparty_address,
 										struct_tag.as_str(),
@@ -59,12 +63,8 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 										Some(1),
 										None
 								).await?;
-						let events = process_response(response);
-				let bridge_transfer_details = bcs::from_bytes::<CounterpartyCompletedDetails<MovementAddress, MovementHash>>(
-						&response.event_data
-				);
+				let events = process_response(locked_response)?;
 
-				// Yield the event
 				yield Ok(events);
 			}
 		};
@@ -76,14 +76,25 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 
 fn process_response(
 	res: Response<Vec<EventWithVersion>>,
-) -> Result<Vec<CounterpartyCompletedDetails<MovementAddress, MovementHash>>, bcs::Error> {
+	kind: CounterpartyEventKind,
+) -> Result<Vec<BridgeContractCounterpartyEvent<MovementAddress, MovementHash>>, bcs::Error> {
 	res.into_inner()
 		.into_iter()
 		.map(|e| {
-			let event_data = e.event.event_data(); // Use the method from the trait
-			bcs::from_bytes::<CounterpartyCompletedDetails<MovementAddress, MovementHash>>(
-				event_data,
-			)
+			let data = e.event.event_data(); // Use the method from the trait
+			match kind {
+				CounterpartyEventKind::Locked => {
+					let locked_details =
+						bcs::from_bytes::<LockDetails<MovementAddress, [u8; 32]>>(data)?;
+					Ok(BridgeContractCounterpartyEvent::Locked(locked_details))
+				}
+				CounterpartyEventKind::Completed => {
+					let completed_details = bcs::from_bytes::<
+						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
+					>(data)?;
+					Ok(BridgeContractCounterpartyEvent::Completed(completed_details))
+				}
+			}
 		})
-		.collect() // Collect the results, handling potential errors
+		.collect()
 }

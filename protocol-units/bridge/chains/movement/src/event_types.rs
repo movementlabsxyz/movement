@@ -6,3 +6,8 @@ pub enum MovementChainEvent<A, H> {
 	CounterpartyContractEvent(SCCResult<A, H>),
 	Noop,
 }
+
+pub enum CounterpartyEventKind {
+	Locked,
+	Completed,
+}

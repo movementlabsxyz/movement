@@ -165,7 +165,7 @@ impl<A, H> Default for BridgeTransferDetails<A, H> {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct LockDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<Vec<u8>>,
