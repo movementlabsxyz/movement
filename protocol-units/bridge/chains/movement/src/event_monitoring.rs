@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::{pin::Pin, task::Poll};
 
 use crate::MovementClient;
@@ -9,7 +10,7 @@ use crate::{
 use anyhow::Result;
 use aptos_sdk::rest_client::Response;
 use aptos_types::contract_event::EventWithVersion;
-use async_stream::try_stream;
+use async_stream::{async_stream::AsyncStream, try_stream};
 use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
@@ -39,6 +40,8 @@ impl MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	}
 }
 
+type TryStreamResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
+
 impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	type Item = BridgeContractCounterpartyEvent<
 		<Self as BridgeContractCounterpartyMonitoring>::Address,
@@ -49,7 +52,10 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 		let client = self.client.as_ref().unwrap(); // would be nice if poll_next could return Result
 		let rest_client = client.rest_client();
 		let this = self.get_mut();
-		let stream = try_stream! {
+		let stream: AsyncStream<
+			TryStreamResult<BridgeContractCounterpartyEvent<MovementAddress, [u8; 32]>>,
+			_,
+		> = try_stream! {
 			loop {
 				let struct_tag = format!(
 						"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
@@ -94,12 +100,20 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 						.chain(cancelled_events.into_iter())
 						.collect::<Vec<_>>();
 
-				yield Ok(total_events);
+				for event in total_events {
+						yield event;
+				}
 			}
 		};
 
 		let mut stream = Box::pin(stream);
-		Pin::new(&mut stream).poll_next(cx)
+		// Handle the Result manually, so that we flatten the output
+		match Pin::new(&mut stream).poll_next(cx) {
+			Poll::Ready(Some(Ok(event))) => Poll::Ready(Some(event)),
+			Poll::Ready(Some(Err(_))) => Poll::Ready(None), // or handle the error as needed
+			Poll::Ready(None) => Poll::Ready(None),
+			Poll::Pending => Poll::Pending,
+		}
 	}
 }
 
@@ -118,6 +132,12 @@ fn process_response(
 					Ok(BridgeContractCounterpartyEvent::Locked(locked_details))
 				}
 				CounterpartyEventKind::Completed => {
+					let completed_details = bcs::from_bytes::<
+						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
+					>(data)?;
+					Ok(BridgeContractCounterpartyEvent::Completed(completed_details))
+				}
+				CounterpartyEventKind::Cancelled => {
 					let completed_details = bcs::from_bytes::<
 						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
 					>(data)?;
