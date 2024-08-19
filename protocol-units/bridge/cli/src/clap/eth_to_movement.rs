@@ -31,16 +31,59 @@ pub struct EthSharedArgs {
 	pub eth_gas_limit: u64,
 }
 
+#[derive(Args, Clone, Debug)]
+pub struct MoveSharedArgs {
+	/// Private key of the Ethereum signer
+	#[arg(long)]
+	pub move_signer_private_key: String,
+
+	/// URL for the Ethereum RPC
+	#[arg(long, default_value = "http://localhost:8545")]
+	pub move_rpc_url: Url,
+
+	/// URL for the Ethereum WebSocket
+	#[arg(long, default_value = "ws://localhost:8545")]
+	pub move_ws_url: Url,
+
+	/// Ethereum contract address for the initiator
+	#[arg(long, default_value = "0x0000000000000000000000000000000000000000")]
+	pub move_initiator_contract: MovementAddress,
+
+	/// Ethereum contract address for the counterparty
+	#[arg(long, default_value = "0x0000000000000000000000000000000000000000")]
+	pub move_counterparty_contract: MovementAddress,
+
+	/// Gas limit for Ethereum transactions
+	#[arg(long, default_value_t = 10_000_000_000)]
+	pub move_gas_limit: u64,
+}
+
+#[derive(Args, Clone, Debug)]
+pub struct CombinedArgs {
+    #[command(flatten)]
+    pub eth_args: EthSharedArgs,
+    
+    #[command(flatten)]
+    pub move_args: MoveSharedArgs,
+}
+
 #[derive(Subcommand)]
 pub enum Commands {
-	/// Initiate a bridge transfer
-	Swap {
+	/// Initiate a bridge transfer from Ethereum
+	BridgeToMovement {
 		#[command(flatten)]
 		args: EthSharedArgs,
-
 		/// The recipient address on the movement labs chain
 		recipient: MovementAddress,
-
+		/// The amount of Ethereum to transfer in WEI
+		amount: u64,
+	},
+	/// Initiate a bridge transfer from Movement
+	BridgeToEthereum {
+		#[command(flatten)]
+		args: MoveSharedArgs,
+		/// The recipient address on the Ethereum chain
+		recipient: EthAddress,
 		/// The amount of Ethereum to transfer in WEI
 		amount: u64,
 	},
@@ -52,5 +95,9 @@ pub enum Commands {
 		/// The ID of the transfer to resume
 		#[arg(long)]
 		transfer_id: String,
+	},
+	IniatializeUser {
+		#[command(flatten)]
+		args: CombinedArgs,
 	},
 }

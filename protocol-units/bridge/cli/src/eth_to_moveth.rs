@@ -1,19 +1,25 @@
-use crate::clap::eth_to_movement::{Commands, EthSharedArgs};
+use crate::clap::eth_to_movement::{Commands, EthSharedArgs, MoveSharedArgs};
 use alloy::primitives::keccak256;
 use anyhow::Result;
 use bridge_shared::types::{Amount, HashLock, HashLockPreImage, RecipientAddress, TimeLock};
-use bridge_shared::{bridge_contracts::BridgeContractInitiator, types::InitiatorAddress};
+use bridge_shared::{types::InitiatorAddress};
 use ethereum_bridge::{types::EthAddress, EthClient};
 use movement_bridge::utils::MovementAddress;
+use movement_bridge::MovementClient;
+use bridge_shared::bridge_contracts::BridgeContractInitiator;
+
+
 
 pub async fn execute(command: &Commands) -> Result<()> {
 	match command {
-		Commands::Swap { args, recipient, amount } => initiate_swap(args, recipient, *amount).await,
+		Commands::IniatializeUser { args } => Ok(()),
+		Commands::BridgeToEthereum { args, recipient, amount } => bridge_to_ethereum(args, recipient, *amount).await,
+		Commands::BridgeToMovement { args, recipient, amount } => bridge_to_movement(args, recipient, *amount).await,
 		Commands::Resume { args, transfer_id } => resume_swap(args, transfer_id).await,
 	}
 }
 
-async fn initiate_swap(
+async fn bridge_to_movement(
 	args: &EthSharedArgs,
 	recipient: &MovementAddress,
 	amount: u64,
@@ -34,7 +40,40 @@ async fn initiate_swap(
 	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
 	let amount = Amount(amount);
 
-	// TODO: Store the swap details in the local database so they can be resumed in case of failure
+	// Call using rust based eth libs
+	client
+		.initiate_bridge_transfer(
+			InitiatorAddress(initiator_address),
+			recipient_address,
+			hash_lock,
+			time_lock,
+			amount,
+		)
+		.await?;
+	Ok(())
+}
+
+async fn bridge_to_ethereum(
+	args: &MoveSharedArgs,
+	recipient: &EthAddress,
+	amount: u64,
+) -> Result<()> {
+	println!("Initiating swap to {:?} with amount {}", recipient, amount);
+
+	let mut client = MovementClient::new(args).await?;
+
+	// Get the current block height
+	let current_block = client.get_block_number().await?;
+	println!("Current Ethereum block height: {}", current_block);
+
+	// Convert signer's private key to EthAddress
+	let initiator_address = MovementAddress(client.get_signer_address());
+	let recipient_address = RecipientAddress(From::from(recipient));
+	let hash_lock_pre_image = HashLockPreImage::random();
+	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
+	let amount = Amount(amount);
+
 
 	client
 		.initiate_bridge_transfer(

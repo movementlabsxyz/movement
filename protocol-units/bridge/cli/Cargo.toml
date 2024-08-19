@@ -13,8 +13,7 @@ rust-version.workspace = true
 bridge-shared.workspace = true
 ethereum-bridge.workspace = true
 movement-bridge.workspace = true
-
-clap.workspace = true
+clap = { workspace = true, features = ["derive"] }
 tokio.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
