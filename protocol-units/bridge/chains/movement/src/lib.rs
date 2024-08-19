@@ -1,5 +1,5 @@
 use crate::utils::MovementAddress;
-use anyhow::{Error, Result};
+use anyhow::Result;
 use aptos_sdk::{
 	move_types::language_storage::TypeTag,
 	rest_client::{Client, FaucetClient},
@@ -18,12 +18,9 @@ use bridge_shared::{
 };
 use rand::prelude::*;
 use serde::Serialize;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::str::FromStr;
-use std::{
-	sync::{mpsc, Arc, Mutex, RwLock},
-	thread,
-};
+use std::sync::{Arc, RwLock};
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::Command as TokioCommand,
@@ -38,6 +35,7 @@ pub mod utils;
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 
+#[allow(dead_code)]
 enum Call {
 	Lock,
 	Complete,
@@ -86,8 +84,8 @@ pub struct MovementClient {
 }
 
 impl MovementClient {
-	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
-		let node_connection_url = format!("http://127.0.0.1:8080");
+	pub async fn new(_config: Config) -> Result<Self, anyhow::Error> {
+		let node_connection_url = "http://127.0.0.1:8080".to_string();
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 
 		let rest_client = Client::new(node_connection_url.clone());
@@ -106,11 +104,11 @@ impl MovementClient {
 	}
 
 	pub async fn new_for_test(
-		config: Config,
+		_config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
-		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("aptos")
-			.args(&["node", "run-local-testnet"])
+			.args(["node", "run-local-testnet"])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.spawn()?;
@@ -118,7 +116,7 @@ impl MovementClient {
 		let stdout = child.stdout.take().expect("Failed to capture stdout");
 		let stderr = child.stderr.take().expect("Failed to capture stderr");
 
-		let node_handle = task::spawn(async move {
+		task::spawn(async move {
 			let mut stdout_reader = BufReader::new(stdout).lines();
 			let mut stderr_reader = BufReader::new(stderr).lines();
 
@@ -167,11 +165,11 @@ impl MovementClient {
 		setup_complete_rx.await.expect("Failed to receive setup completion signal");
 		println!("Setup complete message received.");
 
-		let node_connection_url = format!("http://127.0.0.1:8080");
+		let node_connection_url = "http://127.0.0.1:8080".to_string();
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let faucet_url = format!("http://127.0.0.1:8081");
+		let faucet_url = "http://127.0.0.1:8081".to_string();
 		let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
 		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
 			faucet_url.clone(),
@@ -290,11 +288,6 @@ impl BridgeContractCounterparty for MovementClient {
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
-		// let _ = utils::send_view_request(
-		// 	self.rest_client,
-		// 	self.counterparty_address,
-		// 	"atomic_bridge_counterparty".to_string(),
-		// );
 		todo!();
 	}
 }
