@@ -7,6 +7,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::account::create_account_for_test;
     use aptos_framework::resource_account;
     use aptos_framework::timestamp;
+    use aptos_framework::event::{Self, EventHandle};
     use aptos_framework::aptos_hash::keccak256;
     use aptos_std::smart_table::{Self, SmartTable};
     use moveth::moveth;
@@ -53,6 +54,10 @@ module atomic_bridge::atomic_bridge_counterparty {
     /// An event triggered upon cancelling a bridge transfer
     struct BridgeTransferCancelledEvent has store, drop {
         bridge_transfer_id: vector<u8>,
+    }
+
+    struct BridgeCounterpartyEvents {
+        
     }
     
     entry fun init_module(resource: &signer) {

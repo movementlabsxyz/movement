@@ -13,6 +13,7 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+async-stream = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }
 aptos-api = { workspace = true }
@@ -30,6 +31,7 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+reqwest = { workspace = true }
 rand = { workspace = true }
 
 url = { workspace = true }
