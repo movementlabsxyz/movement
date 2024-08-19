@@ -37,7 +37,7 @@ use std::{
 use url::Url;
 
 #[tokio::test]
-async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), anyhow::Error> {
+async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
 
@@ -82,6 +82,24 @@ async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), any
 }
 
 #[tokio::test]
+async fn test_movement_client_deploy_counterparty_contract() -> Result<(), anyhow::Error> {
+	// See this example for deploying in Rust: https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/e2e-move-tests/src/tests/mint_nft.rs#L62
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_movement_client_complete_bridge_transfer() -> Result<(), anyhow::Error> {
+	
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_movement_client_abort_bridge_transfer() -> Result<(), anyhow::Error> {
+	
+	Ok(())
+}
+
+#[tokio::test]
 async fn test_eth_client_should_build_and_fetch_accounts() {
 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
 
@@ -112,7 +130,7 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 }
 
 #[tokio::test]
-async fn test_client_should_deploy_initiator_contract() {
+async fn test_eth_client_should_deploy_initiator_contract() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -125,7 +143,7 @@ async fn test_client_should_deploy_initiator_contract() {
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initialize() {
+async fn test_eth_client_should_successfully_call_initialize() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -134,7 +152,7 @@ async fn test_client_should_successfully_call_initialize() {
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initiate_transfer() {
+async fn test_eth_client_should_successfully_call_initiate_transfer() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -161,7 +179,7 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 
 #[tokio::test]
 #[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_client_should_successfully_get_bridge_transfer_id() {
+async fn test_eth_client_should_successfully_get_bridge_transfer_id() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -189,7 +207,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 
 #[tokio::test]
 #[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_client_should_successfully_complete_transfer() {
+async fn test_eth_client_should_successfully_complete_transfer() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
