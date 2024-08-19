@@ -221,12 +221,12 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		//@TODO properly return an error instead of unwrapping
 		let args = vec![
-			to_bcs_bytes(&initiator.0).unwrap(),
-			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
-			to_bcs_bytes(&hash_lock.0).unwrap(),
-			to_bcs_bytes(&time_lock.0).unwrap(),
-			to_bcs_bytes(&recipient.0).unwrap(),
-			to_bcs_bytes(&amount.0).unwrap(),
+			bcs::to_bytes(&initiator.0).unwrap(),
+			bcs::to_bytes(&bridge_transfer_id.0).unwrap(),
+			bcs::to_bytes(&hash_lock.0).unwrap(),
+			bcs::to_bytes(&time_lock.0).unwrap(),
+			bcs::to_bytes(&recipient.0).unwrap(),
+			bcs::to_bytes(&amount.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -251,9 +251,9 @@ impl BridgeContractCounterparty for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			to_bcs_bytes(&self.signer.address()).unwrap(),
-			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
-			to_bcs_bytes(&preimage.0).unwrap(),
+			bcs::to_bytes(&self.signer.address()).unwrap(),
+			bcs::to_bytes(&bridge_transfer_id.0).unwrap(),
+			bcs::to_bytes(&preimage.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -278,8 +278,8 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			to_bcs_bytes(&self.signer.address()).unwrap(),
-			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			bcs::to_bytes(&self.signer.address()).unwrap(),
+			bcs::to_bytes(&bridge_transfer_id.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -316,11 +316,4 @@ impl MovementClient {
 			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
 		}
 	}
-}
-
-fn to_bcs_bytes<T>(value: &T) -> Result<Vec<u8>, anyhow::Error>
-where
-	T: Serialize,
-{
-	Ok(bcs::to_bytes(value)?)
 }
