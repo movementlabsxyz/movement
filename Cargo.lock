@@ -3627,6 +3627,7 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "async-trait",
+ "bcs 0.1.4",
  "dashmap 6.0.1",
  "delegate",
  "derive_more",
@@ -3636,6 +3637,7 @@ dependencies = [
  "hex",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
+ "serde",
  "static_str_ops",
  "test-log",
  "thiserror",
