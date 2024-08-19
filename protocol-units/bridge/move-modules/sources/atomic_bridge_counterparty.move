@@ -57,7 +57,9 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     struct BridgeCounterpartyEvents {
-        
+        bridge_transfer_assets_locked: EventHandle<BridgeTransferAssetsLockedEvent>,
+        bridge_transfer_completed: EventHandle<BridgeTransferCompletedEvent>,
+        bridge_transfer_cancelled: EventHandle<BridgeTransferCancelledEvent>,
     }
     
     entry fun init_module(resource: &signer) {
