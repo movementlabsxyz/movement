@@ -232,9 +232,13 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Lock),
 			args,
 		);
-		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 		Ok(())
 	}
 
@@ -256,9 +260,13 @@ impl BridgeContractCounterparty for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
 		Ok(())
 	}
 
@@ -277,9 +285,13 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Abort),
 			args,
 		);
-		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 		Ok(())
 	}
 

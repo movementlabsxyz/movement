@@ -66,6 +66,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         // Update the pool balance
         poolBalance += totalAmount;
 
+        // The nonce is used to generate a unique bridge transfer id, without it 
+        // we can't guarantee the uniqueness of the id.
         nonce++; // increment the nonce
         bridgeTransferId =
             keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce));
