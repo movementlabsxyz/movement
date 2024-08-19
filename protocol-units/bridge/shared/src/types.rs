@@ -2,12 +2,13 @@ use alloy::primitives::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
+use serde::{Deserialize, Serialize};
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
 use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct BridgeTransferId<H>(pub H);
 
 impl<H> BridgeTransferId<H> {
@@ -55,7 +56,7 @@ where
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct InitiatorAddress<A>(pub A);
 
 impl From<&str> for InitiatorAddress<Vec<u8>> {
@@ -70,7 +71,7 @@ impl From<String> for InitiatorAddress<Vec<u8>> {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct RecipientAddress<A>(pub A);
 
 impl From<&str> for RecipientAddress<Vec<u8>> {
@@ -85,7 +86,7 @@ pub struct RecipientAddressCounterparty<A>(pub A);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct HashLock<H>(pub H);
 
 impl<H> HashLock<H> {
@@ -107,7 +108,7 @@ pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
 	HashLock(From::from(other.0))
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HashLockPreImage(pub Vec<u8>);
 
 impl AsRef<[u8]> for HashLockPreImage {
@@ -126,7 +127,7 @@ impl HashLockPreImage {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimeLock(pub u64);
 
 impl From<Uint<256, 4>> for TimeLock {
@@ -137,7 +138,7 @@ impl From<Uint<256, 4>> for TimeLock {
 	}
 }
 
-#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Amount(pub u64);
 
 impl From<Uint<256, 4>> for Amount {
@@ -174,7 +175,7 @@ pub struct LockDetails<A, H> {
 	pub amount: Amount,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct CounterpartyCompletedDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<Vec<u8>>,

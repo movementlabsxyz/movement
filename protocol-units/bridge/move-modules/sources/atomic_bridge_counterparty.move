@@ -37,6 +37,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     /// An event triggered upon locking assets for a bridge transfer 
     struct BridgeTransferAssetsLockedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
+        initiator: vector<u8>,
         recipient: address,
         amount: u64,
         hash_lock: vector<u8>,
@@ -103,6 +104,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         event::emit(
             BridgeTransferAssetsLockedEvent {
                 bridge_transfer_id,
+                initiator,
                 recipient,
                 amount,
                 hash_lock,
