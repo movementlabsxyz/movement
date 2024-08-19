@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes};
@@ -7,20 +5,13 @@ use alloy::providers::fillers::{
 	ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
 };
 use alloy::providers::RootProvider;
-use alloy::pubsub::PubSubFrontend;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress,
-	TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	LockDetails, RecipientAddress, TimeLock,
 };
-use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
-	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-};
-use futures::channel::mpsc::UnboundedReceiver;
 use serde::{Deserialize, Serialize};
 
 pub const INITIATED_SELECT: FixedBytes<32> =

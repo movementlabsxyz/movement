@@ -8,12 +8,14 @@ use bridge_shared::{
 use crate::types::{CompletedDetails, EthAddress};
 use thiserror::Error;
 
+#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MoveCounterpartyEvent<A, H> {
 	LockedBridgeTransfer(LockDetails<A, H>),
 	CompletedBridgeTransfer(CompletedDetails<A, H>),
 }
 
+#[allow(unused)]
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum MoveCounterpartyError {
 	#[error("Transfer not found")]
@@ -22,6 +24,7 @@ pub enum MoveCounterpartyError {
 	InvalidHashLockPreImage,
 }
 
+#[allow(unused)]
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum EthInitiatorError {
 	#[error("Failed to initiate bridge transfer")]
@@ -32,6 +35,7 @@ pub enum EthInitiatorError {
 	InvalidHashLockPreImage,
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EthChainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
@@ -52,7 +56,9 @@ impl From<BridgeContractInitiatorEvent<EthAddress, [u8; 32]>>
 			BridgeContractInitiatorEvent::Completed(id) => EthChainEvent::InitiatorContractEvent(
 				Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(id)),
 			),
-			_ => unimplemented!(), // Refunded variant
+			BridgeContractInitiatorEvent::Refunded(id) => EthChainEvent::InitiatorContractEvent(
+				Ok(SmartContractInitiatorEvent::RefundedBridgeTransfer(id)),
+			),
 		}
 	}
 }

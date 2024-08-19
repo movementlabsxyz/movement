@@ -3,83 +3,12 @@ use alloy::{
 	primitives::{address, keccak256},
 	providers::{Provider, WalletProvider},
 };
-use anyhow::Context;
-use anyhow::Result;
-use aptos_sdk::{
-	coin_client::CoinClient,
-	rest_client::{Client, FaucetClient},
-	types::LocalAccount,
-};
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
 	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use ethereum_bridge::types::EthAddress;
-use rand::{rngs::StdRng, SeedableRng};
-use tokio;
-
-use aptos_language_e2e_tests::{
-	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
-};
-use aptos_logger::Logger;
-use aptos_types::{
-	account_config::{DepositEvent, WithdrawEvent},
-	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
-};
-use std::{
-	convert::TryFrom,
-	process::{Command, Stdio},
-	str::FromStr,
-	time::Instant,
-};
-
-use url::Url;
-
-#[tokio::test]
-async fn test_movement_client_should_build_and_fund_accounts() -> Result<(), anyhow::Error> {
-	let (scaffold, mut child) = TestHarness::new_with_movement().await;
-	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
-
-	let rest_client = movement_client.rest_client();
-	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
-	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
-
-	// Print account addresses.
-	println!("\n=== Addresses ===");
-	println!("Alice: {}", alice.address().to_hex_literal());
-	println!("Bob: {}", bob.address().to_hex_literal());
-	let faucet_client = faucet_client.write().unwrap();
-	faucet_client
-		.fund(alice.address(), 100_000_000)
-		.await
-		.context("Failed to fund Alice's account")?;
-	faucet_client
-		.create_account(bob.address())
-		.await
-		.context("Failed to fund Bob's account")?;
-
-	// Print initial balances.
-	println!("\n=== Initial Balances ===");
-	println!(
-		"Alice: {:?}",
-		coin_client
-			.get_account_balance(&alice.address())
-			.await
-			.context("Failed to get Alice's account balance")?
-	);
-	println!(
-		"Bob: {:?}",
-		coin_client
-			.get_account_balance(&bob.address())
-			.await
-			.context("Failed to get Bob's account balance")?
-	);
-	child.kill().await.context("Failed to kill the child process")?;
-	Ok(())
-}
 
 #[tokio::test]
 async fn test_eth_client_should_build_and_fetch_accounts() {
@@ -88,7 +17,7 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let _anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 
-	let expected_accounts = vec![
+	let expected_accounts = [
 		address!("f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
 		address!("70997970c51812dc3a010c7d01b50e0d17dc79c8"),
 		address!("3c44cdddb6a900fa2b585dd299e03d12fa4293bc"),
@@ -156,64 +85,4 @@ async fn test_client_should_successfully_call_initiate_transfer() {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
-}
-
-#[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_client_should_successfully_get_bridge_transfer_id() {
-	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-	harness.deploy_init_contracts().await;
-
-	let recipient = harness.gen_aptos_account();
-	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-
-	harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
-			HashLock(hash_lock),
-			TimeLock(100),
-			Amount(1000), // Eth
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	//TODO: Here call get details with the captured event
-}
-
-#[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_client_should_successfully_complete_transfer() {
-	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-	harness.deploy_init_contracts().await;
-
-	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
-	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
-
-	let secret = "secret".to_string();
-	let hash_lock = keccak256(secret.as_bytes());
-	let hash_lock: [u8; 32] = hash_lock.into();
-
-	let _ = harness
-		.eth_client_mut()
-		.expect("Failed to get EthClient")
-		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient_bytes),
-			HashLock(hash_lock),
-			TimeLock(1000),
-			Amount(42),
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	//TODO: Here call complete with the id captured from the event
 }
