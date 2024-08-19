@@ -10,4 +10,5 @@ pub enum MovementChainEvent<A, H> {
 pub enum CounterpartyEventKind {
 	Locked,
 	Completed,
+	Cancelled,
 }

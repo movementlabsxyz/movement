@@ -56,16 +56,45 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 						client.counterparty_address.to_hex_literal()
 				);
 				let locked_response = rest_client
-								.get_account_events_bcs(
-										client.counterparty_address,
-										struct_tag.as_str(),
-										"bridge_transfer_assets_locked",
-										Some(1),
-										None
-								).await?;
-				let events = process_response(locked_response)?;
+						.get_account_events_bcs(
+								client.counterparty_address,
+								struct_tag.as_str(),
+								"bridge_transfer_assets_locked",
+								Some(1),
+								None
+						)
+						.await?;
+				let locked_events= process_response(locked_response, CounterpartyEventKind::Locked)?;
 
-				yield Ok(events);
+				let completed_response = rest_client
+						.get_account_events_bcs(
+								client.counterparty_address,
+								struct_tag.as_str(),
+								"bridge_transfer_completed",
+								Some(1),
+								None
+						)
+						.await?;
+				let completed_events = process_response(completed_response, CounterpartyEventKind::Cancelled)?;
+
+				let cancelled_response = rest_client
+						.get_account_events_bcs(
+								client.counterparty_address,
+								struct_tag.as_str(),
+								"bridge_transfer_cancelled",
+								Some(1),
+								None
+						)
+						.await?;
+				let cancelled_events = process_response(cancelled_response, CounterpartyEventKind::Completed)?;
+
+				let total_events = locked_events
+						.into_iter()
+						.chain(completed_events.into_iter())
+						.chain(cancelled_events.into_iter())
+						.collect::<Vec<_>>();
+
+				yield Ok(total_events);
 			}
 		};
 
@@ -81,7 +110,7 @@ fn process_response(
 	res.into_inner()
 		.into_iter()
 		.map(|e| {
-			let data = e.event.event_data(); // Use the method from the trait
+			let data = e.event.event_data();
 			match kind {
 				CounterpartyEventKind::Locked => {
 					let locked_details =
