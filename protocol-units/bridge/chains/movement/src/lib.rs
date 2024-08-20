@@ -18,7 +18,7 @@ use bridge_shared::{
 };
 use rand::prelude::*;
 use serde::Serialize;
-use std::{env, process::{Command, Stdio}};
+use std::{env, io::{Write, Read}, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::{
 	sync::{mpsc, Arc, Mutex, RwLock},
@@ -113,7 +113,7 @@ impl MovementClient {
 		config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
-		let mut child = TokioCommand::new("aptos")
+		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet"])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
@@ -197,29 +197,46 @@ impl MovementClient {
 	
 	pub fn publish_for_test(&self) -> Result<()> {
 		println!("Current directory: {:?}", env::current_dir());
-		let output1 = Command::new("aptos")
-			.args(&[
-				"init",
-				"--assume-yes"			
-			])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.output()
-			.expect("Failed to execute command");
+		let mut process = Command::new("movement")
+                .args(&["init"])
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()
+                .expect("Failed to execute command");
 
-		if !output1.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&output1.stdout));
-		}
-	
-		if !output1.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output1.stderr));
-		}
+        // Write "local" to the first prompt
+	println!("Spawned");
+        let stdin = process.stdin.as_mut().expect("Failed to open stdin");
+        stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-		let output = Command::new("aptos")
+        // Press enter for the second prompt
+        stdin.write_all(b"\n").expect("Failed to write to stdin");
+
+        // Close stdin to indicate that no more input will be provided
+        drop(stdin);
+
+        let output = process
+                .wait_with_output()
+                .expect("Failed to read command output");
+
+        if !output.stdout.is_empty() {
+                println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+        }
+    
+        if !output.stderr.is_empty() {
+                eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+        }
+
+		let output = Command::new("movement")
 			.args(&[
 				"move", 
-				"publish",
+				"create-resource-account-and-publish-package",
 				"--assume-yes",
+				"--address-name",
+				"moveth", 
+				"--seed",
+				"1234",
 				"--package-dir", 
 				"../move-modules"
 			])
