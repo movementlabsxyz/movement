@@ -20,8 +20,19 @@ COMMIT_HASH=$(git rev-parse HEAD)
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 SANITIZED_BRANCH_NAME=${BRANCH_NAME//\//.}
 
+# Get the cargo workspaces version by matching the line version = "x.x.x" directly to avoid add dependencies
+CARGO_WORKSPACE_VERSION=$(awk -F\" '/version =/ {print $2}' Cargo.toml | head -n 1)
+# replace the . with - to avoid docker tag issues
+SANITIZED_CARGO_WORKSPACE_VERSION=${CARGO_WORKSPACE_VERSION//\./-}
+# if the branch is not main, add the branch name to the version
+if [ "$BRANCH_NAME" != "main" ]; then
+    SANITIZED_CARGO_WORKSPACE_VERSION="${SANITIZED_CARGO_WORKSPACE_VERSION}-${SANITIZED_BRANCH_NAME}"
+fi
+
+
 # Tag and build the Docker image
 IMG_NAME_TAG_COMMIT="${REPOSITORY}/${IMAGE_NAME}:${COMMIT_HASH}"
 IMG_NAME_TAG_BRANCH="${REPOSITORY}/${IMAGE_NAME}:${SANITIZED_BRANCH_NAME}"
+IMG_NAME_TAG_VERSION="${REPOSITORY}/${IMAGE_NAME}:${SANITIZED_CARGO_WORKSPACE_VERSION}"
 
-docker buildx imagetools create --tag ${IMG_NAME_TAG_BRANCH} --tag ${IMG_NAME_TAG_COMMIT}  ${IMG_NAME_TAG_COMMIT}-amd64 ${IMG_NAME_TAG_COMMIT}-arm64
+docker buildx imagetools create --tag ${IMG_NAME_TAG_BRANCH} --tag ${IMG_NAME_TAG_COMMIT} --tag ${IMG_NAME_TAG_VERSION}  ${IMG_NAME_TAG_COMMIT}-amd64 ${IMG_NAME_TAG_COMMIT}-arm64
