@@ -1,6 +1,5 @@
 module atomic_bridge::atomic_bridge_counterparty {
     use std::signer;
-    use std::event;
     use std::vector;
     use aptos_framework::account;
     #[test_only]
