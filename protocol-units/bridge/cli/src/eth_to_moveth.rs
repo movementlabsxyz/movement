@@ -14,8 +14,8 @@ use movement_bridge::MovementClient;
 pub async fn execute(command: &Commands) -> Result<()> {
 	match command {
 		Commands::IniatializeUser { args } => Ok(()),
-		Commands::BridgeToEthereum { args, recipient, amount } => bridge_to_ethereum(args, recipient, *amount).await,
-		Commands::BridgeToMovement { args, recipient, amount } => bridge_to_movement(args, recipient, *amount).await,
+		Commands::ToEthereum { args, recipient, amount } => bridge_to_ethereum(args, recipient, *amount).await,
+		Commands::ToMovement { args, recipient, amount } => bridge_to_movement(args, recipient, *amount).await,
 		Commands::Resume { args, transfer_id } => resume_swap(args, transfer_id).await,
 	}
 }

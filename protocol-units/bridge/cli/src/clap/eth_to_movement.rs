@@ -9,7 +9,7 @@ use url::Url;
 pub struct EthSharedArgs {
 	/// Private key of the Ethereum signer
 	#[arg(long)]
-	pub eth_signer_private_key: PrivateKeySigner,
+	pub eth_private_key: PrivateKeySigner,
 
 	/// URL for the Ethereum RPC
 	#[arg(long, default_value = "http://localhost:8545")]
@@ -35,7 +35,7 @@ pub struct EthSharedArgs {
 #[derive(Args, Clone, Debug)]
 pub struct MoveSharedArgs {
 	#[arg(long)]
-	pub move_signer_private_key: String,
+	pub move_private_key: String,
 
 	/// URL for the Ethereum RPC
 	#[arg(long, default_value = "http://localhost:8545")]
@@ -73,7 +73,7 @@ pub struct CombinedArgs {
 #[derive(Subcommand)]
 pub enum Commands {
 	/// Initiate a bridge transfer from Ethereum
-	BridgeToMovement {
+	ToMovement {
 		#[command(flatten)]
 		args: EthSharedArgs,
 		/// The recipient address on the movement labs chain
@@ -82,7 +82,7 @@ pub enum Commands {
 		amount: u64,
 	},
 	/// Initiate a bridge transfer from Movement
-	BridgeToEthereum {
+	ToEthereum {
 		#[command(flatten)]
 		args: MoveSharedArgs,
 		/// The recipient address on the Ethereum chain

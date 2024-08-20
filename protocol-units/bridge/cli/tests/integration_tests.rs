@@ -26,7 +26,7 @@ async fn test_swap() -> eyre::Result<()> {
 
 	// Set up EthSharedArgs
 	let eth_shared_args = EthSharedArgs {
-		eth_signer_private_key: wallet.into(),
+		eth_private_key: wallet.into(),
 		eth_rpc_url: Url::parse(&anvil.endpoint()).unwrap(),
 		eth_ws_url: Url::parse(&anvil.endpoint().replace("http", "ws")).unwrap(),
 		eth_initiator_contract: EthAddress(*initiator_contract.address()),
