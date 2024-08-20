@@ -29,6 +29,7 @@ impl From<&MoveSharedArgs> for MovementConfig {
 
 impl From<MoveSharedArgs> for MovementConfig {
 	fn from(args: MoveSharedArgs) -> Self {
+		// turn a private key string into an Arc<RwLock<LocalAccount>> with ind
 		Self {
 			rpc_url: Some(args.move_rpc_url),
 			ws_url: Some(args.move_ws_url),

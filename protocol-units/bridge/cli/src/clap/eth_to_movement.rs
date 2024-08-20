@@ -2,8 +2,6 @@ use alloy::signers::local::PrivateKeySigner;
 use clap::{Args, Subcommand};
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
-use std::sync::{Arc, RwLock};
-use aptos_sdk::types:: LocalAccount;
 
 use url::Url;
 
@@ -36,9 +34,8 @@ pub struct EthSharedArgs {
 
 #[derive(Args, Clone, Debug)]
 pub struct MoveSharedArgs {
-	/// Private key of the Ethereum signer
 	#[arg(long)]
-	pub move_signer_private_key: Arc<RwLock<LocalAccount>>,
+	pub move_signer_private_key: String,
 
 	/// URL for the Ethereum RPC
 	#[arg(long, default_value = "http://localhost:8545")]
