@@ -18,7 +18,7 @@ use bridge_shared::{
 };
 use rand::prelude::*;
 use serde::Serialize;
-use std::process::{Command, Stdio};
+use std::{env, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::{
 	sync::{mpsc, Arc, Mutex, RwLock},
@@ -96,8 +96,12 @@ impl MovementClient {
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
 
+		let mut address_bytes = [0u8; AccountAddress::LENGTH];
+        	address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
+		let counterparty_address = AccountAddress::new(address_bytes);
+
 		Ok(MovementClient {
-			counterparty_address: DUMMY_ADDRESS,
+			counterparty_address,
 			initiator_address: Vec::new(), //dummy for now
 			rest_client,
 			faucet_client: None,
@@ -190,7 +194,51 @@ impl MovementClient {
 			child,
 		))
 	}
+	
+	pub fn publish_for_test(&self) -> Result<()> {
+		println!("Current directory: {:?}", env::current_dir());
+		let output1 = Command::new("aptos")
+			.args(&[
+				"init",
+				"--assume-yes"			
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
 
+		if !output1.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&output1.stdout));
+		}
+	
+		if !output1.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&output1.stderr));
+		}
+
+		let output = Command::new("aptos")
+			.args(&[
+				"move", 
+				"publish",
+				"--assume-yes",
+				"--package-dir", 
+				"../move-modules"
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+	
+		if !output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+		}
+	
+		if !output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+		}
+
+		Ok(())
+	}
+	
 	pub fn rest_client(&self) -> &Client {
 		&self.rest_client
 	}

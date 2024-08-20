@@ -17,7 +17,7 @@ use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
-	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionPayload, TransactionStatus},
 };
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},

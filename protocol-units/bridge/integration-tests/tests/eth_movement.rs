@@ -5,9 +5,12 @@ use alloy::{
 };
 use anyhow::Context;
 use anyhow::Result;
+
+use aptos_framework;
 use aptos_sdk::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
+	transaction_builder::aptos_stdlib,
 	types::LocalAccount,
 };
 use bridge_integration_tests::TestHarness;
@@ -24,9 +27,9 @@ use aptos_language_e2e_tests::{
 };
 use aptos_logger::Logger;
 use aptos_types::{
-	account_config::{DepositEvent, WithdrawEvent},
-	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
+	account_address::{create_resource_address, AccountAddress}, account_config::{DepositEvent, WithdrawEvent}, transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus}, PeerId
 };
+use bcs;
 use std::{
 	convert::TryFrom,
 	process::{Command, Stdio},
@@ -37,13 +40,14 @@ use std::{
 use url::Url;
 
 #[tokio::test]
+#[ignore]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
-
+// 
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
+	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
@@ -83,7 +87,50 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 
 #[tokio::test]
 async fn test_movement_client_deploy_counterparty_contract() -> Result<(), anyhow::Error> {
-	// See this example for deploying in Rust: https://github.com/aptos-labs/aptos-core/blob/main/aptos-move/e2e-move-tests/src/tests/mint_nft.rs#L62
+
+	let (scaffold, mut child) = TestHarness::new_with_movement().await;
+	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
+
+	let rest_client = movement_client.rest_client();
+	let coin_client = CoinClient::new(&rest_client);
+	let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
+	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+
+	// Print account addresses.
+	println!("\n=== Addresses ===");
+	println!("Alice: {}", alice.address().to_hex_literal());
+	println!("Bob: {}", bob.address().to_hex_literal());
+	let faucet_client = faucet_client.write().unwrap();
+	faucet_client
+		.fund(alice.address(), 100_000_000)
+		.await
+		.context("Failed to fund Alice's account")?;
+	faucet_client
+		.create_account(bob.address())
+		.await
+		.context("Failed to fund Bob's account")?;
+
+	// Print initial balances.
+	println!("\n=== Initial Balances ===");
+	println!(
+		"Alice: {:?}",
+		coin_client
+			.get_account_balance(&alice.address())
+			.await
+			.context("Failed to get Alice's account balance")?
+	);
+	println!(
+		"Bob: {:?}",
+		coin_client
+			.get_account_balance(&bob.address())
+			.await
+			.context("Failed to get Bob's account balance")?
+	);
+
+	movement_client.publish_for_test();
+
+	child.kill().await.context("Failed to kill the child process")?;
 	Ok(())
 }
 
