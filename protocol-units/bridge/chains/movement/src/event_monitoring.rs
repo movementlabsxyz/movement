@@ -97,18 +97,32 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 						.chain(cancelled_events.into_iter())
 						.collect::<Vec<_>>();
 
-				  yield locked_events;
+				yield total_events;
 			}
 		};
 
 		let mut stream = Box::pin(stream);
-		// Handle the Result manually, so that we flatten the output
-		match Pin::new(&mut stream).poll_next(cx) {
-			Poll::Ready(Some(Ok(event))) => Poll::Ready(Some(event)),
-			Poll::Ready(Some(Err(_))) => Poll::Ready(None), // or handle the error as needed
-			Poll::Ready(None) => Poll::Ready(None),
-			Poll::Pending => Poll::Pending,
+
+		// Process each vector of events returned by the stream
+		while let Poll::Ready(option) = Pin::new(&mut stream).poll_next(cx) {
+			match option {
+				Some(Ok(events)) => {
+					for event in events {
+						// Process each event before returning it
+						return Poll::Ready(Some(event));
+					}
+				}
+				Some(Err(e)) => {
+					return Poll::Ready(None);
+				}
+				None => {
+					return Poll::Ready(None);
+				}
+			}
 		}
+
+		// If no events were ready, return Poll::Pending
+		Poll::Pending
 	}
 }
 
