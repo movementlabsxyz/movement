@@ -10,7 +10,7 @@ use crate::{
 use anyhow::Result;
 use aptos_sdk::rest_client::Response;
 use aptos_types::contract_event::EventWithVersion;
-use async_stream::{async_stream::AsyncStream, try_stream};
+use async_stream::try_stream;
 use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
@@ -52,10 +52,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 		let client = self.client.as_ref().unwrap(); // would be nice if poll_next could return Result
 		let rest_client = client.rest_client();
 		let this = self.get_mut();
-		let stream: AsyncStream<
-			TryStreamResult<BridgeContractCounterpartyEvent<MovementAddress, [u8; 32]>>,
-			_,
-		> = try_stream! {
+		let stream = try_stream! {
 			loop {
 				let struct_tag = format!(
 						"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
@@ -70,7 +67,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 								None
 						)
 						.await?;
-				let locked_events= process_response(locked_response, CounterpartyEventKind::Locked)?;
+				let locked_events = process_response(locked_response, CounterpartyEventKind::Locked)?;
 
 				let completed_response = rest_client
 						.get_account_events_bcs(
@@ -100,9 +97,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 						.chain(cancelled_events.into_iter())
 						.collect::<Vec<_>>();
 
-				for event in total_events {
-						yield event;
-				}
+				  yield locked_events;
 			}
 		};
 
