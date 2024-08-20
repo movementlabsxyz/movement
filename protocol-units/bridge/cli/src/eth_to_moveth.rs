@@ -8,7 +8,6 @@ use bridge_shared::types::{
 use ethereum_bridge::{client::EthClient, types::EthAddress};
 use movement_bridge::utils::MovementAddress;
 use movement_bridge::MovementClient;
-use bridge_shared::bridge_contracts::BridgeContractInitiator;
 
 
 

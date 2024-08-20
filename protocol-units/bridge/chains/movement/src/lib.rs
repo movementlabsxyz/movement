@@ -1,13 +1,9 @@
 use aptos_api::accounts::Account;
-use aptos_sdk::{move_types::language_storage::TypeTag, rest_client::Client, types::LocalAccount};
+use aptos_sdk::{move_types::language_storage::TypeTag, rest_client::FaucetClient, rest_client::Client, types::LocalAccount};
 use crate::utils::MovementAddress;
 use anyhow::Result;
-use aptos_sdk::{
-	move_types::language_storage::TypeTag,
-	rest_client::{Client, FaucetClient},
-	types::LocalAccount,
-};
 use aptos_types::account_address::AccountAddress;
+use aptos_sdk::rest_client::aptos_api_types::MoveType;
 use bridge_shared::{
 	
 	bridge_contracts::{
@@ -22,6 +18,7 @@ use bridge_shared::{
 use utils::send_view_request;
 use rand::prelude::*;
 use serde::Serialize;
+use serde_json::Value;
 use std::process::Stdio;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -320,14 +317,18 @@ impl BridgeContractCounterparty for MovementClient {
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
-		send_view_request(
-			self.rest_client.clone() as &MovementClient,
-			self.counterparty_address,
-			COUNTERPARTY_MODULE_NAME,
-			"get_bridge_transfer_details",
-			self.counterparty_type_args(Call::GetDetails),
+		let result = send_view_request(
+			self.rest_client.clone(),
+			self.counterparty_address.to_string(),
+			COUNTERPARTY_MODULE_NAME.to_string(),
+			"get_bridge_transfer_details".to_string(),
+			self.counterparty_move_types(Call::GetDetails),
 			vec![],
-		)
+		).await;
+	// We attempt to deserialize this JSON value into BridgeTransferDetails<Self::Address, Self::Hash> using serde_json::from_value.
+		let response = result.unwrap();
+		let details = serde_json::from_value::<BridgeTransferDetails<Self::Address, Self::Hash>>(response[0].clone()).unwrap();
+		Ok(Some(details))
 	}
 }
 
@@ -409,8 +410,17 @@ impl BridgeContractInitiator for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
-		todo!();
-		// let response = self.rest_client.view
+		let response = send_view_request(
+			self.rest_client.clone(),
+			self.counterparty_address.to_string(),
+			COUNTERPARTY_MODULE_NAME.to_string(),
+			"get_bridge_transfer_details".to_string(),
+			self.counterparty_move_types(Call::GetDetails),
+			vec![],
+		).await;
+
+		let details = serde_json::from_value::<BridgeTransferDetails<Self::Address, Self::Hash>>(response.unwrap()[0].clone()).unwrap();
+		Ok(Some(details))
 	}
 }
 
@@ -421,6 +431,15 @@ impl MovementClient {
 			Call::Complete => vec![TypeTag::Address, TypeTag::U64, TypeTag::U8],
 			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
 			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
+		}
+	}
+
+	fn counterparty_move_types(&self, call: Call) -> Vec<MoveType> {
+		match call {
+			Call::Lock => vec![MoveType::Address, MoveType::U64, MoveType::U64, MoveType::U8],
+			Call::Complete => vec![MoveType::Address, MoveType::U64, MoveType::U8],
+			Call::Abort => vec![MoveType::Address, MoveType::U64],
+			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
 		}
 	}
 }

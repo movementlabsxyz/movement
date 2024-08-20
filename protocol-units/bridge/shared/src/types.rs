@@ -3,8 +3,9 @@ use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
 use std::{fmt::Debug, hash::Hash};
+use serde::Deserialize;
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct BridgeTransferId<H>(pub H);
 
 impl<H> BridgeTransferId<H> {
@@ -52,7 +53,7 @@ where
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct InitiatorAddress<A>(pub A);
 
 impl From<&str> for InitiatorAddress<Vec<u8>> {
@@ -67,7 +68,7 @@ impl From<String> for InitiatorAddress<Vec<u8>> {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct RecipientAddress<A>(pub A);
 
 impl From<&str> for RecipientAddress<Vec<u8>> {
@@ -82,7 +83,7 @@ pub struct RecipientAddressCounterparty<A>(pub A);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
 pub struct HashLock<H>(pub H);
 
 impl<H> HashLock<H> {
@@ -123,7 +124,7 @@ impl HashLockPreImage {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct TimeLock(pub u64);
 
 impl From<Uint<256, 4>> for TimeLock {
@@ -134,7 +135,7 @@ impl From<Uint<256, 4>> for TimeLock {
 	}
 }
 
-#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct Amount(pub u64);
 
 impl From<Uint<256, 4>> for Amount {
@@ -145,7 +146,7 @@ impl From<Uint<256, 4>> for Amount {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<A>,

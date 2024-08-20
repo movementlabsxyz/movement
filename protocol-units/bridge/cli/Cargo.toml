@@ -23,7 +23,7 @@ serde_json.workspace = true
 uuid.workspace = true
 
 alloy.workspace = true
-
+aptos-sdk.workspace = true
 directories = "5.0"
 url.workspace = true
 eyre = "0.6.12"
