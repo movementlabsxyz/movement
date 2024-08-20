@@ -1,12 +1,10 @@
-use std::error::Error;
-use std::{pin::Pin, task::Poll};
-
 use crate::MovementClient;
 use crate::{
 	event_types::{CounterpartyEventKind, MovementChainEvent},
 	types::MovementHash,
 	utils::MovementAddress,
 };
+use anyhow::Error;
 use anyhow::Result;
 use aptos_sdk::rest_client::Response;
 use aptos_types::contract_event::EventWithVersion;
@@ -15,7 +13,8 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
 use bridge_shared::types::{CounterpartyCompletedDetails, LockDetails};
-use futures::{FutureExt, Stream, StreamExt};
+use futures::{Stream, TryFuture};
+use std::{pin::Pin, task::Poll};
 use tokio::sync::mpsc::UnboundedReceiver;
 
 #[allow(unused)]
@@ -31,6 +30,7 @@ impl BridgeContractCounterpartyMonitoring
 	type Hash = MovementHash;
 }
 
+#[allow(unused)]
 impl MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	async fn run(
 		_rest_url: &str,
@@ -39,8 +39,6 @@ impl MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 		todo!()
 	}
 }
-
-type TryStreamResult<T> = Result<T, Box<dyn Error + Send + Sync>>;
 
 impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	type Item = BridgeContractCounterpartyEvent<
@@ -51,78 +49,95 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
 		let client = self.client.as_ref().unwrap(); // would be nice if poll_next could return Result
 		let rest_client = client.rest_client();
-		let this = self.get_mut();
+
 		let stream = try_stream! {
 			loop {
 				let struct_tag = format!(
-						"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
-						client.counterparty_address.to_hex_literal()
+					"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
+					client.counterparty_address.to_hex_literal()
 				);
+
+				// Get locked events
 				let locked_response = rest_client
-						.get_account_events_bcs(
-								client.counterparty_address,
-								struct_tag.as_str(),
-								"bridge_transfer_assets_locked",
-								Some(1),
-								None
-						)
-						.await?;
-				let locked_events = process_response(locked_response, CounterpartyEventKind::Locked)?;
+					.get_account_events_bcs(
+						client.counterparty_address,
+						struct_tag.as_str(),
+						"bridge_transfer_assets_locked",
+						Some(1),
+						None,
+					)
+					.await
+					.map_err(|e| Error::msg(e.to_string()))?;
 
+				// Get completed events
 				let completed_response = rest_client
-						.get_account_events_bcs(
-								client.counterparty_address,
-								struct_tag.as_str(),
-								"bridge_transfer_completed",
-								Some(1),
-								None
-						)
-						.await?;
-				let completed_events = process_response(completed_response, CounterpartyEventKind::Cancelled)?;
+					.get_account_events_bcs(
+						client.counterparty_address,
+						struct_tag.as_str(),
+						"bridge_transfer_completed",
+						Some(1),
+						None,
+					)
+					.await
+					.map_err(|e| Error::msg(e.to_string()))?;
 
+				// Get cancelled events
 				let cancelled_response = rest_client
-						.get_account_events_bcs(
-								client.counterparty_address,
-								struct_tag.as_str(),
-								"bridge_transfer_cancelled",
-								Some(1),
-								None
-						)
-						.await?;
-				let cancelled_events = process_response(cancelled_response, CounterpartyEventKind::Completed)?;
+					.get_account_events_bcs(
+						client.counterparty_address,
+						struct_tag.as_str(),
+						"bridge_transfer_cancelled",
+						Some(1),
+						None,
+					)
+					.await
+					.map_err(|e| Error::msg(e.to_string()))?;
+
+				// Process responses and return results
+				let locked_events = process_response(locked_response, CounterpartyEventKind::Locked)
+					.map_err(|e| Error::msg(e.to_string()))?;
+
+				let completed_events = process_response(completed_response, CounterpartyEventKind::Completed)
+					.map_err(|e| Error::msg(e.to_string()))?;
+
+				let cancelled_events = process_response(cancelled_response, CounterpartyEventKind::Cancelled)
+					.map_err(|e| Error::msg(e.to_string()))?;
 
 				let total_events = locked_events
-						.into_iter()
-						.chain(completed_events.into_iter())
-						.chain(cancelled_events.into_iter())
-						.collect::<Vec<_>>();
+					.into_iter()
+					.chain(completed_events.into_iter())
+					.chain(cancelled_events.into_iter())
+					.collect::<Vec<_>>();
 
-				yield total_events;
+				for event in total_events {
+					yield event;
+				}
 			}
 		};
 
-		let mut stream = Box::pin(stream);
+		// We need to coerce and declare the reutned type of `try_stream!`
+		#[allow(clippy::type_complexity)]
+		let mut stream: Pin<
+			Box<
+				dyn Stream<
+						Item = Result<
+							BridgeContractCounterpartyEvent<
+								<Self as BridgeContractCounterpartyMonitoring>::Address,
+								<Self as BridgeContractCounterpartyMonitoring>::Hash,
+							>,
+							Error,
+						>,
+					> + Send,
+			>,
+		> = Box::pin(stream);
 
-		// Process each vector of events returned by the stream
-		while let Poll::Ready(option) = Pin::new(&mut stream).poll_next(cx) {
-			match option {
-				Some(Ok(events)) => {
-					for event in events {
-						// Process each event before returning it
-						return Poll::Ready(Some(event));
-					}
-				}
-				Some(Err(e)) => {
-					return Poll::Ready(None);
-				}
-				None => {
-					return Poll::Ready(None);
-				}
-			}
+		// Poll the stream to get the next event
+		match Pin::new(&mut stream).poll_next(cx) {
+			Poll::Ready(Some(Ok(event))) => Poll::Ready(Some(event)),
+			Poll::Ready(Some(Err(_))) => Poll::Ready(None),
+			Poll::Ready(None) => Poll::Ready(None),
+			Poll::Pending => Poll::Pending,
 		}
-
-		// If no events were ready, return Poll::Pending
-		Poll::Pending
 	}
 }
 
