@@ -47,9 +47,13 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
-		let client = self.client.as_ref().unwrap(); // would be nice if poll_next could return Result
-		let rest_client = client.rest_client();
+		let client = if let Some(client) = self.client.as_ref() {
+			client
+		} else {
+			return Poll::Ready(None);
+		};
 
+		let rest_client = client.rest_client();
 		let stream = try_stream! {
 			loop {
 				let struct_tag = format!(
