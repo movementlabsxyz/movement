@@ -33,9 +33,9 @@ impl From<MoveSharedArgs> for MovementConfig {
 			rpc_url: Some(args.move_rpc_url),
 			ws_url: Some(args.move_ws_url),
 			chain_id: args.move_chain_id,
-			signer_private_key: Some(args.move_signer_private_key),
-			initiator_contract: Some(args.move_initiator_contract.0),
-			counterparty_contract: Some(args.move_counterparty_contract.0),
+			signer_private_key: args.move_signer_private_key,
+			initiator_contract: Some(args.move_initiator_contract),
+			counterparty_contract: Some(args.move_counterparty_contract),
 			gas_limit: args.move_gas_limit,
 		}
 	}

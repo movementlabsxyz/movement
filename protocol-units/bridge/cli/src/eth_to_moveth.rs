@@ -68,8 +68,8 @@ async fn bridge_to_ethereum(
 	println!("Current Ethereum block height: {}", current_block);
 
 	// Convert signer's private key to EthAddress
-	let initiator_address = MovementAddress(client.get_signer_address());
-	let recipient_address = RecipientAddress(From::from(recipient));
+	let initiator_address = MovementAddress(client.get_signer_address().await);
+	let recipient_address = RecipientAddress(From::from(recipient.to_vec()));
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
