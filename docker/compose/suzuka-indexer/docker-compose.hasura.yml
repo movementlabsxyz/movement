@@ -41,7 +41,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/athena/health"]
       interval: 5s
       timeout: 10s
-      retries: 5
-      start_period: 5s
+      retries: 8
+      start_period: 8s
 volumes:
   db_data:

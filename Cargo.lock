@@ -3721,12 +3721,16 @@ version = "0.1.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 05c67267 (Add indexer and Hasura to movement)
 source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8f5257a29997cc11394e88d7fa2ccefb7ff9ceb2#8f5257a29997cc11394e88d7fa2ccefb7ff9ceb2"
 =======
 source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8b673182cf1887e011c35c5f8889898b1fd5073e#8b673182cf1887e011c35c5f8889898b1fd5073e"
 >>>>>>> 8421d947 (correct Aptos rev issue)
+=======
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb#656bb2ba08888cba4d16405b8b668155a5c624eb"
+>>>>>>> 9262c1c4 (change process compose health timing)
 dependencies = [
  "chrono",
 ]
@@ -6909,6 +6913,7 @@ dependencies = [
 [[package]]
 name = "cc"
 <<<<<<< HEAD
+<<<<<<< HEAD
 version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "504bdec147f2cc13c8b57ed9401fd8a147cc66b67ad5cb241394244f2c947549"
@@ -6917,6 +6922,11 @@ version = "1.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26a5c3fd7bfa1ce3897a3a3501d362b2d87b7f2583ebcb4a949ec25911025cbc"
 >>>>>>> 8e75b173 (Remove indexer from Suzuka node. Keep gRpc stream)
+=======
+version = "1.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68064e60dbf1f17005c2fde4d07c16d8baa506fd7ffed8ccab702d93617975c7"
+>>>>>>> 9262c1c4 (change process compose health timing)
 dependencies = [
  "jobserver",
  "libc",
@@ -14840,12 +14850,13 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8b673182cf1887e011c35c5f8889898b1fd5073e#8b673182cf1887e011c35c5f8889898b1fd5073e"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb#656bb2ba08888cba4d16405b8b668155a5c624eb"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
+<<<<<<< HEAD
 <<<<<<< HEAD
  "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8f5257a29997cc11394e88d7fa2ccefb7ff9ceb2)",
 <<<<<<< HEAD
@@ -14855,6 +14866,9 @@ dependencies = [
 >>>>>>> 05c67267 (Add indexer and Hasura to movement)
 =======
  "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8b673182cf1887e011c35c5f8889898b1fd5073e)",
+=======
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb)",
+>>>>>>> 9262c1c4 (change process compose health timing)
  "aptos-protos",
 >>>>>>> 8421d947 (correct Aptos rev issue)
  "async-trait",
@@ -16257,6 +16271,7 @@ dependencies = [
 name = "serde_json"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
@@ -16270,6 +16285,11 @@ version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
 >>>>>>> 05c67267 (Add indexer and Hasura to movement)
+=======
+version = "1.0.125"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "83c8e735a073ccf5be70aa8066aa984eaf2fa000db6c8d0100ae605b366d31ed"
+>>>>>>> 9262c1c4 (change process compose health timing)
 dependencies = [
  "indexmap 2.3.0",
  "itoa",
@@ -16379,7 +16399,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=8b673182cf1887e011c35c5f8889898b1fd5073e#8b673182cf1887e011c35c5f8889898b1fd5073e"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb#656bb2ba08888cba4d16405b8b668155a5c624eb"
 dependencies = [
  "anyhow",
  "aptos-system-utils",

@@ -160,5 +160,5 @@ jobs:
 
     - name: Run Indexer tests in nix environment
       # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.eth-local.celestia-local.indexer.hasura.indexer-test -t=false"
+      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
 
