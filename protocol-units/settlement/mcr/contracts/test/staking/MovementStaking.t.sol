@@ -435,4 +435,125 @@ contract MovementStakingTest is Test {
         );
         staking.reward(attesters, amounts, custodians);
     }
+
+    function testBasicDelegation() public {
+        MOVEToken moveToken = new MOVEToken();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        // Register a new staker
+        address payable domain = payable(vm.addr(1));
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        vm.prank(domain);
+        staking.registerDomain(1 seconds, custodians);
+
+        // genesis ceremony
+        address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
+        moveToken.mint(staker, 150);
+        vm.prank(staker);
+        moveToken.approve(address(staking), 100);
+        vm.prank(staker);
+        staking.stake(domain, moveToken, 100);
+        vm.prank(domain);
+        staking.acceptGenesisCeremony();
+
+        // add another staker
+        address payable alice = payable(vm.addr(3));
+        staking.whitelistAddress(alice);
+        moveToken.mint(alice, 150);
+        vm.prank(alice);
+        moveToken.approve(address(staking), 100);
+        vm.prank(alice);
+        staking.stakeWithDelegate(domain, moveToken, 100, staker);
+        uint256 stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain) + 1,
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 100);
+
+        // check stake
+        assertEq(
+            staking.getAllCurrentEpochStake(domain, address(moveToken), staker),
+            100
+        );
+
+        vm.warp(2 seconds);
+        vm.prank(domain);
+        staking.rollOverEpoch();
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 100);
+
+        // check stake
+        assertEq(
+            staking.getAllCurrentEpochStake(domain, address(moveToken), staker),
+            200
+        );
+
+        // unstake the staker for themself
+        vm.prank(staker);
+        staking.unstake(domain, address(moveToken), 100);
+        vm.warp(3 seconds);
+        vm.prank(domain);
+        staking.rollOverEpoch();
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            staker
+        );
+        assertEq(stake, 0);
+        stake = staking.getAllStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker
+        );
+        assertEq(stake, 100); // stake from the delegator
+
+        // verify this is indeed stake from the delegator
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 100);
+
+        // now have the delegator unstake
+        vm.prank(alice);
+        staking.unstakeWithDelegate(domain, address(moveToken), 100, staker);
+        vm.warp(4 seconds);
+        vm.prank(domain);
+        staking.rollOverEpoch();
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 0);
+        stake = staking.getAllStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker
+        );
+        assertEq(stake, 0);
+    }
 }

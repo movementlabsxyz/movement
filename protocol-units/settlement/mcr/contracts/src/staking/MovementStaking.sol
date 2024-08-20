@@ -118,8 +118,8 @@ contract MovementStaking is
         // add the attester to the delegator's set
         attestersByDelegatorByDomain[domain][delegator].add(attester);
 
-        epochStakesByDomain[domain][epoch][custodian][delegator][
-            attester
+        epochStakesByDomain[domain][epoch][custodian][attester][
+            delegator
         ] += amount;
         epochTotalStakeByDomain[domain][epoch][custodian] += amount;
     }
@@ -251,22 +251,6 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
-    function getCurrentEpochStake(
-        address domain,
-        address custodian,
-        address attester,
-        address delegator
-    ) public view returns (uint256) {
-        return
-            getAllStakeAtEpoch(
-                domain,
-                getCurrentEpoch(domain),
-                custodian,
-                attester
-            );
-    }
-
-    // gets all the attester stakes for the current epoch
     function getAllCurrentEpochStake(
         address domain,
         address custodian,
@@ -278,6 +262,23 @@ contract MovementStaking is
                 getCurrentEpoch(domain),
                 custodian,
                 attester
+            );
+    }
+
+    // gets all the attester stakes for the current epoch
+    function getCurrentEpochStake(
+        address domain,
+        address custodian,
+        address attester,
+        address delegator
+    ) public view returns (uint256) {
+        return
+            getStakeAtEpoch(
+                domain,
+                getCurrentEpoch(domain),
+                custodian,
+                attester,
+                delegator
             );
     }
 
@@ -417,8 +418,8 @@ contract MovementStaking is
             domain,
             getNextEpochByBlockTime(domain),
             address(custodian),
-            msg.sender,
             delegatee,
+            msg.sender, // the sender is the delegator
             amount
         );
 
@@ -466,8 +467,8 @@ contract MovementStaking is
             domain,
             getNextEpochByBlockTime(domain),
             custodian,
+            delegatee,
             msg.sender,
-            delegatee, // todo: this might be backwards
             amount
         );
 
@@ -491,13 +492,13 @@ contract MovementStaking is
         // treat this attester as a potential delegator
         // we need to roll over the stake for wherever this attester is delegating
 
-        // for everywhere this attester is delegating
+        // for everywhere this attester is delegating (using the reverse mapping)
         for (
             uint256 i = 0;
             i < attestersByDelegatorByDomain[domain][attester].length();
             i++
         ) {
-            address delegatee = delegatorsByAttesterByDomain[domain][attester]
+            address delegatee = attestersByDelegatorByDomain[domain][attester]
                 .at(i);
 
             // the amount of stake rolled over is stake[currentEpoch] - unstake[nextEpoch]
