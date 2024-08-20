@@ -1,11 +1,19 @@
 name: Build Push Containers
 
 on:
+  pull_request:
+    types:
+      - labeled
+      - opened
+      - synchronize
   push:
+    branches:
+      - main
 
 jobs:
 
   m1-da-light-node-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -64,6 +72,7 @@ jobs:
           ./scripts/movement/manifest m1-da-light-node
 
   m1-da-light-node-celestia-appd-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -122,6 +131,7 @@ jobs:
           ./scripts/movement/manifest m1-da-light-node-celestia-appd
 
   m1-da-light-node-celestia-bridge-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -180,6 +190,7 @@ jobs:
           ./scripts/movement/manifest m1-da-light-node-celestia-bridge
 
   suzuka-full-node-setup-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -240,6 +251,7 @@ jobs:
           ./scripts/movement/manifest suzuka-full-node-setup
 
   wait-for-celestia-light-node-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -298,6 +310,7 @@ jobs:
           ./scripts/movement/manifest wait-for-celestia-light-node
 
   suzuka-full-node-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -356,6 +369,7 @@ jobs:
           ./scripts/movement/manifest suzuka-full-node
 
   suzuka-faucet-service-build:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -445,6 +459,7 @@ jobs:
         ./scripts/movement/build-push-image suzuka-client-e2e-simple-interaction
 
   suzuka-client-e2e-simple-interaction-manifest:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     permissions:
       contents: read
       packages: write
@@ -472,6 +487,7 @@ jobs:
           ./scripts/movement/manifest suzuka-client-e2e-simple-interaction
   
   container-checks:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.base_ref == 'main'
     runs-on: buildjet-8vcpu-ubuntu-2204
     needs: 
       - m1-da-light-node-manifest

@@ -1,7 +1,14 @@
 name: Checks
 
 on:
+  pull_request:
+    types:
+      - labeled
+      - opened
+      - synchronize
   push:
+    branches:
+      - main
 
 jobs:
   cargo-check:
@@ -28,6 +35,7 @@ jobs:
       run: nix develop --command bash  -c "cargo check --all-targets"  
 
   suzuka-full-node-local:
+    if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.base_ref == 'main'
     strategy:
       matrix:
         include:
@@ -108,7 +116,7 @@ jobs:
       run: cd protocol-units/bridge/contracts && forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv  
 
   mcr:
-#    if: false
+    if: github.event.label.name == 'cicd:mcr' ||  github.base_ref == 'main'
     strategy:
       matrix:
         include:
