@@ -1,0 +1,13 @@
+#!/bin/bash
+set -eou pipefail
+
+# Get the cargo workspaces version by matching the line version = "x.x.x" directly to avoid add dependencies
+CARGO_WORKSPACE_VERSION=$(awk -F\" '/version =/ {print $2}' Cargo.toml | head -n 1)
+# replace the . with - to avoid docker tag issues
+SANITIZED_CARGO_WORKSPACE_VERSION=${CARGO_WORKSPACE_VERSION//\./-}
+# if the branch is not main, add the branch name to the version
+if [ "$BRANCH_NAME" != "main" ]; then
+    SANITIZED_CARGO_WORKSPACE_VERSION="${SANITIZED_CARGO_WORKSPACE_VERSION}-${SANITIZED_BRANCH_NAME}"
+fi
+
+echo $SANITIZED_CARGO_WORKSPACE_VERSION
