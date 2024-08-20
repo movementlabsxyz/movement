@@ -24,6 +24,7 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
+# This can be moved to a shared lib
 rand_chacha = "0.2.2"
 rand = { workspace = true }
 thiserror = { workspace = true }

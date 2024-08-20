@@ -8835,6 +8835,7 @@ dependencies = [
  "once_cell",
  "poem",
  "rand 0.7.3",
+ "rand_chacha 0.2.2",
  "reqwest 0.12.5",
  "serde",
  "serde_json",

@@ -1,12 +1,19 @@
-use std::collections::HashMap;
-
 use bridge_shared::{
 	counterparty_contract::{CounterpartyCall, SmartContractCounterparty},
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
-	types::{Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, RecipientAddress},
+	types::{
+		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
+		RecipientAddress,
+	},
 };
 use event_types::MovementChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker};
+use std::{
+	collections::HashMap,
+	future::Future,
+	pin::Pin,
+	task::{Context, Poll},
+};
 
 pub mod client;
 pub mod event_monitoring;
@@ -66,5 +73,153 @@ where
 			waker: AtomicWaker::new(),
 			_phantom: std::marker::PhantomData,
 		}
+	}
+
+	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<EthChainEvent<A, H>> {
+		let (sender, receiver) = mpsc::unbounded();
+		self.event_listeners.push(sender);
+		receiver
+	}
+
+	pub fn add_account(&mut self, address: A, amount: Amount) {
+		self.accounts.insert(address, amount);
+	}
+
+	pub fn get_balance(&mut self, address: &A) -> Option<&Amount> {
+		self.accounts.get(address)
+	}
+
+	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<A, H>> {
+		self.transaction_sender.clone()
+	}
+}
+
+impl<A, H, R> Future for MovementChain<A, H, R>
+where
+	A: BridgeAddressType + From<RecipientAddress<A>>,
+	H: BridgeHashType + GenUniqueHash,
+	R: RngSeededClone + Unpin,
+	H: From<HashLockPreImage>,
+{
+	type Output = ();
+
+	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+		let this = self.get_mut();
+
+		// This simulates
+		// async move { while (blockchain_1.next().await).is_some() {} }
+		while let Poll::Ready(event) = this.poll_next_unpin(cx) {
+			match event {
+				Some(_) => {}
+				None => return Poll::Ready(()),
+			}
+		}
+		Poll::Pending
+	}
+}
+
+impl<A, H, R> Stream for MovementChain<A, H, R>
+where
+	A: BridgeAddressType + From<RecipientAddress<A>>,
+	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
+	R: RngSeededClone + Unpin,
+{
+	type Item = EthChainEvent<A, H>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
+		let this = self.get_mut();
+
+		match this.transaction_receiver.poll_next_unpin(cx) {
+			Poll::Ready(Some(transaction)) => {
+				tracing::trace!(
+					"AbstractBlockchain[{}]: Received transaction: {:?}",
+					this.name,
+					transaction
+				);
+				match transaction {
+					Transaction::Initiator(call) => match call {
+						InitiatorCall::InitiateBridgeTransfer(
+							initiator_address,
+							recipient_address,
+							amount,
+							time_lock,
+							hash_lock,
+						) => {
+							this.events.push(EthChainEvent::InitiatorContractEvent(
+								this.initiator_contract.initiate_bridge_transfer(
+									initiator_address.clone(),
+									recipient_address.clone(),
+									amount,
+									time_lock.clone(),
+									hash_lock.clone(),
+								),
+							));
+						}
+						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
+							this.events.push(EthChainEvent::InitiatorContractEvent(
+								this.initiator_contract.complete_bridge_transfer(
+									&mut this.accounts,
+									bridge_transfer_id.clone(),
+									secret.clone(),
+								),
+							));
+						}
+					},
+					Transaction::Counterparty(call) => match call {
+						CounterpartyCall::LockBridgeTransfer(
+							bridge_transfer_id,
+							hash_lock,
+							time_lock,
+							initiator_address,
+							recipient_address,
+							amount,
+						) => {
+							this.events.push(EthChainEvent::CounterpartyContractEvent(
+								this.counterparty_contract.lock_bridge_transfer(
+									bridge_transfer_id.clone(),
+									hash_lock.clone(),
+									time_lock.clone(),
+									initiator_address.clone(),
+									recipient_address.clone(),
+									amount,
+								),
+							));
+						}
+						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
+							this.events.push(EthChainEvent::CounterpartyContractEvent(
+								this.counterparty_contract.complete_bridge_transfer(
+									&mut this.accounts,
+									&bridge_transfer_id,
+									pre_image,
+								),
+							));
+						}
+					},
+				}
+			}
+			Poll::Ready(None) => {
+				tracing::warn!("AbstractBlockchain[{}]: Transaction receiver dropped", this.name);
+			}
+			Poll::Pending => {
+				tracing::trace!(
+					"AbstractBlockchain[{}]: No events in transaction_receiver",
+					this.name
+				);
+			}
+		}
+
+		if let Some(event) = this.events.pop() {
+			for listener in &mut this.event_listeners {
+				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
+				listener.unbounded_send(event.clone()).expect("listener dropped");
+			}
+
+			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);
+			return Poll::Ready(Some(event));
+		}
+
+		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
+		Poll::Pending
 	}
 }
