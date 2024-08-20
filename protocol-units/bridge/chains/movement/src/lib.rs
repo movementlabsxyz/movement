@@ -7,13 +7,14 @@ use bridge_shared::{
 	},
 };
 use event_types::MovementChainEvent;
-use futures::{channel::mpsc, task::AtomicWaker};
+use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{
 	collections::HashMap,
 	future::Future,
 	pin::Pin,
 	task::{Context, Poll},
 };
+use utils::RngSeededClone;
 
 pub mod client;
 pub mod event_monitoring;
@@ -75,7 +76,7 @@ where
 		}
 	}
 
-	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<EthChainEvent<A, H>> {
+	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<MovementChainEvent<A, H>> {
 		let (sender, receiver) = mpsc::unbounded();
 		self.event_listeners.push(sender);
 		receiver
@@ -124,7 +125,7 @@ where
 	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
 	R: RngSeededClone + Unpin,
 {
-	type Item = EthChainEvent<A, H>;
+	type Item = MovementChainEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
@@ -133,7 +134,7 @@ where
 		match this.transaction_receiver.poll_next_unpin(cx) {
 			Poll::Ready(Some(transaction)) => {
 				tracing::trace!(
-					"AbstractBlockchain[{}]: Received transaction: {:?}",
+					"MovementChain [{}]: Received transaction: {:?}",
 					this.name,
 					transaction
 				);
@@ -146,7 +147,7 @@ where
 							time_lock,
 							hash_lock,
 						) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
+							this.events.push(MovementChainEvent::InitiatorContractEvent(
 								this.initiator_contract.initiate_bridge_transfer(
 									initiator_address.clone(),
 									recipient_address.clone(),
@@ -157,7 +158,7 @@ where
 							));
 						}
 						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
+							this.events.push(MovementChainEvent::InitiatorContractEvent(
 								this.initiator_contract.complete_bridge_transfer(
 									&mut this.accounts,
 									bridge_transfer_id.clone(),
@@ -175,7 +176,7 @@ where
 							recipient_address,
 							amount,
 						) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
+							this.events.push(MovementChainEvent::CounterpartyContractEvent(
 								this.counterparty_contract.lock_bridge_transfer(
 									bridge_transfer_id.clone(),
 									hash_lock.clone(),
@@ -187,7 +188,7 @@ where
 							));
 						}
 						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
+							this.events.push(MovementChainEvent::CounterpartyContractEvent(
 								this.counterparty_contract.complete_bridge_transfer(
 									&mut this.accounts,
 									&bridge_transfer_id,
@@ -199,13 +200,10 @@ where
 				}
 			}
 			Poll::Ready(None) => {
-				tracing::warn!("AbstractBlockchain[{}]: Transaction receiver dropped", this.name);
+				tracing::warn!("MovementChain[{}]: Transaction receiver dropped", this.name);
 			}
 			Poll::Pending => {
-				tracing::trace!(
-					"AbstractBlockchain[{}]: No events in transaction_receiver",
-					this.name
-				);
+				tracing::trace!("MovementChain[{}]: No events in transaction_receiver", this.name);
 			}
 		}
 

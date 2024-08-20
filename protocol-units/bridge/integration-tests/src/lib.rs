@@ -14,7 +14,7 @@ use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 };
-use movement_bridge::{Config as MovementConfig, MovementClient};
+use movement_bridge::{client::Config as MovementConfig, client::MovementClient};
 use rand::SeedableRng;
 use std::sync::{Arc, RwLock};
 

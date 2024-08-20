@@ -1,4 +1,4 @@
-use crate::MovementClient;
+use crate::client::MovementClient;
 use crate::{
 	event_types::{CounterpartyEventKind, MovementChainEvent},
 	types::MovementHash,
@@ -13,7 +13,7 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
 use bridge_shared::types::{CounterpartyCompletedDetails, LockDetails};
-use futures::{Stream, TryFuture};
+use futures::Stream;
 use std::{pin::Pin, task::Poll};
 use tokio::sync::mpsc::UnboundedReceiver;
 

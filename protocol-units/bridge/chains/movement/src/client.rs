@@ -1,3 +1,4 @@
+use crate::utils;
 use crate::utils::MovementAddress;
 use anyhow::Result;
 use aptos_sdk::{
@@ -69,15 +70,15 @@ impl Config {
 #[derive(Clone)]
 pub struct MovementClient {
 	///Address of the counterparty moduke
-	counterparty_address: AccountAddress,
+	pub counterparty_address: AccountAddress,
 	///Address of the initiator module
-	initiator_address: Vec<u8>,
+	pub initiator_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The Apotos Rest Client
 	pub faucet_client: Option<Arc<RwLock<FaucetClient>>>,
 	///The signer account
-	signer: Arc<LocalAccount>,
+	pub signer: Arc<LocalAccount>,
 }
 
 impl MovementClient {

@@ -141,7 +141,7 @@ where
 		match this.transaction_receiver.poll_next_unpin(cx) {
 			Poll::Ready(Some(transaction)) => {
 				tracing::trace!(
-					"AbstractBlockchain[{}]: Received transaction: {:?}",
+					"Etherum Chain [{}]: Received transaction: {:?}",
 					this.name,
 					transaction
 				);

@@ -7,8 +7,8 @@ use ethereum_bridge::{
 	EthereumChain,
 };
 use movement_bridge::{
-	event_monitoring::MovementCounterpartyMonitoring, types::MovementHash, utils::MovementAddress,
-	MovementClient,
+	client::MovementClient, event_monitoring::MovementCounterpartyMonitoring, types::MovementHash,
+	utils::MovementAddress, MovementChain,
 };
 
 pub type EthereumService = AbstractBlockchainService<

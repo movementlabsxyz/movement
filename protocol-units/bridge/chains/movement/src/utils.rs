@@ -1,4 +1,4 @@
-use crate::MovementClient;
+use crate::client::MovementClient;
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
