@@ -51,7 +51,6 @@ aptos-block-executor = { workspace = true }
 aptos-vm-types = { workspace = true }
 aptos-vm-logging = { workspace = true }
 aptos-vm-genesis = { workspace = true }
-aptos-language-e2e-tests = { workspace = true }
 aptos-framework = { workspace = true }
 aptos-executor = { workspace = true }
 aptos-executor-types = { workspace = true }

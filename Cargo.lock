@@ -7620,7 +7620,6 @@ dependencies = [
  "aptos-indexer",
  "aptos-indexer-grpc-fullnode",
  "aptos-indexer-grpc-table-info",
- "aptos-language-e2e-tests",
  "aptos-logger",
  "aptos-mempool",
  "aptos-protos",
