@@ -25,7 +25,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const ETIMELOCK_EXPIRED: u64 = 5;
     const ENOT_EXPIRED: u64 = 6;
 
-    struct BridgeTransfer has key, store, drop {
+    struct BridgeTransfer has key, store, drop, copy {
         amount: u64,
         originator: address,
         recipient: vector<u8>, // eth address
@@ -81,19 +81,11 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[view]
-    public fun store() : &BridgeTransferStore acquires BridgeTransferStore, BridgeConfig {
+    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : BridgeTransfer acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
-        return borrow_global<BridgeTransferStore>(config_address)
-    }
-
-    #[view]
-    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : &BridgeTransfer acquires BridgeTransferStore, BridgeConfig {
-        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
-        let store = store();
-        if (aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
-            return aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id)
-        } else {
-        return &BridgeTransfer {
+        let store = borrow_global<BridgeTransferStore>(config_address);
+        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
+            BridgeTransfer {
                 amount: 0,
                 originator: @atomic_bridge,
                 recipient: vector::empty<u8>(),
@@ -101,6 +93,9 @@ module atomic_bridge::atomic_bridge_initiator {
                 time_lock: 0,
                 state: 0,
             }
+        } else {
+            let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+            *bridge_transfer
         }
     }
 
