@@ -4,11 +4,11 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-atomic_bridge = "0x0003f6590872b68c47f1c84eff6766eebebdae21d49a6f795a563eb76ad9f65c"
-moveth = "0x0003f6590872b68c47f1c84eff6766eebebdae21d49a6f795a563eb76ad9f65c"
-master_minter = "0x0003f6590872b68c47f1c84eff6766eebebdae21d49a6f795a563eb76ad9f65c"
+atomic_bridge = "0x7f73894ecbdab2702cf437d4fa88595ea77880db2657b8e1c8feb9466378a413"
+moveth = "0x7f73894ecbdab2702cf437d4fa88595ea77880db2657b8e1c8feb9466378a413"
+master_minter = "0x7f73894ecbdab2702cf437d4fa88595ea77880db2657b8e1c8feb9466378a413"
 minter = "0x31a9bcd02c593c1e311e3edce7084f67397ea5b011aaefe650a2b700c0a5ea77"
-admin = "0x0003f6590872b68c47f1c84eff6766eebebdae21d49a6f795a563eb76ad9f65c"
+admin = "0x7f73894ecbdab2702cf437d4fa88595ea77880db2657b8e1c8feb9466378a413"
 pauser = "0xdafe"
 denylister = "0xcade"
 

@@ -86,7 +86,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 }
 
 #[tokio::test]
-async fn test_movement_client_deploy_counterparty_contract() -> Result<(), anyhow::Error> {
+async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
@@ -125,10 +125,31 @@ async fn test_movement_client_deploy_counterparty_contract() -> Result<(), anyho
 		coin_client
 			.get_account_balance(&bob.address())
 			.await
-			.context("Failed to get Bob's account balance")?
+		.context("Failed to get Bob's account balance")?
 	);
 
 	movement_client.publish_for_test();
+	
+	let creator = b"0xca5".to_vec();
+	let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
+        let recipient = b"0xface".to_vec(); 
+        let bridge_transfer_id = b"transfer1".to_vec();
+        let pre_image = b"secret".to_vec();
+        let hash_lock = keccak256(pre_image).to_vec(); 
+        let time_lock = 3600;
+        let amount = 100;
+
+	movement_client.lock_bridge_transfer_assets(
+		//creator,
+		initiator,
+		bridge_transfer_id,
+		hash_lock,
+		time_lock,
+		recipient,
+		amount
+	);
+
+	//movement_client.complete_bridge_transfer();
 
 	child.kill().await.context("Failed to kill the child process")?;
 	Ok(())
