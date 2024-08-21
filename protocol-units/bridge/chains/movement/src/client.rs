@@ -10,7 +10,7 @@ use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractCounterpartyError,
-		BridgeContractCounterpartyResult,
+		BridgeContractCounterpartyResult, BridgeContractInitiator, BridgeContractInitiatorResult,
 	},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
@@ -310,5 +310,44 @@ impl MovementClient {
 			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
 			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
 		}
+	}
+}
+
+#[async_trait::async_trait]
+impl BridgeContractInitiator for MovementClient {
+	type Address = MovementAddress;
+	type Hash = [u8; 32];
+
+	async fn initiate_bridge_transfer(
+		&mut self,
+		_initiator_address: InitiatorAddress<Self::Address>,
+		_recipient_address: RecipientAddress<Vec<u8>>,
+		_hash_lock: HashLock<Self::Hash>,
+		_time_lock: TimeLock,
+		_amount: Amount,
+	) -> BridgeContractInitiatorResult<()> {
+		todo!()
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_pre_image: HashLockPreImage,
+	) -> BridgeContractInitiatorResult<()> {
+		todo!()
+	}
+
+	async fn refund_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<()> {
+		todo!()
+	}
+
+	async fn get_bridge_transfer_details(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
+		todo!()
 	}
 }

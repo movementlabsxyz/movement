@@ -15,14 +15,11 @@ use bridge_shared::bridge_contracts::{
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
 };
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, CallConfig, HashLock, HashLockPreImage,
-	InitiatorAddress, MethodName, RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	RecipientAddress, TimeLock,
 };
-use dashmap::DashMap;
-use futures::channel::mpsc;
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
-use std::sync::Arc;
 use url::Url;
 
 use crate::types::{
@@ -77,7 +74,7 @@ struct EthBridgeTransferDetails {
 }
 
 // We need to be able to build the client and deploy the contracts
-// using that clients, therfore the `initiator_contract` and `counterparty_contract`
+//  therfore the `initiator_contract` and `counterparty_contract`
 // should be optional, as their values will be unknown at the time of building the client.
 // This is true for the integration tests.
 #[allow(dead_code)]
