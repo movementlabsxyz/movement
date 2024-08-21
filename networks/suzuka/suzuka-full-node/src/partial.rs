@@ -37,14 +37,14 @@ where
 		let services = context.services();
 		let mut movement_rest = self.movement_rest;
 		movement_rest.set_context(services.opt_api_context());
-		let exec_settle_task = tasks::exec_settle::Task::new(
+		let exec_settle_task = tasks::execute_settle::Task::new(
 			self.executor,
 			self.settlement_manager,
 			self.da_db,
 			self.light_node_client.clone(),
 			self.commitment_events,
 		);
-		let tx_ingress_task = tasks::tx_ingress::Task::new(
+		let tx_ingress_task = tasks::transaction_ingress::Task::new(
 			transaction_receiver,
 			self.light_node_client,
 			// FIXME: why are the struct member names so tautological?
