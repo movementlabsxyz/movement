@@ -531,8 +531,12 @@ jobs:
           RELEASE_TAG=$(./scripts/movement/release-name)
           REPO=${{ github.repository }}
 
+          echo "Release tag: $RELEASE_TAG"
+
           # Check if the release already exists
           EXISTING_RELEASE=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json tagName --jq '.tagName' 2>/dev/null)
+
+          echo "Checked for existing release: $EXISTING_RELEASE"
 
           # If the release exists, delete it
           if [ "$EXISTING_RELEASE" == "$RELEASE_TAG" ]; then
@@ -540,4 +544,4 @@ jobs:
               gh release delete "$RELEASE_TAG" --repo "$REPO" -y
           fi
 
-          gh release create "$RELEASE_TAG" --repo "$REPO" --notes "Updated release $RELEASE_TAG" --target ${{ github.sha }}
+          gh release create "$RELEASE_TAG" --repo "$REPO" --notes "$RELEASE_TAG" --target ${{ github.sha }}
