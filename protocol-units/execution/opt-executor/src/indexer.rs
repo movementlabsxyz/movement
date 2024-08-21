@@ -12,7 +12,7 @@ pub struct IndexerRuntime {
 	// We only keep the runtimes around to drop them
 	_table_info_runtime: Runtime,
 	_indexer_grpc: Runtime,
-	_indexer_stream: Runtime,
+	//	_indexer_stream: Runtime,
 }
 
 impl Context {
@@ -53,6 +53,6 @@ impl Context {
 		// 	anyhow::anyhow!("Failed to bootstrap indexer stream runtime"),
 		// )?;
 
-		Ok(IndexerRuntime { _table_info_runtime, _indexer_grpc, _indexer_stream })
+		Ok(IndexerRuntime { _table_info_runtime, _indexer_grpc }) //, _indexer_stream
 	}
 }
