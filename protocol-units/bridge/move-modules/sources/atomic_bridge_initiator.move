@@ -80,13 +80,37 @@ module atomic_bridge::atomic_bridge_initiator {
         });
     }
 
+    #[view]
+    public fun store() : &BridgeTransferStore acquires BridgeTransferStore, BridgeConfig {
+        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+        return borrow_global<BridgeTransferStore>(config_address)
+    }
+
+    #[view]
+    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : &BridgeTransfer acquires BridgeTransferStore, BridgeConfig {
+        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+        let store = store();
+        if (aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
+            return aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id)
+        } else {
+        return &BridgeTransfer {
+                amount: 0,
+                originator: @atomic_bridge,
+                recipient: vector::empty<u8>(),
+                hash_lock: vector::empty<u8>(),
+                time_lock: 0,
+                state: 0,
+            }
+        }
+    }
+
     public fun initiate_bridge_transfer(
         initiator: &signer,
         recipient: vector<u8>, // eth address
         hash_lock: vector<u8>,
         time_lock: u64,
         amount: u64
-    ): vector<u8> acquires BridgeTransferStore, BridgeConfig {
+    ) : vector<u8> acquires BridgeTransferStore, BridgeConfig {
         let addr = signer::address_of(initiator);
         let asset = moveth::metadata();
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
