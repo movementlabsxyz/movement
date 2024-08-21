@@ -12,7 +12,7 @@ pub struct IndexerRuntime {
 	// We only keep the runtimes around to drop them
 	_table_info_runtime: Runtime,
 	_indexer_grpc: Runtime,
-	_indexer_stream: Runtime,
+	//	_indexer_stream: Runtime,
 }
 
 impl Context {
@@ -29,7 +29,7 @@ impl Context {
 		)
 		.ok_or(anyhow::anyhow!("Failed to bootstrap table info runtime"))?;
 
-		// bootstrap indexer grpc
+		// Bootstrap indexer grpc.
 		// this one actually serves the gRPC service
 		let _indexer_grpc = bootstrap_indexer_grpc(
 			&self.node_config,
@@ -40,15 +40,19 @@ impl Context {
 		)
 		.ok_or(anyhow::anyhow!("Failed to bootstrap indexer grpc runtime"))?;
 
+		// Grpc stream works without the indexer.
+		// By default indexer is not started on Suzuka node.
 		// bootstrap indexer stream
-		let _indexer_stream = bootstrap_indexer_stream(
-			&self.node_config,
-			self.maptos_config.chain.maptos_chain_id.clone(),
-			self.db.reader.clone(),
-			self.mempool_client_sender.clone(),
-		)
-		.ok_or(anyhow::anyhow!("Failed to bootstrap indexer stream runtime"))??;
+		// Commented because not needed. Done the external indexer.
+		// let _indexer_stream = bootstrap_indexer_stream(
+		// 	&self.node_config,
+		// 	self.maptos_config.chain.maptos_chain_id.clone(),
+		// 	self.db.reader.clone(),
+		// 	self.mempool_client_sender.clone(),
+		// ).ok_or(
+		// 	anyhow::anyhow!("Failed to bootstrap indexer stream runtime"),
+		// )?;
 
-		Ok(IndexerRuntime { _table_info_runtime, _indexer_grpc, _indexer_stream })
+		Ok(IndexerRuntime { _table_info_runtime, _indexer_grpc }) //, _indexer_stream
 	}
 }

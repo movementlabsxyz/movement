@@ -200,7 +200,8 @@ mod tests {
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).unwrap();
-		let (context, transaction_pipe) = executor.background(tx_sender, &config).unwrap();
+		let (context, transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config).unwrap();
 		(transaction_pipe, context.mempool_client_sender(), tx_receiver)
 	}
 
@@ -309,7 +310,8 @@ mod tests {
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let (context, mut transaction_pipe) = executor.background(tx_sender, &config)?;
+		let (context, mut transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config)?;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -338,7 +340,8 @@ mod tests {
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let (context, mut transaction_pipe) = executor.background(tx_sender, &config)?;
+		let (context, mut transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config)?;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]

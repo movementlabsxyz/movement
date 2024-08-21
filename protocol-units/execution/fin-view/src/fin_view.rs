@@ -78,7 +78,8 @@ mod tests {
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let executor = Executor::try_from_config(&config)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config)?;
 		let finality_view = FinalityView::new(context.db_reader());
 		let service = finality_view.service(
 			context.mempool_client_sender(),

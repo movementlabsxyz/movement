@@ -1,5 +1,5 @@
 use super::Executor;
-use crate::{bootstrap, Context, TransactionPipe};
+use crate::{bootstrap, indexer::IndexerRuntime, Context, TransactionPipe};
 
 use aptos_config::config::NodeConfig;
 #[cfg(test)]
@@ -63,7 +63,7 @@ impl Executor {
 		&self,
 		transaction_sender: mpsc::Sender<SignedTransaction>,
 		maptos_config: &Config,
-	) -> anyhow::Result<(Context, TransactionPipe)> {
+	) -> anyhow::Result<(Context, TransactionPipe, IndexerRuntime)> {
 		let mut node_config = NodeConfig::default();
 
 		node_config.indexer.enabled = true;
@@ -115,6 +115,10 @@ impl Executor {
 			maptos_config.clone(),
 			node_config,
 		);
-		Ok((cx, transaction_pipe))
+
+		// Start indexer grpc entry point.
+		let indexer_runtime = cx.run_indexer_grpc_service()?;
+
+		Ok((cx, transaction_pipe, indexer_runtime))
 	}
 }
