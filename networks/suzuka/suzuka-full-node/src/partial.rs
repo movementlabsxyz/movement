@@ -50,6 +50,7 @@ where
 			// FIXME: why are the struct member names so tautological?
 			self.config.m1_da_light_node.m1_da_light_node_config,
 		);
+
 		let (res1, res2, res3, res4) = try_join!(
 			tokio::spawn(async move { exec_settle_task.run().await }),
 			tokio::spawn(async move { tx_ingress_task.run().await }),

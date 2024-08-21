@@ -29,7 +29,7 @@ impl Context {
 		)
 		.ok_or(anyhow::anyhow!("Failed to bootstrap table info runtime"))?;
 
-		// bootstrap indexer grpc
+		// Bootstrap indexer grpc.
 		// this one actually serves the gRPC service
 		let _indexer_grpc = bootstrap_indexer_grpc(
 			&self.node_config,
