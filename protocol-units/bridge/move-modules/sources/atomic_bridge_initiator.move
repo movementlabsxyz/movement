@@ -91,7 +91,7 @@ module atomic_bridge::atomic_bridge_initiator {
                 recipient: vector::empty<u8>(),
                 hash_lock: vector::empty<u8>(),
                 time_lock: 0,
-                state: 0,
+                state: 3, // ENOT_INITIALIZED
             }
         } else {
             let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
@@ -440,6 +440,8 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_id,
             atomic_bridge
         );
+        let bridge_transfer = bridge_transfers(bridge_transfer_id);
+        assert!(bridge_transfer.state == REFUNDED, 300);
 
         let addr = signer::address_of(sender);
         let asset = moveth::metadata();
@@ -450,7 +452,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[expected_failure]
+    // #[expected_failure(abort_code = 7)]
     public fun test_refund_completed_transfer(
         sender: &signer,
         creator: &signer,
@@ -475,22 +477,28 @@ module atomic_bridge::atomic_bridge_initiator {
             time_lock,
             amount
         );
+
+        // bridge_transfers cannot be used because it dereferences the transfer and modifies it
         let bridge_transfer = bridge_transfers(bridge_transfer_id);
+        
         assert!(bridge_transfer.state == INITIALIZED, 6);
+        aptos_std::debug::print(&bridge_transfer.state);
         complete_bridge_transfer(
             sender,
             bridge_transfer_id,
             pre_image,
             atomic_bridge
         );
-        assert!(bridge_transfer.state == COMPLETED, 7);
-
+        aptos_std::debug::print(&bridge_transfer.state);
+        // bridge_transfers doesn't find the transfer id and returns a new transfer with state 3
+        assert!(bridge_transfers(bridge_transfer_id).state == 3, 7);
+        aptos_std::debug::print(&bridge_transfer.state);
+        // refund fails in borrow_mut because bridge_transfer_id is invalid
         refund_bridge_transfer(
             sender,
             bridge_transfer_id,
             atomic_bridge
         );
-        assert!(bridge_transfer.state == REFUNDED, 8);
 
         let addr = signer::address_of(sender);
         let store = borrow_global<BridgeTransferStore>(addr);
