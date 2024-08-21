@@ -15,10 +15,11 @@ use aptos_sdk::{
 };
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-	bridge_contracts::BridgeContractInitiator,
-	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock},
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, 
+	types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock},
 };
 use ethereum_bridge::types::EthAddress;
+use movement_bridge::utils::MovementAddress;
 use rand::{rngs::StdRng, SeedableRng};
 use tokio;
 
@@ -87,9 +88,9 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 
 #[tokio::test]
 async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
-
-	let (scaffold, mut child) = TestHarness::new_with_movement().await;
-	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
+	
+	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	{ let mut movement_client = harness.movement_client().expect("Failed to get MovementClient");
 
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
@@ -127,29 +128,39 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 			.await
 		.context("Failed to get Bob's account balance")?
 	);
+	}
 
-	movement_client.publish_for_test();
-	
-	let creator = b"0xca5".to_vec();
-	let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
-        let recipient = b"0xface".to_vec(); 
-        let bridge_transfer_id = b"transfer1".to_vec();
-        let pre_image = b"secret".to_vec();
-        let hash_lock = keccak256(pre_image).to_vec(); 
+        let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
+        let recipient:MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));    
+        let bridge_transfer_id = *b"00000000000000000000000transfer1";
+        //let pre_image = b"secret".to_vec();
+        let hash_lock = *keccak256(b"secret".to_vec()); 
         let time_lock = 3600;
         let amount = 100;
+	
+	harness
+	.movement_client_mut()
+	.expect("Failed to get MovmentClient")
+	.lock_bridge_transfer_assets(
+		BridgeTransferId(bridge_transfer_id),
+		HashLock(hash_lock),
+		TimeLock(100),
+		InitiatorAddress(initiator),
+		RecipientAddress(recipient),
+		Amount(1000), // Eth
+	)
+	.await
+	.expect("Failed to complete bridge transfer");
 
-	movement_client.lock_bridge_transfer_assets(
-		//creator,
-		initiator,
-		bridge_transfer_id,
-		hash_lock,
-		time_lock,
-		recipient,
-		amount
-	);
-
-	//movement_client.complete_bridge_transfer();
+	harness
+	.movement_client_mut()
+	.expect("Failed to get MovmentClient")
+	.complete_bridge_transfer(
+		BridgeTransferId(bridge_transfer_id),
+		HashLockPreImage(b"secret".to_vec()),
+	)
+	.await
+	.expect("Failed to complete bridge transfer");
 
 	child.kill().await.context("Failed to kill the child process")?;
 	Ok(())

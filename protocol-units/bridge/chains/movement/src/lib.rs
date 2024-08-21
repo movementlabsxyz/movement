@@ -240,7 +240,7 @@ impl MovementClient {
 				"--address-name",
 				"moveth", 
 				"--seed",
-				"1234",
+				"12345",
 				"--package-dir", 
 				"../move-modules"
 			])
@@ -258,44 +258,6 @@ impl MovementClient {
 		}
 
 		Ok(())
-	}
-
-	pub fn lock_bridge_transfer_assets(
-		&self,
-		resource_addr: Vec<u8>,
-		//caller: &signer,
-		initiator: Vec<u8>, //eth address
-		bridge_transfer_id: Vec<u8>,
-		hash_lock: Vec<u8>,
-		time_lock: u64,
-		recipient: Vec<u8>,
-		amount: u64
-	) {
-		let output = Command::new("movement")
-		.args(&[
-			"move", 
-			"run",
-			"--function-id",
-			"--address-name",
-			"moveth", 
-			"--seed",
-			"1234",
-			"--package-dir", 
-			"../move-modules"
-		])
-		.stdout(Stdio::piped())
-		.stderr(Stdio::piped())
-		.output()
-		.expect("Failed to execute command");
-
-		if !output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-		}
-
-		if !output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-		}
-
 	}
 	
 	pub fn rest_client(&self) -> &Client {
