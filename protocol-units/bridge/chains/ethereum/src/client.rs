@@ -236,7 +236,7 @@ impl BridgeContractInitiator for EthClient {
 				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.0));
-		let _ =
+		let receipt =
 			send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 				.await
 				.map_err(|e| {
@@ -245,6 +245,7 @@ impl BridgeContractInitiator for EthClient {
 						e
 					))
 				})?;
+		println!("receipt: {:?}", receipt);
 		Ok(())
 	}
 
