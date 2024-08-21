@@ -475,19 +475,22 @@ module atomic_bridge::atomic_bridge_initiator {
             time_lock,
             amount
         );
-
+        let bridge_transfer = bridge_transfers(bridge_transfer_id);
+        assert!(bridge_transfer.state == INITIALIZED, 6);
         complete_bridge_transfer(
             sender,
             bridge_transfer_id,
             pre_image,
             atomic_bridge
         );
+        assert!(bridge_transfer.state == COMPLETED, 7);
 
         refund_bridge_transfer(
             sender,
             bridge_transfer_id,
             atomic_bridge
         );
+        assert!(bridge_transfer.state == REFUNDED, 8);
 
         let addr = signer::address_of(sender);
         let store = borrow_global<BridgeTransferStore>(addr);
