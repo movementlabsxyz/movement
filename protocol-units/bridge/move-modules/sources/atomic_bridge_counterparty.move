@@ -104,6 +104,24 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
 
     }
+
+    #[view]
+    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : BridgeTransferDetails acquires BridgeTransferStore, BridgeConfig {
+        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+        let store = store();
+        if (aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
+            return *aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+        } else {
+            return BridgeTransfer {
+                amount: 0,
+                originator: @atomic_bridge,
+                recipient: vector::empty<u8>(),
+                hash_lock: vector::empty<u8>(),
+                time_lock: 0,
+                state: 0,
+            };
+        }
+    }
     
     public fun complete_bridge_transfer(
         caller: &signer,
