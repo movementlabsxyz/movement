@@ -262,6 +262,7 @@ impl MovementClient {
 
 	pub fn lock_bridge_transfer_assets(
 		&self,
+		resource_addr: Vec<u8>,
 		//caller: &signer,
 		initiator: Vec<u8>, //eth address
 		bridge_transfer_id: Vec<u8>,
@@ -273,8 +274,8 @@ impl MovementClient {
 		let output = Command::new("movement")
 		.args(&[
 			"move", 
-			"create-resource-account-and-publish-package",
-			"--assume-yes",
+			"run",
+			"--function-id",
 			"--address-name",
 			"moveth", 
 			"--seed",
