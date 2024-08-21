@@ -22,6 +22,8 @@ use aptos_types::{
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
+	event_types::EthChainEvent,
+	event_logging::EthInitiatorMonitoring	
 };
 use movement_bridge::{Config as MovementConfig, MovementClient};
 use rand::SeedableRng;

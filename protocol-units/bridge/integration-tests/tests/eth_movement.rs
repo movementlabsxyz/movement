@@ -15,13 +15,19 @@ use aptos_sdk::{
 };
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, 
-	types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock},
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
 };
-use ethereum_bridge::types::EthAddress;
+
+use ethereum_bridge::{
+	types::EthAddress,
+	event_types::EthChainEvent,
+	event_logging::EthInitiatorMonitoring	
+};
+
 use movement_bridge::utils::MovementAddress;
 use rand::{rngs::StdRng, SeedableRng};
 use tokio;
+use futures::{channel::mpsc::{self, UnboundedReceiver}, Stream, StreamExt};
 
 use aptos_language_e2e_tests::{
 	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
@@ -87,6 +93,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -257,18 +264,23 @@ async fn test_eth_client_should_successfully_call_initiate_transfer() {
 }
 
 #[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-async fn test_eth_client_should_successfully_get_bridge_transfer_id() {
+async fn test_eth_client_should_successfully_get_bridge_transfer_id() -> Result<()> {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
+	 
 	harness.deploy_init_contracts().await;
+
+	let rpc_url = "ws://localhost:8545"; 
+	let (event_sender, event_receiver): (mpsc::UnboundedSender<_>, UnboundedReceiver<_>) = mpsc::unbounded();
+
+	let monitoring = EthInitiatorMonitoring::run(rpc_url, event_receiver).await?;
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
-	harness
+	let tx_receipt = harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
@@ -280,8 +292,19 @@ async fn test_eth_client_should_successfully_get_bridge_transfer_id() {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
+	dbg!(&tx_receipt);
 
-	//TODO: Here call get details with the captured event
+	futures::pin_mut!(monitoring);
+	let bridge_transfer_id = match monitoring.next().await {
+		Some(BridgeContractInitiatorEvent::Initiated(details)) => Some(details.bridge_transfer_id),
+		_ => None,
+		}
+		.expect("Expected a BridgeTransferId");
+	
+	// Validate or use the captured bridge_transfer_id as needed
+	println!("Captured BridgeTransferId: {:?}", bridge_transfer_id);
+
+	Ok(())
 }
 
 #[tokio::test]

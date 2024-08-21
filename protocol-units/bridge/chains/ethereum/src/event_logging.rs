@@ -32,7 +32,7 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 }
 
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
-	async fn run(
+	pub async fn run(
 		rpc_url: &str,
 		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
 	) -> Result<Self, anyhow::Error> {

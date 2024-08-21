@@ -3615,6 +3615,7 @@ dependencies = [
  "bcs 0.1.4",
  "bridge-shared",
  "ethereum-bridge",
+ "futures",
  "movement-bridge",
  "rand 0.7.3",
  "reqwest 0.12.5",
