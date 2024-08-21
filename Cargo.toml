@@ -192,7 +192,6 @@ alloy-transport = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b
 alloy-transport-ws = { git = "https://github.com/alloy-rs/alloy.git", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2" }
 
 anyhow = "1.0"
-async-channel = "2.2.1"
 async-stream = "0.3.0"
 async-trait = "0.1.71"
 async-recursion = "1.1.1"
