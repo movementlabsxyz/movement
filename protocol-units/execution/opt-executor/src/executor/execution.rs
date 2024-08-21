@@ -265,7 +265,8 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -299,7 +300,8 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config)?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -401,7 +403,8 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe, _indexer_runtime) =
+			executor.background(tx_sender, &config)?;
 		let service = Service::new(&context);
 		executor.rollover_genesis_now().await?;
 
