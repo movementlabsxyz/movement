@@ -63,23 +63,26 @@ contract MovementStaking is
 
         // roll over from 0 (genesis) to current epoch by block time
         currentEpochByDomain[domain] = getEpochByBlockTime(domain);
+        EnumerableSet.AddressSet storage attesters = attestersByDomain[domain];
 
-        for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
-            address attester = attestersByDomain[domain].at(i);
+        for (uint256 i = 0; i < attesters; i++) {
+            address attester = attesters.at(i);
 
-            for (uint256 j = 0; j < custodiansByDomain[domain].length(); j++) {
-                address custodian = custodiansByDomain[domain].at(j);
+            // for every custodian
+            EnumerableSet.AddressSet storage custodians = custodiansByDomain[
+                domain
+            ];
+            for (uint256 j = 0; j < custodians; j++) {
+                address custodian = custodians.at(j);
 
                 // for every delegatee of the attester
-                for (
-                    uint256 k = 0;
-                    k < delegatorsByAttesterByDomain[domain][attester].length();
-                    k++
-                ) {
-                    // todo: can this be replaced with _rollOverAttester?
-                    address delegatee = delegatorsByAttesterByDomain[domain][
+                EnumberableSet.AddressSet
+                    storage delegatees = delegatorsByAttesterByDomain[domain][
                         attester
-                    ].at(k);
+                    ];
+                for (uint256 k = 0; k < delegatees.length(); k++) {
+                    // todo: can this be replaced with _rollOverAttester?
+                    address delegatee = delegatees.at(k);
 
                     // get the genesis stake for the attester
                     uint256 attesterStake = getStakeAtEpoch(
@@ -132,15 +135,15 @@ contract MovementStaking is
         address delegator,
         uint256 amount
     ) internal {
+        uint256 stake = epochStakesByDomain[domain][epoch][custodian][attester][
+            delegator
+        ];
+        stake -= amount; // okay to let this error if it underflows
         epochStakesByDomain[domain][epoch][custodian][attester][
             delegator
-        ] -= amount;
+        ] = stake;
 
-        if (
-            epochStakesByDomain[domain][epoch][custodian][attester][
-                delegator
-            ] == 0
-        ) {
+        if (stake == 0) {
             // remove the delegator from the attester's set
             delegatorsByAttesterByDomain[domain][attester].remove(delegator);
 
