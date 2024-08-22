@@ -58,7 +58,7 @@ fn main() -> Result<(), anyhow::Error> {
 				let mut set = JoinSet::new();
 				set.spawn(async move { default_indexer_config.run().await });
 				//wait all the migration is done.
-				tokio::time::sleep(Duration::from_secs(8)).await;
+				tokio::time::sleep(Duration::from_secs(12)).await;
 				set.spawn(async move { usertx_indexer_config.run().await });
 				set.spawn(async move { accounttx_indexer_config.run().await });
 				set.spawn(async move { coin_indexer_config.run().await });
