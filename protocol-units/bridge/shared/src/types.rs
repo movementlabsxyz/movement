@@ -149,6 +149,23 @@ pub enum EthValue {
 	WethAndEth((u64, u64)),
 }
 
+impl Amount<EthValue> {
+    pub fn weth(&self) -> u64 {
+        match self.0 {
+            EthValue::Weth(value) => value,
+            EthValue::WethAndEth((weth_value, eth_value)) => weth_value,
+			_ => 0, 
+        }
+	}
+	pub fn eth(&self) -> u64 {
+		match self.0 {
+			EthValue::Eth(value) => value,
+			EthValue::WethAndEth((weth_value, eth_value)) => eth_value,
+			_ => 0, 
+		}
+	}
+}
+
 impl From<Uint<256, 4>> for Amount<EthValue> {
 	fn from(value: Uint<256, 4>) -> Self {
 		// Extract the lower 64 bits.

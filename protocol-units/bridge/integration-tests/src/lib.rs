@@ -10,10 +10,7 @@ use alloy::{
 use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
 use aptos_sdk::types::LocalAccount;
-use ethereum_bridge::{
-	types::{AlloyProvider, AtomicBridgeInitiator, WETH9, EthAddress},
-	Config as EthConfig, EthClient,
-};
+use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, WETH9, EthAddress};
 use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
@@ -23,17 +20,14 @@ use aptos_language_e2e_tests::{
 };
 use aptos_logger::Logger;
 use aptos_sdk::rest_client::{Client, FaucetClient};
-use aptos_sdk::types::LocalAccount;
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
 	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
 };
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
-	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 };
-use movement_bridge::{Config as MovementConfig, MovementClient};
-use rand::SeedableRng;
+use movement_bridge::{Config as MovementConfig};
 use std::{
 	convert::TryFrom,
 	sync::{Arc, RwLock},
