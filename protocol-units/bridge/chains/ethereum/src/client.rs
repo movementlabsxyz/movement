@@ -1,7 +1,12 @@
-use crate::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
+use crate::utils::{
+	calculate_storage_slot, send_transaction, send_transaction_rules, RngSeededClone,
+};
+use crate::Transaction;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
+use alloy::rpc::types::trace::geth::CallConfig;
 use alloy::signers::k256::elliptic_curve::SecretKey;
+use alloy::signers::k256::pkcs8::der::oid::Arc;
 use alloy::signers::k256::Secp256k1;
 use alloy::signers::local::LocalSigner;
 use alloy::{
@@ -16,8 +21,10 @@ use bridge_shared::bridge_contracts::{
 };
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	MethodName, RecipientAddress, TimeLock,
 };
+use dashmap::DashMap;
+use futures::channel::mpsc;
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
 use url::Url;
@@ -74,21 +81,29 @@ struct EthBridgeTransferDetails {
 }
 
 // We need to be able to build the client and deploy the contracts
-//  therfore the `initiator_contract` and `counterparty_contract`
+// therfore the `initiator_contract` and `counterparty_contract`
 // should be optional, as their values will be unknown at the time of building the client.
 // This is true for the integration tests.
 #[allow(dead_code)]
 #[derive(Clone)]
-pub struct EthClient {
+pub struct EthClient<A, H, R> {
 	rpc_provider: AlloyProvider,
 	rpc_port: u16,
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<InitiatorContract>,
 	counterparty_contract: Option<CounterpartyContract>,
 	config: Config,
+	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
+	pub rng: R,
+	pub failure_rate: f64,
+	pub false_positive_rate: f64,
+	pub call_configs: Arc<DashMap<MethodName, Vec<(usize, CallConfig)>>>,
 }
 
-impl EthClient {
+impl EthClient
+where
+	R: RngSeededClone,
+{
 	pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
 		let config = config.into();
 		let rpc_provider = ProviderBuilder::new()
