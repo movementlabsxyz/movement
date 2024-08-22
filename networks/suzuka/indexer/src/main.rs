@@ -91,6 +91,10 @@ fn build_processor_conf(
 	dot_movement: &dot_movement::DotMovement,
 ) -> Result<IndexerGrpcProcessorConfig, anyhow::Error> {
 	let indexer_grpc_data_service_address = build_grpc_url(maptos_config);
+
+	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWENN_REQUEST_MS")
+		.map(|t| t.parse().unwrap_or(10))
+		.unwrap_or(10);
 	//create config file
 	let indexer_config_content = format!(
 		"processor_config:
@@ -99,13 +103,15 @@ postgres_connection_string: {}/postgres
 indexer_grpc_data_service_address: {}
 indexer_grpc_http2_ping_interval_in_secs: {}
 indexer_grpc_http2_ping_timeout_in_secs: {}
-auth_token: \"{}\"",
+auth_token: \"{}\"
+default_sleep_time_between_request: {}",
 		processor_name,
 		maptos_config.indexer_processor.postgres_connection_string,
 		indexer_grpc_data_service_address,
 		maptos_config.indexer.maptos_indexer_grpc_inactivity_timeout,
 		maptos_config.indexer.maptos_indexer_grpc_inactivity_ping_interval,
 		maptos_config.indexer_processor.indexer_processor_auth_token,
+		default_sleep_time_between_request,
 	);
 
 	let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
