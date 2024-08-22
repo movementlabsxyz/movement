@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails,
-	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress,
-	TimeLock,
+	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
 };
 use thiserror::Error;
 
@@ -113,7 +111,7 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
-		let balance = accounts.entry(account).or_insert(Amount(0));
+		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
 		**balance += *transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(

@@ -11,21 +11,20 @@ use crate::{
 		BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 		BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 	},
-	types::{BridgeAddressType, BridgeHashType, BridgeValueType},
+	types::{BridgeAddressType, BridgeHashType},
 };
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum ContractEvent<A, H, V> {
-	InitiatorEvent(BridgeContractInitiatorEvent<A, H, V>),
-	CounterpartyEvent(BridgeContractCounterpartyEvent<A, H, V>),
+pub enum ContractEvent<A, H> {
+	InitiatorEvent(BridgeContractInitiatorEvent<A, H>),
+	CounterpartyEvent(BridgeContractCounterpartyEvent<A, H>),
 }
 
 pub trait BlockchainService:
-	Stream<Item = ContractEvent<Self::Address, Self::Hash, Self::Value>> + Unpin
+	Stream<Item = ContractEvent<Self::Address, Self::Hash>> + Unpin
 {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
-	type Value: BridgeValueType;
 
 	type InitiatorContract: BridgeContractInitiator<Address = Self::Address, Hash = Self::Hash>;
 	type InitiatorMonitoring: BridgeContractInitiatorMonitoring<Address = Self::Address, Hash = Self::Hash>
@@ -68,7 +67,6 @@ pub struct AbstractBlockchainService<
 	CounterpartyContractMonitoring,
 	Address,
 	Hash,
-	Value,
 > {
 	pub initiator_contract: InitiatorContract,
 	pub initiator_monitoring: InitiatorContractMonitoring,
@@ -84,7 +82,6 @@ impl<
 		CounterpartyContractMonitoring,
 		Address,
 		Hash,
-		Value,
 	> BlockchainService
 	for AbstractBlockchainService<
 		InitiatorContract,
@@ -93,7 +90,6 @@ impl<
 		CounterpartyContractMonitoring,
 		Address,
 		Hash,
-		Value,
 	> where
 	InitiatorContract: BridgeContractInitiator<Address = Address, Hash = Hash>,
 	CounterpartyContract: BridgeContractCounterparty<Address = Address, Hash = Hash>,
@@ -102,11 +98,9 @@ impl<
 		BridgeContractCounterpartyMonitoring<Address = Address, Hash = Hash>,
 	Address: BridgeAddressType,
 	Hash: BridgeHashType,
-	Value: BridgeValueType
 {
 	type Address = Address;
 	type Hash = Hash;
-	type Value = Value;
 
 	type InitiatorContract = InitiatorContract;
 	type CounterpartyContract = CounterpartyContract;
@@ -137,7 +131,6 @@ impl<
 		CounterpartyContractMonitoring,
 		Address,
 		Hash,
-		Value,
 	> Stream
 	for AbstractBlockchainService<
 		InitiatorContract,
@@ -146,7 +139,6 @@ impl<
 		CounterpartyContractMonitoring,
 		Address,
 		Hash,
-		Value,
 	> where
 	InitiatorContract: BridgeContractInitiator<Address = Address, Hash = Hash>,
 	CounterpartyContract: BridgeContractCounterparty<Address = Address, Hash = Hash>,
@@ -155,9 +147,8 @@ impl<
 		BridgeContractCounterpartyMonitoring<Address = Address, Hash = Hash>,
 	Address: BridgeAddressType,
 	Hash: BridgeHashType,
-	Value: BridgeValueType
 {
-	type Item = ContractEvent<Address, Hash, Value>;
+	type Item = ContractEvent<Address, Hash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -172,7 +163,6 @@ impl<
 		CounterpartyContractMonitoring,
 		Address,
 		Hash,
-		Value,
 	> std::fmt::Debug
 	for AbstractBlockchainService<
 		InitiatorContract,
@@ -181,7 +171,6 @@ impl<
 		CounterpartyContractMonitoring,
 		Address,
 		Hash,
-		Value,
 	>
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

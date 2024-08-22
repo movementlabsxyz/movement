@@ -25,7 +25,7 @@ pub struct BridgeServiceConfig {
 	pub active_swap: ActiveSwapConfig,
 }
 
-pub struct BridgeService<B1, B2, V>
+pub struct BridgeService<B1, B2>
 where
 	B1: BlockchainService,
 	B2: BlockchainService,
@@ -33,11 +33,11 @@ where
 	pub blockchain_1: B1,
 	pub blockchain_2: B2,
 
-	pub active_swaps_b1_to_b2: ActiveSwapMap<B1, B2, V>,
-	pub active_swaps_b2_to_b1: ActiveSwapMap<B2, B1, V>,
+	pub active_swaps_b1_to_b2: ActiveSwapMap<B1, B2>,
+	pub active_swaps_b2_to_b1: ActiveSwapMap<B2, B1>,
 }
 
-impl<B1, B2, V> BridgeService<B1, B2, V>
+impl<B1, B2> BridgeService<B1, B2>
 where
 	B1: BlockchainService + 'static,
 	B2: BlockchainService + 'static,
@@ -62,10 +62,10 @@ where
 	}
 }
 
-fn handle_initiator_event<BFrom, BTo, V>(
-	initiator_event: BridgeContractInitiatorEvent<BFrom::Address, BFrom::Hash, V>,
-	active_swaps: &mut ActiveSwapMap<BFrom, BTo, V>,
-) -> Option<IEvent<BFrom::Address, BFrom::Hash, V>>
+fn handle_initiator_event<BFrom, BTo>(
+	initiator_event: BridgeContractInitiatorEvent<BFrom::Address, BFrom::Hash>,
+	active_swaps: &mut ActiveSwapMap<BFrom, BTo>,
+) -> Option<IEvent<BFrom::Address, BFrom::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
@@ -74,7 +74,6 @@ where
 
 	Vec<u8>: From<BTo::Address>,
 	Vec<u8>: From<BFrom::Address>,
-	V:Clone,
 {
 	match initiator_event {
 		BridgeContractInitiatorEvent::Initiated(ref details) => {
@@ -90,10 +89,10 @@ where
 	}
 }
 
-fn handle_counterparty_event<BFrom, BTo, V>(
-	event: BridgeContractCounterpartyEvent<BTo::Address, BTo::Hash, V>,
-	active_swaps: &mut ActiveSwapMap<BFrom, BTo, V>,
-) -> Option<CEvent<BTo::Address, BTo::Hash, V>>
+fn handle_counterparty_event<BFrom, BTo>(
+	event: BridgeContractCounterpartyEvent<BTo::Address, BTo::Hash>,
+	active_swaps: &mut ActiveSwapMap<BFrom, BTo>,
+) -> Option<CEvent<BTo::Address, BTo::Hash>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
@@ -101,7 +100,6 @@ where
 
 	Vec<u8>: From<BTo::Address>,
 	Vec<u8>: From<BFrom::Address>,
-	V:Clone,
 {
 	use BridgeContractCounterpartyEvent::*;
 	match event {
@@ -123,7 +121,7 @@ where
 	}
 }
 
-impl<B1, B2, V> Stream for BridgeService<B1, B2, V>
+impl<B1, B2> Stream for BridgeService<B1, B2>
 where
 	B1: BlockchainService + 'static,
 	B2: BlockchainService + 'static,
@@ -136,10 +134,8 @@ where
 
 	Vec<u8>: From<B1::Address>,
 	Vec<u8>: From<B2::Address>,
-
-	V: Clone + Unpin,
 {
-	type Item = Event<B1, B2, V>;
+	type Item = Event<B1, B2>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -149,7 +145,7 @@ where
 			use HandleActiveSwapEvent::*;
 
 			let active_swap_event = this.active_swaps_b1_to_b2.poll_next_unpin(cx);
-			if let Some(value) = handle_active_swap_event::<B1, B2, V>(active_swap_event) {
+			if let Some(value) = handle_active_swap_event::<B1, B2>(active_swap_event) {
 				match value {
 					InitiatorEvent(event) => return Poll::Ready(Some(Event::B1I(event))),
 					CounterpartyEvent(event) => return Poll::Ready(Some(Event::B2C(event))),
@@ -157,7 +153,7 @@ where
 			}
 
 			let active_swap_event = this.active_swaps_b2_to_b1.poll_next_unpin(cx);
-			if let Some(value) = handle_active_swap_event::<B2, B1, V>(active_swap_event) {
+			if let Some(value) = handle_active_swap_event::<B2, B1>(active_swap_event) {
 				match value {
 					InitiatorEvent(event) => return Poll::Ready(Some(Event::B2I(event))),
 					CounterpartyEvent(event) => return Poll::Ready(Some(Event::B1C(event))),
@@ -175,7 +171,7 @@ where
 				match blockchain_event {
 					ContractEvent::InitiatorEvent(initiator_event) => {
 						trace!("BridgeService: Initiator event from blockchain service 1");
-						if let Some(propagate_event) = handle_initiator_event::<B1, B2, V>(
+						if let Some(propagate_event) = handle_initiator_event::<B1, B2>(
 							initiator_event,
 							&mut this.active_swaps_b1_to_b2,
 						) {
@@ -183,7 +179,7 @@ where
 						}
 					}
 					ContractEvent::CounterpartyEvent(counterparty_event) => {
-						if let Some(propagate_event) = handle_counterparty_event::<B2, B1, V>(
+						if let Some(propagate_event) = handle_counterparty_event::<B2, B1>(
 							counterparty_event,
 							&mut this.active_swaps_b2_to_b1,
 						) {
@@ -210,7 +206,7 @@ where
 				match blockchain_event {
 					ContractEvent::InitiatorEvent(initiator_event) => {
 						trace!("BridgeService: Initiator event from blockchain service 2");
-						if let Some(propagate_event) = handle_initiator_event::<B2, B1, V>(
+						if let Some(propagate_event) = handle_initiator_event::<B2, B1>(
 							initiator_event,
 							&mut this.active_swaps_b2_to_b1,
 						) {
@@ -219,7 +215,7 @@ where
 					}
 					ContractEvent::CounterpartyEvent(counterparty_event) => {
 						trace!("BridgeService: Counterparty event from blockchain service 2");
-						if let Some(propagate_event) = handle_counterparty_event::<B1, B2, V>(
+						if let Some(propagate_event) = handle_counterparty_event::<B1, B2>(
 							counterparty_event,
 							&mut this.active_swaps_b1_to_b2,
 						) {
@@ -242,23 +238,22 @@ where
 
 // Initiator events pertain to the initiator contract, while counterparty events are associated
 // with the counterparty contract.
-enum HandleActiveSwapEvent<BFrom, BTo, V>
+enum HandleActiveSwapEvent<BFrom, BTo>
 where
 	BFrom: BlockchainService,
 	BTo: BlockchainService,
 {
-	InitiatorEvent(IEvent<BFrom::Address, BFrom::Hash, V>),
-	CounterpartyEvent(CEvent<BTo::Address, BTo::Hash, V>),
+	InitiatorEvent(IEvent<BFrom::Address, BFrom::Hash>),
+	CounterpartyEvent(CEvent<BTo::Address, BTo::Hash>),
 }
 
-fn handle_active_swap_event<BFrom, BTo, V>(
+fn handle_active_swap_event<BFrom, BTo>(
 	active_swap_event: Poll<Option<ActiveSwapEvent<BFrom::Hash>>>,
-) -> Option<HandleActiveSwapEvent<BFrom, BTo, V>>
+) -> Option<HandleActiveSwapEvent<BFrom, BTo>>
 where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
 	BTo::Hash: From<BFrom::Hash>,
-	<BTo as BlockchainService>::Hash: BlockchainService,
 {
 	use ActiveSwapEvent::*;
 	match active_swap_event {
@@ -277,7 +272,7 @@ where
 					// This issue arises during the attempt to communicate with blockchain 2 for accessing the locked funds.
 					// Hence the Event::B2C
 					warn!("BridgeService: Error locking bridge assets: {:?}", error);
-					return Some(HandleActiveSwapEvent::CounterpartyEvent::<<BFrom as BlockchainService>::Address,<BTo as BlockchainService>::Hash, V>(CEvent::Warn(
+					return Some(HandleActiveSwapEvent::CounterpartyEvent(CEvent::Warn(
 						CWarn::BridgeAssetsLockingError(error),
 					)));
 				}

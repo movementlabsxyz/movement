@@ -5,13 +5,13 @@ use crate::types::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BridgeContractInitiatorEvent<A, H, V> {
-	Initiated(BridgeTransferDetails<A, H, V>),
+pub enum BridgeContractInitiatorEvent<A, H> {
+	Initiated(BridgeTransferDetails<A, H>),
 	Completed(BridgeTransferId<H>),
 	Refunded(BridgeTransferId<H>),
 }
 
-impl<A, H, V> BridgeContractInitiatorEvent<A, H, V> {
+impl<A, H> BridgeContractInitiatorEvent<A, H> {
 	pub fn bridge_transfer_id(&self) -> &BridgeTransferId<H> {
 		match self {
 			Self::Initiated(details) => &details.bridge_transfer_id,
@@ -21,23 +21,21 @@ impl<A, H, V> BridgeContractInitiatorEvent<A, H, V> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BridgeContractCounterpartyEvent<A, H, V> {
-	Locked(LockDetails<A, H, V>),
-	Completed(CounterpartyCompletedDetails<A, H, V>),
+pub enum BridgeContractCounterpartyEvent<A, H> {
+	Locked(LockDetails<A, H>),
+	Completed(CounterpartyCompletedDetails<A, H>),
 }
 
 pub trait BridgeContractInitiatorMonitoring:
-	Stream<Item = BridgeContractInitiatorEvent<Self::Address, Self::Hash, Self::Value>> + Unpin
+	Stream<Item = BridgeContractInitiatorEvent<Self::Address, Self::Hash>> + Unpin
 {
 	type Address;
 	type Hash;
-	type Value;
 }
 
 pub trait BridgeContractCounterpartyMonitoring:
-	Stream<Item = BridgeContractCounterpartyEvent<Self::Address, Self::Hash, Self::Value>> + Unpin
+	Stream<Item = BridgeContractCounterpartyEvent<Self::Address, Self::Hash>> + Unpin
 {
 	type Address;
 	type Hash;
-	type Value;
 }

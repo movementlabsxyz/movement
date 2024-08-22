@@ -263,7 +263,6 @@ impl EthClient {
 impl BridgeContractInitiator for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
-	type Value = EthValue;
 
 	// `_initiator_address`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
@@ -287,7 +286,7 @@ impl BridgeContractInitiator for EthClient {
 				FixedBytes(hash_lock.0),
 				U256::from(time_lock.0),
 			)
-			.value(U256::from(amount.0)).from(_initiator_address.0.0);
+			.value(U256::from(AssetType::EthAndWeth((0,amount.0)))).from(_initiator_address.0.0);
 		let _ =
 			send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 				.await
@@ -366,7 +365,7 @@ impl BridgeContractInitiator for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
 		}))
 	}
 }
@@ -375,7 +374,6 @@ impl BridgeContractInitiator for EthClient {
 impl BridgeContractCounterparty for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
-	type Value = EthValue;
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,
@@ -397,7 +395,7 @@ impl BridgeContractCounterparty for EthClient {
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 			recipient.0 .0,
-			U256::from(amount.0),
+			U256::from(AssetType::EthANdWeth(0,amount.0)),
 		);
 		send_transaction(call, &send_tx_rules(), RETRIES, GAS_LIMIT)
 			.await
@@ -466,7 +464,7 @@ impl BridgeContractCounterparty for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
 		}))
 	}
 }

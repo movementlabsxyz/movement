@@ -209,7 +209,6 @@ impl MovementClient {
 impl BridgeContractCounterparty for MovementClient {
 	type Address = MovementAddress;
 	type Hash = [u8; 32];
-	type Value = MovementValue;
 
 	async fn lock_bridge_transfer_assets(
 		&mut self,

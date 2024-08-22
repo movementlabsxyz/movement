@@ -3,6 +3,7 @@ use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
 use std::{fmt::Debug, hash::Hash};
+use std::ops::AddAssign;
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
@@ -141,83 +142,98 @@ impl From<Uint<256, 4>> for TimeLock {
 }
 
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Amount<V>(pub V);
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EthValue {
-	Weth(u64),
-	Eth(u64),
-	WethAndEth((u64, u64)),
+pub struct Amount(pub AssetType);
+#[derive(Clone, Debug, PartialEq, Eq, Copy)]
+pub enum AssetType {
+	EthAndWeth((u64, u64)),
+	Moveth(u64),
 }
 
-impl Amount<EthValue> {
+impl AddAssign for AssetType {
+	fn add_assign(&mut self, other: Self) {
+		match (self, other) {
+			(AssetType::Moveth(ref mut a), AssetType::Moveth(b)) => *a += b,
+			(AssetType::EthAndWeth((ref mut a, ref mut b)), AssetType::EthAndWeth((c, d))) => {
+				*a += c;
+				*b += d;
+			}
+			_ => panic!("Cannot add different AssetTypes"),
+		}
+	}
+}
+
+impl Amount {
     pub fn weth(&self) -> u64 {
         match self.0 {
-            EthValue::Weth(value) => value,
-            EthValue::WethAndEth((weth_value, _)) => weth_value,
+            AssetType::EthAndWeth((_, weth_value)) => weth_value,
 			_ => 0, 
         }
 	}
 	pub fn eth(&self) -> u64 {
 		match self.0 {
-			EthValue::Eth(value) => value,
-			EthValue::WethAndEth((_, eth_value)) => eth_value,
+			AssetType::EthAndWeth((eth_value, _)) => eth_value,
 			_ => 0, 
+		}
+	}
+	pub fn value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((weth_value, eth_value)) => weth_value + eth_value,
+			AssetType::Moveth(value) => value,
 		}
 	}
 }
 
-impl From<Uint<256, 4>> for Amount<EthValue> {
+impl From<Uint<256, 4>> for Amount {
 	fn from(value: Uint<256, 4>) -> Self {
 		// Extract the lower 64 bits.
-		let lower_64_bits: u64 = value.as_limbs()[0];
-		//TODO: unit test this for Weth and Eth
-		Amount(EthValue::Eth(lower_64_bits))
+		let lower_64_bits = value.as_limbs()[0];
+		Amount(AssetType::EthAndWeth((0,lower_64_bits)))
 	}
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct BridgeTransferDetails<A, H, V> {
+pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<A>,
 	pub recipient_address: RecipientAddress<Vec<u8>>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: Amount<V>,
+	pub amount: Amount,
 }
 
-impl<A, H, V> Default for BridgeTransferDetails<A, H, V> {
+impl<A, H> Default for BridgeTransferDetails<A, H> {
 	fn default() -> Self {
 		todo!()
 	}
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct LockDetails<A, H, V> {
+pub struct LockDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<Vec<u8>>,
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
-	pub amount: Amount<V>,
+	pub amount: Amount,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct CounterpartyCompletedDetails<A, H, V> {
+pub struct CounterpartyCompletedDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<Vec<u8>>,
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
 	pub secret: HashLockPreImage,
-	pub amount: Amount<V>,
+	pub amount: Amount,
 }
 
-impl<A, H, V> CounterpartyCompletedDetails<A, H, V>
+impl<A, H> CounterpartyCompletedDetails<A, H>
 where
 	InitiatorAddress<Vec<u8>>: From<InitiatorAddress<A>>,
 	RecipientAddress<A>: From<RecipientAddress<Vec<u8>>>,
 {
 	pub fn from_bridge_transfer_details(
-		bridge_transfer_details: BridgeTransferDetails<A, H, V>,
+		bridge_transfer_details: BridgeTransferDetails<A, H>,
 		secret: HashLockPreImage,
 	) -> Self {
 		CounterpartyCompletedDetails {
@@ -231,8 +247,8 @@ where
 	}
 }
 
-impl<A, H, V> CounterpartyCompletedDetails<A, H, V> {
-	pub fn from_lock_details(lock_details: LockDetails<A, H, V>, secret: HashLockPreImage) -> Self {
+impl<A, H> CounterpartyCompletedDetails<A, H> {
+	pub fn from_lock_details(lock_details: LockDetails<A, H>, secret: HashLockPreImage) -> Self {
 		CounterpartyCompletedDetails {
 			bridge_transfer_id: lock_details.bridge_transfer_id,
 			initiator_address: lock_details.initiator_address,

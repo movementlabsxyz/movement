@@ -10,7 +10,7 @@ use bridge_shared::types::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorEvent<A, H> {
-	InitiatedBridgeTransfer(BridgeTransferDetails<A, H, V>),
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
 	CompletedBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
