@@ -2,7 +2,7 @@ use crate::utils::MovementAddress;
 use anyhow::{Error, Result};
 use aptos_sdk::{
 	move_types::language_storage::TypeTag,
-	rest_client::{Client, FaucetClient},
+	rest_client::{Client, FaucetClient, Transaction},
 	types::LocalAccount,
 };
 use aptos_types::account_address::AccountAddress;
@@ -99,7 +99,6 @@ impl MovementClient {
 		let mut address_bytes = [0u8; AccountAddress::LENGTH];
         	address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
 		let counterparty_address = AccountAddress::new(address_bytes);
-
 		Ok(MovementClient {
 			counterparty_address,
 			initiator_address: Vec::new(), //dummy for now
@@ -195,7 +194,7 @@ impl MovementClient {
 		))
 	}
 	
-	pub fn publish_for_test(&self) -> Result<()> {
+	pub fn publish_for_test(&mut self) -> Result<()> {
 		//println!("Current directory: {:?}", env::current_dir());
 		let mut process = Command::new("movement")
                 .args(&["init"])
@@ -246,7 +245,7 @@ impl MovementClient {
 				"--address",
 				address,
 				"--seed",
-				"12345",
+				"256789",
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
@@ -275,6 +274,10 @@ impl MovementClient {
 		} else {
 			format!("0x{}", resource_address)
 		};
+
+		// Set counterparty module address to resource address, for function calls:
+		self.counterparty_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
+
 
 		println!("Derived resource address: {}", formatted_resource_address);
 
@@ -330,7 +333,7 @@ impl MovementClient {
 				"--address-name",
 				"moveth", 
 				"--seed",
-				"12345",
+				"256789",
 				"--package-dir", 
 				"../move-modules"
 			])
@@ -379,24 +382,25 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		//@TODO properly return an error instead of unwrapping
 		let args = vec![
-			to_bcs_bytes(&initiator.0).unwrap(),
-			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
-			to_bcs_bytes(&hash_lock.0).unwrap(),
-			to_bcs_bytes(&time_lock.0).unwrap(),
-			to_bcs_bytes(&recipient.0).unwrap(),
-			to_bcs_bytes(&amount.0).unwrap(),
-		];
+			to_bcs_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			to_bcs_bytes(&bridge_transfer_id.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			to_bcs_bytes(&hash_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			to_bcs_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			to_bcs_bytes(&recipient.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			to_bcs_bytes(&amount.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+		    ];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
 			COUNTERPARTY_MODULE_NAME,
-			"lock_bridge_transfer_assets",
-			self.counterparty_type_args(Call::Lock),
-			args,
+			"hello_world",
+			vec![],
+			vec![],
 		);
-		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
-			.await
-			.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
-		Ok(())
+                let txn_result = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+                        .await
+                        .map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?;
+		println!("{:?}", &txn_result);
+                Ok(())
 	}
 
 	async fn complete_bridge_transfer(

@@ -29,6 +29,8 @@ impl BridgeContractInitiatorError {
 pub enum BridgeContractCounterpartyError {
 	#[error("Failed to lock bridge transfer assets")]
 	LockTransferAssetsError,
+	#[error("Failed to serialize or deserialize")]
+	SerializationError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
 	#[error("Failed to abort bridge transfer")]

@@ -32,6 +32,8 @@ ethereum-bridge = { workspace = true }
 movement-bridge = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

@@ -43,6 +43,8 @@ use std::{
 	str::FromStr,
 	time::Instant,
 };
+use tracing;
+use tracing_subscriber;
 
 use url::Url;
 
@@ -97,9 +99,13 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 //#[ignore]
 async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
+
+	let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ let mut movement_client = harness.movement_client().expect("Failed to get MovementClient");
+	{ let mut movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
@@ -120,7 +126,7 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
 	.lock_bridge_transfer_assets(
-		BridgeTransferId(bridge_transfer_id),
+		BridgeTransferId(bridge_transfer_id),		
 		HashLock(hash_lock),
 		TimeLock(100),
 		InitiatorAddress(initiator),
@@ -129,8 +135,6 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	)
 	.await
 	.expect("Failed to complete bridge transfer");
-
-	println!("{:?}", txn);
 
 	harness
 	.movement_client_mut()

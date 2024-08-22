@@ -72,6 +72,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         move_to(resource, bridge_transfer_store);
         move_to(resource, bridge_config);
     }
+
+
     
     public fun lock_bridge_transfer_assets(
         caller: &signer,

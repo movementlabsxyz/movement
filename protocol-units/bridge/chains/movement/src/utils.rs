@@ -23,6 +23,7 @@ use aptos_sdk::{
 	},
 };
 use derive_new::new;
+use tracing::log::{info, debug};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use thiserror::Error;
@@ -99,22 +100,31 @@ pub async fn send_aptos_transaction(
 	signer: &LocalAccount,
 	payload: TransactionPayload,
 ) -> Result<AptosTransaction> {
+	info!("Starting send_aptos_transaction");
+        debug!("Payload: {:?}", payload);
+        debug!("Signer address: {:?}", signer.address());
 	let state = rest_client
 		.get_ledger_information()
 		.await
 		.context("Failed in getting chain id")?
 		.into_inner();
+	info!("Ledger information retrieved: chain_id = {}", state.chain_id);
 
 	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
 		.with_gas_unit_price(100)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
+	debug!("Transaction factory created with chain_id = {}", state.chain_id);
 
 	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
+	debug!("Transaction signed: {:?}", signed_tx);
 
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
-		.map_err(|e| anyhow::anyhow!(e.to_string()))?
+		.map_err(|e| {
+		debug!("Transaction submission failed: {:?}", e);
+		anyhow::anyhow!(e.to_string())
+		})?
 		.into_inner();
 	Ok(response)
 }
@@ -156,18 +166,27 @@ pub async fn simulate_aptos_transaction(
 
 /// Make Aptos Transaction Payload
 pub fn make_aptos_payload(
-	package_address: AccountAddress,
-	module_name: &'static str,
-	function_name: &'static str,
-	ty_args: Vec<TypeTag>,
-	args: Vec<Vec<u8>>,
+        package_address: AccountAddress,
+        module_name: &'static str,
+        function_name: &'static str,
+        ty_args: Vec<TypeTag>,
+        args: Vec<Vec<u8>>,
 ) -> TransactionPayload {
-	TransactionPayload::EntryFunction(EntryFunction::new(
-		ModuleId::new(package_address, ident_str!(module_name).to_owned()),
-		ident_str!(function_name).to_owned(),
-		ty_args,
-		args,
-	))
+        // Log the details of the payload being created
+        info!("Creating Aptos transaction payload:");
+        info!("  Package address: {:?}", package_address);
+        info!("  Module name: {}", module_name);
+        info!("  Function name: {}", function_name);
+        debug!("  Type arguments: {:?}", ty_args);
+        debug!("  Arguments: {:?}", args);
+
+        // Create and return the transaction payload
+        TransactionPayload::EntryFunction(EntryFunction::new(
+                ModuleId::new(package_address, ident_str!(module_name).to_owned()),
+                ident_str!(function_name).to_owned(),
+                ty_args,
+                args,
+        ))
 }
 
 /// Send View Request
