@@ -18,7 +18,7 @@ use bridge_shared::{
 };
 use rand::prelude::*;
 use serde::Serialize;
-use std::{env, io::{Write, Read}, process::{Command, Stdio}};
+use std::{env, fs, io::{Read, Write}, path::PathBuf, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::{
 	sync::{mpsc, Arc, Mutex, RwLock},
@@ -219,25 +219,91 @@ impl MovementClient {
 		// Close stdin to indicate that no more input will be provided
 		drop(stdin);
 
-		let output = process
+		let addr_output = process
 			.wait_with_output()
 			.expect("Failed to read command output");
 
-		if !output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+		if !addr_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
 		}
 	
-		if !output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+		if !addr_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 		}
-		let output_str = String::from_utf8_lossy(&output.stderr);
-		let address = output_str
-		    .split_whitespace()
-		    .find(|word| word.starts_with("0x")
+		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
+		let address = addr_output_str
+			.split_whitespace()
+			.find(|word| word.starts_with("0x")
 		) 
-		    .expect("Failed to extract the Movement account address");
+		    	.expect("Failed to extract the Movement account address");
 	    
 		println!("Extracted address: {}", address);
+
+		let resource_output = Command::new("movement")
+			.args(&[
+				"account",
+				"derive-resource-account-address",
+				"--address",
+				address,
+				"--seed",
+				"12345",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		// Print the output of the resource address command for debugging
+		if !resource_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
+		}
+		if !resource_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
+		}
+
+		// Extract the resource address from the JSON output
+		let resource_output_str = String::from_utf8_lossy(&resource_output.stdout);
+		let resource_address = resource_output_str
+			.lines()
+			.find(|line| line.contains("\"Result\""))
+			.and_then(|line| line.split('"').nth(3))
+			.expect("Failed to extract the resource account address");
+
+		// Ensure the address has a "0x" prefix
+		let formatted_resource_address = if resource_address.starts_with("0x") {
+			resource_address.to_string()
+		} else {
+			format!("0x{}", resource_address)
+		};
+
+		println!("Derived resource address: {}", formatted_resource_address);
+
+		let current_dir = env::current_dir().expect("Failed to get current directory");
+		println!("Current directory: {:?}", current_dir);
+
+		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
+
+
+		// Read the existing content of Move.toml
+		let move_toml_content = fs::read_to_string(&move_toml_path)
+			.expect("Failed to read Move.toml file");
+	
+		// Update the content of Move.toml with the new addresses
+		let updated_content = move_toml_content
+			.replace(r#"resource_addr = ""#, &format!(r#"resource_addr = "{}""#, formatted_resource_address))
+			.replace(r#"atomic_bridge = ""#, &format!(r#"atomic_bridge = "{}""#, formatted_resource_address))
+			.replace(r#"moveth = ""#, &format!(r#"moveth = "{}""#, formatted_resource_address))
+			.replace(r#"master_minter = ""#, &format!(r#"master_minter = "{}""#, formatted_resource_address))
+			.replace(r#"minter = ""#, &format!(r#"minter = "{}""#, formatted_resource_address))
+			.replace(r#"admin = ""#, &format!(r#"admin = "{}""#, formatted_resource_address))
+			.replace(r#"origin_addr = ""#, &format!(r#"origin_addr = "{}""#, address))
+			.replace(r#"source_account = ""#, &format!(r#"source_account = "{}""#, address));
+	
+		// Write the updated content back to Move.toml
+		fs::write(move_toml_path, updated_content)
+			.expect("Failed to update Move.toml file");
+	
+		println!("Move.toml updated successfully.");
 
 		let output2 = Command::new("movement")
 			.args(&[
@@ -256,9 +322,6 @@ impl MovementClient {
 			.output()
 			.expect("Failed to execute command");
 
-    	if !output2.stdout.is_empty() {
-        	println!("stdout: {}", output_str);
-    	}
 	if !output2.stderr.is_empty() {
         	eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
     	}
