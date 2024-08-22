@@ -2,6 +2,7 @@ use alloy::primitives::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
+use std::ops::AddAssign;
 use std::{fmt::Debug, hash::Hash};
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
@@ -135,13 +136,31 @@ impl From<Uint<256, 4>> for TimeLock {
 }
 
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Amount(pub u64);
+pub struct Amount(pub AssetType);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AssetType {
+	Moveth(u64),
+	Eth(u64),
+	Weth(u64),
+}
+
+impl AddAssign for AssetType {
+	fn add_assign(&mut self, other: Self) {
+		match (self, other) {
+			(AssetType::Moveth(ref mut a), AssetType::Moveth(b))
+			| (AssetType::Eth(ref mut a), AssetType::Eth(b))
+			| (AssetType::Weth(ref mut a), AssetType::Weth(b)) => *a += b,
+			// Handle cases where the AssetTypes are different
+			_ => panic!("Cannot add different AssetTypes"),
+		}
+	}
+}
 
 impl From<Uint<256, 4>> for Amount {
 	fn from(value: Uint<256, 4>) -> Self {
-		// Extract the lower 64 bits.
 		let lower_64_bits = value.as_limbs()[0];
-		Amount(lower_64_bits)
+		Amount(AssetType::Weth(lower_64_bits))
 	}
 }
 
