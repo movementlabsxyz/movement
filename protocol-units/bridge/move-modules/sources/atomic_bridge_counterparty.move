@@ -16,9 +16,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         pending_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
         completed_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
         aborted_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
-        bridge_transfer_assets_locked_events: EventHandle<BridgeTransferAssetsLockedEvent>,
-        bridge_transfer_completed_events: EventHandle<BridgeTransferCompletedEvent>,
-        bridge_transfer_cancelled_events: EventHandle<BridgeTransferCancelledEvent>,
     }
 
     struct BridgeTransferDetails has key, store {
@@ -66,9 +63,6 @@ module atomic_bridge::atomic_bridge_counterparty {
             pending_transfers: smart_table::new(),
             completed_transfers: smart_table::new(),
             aborted_transfers: smart_table::new(),
-            bridge_transfer_assets_locked_events: account::new_event_handle<BridgeTransferAssetsLockedEvent>(resource),
-            bridge_transfer_completed_events: account::new_event_handle<BridgeTransferCompletedEvent>(resource),
-            bridge_transfer_cancelled_events: account::new_event_handle<BridgeTransferCancelledEvent>(resource),
         };
         let bridge_config = BridgeConfig {
             moveth_minter: signer::address_of(resource),
@@ -79,7 +73,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         move_to(resource, bridge_config);
     }
     
-    public entry fun lock_bridge_transfer_assets(
+    public fun lock_bridge_transfer_assets(
         caller: &signer,
         initiator: vector<u8>, //eth address
         bridge_transfer_id: vector<u8>,
@@ -87,7 +81,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         time_lock: u64,
         recipient: address,
         amount: u64
-    ) acquires BridgeTransferStore {
+    ): bool acquires BridgeTransferStore {
         assert!(signer::address_of(caller) == @origin_addr, 1);
         let bridge_store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
         let details = BridgeTransferDetails {
@@ -109,24 +103,7 @@ module atomic_bridge::atomic_bridge_counterparty {
             },
         );
 
-    }
-
-    #[view]
-    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : BridgeTransferDetails acquires BridgeTransferStore, BridgeConfig {
-        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
-        let store = store();
-        if (aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
-            return *aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
-        } else {
-            return BridgeTransfer {
-                amount: 0,
-                originator: @atomic_bridge,
-                recipient: vector::empty<u8>(),
-                hash_lock: vector::empty<u8>(),
-                time_lock: 0,
-                state: 0,
-            };
-        }
+        true
     }
     
     public fun complete_bridge_transfer(
@@ -219,7 +196,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let hash_lock = keccak256(pre_image); 
         let time_lock = 3600;
         let amount = 100;
-        lock_bridge_transfer_assets(
+        let result = lock_bridge_transfer_assets(
             origin_account,
             initiator,
             bridge_transfer_id,
@@ -228,7 +205,7 @@ module atomic_bridge::atomic_bridge_counterparty {
             recipient,
             amount
         );
-        //assert!(result, 1);
+        assert!(result, 1);
         // Verify that the transfer is stored in pending_transfers
         let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let transfer_details: &BridgeTransferDetails = smart_table::borrow(&bridge_store.pending_transfers, bridge_transfer_id);
