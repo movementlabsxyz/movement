@@ -283,25 +283,42 @@ impl MovementClient {
 
 		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
 
-
 		// Read the existing content of Move.toml
 		let move_toml_content = fs::read_to_string(&move_toml_path)
 			.expect("Failed to read Move.toml file");
 	
 		// Update the content of Move.toml with the new addresses
 		let updated_content = move_toml_content
-			.replace(r#"resource_addr = ""#, &format!(r#"resource_addr = "{}""#, formatted_resource_address))
-			.replace(r#"atomic_bridge = ""#, &format!(r#"atomic_bridge = "{}""#, formatted_resource_address))
-			.replace(r#"moveth = ""#, &format!(r#"moveth = "{}""#, formatted_resource_address))
-			.replace(r#"master_minter = ""#, &format!(r#"master_minter = "{}""#, formatted_resource_address))
-			.replace(r#"minter = ""#, &format!(r#"minter = "{}""#, formatted_resource_address))
-			.replace(r#"admin = ""#, &format!(r#"admin = "{}""#, formatted_resource_address))
-			.replace(r#"origin_addr = ""#, &format!(r#"origin_addr = "{}""#, address))
-			.replace(r#"source_account = ""#, &format!(r#"source_account = "{}""#, address));
+			.lines()
+			.map(|line| {
+				if line.starts_with("resource_addr = ") {
+					format!(r#"resource_addr = "{}""#, formatted_resource_address)
+				} else if line.starts_with("atomic_bridge = ") {
+					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
+				} else if line.starts_with("moveth = ") {
+					format!(r#"moveth = "{}""#, formatted_resource_address)
+				} else if line.starts_with("master_minter = ") {
+					format!(r#"master_minter = "{}""#, formatted_resource_address)
+				} else if line.starts_with("minter = ") {
+					format!(r#"minter = "{}""#, formatted_resource_address)
+				} else if line.starts_with("admin = ") {
+					format!(r#"admin = "{}""#, formatted_resource_address)
+				} else if line.starts_with("origin_addr = ") {
+					format!(r#"origin_addr = "{}""#, address)
+				} else if line.starts_with("source_account = ") {
+					format!(r#"source_account = "{}""#, address)
+				} else {
+					line.to_string()
+				}
+			})
+			.collect::<Vec<_>>()
+			.join("\n");
 	
 		// Write the updated content back to Move.toml
-		fs::write(move_toml_path, updated_content)
-			.expect("Failed to update Move.toml file");
+		let mut file = fs::File::create(&move_toml_path)
+			.expect("Failed to open Move.toml file for writing");
+		file.write_all(updated_content.as_bytes())
+			.expect("Failed to write updated Move.toml file");
 	
 		println!("Move.toml updated successfully.");
 
@@ -321,6 +338,10 @@ impl MovementClient {
 			.stderr(Stdio::piped())
 			.output()
 			.expect("Failed to execute command");
+
+	if !output2.stdout.is_empty() {
+		eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		}
 
 	if !output2.stderr.is_empty() {
         	eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
