@@ -497,7 +497,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[expected_failure(abort_code = 1)]
+    #[expected_failure(abort_code = 7)]
     public fun test_bridge_transfers_view(
         sender: &signer,
         creator: &signer,
@@ -523,10 +523,10 @@ module atomic_bridge::atomic_bridge_initiator {
             amount
         );
 
-        // bridge_transfers cannot be used because it dereferences the transfer and modifies it
-        // but it does return a valid transfer id
+        aptos_std::debug::print(&bridge_transfer_id);
+        // returns a valid transfer
         let bridge_transfer = bridge_transfers(bridge_transfer_id);
-        
+
         assert!(bridge_transfer.state == INITIALIZED, 6);
         aptos_std::debug::print(&bridge_transfer.state);
         complete_bridge_transfer(
@@ -536,14 +536,18 @@ module atomic_bridge::atomic_bridge_initiator {
             atomic_bridge
         );
         aptos_std::debug::print(&bridge_transfer.state);
-        // bridge_transfers doesn't find the transfer id and returns a new transfer with state 3
+
+        // bridge_transfers doesn't find the transfer id because it has been deleted by complete bridge transfer and returns a new transfer with state 3 (non existent)
         assert!(bridge_transfers(bridge_transfer_id).state == 3, 7);
         aptos_std::debug::print(&bridge_transfer.state);
-        // refund fails in borrow_mut because bridge_transfer_id is invalid
+        // refund fails in borrow_mut because bridge_transfer_id is inexistent as well
+        // weridly this errors but the test passes despite us expecting error 7 only, not 1
+        // abort error::invalid_argument(ENOT_FOUND)
         refund_bridge_transfer(
             sender,
             bridge_transfer_id,
             atomic_bridge
         );
+        assert!(bridge_transfers(bridge_transfer_id).state == 3, 7);
     }
 }

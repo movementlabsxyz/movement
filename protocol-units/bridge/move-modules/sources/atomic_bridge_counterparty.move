@@ -18,7 +18,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         aborted_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
     }
 
-    struct BridgeTransferDetails has key, store {
+    struct BridgeTransferDetails has key, store, copy {
         initiator: vector<u8>, // eth address
         recipient: address,
         amount: u64,
@@ -71,6 +71,25 @@ module atomic_bridge::atomic_bridge_counterparty {
         };
         move_to(resource, bridge_transfer_store);
         move_to(resource, bridge_config);
+    }
+
+    #[view]
+    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : BridgeTransfer acquires BridgeTransferStore, BridgeConfig {
+        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+        let store = borrow_global<BridgeTransferStore>(config_address);
+        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
+            BridgeTransfer {
+                amount: 0,
+                originator: @atomic_bridge,
+                recipient: vector::empty<u8>(),
+                hash_lock: vector::empty<u8>(),
+                time_lock: 0,
+                state: 0,
+            }
+        } else {
+            let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+            *bridge_transfer
+        }
     }
     
     public fun lock_bridge_transfer_assets(
@@ -229,5 +248,47 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_details.amount == amount, 2);
         assert!(transfer_details.hash_lock == hash_lock, 3);
         assert!(transfer_details.initiator == initiator, 4);
+    }
+
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    fun test_bridge_transfers_view(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+        source_account: &signer
+    ) acquires BridgeTransferStore, BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+        let receiver_address = @0xdada;
+        let initiator = b"0x123"; //In real world this would be an ethereum address
+        let recipient = @0xface; 
+        let asset = moveth::metadata();
+        
+        let bridge_transfer_id = b"transfer1";
+        let pre_image = b"secret";
+        let hash_lock = keccak256(pre_image); 
+        let time_lock = 3600;
+        let amount = 100;
+        let result = lock_bridge_transfer_assets(
+            origin_account,
+            initiator,
+            bridge_transfer_id,
+            hash_lock,
+            time_lock,
+            recipient,
+            amount
+        );
+        assert!(result, 1);
+        // Verify that the transfer is stored in pending_transfers
+        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
+        let transfer_details = bridge_transfers(bridge_transfer_id);
+        assert!(transfer_details.recipient == recipient, 2);
+        assert!(transfer_details.initiator == initiator, 3);
     }
 }
