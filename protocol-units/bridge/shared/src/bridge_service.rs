@@ -277,7 +277,7 @@ where
 					// This issue arises during the attempt to communicate with blockchain 2 for accessing the locked funds.
 					// Hence the Event::B2C
 					warn!("BridgeService: Error locking bridge assets: {:?}", error);
-					return Some(HandleActiveSwapEvent::CounterpartyEvent::<<BTo as BlockchainService>::Hash>(CEvent::Warn(
+					return Some(HandleActiveSwapEvent::CounterpartyEvent::<<BFrom as BlockchainService>::Address,<BTo as BlockchainService>::Hash, V>(CEvent::Warn(
 						CWarn::BridgeAssetsLockingError(error),
 					)));
 				}

@@ -153,14 +153,14 @@ impl Amount<EthValue> {
     pub fn weth(&self) -> u64 {
         match self.0 {
             EthValue::Weth(value) => value,
-            EthValue::WethAndEth((weth_value, eth_value)) => weth_value,
+            EthValue::WethAndEth((weth_value, _)) => weth_value,
 			_ => 0, 
         }
 	}
 	pub fn eth(&self) -> u64 {
 		match self.0 {
 			EthValue::Eth(value) => value,
-			EthValue::WethAndEth((weth_value, eth_value)) => eth_value,
+			EthValue::WethAndEth((_, eth_value)) => eth_value,
 			_ => 0, 
 		}
 	}
