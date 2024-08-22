@@ -2,7 +2,7 @@ use crate::types::{EthAddress, EventName};
 use crate::{EthChainEvent, Transaction};
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
-use alloy::primitives::{address, LogData};
+use alloy::primitives::{address, Address, LogData};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy::rpc::types::{Filter, Log};
 use alloy::{
@@ -35,16 +35,17 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 	pub async fn run(
 		rpc_url: &str,
 		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
+		signer_address: Address
 	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
-
+		println!("Websocket connected");
 		//TODO: this should be an arg
-		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+		let initiator_address = signer_address;
 		let filter = Filter::new()
 			.address(initiator_address)
-			.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
-			.event("BridgeTransferCompleted(bytes32,bytes32)")
+			//.event("BridgeTransferInitiated")
+			//.event("BridgeTransferCompleted");
 			.from_block(BlockNumberOrTag::Latest);
 
 		let sub = ws.subscribe_logs(&filter).await?;
