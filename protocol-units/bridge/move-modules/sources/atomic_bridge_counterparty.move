@@ -16,6 +16,9 @@ module atomic_bridge::atomic_bridge_counterparty {
         pending_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
         completed_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
         aborted_transfers: SmartTable<vector<u8>, BridgeTransferDetails>,
+        bridge_transfer_assets_locked_events: EventHandle<BridgeTransferAssetsLockedEvent>,
+        bridge_transfer_completed_events: EventHandle<BridgeTransferCompletedEvent>,
+        bridge_transfer_cancelled_events: EventHandle<BridgeTransferCancelledEvent>,
     }
 
     struct BridgeTransferDetails has key, store {
@@ -63,6 +66,9 @@ module atomic_bridge::atomic_bridge_counterparty {
             pending_transfers: smart_table::new(),
             completed_transfers: smart_table::new(),
             aborted_transfers: smart_table::new(),
+            bridge_transfer_assets_locked_events: account::new_event_handle<BridgeTransferAssetsLockedEvent>(resource),
+            bridge_transfer_completed_events: account::new_event_handle<BridgeTransferCompletedEvent>(resource),
+            bridge_transfer_cancelled_events: account::new_event_handle<BridgeTransferCancelledEvent>(resource),
         };
         let bridge_config = BridgeConfig {
             moveth_minter: signer::address_of(resource),

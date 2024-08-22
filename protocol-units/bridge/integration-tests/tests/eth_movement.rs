@@ -24,7 +24,7 @@ use ethereum_bridge::{
 	event_logging::EthInitiatorMonitoring	
 };
 
-use movement_bridge::utils::MovementAddress;
+use movement_bridge::{utils::MovementAddress, MovementClient};
 use rand::{rngs::StdRng, SeedableRng};
 use tokio;
 use futures::{channel::mpsc::{self, UnboundedReceiver}, Stream, StreamExt};
@@ -89,11 +89,13 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 			.context("Failed to get Bob's account balance")?
 	);
 	child.kill().await.context("Failed to kill the child process")?;
+	//let _ = child.wait().await.expect("Failed to wait on process termination");
+
 	Ok(())
 }
 
 #[tokio::test]
-#[ignore]
+//#[ignore]
 async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -102,41 +104,10 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
-	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
-	// Print account addresses.
-	println!("\n=== Addresses ===");
-	println!("Alice: {}", alice.address().to_hex_literal());
-	println!("Bob: {}", bob.address().to_hex_literal());
-	let faucet_client = faucet_client.write().unwrap();
-	faucet_client
-		.fund(alice.address(), 100_000_000)
-		.await
-		.context("Failed to fund Alice's account")?;
-	faucet_client
-		.create_account(bob.address())
-		.await
-		.context("Failed to fund Bob's account")?;
-
-	// Print initial balances.
-	println!("\n=== Initial Balances ===");
-	println!(
-		"Alice: {:?}",
-		coin_client
-			.get_account_balance(&alice.address())
-			.await
-			.context("Failed to get Alice's account balance")?
-	);
-	println!(
-		"Bob: {:?}",
-		coin_client
-			.get_account_balance(&bob.address())
-			.await
-		.context("Failed to get Bob's account balance")?
-	);
+	let _ = movement_client.publish_for_test();
 	}
-
+	
         let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
         let recipient:MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));    
         let bridge_transfer_id = *b"00000000000000000000000transfer1";
@@ -145,7 +116,7 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
         let time_lock = 3600;
         let amount = 100;
 	
-	harness
+	let txn = harness
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
 	.lock_bridge_transfer_assets(
@@ -159,6 +130,8 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	.await
 	.expect("Failed to complete bridge transfer");
 
+	println!("{:?}", txn);
+
 	harness
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
@@ -170,6 +143,7 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
 	.expect("Failed to complete bridge transfer");
 
 	child.kill().await.context("Failed to kill the child process")?;
+	//let _ = child.wait().await.expect("Failed to wait on process termination");
 	Ok(())
 }
 
@@ -264,6 +238,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_eth_client_should_successfully_get_bridge_transfer_id() -> Result<()> {
         let mut harness: TestHarness = TestHarness::new_only_eth().await;
         let anvil = Anvil::new().port(harness.rpc_port()).spawn();

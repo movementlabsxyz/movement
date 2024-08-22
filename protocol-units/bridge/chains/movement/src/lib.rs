@@ -196,7 +196,7 @@ impl MovementClient {
 	}
 	
 	pub fn publish_for_test(&self) -> Result<()> {
-		println!("Current directory: {:?}", env::current_dir());
+		//println!("Current directory: {:?}", env::current_dir());
 		let mut process = Command::new("movement")
                 .args(&["init"])
                 .stdin(Stdio::piped())
@@ -213,7 +213,6 @@ impl MovementClient {
 		// Write "local" to the second prompt
 		stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-		println!("Writing '\\n' (Enter) to stdin");
 		// Press enter for the third prompt
 		stdin.write_all(b"\n").expect("Failed to write to stdin");
 
@@ -249,13 +248,22 @@ impl MovementClient {
 			.output()
 			.expect("Failed to execute command");
 	
-		if !output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-		}
-	
-		if !output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-		}
+   	let output_str = String::from_utf8_lossy(&output.stdout);
+
+    	if !output.stdout.is_empty() {
+        	println!("stdout: {}", output_str);
+    	}
+	if !output.stderr.is_empty() {
+        	eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    	}
+
+    	let address = output_str
+		.lines()
+		.find(|line| line.contains("0x"))
+		.and_then(|line| line.split_whitespace().find(|&word| word.starts_with("0x")))
+		.expect("Failed to extract the Movement account address");
+
+    	println!("Extracted address: {}", address);
 
 		Ok(())
 	}
