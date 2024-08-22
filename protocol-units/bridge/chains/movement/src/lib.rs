@@ -230,8 +230,16 @@ impl MovementClient {
 		if !output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
 		}
+		let output_str = String::from_utf8_lossy(&output.stderr);
+		let address = output_str
+		    .split_whitespace()
+		    .find(|word| word.starts_with("0x")
+		) 
+		    .expect("Failed to extract the Movement account address");
+	    
+		println!("Extracted address: {}", address);
 
-		let output = Command::new("movement")
+		let output2 = Command::new("movement")
 			.args(&[
 				"move", 
 				"create-resource-account-and-publish-package",
@@ -247,23 +255,13 @@ impl MovementClient {
 			.stderr(Stdio::piped())
 			.output()
 			.expect("Failed to execute command");
-	
-   	let output_str = String::from_utf8_lossy(&output.stdout);
 
-    	if !output.stdout.is_empty() {
+    	if !output2.stdout.is_empty() {
         	println!("stdout: {}", output_str);
     	}
-	if !output.stderr.is_empty() {
-        	eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+	if !output2.stderr.is_empty() {
+        	eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
     	}
-
-    	let address = output_str
-		.lines()
-		.find(|line| line.contains("0x"))
-		.and_then(|line| line.split_whitespace().find(|&word| word.starts_with("0x")))
-		.expect("Failed to extract the Movement account address");
-
-    	println!("Extracted address: {}", address);
 
 		Ok(())
 	}
