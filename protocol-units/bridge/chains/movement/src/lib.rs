@@ -2,7 +2,7 @@ use crate::utils::MovementAddress;
 use anyhow::{Error, Result};
 use aptos_sdk::{
 	move_types::language_storage::TypeTag,
-	rest_client::{Client, FaucetClient, Transaction},
+	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
 use aptos_types::account_address::AccountAddress;
@@ -17,8 +17,9 @@ use bridge_shared::{
 	},
 };
 use rand::prelude::*;
+use rand::Rng;
 use serde::Serialize;
-use std::{env, fs, io::{Read, Write}, path::PathBuf, process::{Command, Stdio}};
+use std::{env, fs, io::{Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::{
 	sync::{mpsc, Arc, Mutex, RwLock},
@@ -195,7 +196,9 @@ impl MovementClient {
 	}
 	
 	pub fn publish_for_test(&mut self) -> Result<()> {
-		//println!("Current directory: {:?}", env::current_dir());
+		
+    		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
+		
 		let mut process = Command::new("movement")
                 .args(&["init"])
                 .stdin(Stdio::piped())
@@ -206,16 +209,16 @@ impl MovementClient {
 
 		let stdin: &mut std::process::ChildStdin = process.stdin.as_mut().expect("Failed to open stdin");
 
-		// Press enter for the first prompt
-		stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+		let movement_dir = PathBuf::from(".movement");
 
-		// Write "local" to the second prompt
+		if movement_dir.exists() {
+			stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+		}
+
 		stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-		// Press enter for the third prompt
 		stdin.write_all(b"\n").expect("Failed to write to stdin");
 
-		// Close stdin to indicate that no more input will be provided
 		drop(stdin);
 
 		let addr_output = process
@@ -245,7 +248,7 @@ impl MovementClient {
 				"--address",
 				address,
 				"--seed",
-				"256789",
+				&random_seed,
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
@@ -294,24 +297,32 @@ impl MovementClient {
 		let updated_content = move_toml_content
 			.lines()
 			.map(|line| {
-				if line.starts_with("resource_addr = ") {
-					format!(r#"resource_addr = "{}""#, formatted_resource_address)
-				} else if line.starts_with("atomic_bridge = ") {
-					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
-				} else if line.starts_with("moveth = ") {
-					format!(r#"moveth = "{}""#, formatted_resource_address)
-				} else if line.starts_with("master_minter = ") {
-					format!(r#"master_minter = "{}""#, formatted_resource_address)
-				} else if line.starts_with("minter = ") {
-					format!(r#"minter = "{}""#, formatted_resource_address)
-				} else if line.starts_with("admin = ") {
-					format!(r#"admin = "{}""#, formatted_resource_address)
-				} else if line.starts_with("origin_addr = ") {
-					format!(r#"origin_addr = "{}""#, address)
-				} else if line.starts_with("source_account = ") {
-					format!(r#"source_account = "{}""#, address)
-				} else {
-					line.to_string()
+				match line {
+					_ if line.starts_with("resource_addr = ") => {
+					    format!(r#"resource_addr = "{}""#, formatted_resource_address)
+					}
+					_ if line.starts_with("atomic_bridge = ") => {
+					    format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
+					}
+					_ if line.starts_with("moveth = ") => {
+					    format!(r#"moveth = "{}""#, formatted_resource_address)
+					}
+					_ if line.starts_with("master_minter = ") => {
+					    format!(r#"master_minter = "{}""#, formatted_resource_address)
+					}
+					_ if line.starts_with("minter = ") => {
+					    format!(r#"minter = "{}""#, formatted_resource_address)
+					}
+					_ if line.starts_with("admin = ") => {
+					    format!(r#"admin = "{}""#, formatted_resource_address)
+					}
+					_ if line.starts_with("origin_addr = ") => {
+					    format!(r#"origin_addr = "{}""#, address)
+					}
+					_ if line.starts_with("source_account = ") => {
+					    format!(r#"source_account = "{}""#, address)
+					}
+					_ => line.to_string(),
 				}
 			})
 			.collect::<Vec<_>>()
@@ -333,7 +344,7 @@ impl MovementClient {
 				"--address-name",
 				"moveth", 
 				"--seed",
-				"256789",
+				&random_seed,
 				"--package-dir", 
 				"../move-modules"
 			])
@@ -349,6 +360,12 @@ impl MovementClient {
 	if !output2.stderr.is_empty() {
         	eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
     	}
+
+	
+	if movement_dir.exists() {
+		fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
+		println!(".movement directory deleted successfully.");
+	}
 
 		Ok(())
 	}

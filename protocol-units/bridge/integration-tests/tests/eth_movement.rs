@@ -6,47 +6,28 @@ use alloy::{
 use anyhow::Context;
 use anyhow::Result;
 
-use aptos_framework;
 use aptos_sdk::{
 	coin_client::CoinClient,
-	rest_client::{Client, FaucetClient},
-	transaction_builder::aptos_stdlib,
 	types::LocalAccount,
 };
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, initiator_contract::SmartContractInitiatorEvent, types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
 };
 
 use ethereum_bridge::{
 	types::EthAddress,
-	event_types::EthChainEvent,
 	event_logging::EthInitiatorMonitoring	
 };
 
-use movement_bridge::{utils::MovementAddress, MovementClient};
-use rand::{rngs::StdRng, SeedableRng};
+use movement_bridge::utils::MovementAddress;
+use rand;
 use tokio;
-use futures::{channel::mpsc::{self, UnboundedReceiver}, Stream, StreamExt};
+use futures::{channel::mpsc::{self, UnboundedReceiver}, StreamExt};
 
-use aptos_language_e2e_tests::{
-	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
-};
-use aptos_logger::Logger;
-use aptos_types::{
-	account_address::{create_resource_address, AccountAddress}, account_config::{DepositEvent, WithdrawEvent}, transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus}, PeerId
-};
-use bcs;
-use std::{
-	convert::TryFrom,
-	process::{Command, Stdio},
-	str::FromStr,
-	time::Instant,
-};
+use aptos_types::account_address::AccountAddress;
 use tracing;
 use tracing_subscriber;
-
-use url::Url;
 
 #[tokio::test]
 #[ignore]
@@ -57,7 +38,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
-	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
 	// Print account addresses.
@@ -98,18 +79,36 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 
 #[tokio::test]
 //#[ignore]
-async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
+async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
+
+	// at beginning of test, check whether .movement is present with a conditional statement so it works either way
+	// at end of test, delete .movement
 
 	let _ = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ let mut movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
-	let rest_client = movement_client.rest_client();
-	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
+	let _ = movement_client.publish_for_test();
+	}
+
+	child.kill().await.context("Failed to kill the child process")?;
+	
+	Ok(())
+}
+
+#[tokio::test]
+#[ignore]
+async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyhow::Error> {
+
+	let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
+	
+	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
 	let _ = movement_client.publish_for_test();
 	}
@@ -122,16 +121,16 @@ async fn test_movement_client_happy_path() -> Result<(), anyhow::Error> {
         let time_lock = 3600;
         let amount = 100;
 	
-	let txn = harness
+	harness
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
 	.lock_bridge_transfer_assets(
 		BridgeTransferId(bridge_transfer_id),		
 		HashLock(hash_lock),
-		TimeLock(100),
+		TimeLock(time_lock),
 		InitiatorAddress(initiator),
 		RecipientAddress(recipient),
-		Amount(1000), // Eth
+		Amount(amount), // Eth
 	)
 	.await
 	.expect("Failed to complete bridge transfer");
@@ -254,7 +253,7 @@ async fn test_eth_client_should_successfully_get_bridge_transfer_id() -> Result<
         harness.deploy_init_contracts().await;
 
         let rpc_url = "ws://localhost:8545"; 
-        let (event_sender, mut event_receiver): (mpsc::UnboundedSender<_>, UnboundedReceiver<_>) = mpsc::unbounded();
+        let (_event_sender, event_receiver): (mpsc::UnboundedSender<_>, UnboundedReceiver<_>) = mpsc::unbounded();
 
         let mut monitoring = EthInitiatorMonitoring::run(rpc_url, event_receiver, signer_address).await?;
 
