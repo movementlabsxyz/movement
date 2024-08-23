@@ -26,6 +26,7 @@ jobs:
         sudo apt-get install -y binutils
         sudo apt-get install -y lld
         sudo apt-get install -y libudev-dev
+        sudo apt-get install -y libdw-dev
         which ld
         which lld
         which gcc
