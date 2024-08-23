@@ -4,6 +4,48 @@ on:
   push:
 
 jobs:
+
+  bridge-eth-movement:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Movement CLI
+      run: |
+        sudo apt-get update 
+        sudo apt-get install -y build-essential
+        sudo apt-get install -y binutils
+        sudo apt-get install -y lld
+        which ld
+        which lld
+        which gcc
+        which cc
+        echo $PATH
+        export GIT_CLONE_PROTECTION_ACTIVE=false
+        git clone https://github.com/movementlabsxyz/aptos-core/ 
+        cd aptos-core
+        cargo build -p movement
+        sudo cp target/debug/movement /usr/local/bin/
+        cd -
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run eth_movement tests
+      run: |
+        nix develop --command bash -c "
+          rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
+        "
+ 
   cargo-check:
     strategy:
       matrix:
@@ -212,44 +254,4 @@ jobs:
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
 
-  bridge-eth-movement:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-22.04
-            arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
 
-    runs-on: ${{ matrix.runs-on }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Install Movement CLI
-      run: |
-        sudo apt-get update 
-        sudo apt-get install -y build-essential
-        sudo apt-get install -y binutils
-        sudo apt-get install -y lld
-        which ld
-        which lld
-        which gcc
-        which cc
-        echo $PATH
-        export GIT_CLONE_PROTECTION_ACTIVE=false
-        git clone https://github.com/movementlabsxyz/aptos-core/ 
-        cd aptos-core
-        cargo build -p movement
-        sudo cp target/debug/movement /usr/local/bin/
-        cd -
-
-    - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run eth_movement tests
-      run: |
-        nix develop --command bash -c "
-          rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
-        "
- 
