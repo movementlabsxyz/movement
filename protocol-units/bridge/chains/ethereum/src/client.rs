@@ -13,7 +13,7 @@ use alloy_rlp::Decodable;
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult, 
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
-	BridgeContractWETH9, BridgeContractWETH9Error, BridgeContractWETH9Result,
+	BridgeContractWETH9Error, BridgeContractWETH9Result,
 };
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
@@ -148,9 +148,7 @@ impl EthClient {
 		caller: Address,
 		amount: U256,
 	) -> Result<(), anyhow::Error> {
-		let provider_signer = self.rpc_provider.default_signer_address();
 		let deposit_weth_signer = self.get_signer_address();
-		println!("provider_signer: {:?}", provider_signer);
 		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
 		let contract = self.weth_contract().expect("WETH contract not set");
 		let call = contract.deposit().value(amount).from(caller);

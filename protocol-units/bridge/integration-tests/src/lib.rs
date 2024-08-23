@@ -91,7 +91,9 @@ impl TestHarness {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		let wallet: &mut EthereumWallet = eth_client.rpc_provider_mut().wallet_mut();
 		wallet.register_default_signer(LocalSigner::from(signer));
-		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
+		let new_signer = wallet.default_signer_address();
+		eth_client.set_signer(new_signer);
+		eth_client.get_signer_address().expect("Failed to get signer address")
 	}
 
 	pub fn eth_signer_address(&self) -> Address {
