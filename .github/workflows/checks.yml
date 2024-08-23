@@ -231,6 +231,10 @@ jobs:
         sudo apt-get update 
         sudo apt-get install -y build-essential
         sudo apt-get install -y binutils
+        which ld
+        which gcc
+        which cc
+        echo $PATH
         export GIT_CLONE_PROTECTION_ACTIVE=false
         git clone https://github.com/movementlabsxyz/aptos-core/ 
         cd aptos-core
