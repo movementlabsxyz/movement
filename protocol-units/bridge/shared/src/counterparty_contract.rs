@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
+	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
 };
 use std::fmt::Debug;
 use thiserror::Error;
@@ -111,18 +111,10 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
-		// let balance = accounts.entry(account).or_insert(Amount(0));
 		
-		// match transfer.amount.0 {
-		// 	_ => balance += transfer.amount.0,
-		// 	// BridgedToken::Eth(v) => **balance += v,
-		// 	// BridgedToken::Weth(v) => **balance += v,
-		// 	// BridgedToken::WethAndEth((w, v)) => {
-		// 	// 	todo!();
-		// 	// 	// **balance += weth_amount;
-		// 	// 	// **balance += eth_amount;
-		// 	// }
-		// }
+		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
+		todo!();
+		// balance += **transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
 			CounterpartyCompletedDetails::from_lock_details(transfer, pre_image),

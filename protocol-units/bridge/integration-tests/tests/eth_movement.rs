@@ -13,7 +13,7 @@ use aptos_sdk::{
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
-	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock, BridgedToken},
+	types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock, AssetType},
 };
 use ethereum_bridge::types::EthAddress;
 use rand::{rngs::StdRng, SeedableRng};
@@ -154,7 +154,7 @@ async fn test_client_should_successfully_call_initiate_transfer_only_eth() {
 			HashLock(hash_lock),
 			TimeLock(100),
 			// value has to be > 0
-			Amount(BridgedToken::Eth(1)), // Eth
+			Amount(AssetType::EthAndWeth((1,0))), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -181,7 +181,7 @@ async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 		RecipientAddress(recipient),
 		HashLock(hash_lock),
 		TimeLock(100),
-		Amount(BridgedToken::Weth(1)),
+		Amount(AssetType::EthAndWeth((0,1))),
 		).await
 		.expect("Failed to initiate bridge transfer");
 		
@@ -214,7 +214,7 @@ async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 // 			HashLock(hash_lock),
 // 			TimeLock(100),
 // 			// value has to be > 0
-// 			Amount(BridgedToken::WethAndEth((1,1))), // Eth
+// 			Amount(AssetType::EthAndWeth((1,1))),
 // 		)
 // 		.await
 // 		.expect("Failed to initiate bridge transfer");
@@ -241,7 +241,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
 			TimeLock(100),
-			Amount(BridgedToken::Eth(1000)), // Eth
+			Amount(AssetType::EthAndWeth((1000,0))), // Eth
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -273,7 +273,7 @@ async fn test_client_should_successfully_complete_transfer() {
 			RecipientAddress(recipient_bytes),
 			HashLock(hash_lock),
 			TimeLock(1000),
-			Amount(BridgedToken::Eth(42)),
+			Amount(AssetType::EthAndWeth((42,0))),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

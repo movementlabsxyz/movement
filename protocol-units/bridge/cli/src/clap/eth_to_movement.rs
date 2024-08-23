@@ -8,7 +8,7 @@ use url::Url;
 pub struct EthSharedArgs {
 	/// Private key of the Ethereum signer
 	#[arg(long)]
-	pub eth_signer_private_key: PrivateKeySigner,
+	pub eth_private_key: PrivateKeySigner,
 
 	/// URL for the Ethereum RPC
 	#[arg(long, default_value = "http://localhost:8545")]

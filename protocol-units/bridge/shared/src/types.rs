@@ -4,6 +4,8 @@ use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
 use std::{fmt::Debug, hash::Hash};
 use std::ops::AddAssign;
+use std::convert::TryFrom;
+use thiserror::Error;
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
@@ -127,12 +129,6 @@ impl HashLockPreImage {
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
-#[derive(Debug, Clone, PartialEq, Eq, Copy)]
-pub enum BridgedToken {
-	Weth(u64),
-	Eth(u64),
-	WethAndEth((u64, u64)),
-}
 impl From<Uint<256, 4>> for TimeLock {
 	fn from(value: Uint<256, 4>) -> Self {
 		// Extract the lower 64 bits.
@@ -147,6 +143,30 @@ pub struct Amount(pub AssetType);
 pub enum AssetType {
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
+}
+
+#[derive(Error, Debug)]
+pub enum ConversionError {
+    #[error("Invalid conversion from AssetType to Uint")]
+    InvalidConversion,
+}
+
+impl TryFrom<AssetType> for Uint<256, 4> {
+    type Error = ConversionError;
+
+    fn try_from(value: AssetType) -> Result<Self, Self::Error> {
+        match value {
+            AssetType::EthAndWeth((eth_value, weth_value)) => {
+                // Example logic: combine the values or whatever makes sense in your context
+                let combined_value = eth_value as u128 + weth_value as u128;
+                Ok(Uint::from(combined_value))
+            }
+            AssetType::Moveth(value) => {
+                Ok(Uint::from(value as u128))
+            }
+            _ => Err(ConversionError::InvalidConversion), // Add more cases as needed
+        }
+    }
 }
 
 impl AddAssign for AssetType {

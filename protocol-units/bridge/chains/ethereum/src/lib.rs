@@ -3,25 +3,10 @@ use bridge_shared::{
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
-		RecipientAddress,
+		RecipientAddress
 	},
 };
-use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
-use alloy_rlp::Decodable;
-use bridge_shared::bridge_contracts::{
-	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
-	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
-	BridgeContractWETH9, BridgeContractWETH9Error, BridgeContractWETH9Result
-};
-use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock, BridgedToken
-};
-use serde_with::serde_as;
-use std::fmt::{self, Debug};
-use types::{CounterpartyContract, InitiatorContract, WETH9Contract};
-use url::Url;
-use utils::send_transaction;
+use std::fmt::Debug;
 use event_types::EthChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{
