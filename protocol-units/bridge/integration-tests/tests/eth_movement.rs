@@ -17,7 +17,6 @@ use bridge_shared::{
 
 use ethereum_bridge::{
 	types::EthAddress,
-	event_logging::EthInitiatorMonitoring	
 };
 
 use movement_bridge::utils::MovementAddress;
@@ -238,50 +237,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer() {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
-}
-
-#[tokio::test]
-#[ignore]
-async fn test_eth_client_should_successfully_get_bridge_transfer_id() -> Result<()> {
-        let mut harness: TestHarness = TestHarness::new_only_eth().await;
-        let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-        println!("Anvil started on port: {}", harness.rpc_port());
-
-        let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-        
-        harness.deploy_init_contracts().await;
-
-        let rpc_url = "ws://localhost:8545"; 
-        let (_event_sender, event_receiver): (mpsc::UnboundedSender<_>, UnboundedReceiver<_>) = mpsc::unbounded();
-
-        //let mut monitoring = EthInitiatorMonitoring::run(rpc_url, event_receiver, signer_address).await?;
-
-        let recipient = harness.gen_aptos_account();
-        let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-
-        harness
-            .eth_client_mut()
-            .expect("Failed to get EthClient")
-            .initiate_bridge_transfer(
-                InitiatorAddress(EthAddress(signer_address)),
-                RecipientAddress(recipient),
-                HashLock(hash_lock),
-                TimeLock(100),
-                Amount(1000), // Eth
-            )
-            .await
-            .expect("Failed to initiate bridge transfer");
-        
-        println!("Awaiting event from monitoring...");
-
-	let bridge_transfer_id = match monitoring.next().await {
-		Some(BridgeContractInitiatorEvent::Initiated(details)) => Some(details.bridge_transfer_id),
-		_ => None,
-	    }
-	    .expect("Expected a BridgeTransferId");
-	println!("{:?}", bridge_transfer_id);
-        Ok(())
 }
 
 

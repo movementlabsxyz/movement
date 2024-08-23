@@ -17,6 +17,7 @@ pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContra
 pub enum SmartContractInitiatorEvent<A, H> {
 	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
 	CompletedBridgeTransfer(BridgeTransferId<H>),
+	RefundedBridgeTransfer(BridgeTransferId<H>),
 }
 
 impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEvent<A, H> {

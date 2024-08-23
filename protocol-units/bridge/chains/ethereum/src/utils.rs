@@ -85,7 +85,7 @@ pub fn calculate_storage_slot(key: [u8; 32], mapping_slot: U256) -> U256 {
 	U256::from_be_slice(&hash.0)
 }
 
-pub(crate) fn send_tx_rules() -> Vec<Box<dyn VerifyRule>> {
+pub(crate) fn send_transaction_rules() -> Vec<Box<dyn VerifyRule>> {
 	let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
 	let rule2: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
 	vec![rule1, rule2]
