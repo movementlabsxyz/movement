@@ -42,7 +42,7 @@ async fn test_swap() -> eyre::Result<()> {
 	let amount = 1000000000000000000u64; // 1 ETH in wei
 
 	// Execute the swap
-	let result = eth_to_moveth::execute(&eth_to_movement::Commands::BridgeToMovement {
+	let result = eth_to_moveth::execute(&eth_to_movement::Commands::ToMovement {
 		args: eth_shared_args,
 		recipient: From::from(recipient),
 		amount,
