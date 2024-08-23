@@ -226,10 +226,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install Movement CLI
+      run: |
+        git clone https://github.com/movementlabsxyz/aptos-core/ && cd aptos-core
+        cargo build -p movement
+        sudo cp target/debug/movement /usr/local/bin/
+        cd -
+
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run foundry tests
+    - name: Run eth_movement tests
       run: |
         nix develop --command bash -c "
           rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
