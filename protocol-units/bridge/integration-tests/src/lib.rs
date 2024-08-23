@@ -86,14 +86,14 @@ impl TestHarness {
 	pub fn eth_client_mut(&mut self) -> Result<&mut EthClient> {
 		self.eth_client.as_mut().ok_or(anyhow::Error::msg("EthClient not initialized"))
 	}
-
+	
 	pub fn set_eth_signer(&mut self, signer: SecretKey<Secp256k1>) -> Address {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		let wallet: &mut EthereumWallet = eth_client.rpc_provider_mut().wallet_mut();
+		let clone_signer = signer.clone();
 		wallet.register_default_signer(LocalSigner::from(signer));
-		let new_signer = wallet.default_signer_address();
-		eth_client.set_signer(new_signer);
-		eth_client.get_signer_address().expect("Failed to get signer address")
+		eth_client.set_signer_address(clone_signer);
+		eth_client.get_signer_address()
 	}
 
 	pub fn eth_signer_address(&self) -> Address {

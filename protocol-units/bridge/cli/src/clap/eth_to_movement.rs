@@ -26,6 +26,10 @@ pub struct EthSharedArgs {
 	#[arg(long, default_value = "0x0000000000000000000000000000000000000000")]
 	pub eth_counterparty_contract: EthAddress,
 
+	/// Ethereum contract address for the counterparty
+	#[arg(long, default_value = "0x0000000000000000000000000000000000000000")]
+	pub eth_weth_contract: EthAddress,
+
 	/// Gas limit for Ethereum transactions
 	#[arg(long, default_value_t = 10_000_000_000)]
 	pub eth_gas_limit: u64,

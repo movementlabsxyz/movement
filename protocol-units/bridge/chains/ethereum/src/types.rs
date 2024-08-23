@@ -17,10 +17,6 @@ use bridge_shared::types::{
 
 use serde::{Deserialize, Serialize};
 
-
-use crate::AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance;
-use crate::AtomicBridgeInitiator::AtomicBridgeInitiatorInstance;
-use crate::WETH9::WETH9Instance;
 pub const INITIATED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
 pub const COMPLETED_SELECT: FixedBytes<32> =
@@ -52,9 +48,9 @@ alloy::sol!(
 
 pub type EthHash = [u8; 32];
 
-pub type InitiatorContract = AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract = AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
-pub type WETH9Contract = WETH9Instance<BoxTransport, AlloyProvider>;
+pub type InitiatorContract = AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract = AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
+pub type WETH9Contract = WETH9::WETH9Instance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
