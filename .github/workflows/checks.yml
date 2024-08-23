@@ -232,6 +232,6 @@ jobs:
     - name: Run foundry tests
       run: |
         nix develop --command bash -c "
-          cargo test --test eth_movement -- --nocapture --test-threads=1 
+          rust-backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
         "
  
