@@ -30,7 +30,6 @@ jobs:
         which lld
         which gcc
         which cc
-        which libudev-dev
         echo $PATH
         export GIT_CLONE_PROTECTION_ACTIVE=false
         git clone https://github.com/movementlabsxyz/aptos-core/ 
