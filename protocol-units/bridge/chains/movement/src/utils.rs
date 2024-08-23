@@ -95,7 +95,7 @@ pub struct Indexed<T> {
 }
 
 /// Send Aptos Transaction
-pub async fn send_aptos_transaction(
+pub async fn send_and_confirm_aptos_transaction(
 	rest_client: &RestClient,
 	signer: &LocalAccount,
 	payload: TransactionPayload,

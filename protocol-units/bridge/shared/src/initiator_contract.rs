@@ -29,7 +29,9 @@ impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEv
 			BridgeContractInitiatorEvent::Completed(id) => {
 				SmartContractInitiatorEvent::CompletedBridgeTransfer(id)
 			}
-			_ => unimplemented!(), // Refunded variant
+			BridgeContractInitiatorEvent::Refunded(id) => {
+				SmartContractInitiatorEvent::RefundedBridgeTransfer(id)
+			}
 		}
 	}
 }
