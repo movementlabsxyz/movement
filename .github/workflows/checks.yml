@@ -228,6 +228,9 @@ jobs:
 
     - name: Install Movement CLI
       run: |
+        sudo apt-get update 
+        sudo apt-get install -y build-essential
+        sudo apt-get install -y binutils
         export GIT_CLONE_PROTECTION_ACTIVE=false
         git clone https://github.com/movementlabsxyz/aptos-core/ 
         cd aptos-core
