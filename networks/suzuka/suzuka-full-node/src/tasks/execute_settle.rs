@@ -15,6 +15,7 @@ use movement_types::{Block, BlockCommitment, BlockCommitmentEvent};
 
 use anyhow::Context;
 use futures::{future::Either, stream};
+use suzuka_config::execution_extension;
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info, info_span, warn, Instrument};
@@ -27,6 +28,7 @@ pub struct Task<E, S> {
 	// Stream receiving commitment events, conditionally enabled
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
+	execution_extension: execution_extension::Config,
 }
 
 impl<E, S> Task<E, S> {
@@ -36,12 +38,20 @@ impl<E, S> Task<E, S> {
 		da_db: DaDB,
 		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		commitment_events: Option<CommitmentEventStream>,
+		execution_extension: execution_extension::Config,
 	) -> Self {
 		let commitment_events = match commitment_events {
 			Some(stream) => Either::Left(stream),
 			None => Either::Right(stream::pending()),
 		};
-		Task { executor, settlement_manager, da_db, da_light_node_client, commitment_events }
+		Task {
+			executor,
+			settlement_manager,
+			da_db,
+			da_light_node_client,
+			commitment_events,
+			execution_extension,
+		}
 	}
 
 	fn settlement_enabled(&self) -> bool {
@@ -167,13 +177,13 @@ where
 		block: Block,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		for _ in 0..5 {
+		for _ in 0..self.execution_extension.block_retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_timestamp).await {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					warn!("Failed to execute block: {:?}. Retrying", e);
-					block_timestamp += 5000; // increase the timestamp by 5 ms (5000 microseconds)
+					block_timestamp += self.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}

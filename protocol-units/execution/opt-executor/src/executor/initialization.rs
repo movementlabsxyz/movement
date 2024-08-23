@@ -35,6 +35,7 @@ impl Executor {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
 			transactions_in_flight: Arc::new(AtomicU64::new(0)),
+			config: maptos_config.clone(),
 		})
 	}
 
