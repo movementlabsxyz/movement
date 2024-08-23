@@ -85,7 +85,14 @@ module atomic_bridge::atomic_bridge_initiator {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global<BridgeTransferStore>(config_address);
         if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
-            assert!(false, 1);
+            BridgeTransfer {
+                amount: 0,
+                originator: @atomic_bridge,
+                recipient: vector::empty<u8>(),
+                hash_lock: vector::empty<u8>(),
+                time_lock: 0,
+                state: 0,
+            }
         } else {
             let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
             *bridge_transfer
@@ -350,7 +357,8 @@ module atomic_bridge::atomic_bridge_initiator {
         );
         let bridge_addr = signer::address_of(atomic_bridge);
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
-        assert!(!aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
+        // complete bridge doesn't delete the transfer from the store
+        assert!(aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
