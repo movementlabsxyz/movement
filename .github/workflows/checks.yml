@@ -231,7 +231,9 @@ jobs:
         sudo apt-get update 
         sudo apt-get install -y build-essential
         sudo apt-get install -y binutils
+        sudo apt-get install -y lld
         which ld
+        which lld
         which gcc
         which cc
         echo $PATH
