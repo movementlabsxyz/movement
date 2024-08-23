@@ -91,7 +91,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         }
     }
     
-    public fun lock_bridge_transfer_assets(
+    public fun lock_bridge_transfer(
         caller: &signer,
         originator: vector<u8>, //eth address
         bridge_transfer_id: vector<u8>,
