@@ -18,8 +18,8 @@ use types::CounterpartyCall;
 use utils::RngSeededClone;
 
 pub mod client;
-pub mod event_logging;
-pub mod event_types;
+mod event_logging;
+mod event_types;
 pub mod types;
 mod utils;
 
@@ -35,6 +35,7 @@ pub enum Transaction<A, H> {
 	Counterparty(CounterpartyCall<A, H>),
 }
 
+#[allow(unused)]
 pub struct EthereumChain<A, H, R> {
 	pub name: String,
 	pub time: u64,

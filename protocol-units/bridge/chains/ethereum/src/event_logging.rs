@@ -1,8 +1,8 @@
 use crate::types::{EthAddress, EventName};
-use crate::{EthChainEvent, Transaction};
+use crate::EthChainEvent;
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
-use alloy::primitives::{address, Address, LogData};
+use alloy::primitives::{address, LogData};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy::rpc::types::{Filter, Log};
 use alloy::{
@@ -21,6 +21,7 @@ use std::{pin::Pin, task::Poll};
 
 use crate::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
 
+#[allow(unused)]
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
 	ws: RootProvider<PubSubFrontend>,
@@ -31,21 +32,21 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 	type Hash = EthHash;
 }
 
+#[allow(unused)]
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
-	pub async fn run(
+	async fn run(
 		rpc_url: &str,
 		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
-		signer_address: Address
 	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
-		println!("Websocket connected");
+
 		//TODO: this should be an arg
-		let initiator_address = signer_address;
+		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 		let filter = Filter::new()
 			.address(initiator_address)
-			//.event("BridgeTransferInitiated")
-			//.event("BridgeTransferCompleted");
+			.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
+			.event("BridgeTransferCompleted(bytes32,bytes32)")
 			.from_block(BlockNumberOrTag::Latest);
 
 		let sub = ws.subscribe_logs(&filter).await?;
@@ -98,6 +99,11 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 					}
 					SmartContractInitiatorEvent::CompletedBridgeTransfer(bridge_transfer_id) => {
 						return Poll::Ready(Some(BridgeContractInitiatorEvent::Completed(
+							bridge_transfer_id,
+						)))
+					}
+					SmartContractInitiatorEvent::RefundedBridgeTransfer(bridge_transfer_id) => {
+						return Poll::Ready(Some(BridgeContractInitiatorEvent::Refunded(
 							bridge_transfer_id,
 						)))
 					}
@@ -191,7 +197,7 @@ fn decode_log_data(
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
 				let initiator_address = decoded.indexed[1]
 					.as_address()
-					.map(|a| EthAddress(a))
+					.map(EthAddress)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode InitiatorAddress"))?;
 				let recipient_address = decoded.indexed[2]
 					.as_fixed_bytes()
@@ -219,7 +225,7 @@ fn decode_log_data(
 					amount,
 				};
 
-				return Ok(BridgeContractInitiatorEvent::Initiated(details));
+				Ok(BridgeContractInitiatorEvent::Initiated(details))
 			}
 			COMPLETED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
@@ -227,27 +233,23 @@ fn decode_log_data(
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
 
-				// We do nothing with the secret in the event here
-				return Ok(BridgeContractInitiatorEvent::Completed(BridgeTransferId(
-					bridge_transfer_id,
-				)));
+				Ok(BridgeContractInitiatorEvent::Completed(BridgeTransferId(bridge_transfer_id)))
 			}
 			REFUNDED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
 					.as_fixed_bytes()
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
-				return Ok(BridgeContractInitiatorEvent::Refunded(BridgeTransferId(
-					bridge_transfer_id,
-				)));
+
+				Ok(BridgeContractInitiatorEvent::Refunded(BridgeTransferId(bridge_transfer_id)))
 			}
 			_ => {
 				tracing::error!("Unknown event selector: {:x}", selector);
-				return Err(anyhow::anyhow!("failed to devode event selector"));
+				Err(anyhow::anyhow!("failed to decode event selector"))
 			}
-		};
+		}
 	} else {
 		tracing::error!("Failed to decode event selector");
-		return Err(anyhow::anyhow!("Failed to decode event selector"));
+		Err(anyhow::anyhow!("Failed to decode event selector"))
 	}
 }

@@ -255,7 +255,7 @@ async fn test_eth_client_should_successfully_get_bridge_transfer_id() -> Result<
         let rpc_url = "ws://localhost:8545"; 
         let (_event_sender, event_receiver): (mpsc::UnboundedSender<_>, UnboundedReceiver<_>) = mpsc::unbounded();
 
-        let mut monitoring = EthInitiatorMonitoring::run(rpc_url, event_receiver, signer_address).await?;
+        //let mut monitoring = EthInitiatorMonitoring::run(rpc_url, event_receiver, signer_address).await?;
 
         let recipient = harness.gen_aptos_account();
         let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();

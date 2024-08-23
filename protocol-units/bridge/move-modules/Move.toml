@@ -4,23 +4,23 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-resource_addr = "0x92c5e407d5e13eb51ab95afd262e7d5223be49373489e88cc6dd4ff9d9a05779"
-origin_addr = "0x7dc72e7296e4029142aba3e60612088d87573234828fa844c10ddeadb79f34fe"
-atomic_bridge = "0x92c5e407d5e13eb51ab95afd262e7d5223be49373489e88cc6dd4ff9d9a05779"
-moveth = "0x92c5e407d5e13eb51ab95afd262e7d5223be49373489e88cc6dd4ff9d9a05779"
-master_minter = "0x92c5e407d5e13eb51ab95afd262e7d5223be49373489e88cc6dd4ff9d9a05779"
-minter = "0x92c5e407d5e13eb51ab95afd262e7d5223be49373489e88cc6dd4ff9d9a05779"
-admin = "0x92c5e407d5e13eb51ab95afd262e7d5223be49373489e88cc6dd4ff9d9a05779"
-source_account = "0x7dc72e7296e4029142aba3e60612088d87573234828fa844c10ddeadb79f34fe"
+resource_addr = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+origin_addr = "0xcafe"
+atomic_bridge = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+moveth = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+master_minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+admin = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+source_account = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
 pauser = "0xdafe"
 denylister = "0xcade"
 
 [dev-addresses]
-# moveth = "0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xbeef"
-# atomic_bridge = "0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xfeef"
-# master_minter = "0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xbab"
-# minter = "0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xface"
-# admin = "0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xcabc48e6da9408ee34bec243bb027fc8772bbf1a9586115342ee4ba5d236e9c7"0xad"
+# moveth = "0xbeef"
+# atomic_bridge = "0xfeef"
+# master_minter = "0xbab"
+# minter = "0xface"
+# admin = "0xad"
 # pauser = "_"
 # denylister = "_"
 
@@ -31,3 +31,4 @@ rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
+
