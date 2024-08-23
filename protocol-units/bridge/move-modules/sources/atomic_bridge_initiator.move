@@ -13,9 +13,9 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::debug;
     use moveth::moveth;
 
-    const INITIALIZED: u8 = 0;
-    const COMPLETED: u8 = 1;
-    const REFUNDED: u8 = 2;
+    const INITIALIZED: u8 = 1;
+    const COMPLETED: u8 = 2;
+    const REFUNDED: u8 = 3;
 
     const EINSUFFICIENT_AMOUNT: u64 = 0;
     const EINSUFFICIENT_BALANCE: u64 = 1;
@@ -26,9 +26,9 @@ module atomic_bridge::atomic_bridge_initiator {
     const ENOT_EXPIRED: u64 = 6;
 
     struct BridgeTransfer has key, store, drop, copy {
-        amount: u64,
         originator: address,
         recipient: vector<u8>, // eth address
+        amount: u64,
         hash_lock: vector<u8>,
         time_lock: u64,
         state: u8,
@@ -65,7 +65,7 @@ module atomic_bridge::atomic_bridge_initiator {
         bridge_transfer_id: vector<u8>,
     }
 
-    entry fun init_module(deployer: &signer) {
+    fun init_module(deployer: &signer) {
         let deployer_addr = signer::address_of(deployer);
         move_to(deployer, BridgeTransferStore {
             transfers: aptos_std::smart_table::new<vector<u8>, BridgeTransfer>(),
@@ -85,14 +85,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global<BridgeTransferStore>(config_address);
         if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
-            BridgeTransfer {
-                amount: 0,
-                originator: @atomic_bridge,
-                recipient: vector::empty<u8>(),
-                hash_lock: vector::empty<u8>(),
-                time_lock: 0,
-                state: 0,
-            }
+            assert!(false, 1);
         } else {
             let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
             *bridge_transfer
@@ -176,8 +169,6 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_id: copy bridge_transfer_id,
             pre_image: pre_image,
         });
-
-        aptos_std::smart_table::remove(&mut store.transfers, copy bridge_transfer_id);
     }
 
     public fun refund_bridge_transfer(
@@ -206,8 +197,6 @@ module atomic_bridge::atomic_bridge_initiator {
         event::emit_event(&mut store.bridge_transfer_refunded_events, BridgeTransferRefundedEvent {
             bridge_transfer_id: copy bridge_transfer_id,
         });
-
-        aptos_std::smart_table::remove(&mut store.transfers, copy bridge_transfer_id);
     }
 
     #[test_only]
