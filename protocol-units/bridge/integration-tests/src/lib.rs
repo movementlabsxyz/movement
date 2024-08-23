@@ -140,17 +140,14 @@ impl TestHarness {
 			.expect("Failed to initialize contract");
 	}
 
-	pub async fn initiate_bridge_transfer_weth(&mut self,
+	pub async fn initiate_bridge_transfer(&mut self,
 		initiator_address: InitiatorAddress<EthAddress>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<[u8; 32]>,
 		time_lock: TimeLock,
 		amount: Amount // the amount
 	) -> BridgeContractInitiatorResult<()> {
-		println!("Initiator address: {:?}", initiator_address);
-		let caller: Address = initiator_address.0 .0;
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client.deposit_weth_and_approve(initiator_address.0.0, U256::from(amount.weth())).await.expect("Failed to deposit WETH");
 		eth_client.initiate_bridge_transfer(
 			initiator_address,
 			recipient_address,
@@ -158,6 +155,14 @@ impl TestHarness {
 			time_lock,
 			amount,
 		).await
+	}
+
+	pub async fn deposit_weth_and_approve(&mut self,
+		initiator_address: InitiatorAddress<EthAddress>,
+		amount: Amount // the amount
+	) -> BridgeContractInitiatorResult<()> {
+		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		Ok(eth_client.deposit_weth_and_approve(initiator_address.0.0, U256::from(amount.weth())).await.expect("Failed to deposit WETH"))
 	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {
