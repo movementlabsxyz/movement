@@ -123,9 +123,13 @@ where
 		.await??;
 
 		// get the transactions
+		let transactions_count = block.transactions.len();
 		let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
+
+		// decrement the number of transactions in flight on the executor
+		self.executor.decrement_transactions_in_flight(transactions_count as u64);
 
 		// mark the da_height - 1 as synced
 		// we can't mark this height as synced because we must allow for the possibility of multiple blocks at the same height according to the m1 da specifications (which currently is built on celestia which itself allows more than one block at the same height)
