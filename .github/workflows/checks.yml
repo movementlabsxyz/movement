@@ -25,10 +25,12 @@ jobs:
         sudo apt-get install -y build-essential
         sudo apt-get install -y binutils
         sudo apt-get install -y lld
+        sudo apt-get install -y libudev-dev
         which ld
         which lld
         which gcc
         which cc
+        which libudev-dev
         echo $PATH
         export GIT_CLONE_PROTECTION_ACTIVE=false
         git clone https://github.com/movementlabsxyz/aptos-core/ 
