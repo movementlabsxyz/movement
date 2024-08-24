@@ -18,6 +18,9 @@ RANDOM_SEED=$(shuf -i 0-1000000 -n 1)
 
 # Derive the resource account address using the random seed
 RESOURCE_OUTPUT=$(aptos account derive-resource-account-address --address "$ADDRESS" --seed "$RANDOM_SEED" 2>&1)
+echo "Resource address derivation output: $RESOURCE_OUTPUT"
+
+# Attempt to extract the resource address from the output
 RESOURCE_ADDRESS=$(echo "$RESOURCE_OUTPUT" | grep -oE '0x[a-f0-9]{64}' | head -1)
 
 if [[ -z "$RESOURCE_ADDRESS" ]]; then
