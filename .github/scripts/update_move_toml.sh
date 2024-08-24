@@ -45,3 +45,6 @@ sed -i "s/^origin_addr = \".*\"/origin_addr = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^source_account = \".*\"/source_account = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 
 echo "Move.toml updated with ADDRESS: $ADDRESS and RESOURCE_ADDRESS: $RESOURCE_ADDRESS"
+
+echo "Contents of $MOVE_TOML_PATH:"
+cat "$MOVE_TOML_PATH"
