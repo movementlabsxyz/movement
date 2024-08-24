@@ -15,6 +15,7 @@ fi
 
 # Generate a random seed
 RANDOM_SEED=$(shuf -i 0-1000000 -n 1)
+echo "Seed: $RANDOM_SEED"
 
 # Derive the resource account address using the random seed
 RESOURCE_OUTPUT=$(aptos account derive-resource-account-address --address "$ADDRESS" --seed "$RANDOM_SEED" 2>&1)
