@@ -84,13 +84,11 @@ module atomic_bridge::atomic_bridge_counterparty {
         let store = borrow_global<BridgeTransferStore>(config_address);
  
         if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
-            abort 0x1; // Handle the case where the transfer does not exist
+            abort 0x1; 
         };
 
-        // Borrow the bridge transfer
         let bridge_transfer_ref = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
 
-        // Return the relevant fields as a tuple
         (
             bridge_transfer_ref.originator,
             bridge_transfer_ref.recipient,
@@ -201,7 +199,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::create_signer::create_signer;
     use aptos_framework::primary_fungible_store;
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_complete_bridge_transfer(
         origin_account: &signer,
         resource_addr: signer,
@@ -210,7 +208,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         master_minter: &signer, 
         creator: &signer,
         moveth: &signer,
-        source_account: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
         set_up_test(origin_account, &resource_addr);
 
@@ -261,7 +258,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.originator == initiator, 4);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_get_bridge_transfer_details_from_id(
         origin_account: &signer,
         resource_addr: signer,
@@ -270,7 +267,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         master_minter: &signer, 
         creator: &signer,
         moveth: &signer,
-        source_account: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
         set_up_test(origin_account, &resource_addr);
 
@@ -296,7 +292,7 @@ module atomic_bridge::atomic_bridge_counterparty {
             amount
         );
         assert!(result, 1);
-        // Verify that the transfer is stored in pending_transfers
+
         let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = get_bridge_transfer_details_from_id(bridge_transfer_id);
         assert!(transfer_recipient == recipient, 2);
         assert!(transfer_originator == initiator, 3);
