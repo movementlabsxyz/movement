@@ -43,7 +43,6 @@ sed -i "s/^master_minter = \".*\"/master_minter = \"$RESOURCE_ADDRESS\"/" "$MOVE
 sed -i "s/^minter = \".*\"/minter = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^admin = \".*\"/admin = \"$RESOURCE_ADDRESS\"/" "$MOVE_TOML_PATH"
 sed -i "s/^origin_addr = \".*\"/origin_addr = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
-sed -i "s/^source_account = \".*\"/source_account = \"$ADDRESS\"/" "$MOVE_TOML_PATH"
 
 echo "Move.toml updated with ADDRESS: $ADDRESS and RESOURCE_ADDRESS: $RESOURCE_ADDRESS"
 
