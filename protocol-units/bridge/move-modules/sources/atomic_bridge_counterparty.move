@@ -23,7 +23,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         bridge_transfer_cancelled_events: EventHandle<BridgeTransferCancelledEvent>,
     }
 
-    struct BridgeTransfer has key, store, drop, copy {
+    struct BridgeTransfer has key, store {
         originator: vector<u8>, // eth address,
         recipient: address,
         amount: u64,
@@ -79,25 +79,28 @@ module atomic_bridge::atomic_bridge_counterparty {
         });
     }
 
-    #[view]
-    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : BridgeTransfer acquires BridgeTransferStore, BridgeConfig {
+    public fun get_bridge_transfer_details_from_id(bridge_transfer_id: vector<u8>): (vector<u8>, address, u64, vector<u8>, u64, u8) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global<BridgeTransferStore>(config_address);
-        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
-            BridgeTransfer {
-                amount: 0,
-                originator: vector::empty<u8>(),
-                recipient: @atomic_bridge,
-                hash_lock: vector::empty<u8>(),
-                time_lock: 0,
-                state: 0,
-            }
-        } else {
-            let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
-            *bridge_transfer
-        }
+ 
+        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
+            abort 0x1; // Handle the case where the transfer does not exist
+        };
+
+        // Borrow the bridge transfer
+        let bridge_transfer_ref = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        // Return the relevant fields as a tuple
+        (
+            bridge_transfer_ref.originator,
+            bridge_transfer_ref.recipient,
+            bridge_transfer_ref.amount,
+            bridge_transfer_ref.hash_lock,
+            bridge_transfer_ref.time_lock,
+            bridge_transfer_ref.state
+        )
     }
-    
+
     public fun lock_bridge_transfer(
         caller: &signer,
         originator: vector<u8>, //eth address
@@ -259,7 +262,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, source_account = @source_account, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
-    fun test_bridge_transfers_view(
+    fun test_get_bridge_transfer_details_from_id(
         origin_account: &signer,
         resource_addr: signer,
         client: &signer,
@@ -294,9 +297,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
         assert!(result, 1);
         // Verify that the transfer is stored in pending_transfers
-        let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
-        let bridge_transfer = bridge_transfers(bridge_transfer_id);
-        assert!(bridge_transfer.recipient == recipient, 2);
-        assert!(bridge_transfer.originator == initiator, 3);
+        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = get_bridge_transfer_details_from_id(bridge_transfer_id);
+        assert!(transfer_recipient == recipient, 2);
+        assert!(transfer_originator == initiator, 3);
     }
 }
