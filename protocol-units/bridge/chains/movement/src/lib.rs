@@ -397,19 +397,19 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		//@TODO properly return an error instead of unwrapping
 		let args = vec![
-			to_bcs_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?,
-			to_bcs_bytes(&bridge_transfer_id.0).map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?,
-			to_bcs_bytes(&hash_lock.0).map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?,
-			to_bcs_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?,
-			to_bcs_bytes(&recipient.0).map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?,
-			to_bcs_bytes(&amount.0).map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError)?,
-		    ];
+			to_bcs_bytes(&initiator.0).unwrap(),
+			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			to_bcs_bytes(&hash_lock.0).unwrap(),
+			to_bcs_bytes(&time_lock.0).unwrap(),
+			to_bcs_bytes(&recipient.0).unwrap(),
+			to_bcs_bytes(&amount.0).unwrap(),
+		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
 			COUNTERPARTY_MODULE_NAME,
-			"hello_world",
-			vec![],
-			vec![],
+			"lock_bridge_transfer_assets",
+			self.counterparty_type_args(Call::Lock),
+			args,
 		);
 		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
