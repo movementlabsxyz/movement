@@ -19,8 +19,6 @@ use tracing::{debug, info, info_span, warn, Instrument};
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
 
-const IN_FLIGHT_LIMIT: u64 = 12_000;
-
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 
 /// Domain error for the transaction pipe task
@@ -51,6 +49,8 @@ pub struct TransactionPipe {
 	core_mempool: CoreMempool,
 	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<AtomicU64>,
+	// The configured limit on transactions in flight
+	in_flight_limit: u64,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
 }
@@ -62,6 +62,7 @@ impl TransactionPipe {
 		db_reader: Arc<dyn DbReader>,
 		node_config: &NodeConfig,
 		transactions_in_flight: Arc<AtomicU64>,
+		transactions_in_flight_limit: u64,
 	) -> Self {
 		TransactionPipe {
 			mempool_client_receiver,
@@ -69,6 +70,7 @@ impl TransactionPipe {
 			db_reader,
 			core_mempool: CoreMempool::new(node_config),
 			transactions_in_flight,
+			in_flight_limit: transactions_in_flight_limit,
 			last_gc: Instant::now(),
 		}
 	}
@@ -126,7 +128,7 @@ impl TransactionPipe {
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
-		if in_flight > IN_FLIGHT_LIMIT {
+		if in_flight > self.in_flight_limit {
 			info!(
 				target: "movement_timing",
 				"shedding_load"

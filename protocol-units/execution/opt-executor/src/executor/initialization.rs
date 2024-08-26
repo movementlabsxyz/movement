@@ -108,6 +108,7 @@ impl Executor {
 			self.db().reader.clone(),
 			&node_config,
 			Arc::clone(&self.transactions_in_flight),
+			maptos_config.load_shedding.max_transactions_in_flight,
 		);
 		let cx = Context::new(
 			self.db().clone(),
