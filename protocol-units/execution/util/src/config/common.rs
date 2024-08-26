@@ -133,3 +133,5 @@ env_default!(
 	String,
 	"auth_token".to_string()
 );
+
+env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);
