@@ -16,7 +16,8 @@ pub async fn execute(command: &Commands) -> Result<()> {
 		Commands::IniatializeUser { args } => Ok(()),
 		Commands::ToEthereum { args, recipient, amount } => bridge_to_ethereum(args, recipient, *amount).await,
 		Commands::ToMovement { args, recipient, amount } => bridge_to_movement(args, recipient, *amount).await,
-		Commands::Resume { args, transfer_id } => resume_swap(args, transfer_id).await,
+		Commands::ResumeToEthereum { args, transfer_id } => resume_bridge_to_ethereum(args, transfer_id).await,
+		Commands::ResumeToMovement { args, transfer_id } => resume_bridge_to_movement(args, transfer_id).await,
 	}
 }
 
@@ -69,7 +70,7 @@ async fn bridge_to_ethereum(
 
 	// Convert signer's private key to EthAddress
 	let initiator_address = MovementAddress(client.get_signer_address().await);
-	let recipient_address = RecipientAddress(From::from(recipient.to_vec()));
+	let recipient_address: RecipientAddress<Vec<u8>> = RecipientAddress(From::from(recipient.to_vec()));
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
@@ -96,7 +97,13 @@ async fn bridge_to_ethereum(
 	Ok(())
 }
 
-async fn resume_swap(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+async fn resume_bridge_to_ethereum(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Resuming transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+
+async fn resume_bridge_to_movement(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
 	println!("Resuming transfer with ID: {}", transfer_id);
 
 	Ok(())
