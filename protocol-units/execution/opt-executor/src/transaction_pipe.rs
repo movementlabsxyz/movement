@@ -19,7 +19,7 @@ use tracing::{debug, info, info_span, warn, Instrument};
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
 
-const IN_FLIGHT_LIMIT: u64 = 2u64.pow(16);
+const IN_FLIGHT_LIMIT: u64 = 12_000;
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 
