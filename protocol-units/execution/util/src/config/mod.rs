@@ -36,6 +36,7 @@ pub struct Config {
 	pub fin: fin::Config,
 
 	/// The load shedding parameters
+	#[serde(default)]
 	pub load_shedding: load_shedding::Config,
 }
 
