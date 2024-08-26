@@ -13,9 +13,9 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::debug;
     use moveth::moveth;
 
-    const INITIALIZED: u8 = 0;
-    const COMPLETED: u8 = 1;
-    const REFUNDED: u8 = 2;
+    const INITIALIZED: u8 = 1;
+    const COMPLETED: u8 = 2;
+    const REFUNDED: u8 = 3;
 
     const EINSUFFICIENT_AMOUNT: u64 = 0;
     const EINSUFFICIENT_BALANCE: u64 = 1;
@@ -25,10 +25,10 @@ module atomic_bridge::atomic_bridge_initiator {
     const ETIMELOCK_EXPIRED: u64 = 5;
     const ENOT_EXPIRED: u64 = 6;
 
-    struct BridgeTransfer has key, store, drop {
-        amount: u64,
+    struct BridgeTransfer has key, store, drop, copy {
         originator: address,
         recipient: vector<u8>, // eth address
+        amount: u64,
         hash_lock: vector<u8>,
         time_lock: u64,
         state: u8,
@@ -65,7 +65,7 @@ module atomic_bridge::atomic_bridge_initiator {
         bridge_transfer_id: vector<u8>,
     }
 
-    entry fun init_module(deployer: &signer) {
+    fun init_module(deployer: &signer) {
         let deployer_addr = signer::address_of(deployer);
         move_to(deployer, BridgeTransferStore {
             transfers: aptos_std::smart_table::new<vector<u8>, BridgeTransfer>(),
@@ -80,13 +80,34 @@ module atomic_bridge::atomic_bridge_initiator {
         });
     }
 
+    #[view]
+    public fun bridge_transfers(bridge_transfer_id: vector<u8>): (address, vector<u8>, u64, vector<u8>, u64, u8) acquires BridgeTransferStore, BridgeConfig {
+         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+        let store = borrow_global<BridgeTransferStore>(config_address);
+ 
+        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
+            abort 0x1; 
+        };
+
+        let bridge_transfer_ref = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        (
+            bridge_transfer_ref.originator,
+            bridge_transfer_ref.recipient,
+            bridge_transfer_ref.amount,
+            bridge_transfer_ref.hash_lock,
+            bridge_transfer_ref.time_lock,
+            bridge_transfer_ref.state
+        )
+    }
+
     public fun initiate_bridge_transfer(
         initiator: &signer,
         recipient: vector<u8>, // eth address
         hash_lock: vector<u8>,
         time_lock: u64,
         amount: u64
-    ): vector<u8> acquires BridgeTransferStore, BridgeConfig {
+    ) : vector<u8> acquires BridgeTransferStore, BridgeConfig {
         let addr = signer::address_of(initiator);
         let asset = moveth::metadata();
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
@@ -157,8 +178,6 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_id: copy bridge_transfer_id,
             pre_image: pre_image,
         });
-
-        aptos_std::smart_table::remove(&mut store.transfers, copy bridge_transfer_id);
     }
 
     public fun refund_bridge_transfer(
@@ -187,8 +206,6 @@ module atomic_bridge::atomic_bridge_initiator {
         event::emit_event(&mut store.bridge_transfer_refunded_events, BridgeTransferRefundedEvent {
             bridge_transfer_id: copy bridge_transfer_id,
         });
-
-        aptos_std::smart_table::remove(&mut store.transfers, copy bridge_transfer_id);
     }
 
     #[test_only]
@@ -342,7 +359,8 @@ module atomic_bridge::atomic_bridge_initiator {
         );
         let bridge_addr = signer::address_of(atomic_bridge);
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
-        assert!(!aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
+        // complete bridge doesn't delete the transfer from the store
+        assert!(aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
@@ -475,5 +493,46 @@ module atomic_bridge::atomic_bridge_initiator {
         let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
 
         assert!(transfer.state == COMPLETED, 300);
+    }
+
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    public fun test_bridge_transfers_view(
+        sender: &signer,
+        creator: &signer,
+        aptos_framework: &signer,
+        atomic_bridge: &signer
+    ) acquires BridgeTransferStore, BridgeConfig {
+        init_test(sender, creator, aptos_framework, atomic_bridge);
+
+        let recipient = b"recipient_address";
+        let pre_image = b"pre_image_value";
+        let hash_lock = aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image));
+        assert!(aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == hash_lock, 5);
+        let time_lock = 1000;
+        let amount = 1000;
+        let sender_address = signer::address_of(sender);
+        moveth::mint(atomic_bridge, sender_address, amount);
+
+        let bridge_transfer_id = initiate_bridge_transfer(
+            sender,
+            recipient,
+            hash_lock,
+            time_lock,
+            amount
+        );
+
+        aptos_std::debug::print(&bridge_transfer_id);
+        // returns a valid transfer
+        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
+
+        assert!(transfer_state == INITIALIZED, 6);
+        aptos_std::debug::print(&transfer_state);
+        complete_bridge_transfer(
+            sender,
+            bridge_transfer_id,
+            pre_image,
+            atomic_bridge
+        );
+        aptos_std::debug::print(&transfer_state);
     }
 }
