@@ -79,7 +79,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         });
     }
 
-    public fun get_bridge_transfer_details_from_id(bridge_transfer_id: vector<u8>): (vector<u8>, address, u64, vector<u8>, u64, u8) acquires BridgeTransferStore, BridgeConfig {
+    #[view]
+    public fun bridge_transfers(bridge_transfer_id: vector<u8>): (vector<u8>, address, u64, vector<u8>, u64, u8) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global<BridgeTransferStore>(config_address);
  
@@ -293,7 +294,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
         assert!(result, 1);
 
-        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = get_bridge_transfer_details_from_id(bridge_transfer_id);
+        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
         assert!(transfer_recipient == recipient, 2);
         assert!(transfer_originator == initiator, 3);
     }

@@ -81,22 +81,24 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[view]
-    public fun bridge_transfers(bridge_transfer_id : vector<u8>) : BridgeTransfer acquires BridgeTransferStore, BridgeConfig {
-        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
+    public fun bridge_transfers(bridge_transfer_id: vector<u8>): (address, vector<u8>, u64, vector<u8>, u64, u8) acquires BridgeTransferStore, BridgeConfig {
+         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global<BridgeTransferStore>(config_address);
-        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)){
-            BridgeTransfer {
-                amount: 0,
-                originator: @atomic_bridge,
-                recipient: vector::empty<u8>(),
-                hash_lock: vector::empty<u8>(),
-                time_lock: 0,
-                state: 0,
-            }
-        } else {
-            let bridge_transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
-            *bridge_transfer
-        }
+ 
+        if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
+            abort 0x1; 
+        };
+
+        let bridge_transfer_ref = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        (
+            bridge_transfer_ref.originator,
+            bridge_transfer_ref.recipient,
+            bridge_transfer_ref.amount,
+            bridge_transfer_ref.hash_lock,
+            bridge_transfer_ref.time_lock,
+            bridge_transfer_ref.state
+        )
     }
 
     public fun initiate_bridge_transfer(
@@ -494,7 +496,6 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[expected_failure(abort_code = 7)]
     public fun test_bridge_transfers_view(
         sender: &signer,
         creator: &signer,
@@ -522,29 +523,16 @@ module atomic_bridge::atomic_bridge_initiator {
 
         aptos_std::debug::print(&bridge_transfer_id);
         // returns a valid transfer
-        let bridge_transfer = bridge_transfers(bridge_transfer_id);
+        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
 
-        assert!(bridge_transfer.state == INITIALIZED, 6);
-        aptos_std::debug::print(&bridge_transfer.state);
+        assert!(transfer_state == INITIALIZED, 6);
+        aptos_std::debug::print(&transfer_state);
         complete_bridge_transfer(
             sender,
             bridge_transfer_id,
             pre_image,
             atomic_bridge
         );
-        aptos_std::debug::print(&bridge_transfer.state);
-
-        // bridge_transfers doesn't find the transfer id because it has been deleted by complete bridge transfer and returns a new transfer with state 3 (non existent)
-        assert!(bridge_transfers(bridge_transfer_id).state == 3, 7);
-        aptos_std::debug::print(&bridge_transfer.state);
-        // refund fails in borrow_mut because bridge_transfer_id is inexistent as well
-        // weridly this errors but the test passes despite us expecting error 7 only, not 1
-        // abort error::invalid_argument(ENOT_FOUND)
-        refund_bridge_transfer(
-            sender,
-            bridge_transfer_id,
-            atomic_bridge
-        );
-        assert!(bridge_transfers(bridge_transfer_id).state == 3, 7);
+        aptos_std::debug::print(&transfer_state);
     }
 }
