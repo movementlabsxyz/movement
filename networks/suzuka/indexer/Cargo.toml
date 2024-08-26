@@ -9,9 +9,9 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
-#[[bin]]
-#name = "load_metadata"
-#path = "bin/load_metadata.rs"
+[[bin]]
+name = "load_metadata"
+path = "bin/load_metadata.rs"
 
 [dependencies]
 anyhow = { workspace = true }

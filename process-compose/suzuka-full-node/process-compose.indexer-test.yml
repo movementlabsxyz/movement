@@ -5,7 +5,10 @@ environment:
 processes:
 
   indexer-test:
+    environment:
+      - "POSTGRES_DB_HOST=${POSTGRES_HOST_IP}"
     command: |
+      cargo run -p suzuka-indexer-service --bin load_metadata
       ./scripts/services/indexer/test_indexer
     depends_on:
       indexer:
@@ -13,4 +16,4 @@ processes:
       hasura:
         condition: process_healthy
     availability:
-      exit_on_end: true
+      exit_on_end: false
