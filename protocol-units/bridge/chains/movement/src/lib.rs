@@ -371,6 +371,10 @@ impl MovementClient {
 	pub fn rest_client(&self) -> &Client {
 		&self.rest_client
 	}
+	
+	pub fn signer(&self) -> &LocalAccount {
+		&self.signer
+	}
 
 	pub fn faucet_client(&self) -> Result<&Arc<RwLock<FaucetClient>>> {
 		if let Some(faucet_client) = &self.faucet_client {

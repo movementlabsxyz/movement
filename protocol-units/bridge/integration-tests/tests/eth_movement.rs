@@ -38,10 +38,12 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let movement_client = movement_client.signer();
 
 	println!("\n=== Addresses ===");
 	println!("Alice: {}", alice.address().to_hex_literal());
 	println!("Bob: {}", bob.address().to_hex_literal());
+	println!("Movement Client: {}", movement_client.address().to_hex_literal());
 	let faucet_client = faucet_client.write().unwrap();
 	faucet_client
 		.fund(alice.address(), 100_000_000)
@@ -51,6 +53,10 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 		.create_account(bob.address())
 		.await
 		.context("Failed to fund Bob's account")?;
+	faucet_client
+	.fund(movement_client.address(), 100_000_000)
+	.await
+	.context("Failed to fund Alice's account")?;
 
 	println!("\n=== Initial Balances ===");
 	println!(
@@ -66,6 +72,13 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 			.get_account_balance(&bob.address())
 			.await
 			.context("Failed to get Bob's account balance")?
+	);
+	println!(
+		"Movement Client: {:?}",
+		coin_client
+			.get_account_balance(&movement_client.address())
+			.await
+			.context("Failed to get Movement Client's account balance")?
 	);
 	child.kill().await.context("Failed to kill the child process")?;
 
@@ -90,7 +103,6 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 }
 
 #[tokio::test]
-#[ignore]
 async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyhow::Error> {
 
 	let _ = tracing_subscriber::fmt()
@@ -101,6 +113,55 @@ async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyh
 	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
 	let _ = movement_client.publish_for_test();
+
+	let rest_client = movement_client.rest_client();
+	let coin_client = CoinClient::new(&rest_client);
+	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
+	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let movement_client = movement_client.signer();
+
+	println!("\n=== Addresses ===");
+	println!("Alice: {}", alice.address().to_hex_literal());
+	println!("Bob: {}", bob.address().to_hex_literal());
+	println!("Movement Client: {}", movement_client.address().to_hex_literal());
+	let faucet_client = faucet_client.write().unwrap();
+	faucet_client
+		.fund(alice.address(), 100_000_000)
+		.await
+		.context("Failed to fund Alice's account")?;
+	faucet_client
+		.create_account(bob.address())
+		.await
+		.context("Failed to fund Bob's account")?;
+	faucet_client
+	.fund(movement_client.address(), 100_000_000)
+	.await
+	.context("Failed to fund Alice's account")?;
+
+	println!("\n=== Initial Balances ===");
+	println!(
+		"Alice: {:?}",
+		coin_client
+			.get_account_balance(&alice.address())
+			.await
+			.context("Failed to get Alice's account balance")?
+	);
+	println!(
+		"Bob: {:?}",
+		coin_client
+			.get_account_balance(&bob.address())
+			.await
+			.context("Failed to get Bob's account balance")?
+	);
+	println!(
+		"Movement Client: {:?}",
+		coin_client
+			.get_account_balance(&movement_client.address())
+			.await
+			.context("Failed to get Movement Client's account balance")?
+	);
+
 	}
 	
         let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address

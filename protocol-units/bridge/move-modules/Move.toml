@@ -4,13 +4,13 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-resource_addr = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
-origin_addr = "0xcafe"
-atomic_bridge = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
-moveth = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
-master_minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
-minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
-admin = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+resource_addr = "0x7795772669be4edad96e5a0eb1df810c048a2ea15902c2e13a0ad03eec066517"
+origin_addr = "0xe15539d653cc6f7745aa3473006e365300fea988f975e6f12e2b0fa5ca329278"
+atomic_bridge = "0x7795772669be4edad96e5a0eb1df810c048a2ea15902c2e13a0ad03eec066517"
+moveth = "0x7795772669be4edad96e5a0eb1df810c048a2ea15902c2e13a0ad03eec066517"
+master_minter = "0x7795772669be4edad96e5a0eb1df810c048a2ea15902c2e13a0ad03eec066517"
+minter = "0x7795772669be4edad96e5a0eb1df810c048a2ea15902c2e13a0ad03eec066517"
+admin = "0x7795772669be4edad96e5a0eb1df810c048a2ea15902c2e13a0ad03eec066517"
 pauser = "0xdafe"
 denylister = "0xcade"
 
@@ -30,4 +30,3 @@ rev = "movement"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]
-
