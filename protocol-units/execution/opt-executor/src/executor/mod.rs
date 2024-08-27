@@ -10,6 +10,7 @@ use aptos_vm::AptosVM;
 
 use tracing::info;
 
+use maptos_execution_util::config::Config;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
@@ -22,6 +23,8 @@ pub struct Executor {
 	pub signer: ValidatorSigner,
 	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<AtomicU64>,
+	// The config for the executor.
+	pub(crate) config: Config,
 }
 
 impl Executor {
@@ -47,5 +50,9 @@ impl Executor {
 				Some(current.saturating_sub(count))
 			})
 			.unwrap_or_else(|_| 0);
+	}
+
+	pub fn config(&self) -> &Config {
+		&self.config
 	}
 }
