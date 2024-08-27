@@ -14,14 +14,21 @@ interface ICustodianToken is IERC20 {
     function grantBuyerRole(address account) external;
     function revokeBuyerRole(address account) external;
 
-    function buyCustodialTokenFor(address account, uint256 amount) external;
+    function buyCustodialToken(address account, uint256 amount) external;
+    function buyCustodialTokenFrom(
+        address buyer,
+        address account,
+        uint256 amount
+    ) external;
 }
 
 contract CustodianToken is ICustodianToken, WrappedToken {
     using SafeERC20 for IERC20;
 
-    bytes32 public constant TRANSFER_SINK_ROLE = keccak256("TRANSFER_SINK_ROLE");
-    bytes32 public constant TRANSFER_SINK_ADMIN_ROLE = keccak256("TRANSFER_SINK_ADMIN_ROLE");
+    bytes32 public constant TRANSFER_SINK_ROLE =
+        keccak256("TRANSFER_SINK_ROLE");
+    bytes32 public constant TRANSFER_SINK_ADMIN_ROLE =
+        keccak256("TRANSFER_SINK_ADMIN_ROLE");
 
     bytes32 public constant BUYER_ROLE = keccak256("BUYER_ROLE");
     bytes32 public constant BUYER_ADMIN_ROLE = keccak256("BUYER_ADMIN_ROLE");
@@ -35,19 +42,19 @@ contract CustodianToken is ICustodianToken, WrappedToken {
      * @param symbol The symbol of the token
      * @param _underlyingToken The underlying token to wrap
      */
-    function initialize(string memory name, string memory symbol, IMintableToken _underlyingToken)
-        public
-        virtual
-        override
-        initializer
-    {
+    function initialize(
+        string memory name,
+        string memory symbol,
+        IMintableToken _underlyingToken
+    ) public virtual override initializer {
         __CustodianToken_init(name, symbol, _underlyingToken);
     }
 
-    function __CustodianToken_init(string memory name, string memory symbol, IMintableToken _underlyingToken)
-        internal
-        onlyInitializing
-    {
+    function __CustodianToken_init(
+        string memory name,
+        string memory symbol,
+        IMintableToken _underlyingToken
+    ) internal onlyInitializing {
         __ERC20_init_unchained(name, symbol);
         __BaseToken_init_unchained();
         __MintableToken_init_unchained();
@@ -62,11 +69,15 @@ contract CustodianToken is ICustodianToken, WrappedToken {
         _grantRole(BUYER_ROLE, msg.sender);
     }
 
-    function grantTransferSinkRole(address account) public onlyRole(TRANSFER_SINK_ADMIN_ROLE) {
+    function grantTransferSinkRole(
+        address account
+    ) public onlyRole(TRANSFER_SINK_ADMIN_ROLE) {
         _grantRole(TRANSFER_SINK_ROLE, account);
     }
 
-    function revokeTransferSinkRole(address account) public onlyRole(TRANSFER_SINK_ADMIN_ROLE) {
+    function revokeTransferSinkRole(
+        address account
+    ) public onlyRole(TRANSFER_SINK_ADMIN_ROLE) {
         _revokeRole(TRANSFER_SINK_ROLE, account);
     }
 
@@ -76,14 +87,13 @@ contract CustodianToken is ICustodianToken, WrappedToken {
      * @param amount The amount of tokens to approve
      * @return A boolean indicating whether the approval was successful
      */
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        override(IERC20, ERC20Upgradeable)
-        returns (bool)
-    {
+    function approve(
+        address spender,
+        uint256 amount
+    ) public virtual override(IERC20, ERC20Upgradeable) returns (bool) {
         // require the spender is a transfer sink
-        if (!hasRole(TRANSFER_SINK_ROLE, spender)) revert RestrictedToTransferSinkRole();
+        if (!hasRole(TRANSFER_SINK_ROLE, spender))
+            revert RestrictedToTransferSinkRole();
 
         return underlyingToken.approve(spender, amount);
     }
@@ -95,14 +105,14 @@ contract CustodianToken is ICustodianToken, WrappedToken {
      * @param amount The amount of tokens to transfer
      * @return A boolean indicating whether the transfer was successful
      */
-    function transferFrom(address from, address to, uint256 amount)
-        public
-        virtual
-        override(IERC20, ERC20Upgradeable)
-        returns (bool)
-    {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public virtual override(IERC20, ERC20Upgradeable) returns (bool) {
         // require the destination is a transfer sink
-        if (!hasRole(TRANSFER_SINK_ROLE, to)) revert RestrictedToTransferSinkRole();
+        if (!hasRole(TRANSFER_SINK_ROLE, to))
+            revert RestrictedToTransferSinkRole();
 
         // burn the tokens from the sender
         super.transferFrom(from, address(this), amount);
@@ -117,9 +127,13 @@ contract CustodianToken is ICustodianToken, WrappedToken {
      * @param amount The amount of tokens to transfer
      * @return A boolean indicating whether the transfer was successful
      */
-    function transfer(address to, uint256 amount) public virtual override(IERC20, ERC20Upgradeable) returns (bool) {
+    function transfer(
+        address to,
+        uint256 amount
+    ) public virtual override(IERC20, ERC20Upgradeable) returns (bool) {
         // require the destination is a transfer sink
-        if (!hasRole(TRANSFER_SINK_ROLE, to)) revert RestrictedToTransferSinkRole();
+        if (!hasRole(TRANSFER_SINK_ROLE, to))
+            revert RestrictedToTransferSinkRole();
 
         // burn the tokens from the sender
         super.transfer(address(this), amount);
@@ -132,15 +146,29 @@ contract CustodianToken is ICustodianToken, WrappedToken {
         _grantRole(BUYER_ROLE, account);
     }
 
-    function revokeBuyerRole(address account) public onlyRole(BUYER_ADMIN_ROLE) {
+    function revokeBuyerRole(
+        address account
+    ) public onlyRole(BUYER_ADMIN_ROLE) {
         _revokeRole(BUYER_ROLE, account);
     }
 
-    function buyCustodialTokenFor(address account, uint256 amount) public override {
-        if (!hasRole(BUYER_ROLE, msg.sender)) revert RestrictedToBuyerRole();
+    function buyCustodialToken(
+        address account,
+        uint256 amount
+    ) public override {
+        buyCustodialTokenFrom(msg.sender, account, amount);
+    }
+
+    function buyCustodialTokenFrom(
+        address buyer,
+        address account,
+        uint256 amount
+    ) public override {
+        // todo: this might need to check msg.sender instead or in addition to buyer
+        if (!hasRole(BUYER_ROLE, buyer)) revert RestrictedToBuyerRole();
 
         // transfer the approved value from the buyer to this contract
-        underlyingToken.transferFrom(msg.sender, address(this), amount);
+        underlyingToken.transferFrom(buyer, address(this), amount);
 
         // mint the custodial token for the buyer at their desired address
         // ! maybe this should also be managed through the minter role, so the buyer would have to be buyer and minter

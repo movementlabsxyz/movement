@@ -1,4 +1,3 @@
-
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes};
@@ -10,11 +9,9 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId,
-	HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress,
-	TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+	LockDetails, RecipientAddress, TimeLock,
 };
-
 use serde::{Deserialize, Serialize};
 
 pub const INITIATED_SELECT: FixedBytes<32> =

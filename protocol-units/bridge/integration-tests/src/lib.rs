@@ -1,6 +1,7 @@
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{Address, U256},
+	primitives::Address,
 	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
@@ -22,18 +23,16 @@ use aptos_logger::Logger;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
-	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionPayload, TransactionStatus},
 };
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
+	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
+	
 };
-use movement_bridge::{Config as MovementConfig};
-use std::{
-	convert::TryFrom,
-	sync::{Arc, RwLock},
-	time::Instant,
-};
-use tokio::task;
+use movement_bridge::{Config as MovementConfig, MovementClient};
+use rand::SeedableRng;
+use std::sync::{Arc, RwLock};
 
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,

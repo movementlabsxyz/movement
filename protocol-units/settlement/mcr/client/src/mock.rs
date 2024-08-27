@@ -29,7 +29,7 @@ impl McrSettlementClient {
 		}
 	}
 
-	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn build_with_config(_config: &Config) -> Result<Self, anyhow::Error> {
 		Ok(Self::new())
 	}
 
