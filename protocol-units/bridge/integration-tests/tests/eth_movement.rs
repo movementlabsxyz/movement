@@ -13,7 +13,7 @@ use aptos_sdk::{
 };
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, types::{Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, types::{Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
 };
 
 use ethereum_bridge::{
@@ -121,7 +121,7 @@ async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyh
 		TimeLock(time_lock),
 		InitiatorAddress(initiator),
 		RecipientAddress(recipient),
-		Amount(amount), // Eth
+		Amount(AssetType::Moveth(amount)), // Eth
 	)
 	.await
 	.expect("Failed to complete bridge transfer");

@@ -150,7 +150,7 @@ impl EthClient {
 		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
 		let contract = self.weth_contract().expect("WETH contract not set");
 		let call = contract.deposit().value(amount).from(caller);
-		send_transaction(call, &utils::send_transaction_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to deposit eth to weth contract");
 
@@ -164,7 +164,7 @@ impl EthClient {
 			.expect("Failed to get balance");
 		println!("balance: {}", balance);
 
-		send_transaction(approve_call, &utils::send_transaction_rules(), RETRIES, GAS_LIMIT)
+		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to approve");
 		Ok(())

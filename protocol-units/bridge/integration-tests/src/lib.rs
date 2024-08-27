@@ -1,7 +1,6 @@
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{Address, U256},
-	primitives::Address,
 	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
@@ -27,11 +26,9 @@ use aptos_types::{
 };
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
-	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 	
 };
-use movement_bridge::{Config as MovementConfig, MovementClient};
-use rand::SeedableRng;
+use movement_bridge::{Config as MovementConfig};
 use std::sync::{Arc, RwLock};
 
 pub struct TestHarness {
