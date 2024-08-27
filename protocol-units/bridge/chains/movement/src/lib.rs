@@ -1,23 +1,24 @@
+use aptos_api::accounts::Account;
+use aptos_sdk::{move_types::language_storage::TypeTag, rest_client::FaucetClient, rest_client::Client, types::LocalAccount};
 use crate::utils::MovementAddress;
 use anyhow::Result;
-use aptos_sdk::{
-	move_types::language_storage::TypeTag,
-	rest_client::{Client, FaucetClient},
-	types::LocalAccount,
-};
 use aptos_types::account_address::AccountAddress;
+use aptos_sdk::rest_client::aptos_api_types::MoveType;
 use bridge_shared::{
+	
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractCounterpartyError,
-		BridgeContractCounterpartyResult,
+		BridgeContractCounterpartyResult, BridgeContractInitiator, BridgeContractInitiatorResult, BridgeContractInitiatorError
 	},
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
 		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
+use utils::send_view_request;
 use rand::prelude::*;
 use serde::Serialize;
+use serde_json::Value;
 use std::process::Stdio;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -43,12 +44,14 @@ enum Call {
 	GetDetails,
 }
 
+#[derive(Clone, Debug)]
 pub struct Config {
 	pub rpc_url: Option<String>,
 	pub ws_url: Option<String>,
 	pub chain_id: String,
-	pub signer_private_key: Arc<RwLock<LocalAccount>>,
+	pub signer_private_key: String,
 	pub initiator_contract: Option<MovementAddress>,
+	pub counterparty_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
 }
 
@@ -61,8 +64,9 @@ impl Config {
 			rpc_url: Some("http://localhost:8080".parse().unwrap()),
 			ws_url: Some("ws://localhost:8080".parse().unwrap()),
 			chain_id: 4.to_string(),
-			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
+			signer_private_key: LocalAccount::generate(&mut rng).private_key().to_string(),
 			initiator_contract: None,
+			counterparty_contract: None,
 			gas_limit: 10_000_000_000,
 		}
 	}
@@ -74,7 +78,7 @@ pub struct MovementClient {
 	///Address of the counterparty moduke
 	counterparty_address: AccountAddress,
 	///Address of the initiator module
-	initiator_address: Vec<u8>,
+	initiator_address: AccountAddress,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The Apotos Rest Client
@@ -84,7 +88,7 @@ pub struct MovementClient {
 }
 
 impl MovementClient {
-	pub async fn new(_config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
 		let node_connection_url = "http://127.0.0.1:8080".to_string();
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
 
@@ -94,15 +98,26 @@ impl MovementClient {
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
 
+		let initiator_address_bytes = signer.address().to_vec();
+        let initiator_address_array: [u8; 32] = initiator_address_bytes.try_into().expect("Address must be 32 bytes");
+
+        let initiator_address = AccountAddress::new(initiator_address_array);
 		Ok(MovementClient {
+			initiator_address,
 			counterparty_address: DUMMY_ADDRESS,
-			initiator_address: Vec::new(), //dummy for now
 			rest_client,
 			faucet_client: None,
 			signer: Arc::new(signer),
 		})
 	}
 
+	pub async fn get_signer_address(&self) -> AccountAddress {
+		self.signer.address()
+	}
+
+	pub async fn get_block_number(&self) -> Result<u64, anyhow::Error> {
+		Ok(0)
+	}
 	pub async fn new_for_test(
 		_config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
@@ -177,10 +192,12 @@ impl MovementClient {
 		)));
 
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+
+		let initiator_address = AccountAddress::new([0; 32]);
 		Ok((
 			MovementClient {
 				counterparty_address: DUMMY_ADDRESS,
-				initiator_address: Vec::new(), // dummy for now
+				initiator_address,
 				rest_client,
 				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
@@ -232,7 +249,7 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Lock),
 			args,
 		);
-		let _ = utils::send_and_confirm_aptos_transaction(
+		let _ = utils::send_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
@@ -260,7 +277,7 @@ impl BridgeContractCounterparty for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
+		let _ = utils::send_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
@@ -285,7 +302,7 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_type_args(Call::Abort),
 			args,
 		);
-		let _ = utils::send_and_confirm_aptos_transaction(
+		let _ = utils::send_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
@@ -300,7 +317,110 @@ impl BridgeContractCounterparty for MovementClient {
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
-		todo!();
+		let result = send_view_request(
+			self.rest_client.clone(),
+			self.counterparty_address.to_string(),
+			COUNTERPARTY_MODULE_NAME.to_string(),
+			"get_bridge_transfer_details".to_string(),
+			self.counterparty_move_types(Call::GetDetails),
+			vec![],
+		).await;
+	// We attempt to deserialize this JSON value into BridgeTransferDetails<Self::Address, Self::Hash> using serde_json::from_value.
+		let response = result.unwrap();
+		let details = serde_json::from_value::<BridgeTransferDetails<Self::Address, Self::Hash>>(response[0].clone()).unwrap();
+		Ok(Some(details))
+	}
+}
+
+#[async_trait::async_trait]
+impl BridgeContractInitiator for MovementClient {
+	type Address = MovementAddress;
+	type Hash = [u8; 32];
+
+	async fn initiate_bridge_transfer(
+		&mut self,
+		initiator_address: InitiatorAddress<Self::Address>,
+		recipient_address: RecipientAddress<Vec<u8>>,
+		hash_lock: HashLock<Self::Hash>,
+		time_lock: TimeLock,
+		amount: Amount,
+	) -> BridgeContractInitiatorResult<()> {
+		let args = vec![
+			to_bcs_bytes(&initiator_address.0).unwrap(),
+			to_bcs_bytes(&recipient_address.0).unwrap(),
+			to_bcs_bytes(&hash_lock.0).unwrap(),
+			to_bcs_bytes(&time_lock.0).unwrap(),
+			to_bcs_bytes(&amount.0).unwrap(),
+		];
+		let payload = utils::make_aptos_payload(
+			self.initiator_address,
+			"atomic_bridge_initiator",
+			"initiate_bridge_transfer",
+			self.counterparty_type_args(Call::Lock),
+			args,
+		);
+		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::InitiateTransferError);
+		Ok(())
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		preimage: HashLockPreImage,
+	) -> BridgeContractInitiatorResult<()> {
+		let args = vec![
+			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			to_bcs_bytes(&preimage.0).unwrap(),
+		];
+		let payload = utils::make_aptos_payload(
+			self.initiator_address,
+			"atomic_bridge_initiator",
+			"complete_bridge_transfer",
+			self.counterparty_type_args(Call::Complete),
+			args,
+		);
+		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::CompleteTransferError);
+		Ok(())
+	}
+
+	async fn refund_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<()> {
+		let args = vec![to_bcs_bytes(&bridge_transfer_id.0).unwrap()];
+		let payload = utils::make_aptos_payload(
+			self.initiator_address,
+			"atomic_bridge_initiator",
+			"refund_bridge_transfer",
+			self.counterparty_type_args(Call::Abort),
+			args,
+		);
+		let _ = utils::send_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::GenericError(("Refund Transfer Error").to_string()));
+		Ok(())
+	}
+
+	async fn get_bridge_transfer_details(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
+	{
+		let response = send_view_request(
+			self.rest_client.clone(),
+			self.counterparty_address.to_string(),
+			COUNTERPARTY_MODULE_NAME.to_string(),
+			"get_bridge_transfer_details".to_string(),
+			self.counterparty_move_types(Call::GetDetails),
+			vec![],
+		).await;
+
+		let details = serde_json::from_value::<BridgeTransferDetails<Self::Address, Self::Hash>>(response.unwrap()[0].clone()).unwrap();
+		Ok(Some(details))
 	}
 }
 
@@ -311,6 +431,15 @@ impl MovementClient {
 			Call::Complete => vec![TypeTag::Address, TypeTag::U64, TypeTag::U8],
 			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
 			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
+		}
+	}
+
+	fn counterparty_move_types(&self, call: Call) -> Vec<MoveType> {
+		match call {
+			Call::Lock => vec![MoveType::Address, MoveType::U64, MoveType::U64, MoveType::U8],
+			Call::Complete => vec![MoveType::Address, MoveType::U64, MoveType::U8],
+			Call::Abort => vec![MoveType::Address, MoveType::U64],
+			Call::GetDetails => vec![MoveType::Address, MoveType::U64],
 		}
 	}
 }

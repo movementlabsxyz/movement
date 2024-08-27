@@ -13,8 +13,7 @@ rust-version.workspace = true
 bridge-shared.workspace = true
 ethereum-bridge.workspace = true
 movement-bridge.workspace = true
-
-clap.workspace = true
+clap = { workspace = true, features = ["derive"] }
 tokio.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
@@ -24,7 +23,7 @@ serde_json.workspace = true
 uuid.workspace = true
 
 alloy.workspace = true
-
+aptos-sdk.workspace = true
 directories = "5.0"
 url.workspace = true
 eyre = "0.6.12"

@@ -94,7 +94,7 @@ pub struct Indexed<T> {
 }
 
 /// Send Aptos Transaction
-pub async fn send_and_confirm_aptos_transaction(
+pub async fn send_aptos_transaction(
 	rest_client: &RestClient,
 	signer: &LocalAccount,
 	payload: TransactionPayload,
@@ -172,15 +172,15 @@ pub fn make_aptos_payload(
 
 /// Send View Request
 pub async fn send_view_request(
-	aptos_client: &MovementClient,
+	rest_client: RestClient,
 	package_address: String,
 	module_name: String,
 	function_name: String,
 	type_arguments: Vec<MoveType>,
 	arguments: Vec<serde_json::Value>,
 ) -> Result<Vec<serde_json::Value>, anyhow::Error> {
-	let view_response = aptos_client
-		.rest_client
+	let view_response =
+		rest_client
 		.view(
 			&ViewRequest {
 				function: EntryFunctionId::from_str(&format!(

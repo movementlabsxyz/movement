@@ -13,7 +13,7 @@ async fn inner_main() -> anyhow::Result<()> {
 	let cli = CliOptions::parse();
 
 	match &cli.command {
-		Commands::BridgeEthToMovETH(command) => {
+		Commands::Bridge(command) => {
 			bridge_cli::eth_to_moveth::execute(command).await?;
 		}
 	}

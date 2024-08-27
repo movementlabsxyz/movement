@@ -26,7 +26,7 @@ async fn test_swap() -> eyre::Result<()> {
 
 	// Set up EthSharedArgs
 	let eth_shared_args = EthSharedArgs {
-		eth_signer_private_key: wallet.into(),
+		eth_private_key: wallet.into(),
 		eth_rpc_url: Url::parse(&anvil.endpoint()).unwrap(),
 		eth_ws_url: Url::parse(&anvil.endpoint().replace("http", "ws")).unwrap(),
 		eth_initiator_contract: EthAddress(*initiator_contract.address()),
@@ -42,7 +42,7 @@ async fn test_swap() -> eyre::Result<()> {
 	let amount = 1000000000000000000u64; // 1 ETH in wei
 
 	// Execute the swap
-	let result = eth_to_moveth::execute(&eth_to_movement::Commands::Swap {
+	let result = eth_to_moveth::execute(&eth_to_movement::Commands::ToMovement {
 		args: eth_shared_args,
 		recipient: From::from(recipient),
 		amount,
