@@ -59,7 +59,6 @@ jobs:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"
         nix develop --command bash  -c "just suzuka-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
   
   suzuka-full-node-remote:
