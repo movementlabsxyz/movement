@@ -17,24 +17,29 @@ m1-da-light-node-client = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 mcr-settlement-manager = { workspace = true }
-async-channel = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
+futures = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 sha2 = { workspace = true }
 tonic = { workspace = true }
-tracing = { workspace = true }
 movement-types = { workspace = true }
 movement-rest = { workspace = true }
+movement-tracing = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
-
-tracing-subscriber = { workspace = true, optional = true }
+godfig = { workspace = true }
+tracing-subscriber = { workspace = true }
+console-subscriber = { workspace = true }
+rocksdb = { workspace = true }
+tracing = { workspace = true }
+bcs = { workspace = true }
+zstd = { workspace = true }
 
 [features]
-default = ["logging"]
-logging = ["tracing-subscriber"]
+default = []
+logging = []
 
 
 [lints]

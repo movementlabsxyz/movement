@@ -1,6 +1,8 @@
+mod services;
 pub mod v1;
 
-use aptos_api::runtime::Apis;
+use services::Services;
+
 pub use aptos_crypto::hash::HashValue;
 pub use aptos_types::{
 	block_executor::partitioner::ExecutableBlock,
@@ -9,19 +11,27 @@ pub use aptos_types::{
 	transaction::signature_verified_transaction::SignatureVerifiedTransaction,
 	transaction::{SignedTransaction, Transaction},
 };
-
+use maptos_execution_util::config::Config;
 use movement_types::BlockCommitment;
 
-use async_channel::Sender;
 use async_trait::async_trait;
+use tokio::sync::mpsc::Sender;
+
+use std::future::Future;
 
 #[async_trait]
 pub trait DynOptFinExecutor {
-	/// Runs the service
-	async fn run_service(&self) -> Result<(), anyhow::Error>;
+	type Context: MakeOptFinServices;
 
-	/// Runs the necessary background tasks.
-	async fn run_background_tasks(&self) -> Result<(), anyhow::Error>;
+	/// Initialize the background task responsible for transaction processing.
+	fn background(
+		&self,
+		transaction_sender: Sender<SignedTransaction>,
+		config: &Config,
+	) -> Result<
+		(Self::Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
+		anyhow::Error,
+	>;
 
 	/// Executes a block optimistically
 	async fn execute_block_opt(
@@ -32,20 +42,14 @@ pub trait DynOptFinExecutor {
 	/// Update the height of the latest finalized block
 	fn set_finalized_block_height(&self, block_height: u64) -> Result<(), anyhow::Error>;
 
-	/// Sets the transaction channel.
-	fn set_tx_channel(&mut self, tx_channel: Sender<SignedTransaction>);
-
-	/// Gets the API for the opt (optimistic) state.
-	fn get_opt_apis(&self) -> Apis;
-
-	/// Gets the API for the fin (finalized) state.
-	fn get_fin_apis(&self) -> Apis;
+	/// Revert the chain to the specified height
+	async fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error>;
 
 	/// Get block head height.
-	async fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;
+	fn get_block_head_height(&self) -> Result<u64, anyhow::Error>;
 
 	/// Build block metadata for a timestamp
-	async fn build_block_metadata(
+	fn build_block_metadata(
 		&self,
 		block_id: HashValue,
 		timestamp: u64,
@@ -53,4 +57,11 @@ pub trait DynOptFinExecutor {
 
 	/// Rollover the genesis block
 	async fn rollover_genesis_block(&self) -> Result<(), anyhow::Error>;
+
+	/// Decrements transactions in flight on the transaction channel.
+	fn decrement_transactions_in_flight(&self, count: u64);
+}
+
+pub trait MakeOptFinServices {
+	fn services(&self) -> Services;
 }

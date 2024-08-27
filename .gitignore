@@ -1,6 +1,10 @@
 .DS_Store
 proc-compose.temp.log
 methods/guest/Cargo.lock
+protocol-units/bridge/move-modules/.aptos/*
+protocol-units/bridge/move-modules/build/*
+protocol-units/bridge/contracts/cache/*
+protocol-units/bridge/contracts/out/*
 .idea/
 target/
 ledger_db/
@@ -10,4 +14,11 @@ state_merkle_db/
 .idea
 .vscode
 .data
+node_modules/
 .env
+.aptos
+profile.json
+./docker/compose/grafana-alloy/.env
+*.dat
+*.log
+venv

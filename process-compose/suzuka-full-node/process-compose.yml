@@ -1,7 +1,5 @@
 version: "3"
 
-environment:
-
 processes:
 
   build:
@@ -10,7 +8,8 @@ processes:
 
   setup:
     command: |
-      exit 0
+      # sleep forever
+      sleep 999999999d
     depends_on:
       build:
         condition: process_completed_successfully
@@ -20,7 +19,7 @@ processes:
       exit 1
     depends_on:
       setup:
-        condition: process_completed_successfully
+        condition: process_healthy
 
   celestia-light-node-synced:
     command: |
@@ -40,32 +39,29 @@ processes:
     readiness_probe:
       initial_delay_seconds: 3
       exec:
-        command: echo "true"
-    liveness_probe:
-      initial_delay_seconds: 3
-      exec:
-        command: echo "true"
-
+        command: grpcurl -plaintext 0.0.0.0:30730 list
+    
   suzuka-full-node:
     command: |
       suzuka-full-node
+    env:
+      RUST_LOG: info,aptos-indexer=debug
     depends_on:
       m1-da-light-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 5
+      initial_delay_seconds: 10
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:30731
 
-  suzuka-faucet:
-  
+  suzuka-faucet: 
     command : |
       suzuka-faucet-service run-simple
     depends_on:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 30
       exec:
-        command: echo "true"
+        command: curl http://0.0.0.0:30732
 

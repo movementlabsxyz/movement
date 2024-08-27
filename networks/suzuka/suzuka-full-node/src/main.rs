@@ -1,28 +1,22 @@
-use anyhow::Context;
-use suzuka_full_node::{partial::SuzukaPartialNode, SuzukaFullNode};
+use suzuka_full_node::manager::Manager;
+
+use std::env;
+use std::process::ExitCode;
+
+const TIMING_LOG_ENV: &str = "SUZUKA_TIMING_LOG";
 
 #[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-	#[cfg(feature = "logging")]
-	{
-		use tracing_subscriber::EnvFilter;
+async fn main() -> Result<ExitCode, anyhow::Error> {
+	let tracing_config =
+		movement_tracing::Config { timing_log_path: env::var_os(TIMING_LOG_ENV).map(Into::into) };
+	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
 
-		tracing_subscriber::fmt()
-			.with_env_filter(
-				EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-			)
-			.init();
-	}
-
+	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config = dot_movement.try_get_config_from_json::<suzuka_config::Config>()?;
-	let (executor, background_task) = SuzukaPartialNode::try_from_config(config)
-		.await
-		.context("Failed to create the executor")?;
+	let config_file = dot_movement.try_get_or_create_config_file().await?;
 
-	tokio::spawn(background_task);
+	let manager = Manager::new(config_file).await?;
+	manager.try_run().await?;
 
-	executor.run().await.context("Failed to run suzuka")?;
-
-	Ok(())
+	Ok(ExitCode::SUCCESS)
 }

@@ -1,0 +1,15 @@
+version: "3"
+
+environment:
+
+processes:
+
+  eth:
+    command: |
+      MAYBE_TESTING_MCR=true MAYBE_RUN_LOCAL=true MAYBE_DEPLOY_MCR=true ETH_RPC_CONNECTION_PROTOCOL=http ETH_RPC_CONNECTION_HOSTNAME="localhost" ETH_RPC_CONNECTION_PORT=8545 ETH_WS_CONNECTION_HOSTNAME="localhost" ETH_WS_CONNECTION_PORT=8545 mcr-settlement-runner
+    depends_on:
+      build:
+        condition: process_completed_successfully
+    readiness_probe:
+      exec:
+        command: echo "true"

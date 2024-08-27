@@ -18,6 +18,37 @@ impl DotMovement {
 		self.0.join("config.json")
 	}
 
+	pub async fn try_get_or_create_config_file(&self) -> Result<tokio::fs::File, anyhow::Error> {
+		let config_path = self.get_config_json_path();
+
+		// get res for opening in read-write mode
+		let res = tokio::fs::OpenOptions::new()
+			.read(true)
+			.write(true)
+			.open(config_path.clone())
+			.await;
+
+		match res {
+			Ok(file) => Ok(file),
+			Err(_e) => {
+				// create parent directories
+				tokio::fs::DirBuilder::new()
+					.recursive(true)
+					.create(
+						config_path.parent().ok_or(anyhow::anyhow!(
+							"Failed to get parent directory of config path"
+						))?,
+					)
+					.await?;
+
+				// create the file
+				let file = tokio::fs::File::create_new(config_path).await?;
+
+				Ok(file)
+			}
+		}
+	}
+
 	/// Tries to get a configuration from a JSON file.
 	pub fn try_get_config_from_json<T: serde::de::DeserializeOwned>(
 		&self,

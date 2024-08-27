@@ -70,14 +70,14 @@ impl ExecutionConfig {
 			TestKind::Load { number_scenarios } => {
 				assert!(
 					number_scenarios >= self.number_scenario_per_client,
-					"Number of running scenario less than the number if scenario per client."
+					"Number of running scenario less than the number of scenario per client."
 				);
 			}
 			TestKind::Soak { min_scenarios, max_scenarios, .. } => {
 				assert!(max_scenarios >= min_scenarios, "max scenarios less than min scenarios");
 				assert!(
 					min_scenarios >= self.number_scenario_per_client,
-					"Number of min running scenario less than the number if scenario per client."
+					"Number of min running scenario less than the number of scenario per client."
 				);
 			}
 		}
@@ -168,15 +168,19 @@ pub fn execute_test(config: ExecutionConfig, create_scenario: Arc<scenario::Crea
 		.filter_map(|res| (res.average_execution_time_milli > 0).then_some(res))
 		.collect();
 
-	let average_exec_time = no_zero_exec_time
-		.iter()
-		.map(|res| res.average_execution_time_milli)
-		.sum::<u128>()
-		/ no_zero_exec_time.len() as u128;
+	let average_exec_time = if !no_zero_exec_time.is_empty() {
+		no_zero_exec_time
+			.iter()
+			.map(|res| res.average_execution_time_milli)
+			.sum::<u128>()
+			/ no_zero_exec_time.len() as u128
+	} else {
+		0
+	};
 	let metrics_average_exec_time = serde_json::to_string(&average_exec_time)
 		.unwrap_or("Metric  execution result serialization error.".to_string());
 	tracing::info!(target:EXEC_LOG_FILTER, metrics_average_exec_time);
-	tracing::info!("Scenarios execution average_exec_time:{metrics_average_exec_time}");
+	tracing::info!("Scenarios execution average_exec_time:{average_exec_time}");
 
 	tracing::info!("End test scenario execution.");
 }
@@ -379,14 +383,14 @@ impl ClientExecResult {
 	}
 
 	pub fn calculate_average_exec_time_milli(scenarios: &[ScenarioExecMetric]) -> u128 {
-		if !scenarios.is_empty() {
-			let ok_scenario: Vec<_> = scenarios
-				.into_iter()
-				.filter_map(|s| if s.is_ok() { Some(s.elapse_millli) } else { None })
-				.collect();
+		let ok_scenario: Vec<_> = scenarios
+			.into_iter()
+			.filter_map(|s| if s.is_ok() { Some(s.elapse_millli) } else { None })
+			.collect();
+		if !ok_scenario.is_empty() {
 			ok_scenario.iter().sum::<u128>() / ok_scenario.len() as u128
 		} else {
-			tracing::warn!("No result available average exec time is 0");
+			tracing::warn!("Client exec: No scenario executes correctly, average exec time is 0");
 			0
 		}
 	}

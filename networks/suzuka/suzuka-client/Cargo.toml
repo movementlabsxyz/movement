@@ -9,6 +9,14 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
+### define here all scenarios execution binaries 
+[[bin]]
+name = "demo_scenario"
+path = "bin/demo_scenario.rs"
+#[[bin]]
+# name = "basic_alice_bob"
+# path = "bin/basic_alice_bob.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
@@ -42,6 +50,7 @@ reqwest = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+tonic = { workspace = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }
@@ -51,6 +60,7 @@ maptos-execution-util = { workspace = true }
 mcr-settlement-client = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
+aptos-protos = { workspace = true }
 
 [lints]
 workspace = true

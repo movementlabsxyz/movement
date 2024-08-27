@@ -4,7 +4,6 @@ version = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
 authors = { workspace = true }
-repository = { workspace = true }
 homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
@@ -14,12 +13,21 @@ rust-version = { workspace = true }
 [dependencies]
 mcr-settlement-config = { workspace = true }
 
-alloy = { workspace = true }
+alloy = { workspace = true, features = [
+    "node-bindings",
+    "rpc-types-trace",
+    "json-rpc",
+    "rpc-client",
+    "signers",
+    "signer-yubihsm",
+    "pubsub",
+    "providers",
+] }
 alloy-contract = { workspace = true }
 alloy-network = { workspace = true }
 alloy-primitives = { workspace = true }
-alloy-provider = { workspace = true }
-alloy-signer-wallet = { workspace = true }
+alloy-provider = { workspace = true, features = [] }
+alloy-signer = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-transport = { workspace = true }
 alloy-transport-ws = { workspace = true }
@@ -27,22 +35,26 @@ alloy-transport-ws = { workspace = true }
 anyhow = { workspace = true }
 async-stream = { workspace = true }
 async-trait = { workspace = true }
+serde_json = { workspace = true }
 movement-types = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
 serde = { workspace = true }
+
+godfig = { workspace = true }
+
+dot-movement = { workspace = true }
 
 [dev-dependencies]
 alloy-rpc-types = { workspace = true }
 futures = { workspace = true }
-serde_json = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [features]
 default = ["eth"]
-integration-tests = ["eth"]
+e2e = ["eth"]
 eth = []
 mock = []
 

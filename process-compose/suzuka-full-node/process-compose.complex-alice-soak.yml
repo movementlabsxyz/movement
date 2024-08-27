@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  complex-alice-tests:
+    command: |
+      LOADTEST_NUMBER_SCENARIO=1 LOADTEST_NUMBER_SCENARIO_PER_CLIENT=1 cargo test -p suzuka-client complex_alice_soak -- --nocapture
+    depends_on:
+      suzuka-full-node:
+        condition: process_healthy
+      suzuka-faucet:
+        condition: process_healthy
+    availability:
+      exit_on_end: false # todo: revert

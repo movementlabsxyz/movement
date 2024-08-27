@@ -38,7 +38,12 @@ contract stlMoveTokenTest is Test {
         token.initialize(underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // signers
         address payable alice = payable(vm.addr(1));
@@ -139,7 +144,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 110);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(alice, 110);
+        token.buyCustodialToken(alice, 110);
         assertEq(token.balanceOf(alice), 110);
         assertEq(underlyingToken.balanceOf(stakingPool), 290);
         assertEq(underlyingToken.balanceOf(address(token)), 210);
@@ -153,7 +158,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 100);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(bob, 100);
+        token.buyCustodialToken(bob, 100);
         assertEq(token.balanceOf(bob), 100);
         assertEq(underlyingToken.balanceOf(stakingPool), 190);
         assertEq(underlyingToken.balanceOf(address(token)), 310);
@@ -191,7 +196,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 110);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(carol, 110);
+        token.buyCustodialToken(carol, 110);
         assertEq(token.balanceOf(carol), 110);
         assertEq(underlyingToken.balanceOf(stakingPool), 80); // spent 20 in total on rewards
         assertEq(underlyingToken.balanceOf(address(token)), 220);

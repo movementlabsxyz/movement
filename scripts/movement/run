@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 set -e
-export CARGO_PROFILE="debug"
+
+# The runtime to use for the script, currently native or docker-compose
+RUNTIME=$2
+
+# Validate the runtime
+if [ "$RUNTIME" != "native" ] && [ "$RUNTIME" != "docker-compose" ]; then
+    echo "Invalid runtime: $RUNTIME"
+    exit 1
+fi
+
+# Set the profile to use for cargo default to debug
+export CARGO_PROFILE="${CARGO_PROFILE:-debug}"
+
+# Add the target directory to the path so that built binaries can be found
 export PATH="$PATH:$(pwd)/target/$CARGO_PROFILE"
 export DOT_MOVEMENT_PATH="$(pwd)/.movement"
-./scripts/movement/$2 "$@"
+# IP needed by docker container to connect to the database
+# By default use the host ip.
+# Detect the OS and call the appropriate function
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    IP=$(hostname -I | awk '{print $1}')
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    IP=$(ifconfig | awk '/inet / {print $2}' | grep -v '127.0.0.1')
+fi
+export POSTGRES_HOST_IP=$IP
+
+# Call the runtime script, passing all arguments
+./scripts/movement/$RUNTIME "$@"

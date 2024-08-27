@@ -91,11 +91,11 @@ contract MovementStaking is
     }
 
     function setGenesisCeremony(
-        address domain,
         address[] calldata custodians,
         address[] calldata attesters,
         uint256[] calldata stakes
     ) public {
+        address domain = msg.sender;
         currentEpochByDomain[domain] = getEpochByBlockTime(domain);
 
         for (uint256 i = 0; i < attesters.length; i++) {
@@ -121,7 +121,7 @@ contract MovementStaking is
 
             // transfer the outstanding stake back to the attester
             uint256 refundAmount = stakes[i] - attesterStake;
-            _payAttester(attesters[i], custodian, refundAmount);
+            _payAttester(address(this), attesters[i], custodian, refundAmount);
         }
     }
 
@@ -268,7 +268,11 @@ contract MovementStaking is
     }
 
     // stakes for the next epoch
-    function stake(address domain, IERC20 custodian, uint256 amount) external {
+    function stake(
+        address domain,
+        IERC20 custodian,
+        uint256 amount
+    ) external onlyRole(WHITELIST_ROLE) {
         // add the attester to the list of attesters
         attestersByDomain[domain].add(msg.sender);
 
@@ -312,7 +316,7 @@ contract MovementStaking is
         address domain,
         address custodian,
         uint256 amount
-    ) external {
+    ) external onlyRole(WHITELIST_ROLE) {
         // indicate that we are going to unstake this amount in the next epoch
         // ! this doesn't actually happen until we roll over the epoch
         // note: by tracking in the next epoch we need to make sure when we roll over an epoch we check the amount rolled over from stake by the unstake in the next epoch
@@ -364,7 +368,7 @@ contract MovementStaking is
         // note: this is the only place this takes place
         // there's not risk of double payout, so long as rollOverattester is only called once per epoch
         // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
-        _payAttester(attester, custodian, unstakeAmount);
+        _payAttester(address(this), attester, custodian, unstakeAmount);
 
         emit AttesterEpochRolledOver(
             attester,
@@ -496,7 +500,12 @@ contract MovementStaking is
                 ),
                 Math.min(amounts[i], refundAmounts[i])
             );
-            _payAttester(attesters[i], custodians[i], refundAmount);
+            _payAttester(
+                address(this), // this contract is paying the attester, it should always have enough balance
+                attesters[i],
+                custodians[i],
+                refundAmount
+            );
 
             // slash both stake and unstake so that the weight of the attester is reduced and they can't withdraw the unstake at the next epoch
             _slashStake(
@@ -517,22 +526,39 @@ contract MovementStaking is
     }
 
     function _payAttester(
+        address from,
         address attester,
         address custodian,
         uint256 amount
     ) internal {
-        if (address(token) == custodian) {
-            // if there isn't a custodian
+        if (from == address(this)) {
+            // this contract is paying the attester
+            if (address(token) == custodian) {
+                // if there isn't a custodian...
+                token.transfer(attester, amount); // just transfer the token
+            } else {
+                // approve the custodian to spend the base token
+                token.approve(custodian, amount);
 
-            token.transfer(attester, amount); // just transfer the token
+                // purchase the custodial token for the attester
+                ICustodianToken(custodian).buyCustodialToken(attester, amount);
+            }
         } else {
-            // if there is a custodian
+            // This can be used by the domain to pay the attester, but it's just as convenient for the domain to reward the attester directly.
+            // This is, currently, there is no added benefit of issuing a reward through this contract--other than Riccardian clarity.
 
-            // approve the custodian to spend the base token
-            token.approve(custodian, amount);
-
-            // purchase the custodial token for the attester
-            ICustodianToken(custodian).buyCustodialTokenFor(attester, amount);
+            // somebody else is trying to pay the attester, e.g., the domain
+            if (address(token) == custodian) {
+                // if there isn't a custodian...
+                token.transferFrom(from, attester, amount); // just transfer the token
+            } else {
+                // purchase the custodial token for the attester
+                ICustodianToken(custodian).buyCustodialTokenFrom(
+                    from,
+                    attester,
+                    amount
+                );
+            }
         }
     }
 
@@ -544,7 +570,19 @@ contract MovementStaking is
         // note: you may want to apply this directly to the attester's stake if the Domain sets an automatic restake policy
         for (uint256 i = 0; i < attesters.length; i++) {
             // pay the attester
-            _payAttester(attesters[i], custodians[i], amounts[i]);
+            _payAttester(msg.sender, attesters[i], custodians[i], amounts[i]);
         }
+    }
+
+    function whitelistAddress(
+        address addr
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(WHITELIST_ROLE, addr);
+    }
+
+    function removeAddressFromWhitelist(
+        address addr
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        revokeRole(WHITELIST_ROLE, addr);
     }
 }

@@ -1,18 +1,5 @@
 services:
 
-  wait-for-suzuka-faucet-service:
-    image: busybox
-    container_name: wait-for-suzuka-faucet-service
-    depends_on:
-      - suzuka-faucet-service
-    entrypoint: 
-      - /bin/sh
-      - -c
-      - |
-        echo "Waiting for suzuka-faucet-service to be ready..."
-        sleep 10
-        echo "suzuka-faucet-service is ready"
-
   suzuka-client-e2e-simple-interaction:
     image: ghcr.io/movementlabsxyz/suzuka-client-e2e-simple-interaction:${CONTAINER_REV}
     container_name: suzuka-client-e2e-simple-interaction
@@ -22,5 +9,5 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     depends_on:
-      wait-for-suzuka-faucet-service:
-        condition: service_completed_successfully
+      suzuka-faucet-service: # wait for all of the replicas to be ready
+        condition: service_healthy

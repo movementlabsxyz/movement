@@ -1,0 +1,9 @@
+version: "3"
+
+environment:
+
+processes:
+
+  eth:
+    command: |
+      exit 1
