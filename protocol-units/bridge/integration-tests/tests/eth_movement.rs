@@ -29,7 +29,6 @@ use tracing;
 use tracing_subscriber;
 
 #[tokio::test]
-#[ignore]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
@@ -40,7 +39,6 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 
-	// Print account addresses.
 	println!("\n=== Addresses ===");
 	println!("Alice: {}", alice.address().to_hex_literal());
 	println!("Bob: {}", bob.address().to_hex_literal());
@@ -54,7 +52,6 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 		.await
 		.context("Failed to fund Bob's account")?;
 
-	// Print initial balances.
 	println!("\n=== Initial Balances ===");
 	println!(
 		"Alice: {:?}",
@@ -71,18 +68,12 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 			.context("Failed to get Bob's account balance")?
 	);
 	child.kill().await.context("Failed to kill the child process")?;
-	//let _ = child.wait().await.expect("Failed to wait on process termination");
 
 	Ok(())
 }
 
 #[tokio::test]
-//#[ignore]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
-
-	// at beginning of test, check whether .movement is present with a conditional statement so it works either way
-	// at end of test, delete .movement
-
 	let _ = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)
         .try_init();
