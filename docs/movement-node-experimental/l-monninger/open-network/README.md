@@ -41,7 +41,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./suzuka-full-node.yml).
+An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml).
 
 This will set up the Movement Node to connect to sync with the `l-monninger/open-network` environment.
 
