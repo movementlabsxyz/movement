@@ -22,10 +22,7 @@ use aptos_logger::Logger;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
-	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionStatus},
-};
-use ethereum_bridge::{
-	client::{Config as EthConfig, EthClient},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionPayload, TransactionStatus},
 };
 use movement_bridge::{Config as MovementConfig};
 use std::{
@@ -34,6 +31,14 @@ use std::{
 	time::Instant,
 };
 use tokio::task;
+use ethereum_bridge::{
+	client::{Config as EthConfig, EthClient},
+	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
+	
+};
+use movement_bridge::{Config as MovementConfig, MovementClient};
+use rand::SeedableRng;
+use std::sync::{Arc, RwLock};
 
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
