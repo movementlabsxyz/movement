@@ -98,7 +98,7 @@ impl
 		>,
 	>
 {
-	pub async fn build_with_config(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn build_with_config(config: &Config) -> Result<Self, anyhow::Error> {
 		let signer_private_key = config.settle.signer_private_key.clone();
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
@@ -112,7 +112,7 @@ impl
 			.await
 			.context("Failed to create the RPC provider for the MCR settlement client")?;
 
-		let mut client = Client::build_with_provider(
+		let client = Client::build_with_provider(
 			rpc_provider,
 			ws_url,
 			signer_address,
