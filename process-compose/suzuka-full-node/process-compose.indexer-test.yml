@@ -1,0 +1,16 @@
+version: "3"
+
+environment:
+
+processes:
+
+  indexer-test:
+    command: |
+      ./scripts/services/indexer/test_indexer
+    depends_on:
+      indexer:
+        condition: process_healthy
+      hasura:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

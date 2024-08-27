@@ -10,7 +10,6 @@ interface IMovementStaking {
     ) external;
     function acceptGenesisCeremony() external;
     function setGenesisCeremony(
-        address,
         address[] calldata,
         address[] calldata,
         uint256[] calldata
