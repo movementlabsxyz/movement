@@ -1,8 +1,10 @@
 use std::collections::HashMap;
+
 use crate::types::{
-	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails,
+	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress,
+	TimeLock,
 };
-use std::fmt::Debug;
 use thiserror::Error;
 
 pub type SCCResult<A, H> =
@@ -111,10 +113,8 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
-		
-		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
-		todo!();
-		// balance += **transfer.amount;
+		let balance = accounts.entry(account).or_insert(Amount(0));
+		**balance += *transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
 			CounterpartyCompletedDetails::from_lock_details(transfer, pre_image),

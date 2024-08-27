@@ -806,7 +806,7 @@ fn reduce<'a>(kvs: &'a [(&[bool], [u8; 32])]) -> Vec<(&'a [bool], [u8; 32])> {
 }
 
 /// Returns the key immediately before `key` in `btree`.
-fn prev_key<K>(btree: &BTreeMap<K>, key: &K) -> Option<K>
+fn prev_key<K, V>(btree: &BTreeMap<K, V>, key: &K) -> Option<K>
 where
     K: Clone + Ord,
 {
@@ -816,7 +816,7 @@ where
         .map(|(k, _v)| k.clone())
 }
 
-fn next_key<K>(btree: &BTreeMap<K>, key: &K) -> Option<K>
+fn next_key<K, V>(btree: &BTreeMap<K, V>, key: &K) -> Option<K>
 where
     K: Clone + Ord,
 {

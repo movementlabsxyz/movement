@@ -3,10 +3,9 @@ use bridge_shared::{
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
-		RecipientAddress
+		RecipientAddress,
 	},
 };
-use std::fmt::Debug;
 use event_types::EthChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{

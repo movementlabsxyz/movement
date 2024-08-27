@@ -1,7 +1,8 @@
 use thiserror::Error;
 
 use crate::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId, HashLock,
+	HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -46,24 +47,8 @@ impl BridgeContractCounterpartyError {
 	}
 }
 
-#[derive(Error, Debug, Clone, PartialEq, Eq)]
-pub enum BridgeContractWETH9Error {
-	#[error("Insufficient balance")]
-	BalanceError,
-	#[error("Allowance exceeded")]
-	AllowanceError,
-	#[error("Generic error: {0}")]
-	GenericError(String),
-}
-impl BridgeContractWETH9Error {
-	pub fn generic<E: std::error::Error>(e: E) -> Self {
-		Self::GenericError(e.to_string())
-	}
-}
-
 pub type BridgeContractInitiatorResult<T> = Result<T, BridgeContractInitiatorError>;
 pub type BridgeContractCounterpartyResult<T> = Result<T, BridgeContractCounterpartyError>;
-pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
 
 #[async_trait::async_trait]
 pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
@@ -93,9 +78,7 @@ pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractInitiatorResult<
-		Option<BridgeTransferDetails<Self::Address, Self::Hash>>
-	>;
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
 }
 
 #[async_trait::async_trait]
@@ -128,12 +111,4 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
-}
-
-#[async_trait::async_trait]
-pub trait BridgeContractWETH9: Clone + Unpin + Send + Sync {
-	type Address: BridgeAddressType;
-	type Hash: BridgeHashType;
-
-	async fn deposit_weth(&mut self, amount: Amount) -> BridgeContractWETH9Result<()>;
 }

@@ -3,7 +3,7 @@ use alloy::primitives::keccak256;
 use anyhow::Result;
 use bridge_shared::bridge_contracts::BridgeContractInitiator;
 use bridge_shared::types::{
-	Amount, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock, AssetType
+	Amount, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 };
 use ethereum_bridge::{client::EthClient, types::EthAddress};
 use movement_bridge::utils::MovementAddress;
@@ -34,7 +34,7 @@ async fn initiate_swap(
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
-	let amount = Amount(AssetType::EthAndWeth((amount,0)));
+	let amount = Amount(amount);
 
 	// TODO: Store the swap details in the local database so they can be resumed in case of failure
 
