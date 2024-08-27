@@ -143,6 +143,7 @@ impl EthClient {
 		Ok(())
 	}
 
+        //To be feature flagged, see tracking issue https://github.com/movementlabsxyz/movement/issues/380
 	pub async fn deposit_weth_and_approve(
 		&mut self,
 		caller: Address,
