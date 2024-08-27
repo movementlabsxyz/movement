@@ -11,6 +11,7 @@ on:
       - main
 
 jobs:
+ 
   cargo-check:
     strategy:
       matrix:
@@ -195,7 +196,6 @@ jobs:
           cargo test -p bridge-shared  
         "
   
-
   solidity-bridge-tests:
     strategy:
       matrix:
@@ -219,7 +219,6 @@ jobs:
             cd protocol-units/bridge/contracts && \
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
-
   bridge-eth-movement:
     strategy:
       matrix:
@@ -234,15 +233,35 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install Movement CLI
+      run: |
+        sudo apt-get update 
+        sudo apt-get install -y build-essential
+        sudo apt-get install -y binutils
+        sudo apt-get install -y lld
+        sudo apt-get install -y libudev-dev
+        sudo apt-get install -y libdw-dev
+        which ld
+        which lld
+        which gcc
+        which cc
+        echo $PATH
+        export GIT_CLONE_PROTECTION_ACTIVE=false
+        git clone https://github.com/movementlabsxyz/aptos-core/ 
+        cd aptos-core
+        cargo build -p movement
+        sudo cp target/debug/movement /usr/local/bin/
+        cd -
+
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run foundry tests
+    - name: Run eth_movement tests
       run: |
         nix develop --command bash -c "
-          cargo test --test eth_movement -- --nocapture --test-threads=1 
+          rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
         "
- 
+
 #  Indexer:
 #    strategy:
 #      matrix:

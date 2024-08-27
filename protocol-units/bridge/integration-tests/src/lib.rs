@@ -10,9 +10,14 @@ use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
+use aptos_types::{
+	account_config::{DepositEvent, WithdrawEvent},
+	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionPayload, TransactionStatus},
+};
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
 	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
+	
 };
 use movement_bridge::{Config as MovementConfig, MovementClient};
 use rand::SeedableRng;
