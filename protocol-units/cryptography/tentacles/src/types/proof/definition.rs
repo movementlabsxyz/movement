@@ -125,7 +125,7 @@ impl<H: SimpleHasher> SparseMerkleProof<H> {
         &self,
         expected_root_hash: RootHash,
         element_key: KeyHash,
-        element_value: Option,
+        element_value: Option<V>,
     ) -> Result<()> {
         ensure!(
             self.siblings.len() <= 256,
@@ -305,7 +305,7 @@ impl<H: SimpleHasher> SparseMerkleProof<H> {
         self,
         old_root_hash: RootHash,
         new_element_key: KeyHash,
-        new_element_value: Option,
+        new_element_value: Option<V>,
     ) -> Result<RootHash> {
         if let Some(new_element_value) = new_element_value {
             // A value have been supplied, we need to prove that we inserted a given value at the new key
@@ -534,7 +534,7 @@ impl<H: SimpleHasher> UpdateMerkleProof<H> {
         self,
         old_root_hash: RootHash,
         new_root_hash: RootHash,
-        updates: impl AsRef<[(KeyHash, Option)]>,
+        updates: impl AsRef<[(KeyHash, Option<V>)]>,
     ) -> Result<()> {
         let updates = updates.as_ref();
         ensure!(
