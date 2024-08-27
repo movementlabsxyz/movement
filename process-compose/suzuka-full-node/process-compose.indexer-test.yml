@@ -16,4 +16,4 @@ processes:
       hasura:
         condition: process_healthy
     availability:
-      exit_on_end: false
+      exit_on_end: true
