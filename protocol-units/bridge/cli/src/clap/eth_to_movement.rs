@@ -8,7 +8,7 @@ use url::Url;
 pub struct EthSharedArgs {
 	/// Private key of the Ethereum signer
 	#[arg(long)]
-	pub eth_signer_private_key: PrivateKeySigner,
+	pub eth_private_key: PrivateKeySigner,
 
 	/// URL for the Ethereum RPC
 	#[arg(long, default_value = "http://localhost:8545")]
@@ -25,6 +25,10 @@ pub struct EthSharedArgs {
 	/// Ethereum contract address for the counterparty
 	#[arg(long, default_value = "0x0000000000000000000000000000000000000000")]
 	pub eth_counterparty_contract: EthAddress,
+
+	/// Ethereum contract address for the counterparty
+	#[arg(long, default_value = "0x0000000000000000000000000000000000000000")]
+	pub eth_weth_contract: EthAddress,
 
 	/// Gas limit for Ethereum transactions
 	#[arg(long, default_value_t = 10_000_000_000)]
