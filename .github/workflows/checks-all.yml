@@ -8,8 +8,7 @@ on:
       - synchronize
   push:
     branches:
-      - main
-      - eng-546-atomic-bridge
+      - '**' 
 
 jobs:
  
