@@ -126,6 +126,7 @@ impl EthClient {
 		self.counterparty_contract = Some(contract);
 	}
 
+// To be feature flagged, see tracking issue https://github.com/movementlabsxyz/movement/issues/380
 	pub fn set_weth_contract(&mut self, contract: WETH9Contract) {
 		self.weth_contract = Some(contract);
 	}
