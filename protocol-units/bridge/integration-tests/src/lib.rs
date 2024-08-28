@@ -156,14 +156,6 @@ impl TestHarness {
 		).await
 	}
 
-	pub async fn deposit_weth_and_approve(&mut self,
-		initiator_address: InitiatorAddress<EthAddress>,
-		amount: Amount // the amount
-	) -> BridgeContractInitiatorResult<()> {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		Ok(eth_client.deposit_weth_and_approve(initiator_address.0.0, U256::from(amount.weth())).await.expect("Failed to deposit WETH"))
-	}
-
 	pub fn gen_aptos_account(&self) -> Vec<u8> {
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		let movement_recipient = LocalAccount::generate(&mut rng);
