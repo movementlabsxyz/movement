@@ -498,14 +498,6 @@ impl BridgeContractCounterparty for MovementClient {
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 
-		tracing::debug!("Unserialized args:");
-		tracing::debug!("{:?}", &bridge_transfer_id.0);
-		tracing::debug!("{:?}", &hash_lock.0);
-		tracing::debug!("{:?}", &time_lock.0);
-		tracing::debug!("{:?}", &initiator.0);
-		tracing::debug!("{:?}", &recipient.0);
-		tracing::debug!("{:?}", &amount.0);
-
 		let args = vec![
 			bcs::to_bytes(&initiator.0).unwrap(),
 			bcs::to_bytes(&bridge_transfer_id.0[..].to_vec()).unwrap(),
@@ -514,10 +506,6 @@ impl BridgeContractCounterparty for MovementClient {
 			bcs::to_bytes(&recipient.0.0).unwrap(),
 			bcs::to_bytes(&amount.0).unwrap(),
 		];
-
-		
-
-		tracing::debug!("Serialized args: {:?}", args);
 
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -547,8 +535,6 @@ impl BridgeContractCounterparty for MovementClient {
 			bcs::to_bytes(&bridge_transfer_id.0[..]).unwrap(),
 			bcs::to_bytes(&preimage.0).unwrap(),
 		];
-
-		tracing::debug!("Serialized args: {:?}", args);
 
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,

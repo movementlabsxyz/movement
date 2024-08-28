@@ -12,7 +12,7 @@ use aptos_sdk::{
 			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 			ViewRequest,
 		},
-		Client as RestClient,
+		Client as RestClient, Transaction
 	},
 	transaction_builder::TransactionFactory,
 	types::{
@@ -101,8 +101,6 @@ pub async fn send_and_confirm_aptos_transaction(
 	payload: TransactionPayload,
 ) -> Result<AptosTransaction> {
 	info!("Starting send_aptos_transaction");
-        debug!("Payload: {:?}", payload);
-        debug!("Signer address: {:?}", signer.address());
 	let state = rest_client
 		.get_ledger_information()
 		.await
@@ -113,8 +111,6 @@ pub async fn send_and_confirm_aptos_transaction(
 	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
 		.with_gas_unit_price(100)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
-	debug!("Transaction factory created with chain_id = {}", state.chain_id);
-
 	let latest_account_info = rest_client.get_account(signer.address()).await?;
 	let account = latest_account_info.into_inner();  
 	let latest_sequence_number = account.sequence_number;	
@@ -126,23 +122,29 @@ pub async fn send_and_confirm_aptos_transaction(
 		.build();
 
 	let signed_tx = signer.sign_transaction(raw_tx);
-	
-	debug!("Transaction signed: {:?}", signed_tx);
 
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
 		.map_err(|e| {
-		debug!("Transaction submission failed: {:?}", e);
 		anyhow::anyhow!(e.to_string())
 		})?
 		.into_inner();
 
-	debug!("Response: {:?}", response);
+	match &response {
+		Transaction::UserTransaction(user_txn) => {
+			assert!(
+			user_txn.info.success,
+			"Transaction failed with status: {}",
+			user_txn.info.vm_status
+			);
+		},
+		_ => panic!("Expected a UserTransaction, but got a different transaction type."),
+	}
 	
 	Ok(response)
 }
-
+ 
 // This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(
 	aptos_client: &MovementClient,
@@ -190,15 +192,6 @@ pub fn make_aptos_payload(
         ty_args: Vec<TypeTag>,
         args: Vec<Vec<u8>>,
 ) -> TransactionPayload {
-        // Log the details of the payload being created
-        info!("Creating Aptos transaction payload:");
-        info!("  Package address: {:?}", package_address);
-        info!("  Module name: {}", module_name);
-        info!("  Function name: {}", function_name);
-        debug!("  Type arguments: {:?}", ty_args);
-        debug!("  Arguments: {:?}", args);
-
-        // Create and return the transaction payload
         TransactionPayload::EntryFunction(EntryFunction::new(
                 ModuleId::new(package_address, ident_str!(module_name).to_owned()),
                 ident_str!(function_name).to_owned(),

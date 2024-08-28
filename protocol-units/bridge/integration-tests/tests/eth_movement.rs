@@ -40,10 +40,6 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let movement_client = movement_client.signer();
 
-	println!("\n=== Addresses ===");
-	println!("Alice: {}", alice.address().to_hex_literal());
-	println!("Bob: {}", bob.address().to_hex_literal());
-	println!("Movement Client: {}", movement_client.address().to_hex_literal());
 	let faucet_client = faucet_client.write().unwrap();
 	faucet_client
 		.fund(alice.address(), 100_000_000)
@@ -58,28 +54,6 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	.await
 	.context("Failed to fund Alice's account")?;
 
-	println!("\n=== Initial Balances ===");
-	println!(
-		"Alice: {:?}",
-		coin_client
-			.get_account_balance(&alice.address())
-			.await
-			.context("Failed to get Alice's account balance")?
-	);
-	println!(
-		"Bob: {:?}",
-		coin_client
-			.get_account_balance(&bob.address())
-			.await
-			.context("Failed to get Bob's account balance")?
-	);
-	println!(
-		"Movement Client: {:?}",
-		coin_client
-			.get_account_balance(&movement_client.address())
-			.await
-			.context("Failed to get Movement Client's account balance")?
-	);
 	child.kill().await.context("Failed to kill the child process")?;
 
 	Ok(())
@@ -88,7 +62,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::ERROR)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -106,7 +80,7 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
 
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::ERROR)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -121,10 +95,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let movement_client = movement_client.signer();
 
-	println!("\n=== Addresses ===");
-	println!("Alice: {}", alice.address().to_hex_literal());
-	println!("Bob: {}", bob.address().to_hex_literal());
-	println!("Movement Client: {}", movement_client.address().to_hex_literal());
+
 	let faucet_client = faucet_client.write().unwrap();
 	faucet_client
 		.fund(alice.address(), 100_000_000)
@@ -138,29 +109,6 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 	.fund(movement_client.address(), 100_000_000)
 	.await
 	.context("Failed to fund Alice's account")?;
-
-	println!("\n=== Initial Balances ===");
-	println!(
-		"Alice: {:?}",
-		coin_client
-			.get_account_balance(&alice.address())
-			.await
-			.context("Failed to get Alice's account balance")?
-	);
-	println!(
-		"Bob: {:?}",
-		coin_client
-			.get_account_balance(&bob.address())
-			.await
-			.context("Failed to get Bob's account balance")?
-	);
-	println!(
-		"Movement Client: {:?}",
-		coin_client
-			.get_account_balance(&movement_client.address())
-			.await
-			.context("Failed to get Movement Client's account balance")?
-	);
 
 	}
 	
@@ -234,7 +182,6 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 	];
 
 	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
-	println!("provider: {:?}", provider);
 	let accounts = provider.get_accounts().await.expect("Failed to get accounts");
 	assert_eq!(accounts.len(), expected_accounts.len());
 
