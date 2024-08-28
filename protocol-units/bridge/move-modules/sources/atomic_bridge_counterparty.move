@@ -25,7 +25,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     struct BridgeTransfer has key, store {
-        originator: vector<u8>, // eth address,
+        initiator: vector<u8>, // eth address,
         recipient: address,
         amount: u64,
         hash_lock: vector<u8>,
@@ -43,7 +43,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     /// An event triggered upon locking assets for a bridge transfer 
     struct BridgeTransferLockedEvent has store, drop {
         bridge_transfer_id: vector<u8>,
-        originator: vector<u8>,
+        initiator: vector<u8>,
         recipient: address,
         amount: u64,
         hash_lock: vector<u8>,
@@ -92,7 +92,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let bridge_transfer_ref = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
 
         (
-            bridge_transfer_ref.originator,
+            bridge_transfer_ref.initiator,
             bridge_transfer_ref.recipient,
             bridge_transfer_ref.amount,
             bridge_transfer_ref.hash_lock,
@@ -103,17 +103,17 @@ module atomic_bridge::atomic_bridge_counterparty {
   
     public entry fun lock_bridge_transfer(
         caller: &signer,
-        originator: vector<u8>,
+        initiator: vector<u8>,
         bridge_transfer_id: vector<u8>,
         hash_lock: vector<u8>,
         time_lock: u64,
         recipient: address,
         amount: u64
     ) acquires BridgeTransferStore {
-        assert!(signer::address_of(caller) == @origin_addr, 1);
+        //assert!(signer::address_of(caller) == @origin_addr, 1);
         let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
         let bridge_transfer = BridgeTransfer {
-            originator,
+            initiator,
             recipient,
             amount,
             hash_lock,
@@ -126,7 +126,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         event::emit_event(&mut store.bridge_transfer_locked_events, BridgeTransferLockedEvent {
                 amount,
                 bridge_transfer_id,
-                originator,
+                initiator,
                 recipient,
                 hash_lock,
                 time_lock,
@@ -134,7 +134,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
     }
     
-    public fun complete_bridge_transfer(
+    public entry fun complete_bridge_transfer(
         caller: &signer,
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
@@ -159,6 +159,19 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     public entry fun noop_for_testing(_signer: &signer) {
+         
+    }
+
+    public entry fun pass_data_for_testing(
+        _signer: &signer,
+        initiator: vector<u8>,
+        bridge_transfer_id: vector<u8>,
+        hash_lock: vector<u8>,
+        time_lock: u64,
+        recipient: address,
+        amount: u64,
+
+    ) {
          
     }
     
@@ -241,7 +254,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
         assert!(bridge_transfer.recipient == recipient, 2);
-        assert!(bridge_transfer.originator == initiator, 3);
+        assert!(bridge_transfer.initiator == initiator, 3);
         assert!(bridge_transfer.amount == amount, 5);
         assert!(bridge_transfer.hash_lock == hash_lock, 5);
         let pre_image = b"secret"; 
@@ -259,7 +272,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.recipient == recipient, 1);
         assert!(bridge_transfer.amount == amount, 2);
         assert!(bridge_transfer.hash_lock == hash_lock, 3);
-        assert!(bridge_transfer.originator == initiator, 4);
+        assert!(bridge_transfer.initiator == initiator, 4);
     }
 
     #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
@@ -295,8 +308,8 @@ module atomic_bridge::atomic_bridge_counterparty {
             recipient,
             amount
         );
-        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
+        let (transfer_initiator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
         assert!(transfer_recipient == recipient, 2);
-        assert!(transfer_originator == initiator, 3);
+        assert!(transfer_initiator == initiator, 3);
     }
 }

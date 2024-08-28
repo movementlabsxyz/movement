@@ -416,6 +416,31 @@ impl BridgeContractCounterparty for MovementClient {
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 
+		let test_u64_args = vec![
+			bcs::to_bytes(&initiator.0).unwrap(),
+			bcs::to_bytes(&bridge_transfer_id.0[..]).unwrap(),
+			bcs::to_bytes(&hash_lock.0[..]).unwrap(),
+			bcs::to_bytes(&time_lock.0).unwrap(),
+			bcs::to_bytes(&recipient.0.0).unwrap(),
+			bcs::to_bytes(&amount.0).unwrap(),
+		];
+
+		let test_u64_payload = utils::make_aptos_payload(
+			self.counterparty_address,
+			COUNTERPARTY_MODULE_NAME,
+			"pass_data_for_testing",
+			Vec::new(),
+			test_u64_args,
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			test_u64_payload,
+		)
+		.await
+		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
+
 		tracing::debug!("Unserialized args:");
 		tracing::debug!("{:?}", &bridge_transfer_id.0);
 		tracing::debug!("{:?}", &hash_lock.0);
@@ -426,16 +451,10 @@ impl BridgeContractCounterparty for MovementClient {
 
 		let args = vec![
 			bcs::to_bytes(&initiator.0).unwrap(),
-			bcs::to_bytes(&bridge_transfer_id.0).unwrap(),
-			bcs::to_bytes(&hash_lock.0).unwrap(),
+			bcs::to_bytes(&bridge_transfer_id.0[..].to_vec()).unwrap(),
+			bcs::to_bytes(&hash_lock.0[..]).unwrap(),
 			bcs::to_bytes(&time_lock.0).unwrap(),
-			bcs::to_bytes(
-				&AccountAddress::from_hex_literal(&format!(
-				    "0x{}",
-				    hex::encode(&recipient.0.0)
-				))
-				.unwrap(),
-			    ).unwrap(),
+			bcs::to_bytes(&recipient.0.0).unwrap(),
 			bcs::to_bytes(&amount.0).unwrap(),
 		];
 
@@ -468,8 +487,8 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
 			//to_bcs_bytes(&self.signer.address()).unwrap(),
-			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
-			to_bcs_bytes(&preimage.0).unwrap(),
+			bcs::to_bytes(&bridge_transfer_id.0[..]).unwrap(),
+			bcs::to_bytes(&preimage.0).unwrap(),
 		];
 
 		tracing::debug!("Serialized args: {:?}", args);
