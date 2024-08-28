@@ -43,20 +43,17 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let faucet_client = faucet_client.write().unwrap();
 	faucet_client
 		.fund(alice.address(), 100_000_000)
-		.await
-		.context("Failed to fund Alice's account")?;
+		.await?;
 	faucet_client
 		.create_account(bob.address())
-		.await
-		.context("Failed to fund Bob's account")?;
+		.await?;
 	faucet_client
 	.fund(movement_client.address(), 100_000_000)
 
 
-	.await
-	.context("Failed to fund Alice's account")?;
+	.await?;
 
-	child.kill().await.context("Failed to kill the child process")?;
+	child.kill().await?;
 
 	Ok(())
 }
@@ -73,7 +70,7 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 	let _ = movement_client.publish_for_test();
 	}
 
-	child.kill().await.context("Failed to kill the child process")?;
+	child.kill().await?;
 	
 	Ok(())
 }
@@ -103,14 +100,12 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 
 		faucet_client
 		.fund(movement_client.address(), 100_000_000)
-		.await
-		.context("Failed to fund Movement Client account")?;
+		.await?;
 
 		// Check the balance of movement_client after funding
 		let balance = coin_client
 		.get_account_balance(&movement_client.address())
-		.await
-		.context("Failed to get Movement Client's account balance")?;
+		.await?;
 
 			// Assert that the balance is as expected
 		assert!(
@@ -152,7 +147,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 	.await
 	.expect("Failed to complete bridge transfer");
 
-	child.kill().await.context("Failed to kill the child process")?;
+	child.kill().await?;
 	//let _ = child.wait().await.expect("Failed to wait on process termination");
 	Ok(())
 }
