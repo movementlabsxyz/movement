@@ -110,16 +110,17 @@ echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ### `suzuka-full-node`
 
 - **Features**:
-    - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service.
+    - `setup-local`: Runs setup for local services. 
+    - `celestia-local`: Runs Celestia Data Availability service locally.
+    - `faucet-replicas`: Runs faucet replicas.
 
-**Note:** Currently, both `setup` and `local` must be used. 
+**Note:** Currently, both `setup-local` and `celestia-local` are required to run the `suzuka-full-node` with a local Celestia Data Availability service.
 We only support running the `suzuka-full-node` with a local Celesta Data Availability 
 service via Docker Compose.
 
 ```bash
 # example setup with local
-just suzuka-full-node docker-compose setup.local
+just suzuka-full-node docker-compose setup-local.celestia-local
 ```
 Under the hood, `just` runs
 ```bash
