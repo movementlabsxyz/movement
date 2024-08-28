@@ -149,19 +149,20 @@ impl EthClient {
 		let deposit_weth_signer = self.get_signer_address();
 		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
 		let contract = self.weth_contract().expect("WETH contract not set");
-		let call = contract.deposit().value(amount).from(caller);
+		let call = contract.deposit().value(amount);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to deposit eth to weth contract");
 
 		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract
-			.approve(self.initiator_contract_address()?, amount)
-			.from(deposit_weth_signer);
+			.approve(self.initiator_contract_address()?, amount);
 		let WETH9::balanceOfReturn { _0: balance } = contract
 			.balanceOf(deposit_weth_signer)
 			.call()
 			.await
 			.expect("Failed to get balance");
+		let signer = self.get_signer_address();
+		println!("caller: {}", signer);
 		println!("balance: {}", balance);
 
 		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
@@ -291,6 +292,8 @@ impl BridgeContractInitiator for EthClient {
 				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.eth()));
+		let signer = self.get_signer_address();
+		println!("signer: {:?}", signer);
 		let _ = send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.map_err(|e| {

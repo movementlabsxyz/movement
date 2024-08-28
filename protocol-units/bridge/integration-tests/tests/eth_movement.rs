@@ -233,7 +233,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer() {
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
+async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -266,7 +266,7 @@ async fn test_client_should_successfully_call_initiate_transfer_only_weth() {
 }
 
 #[tokio::test]
-async fn test_client_should_successfully_call_initiate_transfer_eth_and_weth() {
+async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 

@@ -69,7 +69,7 @@ async fn test_bridge_service_error_handling() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(AssetType::EthAndWeth((1000,0))),
+			Amount(AssetType::EthAndWeth((0,1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -229,7 +229,7 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(AssetType::EthAndWeth((1000,0))),
+			Amount(AssetType::EthAndWeth((0,1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -310,7 +310,7 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(AssetType::EthAndWeth((1000,0))),
+			Amount(AssetType::EthAndWeth((0,1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -446,7 +446,7 @@ async fn test_bridge_service_timeout_error_handling() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(AssetType::EthAndWeth((1000,0))),
+			Amount(AssetType::EthAndWeth((0,1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
