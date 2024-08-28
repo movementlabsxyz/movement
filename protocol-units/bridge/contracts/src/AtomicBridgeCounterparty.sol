@@ -13,7 +13,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
     }
 
     struct BridgeTransferDetails {
-        bytes32 initiator;  
+        bytes32 originator;  
         address recipient;
         uint256 amount;
         bytes32 hashLock;
@@ -36,7 +36,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
     }
 
     function lockBridgeTransferAssets(
-        bytes32 initiator,
+        bytes32 originator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
         uint256 timeLock,
@@ -48,7 +48,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
-            initiator: initiator,
+            originator: originator,
             amount: amount,
             hashLock: hashLock,
             timeLock: block.number + timeLock, // using block number for timelock
