@@ -367,7 +367,62 @@ impl MovementClient {
 		println!(".movement directory deleted successfully.");
 	}
 
-		Ok(())
+	    // Read the existing content of Move.toml
+	let move_toml_content = fs::read_to_string(&move_toml_path)
+	    .expect("Failed to read Move.toml file");
+    
+	// Directly assign the address
+	let final_address = "0xcafe";
+
+	// Directly assign the formatted resource address
+	let final_formatted_resource_address = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
+	
+	let updated_content = move_toml_content
+	    .lines()
+	    .map(|line| {
+		match line {
+		    _ if line.starts_with("resource_addr = ") => {
+			format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
+		    }
+		    _ if line.starts_with("atomic_bridge = ") => {
+			format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
+		    }
+		    _ if line.starts_with("moveth = ") => {
+			format!(r#"moveth = "{}""#, final_formatted_resource_address)
+		    }
+		    _ if line.starts_with("master_minter = ") => {
+			format!(r#"master_minter = "{}""#, final_formatted_resource_address)
+		    }
+		    _ if line.starts_with("minter = ") => {
+			format!(r#"minter = "{}""#, final_formatted_resource_address)
+		    }
+		    _ if line.starts_with("admin = ") => {
+			format!(r#"admin = "{}""#, final_formatted_resource_address)
+		    }
+		    _ if line.starts_with("origin_addr = ") => {
+			format!(r#"origin_addr = "{}""#, final_address)
+		    }
+		    _ if line.starts_with("pauser = ") => {
+			format!(r#"pauser = "{}""#, "0xdafe")
+		    }
+		    _ if line.starts_with("denylister = ") => {
+			format!(r#"denylister = "{}""#, "0xcade")
+		    }
+		    _ => line.to_string(),
+		}
+	    })
+	    .collect::<Vec<_>>()
+	    .join("\n");
+    
+	// Write the updated content back to Move.toml
+	let mut file = fs::File::create(&move_toml_path)
+	    .expect("Failed to open Move.toml file for writing");
+	file.write_all(updated_content.as_bytes())
+	    .expect("Failed to write updated Move.toml file");
+    
+	println!("Move.toml addresses updated successfully at the end of the test.");    
+
+	Ok(())
 	}
 	
 	pub fn rest_client(&self) -> &Client {
