@@ -67,9 +67,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
     
     fun init_module(resource: &signer) {
-
         let resource_signer_cap = resource_account::retrieve_resource_account_cap(resource, @origin_addr);
-
         move_to(resource, BridgeTransferStore {
             transfers: aptos_std::smart_table::new<vector<u8>, BridgeTransfer>(),
             bridge_transfer_locked_events: account::new_event_handle<BridgeTransferLockedEvent>(resource),

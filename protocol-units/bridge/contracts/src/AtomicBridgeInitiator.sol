@@ -27,7 +27,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Total WETH pool balance
     uint256 public poolBalance;
 
-    address public counterpartyContract; 
+    address public counterpartyAddress; 
     IWETH9 public weth;
     uint256 private nonce;
 
@@ -39,9 +39,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         __Ownable_init(owner);
     }
 
-    function setCounterpartyContract(address _counterpartyContract) external onlyOwner {
-        if (_counterpartyContract == address(0)) revert ZeroAddress();
-        counterpartyContract = _counterpartyContract;
+    function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
+        if (_counterpartyAddress == address(0)) revert ZeroAddress();
+        counterpartyAddress = _counterpartyAddress;
     }
 
     function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
