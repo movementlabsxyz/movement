@@ -6,13 +6,35 @@ use alloy::network::Ethereum;
 use alloy::primitives::U256;
 use alloy::providers::Provider;
 use alloy::rlp::{Encodable, RlpEncodable};
-use alloy::rpc::types::{Log, TransactionReceipt};
+use alloy::rpc::types::TransactionReceipt;
 use alloy::transports::Transport;
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
 	InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
 use thiserror::Error;
+
+use rand::{rngs::StdRng, SeedableRng};
+use rand::{Rng, RngCore};
+use rand_chacha::ChaChaRng;
+
+pub trait RngSeededClone: Rng + SeedableRng {
+	fn seeded_clone(&mut self) -> Self;
+}
+
+impl RngSeededClone for StdRng {
+	fn seeded_clone(&mut self) -> Self {
+		self.clone()
+	}
+}
+
+impl RngSeededClone for ChaChaRng {
+	fn seeded_clone(&mut self) -> Self {
+		let mut seed = [0u8; 32];
+		self.fill_bytes(&mut seed);
+		ChaChaRng::from_seed(seed)
+	}
+}
 
 #[derive(Debug, Error)]
 pub enum EthUtilError {
@@ -61,7 +83,7 @@ pub fn calculate_storage_slot(key: [u8; 32], mapping_slot: U256) -> U256 {
 	U256::from_be_slice(&hash.0)
 }
 
-pub(crate) fn send_tx_rules() -> Vec<Box<dyn VerifyRule>> {
+pub(crate) fn send_transaction_rules() -> Vec<Box<dyn VerifyRule>> {
 	let rule1: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<UnderPriced>::new());
 	let rule2: Box<dyn VerifyRule> = Box::new(SendTransactionErrorRule::<InsufficentFunds>::new());
 	vec![rule1, rule2]
@@ -152,20 +174,4 @@ pub async fn send_transaction<
 		"Send commitment Transaction fail because of exceed max retry".to_string(),
 	)
 	.into())
-}
-
-pub async fn decode_bridge_transfer_id(log: &Log) -> Result<[u8; 32], anyhow::Error> {
-	let log_data = log.data(); // Access the data via the `inner` field
-
-	if log_data.data.len() != 32 {
-		return Err(anyhow::anyhow!("Log data is not the correct length: expected 32 bytes"));
-	}
-
-	let bridge_transfer_id: [u8; 32] = log_data
-		.data
-		.as_ref()
-		.try_into()
-		.map_err(|_| anyhow::anyhow!("Failed to convert log data to [u8; 32]"))?;
-
-	Ok(bridge_transfer_id)
 }

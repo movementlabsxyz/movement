@@ -1,3 +1,4 @@
+use alloy::primitives::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
@@ -5,6 +6,12 @@ use std::{fmt::Debug, hash::Hash};
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
+
+impl<H> BridgeTransferId<H> {
+	pub fn inner(&self) -> &H {
+		&self.0
+	}
+}
 
 impl BridgeTransferId<[u8; 32]> {
 	pub fn parse(s: &str) -> Result<Self, FromHexError> {
@@ -78,6 +85,12 @@ pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
 
+impl<H> HashLock<H> {
+	pub fn inner(&self) -> &H {
+		&self.0
+	}
+}
+
 impl HashLock<[u8; 32]> {
 	pub fn parse(s: &str) -> Result<Self, FromHexError> {
 		let bytes = hex::decode(s)?;
@@ -113,8 +126,24 @@ impl HashLockPreImage {
 #[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
+impl From<Uint<256, 4>> for TimeLock {
+	fn from(value: Uint<256, 4>) -> Self {
+		// Extract the lower 64 bits.
+		let lower_64_bits = value.as_limbs()[0];
+		TimeLock(lower_64_bits)
+	}
+}
+
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Amount(pub u64);
+
+impl From<Uint<256, 4>> for Amount {
+	fn from(value: Uint<256, 4>) -> Self {
+		// Extract the lower 64 bits.
+		let lower_64_bits = value.as_limbs()[0];
+		Amount(lower_64_bits)
+	}
+}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BridgeTransferDetails<A, H> {

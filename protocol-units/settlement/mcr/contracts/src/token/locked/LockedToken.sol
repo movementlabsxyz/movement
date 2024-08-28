@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "forge-std/Test.sol";
 import {WrappedToken} from "../base/WrappedToken.sol";
 import {IMintableToken} from "../base/MintableToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -81,7 +82,7 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
     function release() external {
         uint256 totalUnlocked = 0;
         Lock[] storage userLocks = locks[msg.sender];
-        for (uint256 i = 0; i < userLocks.length; i++) {
+        for (uint256 i; i < userLocks.length;) {
             if (block.timestamp > userLocks[i].releaseTime) {
                 // compute the max possible amount to withdraw
                 uint256 amount = Math.min(
@@ -102,8 +103,10 @@ contract LockedToken is WrappedToken, LockedTokenStorage {
                 if (userLocks[i].amount == 0) {
                     userLocks[i] = userLocks[userLocks.length - 1];
                     userLocks.pop();
+                    continue;
                 }
             }
+            i++;
         }
 
         // transfer the underlying token
