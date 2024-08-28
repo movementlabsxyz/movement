@@ -50,7 +50,7 @@ async fn test_bridge_service_integration_a_to_b() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(AssetType::EthAndWeth((1000,0))),
+			Amount(AssetType::EthAndWeth((0,1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -175,7 +175,7 @@ async fn test_bridge_service_integration_b_to_a() {
 			RecipientAddress::from(BC2Address("recipient")),
 			HashLock(BC2Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(AssetType::EthAndWeth((1000,0))),
+			Amount(AssetType::EthAndWeth((0,1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
