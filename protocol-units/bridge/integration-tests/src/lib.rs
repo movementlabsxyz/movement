@@ -95,6 +95,7 @@ impl TestHarness {
 	pub fn eth_signer_address(&self) -> Address {
 		let eth_client = self.eth_client().expect("EthClient not initialized");
 		let wallet: &EthereumWallet = eth_client.rpc_provider().wallet();
+		let signer = eth_client.get_signer_address();
 		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
 	}
 
@@ -144,6 +145,8 @@ impl TestHarness {
 		amount: Amount // the amount
 	) -> BridgeContractInitiatorResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		let signer = eth_client.get_signer_address();
+		println!("Signer eth_client: {:?}", signer);
 		eth_client.initiate_bridge_transfer(
 			initiator_address,
 			recipient_address,

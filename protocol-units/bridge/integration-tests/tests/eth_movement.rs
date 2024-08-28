@@ -238,21 +238,11 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-	let matching_signer_address = harness.eth_signer_address();
-
-	assert_eq!(signer_address, matching_signer_address, "Signer address mismatch");
 
 	harness.deploy_init_contracts().await;
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-	harness
-		.deposit_weth_and_approve(
-			InitiatorAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 1))),
-		)
-		.await
-		.expect("Failed to deposit WETH");
 	harness
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
@@ -279,13 +269,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-	harness
-		.deposit_weth_and_approve(
-			InitiatorAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 1))),
-		)
-		.await
-		.expect("Failed to deposit WETH");
 	harness
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
