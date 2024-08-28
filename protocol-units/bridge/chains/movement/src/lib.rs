@@ -112,7 +112,7 @@ impl MovementClient {
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
-			.args(&["node", "run-local-testnet"])
+			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.spawn()?;

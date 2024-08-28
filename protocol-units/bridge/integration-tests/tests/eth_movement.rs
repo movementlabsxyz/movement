@@ -51,6 +51,8 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 		.context("Failed to fund Bob's account")?;
 	faucet_client
 	.fund(movement_client.address(), 100_000_000)
+
+
 	.await
 	.context("Failed to fund Alice's account")?;
 
@@ -84,32 +86,38 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	{ 
+		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
-	let _ = movement_client.publish_for_test();
+		let _ = movement_client.publish_for_test();
 
-	let rest_client = movement_client.rest_client();
-	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
-	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let movement_client = movement_client.signer();
+		let rest_client = movement_client.rest_client();
+		let coin_client = CoinClient::new(&rest_client);
+		let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
+		let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let movement_client = movement_client.signer();
 
 
-	let faucet_client = faucet_client.write().unwrap();
-	faucet_client
-		.fund(alice.address(), 100_000_000)
+		let faucet_client = faucet_client.write().unwrap();
+
+		faucet_client
+		.fund(movement_client.address(), 100_000_000)
 		.await
-		.context("Failed to fund Alice's account")?;
-	faucet_client
-		.create_account(bob.address())
-		.await
-		.context("Failed to fund Bob's account")?;
-	faucet_client
-	.fund(movement_client.address(), 100_000_000)
-	.await
-	.context("Failed to fund Alice's account")?;
+		.context("Failed to fund Movement Client account")?;
 
+		// Check the balance of movement_client after funding
+		let balance = coin_client
+		.get_account_balance(&movement_client.address())
+		.await
+		.context("Failed to get Movement Client's account balance")?;
+
+			// Assert that the balance is as expected
+		assert!(
+			balance >= 100_000_000,
+			"Expected Movement Client to have at least 100_000_000, but found {}",
+			balance
+		);
 	}
 	
         let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
