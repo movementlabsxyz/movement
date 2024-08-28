@@ -205,6 +205,8 @@ impl MovementClient {
                 .spawn()
                 .expect("Failed to execute command");
 
+		let private_key_hex = hex::encode(self.signer.private_key().to_bytes());
+
 		let stdin: &mut std::process::ChildStdin = process.stdin.as_mut().expect("Failed to open stdin");
 
 		let movement_dir = PathBuf::from(".movement");
@@ -215,7 +217,7 @@ impl MovementClient {
 
 		stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-		stdin.write_all(b"\n").expect("Failed to write to stdin");
+		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
 
 		drop(stdin);
 
