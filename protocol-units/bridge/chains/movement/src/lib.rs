@@ -399,7 +399,23 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		//@TODO properly return an error instead of unwrapping
+		
+		let test_noop_payload = utils::make_aptos_payload(
+			self.counterparty_address,
+			COUNTERPARTY_MODULE_NAME,
+			"noop_for_testing",
+			Vec::new(),
+			Vec::new(),
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			test_noop_payload,
+		)
+		.await
+		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
+
 		let args = vec![
 			to_bcs_bytes(&initiator.0).unwrap(),
 			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
@@ -408,13 +424,15 @@ impl BridgeContractCounterparty for MovementClient {
 			to_bcs_bytes(&recipient.0).unwrap(),
 			to_bcs_bytes(&amount.0).unwrap(),
 		];
+
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
 			COUNTERPARTY_MODULE_NAME,
-			"lock_bridge_transfer_assets",
-			self.counterparty_type_args(Call::Lock),
+			"lock_bridge_transfer",
+			Vec::new(),
 			args,
 		);
+
 		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
@@ -431,7 +449,7 @@ impl BridgeContractCounterparty for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			to_bcs_bytes(&self.signer.address()).unwrap(),
+			//to_bcs_bytes(&self.signer.address()).unwrap(),
 			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
 			to_bcs_bytes(&preimage.0).unwrap(),
 		];
@@ -439,9 +457,11 @@ impl BridgeContractCounterparty for MovementClient {
 			self.counterparty_address,
 			COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
-			self.counterparty_type_args(Call::Complete),
+			Vec::new(),
 			args,
 		);
+
+		self.signer.increment_sequence_number();
 
 		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,

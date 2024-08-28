@@ -103,7 +103,7 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 }
 
 #[tokio::test]
-async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyhow::Error> {
+async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
 
 	let _ = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)

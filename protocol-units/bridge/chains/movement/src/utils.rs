@@ -115,7 +115,18 @@ pub async fn send_and_confirm_aptos_transaction(
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
 	debug!("Transaction factory created with chain_id = {}", state.chain_id);
 
-	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
+	let latest_account_info = rest_client.get_account(signer.address()).await?;
+	let account = latest_account_info.into_inner();  
+	let latest_sequence_number = account.sequence_number;	
+
+	let raw_tx = transaction_factory
+		.payload(payload)
+		.sender(signer.address())
+		.sequence_number(latest_sequence_number)
+		.build();
+
+	let signed_tx = signer.sign_transaction(raw_tx);
+	
 	debug!("Transaction signed: {:?}", signed_tx);
 
 	let response = rest_client
@@ -126,6 +137,9 @@ pub async fn send_and_confirm_aptos_transaction(
 		anyhow::anyhow!(e.to_string())
 		})?
 		.into_inner();
+
+	debug!("Response: {:?}", response);
+	
 	Ok(response)
 }
 
@@ -146,11 +160,15 @@ pub async fn simulate_aptos_transaction(
 		.with_gas_unit_price(GAS_UNIT_PRICE)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
 
-	let raw_tx = transaction_factory
-		.payload(payload)
-		.sender(signer.address())
-		.sequence_number(signer.sequence_number())
-		.build();
+		let latest_account_info = aptos_client.rest_client.get_account(signer.address()).await?;
+		let account = latest_account_info.into_inner();  
+		let latest_sequence_number = account.sequence_number;	
+
+		let raw_tx = transaction_factory
+			.payload(payload)
+			.sender(signer.address())
+			.sequence_number(latest_sequence_number)
+			.build();
 
 	let signed_tx = SignedTransaction::new(
 		raw_tx,
