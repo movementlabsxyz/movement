@@ -100,10 +100,10 @@ module atomic_bridge::atomic_bridge_counterparty {
             bridge_transfer_ref.state
         )
     }
-
+  
     public entry fun lock_bridge_transfer(
         caller: &signer,
-        originator: vector<u8>, //eth address
+        originator: vector<u8>,
         bridge_transfer_id: vector<u8>,
         hash_lock: vector<u8>,
         time_lock: u64,
