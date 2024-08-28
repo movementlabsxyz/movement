@@ -3,8 +3,12 @@ use aptos_api::{
 	Context,
 };
 
+use movement_rest::get_finalized_block_info;
+
 use futures::prelude::*;
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use poem::{
+	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
 use tracing::info;
 
 use std::future::Future;
@@ -37,7 +41,12 @@ impl Service {
 		let cors = Cors::new()
 			.allow_methods(vec![Method::GET, Method::POST])
 			.allow_credentials(true);
-		let app = Route::new().nest("/v1", api_service).nest("/spec", ui).with(cors);
+		let app = Route::new()
+			.at("/movement/v1/get-finalized-block-info", get(get_finalized_block_info))
+			.nest("/v1", api_service)
+			.nest("/spec", ui)
+			.data(self.context.clone())
+			.with(cors);
 
 		Server::new(TcpListener::bind(self.listen_url.clone()))
 			.run(app)

@@ -37,5 +37,10 @@ godfig = { workspace = true }
 [dev-dependencies]
 tempfile = { workspace = true }
 
+[features]
+default = []
+eth = ["suzuka-config/eth", "mcr-settlement-setup/eth"]
+mock = ["suzuka-config/mock", "mcr-settlement-setup/mock"]
+
 [lints]
 workspace = true

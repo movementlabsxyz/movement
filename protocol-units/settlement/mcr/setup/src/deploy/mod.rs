@@ -158,8 +158,6 @@ impl Deploy {
 		info!("setting up MCR Ethereum client mcr_address: {mcr_address}");
 
 		if let Some(testing) = &mut config.testing {
-			testing.mcr_testing_admin_account_private_key =
-				deploy.mcr_deployment_account_private_key.clone();
 			testing.move_token_contract_address = move_token_address;
 			testing.movement_staking_contract_address = movement_staking_address;
 		}

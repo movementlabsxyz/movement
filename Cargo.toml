@@ -170,8 +170,10 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-celestia-rpc = { git = "https://github.com/eigerco/lumina" }
-celestia-types = { git = "https://github.com/eigerco/lumina" }
+#celestia-rpc = { git = "https://github.com/eigerco/lumina" }
+#celestia-types = { git = "https://github.com/eigerco/lumina", version= "0.2.x" }
+celestia-types = "0.3.0"
+celestia-rpc = "0.3.0"
 
 ## Alloy Dependencies
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [

@@ -53,7 +53,7 @@ futures = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 [features]
-default = ["eth"]
+default = []
 e2e = ["eth"]
 eth = []
 mock = []

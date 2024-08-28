@@ -8,8 +8,12 @@ use aptos_api::{
 use aptos_storage_interface::DbReaderWriter;
 
 use futures::prelude::*;
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use poem::{
+	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
 use tracing::info;
+
+use movement_rest::get_current_commitment;
 
 use std::future::Future;
 use std::sync::Arc;
@@ -74,10 +78,12 @@ impl Service {
 			.nest("/spec", ui)
 			.at("/spec.json", poem::get(spec_json))
 			.at("/spec.yaml", poem::get(spec_yaml))
+			.at("/movement/v1/current_commitment", get(get_current_commitment))
 			.at(
 				"/set_failpoint",
 				poem::get(set_failpoints::set_failpoint_poem).data(self.api_context()),
 			)
+			.data(self.api_context())
 			.with(cors);
 
 		Server::new(listener)

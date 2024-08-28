@@ -5,7 +5,6 @@ use maptos_dof_execution::{v1::Executor, DynOptFinExecutor};
 use mcr_settlement_client::McrSettlementClient;
 use mcr_settlement_manager::CommitmentEventStream;
 use mcr_settlement_manager::McrSettlementManager;
-use movement_rest::MovementRest;
 use suzuka_config::Config;
 
 use anyhow::Context;
@@ -18,7 +17,6 @@ pub struct SuzukaPartialNode<T> {
 	light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 	settlement_manager: McrSettlementManager,
 	commitment_events: Option<CommitmentEventStream>,
-	movement_rest: MovementRest,
 	config: Config,
 	da_db: DaDB,
 }
@@ -35,8 +33,6 @@ where
 			.executor
 			.background(transaction_sender, &self.config.execution_config.maptos_config)?;
 		let services = context.services();
-		let mut movement_rest = self.movement_rest;
-		movement_rest.set_context(services.opt_api_context());
 		let exec_settle_task = tasks::execute_settle::Task::new(
 			self.executor,
 			self.settlement_manager,
@@ -56,7 +52,6 @@ where
 			tokio::spawn(async move { tx_ingress_task.run().await }),
 			tokio::spawn(exec_background),
 			tokio::spawn(services.run()),
-			// tokio::spawn(async move { movement_rest.run_service().await }),
 		)?;
 		res1.and(res2).and(res3).and(res4)
 	}
@@ -91,7 +86,7 @@ impl SuzukaPartialNode<Executor> {
 		let executor = Executor::try_from_config(&config.execution_config.maptos_config)
 			.context("Failed to create the inner executor")?;
 
-		debug!("Creating the settlement client");
+		debug!("Creating the settlement client should_settle:{}", config.mcr.should_settle());
 		let settlement_client = McrSettlementClient::build_with_config(&config.mcr)
 			.await
 			.context("Failed to build MCR settlement client with config")?;
@@ -99,10 +94,6 @@ impl SuzukaPartialNode<Executor> {
 			McrSettlementManager::new(settlement_client, &config.mcr);
 		let commitment_events =
 			if config.mcr.should_settle() { Some(commitment_events) } else { None };
-
-		debug!("Creating the movement rest service");
-		let movement_rest =
-			MovementRest::try_from_env().context("Failed to create MovementRest")?;
 
 		debug!("Creating the DA DB");
 		let da_db =
@@ -113,7 +104,6 @@ impl SuzukaPartialNode<Executor> {
 			light_node_client,
 			settlement_manager,
 			commitment_events,
-			movement_rest,
 			config,
 			da_db,
 		})

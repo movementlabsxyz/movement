@@ -12,8 +12,7 @@ rust-version.workspace = true
 
 [dependencies]
 mcr-settlement-config = { workspace = true }
-mcr-settlement-client = { workspace = true }
-mcr-settlement-setup = { workspace = true }
+mcr-settlement-setup = { workspace = true, features = ["eth"]  }
 dot-movement = { workspace = true }
 commander = { workspace = true }
 

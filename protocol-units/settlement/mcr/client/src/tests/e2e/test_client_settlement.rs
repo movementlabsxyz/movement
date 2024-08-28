@@ -228,9 +228,10 @@ pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
 	let rpc_url = config.eth_rpc_connection_url();
 
 	let testing_config = config.testing.as_ref().context("Testing config not defined.")?;
+	let deploy_config = config.deploy.as_ref().context("Deploy config not defined.")?;
 	run_genesis_ceremony(
 		&config,
-		PrivateKeySigner::from_str(&testing_config.mcr_testing_admin_account_private_key)?,
+		PrivateKeySigner::from_str(&deploy_config.mcr_deployment_account_private_key)?,
 		&rpc_url,
 		Address::from_str(&testing_config.move_token_contract_address)?,
 		Address::from_str(&testing_config.movement_staking_contract_address)?,

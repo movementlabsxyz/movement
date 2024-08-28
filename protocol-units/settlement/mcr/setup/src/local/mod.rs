@@ -5,6 +5,8 @@ use mcr_settlement_config::Config;
 
 use tracing::info;
 
+pub mod one_validator_genesis_ceremonial;
+
 /// The local setup strategy for MCR settlement
 #[derive(Debug, Clone)]
 pub struct Local {}
@@ -93,22 +95,30 @@ impl Local {
 			let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 		}
 
-		let anvil_addresses =
+		let mut anvil_addresses =
 			mcr_settlement_client::eth_client::read_anvil_json_file_addresses(&*anvil_path)
 				.context("Failed to read Anvil addresses")?;
+		// Remove Anvil 0 address because it's a specific Anvil admin address.
+		anvil_addresses.remove(0);
 		if let Some(deploy) = &mut config.deploy {
 			deploy.mcr_deployment_account_private_key = anvil_addresses
-				.get(0)
-				.ok_or(anyhow!("Failed to get Anvil address"))?
+				.remove(0) // Zero Anvil address are reserved to administration.
 				.private_key
 				.clone();
 		}
 		if let Some(testing) = &mut config.testing {
+			config.settle.signer_private_key = anvil_addresses
+				.remove(0) // remove to avoid its usage in well known address.
+				.private_key
+				.clone();
 			// Remove the old one if the config was existing.
 			testing.well_known_account_private_keys.clear();
 			for anvil_address in &anvil_addresses {
 				testing.well_known_account_private_keys.push(anvil_address.private_key.clone());
 			}
+
+			//activate settlement for testing
+			config.settle.should_settle = true;
 		}
 
 		Ok((config, anvil_join_handle))

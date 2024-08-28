@@ -4,7 +4,8 @@ use tokio_stream::Stream;
 #[cfg(test)]
 pub mod tests;
 
-pub mod mock;
+#[cfg(feature = "mock")]
+mod mock;
 
 #[cfg(feature = "mock")]
 pub use mock::*;
@@ -12,7 +13,7 @@ pub use mock::*;
 pub mod eth_client;
 
 #[cfg(feature = "eth")]
-pub use eth_client::Client as McrEthSettlementClient;
+pub use eth_client::Client as McrSettlementClient;
 
 mod send_eth_transaction;
 

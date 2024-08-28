@@ -30,6 +30,10 @@ mcr-settlement-client = { workspace = true, features = ["mock"] }
 [features]
 default = ["stub"]
 stub = []
+eth = ["mcr-settlement-client/eth"]
+mock = ["mcr-settlement-client/mock"]
+
+
 
 [lints]
 workspace = true

@@ -4,22 +4,6 @@ environment:
 
 processes:
 
-  setup:
-    command: |
-      export ETH_RPC_CONNECTION_PROTOCOL=http
-      export ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0
-      export ETH_RPC_CONNECTION_PORT=8090
-      export MAYBE_RUN_LOCAL=true
-      export MAYBE_DEPLOY_MCR=true
-      suzuka-full-node-setup
-    depends_on:
-      build:
-        condition: process_completed_successfully
-    readiness_probe:
-      initial_delay_seconds: 3
-      exec:
-        command: echo "true"
-
   celestia-node-appd:
     command: |
       m1-da-light-node-celestia-appd

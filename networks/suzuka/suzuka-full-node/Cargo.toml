@@ -15,7 +15,7 @@ rust-version = { workspace = true }
 maptos-dof-execution = { workspace = true }
 m1-da-light-node-client = { workspace = true }
 m1-da-light-node-util = { workspace = true }
-mcr-settlement-client = { workspace = true, features = ["mock"] }
+mcr-settlement-client = { workspace = true }
 mcr-settlement-manager = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -38,8 +38,10 @@ bcs = { workspace = true }
 zstd = { workspace = true }
 
 [features]
-default = []
+default = ["mock"]
 logging = []
+eth = ["mcr-settlement-client/eth", "suzuka-config/eth", "mcr-settlement-manager/eth"]
+mock = ["mcr-settlement-client/mock", "suzuka-config/mock", "mcr-settlement-manager/mock"]
 
 
 [lints]
