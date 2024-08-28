@@ -14,6 +14,8 @@ pub enum BridgeContractInitiatorError {
 	ParsePreimageError,
 	#[error("Initiator address not set")]
 	InitiatorAddressNotSet,
+	#[error("Failed to convert")]
+	ConversionError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }

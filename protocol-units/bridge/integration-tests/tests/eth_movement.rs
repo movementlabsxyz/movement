@@ -206,7 +206,7 @@ async fn test_eth_client_should_successfully_call_initialize() {
 }
 
 #[tokio::test]
-async fn test_eth_client_should_successfully_call_initiate_transfer() {
+async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
@@ -244,6 +244,13 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 	harness
+		.deposit_weth_and_approve(
+			InitiatorAddress(EthAddress(signer_address)),
+			Amount(AssetType::EthAndWeth((0, 1))),
+		)
+		.await
+		.expect("Failed to deposit WETH");
+	harness
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
@@ -269,6 +276,13 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+	harness
+		.deposit_weth_and_approve(
+			InitiatorAddress(EthAddress(signer_address)),
+			Amount(AssetType::EthAndWeth((0, 1))),
+		)
+		.await
+		.expect("Failed to deposit WETH");
 	harness
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),

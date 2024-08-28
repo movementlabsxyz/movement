@@ -403,7 +403,7 @@ impl BridgeContractCounterparty for MovementClient {
 			to_bcs_bytes(&hash_lock.0).unwrap(),
 			to_bcs_bytes(&time_lock.0).unwrap(),
 			to_bcs_bytes(&recipient.0).unwrap(),
-			to_bcs_bytes(&amount.weth()).unwrap(),
+			to_bcs_bytes(&amount.0).unwrap(),
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,

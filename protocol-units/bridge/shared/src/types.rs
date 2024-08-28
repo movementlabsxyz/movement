@@ -139,8 +139,10 @@ impl From<Uint<256, 4>> for TimeLock {
 
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Amount(pub AssetType);
+/// The type of Asset being used
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub enum AssetType {
+	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
 }

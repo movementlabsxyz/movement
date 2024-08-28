@@ -141,6 +141,36 @@ impl EthClient {
 		Ok(())
 	}
 
+	pub async fn deposit_weth_and_approve(
+		&mut self,
+		caller: Address,
+		amount: U256,
+	) -> Result<(), anyhow::Error> {
+		let deposit_weth_signer = self.get_signer_address();
+		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
+		let contract = self.weth_contract().expect("WETH contract not set");
+		let call = contract.deposit().value(amount);
+		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to deposit eth to weth contract");
+
+		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract
+			.approve(self.initiator_contract_address()?, amount);
+		let WETH9::balanceOfReturn { _0: balance } = contract
+			.balanceOf(deposit_weth_signer)
+			.call()
+			.await
+			.expect("Failed to get balance");
+		let signer = self.get_signer_address();
+		println!("caller: {}", signer);
+		println!("balance: {}", balance);
+
+		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to approve");
+		Ok(())
+	}
+
 	pub async fn get_block_number(&self) -> Result<u64, anyhow::Error> {
 		self.rpc_provider
 			.get_block_number()
@@ -244,36 +274,12 @@ impl BridgeContractInitiator for EthClient {
 	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
-		_initiator_address: InitiatorAddress<Self::Address>,
+		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractInitiatorResult<()> {
-		if amount.weth() > 0 {
-			let deposit_weth_signer = self.get_signer_address();
-			println!("deposit_weth_signer: {:?}", deposit_weth_signer);
-			let contract = self.weth_contract().expect("WETH contract not set");
-			let call = contract.deposit().value(U256::from(amount.weth()));
-			send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
-				.await
-				.expect("Failed to deposit eth to weth contract");
-
-			let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract
-				.approve(self.initiator_contract_address()?, U256::from(amount.weth()));
-			let WETH9::balanceOfReturn { _0: balance } = contract
-				.balanceOf(deposit_weth_signer)
-				.call()
-				.await
-				.expect("Failed to get balance");
-			let signer = self.get_signer_address();
-			println!("caller: {}", signer);
-			println!("balance: {}", balance);
-
-			send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
-				.await
-				.expect("Failed to approve");
-		}
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
 		let recipient_bytes: [u8; 32] =
@@ -285,7 +291,7 @@ impl BridgeContractInitiator for EthClient {
 				FixedBytes(hash_lock.0),
 				U256::from(time_lock.0),
 			)
-			.value(U256::from(amount.eth())).from(_initiator_address.0.0);
+			.value(U256::from(amount.eth())).from(initiator_address.0.0);
 		let signer = self.get_signer_address();
 		println!("signer: {:?}", signer);
 		let _ = send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
@@ -395,7 +401,9 @@ impl BridgeContractCounterparty for EthClient {
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 			recipient.0 .0,
-			U256::try_from(amount.0).unwrap(),
+			U256::try_from(amount.0).map_err(|e| {   
+				BridgeContractInitiatorError::ConversionError  
+			})  
 		);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
