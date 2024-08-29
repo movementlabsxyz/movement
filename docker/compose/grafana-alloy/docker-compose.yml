@@ -11,7 +11,7 @@ services:
       - "12345:12345"
     volumes:
       - ${GRAFANA_ALLOY_PATH}/config.alloy:/etc/alloy/config.alloy
-      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
     env_file: "./.env"
     healthcheck:
       test: [ "CMD-SHELL", "nc -zv 0.0.0.0 12345" ]

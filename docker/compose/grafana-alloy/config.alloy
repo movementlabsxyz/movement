@@ -51,8 +51,20 @@ loki.write "grafana_cloud_loki" {
 			username = env("LOKI_USER")
 			password = env("LOKI_PASSWORD")
 		}
+		tenant_id = "mvmt"
 	}
 }
+
+// loki.write "movement_hosted_loki" {
+// 	endpoint {
+// 		url = env("LOKI_URL")
+// 		basic_auth {
+// 			username = env("LOKI_USER")
+// 			password = env("LOKI_PASSWORD")
+// 		}
+// 		tenant_id = "mvmt"
+// 	}
+// }
 
 otelcol.auth.basic "grafana_cloud_tempo" {
 	username = env("TEMPO_USER")
