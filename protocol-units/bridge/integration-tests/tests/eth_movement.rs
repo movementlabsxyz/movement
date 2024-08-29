@@ -38,36 +38,22 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+	let movement_client = movement_client.signer();
 
-	println!("\n=== Addresses ===");
-	println!("Alice: {}", alice.address().to_hex_literal());
-	println!("Bob: {}", bob.address().to_hex_literal());
 	let faucet_client = faucet_client.write().unwrap();
 	faucet_client
 		.fund(alice.address(), 100_000_000)
-		.await
-		.context("Failed to fund Alice's account")?;
+		.await?;
 	faucet_client
 		.create_account(bob.address())
-		.await
-		.context("Failed to fund Bob's account")?;
+		.await?;
+	faucet_client
+	.fund(movement_client.address(), 100_000_000)
 
-	println!("\n=== Initial Balances ===");
-	println!(
-		"Alice: {:?}",
-		coin_client
-			.get_account_balance(&alice.address())
-			.await
-			.context("Failed to get Alice's account balance")?
-	);
-	println!(
-		"Bob: {:?}",
-		coin_client
-			.get_account_balance(&bob.address())
-			.await
-			.context("Failed to get Bob's account balance")?
-	);
-	child.kill().await.context("Failed to kill the child process")?;
+
+	.await?;
+
+	child.kill().await?;
 
 	Ok(())
 }
@@ -75,7 +61,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::ERROR)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -84,23 +70,49 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 	let _ = movement_client.publish_for_test();
 	}
 
-	child.kill().await.context("Failed to kill the child process")?;
+	child.kill().await?;
 	
 	Ok(())
 }
 
 #[tokio::test]
-#[ignore]
-async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyhow::Error> {
+async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
 
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::ERROR)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	{ 
+		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
-	let _ = movement_client.publish_for_test();
+		let _ = movement_client.publish_for_test();
+
+		let rest_client = movement_client.rest_client();
+		let coin_client = CoinClient::new(&rest_client);
+		let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
+		let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let movement_client = movement_client.signer();
+
+
+		let faucet_client = faucet_client.write().unwrap();
+
+		faucet_client
+		.fund(movement_client.address(), 100_000_000)
+		.await?;
+
+		// Check the balance of movement_client after funding
+		let balance = coin_client
+		.get_account_balance(&movement_client.address())
+		.await?;
+
+			// Assert that the balance is as expected
+		assert!(
+			balance >= 100_000_000,
+			"Expected Movement Client to have at least 100_000_000, but found {}",
+			balance
+		);
 	}
 	
         let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
@@ -135,7 +147,7 @@ async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyh
 	.await
 	.expect("Failed to complete bridge transfer");
 
-	child.kill().await.context("Failed to kill the child process")?;
+	child.kill().await?;
 	//let _ = child.wait().await.expect("Failed to wait on process termination");
 	Ok(())
 }
@@ -173,7 +185,6 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 	];
 
 	let provider = scaffold.eth_client.unwrap().rpc_provider().clone();
-	println!("provider: {:?}", provider);
 	let accounts = provider.get_accounts().await.expect("Failed to get accounts");
 	assert_eq!(accounts.len(), expected_accounts.len());
 
