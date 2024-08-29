@@ -73,7 +73,7 @@ rm -rf  ~/.movement/* ; \
 
 1password -> Engineering (vault) -> Grafana Cloud Shared account
 
-Once you login in grafana cloud go to Explore -> Chose grafanacloud-mvmt-logs (data source)
+Once you login in grafana cloud go to Explore -> Chose `loki-mvmt-self-hosted` (data source)
 -> Label Browser. There should be a label `MOVE_DEV`. If everything is setup working,
 you should see also a value for that label  `MOVE_DEV="/Users/YOUR_MAC_USER`,
 for example `MOVE_DEV="/Users/`radupopa`
