@@ -3,8 +3,8 @@ module atomic_bridge::atomic_bridge_initiator {
     use aptos_framework::account::{Self, Account};
     use aptos_framework::primary_fungible_store;
     use aptos_framework::dispatchable_fungible_asset;
-    use aptos_framework::block;
     use aptos_framework::genesis;
+    use aptos_framework::timestamp;
     use aptos_std::aptos_hash;
     use aptos_std::smart_table::{Self, SmartTable};
     use std::signer;
@@ -24,6 +24,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const ENOT_INITIALIZED: u64 = 4;
     const ETIMELOCK_EXPIRED: u64 = 5;
     const ENOT_EXPIRED: u64 = 6;
+    const EINCORRECT_SIGNER: u64 = 7;
 
     struct BridgeTransfer has key, store, drop, copy {
         originator: address,
@@ -137,7 +138,7 @@ module atomic_bridge::atomic_bridge_initiator {
             originator: addr,
             recipient: recipient,
             hash_lock: hash_lock,
-            time_lock: block::get_current_block_height() + time_lock,
+            time_lock: timestamp::now_seconds() + time_lock,
             state: INITIALIZED,
         };
 
@@ -149,7 +150,7 @@ module atomic_bridge::atomic_bridge_initiator {
             recipient: recipient,
             amount: amount,
             hash_lock: hash_lock,
-            time_lock: block::get_current_block_height() + time_lock,
+            time_lock: timestamp::now_seconds() + time_lock,
         });
 
         bridge_transfer_id
@@ -167,7 +168,7 @@ module atomic_bridge::atomic_bridge_initiator {
 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
         assert!(aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
-        assert!(block::get_current_block_height() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
+        assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
 
         moveth::burn(atomic_bridge, @atomic_bridge, bridge_transfer.amount);
 
@@ -185,12 +186,13 @@ module atomic_bridge::atomic_bridge_initiator {
         bridge_transfer_id: vector<u8>,
         atomic_bridge: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
+        assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
         let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
-        assert!(block::get_current_block_height() > bridge_transfer.time_lock, ENOT_EXPIRED);
+        assert!(timestamp::now_seconds() > bridge_transfer.time_lock, ENOT_EXPIRED);
 
         let initiator_addr = bridge_transfer.originator;
         let bridge_addr = signer::address_of(atomic_bridge);
@@ -206,6 +208,8 @@ module atomic_bridge::atomic_bridge_initiator {
         event::emit_event(&mut store.bridge_transfer_refunded_events, BridgeTransferRefundedEvent {
             bridge_transfer_id: copy bridge_transfer_id,
         });
+
+        aptos_std::smart_table::remove(&mut store.transfers, bridge_transfer_id);
     }
 
     #[test_only]
@@ -216,8 +220,6 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) {
         genesis::setup();
-        let current_block_height = block::get_current_block_height();
-        debug::print(&current_block_height);
         moveth::init_for_test(creator);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
@@ -280,7 +282,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.originator == addr, 201);
         assert!(transfer.recipient == b"recipient_address", 202);
         assert!(transfer.hash_lock == b"hash_lock_value", 203);
-        assert!(transfer.time_lock == block::get_current_block_height() + time_lock, 204);
+        assert!(transfer.time_lock == timestamp::now_seconds() + time_lock, 204);
         assert!(transfer.state == INITIALIZED, 205);
     }
 
@@ -292,6 +294,7 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_framework: &signer,
         atomic_bridge: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
         moveth::init_for_test(creator);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
@@ -321,7 +324,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.originator == addr, 201);
         assert!(transfer.recipient == b"recipient_address", 202);
         assert!(transfer.hash_lock == b"hash_lock_value", 203);
-        assert!(transfer.time_lock == block::get_current_block_height() + time_lock, 204);
+        assert!(transfer.time_lock == timestamp::now_seconds() + time_lock, 204);
         assert!(transfer.state == INITIALIZED, 205);
     }
 
@@ -404,9 +407,8 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == COMPLETED, 300);
     }
 
-    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @origin_addr, atomic_bridge = @atomic_bridge)]
     // see tracking issue https://github.com/movementlabsxyz/movement/issues/272
-    #[expected_failure ( abort_code = ENOT_EXPIRED )]
     public fun test_refund_bridge_transfer(
         sender: &signer,
         atomic_bridge: &signer,
@@ -414,7 +416,6 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_framework: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
         init_test(sender, creator, aptos_framework, atomic_bridge);
-
         let recipient = b"recipient_address";
         let hash_lock = b"hash_lock_value";
         let time_lock = 1;
@@ -432,7 +433,7 @@ module atomic_bridge::atomic_bridge_initiator {
             amount
         );
 
-        // Todo: Simulate time passing
+        aptos_framework::timestamp::fast_forward_seconds(time_lock + 2);
 
         refund_bridge_transfer(
             sender,
@@ -448,7 +449,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(!aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
     }
 
-    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @origin_addr, atomic_bridge = @atomic_bridge)]
     #[expected_failure ( abort_code = ENOT_INITIALIZED )]
     public fun test_refund_completed_transfer(
         sender: &signer,
