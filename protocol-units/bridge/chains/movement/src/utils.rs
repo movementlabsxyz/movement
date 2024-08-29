@@ -22,6 +22,7 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
+use bridge_shared::bridge_contracts::BridgeContractCounterpartyError;
 use derive_new::new;
 use tracing::log::{info, debug};
 use serde::{Deserialize, Serialize};
@@ -144,6 +145,15 @@ pub async fn send_and_confirm_aptos_transaction(
 	}
 	
 	Ok(response)
+}
+
+pub fn serialize_u64(value: &u64) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
+	bcs::to_bytes(&value.to_le_bytes())
+	    .map_err(|_| BridgeContractCounterpartyError::SerializationError)
+}
+    
+pub fn serialize_vec(value: &[u8]) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
+	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
 }
  
 // This is not used for now, but we may need to use it in later for estimating gas.

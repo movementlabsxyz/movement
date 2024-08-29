@@ -456,55 +456,14 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		
-		let test_noop_payload = utils::make_aptos_payload(
-			self.counterparty_address,
-			COUNTERPARTY_MODULE_NAME,
-			"noop_for_testing",
-			Vec::new(),
-			Vec::new(),
-		);
-
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			test_noop_payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
-
-		let test_u64_args = vec![
-			bcs::to_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&hash_lock.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&recipient.0.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&amount.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-		];
-
-		let test_u64_payload = utils::make_aptos_payload(
-			self.counterparty_address,
-			COUNTERPARTY_MODULE_NAME,
-			"pass_data_for_testing",
-			Vec::new(),
-			test_u64_args,
-		);
-
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			test_u64_payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 
 		let args = vec![
-			bcs::to_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&hash_lock.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&recipient.0.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&amount.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			utils::serialize_vec(&initiator.0)?,
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec(&hash_lock.0[..])?,
+			utils::serialize_u64(&time_lock.0)?,
+			utils::serialize_vec(&recipient.0.0.to_vec())?,
+			utils::serialize_u64(&amount.0)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -530,10 +489,9 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
-		let args = vec![
-			//to_bcs_bytes(&self.signer.address()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&preimage.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+		let args2 = vec![
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec(&preimage.0)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -541,7 +499,7 @@ impl BridgeContractCounterparty for MovementClient {
 			COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
-			args,
+			args2,
 		);
 
 		self.signer.increment_sequence_number();
@@ -561,8 +519,8 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			to_bcs_bytes(&self.signer.address()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			to_bcs_bytes(&bridge_transfer_id.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			utils::serialize_vec(&self.signer.address().to_vec())?,
+			utils::serialize_vec(&bridge_transfer_id.0)?,
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
@@ -601,9 +559,3 @@ impl MovementClient {
 	}
 }
 
-fn to_bcs_bytes<T>(value: &T) -> Result<Vec<u8>, anyhow::Error>
-where
-	T: Serialize,
-{
-	Ok(bcs::to_bytes(value)?)
-}
