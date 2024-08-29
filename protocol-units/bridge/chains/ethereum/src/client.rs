@@ -147,7 +147,6 @@ impl EthClient {
 		amount: U256,
 	) -> Result<(), anyhow::Error> {
 		let deposit_weth_signer = self.get_signer_address();
-		println!("deposit_weth_signer: {:?}", deposit_weth_signer);
 		let contract = self.weth_contract().expect("WETH contract not set");
 		let call = contract.deposit().value(amount);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
@@ -162,8 +161,6 @@ impl EthClient {
 			.await
 			.expect("Failed to get balance");
 		let signer = self.get_signer_address();
-		println!("caller: {}", signer);
-		println!("balance: {}", balance);
 
 		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
@@ -293,7 +290,6 @@ impl BridgeContractInitiator for EthClient {
 			)
 			.value(U256::from(amount.eth())).from(initiator_address.0.0);
 		let signer = self.get_signer_address();
-		println!("signer: {:?}", signer);
 		let _ = send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.map_err(|e| {
@@ -402,8 +398,8 @@ impl BridgeContractCounterparty for EthClient {
 			U256::from(time_lock.0),
 			recipient.0 .0,
 			U256::try_from(amount.0).map_err(|e| {   
-				BridgeContractInitiatorError::ConversionError  
-			}).expect("Failed to convert amount to U256"),
+				BridgeContractCounterpartyError::ConversionError  
+			})?,
 		);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await

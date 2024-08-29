@@ -38,6 +38,8 @@ pub enum BridgeContractCounterpartyError {
 	CounterpartyAddressNotSet,
 	#[error("Error getting the signer")]
 	SignerError,
+	#[error("Failed to convert")]
+	ConversionError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }

@@ -179,7 +179,7 @@ impl AddAssign for AssetType {
 				*a += c;
 				*b += d;
 			}
-			_ => panic!("Cannot add different AssetTypes"),
+			_ => (),
 		}
 	}
 }
