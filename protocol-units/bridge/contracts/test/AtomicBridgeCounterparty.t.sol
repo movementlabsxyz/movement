@@ -56,7 +56,7 @@ contract AtomicBridgeCounterpartyTest is Test {
 
         // Set the counterparty contract in the AtomicBridgeInitiator contract
         vm.startPrank(deployer);
-        atomicBridgeInitiator.setCounterpartyContract(address(atomicBridgeCounterparty));
+        atomicBridgeInitiator.setCounterpartyAddress(address(atomicBridgeCounterparty));
         vm.stopPrank();
     }
 
