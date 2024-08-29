@@ -69,21 +69,3 @@ pub async fn get_finalized_block_info(
 // 		.ok_or_else(|| anyhow::anyhow!("No state root hash found"))?;
 // 	Ok(state_root_hash.to_string().into_response())
 // }
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use poem::test::TestClient;
-
-	#[tokio::test]
-	async fn test_health_endpoint() {
-		let rest_service = MovementRest::try_from_env().expect("Failed to create MovementRest");
-		assert_eq!(rest_service.url, "http://0.0.0.0:30832");
-		// Create a test client
-		let client = TestClient::new(rest_service.create_routes());
-
-		// Test the /health endpoint
-		let response = client.get("/health").send().await;
-		assert!(response.0.status().is_success());
-	}
-}

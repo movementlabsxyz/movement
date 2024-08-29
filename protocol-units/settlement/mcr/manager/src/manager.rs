@@ -146,7 +146,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use mcr_settlement_client::mock::McrSettlementClient;
+	use mcr_settlement_client::McrSettlementClient;
 	use movement_types::{BlockCommitment, Commitment};
 
 	#[tokio::test]
