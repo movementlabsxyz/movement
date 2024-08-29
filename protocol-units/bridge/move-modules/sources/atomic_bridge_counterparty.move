@@ -260,125 +260,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.originator == originator, 4);
     }
 
-    #[test(aptos_framework = @0x1, creator = @origin_addr, resource_addr = @resource_addr, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
-    #[expected_failure]
-    fun test_abort_transfer_assets_malicious(
-        client: &signer,
-        resource_addr: signer,
-        aptos_framework: &signer,
-        master_minter: &signer, 
-        creator: &signer,
-        moveth: &signer,
-    ) acquires BridgeTransferStore, BridgeConfig {
-        set_up_test(creator, &resource_addr);
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        moveth::init_for_test(moveth);
-        let receiver_address = @0xcafe1;
-        let initiator = b"0x123"; //In real world this would be an ethereum address
-        let recipient = @0xface; 
-        let asset = moveth::metadata();
-
-        let bridge_transfer_id = b"transfer1";
-        let pre_image = b"secret";
-        let hash_lock = keccak256(pre_image); // Compute the hash lock using keccak256
-        let time_lock = 3600;
-        let amount = 100;
-
-        let result = lock_bridge_transfer(
-            creator,
-            initiator,
-            bridge_transfer_id,
-            hash_lock,
-            time_lock,
-            recipient,
-            amount
-        );
-
-        assert!(result, 1);
-
-        // Verify that the transfer is stored in pending_transfers
-        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
-        let transfer_details: &BridgeTransfer = smart_table::borrow(&bridge_store.transfers, bridge_transfer_id);
-        assert!(transfer_details.recipient == recipient, 2);
-        assert!(transfer_details.originator == initiator, 3);
-        assert!(transfer_details.amount == amount, 5);
-        assert!(transfer_details.hash_lock == hash_lock, 5);
-
-       let pre_image = b"secret"; 
-       let msg:vector<u8> = b"secret";
-        debug::print(&utf8(msg));
-
-       // Client must be a moveth minter, otherwise this will fail
-       abort_bridge_transfer(
-           client,
-           bridge_transfer_id,
-       );
-        debug::print(&utf8(msg));
-    }
-
-    #[test(aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @minter, master_minter = @master_minter)]
-    #[expected_failure]
-    fun test_abort_transfer_assets_minter(
-        client: &signer,
-        aptos_framework: &signer,
-        master_minter: &signer, 
-        creator: &signer,
-        moveth: &signer,
-    ) acquires BridgeTransferStore, BridgeConfig {
-        timestamp::set_time_has_started_for_testing(aptos_framework);
-        moveth::init_for_test(moveth);
-        let receiver_address = @0xcafe1;
-        let initiator = b"0x123"; //In real world this would be an ethereum address
-        let recipient = @0xface; 
-        let asset = moveth::metadata();
-
-        init_module(creator);
-
-        let bridge_transfer_id = b"transfer1";
-        let pre_image = b"secret";
-        let hash_lock = keccak256(pre_image); // Compute the hash lock using keccak256
-        let time_lock = 3600;
-        let amount = 100;
-
-        let result = lock_bridge_transfer(
-            creator,
-            initiator,
-            bridge_transfer_id,
-            hash_lock,
-            time_lock,
-            recipient,
-            amount
-        );
-
-        assert!(result, 1);
-
-        // Verify that the transfer is stored in pending_transfers
-        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
-        let transfer_details: &BridgeTransfer = smart_table::borrow(&bridge_store.transfers, bridge_transfer_id);
-        assert!(transfer_details.recipient == recipient, 2);
-        assert!(transfer_details.originator == initiator, 3);
-        assert!(transfer_details.amount == amount, 5);
-        assert!(transfer_details.hash_lock == hash_lock, 5);
-
-       let pre_image = b"secret"; 
-       let msg:vector<u8> = b"secret";
-        debug::print(&utf8(msg));
-
-        abort_bridge_transfer(
-            creator,
-            bridge_transfer_id
-        );
-        debug::print(&utf8(msg));
-
-        // Verify that the transfer is stored in completed_transfers
-        let bridge_store = borrow_global<BridgeTransferStore>(signer::address_of(creator));
-        let transfer_details: &BridgeTransfer = smart_table::borrow(&bridge_store.transfers, bridge_transfer_id);
-        assert!(transfer_details.recipient == recipient, 1);
-        assert!(transfer_details.amount == amount, 2);
-        assert!(transfer_details.hash_lock == hash_lock, 3);
-        assert!(transfer_details.originator == initiator, 4);
-    }
-
     #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
     fun test_get_bridge_transfer_details_from_id(
         origin_account: &signer,
@@ -405,6 +286,46 @@ module atomic_bridge::atomic_bridge_counterparty {
         let amount = 100;
         lock_bridge_transfer(
             origin_account,
+            originator,
+            bridge_transfer_id,
+            hash_lock,
+            time_lock,
+            recipient,
+            amount
+        );
+        let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
+        assert!(transfer_recipient == recipient, 2);
+        assert!(transfer_originator == originator, 3);
+    }
+
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter, malicious=@0xface)]
+    #[expected_failure (abort_code = EINCORRECT_SIGNER)]
+    fun test_malicious_lock(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+        malicious: &signer,
+    ) acquires BridgeTransferStore, BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+        let receiver_address = @0xdada;
+        let originator = b"0x123"; //In real world this would be an ethereum address
+        let recipient = @0xface; 
+        let asset = moveth::metadata();
+        
+        let bridge_transfer_id = b"transfer1";
+        let pre_image = b"secret";
+        let hash_lock = keccak256(pre_image); 
+        let time_lock = 3600;
+        let amount = 100;
+        lock_bridge_transfer(
+            malicious,
             originator,
             bridge_transfer_id,
             hash_lock,
