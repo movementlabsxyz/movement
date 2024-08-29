@@ -99,19 +99,22 @@ pub async fn send_and_confirm_aptos_transaction(
 	rest_client: &RestClient,
 	signer: &LocalAccount,
 	payload: TransactionPayload,
-) -> Result<AptosTransaction> {
+) -> Result<AptosTransaction, String> {
 	info!("Starting send_aptos_transaction");
 	let state = rest_client
 		.get_ledger_information()
 		.await
-		.context("Failed in getting chain id")?
+		.map_err(|e| format!("Failed in getting chain id: {}", e))?
 		.into_inner();
 	info!("Ledger information retrieved: chain_id = {}", state.chain_id);
 
 	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
 		.with_gas_unit_price(100)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
-	let latest_account_info = rest_client.get_account(signer.address()).await?;
+	let latest_account_info = rest_client
+		.get_account(signer.address())
+		.await
+		.map_err(|e| format!("Failed to get account information: {}", e))?;
 	let account = latest_account_info.into_inner();  
 	let latest_sequence_number = account.sequence_number;	
 
@@ -126,9 +129,7 @@ pub async fn send_and_confirm_aptos_transaction(
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
-		.map_err(|e| {
-		anyhow::anyhow!(e.to_string())
-		})?
+		.map_err(|e| e.to_string())? // Convert the error to a String directly
 		.into_inner();
 
 	match &response {
@@ -139,7 +140,7 @@ pub async fn send_and_confirm_aptos_transaction(
 			user_txn.info.vm_status
 			);
 		},
-		_ => panic!("Expected a UserTransaction, but got a different transaction type."),
+		_ => return Err("Expected a UserTransaction, but got a different transaction type.".to_string()),
 	}
 	
 	Ok(response)

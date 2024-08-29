@@ -87,7 +87,7 @@ pub struct MovementClient {
 impl MovementClient {
 	pub async fn new(_config: Config) -> Result<Self, anyhow::Error> {
 		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
+		let node_connection_url = Url::from_str(node_connection_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 
 		let rest_client = Client::new(node_connection_url.clone());
 
@@ -170,11 +170,11 @@ impl MovementClient {
 		println!("Setup complete message received.");
 
 		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str()).unwrap();
+		let node_connection_url = Url::from_str(node_connection_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let faucet_url = "http://127.0.0.1:8081".to_string();
-		let faucet_url = Url::from_str(faucet_url.as_str()).unwrap();
+		let faucet_url = Url::from_str(faucet_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
 			faucet_url.clone(),
 			node_connection_url.clone(),
@@ -474,12 +474,12 @@ impl BridgeContractCounterparty for MovementClient {
 		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 
 		let test_u64_args = vec![
-			bcs::to_bytes(&initiator.0).unwrap(),
-			bcs::to_bytes(&bridge_transfer_id.0[..]).unwrap(),
-			bcs::to_bytes(&hash_lock.0[..]).unwrap(),
-			bcs::to_bytes(&time_lock.0).unwrap(),
-			bcs::to_bytes(&recipient.0.0).unwrap(),
-			bcs::to_bytes(&amount.0).unwrap(),
+			bcs::to_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&hash_lock.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&recipient.0.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&amount.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
 		];
 
 		let test_u64_payload = utils::make_aptos_payload(
@@ -499,12 +499,12 @@ impl BridgeContractCounterparty for MovementClient {
 		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
 
 		let args = vec![
-			bcs::to_bytes(&initiator.0).unwrap(),
-			bcs::to_bytes(&bridge_transfer_id.0[..].to_vec()).unwrap(),
-			bcs::to_bytes(&hash_lock.0[..]).unwrap(),
-			bcs::to_bytes(&time_lock.0).unwrap(),
-			bcs::to_bytes(&recipient.0.0).unwrap(),
-			bcs::to_bytes(&amount.0).unwrap(),
+			bcs::to_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&hash_lock.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&recipient.0.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&amount.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -531,9 +531,9 @@ impl BridgeContractCounterparty for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			//to_bcs_bytes(&self.signer.address()).unwrap(),
-			bcs::to_bytes(&bridge_transfer_id.0[..]).unwrap(),
-			bcs::to_bytes(&preimage.0).unwrap(),
+			//to_bcs_bytes(&self.signer.address()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&preimage.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -561,8 +561,8 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			to_bcs_bytes(&self.signer.address()).unwrap(),
-			to_bcs_bytes(&bridge_transfer_id.0).unwrap(),
+			to_bcs_bytes(&self.signer.address()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			to_bcs_bytes(&bridge_transfer_id.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,

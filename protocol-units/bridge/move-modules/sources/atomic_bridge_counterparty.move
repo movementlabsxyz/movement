@@ -157,23 +157,6 @@ module atomic_bridge::atomic_bridge_counterparty {
             },
         );
     }
-
-    public entry fun noop_for_testing(_signer: &signer) {
-         
-    }
-
-    public entry fun pass_data_for_testing(
-        _signer: &signer,
-        originator: vector<u8>,
-        bridge_transfer_id: vector<u8>,
-        hash_lock: vector<u8>,
-        time_lock: u64,
-        recipient: address,
-        amount: u64,
-
-    ) {
-         
-    }
     
     public fun abort_bridge_transfer(
         account: &signer,
