@@ -1,5 +1,6 @@
 use alloy::{
-	primitives::Address,
+	node_bindings::Anvil,
+	primitives::{Address, U256},
 	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
@@ -8,27 +9,28 @@ use alloy::{
 };
 use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
-use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
+use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, WETH9, EthAddress};
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
+use movement_bridge::MovementClient;
+use rand::SeedableRng;
+use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
+use aptos_language_e2e_tests::{
+	account::Account, common_transactions::peer_to_peer_txn, executor::FakeExecutor,
+};
+use aptos_logger::Logger;
+use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_types::{
 	account_config::{DepositEvent, WithdrawEvent},
 	transaction::{ExecutionStatus, SignedTransaction, TransactionOutput, TransactionPayload, TransactionStatus},
 };
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
-	types::{AlloyProvider, AtomicBridgeInitiator, EthAddress},
 	
 };
-use movement_bridge::{Config as MovementConfig, MovementClient};
-use rand::SeedableRng;
+use movement_bridge::{Config as MovementConfig};
 use std::sync::{Arc, RwLock};
 
-alloy::sol!(
-	#[allow(missing_docs)]
-	#[sol(rpc)]
-	WETH9,
-	"../chains/ethereum/abis/WETH9.json"
-);
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
 	pub movement_client: Option<MovementClient>,
@@ -80,17 +82,20 @@ impl TestHarness {
 	pub fn eth_client_mut(&mut self) -> Result<&mut EthClient> {
 		self.eth_client.as_mut().ok_or(anyhow::Error::msg("EthClient not initialized"))
 	}
-
+	
 	pub fn set_eth_signer(&mut self, signer: SecretKey<Secp256k1>) -> Address {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		let wallet: &mut EthereumWallet = eth_client.rpc_provider_mut().wallet_mut();
+		let clone_signer = signer.clone();
 		wallet.register_default_signer(LocalSigner::from(signer));
-		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
+		eth_client.set_signer_address(clone_signer);
+		eth_client.get_signer_address()
 	}
 
 	pub fn eth_signer_address(&self) -> Address {
 		let eth_client = self.eth_client().expect("EthClient not initialized");
 		let wallet: &EthereumWallet = eth_client.rpc_provider().wallet();
+		let signer = eth_client.get_signer_address();
 		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
 	}
 
@@ -104,7 +109,7 @@ impl TestHarness {
 	}
 
 	pub async fn deploy_initiator_contract(&mut self) -> Address {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		let eth_client: &mut EthClient = self.eth_client_mut().expect("EthClient not initialized");
 		let contract = AtomicBridgeInitiator::deploy(eth_client.rpc_provider())
 			.await
 			.expect("Failed to deploy AtomicBridgeInitiator");
@@ -115,7 +120,8 @@ impl TestHarness {
 	pub async fn deploy_weth_contract(&mut self) -> Address {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		let weth = WETH9::deploy(eth_client.rpc_provider()).await.expect("Failed to deploy WETH9");
-		weth.address().to_owned()
+		eth_client.set_weth_contract(weth.with_cloned_provider());
+		eth_client.weth_contract_address().expect("WETH contract not set")
 	}
 
 	pub async fn deploy_init_contracts(&mut self) {
@@ -129,6 +135,32 @@ impl TestHarness {
 			)
 			.await
 			.expect("Failed to initialize contract");
+	}
+
+	pub async fn initiate_bridge_transfer(&mut self,
+		initiator_address: InitiatorAddress<EthAddress>,
+		recipient_address: RecipientAddress<Vec<u8>>,
+		hash_lock: HashLock<[u8; 32]>,
+		time_lock: TimeLock,
+		amount: Amount // the amount
+	) -> BridgeContractInitiatorResult<()> {
+		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		let signer = eth_client.get_signer_address();
+		eth_client.initiate_bridge_transfer(
+			initiator_address,
+			recipient_address,
+			hash_lock,
+			time_lock,
+			amount,
+		).await
+	}
+
+	pub async fn deposit_weth_and_approve(&mut self,
+		initiator_address: InitiatorAddress<EthAddress>,
+		amount: Amount // the amount
+	) -> BridgeContractInitiatorResult<()> {
+		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+		Ok(eth_client.deposit_weth_and_approve(initiator_address.0.0, U256::from(amount.weth())).await.expect("Failed to deposit WETH"))
 	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {

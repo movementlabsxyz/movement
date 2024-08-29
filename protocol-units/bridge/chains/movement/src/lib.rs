@@ -31,6 +31,7 @@ use tokio::{
 
 use url::Url;
 
+mod types;
 pub mod utils;
 
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
@@ -463,7 +464,7 @@ impl BridgeContractCounterparty for MovementClient {
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_u64(&time_lock.0)?,
 			utils::serialize_vec(&recipient.0.0.to_vec())?,
-			utils::serialize_u64(&amount.0)?,
+			utils::serialize_u64(&amount.moveth())?,
 		];
 
 		let payload = utils::make_aptos_payload(

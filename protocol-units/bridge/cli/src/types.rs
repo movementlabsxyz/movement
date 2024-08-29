@@ -6,9 +6,10 @@ impl From<EthSharedArgs> for Config {
 		Self {
 			rpc_url: args.eth_rpc_url,
 			ws_url: args.eth_ws_url,
-			signer_private_key: args.eth_signer_private_key,
+			signer_private_key: args.eth_private_key,
 			initiator_contract: Some(args.eth_initiator_contract.0),
 			counterparty_contract: Some(args.eth_counterparty_contract.0),
+			weth_contract: Some(args.eth_weth_contract.0),
 			gas_limit: args.eth_gas_limit,
 		}
 	}

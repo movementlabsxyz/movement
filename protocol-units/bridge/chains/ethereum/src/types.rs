@@ -36,12 +36,18 @@ alloy::sol!(
 	"abis/AtomicBridgeCounterparty.json"
 );
 
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	WETH9,
+	"abis/WETH9.json"
+);
+
 pub type EthHash = [u8; 32];
 
-pub type InitiatorContract =
-	AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract =
-	AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
+pub type InitiatorContract = AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
+pub type CounterpartyContract = AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
+pub type WETH9Contract = WETH9::WETH9Instance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
 	JoinFill<
