@@ -403,7 +403,7 @@ impl BridgeContractCounterparty for EthClient {
 			recipient.0 .0,
 			U256::try_from(amount.0).map_err(|e| {   
 				BridgeContractInitiatorError::ConversionError  
-			})  
+			}).expect("Failed to convert amount to U256"),
 		);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
