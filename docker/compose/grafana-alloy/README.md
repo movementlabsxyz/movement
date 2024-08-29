@@ -2,7 +2,7 @@
 1. Create env vars file, with values. Run following commands as your regular user.
 
 ```bash
-  GIT_ROOT=$(git rev-parse --show-toplevel)
+GIT_ROOT=$(git rev-parse --show-toplevel)
 cd "${GIT_ROOT}"/docker/compose/grafana-alloy
 echo "GRAFANA_ALLOY_PATH=$(pwd)" > .env
 echo "MOVE_DEV=${HOME}" >> .env
