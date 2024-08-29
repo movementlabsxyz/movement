@@ -2,9 +2,9 @@ use alloy::primitives::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
-use std::{fmt::Debug, hash::Hash};
-use std::ops::AddAssign;
 use std::convert::TryFrom;
+use std::ops::AddAssign;
+use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
@@ -142,6 +142,8 @@ pub struct Amount(pub AssetType);
 /// The type of Asset being used
 #[derive(Clone, Debug, PartialEq, Eq, Copy)]
 pub enum AssetType {
+	Eth(u64),
+	Weth(u64),
 	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
@@ -149,26 +151,24 @@ pub enum AssetType {
 
 #[derive(Error, Debug)]
 pub enum ConversionError {
-    #[error("Invalid conversion from AssetType to Uint")]
-    InvalidConversion,
+	#[error("Invalid conversion from AssetType to Uint")]
+	InvalidConversion,
 }
 
 impl TryFrom<AssetType> for Uint<256, 4> {
-    type Error = ConversionError;
+	type Error = ConversionError;
 
-    fn try_from(value: AssetType) -> Result<Self, Self::Error> {
-        match value {
-            AssetType::EthAndWeth((eth_value, weth_value)) => {
-                // Example logic: combine the values or whatever makes sense in your context
-                let combined_value = eth_value as u128 + weth_value as u128;
-                Ok(Uint::from(combined_value))
-            }
-            AssetType::Moveth(value) => {
-                Ok(Uint::from(value as u128))
-            }
-            _ => Err(ConversionError::InvalidConversion), // Add more cases as needed
-        }
-    }
+	fn try_from(value: AssetType) -> Result<Self, Self::Error> {
+		match value {
+			AssetType::EthAndWeth((eth_value, weth_value)) => {
+				// Example logic: combine the values or whatever makes sense in your context
+				let combined_value = eth_value as u128 + weth_value as u128;
+				Ok(Uint::from(combined_value))
+			}
+			AssetType::Moveth(value) => Ok(Uint::from(value as u128)),
+			_ => Err(ConversionError::InvalidConversion), // Add more cases as needed
+		}
+	}
 }
 
 impl AddAssign for AssetType {
@@ -185,16 +185,16 @@ impl AddAssign for AssetType {
 }
 
 impl Amount {
-    pub fn weth(&self) -> u64 {
-        match self.0 {
-            AssetType::EthAndWeth((_, weth_value)) => weth_value,
-			_ => 0, 
-        }
+	pub fn weth(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((_, weth_value)) => weth_value,
+			_ => 0,
+		}
 	}
 	pub fn eth(&self) -> u64 {
 		match self.0 {
 			AssetType::EthAndWeth((eth_value, _)) => eth_value,
-			_ => 0, 
+			_ => 0,
 		}
 	}
 	pub fn moveth(&self) -> u64 {
@@ -206,7 +206,7 @@ impl Amount {
 	pub fn value(&self) -> u64 {
 		match self.0 {
 			AssetType::EthAndWeth((weth_value, eth_value)) => weth_value + eth_value,
-			AssetType::Moveth(value) => value,
+			AssetType::Eth(value) | AssetType::Weth(value) | AssetType::Moveth(value) => value,
 		}
 	}
 }
@@ -215,7 +215,7 @@ impl From<Uint<256, 4>> for Amount {
 	fn from(value: Uint<256, 4>) -> Self {
 		// Extract the lower 64 bits.
 		let lower_64_bits = value.as_limbs()[0];
-		Amount(AssetType::EthAndWeth((0,lower_64_bits)))
+		Amount(AssetType::EthAndWeth((0, lower_64_bits)))
 	}
 }
 
