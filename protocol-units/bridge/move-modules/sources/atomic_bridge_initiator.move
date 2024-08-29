@@ -449,7 +449,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[expected_failure]
+    #[expected_failure ( abort_code = ENOT_INITIALIZED )]
     public fun test_refund_completed_transfer(
         sender: &signer,
         creator: &signer,
