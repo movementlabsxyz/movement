@@ -184,6 +184,8 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
 
+        atomicBridgeInitiator.transferOwnership(originator);
+
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
             0, // _wethAmount is 0
             recipient,
@@ -193,15 +195,19 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         vm.stopPrank();
 
+        // Advance time and block height to ensure the time lock has expired
         vm.warp(block.number + timeLock + 1);
-        vm.startPrank(originator);
-
-        // increase time / blockheight so that timelock expires 
         uint256 futureBlockNumber = block.number + timeLock + 4200;
         vm.roll(futureBlockNumber);
+
+        vm.startPrank(originator);
+
+        // Call refund function
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
+        // Verify the WETH balance
         assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
+
         vm.stopPrank();
     }
 }
