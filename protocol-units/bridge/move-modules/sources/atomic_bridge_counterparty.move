@@ -15,7 +15,16 @@ module atomic_bridge::atomic_bridge_counterparty {
     const COMPLETED: u8 = 2;
     const CANCELLED: u8 = 3;
 
-    const EINCORRECT_SIGNER: u64 = 7;
+    const EINCORRECT_SIGNER: u64 = 1;
+    const EWRONG_PREIMAGE: u64 = 2;
+    const ETRANSFER_NOT_LOCKED: u64 = 3;
+    const ETIMELOCK_NOT_EXPIRED: u64 = 4;
+    const EWRONG_RECIPIENT: u64 = 5;
+    const EWRONG_ORIGINATOR: u64 = 6;
+    const EWRONG_AMOUNT: u64 = 7;
+    const EWRONG_HASHLOCK: u64 = 8;
+    const ENO_RESULT: u64 = 9;
+
 
     /// A mapping of bridge transfer IDs to their bridge_transfer
     struct BridgeTransferStore has key, store {
@@ -147,8 +156,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         let computed_hash = keccak256(pre_image);
-        assert!(computed_hash == bridge_transfer.hash_lock, 2);
-        assert!(bridge_transfer.state == LOCKED, 3);
+        assert!(computed_hash == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
+        assert!(bridge_transfer.state == LOCKED, ETRASFER_NOT_LOCKED);
         bridge_transfer.state = COMPLETED;
 
         moveth::mint(&resource_signer, bridge_transfer.recipient, bridge_transfer.amount);
@@ -165,13 +174,13 @@ module atomic_bridge::atomic_bridge_counterparty {
         bridge_transfer_id: vector<u8>
     ) acquires BridgeTransferStore, BridgeConfig {
         // check that the signer is the bridge_module_deployer
-        assert!(signer::address_of(account) == borrow_global<BridgeConfig>(signer::address_of(account)).bridge_module_deployer, 1);
+        assert!(signer::address_of(account) == borrow_global<BridgeConfig>(signer::address_of(account)).bridge_module_deployer, EINCORRECT_SIGNER);
         let store = borrow_global_mut<BridgeTransferStore>(signer::address_of(account));
         let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         // Ensure the timelock has expired
-        assert!(timestamp::now_seconds() > bridge_transfer.time_lock, 2);
-        assert!(bridge_transfer.state == LOCKED, 3);
+        assert!(timestamp::now_seconds() > bridge_transfer.time_lock, ETIMELOCK_NOT_EXPIRED);
+        assert!(bridge_transfer.state == LOCKED, ETRANSFER_NOT_LOCKED);
 
         bridge_transfer.state = CANCELLED;
 
@@ -217,7 +226,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         moveth::init_for_test(moveth);
         let receiver_address = @0xdada;
-        let initiator = b"0x123"; //In real world this would be an ethereum address
+        let originator = b"0x123"; //In real world this would be an ethereum address
         let recipient = @0xface; 
         let asset = moveth::metadata();
         
@@ -228,7 +237,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let amount = 100;
         let result = lock_bridge_transfer(
             origin_account,
-            initiator,
+            originiator,
             bridge_transfer_id,
             hash_lock,
             time_lock,
@@ -239,10 +248,10 @@ module atomic_bridge::atomic_bridge_counterparty {
         // Verify that the transfer is stored in pending_transfers
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
-        assert!(bridge_transfer.recipient == recipient, 2);
-        assert!(bridge_transfer.originator == initiator, 3);
-        assert!(bridge_transfer.amount == amount, 5);
-        assert!(bridge_transfer.hash_lock == hash_lock, 5);
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
         let pre_image = b"secret"; 
         let msg:vector<u8> = b"secret";
         debug::print(&utf8(msg));
@@ -255,10 +264,10 @@ module atomic_bridge::atomic_bridge_counterparty {
         // Verify that the transfer is stored in completed_transfers
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
-        assert!(bridge_transfer.recipient == recipient, 1);
-        assert!(bridge_transfer.amount == amount, 2);
-        assert!(bridge_transfer.hash_lock == hash_lock, 3);
-        assert!(bridge_transfer.originator == initiator, 4);
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
+        assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
     }
 
     #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
@@ -276,7 +285,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         timestamp::set_time_has_started_for_testing(&aptos_framework);
         moveth::init_for_test(moveth);
         let receiver_address = @0xdada;
-        let initiator = b"0x123"; //In real world this would be an ethereum address
+        let originator = b"0x123"; //In real world this would be an ethereum address
         let recipient = @0xface; 
         let asset = moveth::metadata();
         
@@ -287,7 +296,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let amount = 100;
         let result = lock_bridge_transfer(
             origin_account,
-            initiator,
+            originator,
             bridge_transfer_id,
             hash_lock,
             time_lock,
@@ -297,7 +306,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(result, 1);
 
         let (transfer_originator, transfer_recipient, transfer_amount, transfer_hash_lock, transfer_time_lock, transfer_state) = bridge_transfers(bridge_transfer_id);
-        assert!(transfer_recipient == recipient, 2);
-        assert!(transfer_originator == initiator, 3);
+        assert!(transfer_recipient == recipient, EWRONG_RECIPIENT);
+        assert!(transfer_originator == originator, EWRONG_ORIGINATOR);
     }
 }
