@@ -44,6 +44,13 @@ WantedBy=multi-user.target
 An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below:
 
 ```shell
+MOVEMENT_SYNC="l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+CELESTIA_RPC_CONNECTION_PROTOCOL=https
+CELESTIA_RPC_CONNECTION_HOSTNAME=l-monninger.open-network.rpc.celestia.suzuka.devnet.movementlabs.xyz
+CELESTIA_RPC_CONNECTION_PORT=443
+CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL=wss
+CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME=l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz
+CELESTIA_WEBSOCKET_CONNECTION_PORT=443
 ansible-playbook --inventory ec2-54-215-191-59.us-west-1.compute.amazonaws.com, \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
