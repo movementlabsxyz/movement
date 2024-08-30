@@ -54,7 +54,7 @@ async fn test_bridge_service_error_handling() {
 		1,
 		CallConfig {
 			error: ErrorConfig::CounterpartyError(
-				BridgeContractCounterpartyError::LockTransferAssetsError,
+				BridgeContractCounterpartyError::LockTransferError,
 			),
 			delay: None,
 		},
@@ -214,7 +214,7 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			n,
 			CallConfig {
 				error: ErrorConfig::CounterpartyError(
-					BridgeContractCounterpartyError::LockTransferAssetsError,
+					BridgeContractCounterpartyError::LockTransferError,
 				),
 				delay: None,
 			},

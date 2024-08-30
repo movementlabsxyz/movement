@@ -2,7 +2,7 @@ pragma solidity ^0.8.22;
 
 interface IAtomicBridgeCounterparty {
     // Event emitted when a new atomic bridge transfer is locked
-    event BridgeTransferAssetsLocked(
+    event BridgeTransferLocked(
         bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock
     );
 

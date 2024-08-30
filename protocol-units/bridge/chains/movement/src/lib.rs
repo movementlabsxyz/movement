@@ -481,7 +481,7 @@ impl BridgeContractCounterparty for MovementClient {
 			payload,
 		)
 		.await
-		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
+		.map_err(|_| BridgeContractCounterpartyError::LockTransferError);
 		Ok(())
 	}
 

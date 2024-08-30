@@ -31,7 +31,7 @@ pub enum BridgeContractCounterpartyError {
 	#[error("Failed to serialize or deserialize")]
 	SerializationError,
 	#[error("Failed to lock bridge transfer assets")]
-	LockTransferAssetsError,
+	LockTransferError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
 	#[error("Failed to abort bridge transfer")]
