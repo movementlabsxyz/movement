@@ -12,8 +12,7 @@ use bridge_shared::{
 		BridgeContractCounterpartyResult,
 	},
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
+		Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock
 	},
 };
 use rand::prelude::*;
@@ -458,13 +457,18 @@ impl BridgeContractCounterparty for MovementClient {
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
 
+		let amount_value = match amount.0 {
+			AssetType::Moveth(value) => value,
+			_ => return Err(BridgeContractCounterpartyError::SerializationError),
+		};
+
 		let args = vec![
-			utils::serialize_vec(&initiator.0)?,
-			utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec(&hash_lock.0[..])?,
-			utils::serialize_u64(&time_lock.0)?,
-			utils::serialize_vec(&recipient.0.0.to_vec())?,
-			utils::serialize_u64(&amount.moveth())?,
+			bcs::to_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&hash_lock.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&recipient.0.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			bcs::to_bytes(&amount_value).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
 		];
 
 		let payload = utils::make_aptos_payload(

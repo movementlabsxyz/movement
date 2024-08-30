@@ -6,7 +6,6 @@ use std::{fmt::Debug, hash::Hash};
 use std::ops::AddAssign;
 use std::convert::TryFrom;
 use thiserror::Error;
-
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 

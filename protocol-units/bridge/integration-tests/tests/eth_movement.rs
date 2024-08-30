@@ -197,7 +197,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		TimeLock(time_lock),
 		InitiatorAddress(initiator),
 		RecipientAddress(recipient),
-		Amount(AssetType::Moveth(amount)), // Eth
+		Amount(AssetType::Moveth(amount)), 
 	)
 	.await
 	.expect("Failed to complete bridge transfer");
