@@ -233,6 +233,30 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run rust tests
+      run: |
+        nix develop --command bash -c "
+          cargo test -p bridge-shared  
+        "
+
+
+  wrapping-to:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
     - name: Install Movement CLI
       run: |
         sudo apt-get update 
@@ -256,11 +280,12 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run eth_movement tests
+    - name: Run wrapping_to tests
       run: |
         nix develop --command bash -c "
-          rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
+          rust_backtrace=1 cargo test -p ethereum-bridge -- --nocapture --test-threads=1 
         "
+      
 
 #  Indexer:
 #    strategy:
