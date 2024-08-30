@@ -433,7 +433,7 @@ module atomic_bridge::atomic_bridge_initiator {
             amount
         );
 
-        aptos_framework::timestamp::fast_forwa;rd_seconds(time_lock + 2)
+        aptos_framework::timestamp::fast_forward_seconds(time_lock + 2);
 
         refund_bridge_transfer(
             sender,
