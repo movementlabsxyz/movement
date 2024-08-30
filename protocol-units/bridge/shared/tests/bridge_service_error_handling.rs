@@ -10,7 +10,7 @@ use bridge_shared::{
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::{
-		active_swap::{ActiveSwapConfig, LockBridgeTransferAssetsError},
+		active_swap::{ActiveSwapConfig, LockBridgeTransferError},
 		events::{CEvent, CWarn, Event, IEvent, IWarn},
 		BridgeServiceConfig,
 	},
@@ -50,7 +50,7 @@ async fn test_bridge_service_error_handling() {
 
 	// Lets make the blockchain_2_client fail on the locking of assets
 	blockchain_2_client.set_call_config(
-		MethodName::LockBridgeTransferAssets,
+		MethodName::LockBridgeTransfer,
 		1,
 		CallConfig {
 			error: ErrorConfig::CounterpartyError(
@@ -210,7 +210,7 @@ async fn test_bridge_service_locking_termination_after_errors() {
 	// Configure blockchain_2_client to fail 3 times on locking assets
 	for n in 1..5 {
 		blockchain_2_client.set_call_config(
-			MethodName::LockBridgeTransferAssets,
+			MethodName::LockBridgeTransfer,
 			n,
 			CallConfig {
 				error: ErrorConfig::CounterpartyError(
@@ -432,7 +432,7 @@ async fn test_bridge_service_timeout_error_handling() {
 
 	// Lets make the blockchain_2_client fail on the locking of assets
 	blockchain_2_client.set_call_config(
-		MethodName::LockBridgeTransferAssets,
+		MethodName::LockBridgeTransfer,
 		1,
 		// Longer delay than the timeout, to trigger timeout
 		CallConfig { error: ErrorConfig::None, delay: Some(Duration::from_secs(1)) },
@@ -473,7 +473,7 @@ async fn test_bridge_service_timeout_error_handling() {
 	tracing::debug!(?event);
 	assert!(matches!(
 		event.B2C().and_then(CEvent::warn).expect("not a b2c warn event"),
-		CWarn::BridgeAssetsLockingError(LockBridgeTransferAssetsError::ContractCallTimeoutError)
+		CWarn::BridgeAssetsLockingError(LockBridgeTransferError::ContractCallTimeoutError)
 	));
 
 	// The Bridge is expected to retry the operation after the configured delay in case of an error.

@@ -4,7 +4,7 @@ use crate::{
 	types::{BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails},
 };
 
-use super::active_swap::LockBridgeTransferAssetsError;
+use super::active_swap::LockBridgeTransferError;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum IWarn<A, H> {
@@ -37,7 +37,7 @@ impl<A, H> IEvent<A, H> {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CWarn<A, H> {
-	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
+	BridgeAssetsLockingError(LockBridgeTransferError),
 	CannotCompleteUnexistingSwap(CounterpartyCompletedDetails<A, H>),
 	LockingAbortedTooManyAttempts(BridgeTransferId<H>),
 }

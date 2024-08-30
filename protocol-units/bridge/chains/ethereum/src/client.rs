@@ -377,7 +377,7 @@ impl BridgeContractCounterparty for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
@@ -391,7 +391,7 @@ impl BridgeContractCounterparty for EthClient {
 			&self.rpc_provider,
 		);
 		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
-		let call = contract.lockBridgeTransferAssets(
+		let call = contract.lockBridgeTransfer(
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
