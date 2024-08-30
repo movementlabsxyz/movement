@@ -251,7 +251,7 @@ pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
 		},
 		..config.clone()
 	};
-	let client1 = Client::build_with_config(config1).await.unwrap();
+	let client1 = Client::build_with_config(&config1).await.unwrap();
 
 	let mut client1_stream = client1.stream_block_commitments().await.unwrap();
 	// Client post a new commitment
@@ -278,7 +278,7 @@ pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
 		},
 		..config.clone()
 	};
-	let client2 = Client::build_with_config(config2).await.unwrap();
+	let client2 = Client::build_with_config(&config2).await.unwrap();
 
 	let mut client2_stream = client2.stream_block_commitments().await.unwrap();
 

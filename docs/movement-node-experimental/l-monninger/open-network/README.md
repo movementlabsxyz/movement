@@ -41,7 +41,15 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml).
+An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below:
+
+```shell
+ansible-playbook --inventory ec2-54-215-191-59.us-west-1.compute.amazonaws.com, \
+                 --user ubuntu  \
+                 --extra-vars "movement_container_version=${CONTAINER_REV}" \
+                 --extra-vars "user=ubuntu" \
+                 docs/movement-node-experimental/l-monninger/open-network/suzuka-full-follower.yml
+```
 
 This will set up the Movement Node to connect to sync with the `l-monninger/open-network` environment.
 
