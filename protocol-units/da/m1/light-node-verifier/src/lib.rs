@@ -13,7 +13,7 @@ pub trait Verifier {
 		match verification_mode {
 			VerificationMode::Cowboy => self.verify_cowboy(verification_mode, blob, height).await,
 			VerificationMode::ValidatorIn => {
-				self.verifiy_validator_in(verification_mode, blob, height).await
+				self.verify_validator_in(verification_mode, blob, height).await
 			}
 			VerificationMode::MOfN => self.verify_m_of_n(verification_mode, blob, height).await,
 		}
@@ -28,7 +28,7 @@ pub trait Verifier {
 		Ok(true)
 	}
 
-	async fn verifiy_validator_in(
+	async fn verify_validator_in(
 		&self,
 		_verification_mode: VerificationMode,
 		_blob: &[u8],
