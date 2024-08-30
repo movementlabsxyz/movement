@@ -287,7 +287,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[expected_failure ( abort_code = EINSUFFICIENT_BALANCE )]
+    #[expected_failure (abort_code = EINSUFFICIENT_BALANCE, location = Self)]
     public fun test_initiate_bridge_transfer_no_moveth(
         sender: &signer,
         creator: &signer,
@@ -367,7 +367,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[expected_failure ( abort_code = EWRONG_PREIMAGE )]
+    #[expected_failure(abort_code = EWRONG_PREIMAGE, location = Self)]
     public fun test_complete_bridge_transfer_wrong_preimage(
         sender: &signer,
         atomic_bridge: &signer,
@@ -450,7 +450,7 @@ module atomic_bridge::atomic_bridge_initiator {
     }
 
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @origin_addr, atomic_bridge = @atomic_bridge)]
-    #[expected_failure ( abort_code = ENOT_INITIALIZED )]
+    #[expected_failure(abort_code = ENOT_INITIALIZED, location = Self)]
     public fun test_refund_completed_transfer(
         sender: &signer,
         creator: &signer,
