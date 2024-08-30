@@ -127,11 +127,15 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
+	debug!("Signed TX: {:?}", signed_tx);
+
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
-		.map_err(|e| e.to_string())? // Convert the error to a String directly
+		.map_err(|e| e.to_string())? 
 		.into_inner();
+
+	debug!("Response: {:?}", response);
 
 	match &response {
 		Transaction::UserTransaction(user_txn) => {

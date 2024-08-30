@@ -23,7 +23,7 @@ use tokio;
 use futures::{channel::mpsc::{self, UnboundedReceiver}, StreamExt};
 
 use aptos_types::account_address::AccountAddress;
-use tracing;
+use tracing::{debug, info};
 use tracing_subscriber;
 
 #[tokio::test]
@@ -34,17 +34,9 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
-	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let movement_client = movement_client.signer();
 
 	let faucet_client = faucet_client.write().unwrap();
-	faucet_client
-		.fund(alice.address(), 100_000_000)
-		.await?;
-	faucet_client
-		.create_account(bob.address())
-		.await?;
 	faucet_client
 	.fund(movement_client.address(), 100_000_000)
 
@@ -59,7 +51,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::ERROR)
+        .with_max_level(tracing::Level::DEBUG)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -77,7 +69,7 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
 
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::ERROR)
+        .with_max_level(tracing::Level::DEBUG)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -89,8 +81,83 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 		let rest_client = movement_client.rest_client();
 		let coin_client = CoinClient::new(&rest_client);
 		let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
-		let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
-		let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
+		let movement_client = movement_client.signer();
+
+
+		let faucet_client = faucet_client.write().unwrap();
+
+		faucet_client
+		.fund(movement_client.address(), 100_000_000)
+		.await?;
+
+		// Check the balance of movement_client after funding
+		let balance = coin_client
+		.get_account_balance(&movement_client.address())
+		.await?;
+
+			// Assert that the balance is as expected
+		assert!(
+			balance >= 100_000_000,
+			"Expected Movement Client to have at least 100_000_000, but found {}",
+			balance
+		);
+	}
+	
+        let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
+        let recipient:MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));    
+        let bridge_transfer_id = *b"00000000000000000000000transfer1";
+        //let pre_image = b"secret".to_vec();
+        let hash_lock = *keccak256(b"secret".to_vec()); 
+        let time_lock = 3600;
+        let amount = 100;
+	
+	harness
+	.movement_client_mut()
+	.expect("Failed to get MovmentClient")
+	.lock_bridge_transfer_assets(
+		BridgeTransferId(bridge_transfer_id),		
+		HashLock(hash_lock),
+		TimeLock(time_lock),
+		InitiatorAddress(initiator),
+		RecipientAddress(recipient),
+		Amount(AssetType::Moveth(amount)), // Eth
+	)
+	.await
+	.expect("Failed to complete bridge transfer");
+
+	let result = harness
+	.movement_client_mut()
+	.expect("Failed to get MovmentClient")
+	.complete_bridge_transfer(
+		BridgeTransferId(bridge_transfer_id),
+		HashLockPreImage(b"secret".to_vec()),
+	)
+	.await
+	.expect("Failed to complete bridge transfer");
+
+	debug!("Result: {:?}", result);
+
+	child.kill().await?;
+	//let _ = child.wait().await.expect("Failed to wait on process termination");
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_movement_client_should_successfully_call_lock_and_abort() -> Result<(), anyhow::Error> {
+
+	let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
+	
+	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	{ 
+		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+
+		let _ = movement_client.publish_for_test();
+
+		let rest_client = movement_client.rest_client();
+		let coin_client = CoinClient::new(&rest_client);
+		let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 		let movement_client = movement_client.signer();
 
 
@@ -138,27 +205,14 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 	harness
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
-	.complete_bridge_transfer(
+	.abort_bridge_transfer(
 		BridgeTransferId(bridge_transfer_id),
-		HashLockPreImage(b"secret".to_vec()),
 	)
 	.await
-	.expect("Failed to complete bridge transfer");
+	.expect("Failed to abort bridge transfer");
 
 	child.kill().await?;
 	//let _ = child.wait().await.expect("Failed to wait on process termination");
-	Ok(())
-}
-
-#[tokio::test]
-async fn test_movement_client_complete_bridge_transfer() -> Result<(), anyhow::Error> {
-	
-	Ok(())
-}
-
-#[tokio::test]
-async fn test_movement_client_abort_bridge_transfer() -> Result<(), anyhow::Error> {
-	
 	Ok(())
 }
 
