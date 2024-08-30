@@ -95,7 +95,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
