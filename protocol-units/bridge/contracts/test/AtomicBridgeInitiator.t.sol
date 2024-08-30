@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
-import {AtomicBridgeInitiator} from "../src/AtomicBridgeInitiator.sol";
+import {AtomicBridgeInitiator, IAtomicBridgeInitiator, OwnableUpgradeable} from "../src/AtomicBridgeInitiator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IWETH9} from "../src/IWETH9.sol";
@@ -154,8 +154,8 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.expectRevert();
         // Try to initiate bridge transfer
         atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(wethAmount, recipient, hashLock, timeLock);
-        weth.approve(address(atomicBridgeInitiator), wethAmount);
         // Try to initiate bridge transfer
+        weth.approve(address(atomicBridgeInitiator), wethAmount);
         bytes32 bridgeTransferId =
             atomicBridgeInitiator.initiateBridgeTransfer{value: ethAmount}(wethAmount, recipient, hashLock, timeLock);
 
@@ -182,17 +182,16 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
     function testRefundBridgeTransfer() public {
         vm.deal(originator, 1 ether);
+
+        // Test unit owns atomicBridgeInitiator
+
         vm.startPrank(originator);
-
-        atomicBridgeInitiator.transferOwnership(originator);
-
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
             0, // _wethAmount is 0
             recipient,
             hashLock,
             timeLock
         );
-
         vm.stopPrank();
 
         // Advance time and block height to ensure the time lock has expired
@@ -201,14 +200,17 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.roll(futureBlockNumber);
 
         vm.startPrank(originator);
-
+        vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, originator));
         // Call refund function
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
-
-        // Verify the WETH balance
-        assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
-
         vm.stopPrank();
+
+        vm.expectEmit();
+        emit IAtomicBridgeInitiator.BridgeTransferRefunded(bridgeTransferId);
+        atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
+
+        // Verify the WETH balance, originator should receive weth
+        assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
     }
 }
 
