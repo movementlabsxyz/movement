@@ -474,6 +474,7 @@ impl BridgeContractCounterparty for EthClient {
 	}
 }
 
+#[cfg(feature = "wrapping_to_test")]
 fn test_wrapping_to(a: &U256, b: u64) {
     assert_eq!(a.wrapping_to::<u64>(), b);
 }
