@@ -479,13 +479,16 @@ impl BridgeContractCounterparty for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
+		let result = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
+
+		println!("Lock bridge transfer result: {:?}", &result);
+
 		Ok(())
 	}
 
@@ -507,13 +510,15 @@ impl BridgeContractCounterparty for MovementClient {
 			args2,
 		);
 
-		let transaction_result = utils::send_and_confirm_aptos_transaction(
+		let result = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
+
+		println!("Complete bridge transfer result: {:?}", &result);
 
 		Ok(())
 	}
@@ -523,14 +528,13 @@ impl BridgeContractCounterparty for MovementClient {
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args = vec![
-			utils::serialize_vec(&self.signer.address().to_vec())?,
 			utils::serialize_vec(&bridge_transfer_id.0)?,
 		];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
 			COUNTERPARTY_MODULE_NAME,
 			"abort_bridge_transfer",
-			self.counterparty_type_args(Call::Abort),
+			Vec::new(),
 			args,
 		);
 		let result = utils::send_and_confirm_aptos_transaction(
@@ -541,7 +545,7 @@ impl BridgeContractCounterparty for MovementClient {
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 
-		println!("{:?}", &result);
+		println!("Abort bridge transfer result: {:?}", &result);
 		Ok(())
 	}
 

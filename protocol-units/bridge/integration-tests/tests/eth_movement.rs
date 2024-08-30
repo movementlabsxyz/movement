@@ -185,7 +185,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
         let bridge_transfer_id = *b"00000000000000000000000transfer1";
         //let pre_image = b"secret".to_vec();
         let hash_lock = *keccak256(b"secret".to_vec()); 
-        let time_lock = 3600;
+        let time_lock = 1;
         let amount = 100;
 	
 	harness
@@ -201,6 +201,8 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 	)
 	.await
 	.expect("Failed to complete bridge transfer");
+
+	tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
 	harness
 	.movement_client_mut()
