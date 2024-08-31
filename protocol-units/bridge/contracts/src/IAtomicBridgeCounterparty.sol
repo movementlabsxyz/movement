@@ -2,18 +2,14 @@ pragma solidity ^0.8.22;
 
 interface IAtomicBridgeCounterparty {
     // Event emitted when a new atomic bridge transfer is locked
-    event BridgeTransferAssetsLocked(
-        bytes32 indexed bridgeTransferId,
-        address indexed recipient,
-        uint256 amount,
-        bytes32 hashLock,
-        uint256 timeLock
+    event BridgeTransferLocked(
+        bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock
     );
 
     // Event emitted when a BridgeTransfer is completed
     event BridgeTransferCompleted(bytes32 indexed bridgeTransferId, bytes32 pre_image);
 
-    // Event emitted when a BridgeTransfer is aborted 
+    // Event emitted when a BridgeTransfer is aborted
     event BridgeTransferAborted(bytes32 indexed bridgeTransferId);
 
     error ZeroAmount();
@@ -30,7 +26,7 @@ interface IAtomicBridgeCounterparty {
 
     /**
      * @dev Locks the assets for a new atomic bridge transfer
-     * @param initiator The address of the initiator of the BridgeTransfer 
+     * @param initiator The address of the initiator of the BridgeTransfer
      * @param bridgeTransferId A unique id representing this BridgeTransfer
      * @param hashLock The hash of the secret (HASH) that will unlock the funds
      * @param timeLock The timestamp until which this BridgeTransfer is valid and can be executed
@@ -39,7 +35,7 @@ interface IAtomicBridgeCounterparty {
      * @return bool indicating successful lock
      *
      */
-    function lockBridgeTransferAssets(
+    function lockBridgeTransfer(
         bytes32 initiator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
@@ -63,4 +59,3 @@ interface IAtomicBridgeCounterparty {
      */
     function abortBridgeTransfer(bytes32 bridgeTransferId) external;
 }
-

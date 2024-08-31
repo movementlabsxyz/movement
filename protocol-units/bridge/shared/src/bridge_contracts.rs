@@ -30,8 +30,8 @@ impl BridgeContractInitiatorError {
 pub enum BridgeContractCounterpartyError {
 	#[error("Failed to serialize or deserialize")]
 	SerializationError,
-	#[error("Failed to lock bridge transfer assets")]
-	LockTransferAssetsError,
+	#[error("Failed to lock bridge transfer")]
+	LockTransferError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
 	#[error("Failed to abort bridge transfer")]
@@ -109,7 +109,7 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,

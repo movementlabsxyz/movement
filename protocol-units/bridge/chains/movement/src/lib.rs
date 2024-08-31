@@ -448,7 +448,7 @@ impl BridgeContractCounterparty for MovementClient {
 	type Address = MovementAddress;
 	type Hash = [u8; 32];
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
@@ -481,7 +481,7 @@ impl BridgeContractCounterparty for MovementClient {
 			payload,
 		)
 		.await
-		.map_err(|_| BridgeContractCounterpartyError::LockTransferAssetsError);
+		.map_err(|_| BridgeContractCounterpartyError::LockTransferError);
 		Ok(())
 	}
 
