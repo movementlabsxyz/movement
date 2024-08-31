@@ -114,7 +114,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 	harness
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
-	.lock_bridge_transfer_assets(
+	.lock_bridge_transfer(
 		BridgeTransferId(bridge_transfer_id),		
 		HashLock(hash_lock),
 		TimeLock(time_lock),
@@ -191,7 +191,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 	harness
 	.movement_client_mut()
 	.expect("Failed to get MovmentClient")
-	.lock_bridge_transfer_assets(
+	.lock_bridge_transfer(
 		BridgeTransferId(bridge_transfer_id),		
 		HashLock(hash_lock),
 		TimeLock(time_lock),

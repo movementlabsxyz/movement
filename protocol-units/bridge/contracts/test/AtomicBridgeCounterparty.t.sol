@@ -60,7 +60,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
     }
 
-    function testLockBridgeTransferAssets() public {
+    function testLockBridgeTransfer() public {
         vm.startPrank(deployer);
         vm.deal(deployer, 1 ether);
 
@@ -69,7 +69,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         weth.approve(address(atomicBridgeInitiator), amount);
         atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock, timeLock);
 
-        bool result = atomicBridgeCounterparty.lockBridgeTransferAssets(
+        bool result = atomicBridgeCounterparty.lockBridgeTransfer(
             initiator, bridgeTransferId, hashLock, timeLock, recipient, amount
         );
 
@@ -105,7 +105,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         weth.approve(address(atomicBridgeInitiator), amount);
         atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, testHashLock, timeLock);
 
-        atomicBridgeCounterparty.lockBridgeTransferAssets(
+        atomicBridgeCounterparty.lockBridgeTransfer(
             initiator, bridgeTransferId, testHashLock, timeLock, recipient, amount
         );
 
@@ -142,9 +142,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         weth.approve(address(atomicBridgeInitiator), amount);
         atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock, timeLock);
 
-        atomicBridgeCounterparty.lockBridgeTransferAssets(
-            initiator, bridgeTransferId, hashLock, timeLock, recipient, amount
-        );
+        atomicBridgeCounterparty.lockBridgeTransfer(initiator, bridgeTransferId, hashLock, timeLock, recipient, amount);
 
         vm.stopPrank();
 
