@@ -12,21 +12,19 @@ use anyhow::Result;
 use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-<<<<<<< HEAD
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	bridge_monitoring::BridgeContractInitiatorEvent,
 	types::{
-		Amount, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
-		TimeLock,
+		Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+		RecipientAddress, TimeLock,
 	},
 };
 
 use ethereum_bridge::types::EthAddress;
-=======
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, types::{Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
+use futures::{
+	channel::mpsc::{self, UnboundedReceiver},
+	StreamExt,
 };
->>>>>>> eng-546-atomic-bridge
-
-use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
 use rand;
 use tokio::{self, process::Command};
@@ -48,17 +46,9 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let movement_client = movement_client.signer();
 
 	let faucet_client = faucet_client.write().unwrap();
-	faucet_client
-		.fund(alice.address(), 100_000_000)
-		.await?;
-	faucet_client
-		.create_account(bob.address())
-		.await?;
-	faucet_client
-	.fund(movement_client.address(), 100_000_000)
-
-
-	.await?;
+	faucet_client.fund(alice.address(), 100_000_000).await?;
+	faucet_client.create_account(bob.address()).await?;
+	faucet_client.fund(movement_client.address(), 100_000_000).await?;
 
 	child.kill().await?;
 
@@ -67,16 +57,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 
 #[tokio::test]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
-<<<<<<< HEAD
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-=======
-	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::ERROR)
-        .try_init();
-	
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
->>>>>>> eng-546-atomic-bridge
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::ERROR).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 	{
@@ -85,46 +66,18 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 		let _ = movement_client.publish_for_test();
 	}
 
-<<<<<<< HEAD
-	child.kill().await.context("Failed to kill the child process")?;
-
-=======
 	child.kill().await?;
-	
->>>>>>> eng-546-atomic-bridge
+
 	Ok(())
 }
 
 #[tokio::test]
-<<<<<<< HEAD
-#[ignore]
-async fn test_movement_client_should_successfully_call_lock() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
+async fn test_movement_client_should_successfully_call_lock_and_complete(
+) -> Result<(), anyhow::Error> {
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::ERROR).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 	{
-		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-
-		let _ = movement_client.publish_for_test();
-	}
-
-	let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
-	let recipient: MovementAddress =
-		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	//let pre_image = b"secret".to_vec();
-	let hash_lock = *keccak256(b"secret".to_vec());
-	let time_lock = 3600;
-	let amount = 100;
-=======
-async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
-
-	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::ERROR)
-        .try_init();
-	
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ 
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
 		let _ = movement_client.publish_for_test();
@@ -136,59 +89,40 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 		let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
 		let movement_client = movement_client.signer();
 
-
 		let faucet_client = faucet_client.write().unwrap();
 
-		faucet_client
-		.fund(movement_client.address(), 100_000_000)
-		.await?;
+		faucet_client.fund(movement_client.address(), 100_000_000).await?;
 
 		// Check the balance of movement_client after funding
-		let balance = coin_client
-		.get_account_balance(&movement_client.address())
-		.await?;
+		let balance = coin_client.get_account_balance(&movement_client.address()).await?;
 
-			// Assert that the balance is as expected
+		// Assert that the balance is as expected
 		assert!(
 			balance >= 100_000_000,
 			"Expected Movement Client to have at least 100_000_000, but found {}",
 			balance
 		);
 	}
-	
-        let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
-        let recipient:MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));    
-        let bridge_transfer_id = *b"00000000000000000000000transfer1";
-        //let pre_image = b"secret".to_vec();
-        let hash_lock = *keccak256(b"secret".to_vec()); 
-        let time_lock = 3600;
-        let amount = 100;
-	
-	harness
-	.movement_client_mut()
-	.expect("Failed to get MovmentClient")
-	.lock_bridge_transfer(
-		BridgeTransferId(bridge_transfer_id),		
-		HashLock(hash_lock),
-		TimeLock(time_lock),
-		InitiatorAddress(initiator),
-		RecipientAddress(recipient),
-		Amount(AssetType::Moveth(amount)), // Eth
-	)
-	.await
-	.expect("Failed to complete bridge transfer");
->>>>>>> eng-546-atomic-bridge
+
+	let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
+	let recipient: MovementAddress =
+		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
+	let bridge_transfer_id = *b"00000000000000000000000transfer1";
+	//let pre_image = b"secret".to_vec();
+	let hash_lock = *keccak256(b"secret".to_vec());
+	let time_lock = 3600;
+	let amount = 100;
 
 	harness
 		.movement_client_mut()
 		.expect("Failed to get MovmentClient")
-		.lock_bridge_transfer_assets(
+		.lock_bridge_transfer(
 			BridgeTransferId(bridge_transfer_id),
 			HashLock(hash_lock),
 			TimeLock(time_lock),
 			InitiatorAddress(initiator),
 			RecipientAddress(recipient),
-			Amount(amount), // Eth
+			Amount(AssetType::Moveth(amount)), // Eth
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
