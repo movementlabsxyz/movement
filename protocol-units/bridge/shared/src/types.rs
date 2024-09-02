@@ -74,7 +74,13 @@ pub struct RecipientAddress<A>(pub A);
 
 impl From<&str> for RecipientAddress<Vec<u8>> {
 	fn from(value: &str) -> Self {
-		RecipientAddress(value.as_bytes().to_vec())
+		Self(value.as_bytes().to_vec())
+	}
+}
+
+impl From<String> for RecipientAddress<Vec<u8>> {
+	fn from(value: String) -> Self {
+		Self(value.as_bytes().to_vec())
 	}
 }
 
@@ -218,6 +224,13 @@ impl From<Uint<256, 4>> for Amount {
 	}
 }
 
+//#[derive(Debug, PartialEq, Eq, Clone)]
+//enum State {
+//        INITIALIZED,
+//        COMPLETED,
+//        REFUNDED
+//}
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
@@ -226,6 +239,7 @@ pub struct BridgeTransferDetails<A, H> {
 	pub hash_lock: HashLock<H>,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
+	pub state: u8,
 }
 
 impl<A, H> Default for BridgeTransferDetails<A, H> {

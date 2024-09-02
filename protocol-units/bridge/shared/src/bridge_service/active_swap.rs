@@ -464,22 +464,23 @@ impl HasTimeoutError for LockBridgeTransferError {
 
 async fn call_lock_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
 	mut counterparty_contract: BTo::CounterpartyContract,
-	BridgeTransferDetails {
-		bridge_transfer_id,
-		hash_lock,
-		time_lock,
-		recipient_address,
-		initiator_address,
-		amount,
-		..
-	}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
+	details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>
+	//BridgeTransferDetails {
+	////	bridge_transfer_id,
+	////	initiator_address,
+	////	recipient_address,
+	////	hash_lock,
+	////	time_lock,		
+	////	amount,
+	////	..
+	//}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
 ) -> Result<(), LockBridgeTransferError>
 where
 	BTo::Hash: From<BFrom::Hash>,
 	Vec<u8>: From<BFrom::Address>,
 {
-	let bridge_transfer_id = BridgeTransferId(From::from(bridge_transfer_id.0));
-	let hash_lock = HashLock(From::from(hash_lock.0));
+	let bridge_transfer_id = BridgeTransferId(From::from(details.bridge_transfer_id.0));
+	let hash_lock = HashLock(From::from(details.hash_lock.0));
 
 	tracing::trace!(
 		"Calling lock_bridge_transfer on counterparty contract for bridge transfer {:?}",
@@ -490,10 +491,10 @@ where
 		.lock_bridge_transfer(
 			bridge_transfer_id,
 			hash_lock,
-			time_lock,
-			InitiatorAddress(From::from(initiator_address.0)),
-			RecipientAddress(From::from(recipient_address.0)),
-			amount,
+			details.time_lock,
+			InitiatorAddress(From::from(details.initiator_address.0)),
+			RecipientAddress(From::from(details.recipient_address.0)),
+			details.amount,
 		)
 		.await?;
 

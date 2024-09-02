@@ -1,10 +1,12 @@
 use crate::utils::MovementAddress;
 use anyhow::Result;
+use aptos_api::accounts::Account;
 use aptos_sdk::{
-	move_types::language_storage::TypeTag,
-	rest_client::{Client, FaucetClient},
+	move_types::{identifier::Identifier, language_storage::{ModuleId, TypeTag}},
+	rest_client::{Client, FaucetClient, Response},
 	types::LocalAccount,
 };
+use aptos_api_types::{ViewFunction, ViewRequest};
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
@@ -17,6 +19,7 @@ use bridge_shared::{
 };
 use rand::prelude::*;
 use rand::Rng;
+use serde_json::json;
 use serde::Serialize;
 use std::{env, fs, io::{Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}};
 use std::str::FromStr;
@@ -549,11 +552,74 @@ impl BridgeContractCounterparty for MovementClient {
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
-	{
-		todo!();
+		bridge_transfer_id: BridgeTransferId<[u8; 32]>,
+		) -> Result<Option<BridgeTransferDetails<MovementAddress, [u8; 32]>>, BridgeContractCounterpartyError> {
+		// Construct the ViewRequest
+		let view_request = ViewFunction {
+			module: ModuleId::new(
+			    self.counterparty_address.clone(), // Assuming counterparty_address is of type AccountAddress
+			    Identifier::new("atomic_bridge_counterparty").map_err(|_| BridgeContractCounterpartyError::ModuleViewError)?,
+			),
+			function: Identifier::new("bridge_transfers").map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+			ty_args: vec![],
+			args: vec![bcs::to_bytes(&bridge_transfer_id.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?],
+		};
+		
+		// Send the request to the "/view" endpoint using view_bcs
+		let response: Response<(Vec<u8>, AccountAddress, u64, Vec<u8>, u64, u8)> = self.rest_client
+			.view_bcs(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		
+		
+
+		// Check if the response is valid and parse it
+		let (originator, recipient, amount, hash_lock, time_lock, state) = response.into_inner();
+ 
+			// Convert hash_lock to [u8; 32]
+			let hash_lock_array: [u8; 32] = hash_lock
+			.try_into()
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		
+		let details: BridgeTransferDetails<MovementAddress, [u8; 32]> = BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: InitiatorAddress(MovementAddress(AccountAddress::from_bytes(&originator)
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?)),
+			recipient_address: RecipientAddress(recipient.to_vec()),
+			amount: Amount(AssetType::Moveth(amount)),
+			hash_lock: HashLock(hash_lock_array),
+			time_lock: TimeLock(time_lock),
+			state,
+		};
+		Ok(Some(details))
 	}
+
+	async fn get_bridge_transfer_state(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<[u8; 32]>,
+		) -> Result<Option<u8>, BridgeContractCounterpartyError> {
+		// Construct the ViewRequest
+		let view_request = ViewFunction {
+			module: ModuleId::new(
+				self.counterparty_address.clone(), // Assuming counterparty_address is of type AccountAddress
+				Identifier::new("atomic_bridge_counterparty").map_err(|_| BridgeContractCounterpartyError::ModuleViewError)?,
+			),
+			function: Identifier::new("get_bridge_transfer_state").map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+			ty_args: vec![],
+			args: vec![bcs::to_bytes(&bridge_transfer_id.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?],
+		};
+		
+		// Send the request to the "/view" endpoint using view_bcs
+		let response = self.rest_client
+			.view_bcs(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::ViewSerializationError)?;
+		
+		let state = response.into_inner();
+		
+		Ok(Some(state))
+		
+		}
 }
 
 impl MovementClient {

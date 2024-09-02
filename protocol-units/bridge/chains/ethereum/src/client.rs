@@ -368,6 +368,7 @@ impl BridgeContractInitiator for EthClient {
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
+			state: 1
 		}))
 	}
 }
@@ -469,6 +470,7 @@ impl BridgeContractCounterparty for EthClient {
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
+			state: 1
 		}))
 	}
 }

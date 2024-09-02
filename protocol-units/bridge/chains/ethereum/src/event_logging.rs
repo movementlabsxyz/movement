@@ -2,7 +2,7 @@ use crate::types::{EthAddress, EventName};
 use crate::EthChainEvent;
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
-use alloy::primitives::{address, LogData};
+use alloy::primitives::{address, LogData, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy::rpc::types::{Filter, Log};
 use alloy::{
@@ -215,6 +215,10 @@ fn decode_log_data(
 					.as_uint()
 					.map(|(u, _)| u.into())
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
+				let state = decoded.indexed[6]
+    .as_uint()
+    .map(|(u, _)| u.to_le_bytes::<32>()[0])  // Specify the byte size as 32
+    .ok_or_else(|| anyhow::anyhow!("Failed to decode State"))?;		
 
 				let details: BridgeTransferDetails<EthAddress, EthHash> = BridgeTransferDetails {
 					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
@@ -223,6 +227,7 @@ fn decode_log_data(
 					hash_lock: HashLock(hash_lock),
 					time_lock,
 					amount,
+					state
 				};
 
 				Ok(BridgeContractInitiatorEvent::Initiated(details))

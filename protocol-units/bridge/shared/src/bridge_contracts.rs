@@ -28,6 +28,12 @@ impl BridgeContractInitiatorError {
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyError {
+	#[error("Failed to view module")]
+	ModuleViewError,
+	#[error("Failed to view function")]
+	FunctionViewError,
+	#[error("Failed to serialize view args")]
+	ViewSerializationError,
 	#[error("Failed to serialize or deserialize")]
 	SerializationError,
 	#[error("Failed to lock bridge transfer")]
@@ -134,6 +140,11 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
+
+	async fn get_bridge_transfer_state(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<Option<u8>>;
 }
 
 #[async_trait::async_trait]

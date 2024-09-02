@@ -267,6 +267,7 @@ where
 				hash_lock,
 				time_lock,
 				amount,
+				state: 1
 			}));
 		Ok(())
 	}
@@ -345,6 +346,14 @@ where
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
+	{
+		Ok(None)
+	}
+
+	async fn get_bridge_transfer_state(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<Option<u8>>
 	{
 		Ok(None)
 	}

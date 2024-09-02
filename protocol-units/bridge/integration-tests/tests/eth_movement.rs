@@ -120,10 +120,21 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
 		TimeLock(time_lock),
 		InitiatorAddress(initiator),
 		RecipientAddress(recipient),
-		Amount(AssetType::Moveth(amount)), // Eth
+		Amount(AssetType::Moveth(amount)), 
 	)
 	.await
-	.expect("Failed to complete bridge transfer");
+	.expect("Failed to lock bridge transfer");
+
+	let details = harness
+	.movement_client_mut()
+	.expect("Failed to get MovmentClient")
+	.get_bridge_transfer_details(
+		BridgeTransferId(bridge_transfer_id),		
+	)
+	.await
+	.expect("Failed to get bridge transfer details");
+
+	debug!("Bridge transfer details: {:?}", details);
 
 	let result = harness
 	.movement_client_mut()
