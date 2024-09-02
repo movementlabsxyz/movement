@@ -2,6 +2,7 @@ use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{Block, Id, Transaction};
 pub use sequencing_util::Sequencer;
+use std::collections::BTreeSet;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -97,7 +98,11 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		} else {
 			let new_block = {
 				let parent_block = self.parent_block.read().await.clone();
-				Block::new(Default::default(), parent_block.to_vec(), transactions)
+				Block::new(
+					Default::default(),
+					parent_block.to_vec(),
+					BTreeSet::from_iter(transactions),
+				)
 			};
 
 			// update the parent block

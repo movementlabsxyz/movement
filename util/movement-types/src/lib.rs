@@ -1,6 +1,7 @@
 use aptos_types::state_proof::StateProof;
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeSet;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Id([u8; 32]);
@@ -118,12 +119,16 @@ pub enum BlockMetadata {
 pub struct Block {
 	metadata: BlockMetadata,
 	parent: Vec<u8>,
-	transactions: Vec<Transaction>,
+	transactions: BTreeSet<Transaction>,
 	id: Id,
 }
 
 impl Block {
-	pub fn new(metadata: BlockMetadata, parent: Vec<u8>, transactions: Vec<Transaction>) -> Self {
+	pub fn new(
+		metadata: BlockMetadata,
+		parent: Vec<u8>,
+		transactions: BTreeSet<Transaction>,
+	) -> Self {
 		let mut hasher = blake3::Hasher::new();
 		hasher.update(&parent);
 		for transaction in &transactions {
@@ -134,7 +139,7 @@ impl Block {
 		Self { metadata, parent, transactions, id }
 	}
 
-	pub fn into_parts(self) -> (BlockMetadata, Vec<u8>, Vec<Transaction>, Id) {
+	pub fn into_parts(self) -> (BlockMetadata, Vec<u8>, BTreeSet<Transaction>, Id) {
 		(self.metadata, self.parent, self.transactions, self.id)
 	}
 
@@ -146,7 +151,7 @@ impl Block {
 		&self.parent
 	}
 
-	pub fn transactions(&self) -> &Vec<Transaction> {
+	pub fn transactions(&self) -> &BTreeSet<Transaction> {
 		&self.transactions
 	}
 
@@ -155,11 +160,15 @@ impl Block {
 	}
 
 	pub fn test() -> Self {
-		Self::new(BlockMetadata::BlockMetadata, vec![0], vec![Transaction::test()])
+		Self::new(
+			BlockMetadata::BlockMetadata,
+			vec![0],
+			BTreeSet::from_iter(vec![Transaction::test()]),
+		)
 	}
 
 	pub fn add_transaction(&mut self, transaction: Transaction) {
-		self.transactions.push(transaction);
+		self.transactions.insert(transaction);
 	}
 }
 
