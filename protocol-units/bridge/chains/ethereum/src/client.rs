@@ -11,19 +11,20 @@ use alloy::{
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use alloy_rlp::Decodable;
 use bridge_shared::bridge_contracts::{
-	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult,
+	BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult, 
 	BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult,
+	BridgeContractWETH9Error, BridgeContractWETH9Result,
 };
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+	InitiatorAddress, RecipientAddress, TimeLock, AssetType
 };
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
 use url::Url;
 
 use crate::types::{
-	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
+	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract, WETH9Contract, WETH9,
 	EthAddress, EthHash, InitiatorContract,
 };
 
@@ -47,6 +48,7 @@ pub struct Config {
 	pub signer_private_key: PrivateKeySigner,
 	pub initiator_contract: Option<Address>,
 	pub counterparty_contract: Option<Address>,
+	pub weth_contract: Option<Address>,
 	pub gas_limit: u64,
 }
 
@@ -58,6 +60,7 @@ impl Config {
 			signer_private_key: PrivateKeySigner::random(),
 			initiator_contract: None,
 			counterparty_contract: None,
+			weth_contract: None,
 			gas_limit: 10_000_000_000,
 		}
 	}
@@ -85,6 +88,7 @@ pub struct EthClient {
 	ws_provider: Option<RootProvider<PubSubFrontend>>,
 	initiator_contract: Option<InitiatorContract>,
 	counterparty_contract: Option<CounterpartyContract>,
+	weth_contract: Option<WETH9Contract>,
 	config: Config,
 }
 
@@ -107,6 +111,7 @@ impl EthClient {
 			ws_provider: None,
 			initiator_contract: None,
 			counterparty_contract: None,
+			weth_contract: None,
 			config,
 		})
 	}
@@ -119,6 +124,10 @@ impl EthClient {
 		self.counterparty_contract = Some(contract);
 	}
 
+	pub fn set_weth_contract(&mut self, contract: WETH9Contract) {
+		self.weth_contract = Some(contract);
+	}
+
 	pub async fn initialize_initiator_contract(
 		&self,
 		weth: EthAddress,
@@ -129,6 +138,33 @@ impl EthClient {
 		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
+		Ok(())
+	}
+
+	pub async fn deposit_weth_and_approve(
+		&mut self,
+		caller: Address,
+		amount: U256,
+	) -> Result<(), anyhow::Error> {
+		let deposit_weth_signer = self.get_signer_address();
+		let contract = self.weth_contract().expect("WETH contract not set");
+		let call = contract.deposit().value(amount);
+		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to deposit eth to weth contract");
+
+		let approve_call: alloy::contract::CallBuilder<_, &_, _> = contract
+			.approve(self.initiator_contract_address()?, amount);
+		let WETH9::balanceOfReturn { _0: balance } = contract
+			.balanceOf(deposit_weth_signer)
+			.call()
+			.await
+			.expect("Failed to get balance");
+		let signer = self.get_signer_address();
+
+		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to approve");
 		Ok(())
 	}
 
@@ -179,6 +215,24 @@ impl EthClient {
 		}
 	}
 
+	pub fn weth_contract_address(&self) -> BridgeContractWETH9Result<Address> {
+		match &self.weth_contract {
+			Some(contract) => Ok(contract.address().to_owned()),
+			None => Err(BridgeContractWETH9Error::GenericError(
+				"WETH9 contract address not set".to_string(),
+			)),
+		}
+	}
+
+	pub fn weth_contract(&self) -> BridgeContractWETH9Result<&WETH9Contract> {
+		match &self.weth_contract {
+			Some(contract) => Ok(contract),
+			None => Err(BridgeContractWETH9Error::GenericError(
+				"Initiator contract not set".to_string(),
+			)),
+		}
+	}
+
 	pub fn counterparty_contract_address(&self) -> BridgeContractCounterpartyResult<Address> {
 		match &self.counterparty_contract {
 			Some(contract) => Ok(contract.address().to_owned()),
@@ -217,7 +271,7 @@ impl BridgeContractInitiator for EthClient {
 	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
-		_initiator_address: InitiatorAddress<Self::Address>,
+		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
@@ -229,12 +283,13 @@ impl BridgeContractInitiator for EthClient {
 			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
 		let call = contract
 			.initiateBridgeTransfer(
-				U256::from(0), // For now a 0 WETH amount
+				U256::from(amount.weth()),
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
 				U256::from(time_lock.0),
 			)
-			.value(U256::from(amount.0));
+			.value(U256::from(amount.eth())).from(initiator_address.0.0);
+		let signer = self.get_signer_address();
 		let _ = send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.map_err(|e| {
@@ -312,7 +367,7 @@ impl BridgeContractInitiator for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
 		}))
 	}
 }
@@ -322,7 +377,7 @@ impl BridgeContractCounterparty for EthClient {
 	type Address = EthAddress;
 	type Hash = EthHash;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
@@ -336,13 +391,15 @@ impl BridgeContractCounterparty for EthClient {
 			&self.rpc_provider,
 		);
 		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
-		let call = contract.lockBridgeTransferAssets(
+		let call = contract.lockBridgeTransfer(
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
 			recipient.0 .0,
-			U256::from(amount.0),
+			U256::try_from(amount.0).map_err(|e| {   
+				BridgeContractCounterpartyError::ConversionError  
+			})?,
 		);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
@@ -411,7 +468,7 @@ impl BridgeContractCounterparty for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(eth_details.amount.wrapping_to::<u64>()),
+			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
 		}))
 	}
 }

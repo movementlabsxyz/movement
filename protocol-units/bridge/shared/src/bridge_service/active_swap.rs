@@ -54,7 +54,7 @@ pub enum ActiveSwapState<BTo>
 where
 	BTo: BlockchainService,
 {
-	LockingTokens(BoxedFuture<(), LockBridgeTransferAssetsError>, Attempts),
+	LockingTokens(BoxedFuture<(), LockBridgeTransferError>, Attempts),
 	LockingTokensError(Delay, Attempts),
 	WaitingForUnlockedEvent,
 	CompletingBridging(
@@ -195,7 +195,7 @@ where
 			ActiveSwap {
 				details: details.clone(),
 				state: ActiveSwapState::LockingTokens(
-					call_lock_bridge_transfer_assets::<BFrom, BTo>(counterparty_contract, details)
+					call_lock_bridge_transfer::<BFrom, BTo>(counterparty_contract, details)
 						.boxed()
 						.timeout(Delay::new(self.config.contract_call_timeout)),
 					0,
@@ -244,7 +244,7 @@ where
 #[derive(Debug)]
 pub enum ActiveSwapEvent<H> {
 	BridgeAssetsLocked(BridgeTransferId<H>),
-	BridgeAssetsLockingError(LockBridgeTransferAssetsError),
+	BridgeAssetsLockingError(LockBridgeTransferError),
 	BridgeAssetsRetryLocking(BridgeTransferId<H>),
 	BridgeAssetsCompleted(BridgeTransferId<H>),
 	BridgeAssetsCompletingError(BridgeTransferId<H>, CompleteBridgeTransferError),
@@ -337,7 +337,7 @@ where
 							bridge_transfer_id
 						);
 						*state = ActiveSwapState::LockingTokens(
-							call_lock_bridge_transfer_assets::<BFrom, BTo>(
+							call_lock_bridge_transfer::<BFrom, BTo>(
 								this.counterparty_contract.clone(),
 								bridge_transfer.clone(),
 							)
@@ -447,7 +447,7 @@ trait HasTimeoutError {
 }
 
 #[derive(Debug, Error, PartialEq, Eq)]
-pub enum LockBridgeTransferAssetsError {
+pub enum LockBridgeTransferError {
 	#[error("Failed to lock assets")]
 	LockingError,
 	#[error("Timeout while performing contract call")]
@@ -456,13 +456,13 @@ pub enum LockBridgeTransferAssetsError {
 	ContractCallError(#[from] BridgeContractCounterpartyError),
 }
 
-impl HasTimeoutError for LockBridgeTransferAssetsError {
+impl HasTimeoutError for LockBridgeTransferError {
 	fn timeout_error() -> Self {
-		LockBridgeTransferAssetsError::ContractCallTimeoutError
+		LockBridgeTransferError::ContractCallTimeoutError
 	}
 }
 
-async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: BlockchainService>(
+async fn call_lock_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
 	mut counterparty_contract: BTo::CounterpartyContract,
 	BridgeTransferDetails {
 		bridge_transfer_id,
@@ -473,7 +473,7 @@ async fn call_lock_bridge_transfer_assets<BFrom: BlockchainService, BTo: Blockch
 		amount,
 		..
 	}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
-) -> Result<(), LockBridgeTransferAssetsError>
+) -> Result<(), LockBridgeTransferError>
 where
 	BTo::Hash: From<BFrom::Hash>,
 	Vec<u8>: From<BFrom::Address>,
@@ -482,12 +482,12 @@ where
 	let hash_lock = HashLock(From::from(hash_lock.0));
 
 	tracing::trace!(
-		"Calling lock_bridge_transfer_assets on counterparty contract for bridge transfer {:?}",
+		"Calling lock_bridge_transfer on counterparty contract for bridge transfer {:?}",
 		bridge_transfer_id
 	);
 
 	counterparty_contract
-		.lock_bridge_transfer_assets(
+		.lock_bridge_transfer(
 			bridge_transfer_id,
 			hash_lock,
 			time_lock,
