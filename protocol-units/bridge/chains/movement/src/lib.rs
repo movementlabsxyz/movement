@@ -19,9 +19,14 @@ use bridge_shared::{
 use rand::prelude::*;
 use rand::Rng;
 use serde::Serialize;
-use std::{env, fs, io::{Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
+use std::{
+	env, fs,
+	io::{Read, Write},
+	path::{Path, PathBuf},
+	process::{Command, Stdio},
+};
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::Command as TokioCommand,
@@ -59,8 +64,8 @@ impl Config {
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 
 		Config {
-			rpc_url: Some("http://localhost:8080".parse().unwrap()),
-			ws_url: Some("ws://localhost:8080".parse().unwrap()),
+			rpc_url: Some("http://0.0.0.0:30734".parse().unwrap()),
+			ws_url: Some("ws://localhost:30734".parse().unwrap()),
 			chain_id: 4.to_string(),
 			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
 			initiator_contract: None,
@@ -96,7 +101,7 @@ impl MovementClient {
 		let signer = LocalAccount::generate(&mut rng);
 
 		let mut address_bytes = [0u8; AccountAddress::LENGTH];
-        	address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
+		address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
 		let counterparty_address = AccountAddress::new(address_bytes);
 		Ok(MovementClient {
 			counterparty_address,
@@ -192,20 +197,20 @@ impl MovementClient {
 			child,
 		))
 	}
-	
-	pub fn publish_for_test(&mut self) -> Result<()> {
-		
-    		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
-		
-		let mut process = Command::new("movement")
-                .args(&["init"])
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .expect("Failed to execute command");
 
-		let stdin: &mut std::process::ChildStdin = process.stdin.as_mut().expect("Failed to open stdin");
+	pub fn publish_for_test(&mut self) -> Result<()> {
+		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
+
+		let mut process = Command::new("movement")
+			.args(&["init"])
+			.stdin(Stdio::piped())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()
+			.expect("Failed to execute command");
+
+		let stdin: &mut std::process::ChildStdin =
+			process.stdin.as_mut().expect("Failed to open stdin");
 
 		let movement_dir = PathBuf::from(".movement");
 
@@ -219,24 +224,21 @@ impl MovementClient {
 
 		drop(stdin);
 
-		let addr_output = process
-			.wait_with_output()
-			.expect("Failed to read command output");
+		let addr_output = process.wait_with_output().expect("Failed to read command output");
 
 		if !addr_output.stdout.is_empty() {
 			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
 		}
-	
+
 		if !addr_output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 		}
 		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
 		let address = addr_output_str
 			.split_whitespace()
-			.find(|word| word.starts_with("0x")
-		) 
-		    	.expect("Failed to extract the Movement account address");
-	    
+			.find(|word| word.starts_with("0x"))
+			.expect("Failed to extract the Movement account address");
+
 		println!("Extracted address: {}", address);
 
 		let resource_output = Command::new("movement")
@@ -279,7 +281,6 @@ impl MovementClient {
 		// Set counterparty module address to resource address, for function calls:
 		self.counterparty_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
 
-
 		println!("Derived resource address: {}", formatted_resource_address);
 
 		let current_dir = env::current_dir().expect("Failed to get current directory");
@@ -288,86 +289,83 @@ impl MovementClient {
 		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
 
 		// Read the existing content of Move.toml
-		let move_toml_content = fs::read_to_string(&move_toml_path)
-			.expect("Failed to read Move.toml file");
-	
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
 		// Update the content of Move.toml with the new addresses
 		let updated_content = move_toml_content
 			.lines()
-			.map(|line| {
-				match line {
-					_ if line.starts_with("resource_addr = ") => {
-					    format!(r#"resource_addr = "{}""#, formatted_resource_address)
-					}
-					_ if line.starts_with("atomic_bridge = ") => {
-					    format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
-					}
-					_ if line.starts_with("moveth = ") => {
-					    format!(r#"moveth = "{}""#, formatted_resource_address)
-					}
-					_ if line.starts_with("master_minter = ") => {
-					    format!(r#"master_minter = "{}""#, formatted_resource_address)
-					}
-					_ if line.starts_with("minter = ") => {
-					    format!(r#"minter = "{}""#, formatted_resource_address)
-					}
-					_ if line.starts_with("admin = ") => {
-					    format!(r#"admin = "{}""#, formatted_resource_address)
-					}
-					_ if line.starts_with("origin_addr = ") => {
-					    format!(r#"origin_addr = "{}""#, address)
-					}
-					_ if line.starts_with("source_account = ") => {
-					    format!(r#"source_account = "{}""#, address)
-					}
-					_ => line.to_string(),
+			.map(|line| match line {
+				_ if line.starts_with("resource_addr = ") => {
+					format!(r#"resource_addr = "{}""#, formatted_resource_address)
 				}
+				_ if line.starts_with("atomic_bridge = ") => {
+					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("moveth = ") => {
+					format!(r#"moveth = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("master_minter = ") => {
+					format!(r#"master_minter = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("minter = ") => {
+					format!(r#"minter = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("admin = ") => {
+					format!(r#"admin = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("origin_addr = ") => {
+					format!(r#"origin_addr = "{}""#, address)
+				}
+				_ if line.starts_with("source_account = ") => {
+					format!(r#"source_account = "{}""#, address)
+				}
+				_ => line.to_string(),
 			})
 			.collect::<Vec<_>>()
 			.join("\n");
-	
+
 		// Write the updated content back to Move.toml
-		let mut file = fs::File::create(&move_toml_path)
-			.expect("Failed to open Move.toml file for writing");
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
 		file.write_all(updated_content.as_bytes())
 			.expect("Failed to write updated Move.toml file");
-	
+
 		println!("Move.toml updated successfully.");
 
 		let output2 = Command::new("movement")
 			.args(&[
-				"move", 
+				"move",
 				"create-resource-account-and-publish-package",
 				"--assume-yes",
 				"--address-name",
-				"moveth", 
+				"moveth",
 				"--seed",
 				&random_seed,
-				"--package-dir", 
-				"../move-modules"
+				"--package-dir",
+				"../move-modules",
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()
 			.expect("Failed to execute command");
 
-	if !output2.stdout.is_empty() {
-		eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		if !output2.stdout.is_empty() {
+			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
 		}
 
-	if !output2.stderr.is_empty() {
-        	eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
-    	}
+		if !output2.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
+		}
 
-	
-	if movement_dir.exists() {
-		fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
-		println!(".movement directory deleted successfully.");
-	}
+		if movement_dir.exists() {
+			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
+			println!(".movement directory deleted successfully.");
+		}
 
 		Ok(())
 	}
-	
+
 	pub fn rest_client(&self) -> &Client {
 		&self.rest_client
 	}
