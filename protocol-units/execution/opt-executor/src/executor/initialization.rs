@@ -35,6 +35,7 @@ impl Executor {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
 			transactions_in_flight: Arc::new(AtomicU64::new(0)),
+			config: maptos_config.clone(),
 		})
 	}
 
@@ -108,6 +109,7 @@ impl Executor {
 			self.db().reader.clone(),
 			&node_config,
 			Arc::clone(&self.transactions_in_flight),
+			maptos_config.load_shedding.max_transactions_in_flight,
 		);
 		let cx = Context::new(
 			self.db().clone(),
