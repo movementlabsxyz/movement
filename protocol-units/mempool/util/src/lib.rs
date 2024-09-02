@@ -134,13 +134,7 @@ impl Ord for MempoolTransaction {
 			non_equal => return non_equal,
 		}
 
-		// If slot_seconds are equal, then compare by sequence number
-		match self.transaction.sequence_number().cmp(&other.transaction.sequence_number()) {
-			Ordering::Equal => {}
-			non_equal => return non_equal,
-		}
-
-		// If sequence number is equal, then compare by transaction on the whole
+		// If slots seconds are equal, then compare by transaction on the whole
 		self.transaction.cmp(&other.transaction)
 	}
 }

@@ -1,6 +1,7 @@
 use aptos_types::state_proof::StateProof;
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::BTreeSet;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -43,7 +44,7 @@ impl fmt::Display for Id {
 	}
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash)]
 pub struct Transaction {
 	data: Vec<u8>,
 	sequence_number: u64,
@@ -73,6 +74,25 @@ impl Transaction {
 
 	pub fn test() -> Self {
 		Self::new(vec![0], 0)
+	}
+}
+
+impl Ord for Transaction {
+	fn cmp(&self, other: &Self) -> Ordering {
+		// First, compare by sequence_number
+		match self.sequence_number().cmp(&other.sequence_number()) {
+			Ordering::Equal => {}
+			non_equal => return non_equal,
+		}
+
+		// If sequence number is equal, then compare by transaction on the whole
+		self.id().cmp(other.id())
+	}
+}
+
+impl PartialOrd for Transaction {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
 	}
 }
 

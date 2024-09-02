@@ -145,7 +145,7 @@ pub mod test {
 		assert!(block.is_some());
 
 		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
-		assert_eq!(block.transactions.len(), 5);
+		assert_eq!(block.transactions().len(), 5);
 
 		Ok(())
 	}
@@ -163,7 +163,7 @@ pub mod test {
 
 		let result = memseq.wait_for_next_block().await;
 		assert!(result.is_err());
-		assert_eq!(result.unwrap_err().to_string(), "Mock pop_transaction");
+		assert_eq!(result.unwrap_err().to_string(), "Mock pop_mempool_transaction");
 
 		Ok(())
 	}
@@ -307,8 +307,13 @@ pub mod test {
 		memseq.publish(transaction.clone()).await?;
 
 		let block = memseq.wait_for_next_block().await?;
-
-		assert_eq!(block.ok_or(anyhow::anyhow!("Block not found"))?.transactions[0], transaction);
+		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
+		let transaction_0th = block
+			.transactions()
+			.into_iter()
+			.next()
+			.ok_or(anyhow::anyhow!("No transactions in block"))?;
+		assert_eq!(transaction_0th, &transaction);
 
 		Ok(())
 	}
@@ -333,7 +338,7 @@ pub mod test {
 
 		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
 
-		assert_eq!(block.transactions.len(), block_size as usize);
+		assert_eq!(block.transactions().len(), block_size as usize);
 
 		let second_block = memseq.wait_for_next_block().await?;
 
@@ -341,7 +346,7 @@ pub mod test {
 
 		let second_block = second_block.ok_or(anyhow::anyhow!("Second block not found"))?;
 
-		assert_eq!(second_block.transactions.len(), block_size as usize);
+		assert_eq!(second_block.transactions().len(), block_size as usize);
 
 		Ok(())
 	}
@@ -385,7 +390,7 @@ pub mod test {
 			let block = memseq.wait_for_next_block().await?;
 			assert!(block.is_some());
 			let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
-			assert_eq!(block.transactions.len(), (block_size / 2) as usize);
+			assert_eq!(block.transactions().len(), (block_size / 2) as usize);
 
 			tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
@@ -393,7 +398,7 @@ pub mod test {
 			let block = memseq.wait_for_next_block().await?;
 			assert!(block.is_some());
 			let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
-			assert_eq!(block.transactions.len(), ((block_size / 2) - 2) as usize);
+			assert_eq!(block.transactions().len(), ((block_size / 2) - 2) as usize);
 
 			Ok::<_, anyhow::Error>(())
 		};

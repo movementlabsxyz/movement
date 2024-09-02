@@ -265,8 +265,8 @@ mod tests {
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		let commitment = executor.execute_block_opt(block).await?;
 
-		assert_eq!(commitment.block_id.to_vec(), block_id.to_vec());
-		assert_eq!(commitment.height, 1);
+		assert_eq!(commitment.block_id().to_vec(), block_id.to_vec());
+		assert_eq!(commitment.height(), 1);
 
 		services_handle.abort();
 		background_handle.abort();

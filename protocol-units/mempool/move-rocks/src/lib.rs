@@ -325,7 +325,7 @@ pub mod test {
 		mempool.add_mempool_transaction(tx.clone()).await?;
 		assert!(mempool.has_mempool_transaction(tx_id.clone()).await?);
 		let tx2 = mempool.get_mempool_transaction(tx_id.clone()).await?;
-		assert_eq!(Some(tx), tx2);
+		assert_eq!(Some(tx.clone()), tx2);
 		mempool.remove_mempool_transaction(tx_id.clone()).await?;
 		assert!(!mempool.has_mempool_transaction(tx_id.clone()).await?);
 
@@ -334,7 +334,7 @@ pub mod test {
 		mempool.add_block(block.clone()).await?;
 		assert!(mempool.has_block(block_id.clone()).await?);
 		let block2 = mempool.get_block(block_id.clone()).await?;
-		assert_eq!(Some(block), block2);
+		assert_eq!(Some(block.clone()), block2);
 		mempool.remove_block(block_id.clone()).await?;
 		assert!(!mempool.has_block(block_id.clone()).await?);
 
@@ -352,7 +352,7 @@ pub mod test {
 		mempool.add_transaction(tx.clone()).await?;
 		assert!(mempool.has_transaction(tx_id.clone()).await?);
 		let tx2 = mempool.get_transaction(tx_id.clone()).await?;
-		assert_eq!(Some(tx), tx2);
+		assert_eq!(Some(tx.clone()), tx2);
 		mempool.remove_transaction(tx_id.clone()).await?;
 		assert!(!mempool.has_transaction(tx_id.clone()).await?);
 
