@@ -76,27 +76,30 @@ mod block {
 
 	impl BinpackingWeighted for Id {
 		fn weight(&self) -> usize {
-			self.0.len()
+			self.inner().len()
 		}
 	}
 
 	impl BinpackingWeighted for Transaction {
 		fn weight(&self) -> usize {
-			self.data.len() + self.id.weight()
+			self.data().len() + self.id().weight()
 		}
 	}
 
 	impl BinpackingWeighted for Block {
 		fn weight(&self) -> usize {
 			// sum of the transactions
-			let mut weight =
-				self.transactions.iter().map(|transaction| transaction.weight()).sum::<usize>();
+			let mut weight = self
+				.transactions()
+				.iter()
+				.map(|transaction| transaction.weight())
+				.sum::<usize>();
 
 			// id
-			weight += self.id.weight();
+			weight += self.id().weight();
 
 			// parent
-			weight += self.parent.len();
+			weight += self.parent().len();
 
 			// for now metadata is negligible
 

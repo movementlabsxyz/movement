@@ -39,7 +39,7 @@ impl McrSettlementClient {
 	/// posted for this height with the `McrSettlementClientOperations` API.
 	pub async fn override_block_commitment(&self, commitment: BlockCommitment) {
 		let mut commitments = self.commitments.write().await;
-		commitments.insert(commitment.height, commitment);
+		commitments.insert(commitment.height(), commitment);
 	}
 
 	/// Stop streaming commitments after the given height.
@@ -61,7 +61,7 @@ impl McrSettlementClient {
 		{
 			let commitments = self.commitments.read().await;
 			for (_, commitment) in commitments.range(resume_height + 1..) {
-				println!("resume sends commitment for height {}", commitment.height);
+				println!("resume sends commitment for height {}", commitment.height());
 				self.stream_sender.send(Ok(commitment.clone())).await.unwrap();
 			}
 		}
@@ -74,11 +74,11 @@ impl McrSettlementClientOperations for McrSettlementClient {
 		&self,
 		block_commitment: BlockCommitment,
 	) -> Result<(), anyhow::Error> {
-		let height = block_commitment.height;
+		let height = block_commitment.height();
 
 		let settled = {
 			let mut commitments = self.commitments.write().await;
-			commitments.entry(block_commitment.height).or_insert(block_commitment).clone()
+			commitments.entry(block_commitment.height()).or_insert(block_commitment).clone()
 		};
 		{
 			let paused_at_height = self.paused_at_height.read().await;

@@ -133,7 +133,7 @@ where
 		.await??;
 
 		// get the transactions
-		let transactions_count = block.transactions.len();
+		let transactions_count = block.transactions().len();
 		let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
@@ -201,15 +201,16 @@ where
 
 		// get the transactions
 		let mut block_transactions = Vec::new();
-		let block_metadata = self
-			.executor
-			.build_block_metadata(HashValue::sha3_256_of(block_id.0.as_slice()), block_timestamp)?;
+		let block_metadata = self.executor.build_block_metadata(
+			HashValue::sha3_256_of(block_id.inner().as_slice()),
+			block_timestamp,
+		)?;
 		let block_metadata_transaction =
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
 		block_transactions.push(block_metadata_transaction);
 
-		for transaction in block.transactions {
-			let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.data)?;
+		for transaction in block.transactions() {
+			let signed_transaction: SignedTransaction = serde_json::from_slice(transaction.data())?;
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),
 			);
@@ -237,7 +238,7 @@ where
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
 				self.executor
-					.set_finalized_block_height(commitment.height)
+					.set_finalized_block_height(commitment.height())
 					.context("failed to set finalized block height")
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {

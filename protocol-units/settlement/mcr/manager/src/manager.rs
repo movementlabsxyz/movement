@@ -65,10 +65,10 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
 					commitments_to_settle.insert(
-						block_commitment.height,
-						block_commitment.commitment.clone(),
+						block_commitment.height(),
+						block_commitment.commitment().clone(),
 					);
-					if block_commitment.height > max_height {
+					if block_commitment.height() > max_height {
 						// Can't post this commitment to the contract yet.
 						// Post the previously accumulated commitments as a batch
 						// and pause reading from input.
@@ -104,9 +104,9 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 						}
 					};
 
-					let height = settled_commitment.height;
+					let height = settled_commitment.height();
 					if let Some(commitment) = commitments_to_settle.remove(&height) {
-						let event = if commitment == settled_commitment.commitment {
+						let event = if &commitment == settled_commitment.commitment() {
 							BlockCommitmentEvent::Accepted(settled_commitment)
 						} else {
 							BlockCommitmentEvent::Rejected {

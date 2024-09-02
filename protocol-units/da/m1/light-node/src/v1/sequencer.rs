@@ -82,7 +82,7 @@ impl LightNodeV1 {
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions.len(), "received_block");
+				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
 				sender.send(block).await?;
 				Ok(())
 			}
@@ -227,7 +227,7 @@ impl LightNodeV1 {
 		if blocks.is_empty() {
 			return Ok(());
 		}
-		let ids = blocks.iter().map(|b| b.id()).collect::<Vec<_>>();
+		let ids = blocks.iter().map(|b| b.id().clone()).collect::<Vec<_>>();
 
 		// submit the blobs, resizing as needed
 		for block_id in &ids {

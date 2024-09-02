@@ -88,11 +88,7 @@ impl Executor {
 		let block_height = self.get_block_head_height()?;
 
 		let commitment = Commitment::digest_state_proof(&proof);
-		Ok(BlockCommitment {
-			block_id: Id(*block_id.clone()),
-			commitment,
-			height: block_height.into(),
-		})
+		Ok(BlockCommitment::new(block_height.into(), Id::new(*block_id.clone()), commitment))
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {

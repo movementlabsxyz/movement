@@ -57,12 +57,12 @@ pub trait MempoolTransactionOperations {
 	}
 
 	/// Adds a transaction to the mempool.
-	async fn add_transaction(&self, tx: Transaction) -> Result<(), anyhow::Error> {
-		if self.has_transaction(tx.id()).await? {
+	async fn add_transaction(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
+		if self.has_transaction(transaction.id().clone()).await? {
 			return Ok(());
 		}
 
-		let mempool_transaction = MempoolTransaction::slot_now(tx);
+		let mempool_transaction = MempoolTransaction::slot_now(transaction);
 		self.add_mempool_transaction(mempool_transaction).await
 	}
 
@@ -135,7 +135,7 @@ impl Ord for MempoolTransaction {
 		}
 
 		// If slot_seconds are equal, then compare by sequence number
-		match self.transaction.sequence_number.cmp(&other.transaction.sequence_number) {
+		match self.transaction.sequence_number().cmp(&other.transaction.sequence_number()) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,
 		}
@@ -173,7 +173,7 @@ impl MempoolTransaction {
 		Self::at_time(transaction, timestamp)
 	}
 
-	pub fn id(&self) -> Id {
+	pub fn id(&self) -> &Id {
 		self.transaction.id()
 	}
 }

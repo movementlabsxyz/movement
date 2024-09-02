@@ -108,7 +108,7 @@ mod block {
 	impl Splitable for Block {
 		fn split(self, factor: usize) -> Result<Vec<Self>, anyhow::Error> {
 			// unpack the transactions
-			let Block { metadata, transactions, parent, id: _ } = self;
+			let (metadata, parent, transactions, _id) = self.into_parts();
 
 			// split the vector of transactions
 			let split_transactions = transactions.split(factor)?;

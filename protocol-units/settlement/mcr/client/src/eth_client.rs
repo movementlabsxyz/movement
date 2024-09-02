@@ -172,9 +172,9 @@ where
 
 		let eth_block_commitment = MCR::BlockCommitment {
 			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
-			height: U256::from(block_commitment.height),
-			commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
-			blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
+			height: U256::from(block_commitment.height()),
+			commitment: alloy_primitives::FixedBytes(block_commitment.commitment().inner().clone()),
+			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().inner().clone()),
 		};
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
@@ -199,9 +199,13 @@ where
 			.map(|block_commitment| {
 				Ok(MCR::BlockCommitment {
 					// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
-					height: U256::from(block_commitment.height),
-					commitment: alloy_primitives::FixedBytes(block_commitment.commitment.0),
-					blockId: alloy_primitives::FixedBytes(block_commitment.block_id.0),
+					height: U256::from(block_commitment.height()),
+					commitment: alloy_primitives::FixedBytes(
+						block_commitment.commitment().inner().clone(),
+					),
+					blockId: alloy_primitives::FixedBytes(
+						block_commitment.block_id().inner().clone(),
+					),
 				})
 			})
 			.collect::<Result<Vec<_>, TryFromSliceError>>()?;
@@ -231,11 +235,11 @@ where
 							alloy_sol_types::Error::Other(err.to_string().into())
 						},
 					)?;
-					Ok(BlockCommitment {
+					Ok(BlockCommitment::new(
 						height,
-						block_id: Id(commitment.blockHash.0),
-						commitment: Commitment(commitment.stateCommitment.0),
-					})
+						Id::new(commitment.blockHash.0),
+						Commitment::new(commitment.stateCommitment.0),
+					))
 				})
 				.map_err(|err| McrEthConnectorError::EventNotificationError(err).into())
 		});
@@ -255,14 +259,14 @@ where
 			.try_into()
 			.context("Failed to convert the commitment height from U256 to u64")?;
 		// Commitment with height 0 mean not found
-		Ok((return_height != 0).then_some(BlockCommitment {
-			height: commitment
+		Ok((return_height != 0).then_some(BlockCommitment::new(
+			commitment
 				.height
 				.try_into()
 				.context("Failed to convert the commitment height from U256 to u64")?,
-			block_id: Id(commitment.blockId.into()),
-			commitment: Commitment(commitment.commitment.into()),
-		}))
+			Id::new(commitment.blockId.into()),
+			Commitment::new(commitment.commitment.into()),
+		)))
 	}
 
 	async fn get_max_tolerable_block_height(&self) -> Result<u64, anyhow::Error> {

@@ -41,7 +41,7 @@ impl RocksdbMempool {
 		key.write_fmt(format_args!(
 			"{:032}:{:032}:{}",
 			transaction.timestamp,
-			transaction.transaction.sequence_number,
+			transaction.transaction.sequence_number(),
 			transaction.transaction.id(),
 		))
 		.unwrap();

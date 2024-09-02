@@ -3,9 +3,17 @@ use core::fmt;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Id(pub [u8; 32]);
+pub struct Id([u8; 32]);
 
 impl Id {
+	pub fn new(data: [u8; 32]) -> Self {
+		Self(data)
+	}
+
+	pub fn inner(&self) -> &[u8; 32] {
+		&self.0
+	}
+
 	pub fn test() -> Self {
 		Self([0; 32])
 	}
@@ -36,9 +44,9 @@ impl fmt::Display for Id {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Transaction {
-	pub data: Vec<u8>,
-	pub sequence_number: u64,
-	pub id: Id,
+	data: Vec<u8>,
+	sequence_number: u64,
+	id: Id,
 }
 
 impl Transaction {
@@ -50,8 +58,16 @@ impl Transaction {
 		Self { data, sequence_number, id }
 	}
 
-	pub fn id(&self) -> Id {
-		self.id.clone()
+	pub fn id(&self) -> &Id {
+		&self.id
+	}
+
+	pub fn data(&self) -> &Vec<u8> {
+		&self.data
+	}
+
+	pub fn sequence_number(&self) -> u64 {
+		self.sequence_number
 	}
 
 	pub fn test() -> Self {
@@ -61,14 +77,14 @@ impl Transaction {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct TransactionEntry {
-	pub consumer_id: Id,
-	pub data: Transaction,
+	consumer_id: Id,
+	data: Transaction,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct AtomicTransactionBundle {
-	pub sequencer_id: Id,
-	pub transactions: Vec<TransactionEntry>,
+	sequencer_id: Id,
+	transactions: Vec<TransactionEntry>,
 }
 
 impl TryFrom<AtomicTransactionBundle> for Transaction {
@@ -100,10 +116,10 @@ pub enum BlockMetadata {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Block {
-	pub metadata: BlockMetadata,
-	pub parent: Vec<u8>,
-	pub transactions: Vec<Transaction>,
-	pub id: Id,
+	metadata: BlockMetadata,
+	parent: Vec<u8>,
+	transactions: Vec<Transaction>,
+	id: Id,
 }
 
 impl Block {
@@ -118,8 +134,24 @@ impl Block {
 		Self { metadata, parent, transactions, id }
 	}
 
-	pub fn id(&self) -> Id {
-		self.id.clone()
+	pub fn into_parts(self) -> (BlockMetadata, Vec<u8>, Vec<Transaction>, Id) {
+		(self.metadata, self.parent, self.transactions, self.id)
+	}
+
+	pub fn id(&self) -> &Id {
+		&self.id
+	}
+
+	pub fn parent(&self) -> &Vec<u8> {
+		&self.parent
+	}
+
+	pub fn transactions(&self) -> &Vec<Transaction> {
+		&self.transactions
+	}
+
+	pub fn metadata(&self) -> &BlockMetadata {
+		&self.metadata
 	}
 
 	pub fn test() -> Self {
@@ -132,11 +164,19 @@ impl Block {
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
-pub struct Commitment(pub [u8; 32]);
+pub struct Commitment([u8; 32]);
 
 impl Commitment {
+	pub fn new(data: [u8; 32]) -> Self {
+		Self(data)
+	}
+
 	pub fn test() -> Self {
 		Self([0; 32])
+	}
+
+	pub fn inner(&self) -> &[u8; 32] {
+		&self.0
 	}
 
 	/// Creates a commitment by making a cryptographic digest of the state proof.
@@ -184,9 +224,31 @@ impl fmt::Display for Commitment {
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct BlockCommitment {
-	pub height: u64,
-	pub block_id: Id,
-	pub commitment: Commitment,
+	height: u64,
+	block_id: Id,
+	commitment: Commitment,
+}
+
+impl BlockCommitment {
+	pub fn new(height: u64, block_id: Id, commitment: Commitment) -> Self {
+		Self { height, block_id, commitment }
+	}
+
+	pub fn height(&self) -> u64 {
+		self.height
+	}
+
+	pub fn block_id(&self) -> &Id {
+		&self.block_id
+	}
+
+	pub fn commitment(&self) -> &Commitment {
+		&self.commitment
+	}
+
+	pub fn test() -> Self {
+		Self::new(0, Id::test(), Commitment::test())
+	}
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
