@@ -28,6 +28,8 @@ impl BridgeContractInitiatorError {
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyError {
+	#[error("Function call failed")]
+	CallError,
 	#[error("Failed to view module")]
 	ModuleViewError,
 	#[error("Failed to view function")]

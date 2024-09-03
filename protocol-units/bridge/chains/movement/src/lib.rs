@@ -77,7 +77,7 @@ impl Config {
 #[derive(Clone)]
 pub struct MovementClient {
 	///Address of the counterparty moduke
-	counterparty_address: AccountAddress,
+	pub counterparty_address: AccountAddress,
 	///Address of the initiator module
 	initiator_address: Vec<u8>,
 	///The Apotos Rest Client
@@ -566,20 +566,23 @@ impl BridgeContractCounterparty for MovementClient {
 			.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
 			ty_args: vec![],
 			args: vec![bcs::to_bytes(&bridge_transfer_id.0)
-			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?],
+			.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?],
 		};
 		
 		// Send the request to the "/view" endpoint using view_bcs
-		let response: Response<(String, String, u64, String, u64, u8)> = self.rest_client
+		let response: Response<(Vec<u8>, AccountAddress, u64, Vec<u8>, u64, u8)> = self.rest_client
 			.view_bcs(&view_request, None)
 			.await
-			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+			.map_err(|_| BridgeContractCounterpartyError::CallError)?;
 		
 		// Check if the response is valid and parse it
 		let (originator, recipient, amount, hash_lock, time_lock, state) = response.into_inner();
+
+		let originator_hex = hex::encode(&originator);
+		let originator_hex_str = format!("0x{}", originator_hex);
 		
 		// Convert originator and recipient addresses from hex strings to AccountAddress
-		let originator_address = AccountAddress::from_hex_literal(&originator)
+		let originator_address = AccountAddress::from_hex_literal(&originator_hex_str)
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let recipient_address_bytes = hex::decode(&recipient[2..])
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;

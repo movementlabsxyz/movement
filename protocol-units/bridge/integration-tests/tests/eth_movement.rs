@@ -19,7 +19,7 @@ use bridge_shared::{
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
 use rand;
-use tokio::{self, process::Child};
+use tokio::{self, process::{Child, Command}};
 use futures::{channel::mpsc::{self, UnboundedReceiver}, StreamExt};
 
 use aptos_types::account_address::AccountAddress;
@@ -120,15 +120,17 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
                     RecipientAddress(recipient),
                     Amount(AssetType::Moveth(amount))
                 ).await.expect("Failed to lock bridge transfer");
+
         } // End of the second borrow scope
 
         // Third mutable borrow
         {
             let details = harness.movement_client_mut().expect("Failed to get MovmentClient")
-                .get_bridge_transfer_state(BridgeTransferId(bridge_transfer_id)).await
-                .expect("Failed to get bridge transfer state");
+                .get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id)).await
+                .expect("Failed to get bridge transfer details");
 
-            debug!("Bridge transfer state: {:?}", details);
+            debug!("Bridge transfer details: {:?}", details);
+
         } // End of the third borrow scope
 
         // Fourth mutable borrow
