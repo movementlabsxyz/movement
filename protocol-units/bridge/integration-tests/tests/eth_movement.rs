@@ -1,4 +1,4 @@
-use std::{env, path::Path};
+use std::{env, net::TcpStream, path::Path, time::Duration};
 
 use alloy::{
 	node_bindings::Anvil,
@@ -357,11 +357,29 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut _harness, mut child) = TestHarness::new_with_movement().await;
-
 	let package_root = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-	println!("pacakge_root: {:?}", package_root);
+	let script_path = format!("{}/scripts/postgres-start.bash", package_root);
+	let script_path_clone = script_path.clone();
+
+	// Check if PostgreSQL is running
+	if !is_postgres_running("127.0.0.1", 5432).await {
+		println!("PostgreSQL is not running. Starting PostgreSQL setup...");
+
+		tokio::spawn(async move {
+			Command::new("bash")
+				.arg(&script_path_clone)
+				.status()
+				.await
+				.expect("Failed to run the PostgreSQL setup script")
+		});
+
+		tokio::time::sleep(Duration::from_secs(5)).await;
+	} else {
+		println!("PostgreSQL is already running.");
+	}
+
+	let (mut _harness, mut child) = TestHarness::new_with_movement().await;
 
 	let mut indexer_child = Command::new("cargo")
 		.arg("run")
@@ -373,10 +391,13 @@ async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 		.spawn()
 		.expect("Failed to start indexer");
 
-	// Check postgres connection
-
+	// Wait for the indexer process to complete
 	indexer_child.wait().await?;
 
 	child.kill().await.context("Failed to kill the child process")?;
 	Ok(())
+}
+
+async fn is_postgres_running(host: &str, port: u16) -> bool {
+	TcpStream::connect((host, port)).is_ok()
 }

@@ -20,7 +20,6 @@ echo -e "host    all             all             172.0.0.0/8             trust" 
 # For Mac docker connection
 IP_NET_MASK="$(echo $POSTGRES_HOST_IP | cut -d'.' -f1-3).0/24"
 
-
 # Start the PostgreSQL server
 pg_ctl -D ./.data -l ./.data/logfile -o "-c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'" start
 
