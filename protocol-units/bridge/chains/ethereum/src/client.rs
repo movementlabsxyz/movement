@@ -22,6 +22,7 @@ use bridge_shared::types::{
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
 use url::Url;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::types::{
 	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract, WETH9Contract, WETH9,
@@ -470,5 +471,49 @@ impl BridgeContractCounterparty for EthClient {
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
 		}))
+	}
+}
+
+#[cfg(test)]
+fn test_wrapping_to(a: &U256, b: u64) {
+    assert_eq!(a.wrapping_to::<u64>(), b);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wrapping_to_on_eth_details() {
+        let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let eth_details = EthBridgeTransferDetails {
+            amount: U256::from(1u64 * 10u64.pow(18)),
+            originator: EthAddress([0; 20].into()),
+            recipient: [0; 32],
+            hash_lock: [0; 32],
+            time_lock: U256::from(current_time + 84600), // 1 day
+            state: 1,
+        };
+        test_wrapping_to(&eth_details.amount, 1 * 10u64.pow(18));
+        test_wrapping_to(&eth_details.time_lock, current_time + 84600);
+    }
+
+	#[test]
+	fn fuzz_test_wrapping_to_on_eth_details() {
+		for _ in 0..100 {
+		let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+		let additional_time = rand::random::<u64>();
+		let random_amount = rand::random::<u64>();
+		let eth_details = EthBridgeTransferDetails {
+			amount: U256::from(random_amount),
+			originator: EthAddress([0; 20].into()),
+			recipient: [0; 32],
+			hash_lock: [0; 32],
+			time_lock: U256::from(current_time + additional_time),
+			state: 1,
+		};
+		test_wrapping_to(&eth_details.amount, random_amount);
+		test_wrapping_to(&eth_details.time_lock, current_time + additional_time);
+		}
 	}
 }
