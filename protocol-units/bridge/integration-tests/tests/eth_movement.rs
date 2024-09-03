@@ -172,7 +172,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 	let amount = 100;
 
 	let result = async {
-		// First borrow scope
 		{
 		    let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 		    let _ = movement_client.publish_for_test();
@@ -189,7 +188,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		    assert!(balance >= 100_000_000, "Expected Movement Client to have at least 100_000_000, but found {}", balance);
 		}
 	
-		// Second borrow scope
 		{	
 		    harness.movement_client_mut().expect("Failed to get MovmentClient")
 			.lock_bridge_transfer(
@@ -202,7 +200,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			).await.expect("Failed to lock bridge transfer");
 		}
 	
-		// Third borrow scope
 		{
 		    let details = harness.movement_client_mut().expect("Failed to get MovmentClient")
 			.get_bridge_transfer_state(BridgeTransferId(bridge_transfer_id)).await
@@ -211,7 +208,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		    debug!("Bridge transfer state: {:?}", details);
 		}
 	
-		// Fourth borrow scope
 		{
 		    let result = harness.movement_client_mut().expect("Failed to get MovmentClient")
 			.complete_bridge_transfer(
