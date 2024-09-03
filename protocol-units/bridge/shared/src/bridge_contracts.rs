@@ -142,11 +142,6 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
-
-	async fn get_bridge_transfer_state(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<u8>>;
 }
 
 #[async_trait::async_trait]

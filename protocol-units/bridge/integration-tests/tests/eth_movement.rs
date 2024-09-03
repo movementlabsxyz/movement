@@ -208,10 +208,10 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		// Third borrow scope
 		{
 		    let details = harness.movement_client_mut().expect("Failed to get MovmentClient")
-			.get_bridge_transfer_state(BridgeTransferId(bridge_transfer_id)).await
+			.get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id)).await
 			.expect("Failed to get bridge transfer state");
 	
-		    debug!("Bridge transfer state: {:?}", details);
+		    debug!("Bridge transfer details: {:?}", details);
 		}
 	
 		// Fourth borrow scope

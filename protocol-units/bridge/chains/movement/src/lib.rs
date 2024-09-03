@@ -579,167 +579,43 @@ impl BridgeContractCounterparty for MovementClient {
 		    .await
 		    .map_err(|_| BridgeContractCounterpartyError::CallError)?;
 	    
-		println!("The response is: {:?}", response);
-
 		// Extract and parse the response
-		if let Some(result) = response.into_inner().get(0) {
-		    if let serde_json::Value::Array(values) = result {
-			if values.len() == 6 {
-			    let originator = values[0].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-			    let recipient = values[1].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-			    let amount = values[2].as_u64().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-			    let hash_lock = values[3].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-			    let time_lock = values[4].as_u64().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-			    let state = values[5].as_u64().ok_or(BridgeContractCounterpartyError::SerializationError)? as u8;
+		let values = response.inner();
+		if values.len() == 6 {
+		    let originator = values[0].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
+		    let recipient = values[1].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
+		    let amount = values[2].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		    let hash_lock = values[3].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
+		    let time_lock = values[4].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		    let state = values[5].as_u64().ok_or(BridgeContractCounterpartyError::SerializationError)? as u8;
 	    
-			    // Convert the originator, recipient, and hash_lock
-			    let originator_address = AccountAddress::from_hex_literal(originator)
-				.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-			    let recipient_address_bytes = hex::decode(&recipient[2..])
-				.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-			    let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
-				.map_err(|_| BridgeContractCounterpartyError::SerializationError)?
-				.try_into()
-				.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		    // Convert the originator, recipient, and hash_lock
+		    let originator_address = AccountAddress::from_hex_literal(originator)
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		    let recipient_address_bytes = hex::decode(&recipient[2..])
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		    let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?
+			.try_into()
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 	    
-			    // Create the BridgeTransferDetails struct
-			    let details = BridgeTransferDetails {
-				bridge_transfer_id,
-				initiator_address: InitiatorAddress(MovementAddress(originator_address)),
-				recipient_address: RecipientAddress(recipient_address_bytes),
-				amount: Amount(AssetType::Moveth(amount)),
-				hash_lock: HashLock(hash_lock_array),
-				time_lock: TimeLock(time_lock),
-				state,
-			    };
+		    // Create the BridgeTransferDetails struct
+		    let details: BridgeTransferDetails<MovementAddress, [u8; 32]> = BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: InitiatorAddress(MovementAddress(originator_address)),
+			recipient_address: RecipientAddress(recipient_address_bytes),
+			amount: Amount(AssetType::Moveth(amount)),
+			hash_lock: HashLock(hash_lock_array),
+			time_lock: TimeLock(time_lock),
+			state,
+		    };
 	    
-			    return Ok(Some(details));
-			}
-		    }
+		    return Ok(Some(details));
 		}
 	    
 		Ok(None)
 	    }
 
-
-	async fn get_bridge_transfer_state(
-		&mut self,
-		bridge_transfer_id: BridgeTransferId<[u8; 32]>,
-	) -> Result<Option<u8>, BridgeContractCounterpartyError> {
-	
-		#[derive(Debug, Deserialize, Serialize)]
-		pub struct BridgeTransfer {
-			pub originator: Vec<u8>, // Eth address as bytes
-			pub recipient: String,   // Account address
-			pub amount: u64,
-			pub hash_lock: Vec<u8>,
-			pub time_lock: u64,
-			pub state: u8,
-		}
-	
-		#[derive(Debug, Deserialize, Serialize)]
-		pub struct BridgeTransferStore {
-			pub transfers: Vec<BridgeTransfer>,
-			// Include other fields if necessary
-		}
-	
-		// Construct the resource path to BridgeTransferStore
-		let resource_path = format!(
-			"{}::atomic_bridge_counterparty::BridgeTransferStore",
-			self.counterparty_address.to_string(),
-		);
-	
-		// Query the BridgeTransferStore resource
-		let response = self.rest_client
-			.get_account_resource(self.counterparty_address, &resource_path)
-			.await
-			.map_err(|e| {
-				tracing::error!("Failed to get account resource: {:?}", e);
-				BridgeContractCounterpartyError::ViewSerializationError
-			})?;
-	
-		// Handle the Option<Resource>
-		let resource = match response.into_inner() {
-			Some(resource) => resource,
-			None => {
-				tracing::error!("No resource found at the given path.");
-				return Ok(None); // Return None if the resource is not found
-			}
-		};
-		tracing::info!("Resource: {:?}", resource);
-
-		// Access the 'transfers' handle directly from the resource data
-		let transfers_handle = resource
-		.data
-		.get("transfers")
-		.and_then(|transfers| transfers.get("buckets"))
-		.and_then(|buckets| buckets.get("inner"))
-		.and_then(|inner| inner.get("handle"))
-		.and_then(|handle| handle.as_str())
-		.ok_or_else(|| {
-		tracing::error!("Failed to extract transfers handle from resource data.");
-		BridgeContractCounterpartyError::SerializationError
-		})?;
-
-		tracing::info!("Transfers handle: {:?}", transfers_handle);
-	
-		// Convert the bridge_transfer_id to a hex string for the lookup
-		let id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
-
-		tracing::info!("Id hex: {:?}", id_hex);
-		
-		let mut transfers_handle_cleaned = transfers_handle.trim().trim_start_matches("0x").to_string();
-
-		if transfers_handle_cleaned.len() == 63 {
-		    // Prepend a leading zero to make the length 64 characters
-		    transfers_handle_cleaned = format!("0{}", transfers_handle_cleaned);
-		}
-		
-		tracing::info!("Transfers handle after fixing: {:?}, length: {}", transfers_handle_cleaned, transfers_handle_cleaned.len());
-		
-		let transfers_handle_bytes = decode(transfers_handle_cleaned).map_err(|e| {
-		    tracing::error!("Failed to decode transfers handle: {:?}", e);
-		    BridgeContractCounterpartyError::SerializationError
-		})?;
-	    
-		if transfers_handle_bytes.len() != 32 {
-		    tracing::error!("Transfers handle has an incorrect length: {}", transfers_handle_bytes.len());
-		    return Err(BridgeContractCounterpartyError::SerializationError);
-		}
-	    
-		let mut address_bytes = [0u8; 32];
-		address_bytes.copy_from_slice(&transfers_handle_bytes);
-	    
-		let transfers_handle_address = AccountAddress::new(address_bytes);
-	    
-		tracing::info!("Transfers handle as AccountAddress: {:?}", transfers_handle_address);	    
-
-		// Query the specific BridgeTransfer using the transfers handle and the ID
-		let transfer_response = self.rest_client
-			.get_table_item(
-				transfers_handle_address,
-				"vector<u8>",
-				&format!("{}::atomic_bridge_counterparty::BridgeTransfer", self.counterparty_address),
-				id_hex,
-			)
-			.await
-			.map_err(|e| {
-			tracing::error!("Failed to get transfer item: {:?}", e);
-			BridgeContractCounterpartyError::ViewSerializationError
-			})?;
-
-		let transfer_value = transfer_response.into_inner();
-		
-		// Deserialize the specific transfer into the BridgeTransfer struct
-		let bridge_transfer: BridgeTransfer = serde_json::from_value(transfer_value)
-			.map_err(|e| {
-			tracing::error!("Deserialization error for transfer: {:?}", e);
-			BridgeContractCounterpartyError::SerializationError
-			})?;
-		
-		// Return the state of the bridge transfer or None if not found
-		Ok(Some(bridge_transfer.state))
-	}
 	
 }
 
