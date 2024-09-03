@@ -77,81 +77,82 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 
 #[tokio::test]
 async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt()
-		.with_max_level(tracing::Level::DEBUG)
-		.try_init();
 
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+    let _ = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
 
-	let initiator = b"0x123".to_vec();
-	let recipient: MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	let hash_lock = *keccak256(b"secret".to_vec());
-	let time_lock = 3600;
-	let amount = 100;
+    let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
-	let test_result = async {
-		// First mutable borrow
-		{
-		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-		let _ = movement_client.publish_for_test();
+    let initiator = b"0x123".to_vec();
+    let recipient: MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
+    let bridge_transfer_id = *b"00000000000000000000000transfer1";
+    let hash_lock = *keccak256(b"secret".to_vec());
+    let time_lock = 3600;
+    let amount = 100;
 
-		let rest_client = movement_client.rest_client();
-		let coin_client = CoinClient::new(&rest_client);
-		let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
-		let movement_client = movement_client.signer();
+    let test_result = async {
+        // First mutable borrow
+        {
+            let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+            let _ = movement_client.publish_for_test();
 
-		let faucet_client = faucet_client.write().unwrap();
-		faucet_client.fund(movement_client.address(), 100_000_000).await?;
+            let rest_client = movement_client.rest_client();
+            let coin_client = CoinClient::new(&rest_client);
+            let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
+            let movement_client = movement_client.signer();
 
-		let balance = coin_client.get_account_balance(&movement_client.address()).await?;
-		assert!(balance >= 100_000_000, "Expected Movement Client to have at least 100_000_000, but found {}", balance);
-		} // End of the first borrow scope
+            let faucet_client = faucet_client.write().unwrap();
+            faucet_client.fund(movement_client.address(), 100_000_000).await?;
 
-		// Second mutable borrow
-		{
-		harness.movement_client_mut().expect("Failed to get MovmentClient")
-			.lock_bridge_transfer(
-			BridgeTransferId(bridge_transfer_id),        
-			HashLock(hash_lock),
-			TimeLock(time_lock),
-			InitiatorAddress(initiator),
-			RecipientAddress(recipient),
-			Amount(AssetType::Moveth(amount))
-			).await.expect("Failed to lock bridge transfer");
-		} // End of the second borrow scope
+            let balance = coin_client.get_account_balance(&movement_client.address()).await?;
+            assert!(balance >= 100_000_000, "Expected Movement Client to have at least 100_000_000, but found {}", balance);
+        } // End of the first borrow scope
 
-		// Third mutable borrow
-		{
-		let details = harness.movement_client_mut().expect("Failed to get MovmentClient")
-			.get_bridge_transfer_state(BridgeTransferId(bridge_transfer_id)).await
-			.expect("Failed to get bridge transfer state");
+        // Second mutable borrow
+        {
+            harness.movement_client_mut().expect("Failed to get MovmentClient")
+                .lock_bridge_transfer(
+                    BridgeTransferId(bridge_transfer_id),        
+                    HashLock(hash_lock),
+                    TimeLock(time_lock),
+                    InitiatorAddress(initiator),
+                    RecipientAddress(recipient),
+                    Amount(AssetType::Moveth(amount))
+                ).await.expect("Failed to lock bridge transfer");
+        } // End of the second borrow scope
 
-		debug!("Bridge transfer state: {:?}", details);
-		} // End of the third borrow scope
+        // Third mutable borrow
+        {
+            let details = harness.movement_client_mut().expect("Failed to get MovmentClient")
+                .get_bridge_transfer_state(BridgeTransferId(bridge_transfer_id)).await
+                .expect("Failed to get bridge transfer state");
 
-		// Fourth mutable borrow
-		{
-		let result = harness.movement_client_mut().expect("Failed to get MovmentClient")
-			.complete_bridge_transfer(
-			BridgeTransferId(bridge_transfer_id),
-			HashLockPreImage(b"secret".to_vec())
-			).await
-			.expect("Failed to complete bridge transfer");
+            debug!("Bridge transfer state: {:?}", details);
+        } // End of the third borrow scope
 
-		debug!("Result: {:?}", result);
-		} // End of the fourth borrow scope
+        // Fourth mutable borrow
+        {
+            let result = harness.movement_client_mut().expect("Failed to get MovmentClient")
+                .complete_bridge_transfer(
+                    BridgeTransferId(bridge_transfer_id),
+                    HashLockPreImage(b"secret".to_vec())
+                ).await
+                .expect("Failed to complete bridge transfer");
 
-		Ok(())
-	}.await;
+            debug!("Result: {:?}", result);
+        } // End of the fourth borrow scope
 
-	// Ensure the child process is killed regardless of test result
-	if let Err(e) = child.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
+        Ok(())
+    }.await;
 
-	// Return the test result
-	test_result
+    // Ensure the child process is killed regardless of test result
+    if let Err(e) = child.kill().await {
+        eprintln!("Failed to kill child process: {:?}", e);
+    }
+
+    // Return the test result
+    test_result
 }
 
 
@@ -172,6 +173,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 	let amount = 100;
 
 	let result = async {
+		// First borrow scope
 		{
 		    let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 		    let _ = movement_client.publish_for_test();
@@ -188,6 +190,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		    assert!(balance >= 100_000_000, "Expected Movement Client to have at least 100_000_000, but found {}", balance);
 		}
 	
+		// Second borrow scope
 		{	
 		    harness.movement_client_mut().expect("Failed to get MovmentClient")
 			.lock_bridge_transfer(
@@ -200,6 +203,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			).await.expect("Failed to lock bridge transfer");
 		}
 	
+		// Third borrow scope
 		{
 		    let details = harness.movement_client_mut().expect("Failed to get MovmentClient")
 			.get_bridge_transfer_state(BridgeTransferId(bridge_transfer_id)).await
@@ -208,6 +212,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		    debug!("Bridge transfer state: {:?}", details);
 		}
 	
+		// Fourth borrow scope
 		{
 		    let result = harness.movement_client_mut().expect("Failed to get MovmentClient")
 			.complete_bridge_transfer(

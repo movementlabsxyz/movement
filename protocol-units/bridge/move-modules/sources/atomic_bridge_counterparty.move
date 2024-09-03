@@ -119,40 +119,6 @@ module atomic_bridge::atomic_bridge_counterparty {
         aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id).state
     }
 
-    #[view]
-    public fun bridge_transfers_simple_map(): simple_map::SimpleMap<vector<u8>, (vector<u8>, address, u64, vector<u8>, u64, u8)> acquires BridgeTransferStore, BridgeConfig {
-        let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
-        let store = borrow_global<BridgeTransferStore>(config_address);
-
-        // Convert the SmartTable to a SimpleMap
-        let simple_map_transfers = aptos_std::smart_table::to_simple_map(&store.transfers);
-
-        // Transform the map's values to the tuple structure we want to return
-        let transformed_map = simple_map::new<vector<u8>, (vector<u8>, address, u64, vector<u8>, u64, u8)>();
-
-        let keys = simple_map::keys(&simple_map_transfers);
-        let values = simple_map::values(&simple_map_transfers);
-
-        let i = 0;
-        while (i < vector::length(keys)) {
-            let key = vector::borrow(&keys, i);
-            let bridge_transfer_ref = vector::borrow(&values, i);
-
-            let transformed_value = (
-                bridge_transfer_ref.originator,
-                bridge_transfer_ref.recipient,
-                bridge_transfer_ref.amount,
-                bridge_transfer_ref.hash_lock,
-                bridge_transfer_ref.time_lock,
-                bridge_transfer_ref.state
-            );
-            simple_map::add(&mut transformed_map, *key, transformed_value);
-            i = i + 1;
-        };
-
-        transformed_map
-    }
-
     public entry fun lock_bridge_transfer(
         account: &signer,
         originator: vector<u8>, //eth address
