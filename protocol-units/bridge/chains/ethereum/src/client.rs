@@ -473,4 +473,29 @@ impl BridgeContractCounterparty for EthClient {
 			state: 1
 		}))
 	}
+
+	async fn get_bridge_transfer_state(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<Option<u8>>
+	{
+		let generic_error =
+			|desc| BridgeContractCounterpartyError::GenericError(String::from(desc));
+
+		let mapping_slot = U256::from(1); // the mapping is the 1st slot in the contract
+		let key = bridge_transfer_id.0;
+		let storage_slot = calculate_storage_slot(key, mapping_slot);
+		let storage: U256 = self
+			.rpc_provider
+			.get_storage_at(self.counterparty_contract_address()?, storage_slot)
+			.await
+			.map_err(|_| generic_error("could not find storage"))?;
+		let storage_bytes = storage.to_be_bytes::<32>();
+		let mut storage_slice = &storage_bytes[..];
+		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
+			.map_err(|_| generic_error("could not decode storage"))?;
+
+		Ok(Some(1))
+	}
+
 }

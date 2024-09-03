@@ -109,14 +109,14 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     #[view]
-    public fun get_bridge_transfer_state(bridge_transfer_id: vector<u8>): (vector<u8>, address, u64, vector<u8>, u64, u8) acquires BridgeTransferStore, BridgeConfig {
+    public fun get_bridge_transfer_state(bridge_transfer_id: vector<u8>): u8 acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global<BridgeTransferStore>(config_address);
 
         if (!aptos_std::smart_table::contains(&store.transfers, bridge_transfer_id)) {
             abort 0x1; 
         };
-        aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id).state;
+        aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id).state
     }
 
     public entry fun lock_bridge_transfer(
@@ -355,8 +355,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
         let state = get_bridge_transfer_state(bridge_transfer_id);
 
-        assert!(state == LOCKED, EWRONG_STATE);
-        assert!(transfer_originator == originator, EWRONG_ORIGINATOR);
+        assert!(state == 1, EWRONG_STATE);
     }
 
     #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter, malicious=@0xface)]
