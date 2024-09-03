@@ -354,30 +354,20 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 }
 
 #[tokio::test]
-async fn test_start_indexer() -> Result<(), anyhow::Error> {
+async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let package_dir = env::var("CARGO_MANIFEST_DIR").context("Failed to get workspace root")?;
-	let workspace_root = Path::new(&package_dir)
-		.parent()
-		.context("Failed to get workspace root")?
-		.parent()
-		.context("Failed to get workspace root")?
-		.parent()
-		.context("Failed to get workspace root")?
-		.to_str()
-		.context("Failed to get workspace root")?
-		.to_string();
-
-	println!("workspace_root: {:?}", workspace_root);
-
 	let (mut _harness, mut child) = TestHarness::new_with_movement().await;
+
+	let package_root = env::var("CARGO_MANIFEST_DIR").unwrap();
+
+	println!("pacakge_root: {:?}", package_root);
 
 	Command::new("cargo")
 		.arg("run")
 		.arg("-p")
 		.arg("suzuka-indexer-service")
-		.env("DOT_MOVEMENT_PATH", format!("{}/.movement", workspace_root))
+		.env("DOT_MOVEMENT_PATH", format!("{}/.movement", package_root))
 		.spawn()
 		.expect("Failed to start indexer");
 
