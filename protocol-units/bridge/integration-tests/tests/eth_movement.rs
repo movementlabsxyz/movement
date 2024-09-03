@@ -363,13 +363,19 @@ async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 
 	println!("pacakge_root: {:?}", package_root);
 
-	Command::new("cargo")
+	let mut indexer_child = Command::new("cargo")
 		.arg("run")
 		.arg("-p")
 		.arg("suzuka-indexer-service")
+		.env("MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME", "127.0.0.1")
+		.env("MAPTOS_INDEXER_GRPC_LISTEN_PORT", "50051")
 		.env("DOT_MOVEMENT_PATH", format!("{}/.movement", package_root))
 		.spawn()
 		.expect("Failed to start indexer");
+
+	// Check postgres connection
+
+	indexer_child.wait().await?;
 
 	child.kill().await.context("Failed to kill the child process")?;
 	Ok(())
