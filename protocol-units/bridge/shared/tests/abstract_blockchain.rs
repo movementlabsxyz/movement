@@ -108,6 +108,7 @@ async fn test_initiate_bridge_transfer() {
 				amount: amount.clone(),
 				time_lock: time_lock.clone(),
 				hash_lock: hash_lock.clone(),
+				state: 1
 			})
 		))
 	);

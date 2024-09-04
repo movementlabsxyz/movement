@@ -25,6 +25,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     const EWRONG_AMOUNT: u64 = 7;
     const EWRONG_HASHLOCK: u64 = 8;
     const ENO_RESULT: u64 = 9;
+    const EWRONG_STATE: u64 = 10;
 
     struct BridgeConfig has key {
         moveth_minter: address,
@@ -164,19 +165,21 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
     }
     
-    public fun abort_bridge_transfer(
+    public entry fun abort_bridge_transfer(
         account: &signer,
         bridge_transfer_id: vector<u8>
     ) acquires BridgeTransferStore, BridgeConfig {
         // check that the signer is the bridge_module_deployer
-        assert!(signer::address_of(account) == borrow_global<BridgeConfig>(signer::address_of(account)).bridge_module_deployer, EINCORRECT_SIGNER);
-        let store = borrow_global_mut<BridgeTransferStore>(signer::address_of(account));
+        assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
+        let config_address = borrow_global<BridgeConfig>(@resource_addr).bridge_module_deployer;
+        let resource_signer = account::create_signer_with_capability(&borrow_global<BridgeConfig>(@resource_addr).signer_cap);
+        let store = borrow_global_mut<BridgeTransferStore>(config_address);
         let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
 
         // Ensure the timelock has expired
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, ETIMELOCK_NOT_EXPIRED);
         assert!(bridge_transfer.state == LOCKED, ETRANSFER_NOT_LOCKED);
-
+//
         bridge_transfer.state = CANCELLED;
 
         event::emit_event(&mut store.bridge_transfer_cancelled_events, BridgeTransferCancelledEvent {

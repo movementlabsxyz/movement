@@ -87,7 +87,8 @@ async fn test_bridge_service_error_handling() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(AssetType::EthAndWeth((0,1000)))
+			amount: Amount(AssetType::EthAndWeth((0,1000))),
+			state: 1
 		})
 	);
 
@@ -247,7 +248,8 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(AssetType::EthAndWeth((0,1000)))
+			amount: Amount(AssetType::EthAndWeth((0,1000))),
+			state: 1
 		})
 	);
 
@@ -328,7 +330,8 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(AssetType::EthAndWeth((0,1000)))
+			amount: Amount(AssetType::EthAndWeth((0,1000))),
+			state: 1
 		})
 	);
 
@@ -464,7 +467,8 @@ async fn test_bridge_service_timeout_error_handling() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(AssetType::EthAndWeth((0,1000)))
+			amount: Amount(AssetType::EthAndWeth((0,1000))),
+			state: 1
 		})
 	);
 
