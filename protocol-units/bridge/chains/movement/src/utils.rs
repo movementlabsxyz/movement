@@ -24,6 +24,7 @@ use aptos_sdk::{
 };
 use bridge_shared::bridge_contracts::BridgeContractCounterpartyError;
 use derive_new::new;
+use serde_json::Value;
 use tracing::log::{info, debug};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -127,11 +128,15 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
+	debug!("Signed TX: {:?}", signed_tx);
+
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
-		.map_err(|e| e.to_string())? // Convert the error to a String directly
+		.map_err(|e| e.to_string())? 
 		.into_inner();
+
+	debug!("Response: {:?}", response);
 
 	match &response {
 		Transaction::UserTransaction(user_txn) => {
@@ -147,12 +152,22 @@ pub async fn send_and_confirm_aptos_transaction(
 	Ok(response)
 }
 
+pub fn val_as_str(value: Option<&Value>) -> Result<&str, BridgeContractCounterpartyError> {
+	value.as_ref().and_then(|v| v.as_str()).ok_or(BridgeContractCounterpartyError::SerializationError)
+}
+
+pub fn val_as_u64(value: Option<&Value>) -> Result<u64, BridgeContractCounterpartyError> {
+	value
+	    .as_ref()
+	    .and_then(|v| v.as_u64())
+	    .ok_or(BridgeContractCounterpartyError::SerializationError)
+}
+
 pub fn serialize_u64(value: &u64) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
-	bcs::to_bytes(&value.to_le_bytes())
-	    .map_err(|_| BridgeContractCounterpartyError::SerializationError)
+	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
 }
     
-pub fn serialize_vec(value: &[u8]) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
+pub fn serialize_vec<T: serde::Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
 }
  

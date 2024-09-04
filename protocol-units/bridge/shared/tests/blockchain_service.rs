@@ -41,6 +41,7 @@ async fn test_bridge_transfer_initiated() {
 				hash_lock: HashLock("hash_lock"),
 				time_lock: TimeLock(100),
 				amount: Amount(AssetType::EthAndWeth((1000,0))),
+				state: 1
 			}
 		))))
 	);

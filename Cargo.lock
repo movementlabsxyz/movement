@@ -9150,6 +9150,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-api",
+ "aptos-api-types",
  "aptos-sdk",
  "aptos-types",
  "async-trait",

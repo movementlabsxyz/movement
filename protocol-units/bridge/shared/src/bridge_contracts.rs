@@ -28,6 +28,16 @@ impl BridgeContractInitiatorError {
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyError {
+	#[error("Invalid response length")]
+	InvalidResponseLength,
+	#[error("Function call failed")]
+	CallError,
+	#[error("Failed to view module")]
+	ModuleViewError,
+	#[error("Failed to view function")]
+	FunctionViewError,
+	#[error("Failed to serialize view args")]
+	ViewSerializationError,
 	#[error("Failed to serialize or deserialize")]
 	SerializationError,
 	#[error("Failed to lock bridge transfer")]

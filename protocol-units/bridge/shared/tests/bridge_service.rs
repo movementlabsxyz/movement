@@ -68,7 +68,8 @@ async fn test_bridge_service_integration_a_to_b() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(AssetType::EthAndWeth((0,1000)))
+			amount: Amount(AssetType::EthAndWeth((0,1000))),
+			state: 1
 		})
 	);
 
@@ -193,7 +194,8 @@ async fn test_bridge_service_integration_b_to_a() {
 			recipient_address: RecipientAddress::from(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(AssetType::EthAndWeth((0,1000)))
+			amount: Amount(AssetType::EthAndWeth((0,1000))),
+			state: 1
 		})
 	);
 
