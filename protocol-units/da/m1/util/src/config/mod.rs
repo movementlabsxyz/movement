@@ -178,12 +178,17 @@ impl Config {
 
 	pub fn try_block_building_parameters(&self) -> Result<(u32, u64), anyhow::Error> {
 		match self {
-			Config::Local(local) => Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time)),
-			Config::Arabica(local) => Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time)),
-			Config::Mocha(local) => Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time)),
+			Config::Local(local) => {
+				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
+			}
+			Config::Arabica(local) => {
+				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
+			}
+			Config::Mocha(local) => {
+				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
+			}
 		}
 	}
-
 }
 
 /// The M1 DA Light Node configuration as should be read from file.
