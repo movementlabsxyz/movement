@@ -8,6 +8,7 @@ use alloy::{
 use anyhow::Result;
 
 use aptos_sdk::coin_client::CoinClient;
+use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
@@ -16,13 +17,9 @@ use bridge_shared::{
 		RecipientAddress, TimeLock,
 	},
 };
-
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
-
 use tokio::{self, process::Child};
-
-use aptos_types::account_address::AccountAddress;
 
 struct ChildGuard {
 	child: Child,
