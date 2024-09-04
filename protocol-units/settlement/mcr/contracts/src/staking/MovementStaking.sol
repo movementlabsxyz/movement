@@ -105,7 +105,7 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
         uint256 amount
     ) internal {
         uint256 _stake = epochStakesByDomain[domain][epoch][custodian][attester][delegator];
-        _stake -= amount; // okay to let this error if it underflows
+        _stake = _stake > amount ? _stake - amount : 0;
         epochStakesByDomain[domain][epoch][custodian][attester][delegator] = _stake;
 
         if (_stake == 0) {
