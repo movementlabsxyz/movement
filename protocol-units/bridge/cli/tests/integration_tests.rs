@@ -25,12 +25,13 @@ async fn test_swap() -> eyre::Result<()> {
 	let initiator_contract = AtomicBridgeInitiator::deploy(provider).await?;
 
 	// Set up EthSharedArgs
-	let eth_shared_args = EthSharedArgs {
+	let eth_shared_args: EthSharedArgs = EthSharedArgs {
 		eth_private_key: wallet.into(),
 		eth_rpc_url: Url::parse(&anvil.endpoint()).unwrap(),
 		eth_ws_url: Url::parse(&anvil.endpoint().replace("http", "ws")).unwrap(),
 		eth_initiator_contract: EthAddress(*initiator_contract.address()),
 		eth_counterparty_contract: EthAddress(Address::ZERO), // Not needed for this test
+		eth_weth_contract: EthAddress(Address::ZERO), // Not needed for this test
 		eth_gas_limit: 3000000,
 	};
 

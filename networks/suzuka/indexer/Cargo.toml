@@ -1,0 +1,27 @@
+[package]
+name = "suzuka-indexer-service"
+version = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+publish = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true }
+dot-movement = { workspace = true }
+num_cpus = { workspace = true }
+processor = { workspace = true }
+server-framework = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+maptos-execution-util = { workspace = true }
+clap = { workspace = true }
+reqwest = { workspace = true }
+tempfile = { workspace = true }
+
+[lints]
+workspace = true

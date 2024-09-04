@@ -24,7 +24,7 @@ $ forge build
 ### Test
 
 ```shell
-$ forge test
+$ forge test --fork-url https://ethereum-sepolia.blockpi.network/v1/rpc/public
 ```
 
 ### Format

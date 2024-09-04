@@ -107,6 +107,20 @@ env_default!(
 );
 
 env_default!(
+	default_maptos_indexer_grpc_inactivity_timeout,
+	"MAPTOS_INDEXER_GRPC_INACTIVITY_TIMEOUT_SEC",
+	u64,
+	60
+);
+
+env_default!(
+	default_maptos_indexer_grpc_ping_interval,
+	"MAPTOS_INDEXER_GRPC_PING_INTERVAL_SEC",
+	u64,
+	10
+);
+
+env_default!(
 	default_postgres_connection_string,
 	"INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING",
 	String,
@@ -119,3 +133,5 @@ env_default!(
 	String,
 	"auth_token".to_string()
 );
+
+env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);

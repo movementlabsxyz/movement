@@ -18,7 +18,7 @@ To publish this package under a resource account using [Movement CLI](https://do
 
 1. Run `movement init` to create an origin account address. 
 
-2. Run
+2. Run:
 
 ```
 movement move create-resource-account-and-publish-package --address-name resource_addr --seed <any-string-as-a-seed>
