@@ -3,24 +3,24 @@ use tokio::time::{sleep, Duration}; // Add these imports
 
 use alloy::{
 	node_bindings::Anvil,
-	primitives::{address, keccak256, U256},
+	primitives::{address, keccak256},
 	providers::Provider,
-	signers::local::yubihsm::ecdsa::Signer,
 };
-use anyhow::Context;
 use anyhow::Result;
 
-use aptos_sdk::{
-	coin_client::CoinClient,
-	types::LocalAccount,
-};
+use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator}, bridge_monitoring::BridgeContractInitiatorEvent, types::{Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock}
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	types::{
+		Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
+		RecipientAddress, TimeLock,
+	},
 };
 
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
+
 use rand;
 use tokio::{self, process::{Child, Command}};
 use futures::{channel::mpsc::{self, UnboundedReceiver}, StreamExt};
@@ -43,17 +43,14 @@ impl Drop for ChildGuard {
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
-// 
-	let rest_client = movement_client.rest_client();
-	let coin_client = CoinClient::new(&rest_client);
+	//
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 	let movement_client = movement_client.signer();
 
 	let faucet_client = faucet_client.write().unwrap();
+
 	faucet_client
 	.fund(movement_client.address(), 100_000_000)
-
-
 	.await?;
 
 	child.kill().await?;
@@ -67,17 +64,19 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
-	{ let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	{
+		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
-	let _ = movement_client.publish_for_test();
+		let _ = movement_client.publish_for_test();
 	}
 
 	child.kill().await?;
-	
+
 	Ok(())
 }
 
 #[tokio::test]
+
 async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
         let _ = tracing_subscriber::fmt()
                 .with_max_level(tracing::Level::DEBUG)
@@ -269,6 +268,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
         }
 
         test_result
+
 }
 
 #[tokio::test]
@@ -278,7 +278,7 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 	let eth_client = scaffold.eth_client().expect("Failed to get EthClient");
 	let _anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 
-	let expected_accounts = vec![
+	let expected_accounts = [
 		address!("f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
 		address!("70997970c51812dc3a010c7d01b50e0d17dc79c8"),
 		address!("3c44cdddb6a900fa2b585dd299e03d12fa4293bc"),
@@ -456,7 +456,7 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 	let hash_lock = keccak256(secret.as_bytes());
 	let hash_lock: [u8; 32] = hash_lock.into();
 
-	let _ = harness
+	harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
