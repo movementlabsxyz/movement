@@ -1,13 +1,11 @@
-use std::{env, net::TcpStream, path::Path, time::Duration};
-
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
 	providers::Provider,
 };
 use anyhow::Result;
-
 use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
+use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
@@ -16,23 +14,15 @@ use bridge_shared::{
 		RecipientAddress, TimeLock,
 	},
 };
-
 use ethereum_bridge::types::EthAddress;
-use futures::{
-	channel::mpsc::{self, UnboundedReceiver},
-	StreamExt,
-};
 use movement_bridge::utils::MovementAddress;
-
-use aptos_types::account_address::AccountAddress;
+use std::{env, net::TcpStream, time::Duration};
+use tokio::process::Command;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
-
-	let rest_client = movement_client.rest_client();
-	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 	let alice = LocalAccount::generate(&mut rand::rngs::OsRng);
 	let bob = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -384,8 +374,7 @@ async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 
 	// Wait for the indexer process to complete
 	indexer_child.wait().await?;
-
-	harness_child.kill().await.context("Failed to kill the child process")?;
+	harness_child.kill().await.expect("Failed to kill the child process");
 	Ok(())
 }
 
