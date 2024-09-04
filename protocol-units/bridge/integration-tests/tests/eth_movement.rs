@@ -16,6 +16,8 @@ use bridge_shared::{
 };
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
+use std::{env, net::TcpStream, time::Duration};
+use tokio::process::Command;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {

@@ -28,6 +28,7 @@ use tokio::process::Command;
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
 	pub movement_client: Option<MovementClient>,
+	pub indexer_process: Option<tokio::process::Child>,
 }
 
 impl TestHarness {
@@ -36,7 +37,14 @@ impl TestHarness {
 			MovementClient::new_for_test(MovementConfig::build_for_test())
 				.await
 				.expect("Failed to create MovementClient");
-		(Self { eth_client: None, movement_client: Some(movement_client) }, child)
+		(
+			Self {
+				eth_client: None,
+				movement_client: Some(movement_client),
+				indexer_process: None,
+			},
+			child,
+		)
 	}
 
 	pub fn movement_rest_client(&self) -> &Client {
@@ -66,7 +74,7 @@ impl TestHarness {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 			.await
 			.expect("Failed to create EthClient");
-		Self { eth_client: Some(eth_client), movement_client: None }
+		Self { eth_client: Some(eth_client), movement_client: None, indexer_process: None }
 	}
 
 	pub async fn new_only_indexer() {}
@@ -201,6 +209,7 @@ impl TestHarness {
 			.arg("run")
 			.arg("-p")
 			.arg("suzuka-indexer-service")
+			.env("MAPTOS_CHAIN_ID", "4")
 			.env("MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME", "127.0.0.1")
 			.env("MAPTOS_INDEXER_GRPC_LISTEN_PORT", "50051")
 			.env("DOT_MOVEMENT_PATH", format!("{}/.movement", package_root))
