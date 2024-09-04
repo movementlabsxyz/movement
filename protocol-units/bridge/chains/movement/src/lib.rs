@@ -634,6 +634,29 @@ impl BridgeContractInitiator for MovementClient {
                 };
 		debug!("Amount value: {:?}", amount_value);
 
+		let mint_amount = 200 * 100_000_000; // Assuming 8 decimals for MovETH
+
+		let mint_args = vec![
+			utils::serialize_address_initiator(&self.signer.address())?, // Mint to initiator's address
+			utils::serialize_u64_initiator(&mint_amount)?,                     // Amount to mint (200 MovETH)
+		];
+ 
+		let mint_payload = utils::make_aptos_payload(
+			self.counterparty_address, // Address where moveth module is published
+			"moveth",
+			"mint",
+			Vec::new(),
+			mint_args,
+		);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), mint_payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::MintError)?; // New error variant for mint failure
+
+		debug!("Successfully minted 200 MovETH to the initiator");
+	
+
+
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,					
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,			

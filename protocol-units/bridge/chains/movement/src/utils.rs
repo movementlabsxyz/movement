@@ -188,6 +188,10 @@ pub fn serialize_vec<T: serde::Serialize + ?Sized>(value: &T) -> Result<Vec<u8>,
 pub fn serialize_u64_initiator(value: &u64) -> Result<Vec<u8>, BridgeContractInitiatorError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
+
+pub fn serialize_address_initiator(address: &AccountAddress) -> Result<Vec<u8>, BridgeContractInitiatorError> {
+	bcs::to_bytes(address).map_err(|_| BridgeContractInitiatorError::SerializationError)
+}
     
 pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, BridgeContractInitiatorError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)

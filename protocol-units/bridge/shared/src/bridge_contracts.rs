@@ -6,6 +6,8 @@ use crate::types::{
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractInitiatorError {
+	#[error("Failed to mint")]
+	MintError,
 	#[error("Failed to call function")]
 	CallError,
 	#[error("Failed to serialize or deserialize")]
