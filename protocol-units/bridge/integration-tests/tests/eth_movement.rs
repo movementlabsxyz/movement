@@ -37,7 +37,7 @@ use tracing_subscriber;
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
-	//
+
 	let rest_client = movement_client.rest_client();
 	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
@@ -379,7 +379,7 @@ async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 		println!("PostgreSQL is already running.");
 	}
 
-	let (mut _harness, mut child) = TestHarness::new_with_movement().await;
+	let (mut _harness, mut harness_child) = TestHarness::new_with_movement().await;
 
 	let mut indexer_child = Command::new("cargo")
 		.arg("run")
@@ -394,7 +394,7 @@ async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 	// Wait for the indexer process to complete
 	indexer_child.wait().await?;
 
-	child.kill().await.context("Failed to kill the child process")?;
+	harness_child.kill().await.context("Failed to kill the child process")?;
 	Ok(())
 }
 

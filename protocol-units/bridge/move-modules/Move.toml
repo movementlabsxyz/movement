@@ -4,13 +4,13 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-resource_addr = "0xefbffdf8b1eef4ec7b95759e78ad482cee34544371e324639ff6a5a79e230e4c"
-origin_addr = "0xeed93c0c39348b6f85f692b3a73478396e9290352eb45128d9f19886ca0c27db"
-atomic_bridge = "0xefbffdf8b1eef4ec7b95759e78ad482cee34544371e324639ff6a5a79e230e4c"
-moveth = "0xefbffdf8b1eef4ec7b95759e78ad482cee34544371e324639ff6a5a79e230e4c"
-master_minter = "0xefbffdf8b1eef4ec7b95759e78ad482cee34544371e324639ff6a5a79e230e4c"
-minter = "0xefbffdf8b1eef4ec7b95759e78ad482cee34544371e324639ff6a5a79e230e4c"
-admin = "0xefbffdf8b1eef4ec7b95759e78ad482cee34544371e324639ff6a5a79e230e4c"
+resource_addr = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+origin_addr = "0xcafe"
+atomic_bridge = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+moveth = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+master_minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+minter = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
+admin = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5"
 pauser = "0xdafe"
 denylister = "0xcade"
 
