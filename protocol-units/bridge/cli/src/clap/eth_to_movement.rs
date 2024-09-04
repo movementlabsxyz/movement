@@ -73,7 +73,7 @@ pub struct CombinedArgs {
 #[derive(Subcommand)]
 pub enum Commands {
 	/// Initiate a bridge transfer from Ethereum
-	ToMovement {
+	FromEthereum {
 		#[command(flatten)]
 		args: EthSharedArgs,
 		/// The recipient address on the movement labs chain
@@ -82,7 +82,7 @@ pub enum Commands {
 		amount: u64,
 	},
 	/// Initiate a bridge transfer from Movement
-	ToEthereum {
+	FromMovement {
 		#[command(flatten)]
 		args: MoveSharedArgs,
 		/// The recipient address on the Ethereum chain
@@ -91,9 +91,90 @@ pub enum Commands {
 		amount: u64,
 	},
 	/// Resume a bridge transfer
-	Resume {
+	LockOnEthereum {
 		#[command(flatten)]
 		args: EthSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Resume a bridge transfer
+	LockOnMovement {
+		#[command(flatten)]
+		args: MoveSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Complete a bridge transfer
+	CompleteInitiatorOnEthereum {
+		#[command(flatten)]
+		args: EthSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Complete a bridge transfer
+	CompleteInitiatorOnMovement {
+		#[command(flatten)]
+		args: MoveSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Complete a bridge transfer
+	CompleteCounterpartyOnEthereum {
+		#[command(flatten)]
+		args: EthSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Complete a bridge transfer
+	CompleteCounterpartyOnMovement {
+		#[command(flatten)]
+		args: MoveSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Cancel a bridge transfer
+	CancelOnEthereum {
+		#[command(flatten)]
+		args: EthSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Cancel a bridge transfer
+	CancelOnMovement {
+		#[command(flatten)]
+		args: MoveSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Cancel a bridge transfer
+	RefundOnEthereum {
+		#[command(flatten)]
+		args: EthSharedArgs,
+
+		/// The ID of the transfer to resume
+		#[arg(long)]
+		transfer_id: String,
+	},
+	/// Cancel a bridge transfer
+	RefundOnMovement {
+		#[command(flatten)]
+		args: MoveSharedArgs,
 
 		/// The ID of the transfer to resume
 		#[arg(long)]

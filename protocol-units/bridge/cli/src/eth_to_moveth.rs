@@ -14,14 +14,22 @@ use movement_bridge::MovementClient;
 pub async fn execute(command: &Commands) -> Result<()> {
 	match command {
 		Commands::IniatializeUser { args } => Ok(()),
-		Commands::ToEthereum { args, recipient, amount } => bridge_to_ethereum(args, recipient, *amount).await,
-		Commands::ToMovement { args, recipient, amount } => bridge_to_movement(args, recipient, *amount).await,
-		Commands::ResumeToEthereum { args, transfer_id } => resume_bridge_to_ethereum(args, transfer_id).await,
-		Commands::ResumeToMovement { args, transfer_id } => resume_bridge_to_movement(args, transfer_id).await,
+		Commands::FromEthereum { args, recipient, amount } => bridge_initiator_eth(args, recipient, *amount).await,
+		Commands::FromMovement { args, recipient, amount } => bridge_initiator_move(args, recipient, *amount).await,
+		Commands::LockOnEthereum { args, transfer_id } => lock_counterparty_eth(args, transfer_id).await,
+		Commands::LockOnMovement { args, transfer_id } => lock_counterparty_move(args, transfer_id).await,
+		Commands::CompleteInitiatorOnEthereum { args, transfer_id } => complete_initiator_eth(args, transfer_id).await,
+		Commands::CompleteInitiatorOnMovement { args, transfer_id } => complete_initiator_move(args, transfer_id).await,
+		Commands::CompleteCounterpartyOnEthereum { args, transfer_id } => complete_counterparty_eth(args, transfer_id).await,
+		Commands::CompleteCounterpartyOnMovement { args, transfer_id } => complete_counterparty_move(args, transfer_id).await,
+		Commands::CancelOnEthereum { args, transfer_id } => cancel_counterparty_eth(args, transfer_id).await,
+		Commands::CancelOnMovement { args, transfer_id } => cancel_counterparty_move(args, transfer_id).await,
+		Commands::RefundOnEthereum { args, transfer_id } => refund_counterparty_eth(args, transfer_id).await,
+		Commands::RefundOnMovement { args, transfer_id } => refund_counterparty_move(args, transfer_id).await,
 	}
 }
 
-async fn bridge_to_movement(
+async fn bridge_initiator_eth(
 	args: &EthSharedArgs,
 	recipient: &MovementAddress,
 	amount: u64,
@@ -55,7 +63,7 @@ async fn bridge_to_movement(
 	Ok(())
 }
 
-async fn bridge_to_ethereum(
+async fn bridge_initiator_move(
 	args: &MoveSharedArgs,
 	recipient: &EthAddress,
 	amount: u64,
@@ -97,14 +105,70 @@ async fn bridge_to_ethereum(
 	Ok(())
 }
 
-async fn resume_bridge_to_ethereum(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
-	println!("Resuming transfer with ID: {}", transfer_id);
+async fn lock_counterparty_eth(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Lock transfer with ID: {}", transfer_id);
+	let mut client = EthClient::new(args).await?;
+
+	// Convert signer's private key to EthAddress
+	let initiator_address = MovementAddress(client.get_signer_address().await);
+	let recipient_address: RecipientAddress<Vec<u8>> = RecipientAddress(From::from(recipient.to_vec()));
+	let hash_lock_pre_image = HashLockPreImage::random();
+	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
+	let amount = Amount(amount);
+	
+	client.lock_bridge_transfer(transfer_id).await?;
+	Ok(())
+}
+
+async fn lock_counterparty_move(args: &MoveSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Lock transfer with ID: {}", transfer_id);
 
 	Ok(())
 }
 
-async fn resume_bridge_to_movement(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
-	println!("Resuming transfer with ID: {}", transfer_id);
+async fn complete_initiator_eth(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Complete transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+
+async fn complete_initiator_move(args: &MoveSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Complete transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+
+async fn complete_counterparty_eth(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Complete transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+
+async fn complete_counterparty_move(args: &MoveSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Complete transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+async fn cancel_counterparty_eth(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Cancel transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+
+async fn cancel_counterparty_move(args: &MoveSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Cancel transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+async fn refund_counterparty_eth(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Refund transfer with ID: {}", transfer_id);
+
+	Ok(())
+}
+
+async fn refund_counterparty_move(args: &MoveSharedArgs, transfer_id: &str) -> Result<()> {
+	println!("Refund transfer with ID: {}", transfer_id);
 
 	Ok(())
 }
