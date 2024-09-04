@@ -6,7 +6,8 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {ICustodianToken} from "../token/custodian/CustodianToken.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {MovementStakingStorage, EnumerableSet} from "./MovementStakingStorage.sol";
+import {MovementStakingStorage} from "./MovementStakingStorage.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IMovementStaking} from "./interfaces/IMovementStaking.sol";
 
 contract MovementStaking is
@@ -65,21 +66,18 @@ contract MovementStaking is
         currentEpochByDomain[domain] = getEpochByBlockTime(domain);
         EnumerableSet.AddressSet storage attesters = attestersByDomain[domain];
 
-        for (uint256 i = 0; i < attesters; i++) {
+        for (uint256 i = 0; i < attesters.length(); i++) {
             address attester = attesters.at(i);
 
             // for every custodian
-            EnumerableSet.AddressSet storage custodians = custodiansByDomain[
-                domain
-            ];
-            for (uint256 j = 0; j < custodians; j++) {
+            EnumerableSet.AddressSet storage custodians = custodiansByDomain[domain];
+            for (uint256 j = 0; j < custodians.length(); j++) {
                 address custodian = custodians.at(j);
 
                 // for every delegatee of the attester
-                EnumberableSet.AddressSet
-                    storage delegatees = delegatorsByAttesterByDomain[domain][
-                        attester
-                    ];
+                EnumerableSet.AddressSet storage delegatees = delegatorsByAttesterByDomain[domain][
+                    attester
+                ];
                 for (uint256 k = 0; k < delegatees.length(); k++) {
                     // todo: can this be replaced with _rollOverAttester?
                     address delegatee = delegatees.at(k);
