@@ -83,9 +83,6 @@ module atomic_bridge::atomic_bridge_initiator {
             moveth_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
         });
-
-        let amount_to_mint = 1_000 * 100_000_000; 
-        moveth::mint(deployer, @origin_addr, amount_to_mint);
     }
 
     #[view]
@@ -125,9 +122,9 @@ module atomic_bridge::atomic_bridge_initiator {
 
         let originator_store = primary_fungible_store::ensure_primary_store_exists(originator_addr, asset);
 
+        // Check balance of originator account
         assert!(primary_fungible_store::balance(originator_addr, asset) >= amount, EINSUFFICIENT_BALANCE);
         let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
-        
         dispatchable_fungible_asset::transfer(originator, originator_store, bridge_store, amount);
         store.nonce = store.nonce + 1;
 
