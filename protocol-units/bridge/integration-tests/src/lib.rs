@@ -17,7 +17,13 @@ use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, W
 use movement_bridge::Config as MovementConfig;
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
-use std::sync::{Arc, RwLock};
+use std::{
+	env,
+	net::TcpStream,
+	sync::{Arc, RwLock},
+	time::Duration,
+};
+use tokio::process::Command;
 
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
@@ -164,4 +170,47 @@ impl TestHarness {
 		let movement_recipient = LocalAccount::generate(&mut rng);
 		movement_recipient.public_key().to_bytes().to_vec()
 	}
+
+	pub async fn start_indexer(&self, host: &str, port: u16) -> tokio::process::Child {
+		//check that the harness is initialized with a movement client
+		let _ = self
+			.movement_client()
+			.expect("Movement Client and Harness must be initialized to start the indexer");
+
+		let package_root = env::var("CARGO_MANIFEST_DIR").unwrap();
+		let script_path = format!("{}/scripts/postgres-start.bash", package_root);
+
+		// Check if PostgreSQL is running
+		if !is_postgres_running(host, port).await {
+			println!("PostgreSQL is not running. Starting PostgreSQL setup...");
+
+			tokio::spawn(async move {
+				Command::new("bash")
+					.arg(&script_path)
+					.status()
+					.await
+					.expect("Failed to run the PostgreSQL setup script")
+			});
+
+			tokio::time::sleep(Duration::from_secs(5)).await;
+		} else {
+			println!("PostgreSQL is already running.");
+		}
+
+		let indexer_child = Command::new("cargo")
+			.arg("run")
+			.arg("-p")
+			.arg("suzuka-indexer-service")
+			.env("MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME", "127.0.0.1")
+			.env("MAPTOS_INDEXER_GRPC_LISTEN_PORT", "50051")
+			.env("DOT_MOVEMENT_PATH", format!("{}/.movement", package_root))
+			.spawn()
+			.expect("Failed to start indexer");
+
+		indexer_child
+	}
+}
+
+async fn is_postgres_running(host: &str, port: u16) -> bool {
+	TcpStream::connect((host, port)).is_ok()
 }

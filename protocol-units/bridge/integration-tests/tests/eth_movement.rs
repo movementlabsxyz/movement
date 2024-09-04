@@ -338,46 +338,11 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let package_root = env::var("CARGO_MANIFEST_DIR").unwrap();
-
-	let script_path = format!("{}/scripts/postgres-start.bash", package_root);
-	let script_path_clone = script_path.clone();
-
-	// Check if PostgreSQL is running
-	if !is_postgres_running("127.0.0.1", 5432).await {
-		println!("PostgreSQL is not running. Starting PostgreSQL setup...");
-
-		tokio::spawn(async move {
-			Command::new("bash")
-				.arg(&script_path_clone)
-				.status()
-				.await
-				.expect("Failed to run the PostgreSQL setup script")
-		});
-
-		tokio::time::sleep(Duration::from_secs(5)).await;
-	} else {
-		println!("PostgreSQL is already running.");
-	}
-
-	let (mut _harness, mut harness_child) = TestHarness::new_with_movement().await;
-
-	let mut indexer_child = Command::new("cargo")
-		.arg("run")
-		.arg("-p")
-		.arg("suzuka-indexer-service")
-		.env("MAPTOS_INDEXER_GRPC_LISTEN_HOSTNAME", "127.0.0.1")
-		.env("MAPTOS_INDEXER_GRPC_LISTEN_PORT", "50051")
-		.env("DOT_MOVEMENT_PATH", format!("{}/.movement", package_root))
-		.spawn()
-		.expect("Failed to start indexer");
+	let (harness, mut harness_child) = TestHarness::new_with_movement().await;
+	let mut indexer_child = harness.start_indexer("127.0.0.1", 5432).await;
 
 	// Wait for the indexer process to complete
 	indexer_child.wait().await?;
 	harness_child.kill().await.expect("Failed to kill the child process");
 	Ok(())
-}
-
-async fn is_postgres_running(host: &str, port: u16) -> bool {
-	TcpStream::connect((host, port)).is_ok()
 }
