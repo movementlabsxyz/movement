@@ -12849,6 +12849,7 @@ dependencies = [
  "processor",
  "reqwest 0.12.5",
  "server-framework",
+ "tempfile",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
