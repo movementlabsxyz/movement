@@ -28,6 +28,8 @@ impl BridgeContractInitiatorError {
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyError {
+	#[error("Invalid response length")]
+	InvalidResponseLength,
 	#[error("Function call failed")]
 	CallError,
 	#[error("Failed to view module")]

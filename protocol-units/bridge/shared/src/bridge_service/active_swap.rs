@@ -465,15 +465,7 @@ impl HasTimeoutError for LockBridgeTransferError {
 async fn call_lock_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainService>(
 	mut counterparty_contract: BTo::CounterpartyContract,
 	details: BridgeTransferDetails<BFrom::Address, BFrom::Hash>
-	//BridgeTransferDetails {
-	////	bridge_transfer_id,
-	////	initiator_address,
-	////	recipient_address,
-	////	hash_lock,
-	////	time_lock,		
-	////	amount,
-	////	..
-	//}: BridgeTransferDetails<BFrom::Address, BFrom::Hash>,
+
 ) -> Result<(), LockBridgeTransferError>
 where
 	BTo::Hash: From<BFrom::Hash>,

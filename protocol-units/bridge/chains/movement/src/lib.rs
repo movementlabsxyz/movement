@@ -467,12 +467,12 @@ impl BridgeContractCounterparty for MovementClient {
 		};
 
 		let args = vec![
-			bcs::to_bytes(&initiator.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&bridge_transfer_id.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&hash_lock.0[..]).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&time_lock.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&recipient.0.0).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
-			bcs::to_bytes(&amount_value).map_err(|_| BridgeContractCounterpartyError::SerializationError)?,
+			utils::serialize_vec(&initiator.0)?,			
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,			
+			utils::serialize_vec(&hash_lock.0[..])?,			
+			utils::serialize_u64(&time_lock.0)?,			
+			utils::serialize_vec(&recipient.0.0)?,
+			utils::serialize_u64(&amount_value)?
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -520,8 +520,6 @@ impl BridgeContractCounterparty for MovementClient {
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
 
-		println!("Complete bridge transfer result: {:?}", &result);
-
 		Ok(())
 	}
 
@@ -547,60 +545,63 @@ impl BridgeContractCounterparty for MovementClient {
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 
-		println!("Abort bridge transfer result: {:?}", &result);
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<[u8; 32]>,
-	    ) -> Result<Option<BridgeTransferDetails<MovementAddress, [u8; 32]>>, BridgeContractCounterpartyError> {
+	) -> Result<Option<BridgeTransferDetails<MovementAddress, [u8; 32]>>, BridgeContractCounterpartyError> {
 		// Convert the bridge_transfer_id to a hex string
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
-	    
+	
 		// Construct the ViewRequest
 		let view_request = ViewRequest {
-		    function: EntryFunctionId {
+		function: EntryFunctionId {
 			module: MoveModuleId {
-			    address: self.counterparty_address.clone().into(),
-			    name: aptos_api_types::IdentifierWrapper(Identifier::new("atomic_bridge_counterparty")
+			address: self.counterparty_address.clone().into(),
+			name: aptos_api_types::IdentifierWrapper(Identifier::new("atomic_bridge_counterparty")
 				.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?),
 			},
 			name: aptos_api_types::IdentifierWrapper(Identifier::new("bridge_transfers")
-			    .map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?),
-		    },
-		    type_arguments: vec![],
-		    arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
+			.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?),
+		},
+		type_arguments: vec![],
+		arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
 		};
-	    
+	
 		// Send the request to the "/view" endpoint using JSON
 		let response: Response<Vec<serde_json::Value>> = self.rest_client
-		    .view(&view_request, None)
-		    .await
-		    .map_err(|_| BridgeContractCounterpartyError::CallError)?;
-	    
+		.view(&view_request, None)
+		.await
+		.map_err(|_| BridgeContractCounterpartyError::CallError)?;
+	
 		// Extract and parse the response
 		let values = response.inner();
-		if values.len() == 6 {
-		    let originator = values[0].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-		    let recipient = values[1].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-		    let amount = values[2].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-		    let hash_lock = values[3].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?;
-		    let time_lock = values[4].as_str().ok_or(BridgeContractCounterpartyError::SerializationError)?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-		    let state = values[5].as_u64().ok_or(BridgeContractCounterpartyError::SerializationError)? as u8;
-	    
-		    // Convert the originator, recipient, and hash_lock
-		    let originator_address = AccountAddress::from_hex_literal(originator)
+
+		if values.len() != 6 {
+			return Err(BridgeContractCounterpartyError::InvalidResponseLength); 
+		}
+		
+		let originator = utils::val_as_str(values.get(0))?;
+		let recipient = utils::val_as_str(values.get(1))?;
+		let amount = utils::val_as_str(values.get(2))?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let hash_lock = utils::val_as_str(values.get(3))?;
+		let time_lock = utils::val_as_str(values.get(4))?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let state = utils::val_as_u64(values.get(5))? as u8;
+	
+		// Convert the originator, recipient, and hash_lock
+		let originator_address = AccountAddress::from_hex_literal(originator)
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-		    let recipient_address_bytes = hex::decode(&recipient[2..])
+		let recipient_address_bytes = hex::decode(&recipient[2..])
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-		    let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?
 			.try_into()
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-	    
-		    // Create the BridgeTransferDetails struct
-		    let details: BridgeTransferDetails<MovementAddress, [u8; 32]> = BridgeTransferDetails {
+	
+		// Create the BridgeTransferDetails struct
+		let details: BridgeTransferDetails<MovementAddress, [u8; 32]> = BridgeTransferDetails {
 			bridge_transfer_id,
 			initiator_address: InitiatorAddress(MovementAddress(originator_address)),
 			recipient_address: RecipientAddress(recipient_address_bytes),
@@ -608,15 +609,9 @@ impl BridgeContractCounterparty for MovementClient {
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),
 			state,
-		    };
-	    
-		    return Ok(Some(details));
-		}
-	    
-		Ok(None)
-	    }
-
-	
+		};
+		Ok(Some(details))	
+	    }	
 }
 
 impl MovementClient {

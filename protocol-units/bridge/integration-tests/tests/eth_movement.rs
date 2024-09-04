@@ -64,7 +64,6 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
         .try_init();
 	
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
