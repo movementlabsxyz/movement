@@ -245,21 +245,21 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
                         ).await
                         .expect("Failed to complete bridge transfer");
 
-                let details = movement_client
+                let abort_details = movement_client
                         .get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id)).await
                         .expect("Failed to get bridge transfer details")
                         .expect("Expected to find bridge transfer details, but got None");
 
-                assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-                assert_eq!(details.hash_lock.0, hash_lock);
+                assert_eq!(abort_details.bridge_transfer_id.0, bridge_transfer_id);
+                assert_eq!(abort_details.hash_lock.0, hash_lock);
                 assert_eq!(
-                        &details.initiator_address.0 .0[32 - initiator.len()..],
+                        &abort_details.initiator_address.0 .0[32 - initiator.len()..],
                         &initiator,
                         "Initiator address does not match"
                 );
-                assert_eq!(details.recipient_address.0, recipient.0.to_vec());
-                assert_eq!(details.amount.0, AssetType::Moveth(amount));
-                assert_eq!(details.state, 3, "Bridge transfer is supposed to be cancelled but it's not.");
+                assert_eq!(abort_details.recipient_address.0, recipient.0.to_vec());
+                assert_eq!(abort_details.amount.0, AssetType::Moveth(amount));
+                assert_eq!(abort_details.state, 3, "Bridge transfer is supposed to be cancelled but it's not.");
 
                 Ok(())
         }.await;
