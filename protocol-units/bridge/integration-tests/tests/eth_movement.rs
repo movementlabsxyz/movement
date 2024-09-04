@@ -16,8 +16,6 @@ use bridge_shared::{
 };
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
-use std::{env, net::TcpStream, time::Duration};
-use tokio::process::Command;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -85,25 +83,18 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		);
 	}
 
-	let initiator = b"0x123".to_vec(); //In real world this would be an ethereum address
-	let recipient: MovementAddress =
-		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	//let pre_image = b"secret".to_vec();
-	let hash_lock = *keccak256(b"secret");
-	let time_lock = 3600;
-	let amount = 100;
+	let args = harness.move_call_args();
 
 	harness
 		.movement_client_mut()
 		.expect("Failed to get MovmentClient")
 		.lock_bridge_transfer(
-			BridgeTransferId(bridge_transfer_id),
-			HashLock(hash_lock),
-			TimeLock(time_lock),
-			InitiatorAddress(initiator),
-			RecipientAddress(recipient),
-			Amount(AssetType::Moveth(amount)), // Eth
+			BridgeTransferId(args.bridge_transfer_id),
+			HashLock(args.hash_lock),
+			TimeLock(args.time_lock),
+			InitiatorAddress(args.initiator),
+			RecipientAddress(args.recipient),
+			Amount(AssetType::Moveth(args.amount)), // Eth
 		)
 		.await
 		.expect("Failed to complete bridge transfer");

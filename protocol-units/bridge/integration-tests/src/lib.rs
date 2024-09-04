@@ -1,5 +1,5 @@
 use alloy::{
-	primitives::{Address, U256},
+	primitives::{keccak256, Address, U256},
 	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
@@ -10,12 +10,13 @@ use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
+use aptos_types::account_address::AccountAddress;
 use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
 use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
 use ethereum_bridge::client::{Config as EthConfig, EthClient};
 use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
-use movement_bridge::Config as MovementConfig;
 use movement_bridge::MovementClient;
+use movement_bridge::{utils::MovementAddress, Config as MovementConfig};
 use rand::SeedableRng;
 use std::{
 	env,
@@ -25,10 +26,34 @@ use std::{
 };
 use tokio::process::Command;
 
+#[derive(Clone)]
+pub struct MoveCallArgs {
+	pub initiator: Vec<u8>,
+	pub recipient: MovementAddress,
+	pub bridge_transfer_id: [u8; 32],
+	pub hash_lock: [u8; 32],
+	pub time_lock: u64,
+	pub amount: u64,
+}
+
+impl Default for MoveCallArgs {
+	fn default() -> Self {
+		Self {
+			initiator: b"0x123".to_vec(),
+			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
+			bridge_transfer_id: *b"00000000000000000000000transfer1",
+			hash_lock: *keccak256(b"secret"),
+			time_lock: 3600,
+			amount: 100,
+		}
+	}
+}
+
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
 	pub movement_client: Option<MovementClient>,
 	pub indexer_process: Option<tokio::process::Child>,
+	pub move_call_args: MoveCallArgs,
 }
 
 impl TestHarness {
@@ -42,6 +67,7 @@ impl TestHarness {
 				eth_client: None,
 				movement_client: Some(movement_client),
 				indexer_process: None,
+				move_call_args: MoveCallArgs::default(),
 			},
 			child,
 		)
@@ -49,6 +75,10 @@ impl TestHarness {
 
 	pub fn movement_rest_client(&self) -> &Client {
 		self.movement_client().expect("Could not fetch Movement client").rest_client()
+	}
+
+	pub fn move_call_args(&self) -> MoveCallArgs {
+		self.move_call_args.clone()
 	}
 
 	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
@@ -74,7 +104,12 @@ impl TestHarness {
 		let eth_client = EthClient::new(EthConfig::build_for_test())
 			.await
 			.expect("Failed to create EthClient");
-		Self { eth_client: Some(eth_client), movement_client: None, indexer_process: None }
+		Self {
+			eth_client: Some(eth_client),
+			movement_client: None,
+			indexer_process: None,
+			move_call_args: Default::default(),
+		}
 	}
 
 	pub async fn new_only_indexer() {}
