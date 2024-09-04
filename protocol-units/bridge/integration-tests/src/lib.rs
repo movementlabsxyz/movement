@@ -85,7 +85,6 @@ impl TestHarness {
 	pub fn eth_signer_address(&self) -> Address {
 		let eth_client = self.eth_client().expect("EthClient not initialized");
 		let wallet: &EthereumWallet = eth_client.rpc_provider().wallet();
-		let signer = eth_client.get_signer_address();
 		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
 	}
 
@@ -136,7 +135,6 @@ impl TestHarness {
 		amount: Amount, // the amount
 	) -> BridgeContractInitiatorResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		let signer = eth_client.get_signer_address();
 		eth_client
 			.initiate_bridge_transfer(
 				initiator_address,
@@ -151,13 +149,14 @@ impl TestHarness {
 	pub async fn deposit_weth_and_approve(
 		&mut self,
 		initiator_address: InitiatorAddress<EthAddress>,
-		amount: Amount, // the amount
+		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		Ok(eth_client
+		eth_client
 			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth()))
 			.await
-			.expect("Failed to deposit WETH"))
+			.expect("Failed to deposit WETH");
+		Ok(())
 	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {
