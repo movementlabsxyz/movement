@@ -83,6 +83,9 @@ module atomic_bridge::atomic_bridge_initiator {
             moveth_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
         });
+
+        let amount_to_mint = 1_000 * 100_000_000; 
+        moveth::mint(deployer, @origin_addr, amount_to_mint);
     }
 
     #[view]
@@ -106,13 +109,13 @@ module atomic_bridge::atomic_bridge_initiator {
         )
     }
 
-    public fun initiate_bridge_transfer(
+    public entry fun initiate_bridge_transfer(
         originator: &signer,
         recipient: vector<u8>, // eth address
         hash_lock: vector<u8>,
         time_lock: u64,
         amount: u64
-    ) : vector<u8> acquires BridgeTransferStore, BridgeConfig {
+    ) acquires BridgeTransferStore, BridgeConfig {
         let originator_addr = signer::address_of(originator);
         let asset = moveth::metadata();
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
@@ -122,9 +125,9 @@ module atomic_bridge::atomic_bridge_initiator {
 
         let originator_store = primary_fungible_store::ensure_primary_store_exists(originator_addr, asset);
 
-        // Check balance of originator account
         assert!(primary_fungible_store::balance(originator_addr, asset) >= amount, EINSUFFICIENT_BALANCE);
         let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
+        
         dispatchable_fungible_asset::transfer(originator, originator_store, bridge_store, amount);
         store.nonce = store.nonce + 1;
 
@@ -156,8 +159,6 @@ module atomic_bridge::atomic_bridge_initiator {
             hash_lock: hash_lock,
             time_lock: timestamp::now_seconds() + time_lock,
         });
-
-        bridge_transfer_id
     }
 
     public fun complete_bridge_transfer(
