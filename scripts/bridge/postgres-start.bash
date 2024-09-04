@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+set -e
+
+# Remove old data directory
+rm -rf ./.data
+
+# Initialize the database cluster
+initdb -D ./.data --no-locale
+
+# allow docker connection to the db.
+# On Mac sed works differently than on lunux
+# Use awk for the compatibility between both system.
+awk '{if($0 ~ /listen_addresses/) print "listen_addresses = '\''*'\''"; else print $0}' ./.data/postgresql.conf > ./.data/postgresql.temp.conf && mv ./.data/postgresql.temp.conf ./.data/postgresql.conf
+
+#increase max connection for all indexer
+awk '{if($0 ~ /max_connections/) print "max_connections = 1000"; else print $0}' ./.data/postgresql.conf > ./.data/postgresql.temp.conf && mv ./.data/postgresql.temp.conf ./.data/postgresql.conf
+
+# For linux docker connection
+echo -e "host    all             all             172.0.0.0/8             trust" >> ./.data/pg_hba.conf 
+# For Mac docker connection
+IP_NET_MASK="$(echo $POSTGRES_HOST_IP | cut -d'.' -f1-3).0/24"
+
+# Start the PostgreSQL server
+pg_ctl -D ./.data -l ./.data/logfile -o "-c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'" start
+
+# Wait a few seconds to ensure the server is fully started
+sleep 5
+
+# Create the 'postgres' superuser
+psql -U "$USER" -d template1 -h '/tmp' -c "CREATE USER postgres WITH SUPERUSER PASSWORD 'password';"
+
+# Change ownership of the 'postgres' database
+psql -U "$USER" -d template1 -h '/tmp' -c "ALTER DATABASE postgres OWNER TO postgres;"
+
+# Stop the PostgreSQL server
+pg_ctl -D ./.data -o "-c unix_socket_directories='/tmp'" stop
+
+# Start the PostgreSQL server normally
+postgres -D ./.data -h 0.0.0.0 -p 5432 -c shared_buffers=256MB -c max_connections=1000 -c unix_socket_directories='/tmp'
