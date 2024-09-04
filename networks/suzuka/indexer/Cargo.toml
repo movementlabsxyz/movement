@@ -21,6 +21,7 @@ tracing-subscriber = { workspace = true }
 maptos-execution-util = { workspace = true }
 clap = { workspace = true }
 reqwest = { workspace = true }
+tempfile = { workspace = true }
 
 [lints]
 workspace = true
