@@ -44,14 +44,22 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let (scaffold, mut child) = TestHarness::new_with_movement().await;
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
 	//
+	let rest_client = movement_client.rest_client();
+        let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
-	let movement_client = movement_client.signer();
+	let movement_client_signer = movement_client.signer();
 
 	let faucet_client = faucet_client.write().unwrap();
 
 	faucet_client
-	.fund(movement_client.address(), 100_000_000)
+	.fund(movement_client_signer.address(), 100_000_000)
 	.await?;
+	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
+	assert!(
+		balance >= 100_000_000,
+		"Expected Movement Client to have at least 100_000_000, but found {}",
+		balance
+	);
 
 	child.kill().await?;
 
@@ -103,7 +111,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
                 {
                         let faucet_client = faucet_client.write().unwrap();
                         faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-                } // faucet_client is dropped here, releasing the immutable borrow
+                } 
 
                 let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
                 assert!(
