@@ -5,10 +5,21 @@
   remote_user: "{{ user }}"
   gather_facts: false
   vars:
-    repo_url: "https://github.com/movementlabsxyz/movement/"
+    repo_url: "https://github.com/movementlabsxyz/movement"
     destination_path: "/home/{{ user }}/movement"
+    movement_sync: "l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+    celestia_rpc_connection_protocol: "https"
+    celestia_rpc_connection_hostname: "l-monninger.open-network.rpc.celestia.suzuka.devnet.movementlabs.xyz"
+    celestia_rpc_connection_port: "443"
+    celestia_websocket_connection_protocol: "wss"
+    celestia_websocket_connection_hostname: "l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz"
+    celestia_websocket_connection_port: "443"
+    rev: "{{ movement_container_version }}"
 
   tasks:
+    - debug:
+        msg: "MOVEMENT_SYNC: {{ movement_sync }}"
+
     - name: Install required packages
       ansible.builtin.apt:
         name:
@@ -20,8 +31,8 @@
         state: present
         update_cache: yes
 
-    - name: Clone the main branch of the repository
-      ansible.builtin.git:
+    - name: Clone the appropriate application version
+      git:
         repo: "{{ repo_url }}"
         dest: "{{ destination_path }}"
         version: "{{ movement_container_version }}"
@@ -31,7 +42,7 @@
       become: no  # Run git clone as the ansible user or specify a different user
 
     - name: Install Docker
-      ansible.builtin.shell: curl -fsSL https://get.docker.com | bash
+      shell: curl -fsSL https://get.docker.com | bash
 
     - name: Enable Docker service
       ansible.builtin.systemd:

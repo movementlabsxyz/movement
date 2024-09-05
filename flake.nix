@@ -54,6 +54,7 @@
           gcc
           rust
           postgresql
+          ansible
         ];
         
         sysDependencies = with pkgs; [] 

@@ -22,3 +22,4 @@ profile.json
 *.dat
 *.log
 venv
+*.pem

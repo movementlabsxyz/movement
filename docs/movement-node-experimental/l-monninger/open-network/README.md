@@ -51,7 +51,7 @@ CELESTIA_RPC_CONNECTION_PORT=443
 CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL=wss
 CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME=l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz
 CELESTIA_WEBSOCKET_CONNECTION_PORT=443
-ansible-playbook --inventory ec2-54-215-191-59.us-west-1.compute.amazonaws.com, \
+ansible-playbook --inventory ec2-35-93-108-129.us-west-2.compute.amazonaws.com, \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
     --extra-vars "user=ubuntu" \
