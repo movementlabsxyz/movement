@@ -195,7 +195,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.stopPrank();
 
         //Internally the timeLock is multiplied by 2 
-        timeLock = timeLock * 2;
+        timeLock = timeLock * 4;
 
         // Advance time and block height to ensure the time lock has expired
         vm.warp(block.timestamp + timeLock + 1);
