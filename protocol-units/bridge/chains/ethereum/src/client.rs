@@ -500,7 +500,7 @@ mod tests {
 	#[test]
 	fn fuzz_test_wrapping_to_on_eth_details() {
 		for _ in 0..100 {
-			let current_time = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+			let current_time: u64 = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 			let additional_time = rand::random::<u64>();
 			let random_amount = rand::random::<u64>();
 			let eth_details = EthBridgeTransferDetails {
