@@ -131,7 +131,7 @@ module atomic_bridge::atomic_bridge_initiator {
         // Check balance of originator account
         assert!(primary_fungible_store::balance(originator_addr, asset) >= amount, EINSUFFICIENT_BALANCE);
         let bridge_store = primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
-        dispatchable_fungible_asset::transfer(originator, originator_store, bridge_store, amount);
+            dispatchable_fungible_asset::transfer(originator, originator_store, bridge_store, amount);
         store.nonce = store.nonce + 1;
 
         // Create a single byte vector by concatenating all components
