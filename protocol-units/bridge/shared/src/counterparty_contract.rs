@@ -1,7 +1,9 @@
-use std::collections::HashMap;
 use crate::types::{
-	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
+	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
+	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
+	LockDetails, RecipientAddress, TimeLock,
 };
+use std::collections::HashMap;
 use std::fmt::Debug;
 use thiserror::Error;
 
@@ -111,7 +113,7 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
-		
+
 		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
 		todo!();
 		// balance += **transfer.amount;

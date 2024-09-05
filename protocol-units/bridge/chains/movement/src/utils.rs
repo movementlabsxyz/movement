@@ -12,7 +12,7 @@ use aptos_sdk::{
 			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 			ViewRequest,
 		},
-		Client as RestClient, Transaction
+		Client as RestClient, Transaction,
 	},
 	transaction_builder::TransactionFactory,
 	types::{
@@ -24,11 +24,11 @@ use aptos_sdk::{
 };
 use bridge_shared::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
 use derive_new::new;
-use serde_json::Value;
-use tracing::log::{info, debug, error};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
+use tracing::log::{debug, info, error};
 
 #[derive(Debug, Error)]
 pub enum MovementAddressError {
@@ -117,8 +117,8 @@ pub async fn send_and_confirm_aptos_transaction(
 		.get_account(signer.address())
 		.await
 		.map_err(|e| format!("Failed to get account information: {}", e))?;
-	let account = latest_account_info.into_inner();  
-	let latest_sequence_number = account.sequence_number;	
+	let account = latest_account_info.into_inner();
+	let latest_sequence_number = account.sequence_number;
 
 	let raw_tx = transaction_factory
 		.payload(payload)
@@ -133,6 +133,7 @@ pub async fn send_and_confirm_aptos_transaction(
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
+
 		.map_err(|e| {
 			let err_msg = format!("Transaction submission error: {}", e.to_string());
 			error!("{}", err_msg); // Log the error in detail
@@ -172,14 +173,17 @@ pub fn extract_bridge_transfer_id(txn: Transaction) -> Option<String> {
 }
 
 pub fn val_as_str(value: Option<&Value>) -> Result<&str, BridgeContractCounterpartyError> {
-	value.as_ref().and_then(|v| v.as_str()).ok_or(BridgeContractCounterpartyError::SerializationError)
+	value
+		.as_ref()
+		.and_then(|v| v.as_str())
+		.ok_or(BridgeContractCounterpartyError::SerializationError)
 }
 
 pub fn val_as_u64(value: Option<&Value>) -> Result<u64, BridgeContractCounterpartyError> {
 	value
-	    .as_ref()
-	    .and_then(|v| v.as_u64())
-	    .ok_or(BridgeContractCounterpartyError::SerializationError)
+		.as_ref()
+		.and_then(|v| v.as_u64())
+		.ok_or(BridgeContractCounterpartyError::SerializationError)
 }
 
 pub fn val_as_str_initiator(value: Option<&Value>) -> Result<&str, BridgeContractInitiatorError> {
@@ -196,8 +200,10 @@ pub fn val_as_u64_initiator(value: Option<&Value>) -> Result<u64, BridgeContract
 pub fn serialize_u64(value: &u64) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
 }
-    
-pub fn serialize_vec<T: serde::Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
+
+pub fn serialize_vec<T: serde::Serialize + ?Sized>(
+	value: &T,
+) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
 }
 
@@ -213,6 +219,7 @@ pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(value: &T) -> Resul
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
  
+
 // This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(
 	aptos_client: &MovementClient,
@@ -230,15 +237,15 @@ pub async fn simulate_aptos_transaction(
 		.with_gas_unit_price(GAS_UNIT_PRICE)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
 
-		let latest_account_info = aptos_client.rest_client.get_account(signer.address()).await?;
-		let account = latest_account_info.into_inner();  
-		let latest_sequence_number = account.sequence_number;	
+	let latest_account_info = aptos_client.rest_client.get_account(signer.address()).await?;
+	let account = latest_account_info.into_inner();
+	let latest_sequence_number = account.sequence_number;
 
-		let raw_tx = transaction_factory
-			.payload(payload)
-			.sender(signer.address())
-			.sequence_number(latest_sequence_number)
-			.build();
+	let raw_tx = transaction_factory
+		.payload(payload)
+		.sender(signer.address())
+		.sequence_number(latest_sequence_number)
+		.build();
 
 	let signed_tx = SignedTransaction::new(
 		raw_tx,
@@ -254,18 +261,18 @@ pub async fn simulate_aptos_transaction(
 
 /// Make Aptos Transaction Payload
 pub fn make_aptos_payload(
-        package_address: AccountAddress,
-        module_name: &'static str,
-        function_name: &'static str,
-        ty_args: Vec<TypeTag>,
-        args: Vec<Vec<u8>>,
+	package_address: AccountAddress,
+	module_name: &'static str,
+	function_name: &'static str,
+	ty_args: Vec<TypeTag>,
+	args: Vec<Vec<u8>>,
 ) -> TransactionPayload {
-        TransactionPayload::EntryFunction(EntryFunction::new(
-                ModuleId::new(package_address, ident_str!(module_name).to_owned()),
-                ident_str!(function_name).to_owned(),
-                ty_args,
-                args,
-        ))
+	TransactionPayload::EntryFunction(EntryFunction::new(
+		ModuleId::new(package_address, ident_str!(module_name).to_owned()),
+		ident_str!(function_name).to_owned(),
+		ty_args,
+		args,
+	))
 }
 
 /// Send View Request

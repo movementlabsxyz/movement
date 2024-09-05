@@ -1,6 +1,5 @@
 use tokio::time::{sleep, Duration}; // Add these imports
 
-
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
@@ -21,9 +20,15 @@ use bridge_shared::{
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
 
+use futures::{
+	channel::mpsc::{self, UnboundedReceiver},
+	StreamExt,
+};
 use rand;
-use tokio::{self, process::{Child, Command}};
-use futures::{channel::mpsc::{self, UnboundedReceiver}, StreamExt};
+use tokio::{
+	self,
+	process::{Child, Command},
+};
 
 use aptos_types::account_address::AccountAddress;
 use tracing::{debug, info};
@@ -31,11 +36,11 @@ use tracing_subscriber;
 
 struct ChildGuard {
 	child: Child,
-    }
-    
+}
+
 impl Drop for ChildGuard {
 	fn drop(&mut self) {
-	    let _ = self.child.kill();
+		let _ = self.child.kill();
 	}
 }
 
@@ -61,6 +66,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 		balance
 	);
 
+
 	child.kill().await?;
 
 	Ok(())
@@ -68,9 +74,8 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 
 #[tokio::test]
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt()
-        .try_init();
-	
+	let _ = tracing_subscriber::fmt().try_init();
+
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 	{
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
@@ -85,50 +90,52 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 
 #[tokio::test]
 
-async fn test_movement_client_should_successfully_call_lock_and_complete() -> Result<(), anyhow::Error> {
-        let _ = tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::DEBUG)
-                .try_init();
+async fn test_movement_client_should_successfully_call_lock_and_complete(
+) -> Result<(), anyhow::Error> {
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-        let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
-        let bridge_transfer_id = *b"00000000000000000000000transfer1";
-        let hash_lock = *keccak256(b"secret".to_vec());
-        let time_lock = 3600;
-        let initiator = b"0x123".to_vec();
-        let recipient: MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-        let amount = 100;
+	let bridge_transfer_id = *b"00000000000000000000000transfer1";
+	let hash_lock = *keccak256(b"secret".to_vec());
+	let time_lock = 3600;
+	let initiator = b"0x123".to_vec();
+	let recipient: MovementAddress =
+		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
+	let amount = 100;
 
-        let test_result = async {
-                let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-                let _ = movement_client.publish_for_test();
+	let test_result = async {
+		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+		let _ = movement_client.publish_for_test();
 
-                let rest_client = movement_client.rest_client();
-                let coin_client = CoinClient::new(&rest_client);
-                let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
-                let movement_client_signer = movement_client.signer();
+		let rest_client = movement_client.rest_client();
+		let coin_client = CoinClient::new(&rest_client);
+		let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
+		let movement_client_signer = movement_client.signer();
 
                 {
                         let faucet_client = faucet_client.write().unwrap();
                         faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
                 } 
 
-                let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-                assert!(
-                        balance >= 100_000_000,
-                        "Expected Movement Client to have at least 100_000_000, but found {}",
-                        balance
-                );
+		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
+		assert!(
+			balance >= 100_000_000,
+			"Expected Movement Client to have at least 100_000_000, but found {}",
+			balance
+		);
 
-                movement_client
-                        .lock_bridge_transfer(
-                                BridgeTransferId(bridge_transfer_id),        
-                                HashLock(hash_lock),
-                                TimeLock(time_lock),
-                                InitiatorAddress(initiator.clone()),
-                                RecipientAddress(recipient.clone()),
-                                Amount(AssetType::Moveth(amount))
-                        ).await.expect("Failed to lock bridge transfer");
+		movement_client
+			.lock_bridge_transfer(
+				BridgeTransferId(bridge_transfer_id),
+				HashLock(hash_lock),
+				TimeLock(time_lock),
+				InitiatorAddress(initiator.clone()),
+				RecipientAddress(recipient.clone()),
+				Amount(AssetType::Moveth(amount)),
+			)
+			.await
+			.expect("Failed to lock bridge transfer");
 
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
@@ -173,64 +180,65 @@ async fn test_movement_client_should_successfully_call_lock_and_complete() -> Re
                 assert_eq!(details.amount.0, AssetType::Moveth(amount));
                 assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
-                Ok(())
-        }.await;
+		Ok(())
+	}
+	.await;
 
-        if let Err(e) = child.kill().await {
-                eprintln!("Failed to kill child process: {:?}", e);
-        }
+	if let Err(e) = child.kill().await {
+		eprintln!("Failed to kill child process: {:?}", e);
+	}
 
-        test_result
+	test_result
 }
 
-
-
-
 #[tokio::test]
-async fn test_movement_client_should_successfully_call_lock_and_abort() -> Result<(), anyhow::Error> {
-        let _ = tracing_subscriber::fmt()
-                .with_max_level(tracing::Level::DEBUG)
-                .try_init();
+async fn test_movement_client_should_successfully_call_lock_and_abort() -> Result<(), anyhow::Error>
+{
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-        let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
-        let bridge_transfer_id = *b"00000000000000000000000transfer1";
-        let hash_lock = *keccak256(b"secret".to_vec());
-        let time_lock = 1;
-        let initiator = b"0x123".to_vec();
-        let recipient: MovementAddress = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-        let amount = 100;
+	let bridge_transfer_id = *b"00000000000000000000000transfer1";
+	let hash_lock = *keccak256(b"secret".to_vec());
+	let time_lock = 1;
+	let initiator = b"0x123".to_vec();
+	let recipient: MovementAddress =
+		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
+	let amount = 100;
 
-        let test_result = async {
-                let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-                let _ = movement_client.publish_for_test();
+	let test_result = async {
+		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+		let _ = movement_client.publish_for_test();
 
-                let rest_client = movement_client.rest_client();
-                let coin_client = CoinClient::new(&rest_client);
-                let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
-                let movement_client_signer = movement_client.signer();
+		let rest_client = movement_client.rest_client();
+		let coin_client = CoinClient::new(&rest_client);
+		let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
+		let movement_client_signer = movement_client.signer();
 
-                {
-                        let faucet_client = faucet_client.write().unwrap();
-                        faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-                } 
+		{
+			let faucet_client = faucet_client.write().unwrap();
+			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+		}
 
-                let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-                assert!(
-                        balance >= 100_000_000,
-                        "Expected Movement Client to have at least 100_000_000, but found {}",
-                        balance
-                );
+		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
+		assert!(
+			balance >= 100_000_000,
+			"Expected Movement Client to have at least 100_000_000, but found {}",
+			balance
+		);
 
-                movement_client
-                        .lock_bridge_transfer(
-                                BridgeTransferId(bridge_transfer_id),        
-                                HashLock(hash_lock),
-                                TimeLock(time_lock),
-                                InitiatorAddress(initiator.clone()),
-                                RecipientAddress(recipient.clone()),
-                                Amount(AssetType::Moveth(amount))
-                        ).await.expect("Failed to lock bridge transfer");
+		movement_client
+			.lock_bridge_transfer(
+				BridgeTransferId(bridge_transfer_id),
+				HashLock(hash_lock),
+				TimeLock(time_lock),
+				InitiatorAddress(initiator.clone()),
+				RecipientAddress(recipient.clone()),
+				Amount(AssetType::Moveth(amount)),
+			)
+			.await
+			.expect("Failed to lock bridge transfer");
+
 
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
@@ -239,24 +247,23 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.expect("Failed to get bridge transfer details")
 			.expect("Expected to find bridge transfer details, but got None");
 
-                assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-                assert_eq!(details.hash_lock.0, hash_lock);
-                assert_eq!(
-                        &details.initiator_address.0 .0[32 - initiator.len()..],
-                        &initiator,
-                        "Initiator address does not match"
-                );
-                assert_eq!(details.recipient_address.0, recipient.0.to_vec());
-                assert_eq!(details.amount.0, AssetType::Moveth(amount));
-                assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
+		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
+		assert_eq!(details.hash_lock.0, hash_lock);
+		assert_eq!(
+			&details.initiator_address.0 .0[32 - initiator.len()..],
+			&initiator,
+			"Initiator address does not match"
+		);
+		assert_eq!(details.recipient_address.0, recipient.0.to_vec());
+		assert_eq!(details.amount.0, AssetType::Moveth(amount));
+		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
 		sleep(Duration::from_secs(2)).await;
 
-                movement_client
-                        .abort_bridge_transfer(
-                                BridgeTransferId(bridge_transfer_id)
-                        ).await
-                        .expect("Failed to complete bridge transfer");
+		movement_client
+			.abort_bridge_transfer(BridgeTransferId(bridge_transfer_id))
+			.await
+			.expect("Failed to complete bridge transfer");
 
 		let abort_details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
@@ -265,27 +272,29 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.expect("Failed to get bridge transfer details")
 			.expect("Expected to find bridge transfer details, but got None");
 	
+		assert_eq!(abort_details.bridge_transfer_id.0, bridge_transfer_id);
+		assert_eq!(abort_details.hash_lock.0, hash_lock);
+		assert_eq!(
+			&abort_details.initiator_address.0 .0[32 - initiator.len()..],
+			&initiator,
+			"Initiator address does not match"
+		);
+		assert_eq!(abort_details.recipient_address.0, recipient.0.to_vec());
+		assert_eq!(abort_details.amount.0, AssetType::Moveth(amount));
+		assert_eq!(
+			abort_details.state, 3,
+			"Bridge transfer is supposed to be cancelled but it's not."
+		);
 
-                assert_eq!(abort_details.bridge_transfer_id.0, bridge_transfer_id);
-                assert_eq!(abort_details.hash_lock.0, hash_lock);
-                assert_eq!(
-                        &abort_details.initiator_address.0 .0[32 - initiator.len()..],
-                        &initiator,
-                        "Initiator address does not match"
-                );
-                assert_eq!(abort_details.recipient_address.0, recipient.0.to_vec());
-                assert_eq!(abort_details.amount.0, AssetType::Moveth(amount));
-                assert_eq!(abort_details.state, 3, "Bridge transfer is supposed to be cancelled but it's not.");
+		Ok(())
+	}
+	.await;
 
-                Ok(())
-        }.await;
+	if let Err(e) = child.kill().await {
+		eprintln!("Failed to kill child process: {:?}", e);
+	}
 
-        if let Err(e) = child.kill().await {
-                eprintln!("Failed to kill child process: {:?}", e);
-        }
-
-        test_result
-
+	test_result
 }
 
 #[tokio::test]

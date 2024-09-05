@@ -1,19 +1,23 @@
 use crate::utils::MovementAddress;
 use anyhow::Result;
 use aptos_api::accounts::Account;
+use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewFunction, ViewRequest};
 use aptos_sdk::{
-	move_types::{identifier::Identifier, language_storage::{ModuleId, TypeTag}},
+	move_types::{
+		identifier::Identifier,
+		language_storage::{ModuleId, TypeTag},
+	},
 	rest_client::{Client, FaucetClient, Response},
 	types::LocalAccount,
 };
-use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewFunction, ViewRequest};
 use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	bridge_contracts::{
 		BridgeContractCounterparty, BridgeContractCounterpartyError, BridgeContractCounterpartyResult, BridgeContractInitiator, BridgeContractInitiatorError, BridgeContractInitiatorResult
 	},
 	types::{
-		Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock
+		Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
+		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
 use hex::{decode, FromHex};
@@ -21,7 +25,6 @@ use rand::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, info};
 use std::{env, fs, io::{Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -31,6 +34,7 @@ use tokio::{
 	sync::oneshot,
 	task,
 };
+use tracing::{debug, info};
 
 use url::Url;
 
@@ -91,7 +95,8 @@ pub struct MovementClient {
 impl MovementClient {
 	pub async fn new(_config: Config) -> Result<Self, anyhow::Error> {
 		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let node_connection_url = Url::from_str(node_connection_url.as_str())
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 
 		let rest_client = Client::new(node_connection_url.clone());
 
@@ -100,7 +105,7 @@ impl MovementClient {
 		let signer = LocalAccount::generate(&mut rng);
 
 		let mut address_bytes = [0u8; AccountAddress::LENGTH];
-        	address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
+		address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
 		let counterparty_address = AccountAddress::new(address_bytes);
 		Ok(MovementClient {
 			counterparty_address,
@@ -174,11 +179,13 @@ impl MovementClient {
 		println!("Setup complete message received.");
 
 		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let node_connection_url = Url::from_str(node_connection_url.as_str())
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let faucet_url = "http://127.0.0.1:8081".to_string();
-		let faucet_url = Url::from_str(faucet_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let faucet_url = Url::from_str(faucet_url.as_str())
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
 			faucet_url.clone(),
 			node_connection_url.clone(),
@@ -196,22 +203,22 @@ impl MovementClient {
 			child,
 		))
 	}
-	
+
 	pub fn publish_for_test(&mut self) -> Result<()> {
-		
-    		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
-		
+		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
+
 		let mut process = Command::new("movement")
-                .args(&["init"])
-                .stdin(Stdio::piped())
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .spawn()
-                .expect("Failed to execute command");
+			.args(&["init"])
+			.stdin(Stdio::piped())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()
+			.expect("Failed to execute command");
 
 		let private_key_hex = hex::encode(self.signer.private_key().to_bytes());
 
-		let stdin: &mut std::process::ChildStdin = process.stdin.as_mut().expect("Failed to open stdin");
+		let stdin: &mut std::process::ChildStdin =
+			process.stdin.as_mut().expect("Failed to open stdin");
 
 		let movement_dir = PathBuf::from(".movement");
 
@@ -225,24 +232,21 @@ impl MovementClient {
 
 		drop(stdin);
 
-		let addr_output = process
-			.wait_with_output()
-			.expect("Failed to read command output");
+		let addr_output = process.wait_with_output().expect("Failed to read command output");
 
 		if !addr_output.stdout.is_empty() {
 			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
 		}
-	
+
 		if !addr_output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 		}
 		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
 		let address = addr_output_str
 			.split_whitespace()
-			.find(|word| word.starts_with("0x")
-		) 
-		    	.expect("Failed to extract the Movement account address");
-	    
+			.find(|word| word.starts_with("0x"))
+			.expect("Failed to extract the Movement account address");
+
 		println!("Extracted address: {}", address);
 
 		let resource_output = Command::new("movement")
@@ -285,7 +289,6 @@ impl MovementClient {
 		// Set counterparty module address to resource address, for function calls:
 		self.counterparty_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
 
-
 		println!("Derived resource address: {}", formatted_resource_address);
 
 		let current_dir = env::current_dir().expect("Failed to get current directory");
@@ -294,9 +297,9 @@ impl MovementClient {
 		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
 
 		// Read the existing content of Move.toml
-		let move_toml_content = fs::read_to_string(&move_toml_path)
-			.expect("Failed to read Move.toml file");
-	
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
 		// Update the content of Move.toml with the new addresses
 		let updated_content = move_toml_content
 			.lines()
@@ -326,113 +329,111 @@ impl MovementClient {
 					_ if line.starts_with("source_account = ") => {
 					    format!(r#"source_account = "{}""#, address)
 					}
-					_ => line.to_string(),
-				}
-			})
+					_ => line.to_string(),	
+				
+			}})
 			.collect::<Vec<_>>()
 			.join("\n");
-	
+
 		// Write the updated content back to Move.toml
-		let mut file = fs::File::create(&move_toml_path)
-			.expect("Failed to open Move.toml file for writing");
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
 		file.write_all(updated_content.as_bytes())
 			.expect("Failed to write updated Move.toml file");
-	
+
 		println!("Move.toml updated successfully.");
 
 		let output2 = Command::new("movement")
 			.args(&[
-				"move", 
+				"move",
 				"create-resource-account-and-publish-package",
 				"--assume-yes",
 				"--address-name",
-				"moveth", 
+				"moveth",
 				"--seed",
 				&random_seed,
-				"--package-dir", 
-				"../move-modules"
+				"--package-dir",
+				"../move-modules",
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()
 			.expect("Failed to execute command");
 
-	if !output2.stdout.is_empty() {
-		eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		if !output2.stdout.is_empty() {
+			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
 		}
 
-	if !output2.stderr.is_empty() {
-        	eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
-    	}
-
-	
-	if movement_dir.exists() {
-		fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
-		println!(".movement directory deleted successfully.");
-	}
-
-	    // Read the existing content of Move.toml
-	let move_toml_content = fs::read_to_string(&move_toml_path)
-	    .expect("Failed to read Move.toml file");
-    
-	// Directly assign the address
-	let final_address = "0xcafe";
-
-	// Directly assign the formatted resource address
-	let final_formatted_resource_address = "0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
-	
-	let updated_content = move_toml_content
-	    .lines()
-	    .map(|line| {
-		match line {
-		    _ if line.starts_with("resource_addr = ") => {
-			format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
-		    }
-		    _ if line.starts_with("atomic_bridge = ") => {
-			format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
-		    }
-		    _ if line.starts_with("moveth = ") => {
-			format!(r#"moveth = "{}""#, final_formatted_resource_address)
-		    }
-		    _ if line.starts_with("master_minter = ") => {
-			format!(r#"master_minter = "{}""#, final_formatted_resource_address)
-		    }
-		    _ if line.starts_with("minter = ") => {
-			format!(r#"minter = "{}""#, final_formatted_resource_address)
-		    }
-		    _ if line.starts_with("admin = ") => {
-			format!(r#"admin = "{}""#, final_formatted_resource_address)
-		    }
-		    _ if line.starts_with("origin_addr = ") => {
-			format!(r#"origin_addr = "{}""#, final_address)
-		    }
-		    _ if line.starts_with("pauser = ") => {
-			format!(r#"pauser = "{}""#, "0xdafe")
-		    }
-		    _ if line.starts_with("denylister = ") => {
-			format!(r#"denylister = "{}""#, "0xcade")
-		    }
-		    _ => line.to_string(),
+		if !output2.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
 		}
-	    })
-	    .collect::<Vec<_>>()
-	    .join("\n");
-    
-	// Write the updated content back to Move.toml
-	let mut file = fs::File::create(&move_toml_path)
-	    .expect("Failed to open Move.toml file for writing");
-	file.write_all(updated_content.as_bytes())
-	    .expect("Failed to write updated Move.toml file");
-    
-	println!("Move.toml addresses updated successfully at the end of the test.");    
 
-	Ok(())
+		if movement_dir.exists() {
+			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
+			println!(".movement directory deleted successfully.");
+		}
+
+		// Read the existing content of Move.toml
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
+		// Directly assign the address
+		let final_address = "0xcafe";
+
+		// Directly assign the formatted resource address
+		let final_formatted_resource_address =
+			"0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
+
+		let updated_content = move_toml_content
+			.lines()
+			.map(|line| match line {
+				_ if line.starts_with("resource_addr = ") => {
+					format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("atomic_bridge = ") => {
+					format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("moveth = ") => {
+					format!(r#"moveth = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("master_minter = ") => {
+					format!(r#"master_minter = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("minter = ") => {
+					format!(r#"minter = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("admin = ") => {
+					format!(r#"admin = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("origin_addr = ") => {
+					format!(r#"origin_addr = "{}""#, final_address)
+				}
+				_ if line.starts_with("pauser = ") => {
+					format!(r#"pauser = "{}""#, "0xdafe")
+				}
+				_ if line.starts_with("denylister = ") => {
+					format!(r#"denylister = "{}""#, "0xcade")
+				}
+				_ => line.to_string(),
+			})
+			.collect::<Vec<_>>()
+			.join("\n");
+
+		// Write the updated content back to Move.toml
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
+		file.write_all(updated_content.as_bytes())
+			.expect("Failed to write updated Move.toml file");
+
+		println!("Move.toml addresses updated successfully at the end of the test.");
+
+		Ok(())
 	}
-	
+
 	pub fn rest_client(&self) -> &Client {
 		&self.rest_client
 	}
-	
+
 	pub fn signer(&self) -> &LocalAccount {
 		&self.signer
 	}
@@ -460,19 +461,18 @@ impl BridgeContractCounterparty for MovementClient {
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-
 		let amount_value = match amount.0 {
 			AssetType::Moveth(value) => value,
 			_ => return Err(BridgeContractCounterpartyError::SerializationError),
 		};
 
 		let args = vec![
-			utils::serialize_vec(&initiator.0)?,			
-			utils::serialize_vec(&bridge_transfer_id.0[..])?,			
-			utils::serialize_vec(&hash_lock.0[..])?,			
-			utils::serialize_u64(&time_lock.0)?,			
-			utils::serialize_vec(&recipient.0.0)?,
-			utils::serialize_u64(&amount_value)?
+			utils::serialize_vec(&initiator.0)?,
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec(&hash_lock.0[..])?,
+			utils::serialize_u64(&time_lock.0)?,
+			utils::serialize_vec(&recipient.0 .0)?,
+			utils::serialize_u64(&amount_value)?,
 		];
 
 		let payload = utils::make_aptos_payload(
@@ -527,9 +527,7 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
-		let args3 = vec![
-			utils::serialize_vec(&bridge_transfer_id.0[..])?,
-		];
+		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
 			COUNTERPARTY_MODULE_NAME,
@@ -552,45 +550,57 @@ impl BridgeContractCounterparty for MovementClient {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<[u8; 32]>,
-	) -> Result<Option<BridgeTransferDetails<MovementAddress, [u8; 32]>>, BridgeContractCounterpartyError> {
+	) -> Result<
+		Option<BridgeTransferDetails<MovementAddress, [u8; 32]>>,
+		BridgeContractCounterpartyError,
+	> {
 		// Convert the bridge_transfer_id to a hex string
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
-	
+
 		// Construct the ViewRequest
 		let view_request = ViewRequest {
-		function: EntryFunctionId {
-			module: MoveModuleId {
-			address: self.counterparty_address.clone().into(),
-			name: aptos_api_types::IdentifierWrapper(Identifier::new("atomic_bridge_counterparty")
-				.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?),
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.counterparty_address.clone().into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_counterparty")
+							.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_transfers")
+						.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+				),
 			},
-			name: aptos_api_types::IdentifierWrapper(Identifier::new("bridge_transfers")
-			.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?),
-		},
-		type_arguments: vec![],
-		arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
+			type_arguments: vec![],
+			arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
 		};
-	
+
 		// Send the request to the "/view" endpoint using JSON
-		let response: Response<Vec<serde_json::Value>> = self.rest_client
-		.view(&view_request, None)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::CallError)?;
-	
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CallError)?;
+
 		// Extract and parse the response
 		let values = response.inner();
 
 		if values.len() != 6 {
-			return Err(BridgeContractCounterpartyError::InvalidResponseLength); 
+			return Err(BridgeContractCounterpartyError::InvalidResponseLength);
 		}
-		
+
 		let originator = utils::val_as_str(values.get(0))?;
 		let recipient = utils::val_as_str(values.get(1))?;
-		let amount = utils::val_as_str(values.get(2))?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let amount = utils::val_as_str(values.get(2))?
+			.parse::<u64>()
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let hash_lock = utils::val_as_str(values.get(3))?;
-		let time_lock = utils::val_as_str(values.get(4))?.parse::<u64>().map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
+		let time_lock = utils::val_as_str(values.get(4))?
+			.parse::<u64>()
+			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let state = utils::val_as_u64(values.get(5))? as u8;
-	
+
 		// Convert the originator, recipient, and hash_lock
 		let originator_address = AccountAddress::from_hex_literal(originator)
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
@@ -600,7 +610,7 @@ impl BridgeContractCounterparty for MovementClient {
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?
 			.try_into()
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
-	
+
 		// Create the BridgeTransferDetails struct
 		let details: BridgeTransferDetails<MovementAddress, [u8; 32]> = BridgeTransferDetails {
 			bridge_transfer_id,
@@ -611,8 +621,8 @@ impl BridgeContractCounterparty for MovementClient {
 			time_lock: TimeLock(time_lock),
 			state,
 		};
-		Ok(Some(details))	
-	    }	
+		Ok(Some(details))
+	}
 }
 
 #[async_trait::async_trait]
@@ -784,4 +794,3 @@ impl MovementClient {
 		}
 	}
 }
-
