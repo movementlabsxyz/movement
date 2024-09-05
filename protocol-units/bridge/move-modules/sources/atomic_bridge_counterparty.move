@@ -91,8 +91,6 @@ module atomic_bridge::atomic_bridge_counterparty {
 
     public(friend) fun burn_moveth(amount: u64) acquires BridgeConfig {
         let config = borrow_global<BridgeConfig>(@atomic_bridge);
-
-        // Use the `signer_cap` to burn the MovETH tokens
         moveth::burn(&account::create_signer_with_capability(&config.signer_cap), @atomic_bridge, amount);
     }
 
