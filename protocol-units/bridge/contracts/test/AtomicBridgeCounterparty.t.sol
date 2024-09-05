@@ -146,6 +146,9 @@ contract AtomicBridgeCounterpartyTest is Test {
 
         vm.stopPrank();
 
+        // Internally counterparty timelock is set to half of the initiator timelock (which is 4 *)
+        timeLock = timeLock * 2;
+
         // Advance the timestamp to beyond the timelock period
         vm.roll(block.timestamp + timeLock + 1);
 
@@ -167,9 +170,6 @@ contract AtomicBridgeCounterpartyTest is Test {
             AtomicBridgeCounterparty.MessageState abortedState
         ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
 
-        // Internally the timelock is halved by the counterparty contract
-        // So we need to halve the timelock to compare with the expected value
-        timeLock = timeLock / 2;
         uint256 expectedTimeLock = block.timestamp + timeLock;
 
         assertEq(abortedInitiator, initiator);

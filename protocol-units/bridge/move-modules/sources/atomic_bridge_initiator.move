@@ -138,7 +138,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_transfer_id = aptos_std::aptos_hash::keccak256(combined_bytes);
 
         // Initiator timelock must be double the counterparty timelock
-        time_lock = time_lock * 2;
+        time_lock = time_lock * 4;
 
         let bridge_transfer = BridgeTransfer {
             amount: amount,
@@ -285,14 +285,14 @@ module atomic_bridge::atomic_bridge_initiator {
         let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
 
         // The timelock is internally doubled by the initiator module
-        let doubled_timelock = time_lock * 2;
-        let expected_timelock = timestamp::now_seconds() + doubled_timelock;
+        let multiplied_time_lock= time_lock * 4;
+        let expected_time_lock = timestamp::now_seconds() + multiplied_time_lock;
 
         assert!(transfer.amount == amount, 200);
         assert!(transfer.originator == addr, 201);
         assert!(transfer.recipient == b"recipient_address", 202);
         assert!(transfer.hash_lock == b"hash_lock_value", 203);
-        assert!(transfer.time_lock == expected_timelock, 204);
+        assert!(transfer.time_lock == expected_time_lock, 204);
         assert!(transfer.state == INITIALIZED, 205);
     }
 
@@ -442,6 +442,9 @@ module atomic_bridge::atomic_bridge_initiator {
             time_lock,
             amount
         );
+
+        // Timelock is internally multiplied by the initiator module
+        time_lock = time_lock * 4;
 
         aptos_framework::timestamp::fast_forward_seconds(time_lock + 2);
 
