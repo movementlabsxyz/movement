@@ -1,12 +1,9 @@
-use tokio::time::{sleep, Duration};
-
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
 	providers::Provider,
 };
 use anyhow::Result;
-
 use aptos_sdk::coin_client::CoinClient;
 use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::TestHarness;
@@ -19,6 +16,7 @@ use bridge_shared::{
 };
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
+use tokio::time::{sleep, Duration};
 use tokio::{self, process::Child};
 
 #[allow(dead_code)]

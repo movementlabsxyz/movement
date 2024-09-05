@@ -24,6 +24,7 @@ async fn test_indexer_should_capture_event_for_lock_call() -> Result<(), anyhow:
 	let (mut harness, mut _harness_child) = TestHarness::new_with_movement().await;
 	harness.start_indexer("127.0.0.1", 5432).await;
 	tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
+
 	{
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 		let _ = movement_client.publish_for_test();
