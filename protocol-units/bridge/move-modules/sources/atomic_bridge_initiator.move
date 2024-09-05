@@ -158,11 +158,10 @@ module atomic_bridge::atomic_bridge_initiator {
         });
     }
 
-    public fun complete_bridge_transfer(
+    public entry fun complete_bridge_transfer(
         account: &signer,
         bridge_transfer_id: vector<u8>,
         pre_image: vector<u8>,
-        atomic_bridge: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
@@ -172,7 +171,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
         assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
 
-        moveth::burn(atomic_bridge, @atomic_bridge, bridge_transfer.amount);
+        //moveth::burn(atomic_bridge, @atomic_bridge, bridge_transfer.amount);
 
         bridge_transfer.state = COMPLETED;
 

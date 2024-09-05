@@ -81,7 +81,9 @@ async fn test_movement_client_initiate_and_complete_transfer() -> Result<(), any
 
 	let initiator_addr = AccountAddress::new(*b"0x123456789abcdef123456789abcdef");
 	let recipient = b"0x123456789abcdef".to_vec();
-	let hash_lock = *keccak256(b"secret".to_vec());
+        let preimage = "secret".to_string();
+        let serialized_preimage = bcs::to_bytes(&preimage).unwrap();  // BCS serialization
+        let hash_lock = *keccak256(&serialized_preimage);
 	let time_lock = 3600;
 	let amount = 100;
 
