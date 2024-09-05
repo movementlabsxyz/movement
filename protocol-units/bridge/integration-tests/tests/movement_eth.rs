@@ -210,7 +210,7 @@ async fn test_movement_client_initiate_and_complete_transfer() -> Result<(), any
 
 		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
 		assert_eq!(details.hash_lock.0, hash_lock);
-		//assert_eq!(&details.initiator_address.0 .0[32 - recipient.len()..], &recipient);
+		assert_eq!(details.initiator_address.0.0, sender_address);
 		assert_eq!(details.recipient_address.0, recipient);
 		assert_eq!(details.amount.0, AssetType::Moveth(amount));
 		assert_eq!(details.state, 1, "Bridge transfer should be locked.");
