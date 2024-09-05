@@ -90,3 +90,36 @@ impl BucketConnection {
 		Ok(())
 	}
 }
+
+pub mod test {
+	use super::*;
+
+	#[tokio::test]
+	async fn test_create() -> Result<(), anyhow::Error> {
+		let bucket = format!("public-test-bucket-{}", uuid::Uuid::new_v4());
+		let config = aws_config::load_from_env().await;
+		let client = aws_sdk_s3::Client::new(&config);
+
+		let connection = BucketConnection::new(client.clone(), bucket.clone());
+
+		connection.create_bucket_if_not_exists().await?;
+
+		// assert bucket exists
+		let bucket_exists = client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		assert!(bucket_exists);
+
+		connection.create_bucket_if_not_exists().await?;
+
+		// assert bucket still exists
+		let bucket_exists = client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		assert!(bucket_exists);
+
+		connection.destroy_if_exists().await?;
+
+		// assert bucket does not exist
+		let bucket_exists = client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
+		assert!(!bucket_exists);
+
+		Ok(())
+	}
+}
