@@ -32,7 +32,9 @@ impl From<MoveSharedArgs> for MoveConfig {
 			ws_url: Some(args.move_ws_url),
 			chain_id: args.move_chain_id,
 			// cannot use anything besides unwrap because we do not want to modify the return type here
-			signer_private_key: Arc::new(RwLock::new(LocalAccount::from_private_key(args.move_private_key.as_str(), 0).unwrap())),
+			signer_private_key: Arc::new(RwLock::new(
+				LocalAccount::from_private_key(args.move_private_key.as_str(), 0).unwrap(),
+			)),
 			initiator_contract: Some(MovementAddress(args.move_initiator_contract.0)),
 			counterparty_contract: Some(MovementAddress(args.move_counterparty_contract.0)),
 			gas_limit: args.move_gas_limit,
