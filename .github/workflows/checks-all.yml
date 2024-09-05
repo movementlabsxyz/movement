@@ -258,10 +258,11 @@ jobs:
 
     - name: Run eth_movement tests
       run: |
-        nix develop --command bash -c "
-          rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
-          && rust_backtrace=1 cargo test --test movement_eth -- --nocapture --test-threads=1
-        "
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1"
+
+    - name: Run movement_eth tests
+      run: |
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test movement_eth -- --nocapture --test-threads=1"
 
 #  Indexer:
 #    strategy:
