@@ -21,7 +21,7 @@ use rand::prelude::*;
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::debug;
+use tracing::{debug, info};
 use std::{env, fs, io::{Read, Write}, path::{Path, PathBuf}, process::{Command, Stdio}};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -655,8 +655,6 @@ impl BridgeContractInitiator for MovementClient {
 
 		debug!("Successfully minted 200 MovETH to the initiator");
 	
-
-
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,					
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,			
@@ -672,7 +670,7 @@ impl BridgeContractInitiator for MovementClient {
                         args,
                 );
 
-                utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+                let response = utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
                         .await
                         .map_err(|_| BridgeContractInitiatorError::InitiateTransferError)?;
 
@@ -727,63 +725,74 @@ impl BridgeContractInitiator for MovementClient {
                 Ok(())
         }
 
-        async fn get_bridge_transfer_details(
-                &mut self,
-                bridge_transfer_id: BridgeTransferId<<MovementClient as BridgeContractCounterparty>::Hash>,
-        ) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<<MovementClient as BridgeContractCounterparty>::Address, <MovementClient as BridgeContractCounterparty>::Hash>>> {
-                let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
-                let view_request = ViewRequest {
-                        function: EntryFunctionId {
-                                module: MoveModuleId {
-                                        address: self.counterparty_address.clone().into(),
-                                        name: aptos_api_types::IdentifierWrapper(Identifier::new("atomic_bridge_initiator")
-                                                .map_err(|_| BridgeContractInitiatorError::FunctionViewError)?),
-                                },
-                                name: aptos_api_types::IdentifierWrapper(Identifier::new("bridge_transfers")
-                                        .map_err(|_| BridgeContractInitiatorError::FunctionViewError)?),
-                        },
-                        type_arguments: vec![],
-                        arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
-                };
-
-                let response: Response<Vec<serde_json::Value>> = self.rest_client
-                        .view(&view_request, None)
-                        .await
-                        .map_err(|_| BridgeContractInitiatorError::CallError)?;
-
-                let values = response.inner();
-
-                if values.len() != 6 {
-                        return Err(BridgeContractInitiatorError::InvalidResponseLength); 
-                }
-
-                let originator = utils::val_as_str_initiator(values.get(0))?;
-                let recipient = utils::val_as_str_initiator(values.get(1))?;
-                let amount = utils::val_as_str_initiator(values.get(2))?.parse::<u64>().map_err(|_| BridgeContractInitiatorError::SerializationError)?;
-                let hash_lock = utils::val_as_str_initiator(values.get(3))?;
-                let time_lock = utils::val_as_str_initiator(values.get(4))?.parse::<u64>().map_err(|_| BridgeContractInitiatorError::SerializationError)?;
-                let state = utils::val_as_u64_initiator(values.get(5))? as u8;
-
-                let originator_address = AccountAddress::from_hex_literal(originator)
-                        .map_err(|_| BridgeContractInitiatorError::SerializationError)?;
-                let recipient_address_bytes = hex::decode(&recipient[2..])
-                        .map_err(|_| BridgeContractInitiatorError::SerializationError)?;
-                let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
-                        .map_err(|_| BridgeContractInitiatorError::SerializationError)?
-                        .try_into()
-                        .map_err(|_| BridgeContractInitiatorError::SerializationError)?;
-
-                let details: BridgeTransferDetails<MovementAddress, [u8; 32]> = BridgeTransferDetails {
-                        bridge_transfer_id,
-                        initiator_address: InitiatorAddress(MovementAddress(originator_address)),
-                        recipient_address: RecipientAddress(recipient_address_bytes),
-                        amount: Amount(AssetType::Moveth(amount)),
-                        hash_lock: HashLock(hash_lock_array),
-                        time_lock: TimeLock(time_lock),
-                        state,
-                };
-                Ok(Some(details))
-        }
+	async fn get_bridge_transfer_details(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId<<MovementClient as BridgeContractCounterparty>::Hash>,
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<MovementAddress, [u8; 32]>>> {
+		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
+	
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.counterparty_address.clone().into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_initiator")
+						.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_transfers")
+						.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
+					),
+			},
+			type_arguments: vec![],
+			arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
+		};
+	
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::CallError)?;
+	
+		let values = response.inner();
+	
+		if values.len() != 6 {
+		return Err(BridgeContractInitiatorError::InvalidResponseLength);
+		}
+	
+		let originator = utils::val_as_str_initiator(values.get(0))?;
+		let recipient = utils::val_as_str_initiator(values.get(1))?;
+		let amount = utils::val_as_str_initiator(values.get(2))?
+		.parse::<u64>()
+		.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
+		let hash_lock = utils::val_as_str_initiator(values.get(3))?;
+		let time_lock = utils::val_as_str_initiator(values.get(4))?
+		.parse::<u64>()
+		.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
+		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
+	
+		let originator_address = AccountAddress::from_hex_literal(originator)
+		.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
+		let recipient_address_bytes = hex::decode(&recipient[2..])
+		.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
+		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+		.map_err(|_| BridgeContractInitiatorError::SerializationError)?
+		.try_into()
+		.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
+	
+		let details = BridgeTransferDetails {
+		bridge_transfer_id,
+		initiator_address: InitiatorAddress(MovementAddress(originator_address)),
+		recipient_address: RecipientAddress(recipient_address_bytes),
+		amount: Amount(AssetType::Moveth(amount)),
+		hash_lock: HashLock(hash_lock_array),
+		time_lock: TimeLock(time_lock),
+		state,
+		};
+	
+		Ok(Some(details))
+	}
 }
 
 impl MovementClient {
