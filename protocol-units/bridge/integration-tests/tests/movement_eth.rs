@@ -11,7 +11,7 @@ use anyhow::Result;
 use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
+	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator, BridgeContractInitiatorError},
 	types::{
 		Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
 		RecipientAddress, TimeLock,
@@ -19,7 +19,7 @@ use bridge_shared::{
 };
 
 use ethereum_bridge::types::EthAddress;
-use movement_bridge::utils::MovementAddress;
+use movement_bridge::utils::{self, MovementAddress};
 
 use futures::{
 	channel::mpsc::{self, UnboundedReceiver},
@@ -116,6 +116,27 @@ async fn test_movement_client_initiate_and_complete_transfer() -> Result<(), any
 			let movement_client =
 				harness.movement_client_mut().expect("Failed to get MovementClient");
 			let _ = movement_client.publish_for_test();
+
+                        let mint_amount = 200 * 100_000_000; // Assuming 8 decimals for MovETH
+
+                        let mint_args = vec![
+                                utils::serialize_address_initiator(&movement_client.signer().address())?, // Mint to initiator's address
+                                utils::serialize_u64_initiator(&mint_amount)?,                     // Amount to mint (200 MovETH)
+                        ];
+         
+                        let mint_payload = utils::make_aptos_payload(
+                                movement_client.counterparty_address, // Address where moveth module is published
+                                "moveth",
+                                "mint",
+                                Vec::new(),
+                                mint_args,
+                        );
+        
+                        utils::send_and_confirm_aptos_transaction(&movement_client.rest_client, movement_client.signer(), mint_payload)
+                                .await
+                                .map_err(|_| BridgeContractInitiatorError::MintError)?; // New error variant for mint failure
+        
+                        debug!("Successfully minted 200 MovETH to the initiator");
 
 			movement_client
 				.initiate_bridge_transfer(
