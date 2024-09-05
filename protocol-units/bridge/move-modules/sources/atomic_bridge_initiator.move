@@ -4,6 +4,7 @@ module atomic_bridge::atomic_bridge_initiator {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::genesis;
+    use aptos_framework::resource_account;
     use aptos_framework::timestamp;
     use aptos_std::aptos_hash;
     use aptos_std::smart_table::{Self, SmartTable};
@@ -12,6 +13,8 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::bcs;
     use std::debug;
     use moveth::moveth;
+    use atomic_bridge::atomic_bridge_counterparty;
+    
 
     const INITIALIZED: u8 = 1;
     const COMPLETED: u8 = 2;
@@ -72,6 +75,7 @@ module atomic_bridge::atomic_bridge_initiator {
 
     fun init_module(deployer: &signer) {
         let deployer_addr = signer::address_of(deployer);
+
         move_to(deployer, BridgeTransferStore {
             transfers: aptos_std::smart_table::new<vector<u8>, BridgeTransfer>(),
             nonce: 0,
@@ -79,9 +83,11 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_completed_events: account::new_event_handle<BridgeTransferCompletedEvent>(deployer),
             bridge_transfer_refunded_events: account::new_event_handle<BridgeTransferRefundedEvent>(deployer),
         });
+
         move_to(deployer, BridgeConfig {
             moveth_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
+            //signer_cap: resource_signer_cap
         });
     }
 
@@ -166,13 +172,14 @@ module atomic_bridge::atomic_bridge_initiator {
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
         let bridge_transfer = aptos_std::smart_table::borrow_mut(&mut store.transfers, bridge_transfer_id);
-
+ 
         assert!(bridge_transfer.state == INITIALIZED, ENOT_INITIALIZED);
         assert!(aptos_std::aptos_hash::keccak256(bcs::to_bytes(&pre_image)) == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
         assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
 
-        //moveth::burn(atomic_bridge, @atomic_bridge, bridge_transfer.amount);
-
+        atomic_bridge_counterparty::burn_moveth(bridge_transfer.amount);
+        //moveth::burn(&account::create_signer_with_capability(&signer_cap), @atomic_bridge, bridge_transfer.amount);
+        
         bridge_transfer.state = COMPLETED;
 
         event::emit_event(&mut store.bridge_transfer_completed_events, BridgeTransferCompletedEvent {
