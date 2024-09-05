@@ -44,7 +44,7 @@ impl Memseq<RocksdbMempool> {
 	pub fn try_move_rocks(
 		path: PathBuf,
 		block_size: u32,
-		building_time_ms: u64,	
+		building_time_ms: u64,
 	) -> Result<Self, anyhow::Error> {
 		let mempool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
@@ -124,7 +124,9 @@ pub mod test {
 	async fn test_wait_for_next_block_building_time_expires() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path, 128, 250)?.with_block_size(10).with_building_time_ms(500);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?
+			.with_block_size(10)
+			.with_building_time_ms(500);
 
 		// Add some transactions
 		for i in 0..5 {
@@ -215,22 +217,14 @@ pub mod test {
 	async fn test_try_move_rocks() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(
-			path.clone(),
-			1024,
-			500,
-		)?;
+		let memseq = Memseq::try_move_rocks(path.clone(), 1024, 500)?;
 
 		assert_eq!(memseq.block_size, 1024);
 		assert_eq!(memseq.building_time_ms, 500);
 
 		// Test invalid path
 		let invalid_path = PathBuf::from("");
-		let result = Memseq::try_move_rocks(
-			invalid_path,
-			1024,
-			500,
-		);
+		let result = Memseq::try_move_rocks(invalid_path, 1024, 500);
 		assert!(result.is_err());
 
 		Ok(())
@@ -288,7 +282,9 @@ pub mod test {
 	async fn test_wait_for_next_block_no_transactions() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path, 128, 250)?.with_block_size(10).with_building_time_ms(500);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?
+			.with_block_size(10)
+			.with_building_time_ms(500);
 
 		let block = memseq.wait_for_next_block().await?;
 		assert!(block.is_none());

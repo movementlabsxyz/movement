@@ -215,9 +215,11 @@ fn decode_log_data(
 					.as_uint()
 					.map(|(u, _)| u.into())
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
-				let state = decoded.indexed.get(6)
+				let state = decoded
+					.indexed
+					.get(6)
 					.and_then(|val| val.as_uint())
-					.and_then(|(u, _)| u.try_into().ok())  // Try converting to u8
+					.and_then(|(u, _)| u.try_into().ok()) // Try converting to u8
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode state as u8"))?;
 
 				let details: BridgeTransferDetails<EthAddress, EthHash> = BridgeTransferDetails {
@@ -227,7 +229,7 @@ fn decode_log_data(
 					hash_lock: HashLock(hash_lock),
 					time_lock,
 					amount,
-					state
+					state,
 				};
 
 				Ok(BridgeContractInitiatorEvent::Initiated(details))

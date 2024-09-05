@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use bridge_shared::types::{
-	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId, CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock
+	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
+	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
+	LockDetails, RecipientAddress, TimeLock,
 };
 use thiserror::Error;
 

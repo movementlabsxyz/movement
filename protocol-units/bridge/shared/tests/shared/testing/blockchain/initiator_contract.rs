@@ -85,7 +85,7 @@ where
 				hash_lock: hash_lock.clone(),
 				time_lock: time_lock.clone(),
 				amount,
-				state: 1
+				state: 1,
 			},
 		);
 
@@ -96,7 +96,7 @@ where
 			hash_lock,
 			time_lock,
 			amount,
-			state: 1
+			state: 1,
 		}))
 	}
 

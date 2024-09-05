@@ -1,4 +1,4 @@
-use tokio::time::{sleep, Duration}; // Add these imports
+use tokio::time::{sleep, Duration};
 
 use alloy::{
 	node_bindings::Anvil,
@@ -21,6 +21,7 @@ use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
 use tokio::{self, process::Child};
 
+#[allow(dead_code)]
 struct ChildGuard {
 	child: Child,
 }
