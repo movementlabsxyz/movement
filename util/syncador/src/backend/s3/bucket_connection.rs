@@ -91,8 +91,9 @@ impl BucketConnection {
 	}
 }
 
+#[cfg(test)]
 pub mod test {
-	use super::*;
+	use super::BucketConnection;
 
 	#[tokio::test]
 	async fn test_create() -> Result<(), anyhow::Error> {

@@ -1,11 +1,17 @@
 use super::bucket_connection;
+use aws_types::region::Region;
+use tracing::info;
 
 pub mod metadata;
 pub mod pull;
 pub mod push;
 
 pub async fn create_random(bucket: String) -> Result<(push::Push, pull::Pull), anyhow::Error> {
-	let config = aws_config::load_from_env().await;
+	let region = std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string());
+	let region = Region::new(region);
+	info!("May create random bucket in region {}", region);
+	let config = aws_config::load_from_env().await.into_builder().region(Some(region)).build();
+	info!("Client used region {}", config.region().ok_or(anyhow::anyhow!("No region"))?);
 	let client = aws_sdk_s3::Client::new(&config);
 	create(client, bucket, metadata::Metadata::random()).await
 }
