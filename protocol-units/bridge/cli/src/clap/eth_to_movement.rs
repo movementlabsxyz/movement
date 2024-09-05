@@ -67,11 +67,11 @@ pub struct MoveSharedArgs {
 
 #[derive(Args, Clone, Debug)]
 pub struct CombinedArgs {
-    #[command(flatten)]
-    pub eth_args: EthSharedArgs,
-    
-    #[command(flatten)]
-    pub move_args: MoveSharedArgs,
+	#[command(flatten)]
+	pub eth_args: EthSharedArgs,
+
+	#[command(flatten)]
+	pub move_args: MoveSharedArgs,
 }
 
 #[derive(Subcommand)]

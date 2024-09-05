@@ -366,8 +366,8 @@ impl BridgeContractInitiator for EthClient {
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
-			state: eth_details.state
+			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			state: eth_details.state,
 		}))
 	}
 }
@@ -466,8 +466,8 @@ impl BridgeContractCounterparty for EthClient {
 			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(AssetType::EthAndWeth((0,eth_details.amount.wrapping_to::<u64>()))),
-			state: eth_details.state
+			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			state: eth_details.state,
 		}))
 	}
 }

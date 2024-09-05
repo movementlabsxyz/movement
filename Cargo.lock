@@ -3674,6 +3674,7 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
+ "aptos-sdk",
  "bridge-shared",
  "clap 4.5.13",
  "directories",

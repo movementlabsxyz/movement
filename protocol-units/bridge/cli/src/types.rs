@@ -2,9 +2,8 @@ use crate::clap::eth_to_movement::{EthSharedArgs, MoveSharedArgs};
 use ethereum_bridge::client::Config as EthConfig;
 use movement_bridge::{utils::MovementAddress, Config as MoveConfig};
 // import arc, rwlock and localaccount
-use std::sync::{Arc, RwLock};
 use aptos_sdk::types::LocalAccount;
-
+use std::sync::{Arc, RwLock};
 
 impl From<EthSharedArgs> for EthConfig {
 	fn from(args: EthSharedArgs) -> Self {
@@ -25,7 +24,6 @@ impl From<&EthSharedArgs> for EthConfig {
 		From::from(args.clone())
 	}
 }
-
 
 impl From<MoveSharedArgs> for MoveConfig {
 	fn from(args: MoveSharedArgs) -> Self {
