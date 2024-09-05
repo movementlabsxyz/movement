@@ -66,6 +66,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         // Update the pool balance
         poolBalance += totalAmount;
 
+        // Initiator timelock must be double the counterparty timelock
+        timeLock = timeLock * 2;
+
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce++));
 
@@ -74,7 +77,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.number + timeLock,
+            timeLock: block.timestamp + timeLock,
             state: MessageState.INITIALIZED
         });
 

@@ -194,10 +194,13 @@ contract AtomicBridgeInitiatorWethTest is Test {
         );
         vm.stopPrank();
 
+        //Internally the timeLock is multiplied by 2 
+        timeLock = timeLock * 2;
+
         // Advance time and block height to ensure the time lock has expired
-        vm.warp(block.number + timeLock + 1);
-        uint256 futureBlockNumber = block.number + timeLock + 4200;
-        vm.roll(futureBlockNumber);
+        vm.warp(block.timestamp + timeLock + 1);
+        uint256 futureTimeStamp = block.timestamp + timeLock + 4200;
+        vm.roll(futureTimeStamp);
 
         vm.startPrank(originator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, originator));
