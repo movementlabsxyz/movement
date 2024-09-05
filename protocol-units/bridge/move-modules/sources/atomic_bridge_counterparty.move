@@ -117,6 +117,8 @@ module atomic_bridge::atomic_bridge_counterparty {
         recipient: address,
         amount: u64
     ) acquires BridgeTransferStore {
+        time_lock = time_lock / 2;
+
         assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
         let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
         let bridge_transfer = BridgeTransfer {
@@ -179,7 +181,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         // Ensure the timelock has expired
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, ETIMELOCK_NOT_EXPIRED);
         assert!(bridge_transfer.state == LOCKED, ETRANSFER_NOT_LOCKED);
-//
+
         bridge_transfer.state = CANCELLED;
 
         event::emit_event(&mut store.bridge_transfer_cancelled_events, BridgeTransferCancelledEvent {
@@ -246,10 +248,13 @@ module atomic_bridge::atomic_bridge_counterparty {
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
 
+        let expected_time_lock = time_lock / 2;
+
         assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
         assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
         assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
         assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
+        assert!(bridge_transfer.time_lock == expected_time_lock, 420);
 
         let pre_image = b"secret"; 
         let msg:vector<u8> = b"secret";

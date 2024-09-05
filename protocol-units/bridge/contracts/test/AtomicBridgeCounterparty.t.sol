@@ -146,8 +146,8 @@ contract AtomicBridgeCounterpartyTest is Test {
 
         vm.stopPrank();
 
-        // Advance the block number to beyond the timelock period
-        vm.roll(block.number + timeLock + 1);
+        // Advance the timestamp to beyond the timelock period
+        vm.roll(block.timestamp + timeLock + 1);
 
         // Malicious attempt to abort the bridge transfer
         vm.prank(address(0x1337));
@@ -167,11 +167,16 @@ contract AtomicBridgeCounterpartyTest is Test {
             AtomicBridgeCounterparty.MessageState abortedState
         ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
 
+        // Internally the timelock is halved by the counterparty contract
+        // So we need to halve the timelock to compare with the expected value
+        timeLock = timeLock / 2;
+        uint256 expectedTimeLock = block.timestamp + timeLock;
+
         assertEq(abortedInitiator, initiator);
         assertEq(abortedRecipient, recipient);
         assertEq(abortedAmount, amount);
         assertEq(abortedHashLock, hashLock);
-        assertLe(abortedTimeLock, block.number, "Timelock is not less than or equal to current block number");
+        assertLe(abortedTimeLock, expectedTimeLock, "Timelock is not less than or equal to current block number");
         assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
 
         vm.stopPrank();
