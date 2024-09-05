@@ -263,7 +263,6 @@ jobs:
           && rust_backtrace=1 cargo test --test movement_eth -- --nocapture --test-threads=1
         "
 
-
 #  Indexer:
 #    strategy:
 #      matrix:
