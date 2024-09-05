@@ -54,6 +54,7 @@ pub struct Config {
 	pub chain_id: String,
 	pub signer_private_key: Arc<RwLock<LocalAccount>>,
 	pub initiator_contract: Option<MovementAddress>,
+	pub counterparty_contract: Option<MovementAddress>,
 	pub gas_limit: u64,
 }
 
@@ -68,6 +69,7 @@ impl Config {
 			chain_id: 4.to_string(),
 			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
 			initiator_contract: None,
+			counterparty_contract: None,
 			gas_limit: 10_000_000_000,
 		}
 	}
@@ -89,7 +91,7 @@ pub struct MovementClient {
 }
 
 impl MovementClient {
-	pub async fn new(_config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn new(_config:impl Into<Config>) -> Result<Self, anyhow::Error> {
 		let node_connection_url = "http://127.0.0.1:8080".to_string();
 		let node_connection_url = Url::from_str(node_connection_url.as_str()).map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 

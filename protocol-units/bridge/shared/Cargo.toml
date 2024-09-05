@@ -32,7 +32,6 @@ alloy = { workspace = true, features = [
   "contract",
   "sol-types",
 ] }
-serde = { workspace = true }
 [dev-dependencies]
 dashmap = "6.0.1"
 static_str_ops = "0.1.2"

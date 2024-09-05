@@ -99,6 +99,17 @@ pub enum Commands {
 		#[command(flatten)]
 		args: EthSharedArgs,
 
+		#[arg(long)]
+		amount: u64,
+
+		/// The address of the originator on ethereum
+		#[arg(long)]
+		originator: MovementAddress,
+
+		/// The address of the recipient on the movement
+		#[arg(long)]
+		recipient: EthAddress,
+
 		/// The ID of the transfer to resume
 		#[arg(long)]
 		transfer_id: String,
@@ -107,6 +118,17 @@ pub enum Commands {
 	LockOnMovement {
 		#[command(flatten)]
 		args: MoveSharedArgs,
+
+		#[arg(long)]
+		amount: u64,
+
+		/// The address of the originator on ethereum
+		#[arg(long)]
+		originator: EthAddress,
+
+		/// The address of the recipient on the movement
+		#[arg(long)]
+		recipient: MovementAddress,
 
 		/// The ID of the transfer to resume
 		#[arg(long)]

@@ -6,7 +6,6 @@ use std::{fmt::Debug, hash::Hash};
 use std::ops::AddAssign;
 use std::convert::TryFrom;
 use thiserror::Error;
-use serde::Deserialize;
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
@@ -55,7 +54,7 @@ where
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddress<A>(pub A);
 
 impl From<&str> for InitiatorAddress<Vec<u8>> {
@@ -70,7 +69,7 @@ impl From<String> for InitiatorAddress<Vec<u8>> {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecipientAddress<A>(pub A);
 
 impl From<&str> for RecipientAddress<Vec<u8>> {
@@ -91,7 +90,7 @@ pub struct RecipientAddressCounterparty<A>(pub A);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashLock<H>(pub H);
 
 impl<H> HashLock<H> {
@@ -132,7 +131,7 @@ impl HashLockPreImage {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq)]
 pub struct TimeLock(pub u64);
 
 impl From<Uint<256, 4>> for TimeLock {

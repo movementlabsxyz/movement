@@ -14,5 +14,4 @@ pub enum Commands {
 	/// Ethereum to Movement Labs bridge commands
 	#[command(subcommand)]
 	Bridge(eth_to_movement::Commands),
-	
 }

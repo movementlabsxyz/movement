@@ -1,14 +1,14 @@
 use crate::clap::eth_to_movement::{Commands, EthSharedArgs, MoveSharedArgs};
 use alloy::primitives::keccak256;
 use anyhow::Result;
-use bridge_shared::bridge_contracts::BridgeContractInitiator;
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractCounterparty};
 use bridge_shared::types::{
-	Amount, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock, AssetType
+	BridgeTransferId, Amount, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock, AssetType
 };
 use ethereum_bridge::{client::EthClient, types::EthAddress};
 use movement_bridge::utils::MovementAddress;
 use movement_bridge::MovementClient;
-
+use std::convert::TryInto;
 
 
 pub async fn execute(command: &Commands) -> Result<()> {
@@ -16,8 +16,8 @@ pub async fn execute(command: &Commands) -> Result<()> {
 		Commands::IniatializeUser { args } => Ok(()),
 		Commands::FromEthereum { args, recipient, amount } => bridge_initiator_eth(args, recipient, *amount).await,
 		Commands::FromMovement { args, recipient, amount } => bridge_initiator_move(args, recipient, *amount).await,
-		Commands::LockOnEthereum { args, transfer_id } => lock_counterparty_eth(args, transfer_id).await,
-		Commands::LockOnMovement { args, transfer_id } => lock_counterparty_move(args, transfer_id).await,
+		Commands::LockOnEthereum { args, amount, originator, recipient, transfer_id } => lock_counterparty_eth(args, *amount, originator, recipient, transfer_id).await,
+		Commands::LockOnMovement { args, amount, originator, recipient, transfer_id } => lock_counterparty_move(args, *amount, originator, recipient, transfer_id).await,
 		Commands::CompleteInitiatorOnEthereum { args, transfer_id } => complete_initiator_eth(args, transfer_id).await,
 		Commands::CompleteInitiatorOnMovement { args, transfer_id } => complete_initiator_move(args, transfer_id).await,
 		Commands::CompleteCounterpartyOnEthereum { args, transfer_id } => complete_counterparty_eth(args, transfer_id).await,
@@ -43,7 +43,7 @@ async fn bridge_initiator_eth(
 	println!("Current Ethereum block height: {}", current_block);
 
 	// Convert signer's private key to EthAddress
-	let initiator_address = EthAddress(client.get_signer_address());
+	let originator_address = EthAddress(client.get_signer_address());
 	let recipient_address = RecipientAddress(From::from(recipient));
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
@@ -53,7 +53,7 @@ async fn bridge_initiator_eth(
 	// Call using rust based eth libs
 	client
 		.initiate_bridge_transfer(
-			InitiatorAddress(initiator_address),
+			InitiatorAddress(originator_address),
 			recipient_address,
 			hash_lock,
 			time_lock,
@@ -70,30 +70,29 @@ async fn bridge_initiator_move(
 ) -> Result<()> {
 	println!("Initiating swap to {:?} with amount {}", recipient, amount);
 
-	let mut client = MovementClient::new(args).await?;
+	// let mut client = MovementClient::new(args).await?;
 
 	// Get the current block height
-	let current_block = client.get_block_number().await?;
-	println!("Current Ethereum block height: {}", current_block);
+	// let current_block = client.get_block_number().await?;
+	// println!("Current Ethereum block height: {}", current_block);
 
-	// Convert signer's private key to EthAddress
-	let initiator_address = MovementAddress(client.get_signer_address().await);
-	let recipient_address: RecipientAddress<Vec<u8>> = RecipientAddress(From::from(recipient.to_vec()));
-	let hash_lock_pre_image = HashLockPreImage::random();
-	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
-	let amount = Amount(amount);
+	// // Convert signer's private key to EthAddress
+	// let originator_address = MovementAddress(client.si9().await);
+	// let recipient_address: RecipientAddress<Vec<u8>> = RecipientAddress(From::from(recipient.to_vec()));
+	// let hash_lock_pre_image = HashLockPreImage::random();
+	// let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	// let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
+	// let amount = Amount(AssetType::Moveth(amount));
 
 
-	client
-		.initiate_bridge_transfer(
-			InitiatorAddress(initiator_address),
-			recipient_address,
-			hash_lock,
-			time_lock,
-			amount,
-		)
-		.await?;
+	// client
+	// 	.initiate_bridge_transfer(
+	// 		recipient_address,
+	// 		hash_lock,
+	// 		time_lock,
+	// 		amount,
+	// 	)
+	// 	.await?;
 
 	// Now we need to listen to the blockchain to receive the correct events and match them accordingly.
 
@@ -105,24 +104,43 @@ async fn bridge_initiator_move(
 	Ok(())
 }
 
-async fn lock_counterparty_eth(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+async fn lock_counterparty_eth(args: &EthSharedArgs, amount:u64, originator: &MovementAddress, recipient: &EthAddress, transfer_id: &str) -> Result<()> {
 	println!("Lock transfer with ID: {}", transfer_id);
 	let mut client = EthClient::new(args).await?;
 
+	let current_block = client.get_block_number().await?;
+
 	// Convert signer's private key to EthAddress
-	let initiator_address = MovementAddress(client.get_signer_address().await);
-	let recipient_address: RecipientAddress<Vec<u8>> = RecipientAddress(From::from(recipient.to_vec()));
+	let transfer_id_slice: &[u8] = transfer_id.as_bytes();
+
+	let bridge_transfer_id: [u8; 32] = transfer_id_slice
+    .try_into()
+    .expect("transfer_id should be 32 bytes long");
+	let originator_address = InitiatorAddress(originator.to_vec());
+	let recipient_address = RecipientAddress(EthAddress(recipient.0));
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
-	let amount = Amount(amount);
+	let amount = Amount(AssetType::EthAndWeth((0,amount)));
 	
-	client.lock_bridge_transfer(transfer_id).await?;
+	client.lock_bridge_transfer(BridgeTransferId(bridge_transfer_id), hash_lock, time_lock, originator_address, recipient_address, amount).await?;
 	Ok(())
 }
 
-async fn lock_counterparty_move(args: &MoveSharedArgs, transfer_id: &str) -> Result<()> {
+async fn lock_counterparty_move(args: &MoveSharedArgs, amount: u64, originator: &EthAddress, recipient: &MovementAddress, transfer_id: &str) -> Result<()> {
 	println!("Lock transfer with ID: {}", transfer_id);
+
+	let mut client = MovementClient::new(args).await?;
+
+	// // Convert signer's private key to EthAddress
+	// let originator_address = InitiatorAddress(client.get_signer_address());
+	// let recipient_address: RecipientAddress<Vec<u8>> = RecipientAddress(From::from(recipient.to_vec()));
+	// let hash_lock_pre_image = HashLockPreImage::random();
+	// let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
+	// let time_lock = TimeLock(current_block + 100); // Set an appropriate time lock
+	// let amount = Amount(AssetType::EthAndWeth((0,amount)));
+
+	// client.lock_bridge_transfer(transfer_id, hash_lock).await?;
 
 	Ok(())
 }

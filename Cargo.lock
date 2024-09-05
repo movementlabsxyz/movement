@@ -3674,7 +3674,6 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
- "aptos-sdk",
  "bridge-shared",
  "clap 4.5.13",
  "directories",
@@ -3737,7 +3736,6 @@ dependencies = [
  "hex",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
- "serde",
  "static_str_ops",
  "test-log",
  "thiserror",
