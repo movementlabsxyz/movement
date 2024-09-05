@@ -46,12 +46,15 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         if (amount == 0) revert ZeroAmount();
         if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
 
+        // Enforce that counterpary timelock is half as long as initiator timelock
+        timeLock = timeLock / 2;
+
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
             originator: originator,
             amount: amount,
             hashLock: hashLock,
-            timeLock: block.number + timeLock, // using block number for timelock
+            timeLock: block.timestamp + timeLock, // using block number for timelock
             state: MessageState.PENDING
         });
 
