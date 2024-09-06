@@ -9,5 +9,6 @@ contract MOVEToken is MintableToken {
      */
     function initialize() public initializer {
         __MintableToken_init("Move Token", "MOVE");
+        _mint(address(msg.sender), 10000000000 * 10 ** decimals());
     }
 }
