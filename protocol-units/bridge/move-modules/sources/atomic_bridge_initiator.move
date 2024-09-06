@@ -478,6 +478,9 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_addr = signer::address_of(atomic_bridge);
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
         assert!(aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
+        let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        assert!(transfer.state == REFUNDED, 300);
     }
 
     #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @origin_addr, atomic_bridge = @atomic_bridge)]
@@ -526,16 +529,9 @@ module atomic_bridge::atomic_bridge_initiator {
             sender,
             bridge_transfer_id,
         );
-
-        let addr = signer::address_of(sender);
-        let store = borrow_global<BridgeTransferStore>(addr);
-        let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
-
-        assert!(transfer.state == COMPLETED, 300);
     }
-/*
+
     #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
-    #[ignore]
     public fun test_bridge_transfers_view(
         sender: &signer,
         creator: &signer,
@@ -553,6 +549,14 @@ module atomic_bridge::atomic_bridge_initiator {
         let nonce = 1;
         let sender_address = signer::address_of(sender);
         moveth::mint(atomic_bridge, sender_address, amount);
+
+        let combined_bytes = vector::empty<u8>();
+        vector::append(&mut combined_bytes, bcs::to_bytes(&sender_address));
+        vector::append(&mut combined_bytes, recipient);
+        vector::append(&mut combined_bytes, hash_lock);
+        vector::append(&mut combined_bytes, bcs::to_bytes(&nonce));
+
+        let bridge_transfer_id = aptos_std::aptos_hash::keccak256(combined_bytes);
 
         initiate_bridge_transfer(
             sender,
@@ -575,5 +579,4 @@ module atomic_bridge::atomic_bridge_initiator {
         );
         aptos_std::debug::print(&transfer_state);
     }
-    */
 }
