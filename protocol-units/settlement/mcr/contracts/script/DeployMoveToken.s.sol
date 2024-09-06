@@ -19,7 +19,8 @@ contract DeployMoveToken is Script {
         );
         // since admin proxy owns both move and stlmove, we only need to transfer ownership of admin to timelock
         MOVEToken moveToken = MOVEToken(address(moveProxy));
-        moveToken.transfer(0x47A9561eFaa534add7Ce95904690CD6bBd7cCb8f, 20 * 10**18);
+        // if a direct allocation is required, add the following line with the proper address
+        // moveToken.transfer(0x47A9561eFaa534add7Ce95904690CD6bBd7cCb8f, 20 * 10**18);
         
         console.log("Move Token deployed at: ", address(moveProxy));
         console.log("implementation: ", address(moveImplementation));
