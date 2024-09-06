@@ -18,9 +18,19 @@ services:
       ETH_RPC_CONNECTION_PROTOCOL: ${ETH_RPC_CONNECTION_PROTOCOL}
       ETH_RPC_CONNECTION_PORT: ${ETH_RPC_CONNECTION_PORT}
       INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is not set}
       MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
+      MAYBE_RUN_LOCAL: "true"
+      MAYBE_DEPLOY_MCR: "true"
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "8090:8090" # port for anvil, this should be moved out into runner
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 8090" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
 
   celestia-light-node:
     image: busybox
