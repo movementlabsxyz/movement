@@ -13319,6 +13319,7 @@ dependencies = [
  "futures",
  "syncador",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

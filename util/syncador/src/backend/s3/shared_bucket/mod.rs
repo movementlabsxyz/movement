@@ -111,7 +111,7 @@ pub mod test {
 		tokio::fs::remove_dir_all(&root_dir).await?;
 
 		// download the manifest
-		let _downloaded_package = pull.pull(package).await?; // package doesn't really matter here
+		let _downloaded_package = pull.pull(Some(package)).await?; // package doesn't really matter here
 
 		// check that all the files are back
 		for (i, path) in paths.iter().enumerate() {

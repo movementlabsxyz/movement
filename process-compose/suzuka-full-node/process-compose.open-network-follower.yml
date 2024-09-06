@@ -1,0 +1,37 @@
+version: "3"
+
+processes:
+  setup:
+    environment:
+      - "AWS_REGION=us-west-1"
+      - "MOVEMENT_SYNC=l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+      - "CELESTIA_RPC_CONNECTION_PROTOCOL=https"
+      - "CELESTIA_RPC_CONNECTION_HOSTNAME=l-monninger.open-network.rpc.celestia.suzuka.devnet.movementlabs.xyz"
+      - "CELESTIA_RPC_CONNECTION_PORT=443"
+      - "CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL=wss"
+      - "CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME=l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz"
+      - "CELESTIA_WEBSOCKET_CONNECTION_PORT=443"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
+
+  celestia-light-node:
+    command: |
+      sleep 999999999
+      echo "started"
+    readiness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: |
+          echo "true"
+    liveness_probe:
+      initial_delay_seconds: 10
+      exec:
+        command: |
+          echo "true"
+    depends_on:
+      setup:
+        condition: process_healthy

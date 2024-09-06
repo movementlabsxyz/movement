@@ -21,7 +21,20 @@ impl FileGlob {
 
 #[async_trait::async_trait]
 impl PullOperations for FileGlob {
-	async fn pull(&self, _package: Package) -> Result<Package, anyhow::Error> {
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		if package.is_none() {
+			return Ok(None);
+		}
+
+		let package = package.ok_or(anyhow::anyhow!("package is none"))?;
+
+		Ok(Some(self.push(package).await?))
+	}
+}
+
+#[async_trait::async_trait]
+impl PushOperations for FileGlob {
+	async fn push(&self, _package: Package) -> Result<Package, anyhow::Error> {
 		// just check the matching glob files
 		let mut sync_files = Vec::new();
 		for path in glob(self.pattern.as_str())? {
@@ -29,12 +42,5 @@ impl PullOperations for FileGlob {
 		}
 		let package_element = PackageElement { sync_files, root_dir: self.root_dir.clone() };
 		Ok(Package(vec![package_element]))
-	}
-}
-
-#[async_trait::async_trait]
-impl PushOperations for FileGlob {
-	async fn push(&self, package: Package) -> Result<Package, anyhow::Error> {
-		self.pull(package).await
 	}
 }

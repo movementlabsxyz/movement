@@ -19,7 +19,20 @@ impl PackageGlob {
 
 #[async_trait::async_trait]
 impl PullOperations for PackageGlob {
-	async fn pull(&self, package: Package) -> Result<Package, anyhow::Error> {
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		if package.is_none() {
+			return Ok(None);
+		}
+
+		let package = package.ok_or(anyhow::anyhow!("package is none"))?;
+
+		Ok(Some(self.push(package).await?))
+	}
+}
+
+#[async_trait::async_trait]
+impl PushOperations for PackageGlob {
+	async fn push(&self, package: Package) -> Result<Package, anyhow::Error> {
 		let filtered = package
 			.0
 			.into_iter()
@@ -36,12 +49,5 @@ impl PullOperations for PackageGlob {
 			)
 			.collect();
 		Ok(Package(filtered))
-	}
-}
-
-#[async_trait::async_trait]
-impl PushOperations for PackageGlob {
-	async fn push(&self, package: Package) -> Result<Package, anyhow::Error> {
-		self.pull(package).await
 	}
 }

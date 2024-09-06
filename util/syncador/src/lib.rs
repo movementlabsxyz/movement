@@ -22,7 +22,7 @@ pub async fn sync<
 	// run both pull and push operations until the last one closes or one fails
 	let pull = async {
 		while let Some(pkg) = pull_stream.next().await {
-			pull.pull(pkg?).await?;
+			pull.pull(Some(pkg?)).await?;
 		}
 		Ok::<(), anyhow::Error>(())
 	};
@@ -66,7 +66,7 @@ pub mod test {
 
 	#[async_trait::async_trait]
 	impl PullOperations for TestSyncer {
-		async fn pull(&self, package: Package) -> Result<Package, anyhow::Error> {
+		async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
 			println!("pull");
 			self.sender.send(()).await?;
 			Ok(package)

@@ -77,13 +77,20 @@ impl Pull {
 
 #[async_trait::async_trait]
 impl PullOperations for Pull {
-	async fn pull(&self, package: Package) -> Result<Package, anyhow::Error> {
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		// If the package is None, return None
+		if package.is_none() {
+			return Ok(None);
+		}
+
+		let package = package.ok_or(anyhow::anyhow!("package is none"))?;
+
 		let mut manifests = Vec::new();
 		for manifest in package.0.into_iter() {
 			let new_manifest =
 				Self::ungzip_tar_manifest(manifest, self.destination_dir.clone()).await?;
 			manifests.push(new_manifest);
 		}
-		Ok(Package(manifests))
+		Ok(Some(Package(manifests)))
 	}
 }

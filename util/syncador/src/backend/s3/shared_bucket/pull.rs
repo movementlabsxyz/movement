@@ -165,9 +165,20 @@ impl Pull {
 
 #[async_trait::async_trait]
 impl PullOperations for Pull {
-	async fn pull(&self, package: Package) -> Result<Package, anyhow::Error> {
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		if package.is_none() {
+			return Ok(None);
+		}
+
+		let package = package.ok_or(anyhow::anyhow!("package is none"))?;
+
 		let candidates = self.find_candidates(&package).await?;
+
+		if candidates.is_empty() {
+			return Ok(None);
+		}
+
 		let candidate_selected = self.select_candidate_from(&package, candidates).await?;
-		self.pull_candidate(package, candidate_selected).await
+		Ok(Some(self.pull_candidate(package, candidate_selected).await?))
 	}
 }

@@ -59,7 +59,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			Box::pin(async { futures::future::pending::<Result<(), anyhow::Error>>().await })
 		};
 
-	let mut config_file = dot_movement.try_get_or_create_config_file().await?;
+	let config_file = dot_movement.try_get_or_create_config_file().await?;
 
 	// get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);

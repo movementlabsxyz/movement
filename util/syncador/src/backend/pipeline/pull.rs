@@ -17,7 +17,7 @@ impl Pipeline {
 
 #[async_trait::async_trait]
 impl PullOperations for Pipeline {
-	async fn pull(&self, package: Package) -> Result<Package, anyhow::Error> {
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
 		let mut package = package;
 		for backend in &self.backends {
 			package = backend.pull(package.clone()).await?;

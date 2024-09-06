@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-/// A package is a collection of file system locations that are synced together, either publicly or privately.
+/// A package is a collection of file system locations that are synced together.
 #[derive(Debug, Clone)]
 pub struct Package(pub Vec<PackageElement>);
 

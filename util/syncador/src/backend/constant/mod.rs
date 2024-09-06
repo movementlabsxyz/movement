@@ -8,8 +8,8 @@ pub struct Constant {
 
 #[async_trait::async_trait]
 impl PullOperations for Constant {
-	async fn pull(&self, _package: Package) -> Result<Package, anyhow::Error> {
-		Ok(self.package.clone())
+	async fn pull(&self, _package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		Ok(Some(self.package.clone()))
 	}
 }
 

@@ -13,5 +13,5 @@ pub trait PushOperations {
 
 #[async_trait::async_trait]
 pub trait PullOperations {
-	async fn pull(&self, package: Package) -> Result<Package, anyhow::Error>;
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error>;
 }
