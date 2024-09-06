@@ -31,6 +31,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     IWETH9 public weth;
     uint256 private nonce;
 
+    // Constant time lock of 24 hours in seconds (86400 seconds)
+    uint256 public constant TIME_LOCK_DURATION = 24 * 60 * 60;
+
     function initialize(address _weth, address owner) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
@@ -44,7 +47,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         counterpartyAddress = _counterpartyAddress;
     }
 
-    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
+    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock)
         external
         payable
         returns (bytes32 bridgeTransferId)
@@ -52,12 +55,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         address originator = msg.sender;
         uint256 ethAmount = msg.value;
         uint256 totalAmount = wethAmount + ethAmount;
+
         // Ensure there is a valid total amount
         if (totalAmount == 0) {
             revert ZeroAmount();
         }
+        
         // If msg.value is greater than 0, convert ETH to WETH
         if (ethAmount > 0) weth.deposit{value: ethAmount}();
+        
         // Transfer WETH to this contract, revert if transfer fails
         if (wethAmount > 0) {
             if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
@@ -66,8 +72,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         // Update the pool balance
         poolBalance += totalAmount;
 
-        // Initiator timelock must be double the counterparty timelock
-        timeLock = timeLock * 2;
+        // Initiator timelock must be double the counterparty timelock (24 hours * 2 = 48 hours in seconds)
+        uint256 timeLock = TIME_LOCK_DURATION * 2;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce++));
@@ -89,7 +95,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.number > bridgeTransfer.timeLock) revert TimelockExpired();
+        if (block.number > bridgeTransfer.timeLock) revert TimeLockExpired();
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -100,6 +106,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
+        
         // Decrease pool balance and transfer WETH back to originator
         poolBalance -= bridgeTransfer.amount;
         if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
@@ -115,3 +122,4 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
     }
 }
+
