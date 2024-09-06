@@ -65,14 +65,13 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
                     attester
                 ];
                 for (uint256 k = 0; k < delegatees.length(); k++) {
-                    // todo: can this be replaced with _rollOverAttester?
                     address delegatee = delegatees.at(k);
-
                     // get the genesis stake for the attester
                     uint256 attesterStake = getStakeAtEpoch(domain, 0, custodian, delegatee, attester);
-
                     // roll over the genesis stake to the current epoch
                     _addStake(domain, getCurrentEpoch(domain), custodian, delegatee, attester, attesterStake);
+
+                    emit AttesterEpochRolledOver(attester, delegatee, 0, custodian, attesterStake, 0);
                 }
             }
         }
@@ -228,8 +227,9 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
         returns (uint256)
     {
         uint256 totalUnstake = 0;
-        for (uint256 i = 0; i < attestersByDelegatorByDomain[domain][attester].length(); i++) {
-            address delegator = attestersByDelegatorByDomain[domain][attester].at(i);
+        EnumerableSet.AddressSet storage delegatees = delegatorsByAttesterByDomain[domain][attester];
+        for (uint256 i = 0; i < delegatees.length(); i++) {
+            address delegator = delegatees.at(i);
             totalUnstake += getUnstakeAtEpoch(domain, epoch, custodian, attester, delegator);
         }
         return totalUnstake;
@@ -356,7 +356,7 @@ contract MovementStaking is MovementStakingStorage, IMovementStaking, BaseStakin
 
             // the unstake is then paid out
             // note: this is the only place this takes place
-            // there's not risk of double payout, so long as rollOverattester is only called once per epoch
+            // there's not risk of double payout, so long as rollOverAttester is only called once per epoch
             // this should be guaranteed by the implementation, but we may want to create a withdrawal mapping to ensure this
             _payAttester(address(this), attester, custodian, unstakeAmount);
 
