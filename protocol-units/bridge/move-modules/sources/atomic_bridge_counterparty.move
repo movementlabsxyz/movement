@@ -89,9 +89,14 @@ module atomic_bridge::atomic_bridge_counterparty {
         });
     }
 
-    public(friend) fun burn_moveth(amount: u64) acquires BridgeConfig {
+    public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {
         let config = borrow_global<BridgeConfig>(@atomic_bridge);
-        moveth::burn(&account::create_signer_with_capability(&config.signer_cap), @atomic_bridge, amount);
+        moveth::mint(&account::create_signer_with_capability(&config.signer_cap), to, amount);
+    }
+
+    public(friend) fun burn_moveth(from: address, amount: u64) acquires BridgeConfig {
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+        moveth::burn(&account::create_signer_with_capability(&config.signer_cap), from, amount);
     }
 
     #[view]
