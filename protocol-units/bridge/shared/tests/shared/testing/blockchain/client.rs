@@ -24,7 +24,7 @@ pub enum MethodName {
 	CompleteBridgeTransferCounterparty,
 	RefundBridgeTransfer,
 	GetBridgeTransferDetails,
-	LockBridgeTransferAssets,
+	LockBridgeTransfer,
 	AbortBridgeTransfer,
 }
 
@@ -278,7 +278,7 @@ where
 	type Address = A;
 	type Hash = H;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
@@ -287,9 +287,9 @@ where
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		self.register_call(MethodName::LockBridgeTransferAssets);
-		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransferAssets) {
-			tracing::error!("lock_bridge_transfer_assets {:?}", config);
+		self.register_call(MethodName::LockBridgeTransfer);
+		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransfer) {
+			tracing::error!("lock_bridge_transfer {:?}", config);
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}

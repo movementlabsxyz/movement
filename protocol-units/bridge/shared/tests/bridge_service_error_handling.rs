@@ -10,12 +10,12 @@ use bridge_shared::{
 	},
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::{
-		active_swap::{ActiveSwapConfig, LockBridgeTransferAssetsError},
+		active_swap::{ActiveSwapConfig, LockBridgeTransferError},
 		events::{CEvent, CWarn, Event, IEvent, IWarn},
 		BridgeServiceConfig,
 	},
 	types::{
-		Amount, BridgeTransferDetails, Convert, CounterpartyCompletedDetails, HashLock,
+		Amount, AssetType, BridgeTransferDetails, Convert, CounterpartyCompletedDetails, HashLock,
 		HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
@@ -50,11 +50,11 @@ async fn test_bridge_service_error_handling() {
 
 	// Lets make the blockchain_2_client fail on the locking of assets
 	blockchain_2_client.set_call_config(
-		MethodName::LockBridgeTransferAssets,
+		MethodName::LockBridgeTransfer,
 		1,
 		CallConfig {
 			error: ErrorConfig::CounterpartyError(
-				BridgeContractCounterpartyError::LockTransferAssetsError,
+				BridgeContractCounterpartyError::LockTransferError,
 			),
 			delay: None,
 		},
@@ -69,7 +69,7 @@ async fn test_bridge_service_error_handling() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -87,7 +87,8 @@ async fn test_bridge_service_error_handling() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(1000)
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
+			state: 1
 		})
 	);
 
@@ -139,7 +140,7 @@ async fn test_bridge_service_error_handling() {
 			recipient_address: RecipientAddress(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
-			amount: Amount(1000),
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 		})
 	);
 
@@ -210,11 +211,11 @@ async fn test_bridge_service_locking_termination_after_errors() {
 	// Configure blockchain_2_client to fail 3 times on locking assets
 	for n in 1..5 {
 		blockchain_2_client.set_call_config(
-			MethodName::LockBridgeTransferAssets,
+			MethodName::LockBridgeTransfer,
 			n,
 			CallConfig {
 				error: ErrorConfig::CounterpartyError(
-					BridgeContractCounterpartyError::LockTransferAssetsError,
+					BridgeContractCounterpartyError::LockTransferError,
 				),
 				delay: None,
 			},
@@ -229,7 +230,7 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -247,7 +248,8 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(1000)
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
+			state: 1
 		})
 	);
 
@@ -310,7 +312,7 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -328,7 +330,8 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(1000)
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
+			state: 1
 		})
 	);
 
@@ -376,7 +379,7 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			recipient_address: RecipientAddress(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
-			amount: Amount(1000),
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 		})
 	);
 
@@ -432,7 +435,7 @@ async fn test_bridge_service_timeout_error_handling() {
 
 	// Lets make the blockchain_2_client fail on the locking of assets
 	blockchain_2_client.set_call_config(
-		MethodName::LockBridgeTransferAssets,
+		MethodName::LockBridgeTransfer,
 		1,
 		// Longer delay than the timeout, to trigger timeout
 		CallConfig { error: ErrorConfig::None, delay: Some(Duration::from_secs(1)) },
@@ -446,7 +449,7 @@ async fn test_bridge_service_timeout_error_handling() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -464,7 +467,8 @@ async fn test_bridge_service_timeout_error_handling() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(1000)
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
+			state: 1
 		})
 	);
 
@@ -473,7 +477,7 @@ async fn test_bridge_service_timeout_error_handling() {
 	tracing::debug!(?event);
 	assert!(matches!(
 		event.B2C().and_then(CEvent::warn).expect("not a b2c warn event"),
-		CWarn::BridgeAssetsLockingError(LockBridgeTransferAssetsError::ContractCallTimeoutError)
+		CWarn::BridgeAssetsLockingError(LockBridgeTransferError::ContractCallTimeoutError)
 	));
 
 	// The Bridge is expected to retry the operation after the configured delay in case of an error.

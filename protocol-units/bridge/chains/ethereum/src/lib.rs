@@ -8,6 +8,7 @@ use bridge_shared::{
 };
 use event_types::EthChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
+use std::fmt::Debug;
 use std::{
 	collections::HashMap,
 	future::Future,
@@ -35,7 +36,6 @@ pub enum Transaction<A, H> {
 	Counterparty(CounterpartyCall<A, H>),
 }
 
-#[allow(unused)]
 pub struct EthereumChain<A, H, R> {
 	pub name: String,
 	pub time: u64,

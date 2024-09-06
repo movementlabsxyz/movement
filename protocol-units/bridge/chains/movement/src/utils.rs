@@ -12,7 +12,7 @@ use aptos_sdk::{
 			EntryFunctionId, MoveType, Transaction as AptosTransaction, TransactionInfo,
 			ViewRequest,
 		},
-		Client as RestClient,
+		Client as RestClient, Transaction,
 	},
 	transaction_builder::TransactionFactory,
 	types::{
@@ -22,10 +22,13 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
+use bridge_shared::bridge_contracts::BridgeContractCounterpartyError;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
+use tracing::log::{debug, info};
 
 use rand::{rngs::StdRng, SeedableRng};
 use rand::{Rng, RngCore};
@@ -122,25 +125,83 @@ pub async fn send_and_confirm_aptos_transaction(
 	rest_client: &RestClient,
 	signer: &LocalAccount,
 	payload: TransactionPayload,
-) -> Result<AptosTransaction> {
+) -> Result<AptosTransaction, String> {
+	info!("Starting send_aptos_transaction");
 	let state = rest_client
 		.get_ledger_information()
 		.await
-		.context("Failed in getting chain id")?
+		.map_err(|e| format!("Failed in getting chain id: {}", e))?
 		.into_inner();
+	info!("Ledger information retrieved: chain_id = {}", state.chain_id);
 
 	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
 		.with_gas_unit_price(100)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
+	let latest_account_info = rest_client
+		.get_account(signer.address())
+		.await
+		.map_err(|e| format!("Failed to get account information: {}", e))?;
+	let account = latest_account_info.into_inner();
+	let latest_sequence_number = account.sequence_number;
 
-	let signed_tx = signer.sign_with_transaction_builder(transaction_factory.payload(payload));
+	let raw_tx = transaction_factory
+		.payload(payload)
+		.sender(signer.address())
+		.sequence_number(latest_sequence_number)
+		.build();
+
+	let signed_tx = signer.sign_transaction(raw_tx);
+
+	debug!("Signed TX: {:?}", signed_tx);
 
 	let response = rest_client
 		.submit_and_wait(&signed_tx)
 		.await
-		.map_err(|e| anyhow::anyhow!(e.to_string()))?
+		.map_err(|e| e.to_string())?
 		.into_inner();
+
+	debug!("Response: {:?}", response);
+
+	match &response {
+		Transaction::UserTransaction(user_txn) => {
+			assert!(
+				user_txn.info.success,
+				"Transaction failed with status: {}",
+				user_txn.info.vm_status
+			);
+		}
+		_ => {
+			return Err(
+				"Expected a UserTransaction, but got a different transaction type.".to_string()
+			)
+		}
+	}
+
 	Ok(response)
+}
+
+pub fn val_as_str(value: Option<&Value>) -> Result<&str, BridgeContractCounterpartyError> {
+	value
+		.as_ref()
+		.and_then(|v| v.as_str())
+		.ok_or(BridgeContractCounterpartyError::SerializationError)
+}
+
+pub fn val_as_u64(value: Option<&Value>) -> Result<u64, BridgeContractCounterpartyError> {
+	value
+		.as_ref()
+		.and_then(|v| v.as_u64())
+		.ok_or(BridgeContractCounterpartyError::SerializationError)
+}
+
+pub fn serialize_u64(value: &u64) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
+	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
+}
+
+pub fn serialize_vec<T: serde::Serialize + ?Sized>(
+	value: &T,
+) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
+	bcs::to_bytes(value).map_err(|_| BridgeContractCounterpartyError::SerializationError)
 }
 
 // This is not used for now, but we may need to use it in later for estimating gas.
@@ -160,10 +221,14 @@ pub async fn simulate_aptos_transaction(
 		.with_gas_unit_price(GAS_UNIT_PRICE)
 		.with_max_gas_amount(GAS_UNIT_LIMIT);
 
+	let latest_account_info = aptos_client.rest_client.get_account(signer.address()).await?;
+	let account = latest_account_info.into_inner();
+	let latest_sequence_number = account.sequence_number;
+
 	let raw_tx = transaction_factory
 		.payload(payload)
 		.sender(signer.address())
-		.sequence_number(signer.sequence_number())
+		.sequence_number(latest_sequence_number)
 		.build();
 
 	let signed_tx = SignedTransaction::new(

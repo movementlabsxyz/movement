@@ -15,6 +15,7 @@ path = "src/lib.rs"
 [dependencies]
 async-stream = { workspace = true }
 aptos-sdk = { workspace = true }
+aptos-api-types = { workspace = true }
 aptos-types = { workspace = true }
 aptos-api = { workspace = true }
 async-trait = { workspace = true }

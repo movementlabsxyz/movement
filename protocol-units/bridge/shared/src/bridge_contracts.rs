@@ -15,6 +15,8 @@ pub enum BridgeContractInitiatorError {
 	ParsePreimageError,
 	#[error("Initiator address not set")]
 	InitiatorAddressNotSet,
+	#[error("Failed to convert")]
+	ConversionError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
@@ -27,8 +29,20 @@ impl BridgeContractInitiatorError {
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractCounterpartyError {
-	#[error("Failed to lock bridge transfer assets")]
-	LockTransferAssetsError,
+	#[error("Invalid response length")]
+	InvalidResponseLength,
+	#[error("Function call failed")]
+	CallError,
+	#[error("Failed to view module")]
+	ModuleViewError,
+	#[error("Failed to view function")]
+	FunctionViewError,
+	#[error("Failed to serialize view args")]
+	ViewSerializationError,
+	#[error("Failed to serialize or deserialize")]
+	SerializationError,
+	#[error("Failed to lock bridge transfer")]
+	LockTransferError,
 	#[error("Failed to complete bridge transfer")]
 	CompleteTransferError,
 	#[error("Failed to abort bridge transfer")]
@@ -37,6 +51,8 @@ pub enum BridgeContractCounterpartyError {
 	CounterpartyAddressNotSet,
 	#[error("Error getting the signer")]
 	SignerError,
+	#[error("Failed to convert")]
+	ConversionError,
 	#[error("Generic error: {0}")]
 	GenericError(String),
 }
@@ -47,8 +63,24 @@ impl BridgeContractCounterpartyError {
 	}
 }
 
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum BridgeContractWETH9Error {
+	#[error("Insufficient balance")]
+	BalanceError,
+	#[error("Allowance exceeded")]
+	AllowanceError,
+	#[error("Generic error: {0}")]
+	GenericError(String),
+}
+impl BridgeContractWETH9Error {
+	pub fn generic<E: std::error::Error>(e: E) -> Self {
+		Self::GenericError(e.to_string())
+	}
+}
+
 pub type BridgeContractInitiatorResult<T> = Result<T, BridgeContractInitiatorError>;
 pub type BridgeContractCounterpartyResult<T> = Result<T, BridgeContractCounterpartyError>;
+pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
 
 #[async_trait::async_trait]
 pub trait BridgeContractInitiator: Clone + Unpin + Send + Sync {
@@ -86,7 +118,7 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
@@ -111,4 +143,12 @@ pub trait BridgeContractCounterparty: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>;
+}
+
+#[async_trait::async_trait]
+pub trait BridgeContractWETH9: Clone + Unpin + Send + Sync {
+	type Address: BridgeAddressType;
+	type Hash: BridgeHashType;
+
+	async fn deposit_weth(&mut self, amount: Amount) -> BridgeContractWETH9Result<()>;
 }

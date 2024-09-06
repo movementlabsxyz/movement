@@ -27,7 +27,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Total WETH pool balance
     uint256 public poolBalance;
 
-    address public counterpartyContract; 
+    address public counterpartyAddress; 
     IWETH9 public weth;
     uint256 private nonce;
 
@@ -39,9 +39,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         __Ownable_init(owner);
     }
 
-    function setCounterpartyContract(address _counterpartyContract) external onlyOwner {
-        if (_counterpartyContract == address(0)) revert ZeroAddress();
-        counterpartyContract = _counterpartyContract;
+    function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
+        if (_counterpartyAddress == address(0)) revert ZeroAddress();
+        counterpartyAddress = _counterpartyAddress;
     }
 
     function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
@@ -66,11 +66,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         // Update the pool balance
         poolBalance += totalAmount;
 
-        // The nonce is used to generate a unique bridge transfer id, without it 
-        // we can't guarantee the uniqueness of the id.
-        nonce++; // increment the nonce
-        bridgeTransferId =
-            keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce));
+        // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
@@ -95,7 +92,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
 
-    function refundBridgeTransfer(bytes32 bridgeTransferId) external {
+    function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
@@ -109,10 +106,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
 
     // Counterparty contract to withdraw WETH for originator
     function withdrawWETH(address recipient, uint256 amount) external {
-        if (msg.sender != counterpartyContract) revert Unauthorized();
+        if (msg.sender != counterpartyAddress) revert Unauthorized();
         if (poolBalance < amount) revert InsufficientWethBalance();
         poolBalance -= amount;
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
     }
 }
-
