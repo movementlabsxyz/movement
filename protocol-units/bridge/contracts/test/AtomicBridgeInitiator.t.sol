@@ -176,8 +176,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
     }
 
     function testRefundBridgeTransfer() public {
-        vm.deal(originator, 1 ether);
+    vm.deal(originator, 1 ether);
 
+        // Originator initiates a bridge transfer
         vm.startPrank(originator);
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer{value: amount}(
             0, // _wethAmount is 0
@@ -186,13 +187,13 @@ contract AtomicBridgeInitiatorWethTest is Test {
         );
         vm.stopPrank();
 
-        // Advance time and block height to ensure the time lock has expired (48 hours in seconds)
-        uint256 timeLockDuration = 48 * 60 * 60;
-        vm.warp(block.timestamp + timeLockDuration + 1);
+        // Advance time to ensure the time lock has expired (48 hours + 1 second)
+        uint256 timeLockDuration = 24 * 60 * 60; // 24 hours in seconds
+        vm.warp(block.timestamp + (timeLockDuration * 2) + 1);
 
+        // Test that a non-owner cannot call refund
         vm.startPrank(originator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, originator));
-        // Attempt to call refund function by non-owner
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
         vm.stopPrank();
 
@@ -201,7 +202,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         emit IAtomicBridgeInitiator.BridgeTransferRefunded(bridgeTransferId);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
-        // Verify the WETH balance, originator should receive weth
+        // Verify the WETH balance, originator should receive WETH back
         assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
     }
 }
