@@ -102,7 +102,6 @@ impl
 		let signer_private_key = config.settle.signer_private_key.clone();
 		let signer = signer_private_key.parse::<PrivateKeySigner>()?;
 		let signer_address = signer.address();
-		tracing::info!("ICI validator signer address:{signer_address}",);
 		let contract_address = config.settle.mcr_contract_address.parse()?;
 		let rpc_url = config.eth_rpc_connection_url();
 		let ws_url = config.eth_ws_connection_url();
@@ -232,7 +231,6 @@ where
 							alloy_sol_types::Error::Other(err.to_string().into())
 						},
 					)?;
-					tracing::info!("ICI stream_block_commitments receive a commitment");
 					Ok(BlockCommitment {
 						height,
 						block_id: Id(commitment.blockHash.0),

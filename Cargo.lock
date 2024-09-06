@@ -12511,6 +12511,7 @@ dependencies = [
  "maptos-execution-util",
  "mcr-settlement-client",
  "mcr-settlement-config",
+ "movement-types",
  "once_cell",
  "rand 0.7.3",
  "rayon",

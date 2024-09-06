@@ -59,6 +59,7 @@ serde_json = { workspace = true }
 maptos-execution-util = { workspace = true }
 mcr-settlement-config = { workspace = true }
 mcr-settlement-client = { workspace = true }
+movement-types = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
 aptos-protos = { workspace = true }

@@ -25,16 +25,16 @@ pub async fn richard() -> Response {
 	"Well Done".into_response()
 }
 
-#[handler]
-pub async fn get_current_commitment(
-	context: Data<&Arc<Context>>,
-) -> Result<Response, anyhow::Error> {
-	let latest_ledger_info = context.db.get_latest_ledger_info()?;
-	let version = latest_ledger_info.ledger_info().version();
-	let state_proof = context.db.get_state_proof(version)?;
-	let commitment = movement_types::Commitment::digest_state_proof(&state_proof);
-	Ok(hex::encode(&commitment.0).into_response())
-}
+// #[handler]
+// pub async fn get_current_commitment(
+// 	context: Data<&Arc<Context>>,
+// ) -> Result<Response, anyhow::Error> {
+// 	let latest_ledger_info = context.db.get_latest_ledger_info()?;
+// 	let version = latest_ledger_info.ledger_info().version();
+// 	let state_proof = context.db.get_state_proof(version)?;
+// 	let commitment = movement_types::Commitment::digest_state_proof(&state_proof);
+// 	Ok(hex::encode(&commitment.0).into_response())
+// }
 
 #[handler]
 pub async fn get_finalized_block_info(
