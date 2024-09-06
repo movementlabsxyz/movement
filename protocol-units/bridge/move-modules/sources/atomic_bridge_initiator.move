@@ -28,6 +28,10 @@ module atomic_bridge::atomic_bridge_initiator {
     const ETIMELOCK_EXPIRED: u64 = 5;
     const ENOT_EXPIRED: u64 = 6;
     const EINCORRECT_SIGNER: u64 = 7;
+    const EWRONG_RECIPIENT: u64 = 8;
+    const EWRONG_ORIGINATOR: u64 = 9;
+    const EWRONG_AMOUNT: u64 = 10;
+    const EWRONG_HASHLOCK: u64 = 11;
 
     struct BridgeConfig has key {
         moveth_minter: address,
@@ -189,7 +193,6 @@ module atomic_bridge::atomic_bridge_initiator {
     public entry fun refund_bridge_transfer(
         account: &signer,
         bridge_transfer_id: vector<u8>,
-        atomic_bridge: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
         assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
@@ -200,7 +203,6 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, ENOT_EXPIRED);
 
         let originator_addr = bridge_transfer.originator;
-        let bridge_addr = signer::address_of(atomic_bridge);
         let asset = moveth::metadata();
 
         // Transfer amount of asset from atomic bridge primary fungible store to originator's primary fungible store
@@ -215,7 +217,7 @@ module atomic_bridge::atomic_bridge_initiator {
             bridge_transfer_id: copy bridge_transfer_id,
         });
 
-        aptos_std::smart_table::remove(&mut store.transfers, bridge_transfer_id);
+        //aptos_std::smart_table::remove(&mut store.transfers, bridge_transfer_id);
     }
 
     #[test_only]
@@ -350,11 +352,11 @@ module atomic_bridge::atomic_bridge_initiator {
         let time_lock = 1000;
         let amount = 1000;
         let nonce = 1;
-        let sender_address = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_address, amount);
+        let sender_addr = signer::address_of(sender);
+        moveth::mint(atomic_bridge, sender_addr, amount);
 
         let combined_bytes = vector::empty<u8>();
-        vector::append(&mut combined_bytes, bcs::to_bytes(&sender_address));
+        vector::append(&mut combined_bytes, bcs::to_bytes(&sender_addr));
         vector::append(&mut combined_bytes, recipient);
         vector::append(&mut combined_bytes, hash_lock);
         vector::append(&mut combined_bytes, bcs::to_bytes(&nonce));
@@ -378,6 +380,12 @@ module atomic_bridge::atomic_bridge_initiator {
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
         // complete bridge doesn't delete the transfer from the store
         assert!(aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
+        let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.originator == sender_addr, EWRONG_ORIGINATOR);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
     }
 
     #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
@@ -462,7 +470,6 @@ module atomic_bridge::atomic_bridge_initiator {
         refund_bridge_transfer(
             sender,
             bridge_transfer_id,
-            atomic_bridge
         );
 
         let addr = signer::address_of(sender);
@@ -470,7 +477,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(primary_fungible_store::balance(addr, asset) == amount, 0);
         let bridge_addr = signer::address_of(atomic_bridge);
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
-        assert!(!aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
+        assert!(aptos_std::smart_table::contains(&store.transfers, copy bridge_transfer_id), 300);
     }
 
     #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @origin_addr, atomic_bridge = @atomic_bridge)]
@@ -518,7 +525,6 @@ module atomic_bridge::atomic_bridge_initiator {
         refund_bridge_transfer(
             sender,
             bridge_transfer_id,
-            atomic_bridge
         );
 
         let addr = signer::address_of(sender);
