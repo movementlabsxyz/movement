@@ -4,34 +4,47 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
 import "../../src/token/MOVEToken.sol";
+import { TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract MovementStakingTest is Test {
-    function testInitialize() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+    MOVEToken public moveToken;
+    MovementStaking public staking;
+    ProxyAdmin public admin;
+    string public moveSignature = "initialize(string,string)";
+    string public stakingSignature = "initialize(address)";
+
+    function setUp() public {
+        MOVEToken moveTokenImplementation = new MOVEToken();
+        MovementStaking stakingImplementation = new MovementStaking();
+
+        // Contract MCRTest is the admin
+        admin = new ProxyAdmin(address(this));
+
+        // Deploy proxies
+        TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
+            address(moveTokenImplementation), address(admin), abi.encodeWithSignature(moveSignature, "Move Token", "MOVE")
+        );
+        TransparentUpgradeableProxy stakingProxy = new TransparentUpgradeableProxy(
+            address(stakingImplementation),
+            address(admin),
+            abi.encodeWithSignature(
+                stakingSignature, IMintableToken(address(moveProxy))
+                    )
+        );
+        moveToken = MOVEToken(address(moveProxy));
+        staking = MovementStaking(address(stakingProxy));
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
 
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
         staking.initialize(moveToken);
     }
 
-    function testRegister() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+    function testRegister() public returns (address payable, address[] memory) {
 
         // Register a new domain
         address payable domain = payable(vm.addr(1));
@@ -41,14 +54,11 @@ contract MovementStakingTest is Test {
         staking.registerDomain(1 seconds, custodians);
 
         assertEq(staking.getCurrentEpoch(domain), 0);
+
+        return (domain, custodians);
     }
 
     function testWhitelist() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
 
         // Our whitelister
         address whitelister = vm.addr(1);
@@ -65,18 +75,8 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleStaker() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
-        // Register a new staker
-        address payable domain = payable(vm.addr(1));
-        address[] memory custodians = new address[](1);
-        custodians[0] = address(moveToken);
-        vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        (address payable domain, address[] memory custodians) = testRegister();
 
         // stake at the domain
         address payable staker = payable(vm.addr(2));
@@ -88,24 +88,14 @@ contract MovementStakingTest is Test {
         staking.stake(domain, moveToken, 100);
         assertEq(moveToken.balanceOf(staker), 0);
         assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), staker),
+            staking.getAllStakeAtEpoch(domain, 0, address(moveToken), staker),
             100
         );
     }
 
     function testSimpleGenesisCeremony() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
-        // Register a new staker
-        address payable domain = payable(vm.addr(1));
-        address[] memory custodians = new address[](1);
-        custodians[0] = address(moveToken);
-        vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        (address payable domain, address[] memory custodians) = testRegister();
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -119,24 +109,14 @@ contract MovementStakingTest is Test {
         staking.acceptGenesisCeremony();
         assertNotEq(staking.currentEpochByDomain(domain), 0);
         assertEq(
-            staking.getCurrentEpochStake(domain, address(moveToken), staker),
+            staking.getAllCurrentEpochStake(domain, address(moveToken), staker),
             100
         );
     }
 
     function testSimpleRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
-        // Register a new staker
-        address payable domain = payable(vm.addr(1));
-        address[] memory custodians = new address[](1);
-        custodians[0] = address(moveToken);
-        vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        (address payable domain, address[] memory custodians) = testRegister();
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -159,7 +139,7 @@ contract MovementStakingTest is Test {
             uint256 epochAfter = staking.getCurrentEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -170,18 +150,8 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
-        // Register a new staker
-        address payable domain = payable(vm.addr(1));
-        address[] memory custodians = new address[](1);
-        custodians[0] = address(moveToken);
-        vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        (address payable domain, address[] memory custodians) = testRegister();
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -202,7 +172,7 @@ contract MovementStakingTest is Test {
             vm.prank(staker);
             staking.unstake(domain, address(moveToken), 10);
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -220,18 +190,8 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeAndStakeRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
-        // Register a new staker
-        address payable domain = payable(vm.addr(1));
-        address[] memory custodians = new address[](1);
-        custodians[0] = address(moveToken);
-        vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        (address payable domain, address[] memory custodians) = testRegister();
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -260,7 +220,7 @@ contract MovementStakingTest is Test {
 
             // check stake
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -281,18 +241,8 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeStakeAndSlashRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
-        // Register a new staker
-        address payable domain = payable(vm.addr(1));
-        address[] memory custodians = new address[](1);
-        custodians[0] = address(moveToken);
-        vm.prank(domain);
-        staking.registerDomain(1 seconds, custodians);
+        (address payable domain, address[] memory custodians) = testRegister();
 
         // genesis ceremony
         address payable staker = payable(vm.addr(2));
@@ -321,7 +271,7 @@ contract MovementStakingTest is Test {
 
             // check stake
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -343,11 +293,17 @@ contract MovementStakingTest is Test {
             amounts1[0] = 1;
             uint256[] memory refundAmounts1 = new uint256[](1);
             refundAmounts1[0] = 0;
-            staking.slash(custodians1, attesters1, amounts1, refundAmounts1);
+            staking.slash(
+                custodians1,
+                attesters1,
+                attesters1, // use attesters as delegates
+                amounts1,
+                refundAmounts1
+            );
 
             // slash immediately takes effect
             assertEq(
-                staking.getCurrentEpochStake(
+                staking.getAllCurrentEpochStake(
                     domain,
                     address(moveToken),
                     staker
@@ -364,11 +320,6 @@ contract MovementStakingTest is Test {
     }
 
     function testHalbornReward() public {
-        MOVEToken moveToken = new MOVEToken();
-        moveToken.initialize();
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
 
         // Register a domain
         address payable domain = payable(vm.addr(1));
@@ -404,11 +355,11 @@ contract MovementStakingTest is Test {
             1100
         );
         assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), alice),
+            staking.getAllStakeAtEpoch(domain, 0, address(moveToken), alice),
             1000
         );
         assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), bob),
+            staking.getAllStakeAtEpoch(domain, 0, address(moveToken), bob),
             100
         );
 
@@ -428,5 +379,116 @@ contract MovementStakingTest is Test {
             )
         );
         staking.reward(attesters, amounts, custodians);
+    }
+
+    function testBasicDelegation() public {
+
+        (address payable domain, address[] memory custodians) = testRegister();
+
+        // genesis ceremony
+        address payable staker = payable(vm.addr(2));
+        staking.whitelistAddress(staker);
+        moveToken.mint(staker, 150);
+        vm.prank(staker);
+        moveToken.approve(address(staking), 100);
+        vm.prank(staker);
+        staking.stake(domain, moveToken, 100);
+        vm.prank(domain);
+        staking.acceptGenesisCeremony();
+
+        // add another staker
+        address payable alice = payable(vm.addr(3));
+        staking.whitelistAddress(alice);
+        moveToken.mint(alice, 150);
+        vm.prank(alice);
+        moveToken.approve(address(staking), 100);
+        vm.prank(alice);
+        staking.stakeWithDelegate(domain, moveToken, 100, staker);
+        uint256 stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain) + 1,
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 100);
+
+        // check stake
+        assertEq(
+            staking.getAllCurrentEpochStake(domain, address(moveToken), staker),
+            100
+        );
+
+        vm.warp(2 seconds);
+        vm.prank(domain);
+        staking.rollOverEpoch();
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 100);
+
+        // check stake
+        assertEq(
+            staking.getAllCurrentEpochStake(domain, address(moveToken), staker),
+            200
+        );
+
+        // unstake the staker for themself
+        vm.prank(staker);
+        staking.unstake(domain, address(moveToken), 100);
+        vm.warp(3 seconds);
+        vm.prank(domain);
+        staking.rollOverEpoch();
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            staker
+        );
+        assertEq(stake, 0);
+        stake = staking.getAllStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker
+        );
+        assertEq(stake, 100); // stake from the delegator
+
+        // verify this is indeed stake from the delegator
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 100);
+
+        // now have the delegator unstake
+        vm.prank(alice);
+        staking.unstakeWithDelegate(domain, address(moveToken), 100, staker);
+        vm.warp(4 seconds);
+        vm.prank(domain);
+        staking.rollOverEpoch();
+        stake = staking.getStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker,
+            alice
+        );
+        assertEq(stake, 0);
+        stake = staking.getAllStakeAtEpoch(
+            domain,
+            staking.getCurrentEpoch(domain),
+            address(moveToken),
+            staker
+        );
+        assertEq(stake, 0);
     }
 }
