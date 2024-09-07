@@ -1922,7 +1922,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=05dac9772269abe3672b1ea5c0fd260dbe8ab12a#05dac9772269abe3672b1ea5c0fd260dbe8ab12a"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=91662926da84e1eaf5973928b4812ebe43721107#91662926da84e1eaf5973928b4812ebe43721107"
 dependencies = [
  "chrono",
 ]
@@ -10397,13 +10397,13 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=05dac9772269abe3672b1ea5c0fd260dbe8ab12a#05dac9772269abe3672b1ea5c0fd260dbe8ab12a"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=91662926da84e1eaf5973928b4812ebe43721107#91662926da84e1eaf5973928b4812ebe43721107"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=05dac9772269abe3672b1ea5c0fd260dbe8ab12a)",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=91662926da84e1eaf5973928b4812ebe43721107)",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
  "async-trait",
  "bcs 0.1.4",
@@ -11908,7 +11908,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=05dac9772269abe3672b1ea5c0fd260dbe8ab12a#05dac9772269abe3672b1ea5c0fd260dbe8ab12a"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=91662926da84e1eaf5973928b4812ebe43721107#91662926da84e1eaf5973928b4812ebe43721107"
 dependencies = [
  "anyhow",
  "aptos-system-utils",
