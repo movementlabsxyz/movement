@@ -1,6 +1,4 @@
 use super::Context;
-
-use aptos_indexer::runtime::bootstrap as bootstrap_indexer_stream;
 use aptos_indexer_grpc_fullnode::runtime::bootstrap as bootstrap_indexer_grpc;
 use aptos_indexer_grpc_table_info::runtime::bootstrap as bootstrap_table_info;
 

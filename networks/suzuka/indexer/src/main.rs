@@ -16,23 +16,18 @@ fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let maptos_config =
-		dot_movement.try_get_config_from_json::<maptos_execution_util::config::Config>()?;
+	let maptos_config = dot_movement
+		.try_get_or_create_config_from_json::<maptos_execution_util::config::Config>()?;
 
-	let default_indexer_config =
-		build_processor_conf("default_processor", &maptos_config, &dot_movement)?;
-	let usertx_indexer_config =
-		build_processor_conf("user_transaction_processor", &maptos_config, &dot_movement)?;
+	let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
+	let usertx_indexer_config = build_processor_conf("user_transaction_processor", &maptos_config)?;
 	let accounttx_indexer_config =
-		build_processor_conf("account_transactions_processor", &maptos_config, &dot_movement)?;
-	let coin_indexer_config =
-		build_processor_conf("coin_processor", &maptos_config, &dot_movement)?;
-	let event_indexer_config =
-		build_processor_conf("events_processor", &maptos_config, &dot_movement)?;
-	let fungible_indexer_config =
-		build_processor_conf("fungible_asset_processor", &maptos_config, &dot_movement)?;
+		build_processor_conf("account_transactions_processor", &maptos_config)?;
+	let coin_indexer_config = build_processor_conf("coin_processor", &maptos_config)?;
+	let event_indexer_config = build_processor_conf("events_processor", &maptos_config)?;
+	let fungible_indexer_config = build_processor_conf("fungible_asset_processor", &maptos_config)?;
 	let txmeta_indexer_config =
-		build_processor_conf("transaction_metadata_processor", &maptos_config, &dot_movement)?;
+		build_processor_conf("transaction_metadata_processor", &maptos_config)?;
 
 	let num_cpus = num_cpus::get();
 	let worker_threads = (num_cpus * RUNTIME_WORKER_MULTIPLIER).max(16);
@@ -88,7 +83,6 @@ fn main() -> Result<(), anyhow::Error> {
 fn build_processor_conf(
 	processor_name: &str,
 	maptos_config: &maptos_execution_util::config::Config,
-	dot_movement: &dot_movement::DotMovement,
 ) -> Result<IndexerGrpcProcessorConfig, anyhow::Error> {
 	let indexer_grpc_data_service_address = build_grpc_url(maptos_config);
 
@@ -114,14 +108,15 @@ default_sleep_time_between_request: {}",
 		default_sleep_time_between_request,
 	);
 
-	let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
-	let mut output_file = std::fs::File::create(&indexer_config_path).map_err(|err| {
-		anyhow::anyhow!("Indexer temps config file :{indexer_config_path:?} can't be created because of err:{err}")
-	})?;
+	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
+	let mut output_file = tempfile::NamedTempFile::new()?;
+	// let mut output_file = std::fs::File::create(&indexer_config_path).map_err(|err| {
+	// 	anyhow::anyhow!("Indexer temps config file :{indexer_config_path:?} can't be created because of err:{err}")
+	// })?;
 	write!(output_file, "{}", indexer_config_content)?;
 
 	let indexer_config =
-		server_framework::load::<IndexerGrpcProcessorConfig>(&indexer_config_path)?;
+		server_framework::load::<IndexerGrpcProcessorConfig>(&output_file.path().to_path_buf())?;
 	Ok(indexer_config)
 }
 

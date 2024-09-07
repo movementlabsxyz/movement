@@ -22,6 +22,7 @@ interface IAtomicBridgeInitiator {
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
+    error InsufficientWethBalance();
     error TimeLockNotExpired();
     error TimelockExpired();
     error ZeroAddress();

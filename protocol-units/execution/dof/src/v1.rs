@@ -123,6 +123,10 @@ impl DynOptFinExecutor for Executor {
 	fn decrement_transactions_in_flight(&self, count: u64) {
 		self.executor.decrement_transactions_in_flight(count)
 	}
+
+	fn config(&self) -> &Config {
+		self.executor.config()
+	}
 }
 
 #[cfg(test)]

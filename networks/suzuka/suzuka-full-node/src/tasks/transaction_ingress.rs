@@ -5,7 +5,7 @@ use m1_da_light_node_util::config::Config as LightNodeConfig;
 use maptos_dof_execution::SignedTransaction;
 
 use tokio::sync::mpsc;
-use tracing::info;
+use tracing::{info, warn};
 
 use std::ops::ControlFlow;
 use std::sync::atomic::AtomicU64;
@@ -29,11 +29,14 @@ impl Task {
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		while let ControlFlow::Continue(()) = self.write_next_transaction_batch().await? {}
+		while let ControlFlow::Continue(()) = self.spawn_write_next_transaction_batch().await? {}
 		Ok(())
 	}
 
-	async fn write_next_transaction_batch(&mut self) -> Result<ControlFlow<(), ()>, anyhow::Error> {
+	/// Constructs a batch of transactions then spawns the write request to the DA in the background.
+	async fn spawn_write_next_transaction_batch(
+		&mut self,
+	) -> Result<ControlFlow<(), ()>, anyhow::Error> {
 		use ControlFlow::{Break, Continue};
 
 		// limit the total time batching transactions
@@ -96,7 +99,13 @@ impl Task {
 				"built_batch_write"
 			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
-			self.da_light_node_client.batch_write(batch_write).await?;
+			// spawn the actual batch write request in the background
+			let mut da_light_node_client = self.da_light_node_client.clone();
+			tokio::spawn(async move {
+				if let Err(e) = da_light_node_client.batch_write(batch_write).await {
+					warn!("failed to write batch to DA: {:?}", e);
+				}
+			});
 		}
 
 		Ok(Continue(()))
