@@ -86,7 +86,7 @@ fn build_processor_conf(
 ) -> Result<IndexerGrpcProcessorConfig, anyhow::Error> {
 	let indexer_grpc_data_service_address = build_grpc_url(maptos_config);
 
-	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWENN_REQUEST_MS")
+	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWEEN_REQUEST_MS")
 		.map(|t| t.parse().unwrap_or(10))
 		.unwrap_or(10);
 	//create config file
