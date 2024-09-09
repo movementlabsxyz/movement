@@ -253,6 +253,16 @@ jobs:
         sudo cp target/debug/movement /usr/local/bin/
         cd -
 
+    - name: Kill running movement process
+      run: |
+        PID=$(ps aux | grep 'movement node run-local-testnet' | grep -v grep | awk '{print $2}' | head -n 1)
+        if [ -n "$PID" ]; then
+          echo "Killing process with PID: $PID"
+          kill -9 $PID
+        else
+          echo "No movement process found."
+        fi
+
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
