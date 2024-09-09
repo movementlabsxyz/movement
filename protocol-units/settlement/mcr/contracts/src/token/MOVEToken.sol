@@ -11,4 +11,8 @@ contract MOVEToken is MintableToken {
         __MintableToken_init("Movement", "MOVE");
         _mint(address(msg.sender), 10000000000 * 10 ** decimals());
     }
+
+    function decimals() public pure override returns (uint8) {
+        return 8;
+    }
 }
