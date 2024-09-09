@@ -17,7 +17,7 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
 use bridge_shared::initiator_contract::SmartContractInitiatorEvent;
-use bridge_shared::types::LockDetails;
+use bridge_shared::types::{CounterpartyCompletedDetails, HashLockPreImage, LockDetails};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
@@ -64,7 +64,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
-				let event = decode_log_data(log)
+				let event = decode_initiator_log_data(log)
 					.map_err(|e| {
 						tracing::error!("Failed to decode log data: {:?}", e);
 					})
@@ -133,6 +133,43 @@ impl BridgeContractCounterpartyMonitoring for EthCounterpartyMonitoring<EthAddre
 	type Hash = EthHash;
 }
 
+impl Stream for EthCounterpartyMonitoring<EthAddress, EthHash> {
+	type Item = BridgeContractCounterpartyEvent<
+		<Self as BridgeContractCounterpartyMonitoring>::Address,
+		<Self as BridgeContractCounterpartyMonitoring>::Hash,
+	>;
+
+	fn poll_next(self: Pin<&mut Self>, cx: &mut std::task::Context) -> Poll<Option<Self::Item>> {
+		let this = self.get_mut();
+		if let Poll::Ready(Some(EthChainEvent::CounterpartyContractEvent(contract_result))) =
+			this.listener.poll_next_unpin(cx)
+		{
+			tracing::trace!(
+				"CounterpartyContractMonitoring: Received contract event: {:?}",
+				contract_result
+			);
+
+			// Only listen to the counterparty contract events
+			match contract_result {
+				Ok(contract_event) => match contract_event {
+					SmartContractCounterpartyEvent::LockedBridgeTransfer(details) => {
+						return Poll::Ready(Some(BridgeContractCounterpartyEvent::Locked(details)))
+					}
+					SmartContractCounterpartyEvent::CompletedBridgeTransfer(bridge_transfer_id) => {
+						return Poll::Ready(Some(BridgeContractCounterpartyEvent::Completed(
+							bridge_transfer_id,
+						)))
+					}
+				},
+				Err(e) => {
+					tracing::error!("Error in contract event: {:?}", e);
+				}
+			}
+		}
+		Poll::Pending
+	}
+}
+
 impl EthContractCounterpartyMonitoring<EthAddress, EthHash> {
 	pub async fn build(
 		rpc_url: &str,
@@ -159,7 +196,7 @@ impl EthContractCounterpartyMonitoring<EthAddress, EthHash> {
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
-				let event = decode_log_data(log)
+				let event = decode_counterparty_log_data(log)
 					.map_err(|e| {
 						tracing::error!("Failed to decode log data: {:?}", e);
 					})
@@ -424,6 +461,18 @@ fn decode_counterparty_log_data(
 					hash_lock: HashLock(hash_lock),
 					time_lock: TimeLock(time_lock),
 				}))
+			}
+			COUNTERPARTY_COMPLETED_SELECT => {
+				unimplemented!();
+				// let bridge_transfer_id = decoded.indexed[0]
+				// 	.as_fixed_bytes()
+				// 	.map(coerce_bytes)
+				// 	.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
+				// let pre_image = decoded.indexed[1]
+				// 	.as_fixed_bytes()
+				// 	.map(coerce_bytes)
+				// 	.ok_or_else(|| anyhow::anyhow!("Failed to decode PreImage"))?;
+				// Ok(BridgeContractCounterpartyEvent::Completed(CounterpartyCompletedDetails {}))
 			}
 			_ => {
 				tracing::error!("Unknown event selector: {:x}", selector);
