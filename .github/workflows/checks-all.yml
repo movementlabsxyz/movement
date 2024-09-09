@@ -197,6 +197,7 @@ jobs:
         "
   
   solidity-bridge-tests:
+    if: contains(github.event.label.name, 'bridge') 
     strategy:
       matrix:
         include:
