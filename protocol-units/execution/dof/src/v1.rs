@@ -67,11 +67,18 @@ impl DynOptFinExecutor for Executor {
 		);
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
-			let indexer_runtime = indexer_runtime;
+			let _indexer_runtime = indexer_runtime;
 			transaction_pipe.run().await?;
 			Ok(())
 		};
 		Ok((Context { opt_context, fin_service }, background))
+	}
+
+	fn has_executed_transaction_opt(
+		&self,
+		transaction_hash: HashValue,
+	) -> Result<bool, anyhow::Error> {
+		self.executor.has_executed_transaction(transaction_hash)
 	}
 
 	async fn execute_block_opt(
