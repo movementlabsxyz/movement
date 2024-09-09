@@ -41,7 +41,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below:
+An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/0b980918c0de466b975947aaac7f4813?sid=c99ddfdd-21bb-4889-95c8-fa625ac271bd).
 
 ```shell
 MOVEMENT_SYNC="l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
