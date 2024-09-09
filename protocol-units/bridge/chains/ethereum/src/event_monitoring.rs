@@ -1,4 +1,8 @@
-use crate::types::{EthAddress, EventName};
+use crate::types::{
+	EthAddress, EventName, COUNTERPARTY_ABORTED_SELECT, COUNTERPARTY_COMPLETED_SELECT,
+	COUNTERPARTY_LOCKED_SELECT, INITIATOR_COMPLETED_SELECT, INITIATOR_INITIATED_SELECT,
+	INITIATOR_REFUNDED_SELECT,
+};
 use crate::EthChainEvent;
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
@@ -9,7 +13,11 @@ use alloy::{
 	json_abi::{Event, EventParam},
 	pubsub::PubSubFrontend,
 };
+use bridge_shared::bridge_monitoring::{
+	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
+};
 use bridge_shared::initiator_contract::SmartContractInitiatorEvent;
+use bridge_shared::types::LockDetails;
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
@@ -21,7 +29,6 @@ use std::{pin::Pin, task::Poll};
 
 use crate::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
 
-#[allow(unused)]
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
 	ws: RootProvider<PubSubFrontend>,
@@ -32,9 +39,8 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 	type Hash = EthHash;
 }
 
-#[allow(unused)]
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
-	async fn run(
+	pub async fn build(
 		rpc_url: &str,
 		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
 	) -> Result<Self, anyhow::Error> {
@@ -117,7 +123,60 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 	}
 }
 
-fn decode_log_data(
+pub struct EthCounterpartyMonitoring<A, H> {
+	listener: UnboundedReceiver<EthChainEvent<A, H>>,
+	ws: RootProvider<PubSubFrontend>,
+}
+
+impl BridgeContractCounterpartyMonitoring for EthCounterpartyMonitoring<EthAddress, EthHash> {
+	type Address = EthAddress;
+	type Hash = EthHash;
+}
+
+impl EthContractCounterpartyMonitoring<EthAddress, EthHash> {
+	pub async fn build(
+		rpc_url: &str,
+		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
+	) -> Result<Self, anyhow::Error> {
+		let ws = WsConnect::new(rpc_url);
+		let ws = ProviderBuilder::new().on_ws(ws).await?;
+
+		//TODO: change this value
+		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+		let filter = Filter::new()
+			.address(initiator_address)
+			.event("BridgeTransferLocked(bytes32,address,uint256,bytes32)")
+			.event("BridgeTransferCompleted(bytes32,bytes32)")
+			.event("BridgeTransferAborted(bytes32)")
+			.from_block(BlockNumberOrTag::Latest);
+
+		let sub = ws.subscribe_logs(&filter).await?;
+		let mut sub_stream = sub.into_stream();
+
+		// Spawn a task to forward events to the listener channel
+		let (sender, _) =
+			tokio::sync::mpsc::unbounded_channel::<EthChainEvent<EthAddress, EthHash>>();
+
+		tokio::spawn(async move {
+			while let Some(log) = sub_stream.next().await {
+				let event = decode_log_data(log)
+					.map_err(|e| {
+						tracing::error!("Failed to decode log data: {:?}", e);
+					})
+					.expect("Failed to decode log data");
+				let event = EthChainEvent::InitiatorContractEvent(Ok(event.into()));
+				if sender.send(event).is_err() {
+					tracing::error!("Failed to send event to listener channel");
+					break;
+				}
+			}
+		});
+
+		Ok(Self { listener, ws })
+	}
+}
+
+fn decode_initiator_log_data(
 	log: Log,
 ) -> Result<BridgeContractInitiatorEvent<EthAddress, EthHash>, anyhow::Error> {
 	let topics = log.topics().to_owned();
@@ -129,8 +188,8 @@ fn decode_log_data(
 		.iter()
 		.find_map(|topic| {
 			match *topic {
-				INITIATED_SELECT => Some(Event {
-					name: EventName::Initiated.as_str().to_string(),
+				INITIATOR_INITIATED_SELECT => Some(Event {
+					name: EventName::InitiatorInitiated.as_str().to_string(),
 					inputs: EventName::Initiated
 						.params()
 						.iter()
@@ -144,8 +203,8 @@ fn decode_log_data(
 						.collect(),
 					anonymous: false,
 				}),
-				COMPLETED_SELECT => Some(Event {
-					name: EventName::Completed.as_str().to_string(),
+				INITIATOR_COMPLETED_SELECT => Some(Event {
+					name: EventName::InitiatorCompleted.as_str().to_string(),
 					inputs: EventName::Completed
 						.params()
 						.iter()
@@ -159,8 +218,8 @@ fn decode_log_data(
 						.collect(),
 					anonymous: false,
 				}),
-				REFUNDED_SELECT => Some(Event {
-					name: EventName::Refunded.as_str().to_string(),
+				INITIATOR_REFUNDED_SELECT => Some(Event {
+					name: EventName::InitiatorRefunded.as_str().to_string(),
 					inputs: EventName::Refunded
 						.params()
 						.iter()
@@ -174,7 +233,6 @@ fn decode_log_data(
 						.collect(),
 					anonymous: false,
 				}),
-
 				_ => None,
 			}
 		})
@@ -190,7 +248,7 @@ fn decode_log_data(
 
 	if let Some(selector) = decoded.selector {
 		match selector {
-			INITIATED_SELECT => {
+			INITIATOR_INITIATED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
 					.as_fixed_bytes()
 					.map(coerce_bytes)
@@ -234,7 +292,7 @@ fn decode_log_data(
 
 				Ok(BridgeContractInitiatorEvent::Initiated(details))
 			}
-			COMPLETED_SELECT => {
+			INITIATOR_COMPLETED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
 					.as_fixed_bytes()
 					.map(coerce_bytes)
@@ -242,13 +300,120 @@ fn decode_log_data(
 
 				Ok(BridgeContractInitiatorEvent::Completed(BridgeTransferId(bridge_transfer_id)))
 			}
-			REFUNDED_SELECT => {
+			INITIATOR_REFUNDED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
 					.as_fixed_bytes()
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
 
 				Ok(BridgeContractInitiatorEvent::Refunded(BridgeTransferId(bridge_transfer_id)))
+			}
+			_ => {
+				tracing::error!("Unknown event selector: {:x}", selector);
+				Err(anyhow::anyhow!("failed to decode event selector"))
+			}
+		}
+	} else {
+		tracing::error!("Failed to decode event selector");
+		Err(anyhow::anyhow!("Failed to decode event selector"))
+	}
+}
+
+fn decode_counterparty_log_data(
+	log: Log,
+) -> Result<BridgeContractCounterpartyEvent<EthAddress, EthHash>, anyhow::Error> {
+	let topics = log.topics().to_owned();
+	let log_data =
+		LogData::new(topics.clone(), log.data().data.clone()).expect("Failed to create log data");
+
+	// Build the event
+	let event = topics
+		.iter()
+		.find_map(|topic| {
+			match *topic {
+				COUNTERPARTY_LOCKED_SELECT => Some(Event {
+					name: EventName::ConterpartyLocked.as_str().to_string(),
+					inputs: EventName::Locked
+						.params()
+						.iter()
+						.map(|p| EventParam {
+							ty: p.to_string(),
+							name: p.name.clone(),
+							indexed: true,
+							components: EventName::Locked.params(),
+							internal_type: None, // for now
+						})
+						.collect(),
+					anonymous: false,
+				}),
+				COUNTERPARTY_COMPLETED_SELECT => Some(Event {
+					name: EventName::ConterpartyCompleted.as_str().to_string(),
+					inputs: EventName::Completed
+						.params()
+						.iter()
+						.map(|p| EventParam {
+							ty: p.to_string(),
+							name: p.name.clone(),
+							indexed: true,
+							components: EventName::Completed.params(),
+							internal_type: None, // for now
+						})
+						.collect(),
+					anonymous: false,
+				}),
+				COUNTERPARTY_ABORTED_SELECT => Some(Event {
+					name: EventName::ConterpartyAborted.as_str().to_string(),
+					inputs: EventName::Aborted
+						.params()
+						.iter()
+						.map(|p| EventParam {
+							ty: p.to_string(),
+							name: p.name.clone(),
+							indexed: true,
+							components: EventName::Aborted.params(),
+							internal_type: None, // for now
+						})
+						.collect(),
+					anonymous: false,
+				}),
+				_ => None,
+			}
+		})
+		.ok_or_else(|| anyhow::anyhow!("Failed to find event"))?;
+
+	let decoded = event.decode_log(&log_data, true).expect("Failed to decode log");
+
+	let coerce_bytes = |(bytes, _): (&[u8], usize)| {
+		let mut array = [0u8; 32];
+		array.copy_from_slice(bytes);
+		array
+	};
+
+	if let Some(selector) = decoded.selector {
+		match selector {
+			COUNTERPARTY_LOCKED_SELECT => {
+				let bridge_transfer_id = decoded.indexed[0]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
+				let recipient_address = decoded.indexed[1]
+					.as_address()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode RecipientAddress"))?;
+				let amount = decoded.indexed[2]
+					.as_uint()
+					.map(|(u, _)| u.into())
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode Amount"))?;
+				let hash_lock = decoded.indexed[3]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode HashLock"))?;
+				Ok(BridgeContractCounterpartyEvent::Locked(LockDetails {
+					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
+					recipient_address: RecipientAddress(recipient_address.to_vec()),
+					amount,
+					hash_lock: HashLock(hash_lock),
+				}))
 			}
 			_ => {
 				tracing::error!("Unknown event selector: {:x}", selector);

@@ -1,5 +1,5 @@
 [package]
-name = "bridge-service"
+name = "bridge-serivice"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

@@ -14,12 +14,18 @@ use bridge_shared::types::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const INITIATED_SELECT: FixedBytes<32> =
+pub const INITIATOR_INITIATED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
-pub const COMPLETED_SELECT: FixedBytes<32> =
+pub const INITIATOR_COMPLETED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
-pub const REFUNDED_SELECT: FixedBytes<32> =
+pub const INITIATOR_REFUNDED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
+pub const COUNTERPARTY_LOCKED_SELECT: FixedBytes<32> =
+	AtomicBridgeCounterparty::BridgeTransferLocked::SIGNATURE_HASH;
+pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
+	AtomicBridgeCounterparty::BridgeTransferCompleted::SIGNATURE_HASH;
+pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
+	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
 
 // Codegen from the abis
 alloy::sol!(
@@ -160,23 +166,29 @@ impl AlloyParam {
 }
 
 pub(crate) enum EventName {
-	Initiated,
-	Completed,
-	Refunded,
+	InitiatorInitiated,
+	InitiatorCompleted,
+	InitiatorRefunded,
+	ConterpartyLocked,
+	ConterpartyCompleted,
+	ConterpartyAborted,
 }
 
 impl EventName {
 	pub fn as_str(&self) -> &str {
 		match self {
-			EventName::Initiated => "BridgeTransferInitiated",
-			EventName::Completed => "BridgeTransferCompleted",
-			EventName::Refunded => "BridgeTransferRefunded",
+			EventName::InitiatorInitiated => "BridgeTransferInitiated",
+			EventName::InitiatorCompleted => "BridgeTransferCompleted",
+			EventName::InitiatorRefunded => "BridgeTransferRefunded",
+			EventName::ConterpartyLocked => "BridgeTransferLocked",
+			EventName::ConterpartyCompleted => "BridgeTransferCompleted",
+			EventName::ConterpartyAborted => "BridgeTransferAborted",
 		}
 	}
 
 	pub fn params(&self) -> Vec<Param> {
 		match self {
-			EventName::Initiated => vec![
+			EventName::InitiatorInitiated => vec![
 				AlloyParam::BridgeTransferId.fill(),
 				AlloyParam::InitiatorAddress.fill(),
 				AlloyParam::RecipientAddress.fill(),
@@ -185,10 +197,20 @@ impl EventName {
 				AlloyParam::TimeLock.fill(),
 				AlloyParam::Amount.fill(),
 			],
-			EventName::Completed => {
+			EventName::InitiatorCompleted => {
 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
 			}
-			EventName::Refunded => vec![AlloyParam::BridgeTransferId.fill()],
+			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
+			EventName::ConterpartyLocked => vec![
+				AlloyParam::BridgeTransferId.fill(),
+				AlloyParam::InitiatorAddress.fill(),
+				AlloyParam::Amount.fill(),
+				AlloyParam::HashLock.fill(),
+				AlloyParam::TimeLock.fill(),
+			],
+			EventParam::ConterpartyCompleted => {
+				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
+			}
 		}
 	}
 }

@@ -2,21 +2,15 @@ use alloy::primitives::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
-<<<<<<< HEAD
 use serde::{Deserialize, Serialize};
-use std::{fmt::Debug, hash::Hash};
-use thiserror::Error;
-
-use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
-
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
-=======
 use std::convert::TryFrom;
 use std::ops::AddAssign;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
->>>>>>> main
+
+use crate::bridge_contracts::BridgeContractInitiatorError;
+use crate::bridge_monitoring::BridgeContractCounterpartyMonitoring;
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BridgeTransferId<H>(pub H);
 
 impl<H> BridgeTransferId<H> {
@@ -79,7 +73,7 @@ impl From<String> for InitiatorAddress<Vec<u8>> {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RecipientAddress<A>(pub A);
 
 impl From<&str> for RecipientAddress<Vec<u8>> {
@@ -152,7 +146,7 @@ impl From<Uint<256, 4>> for TimeLock {
 	}
 }
 
-#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Amount(pub AssetType);
 
 /// The type of Asset being used
@@ -333,7 +327,7 @@ pub enum AbstractBlockchainClientError {
 pub enum ErrorConfig {
 	None,
 	InitiatorError(BridgeContractInitiatorError),
-	CounterpartyError(BridgeContractCounterpartyError),
+	CounterpartyError(BridgeContractCounterpartyMonitoring),
 	CustomError(AbstractBlockchainClientError),
 }
 
