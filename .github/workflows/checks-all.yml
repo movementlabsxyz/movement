@@ -142,6 +142,7 @@ jobs:
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
   move-modules-test:
+    if: contains(github.event.label.name, 'bridge') 
     strategy:
       matrix:
         include:
@@ -221,6 +222,7 @@ jobs:
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
   bridge-eth-movement:
+    if: contains(github.event.label.name, 'bridge') 
     strategy:
       matrix:
         include:
