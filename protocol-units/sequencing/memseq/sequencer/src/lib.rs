@@ -76,7 +76,7 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
-		let mut now = std::time::Instant::now();
+		let now = std::time::Instant::now();
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -101,11 +101,7 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		} else {
 			let new_block = {
 				let parent_block = self.parent_block.read().await.clone();
-				Block::new(
-					Default::default(),
-					parent_block.to_vec(),
-					BTreeSet::from_iter(transactions),
-				)
+				Block::new(Default::default(), parent_block, BTreeSet::from_iter(transactions))
 			};
 
 			// update the parent block

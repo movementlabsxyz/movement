@@ -106,7 +106,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 
 					let height = settled_commitment.height();
 					if let Some(commitment) = commitments_to_settle.remove(&height) {
-						let event = if &commitment == settled_commitment.commitment() {
+						let event = if commitment == settled_commitment.commitment() {
 							BlockCommitmentEvent::Accepted(settled_commitment)
 						} else {
 							BlockCommitmentEvent::Rejected {

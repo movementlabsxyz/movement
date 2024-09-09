@@ -2,7 +2,10 @@ use crate::transaction::Transaction;
 use aptos_types::state_proof::StateProof;
 use core::fmt;
 use serde::{Deserialize, Serialize};
+use std::collections::btree_set;
 use std::collections::BTreeSet;
+
+pub type Transactions<'a> = btree_set::Iter<'a, Transaction>;
 
 #[derive(
 	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
@@ -55,19 +58,15 @@ pub enum BlockMetadata {
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Block {
 	metadata: BlockMetadata,
-	parent: Vec<u8>,
+	parent: Id,
 	transactions: BTreeSet<Transaction>,
 	id: Id,
 }
 
 impl Block {
-	pub fn new(
-		metadata: BlockMetadata,
-		parent: Vec<u8>,
-		transactions: BTreeSet<Transaction>,
-	) -> Self {
+	pub fn new(metadata: BlockMetadata, parent: Id, transactions: BTreeSet<Transaction>) -> Self {
 		let mut hasher = blake3::Hasher::new();
-		hasher.update(&parent);
+		hasher.update(parent.inner());
 		for transaction in &transactions {
 			hasher.update(&transaction.id().as_ref());
 		}
@@ -76,7 +75,7 @@ impl Block {
 		Self { metadata, parent, transactions, id }
 	}
 
-	pub fn into_parts(self) -> (BlockMetadata, Vec<u8>, BTreeSet<Transaction>, Id) {
+	pub fn into_parts(self) -> (BlockMetadata, Id, BTreeSet<Transaction>, Id) {
 		(self.metadata, self.parent, self.transactions, self.id)
 	}
 
@@ -84,12 +83,12 @@ impl Block {
 		self.id
 	}
 
-	pub fn parent(&self) -> &[u8] {
-		&self.parent
+	pub fn parent(&self) -> Id {
+		self.parent
 	}
 
-	pub fn transactions(&self) -> &BTreeSet<Transaction> {
-		&self.transactions
+	pub fn transactions(&self) -> Transactions {
+		self.transactions.iter()
 	}
 
 	pub fn metadata(&self) -> &BlockMetadata {
@@ -99,7 +98,7 @@ impl Block {
 	pub fn test() -> Self {
 		Self::new(
 			BlockMetadata::BlockMetadata,
-			vec![0],
+			Id::test(),
 			BTreeSet::from_iter(vec![Transaction::test()]),
 		)
 	}
@@ -109,7 +108,9 @@ impl Block {
 	}
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(
+	Serialize, Deserialize, Clone, Copy, Default, Debug, PartialEq, Eq, Hash, PartialOrd, Ord,
+)]
 pub struct Commitment([u8; 32]);
 
 impl Commitment {
@@ -188,8 +189,8 @@ impl BlockCommitment {
 		&self.block_id
 	}
 
-	pub fn commitment(&self) -> &Commitment {
-		&self.commitment
+	pub fn commitment(&self) -> Commitment {
+		self.commitment
 	}
 
 	pub fn test() -> Self {

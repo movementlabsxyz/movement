@@ -23,10 +23,6 @@ impl Id {
 	pub fn to_vec(&self) -> Vec<u8> {
 		self.0.into()
 	}
-
-	pub fn genesis_block() -> Self {
-		Self([0; 32])
-	}
 }
 
 impl AsRef<[u8]> for Id {
