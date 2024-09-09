@@ -9,8 +9,8 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	LockDetails, RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails,
+	RecipientAddress,
 };
 use serde::{Deserialize, Serialize};
 
@@ -169,9 +169,9 @@ pub(crate) enum EventName {
 	InitiatorInitiated,
 	InitiatorCompleted,
 	InitiatorRefunded,
-	ConterpartyLocked,
-	ConterpartyCompleted,
-	ConterpartyAborted,
+	CounterpartyLocked,
+	CounterpartyCompleted,
+	CounterpartyAborted,
 }
 
 impl EventName {
@@ -180,9 +180,9 @@ impl EventName {
 			EventName::InitiatorInitiated => "BridgeTransferInitiated",
 			EventName::InitiatorCompleted => "BridgeTransferCompleted",
 			EventName::InitiatorRefunded => "BridgeTransferRefunded",
-			EventName::ConterpartyLocked => "BridgeTransferLocked",
-			EventName::ConterpartyCompleted => "BridgeTransferCompleted",
-			EventName::ConterpartyAborted => "BridgeTransferAborted",
+			EventName::CounterpartyLocked => "BridgeTransferLocked",
+			EventName::CounterpartyCompleted => "BridgeTransferCompleted",
+			EventName::CounterpartyAborted => "BridgeTransferAborted",
 		}
 	}
 
@@ -201,16 +201,17 @@ impl EventName {
 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
 			}
 			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
-			EventName::ConterpartyLocked => vec![
+			EventName::CounterpartyLocked => vec![
 				AlloyParam::BridgeTransferId.fill(),
 				AlloyParam::InitiatorAddress.fill(),
 				AlloyParam::Amount.fill(),
 				AlloyParam::HashLock.fill(),
 				AlloyParam::TimeLock.fill(),
 			],
-			EventParam::ConterpartyCompleted => {
+			EventName::CounterpartyCompleted => {
 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
 			}
+			EventName::CounterpartyAborted => vec![AlloyParam::BridgeTransferId.fill()],
 		}
 	}
 }
@@ -218,9 +219,9 @@ impl EventName {
 impl From<&str> for EventName {
 	fn from(s: &str) -> Self {
 		match s {
-			"BridgeTransferInitiated" => EventName::Initiated,
-			"BridgeTransferCompleted" => EventName::Completed,
-			"BridgeTransferRefunded" => EventName::Refunded,
+			"BridgeTransferInitiated" => EventName::InitiatorInitiated,
+			"BridgeTransferCompleted" => EventName::InitiatorCompleted,
+			"BridgeTransferRefunded" => EventName::InitiatorRefunded,
 			_ => panic!("Invalid event name"),
 		}
 	}
@@ -263,17 +264,4 @@ where
 			amount: lock_details.amount,
 		}
 	}
-}
-
-#[derive(Debug)]
-pub enum CounterpartyCall<A, H> {
-	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
-	LockBridgeTransfer(
-		BridgeTransferId<H>,
-		HashLock<H>,
-		TimeLock,
-		InitiatorAddress<Vec<u8>>,
-		RecipientAddress<A>,
-		Amount,
-	),
 }

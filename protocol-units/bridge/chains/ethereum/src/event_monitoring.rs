@@ -17,7 +17,9 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
 use bridge_shared::initiator_contract::SmartContractInitiatorEvent;
-use bridge_shared::types::{CounterpartyCompletedDetails, HashLockPreImage, LockDetails};
+use bridge_shared::types::{
+	Amount, CounterpartyCompletedDetails, HashLockPreImage, LockDetails, TimeLock,
+};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
@@ -369,45 +371,45 @@ fn decode_counterparty_log_data(
 		.find_map(|topic| {
 			match *topic {
 				COUNTERPARTY_LOCKED_SELECT => Some(Event {
-					name: EventName::ConterpartyLocked.as_str().to_string(),
-					inputs: EventName::Locked
+					name: EventName::CounterpartyLocked.as_str().to_string(),
+					inputs: EventName::CounterpartyLocked
 						.params()
 						.iter()
 						.map(|p| EventParam {
 							ty: p.to_string(),
 							name: p.name.clone(),
 							indexed: true,
-							components: EventName::Locked.params(),
+							components: EventName::CounterpartyLocked.params(),
 							internal_type: None, // for now
 						})
 						.collect(),
 					anonymous: false,
 				}),
 				COUNTERPARTY_COMPLETED_SELECT => Some(Event {
-					name: EventName::ConterpartyCompleted.as_str().to_string(),
-					inputs: EventName::Completed
+					name: EventName::CounterpartyCompleted.as_str().to_string(),
+					inputs: EventName::CounterpartyCompleted
 						.params()
 						.iter()
 						.map(|p| EventParam {
 							ty: p.to_string(),
 							name: p.name.clone(),
 							indexed: true,
-							components: EventName::Completed.params(),
+							components: EventName::CounterpartyCompleted.params(),
 							internal_type: None, // for now
 						})
 						.collect(),
 					anonymous: false,
 				}),
 				COUNTERPARTY_ABORTED_SELECT => Some(Event {
-					name: EventName::ConterpartyAborted.as_str().to_string(),
-					inputs: EventName::Aborted
+					name: EventName::CounterpartyAborted.as_str().to_string(),
+					inputs: EventName::CounterpartyAborted
 						.params()
 						.iter()
 						.map(|p| EventParam {
 							ty: p.to_string(),
 							name: p.name.clone(),
 							indexed: true,
-							components: EventName::Aborted.params(),
+							components: EventName::CounterpartyAborted.params(),
 							internal_type: None, // for now
 						})
 						.collect(),
@@ -439,7 +441,6 @@ fn decode_counterparty_log_data(
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode InitiatorAddress"))?;
 				let recipient_address = decoded.indexed[1]
 					.as_address()
-					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode RecipientAddress"))?;
 				let amount = decoded.indexed[2]
 					.as_uint()
@@ -455,8 +456,8 @@ fn decode_counterparty_log_data(
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
 				Ok(BridgeContractCounterpartyEvent::Locked(LockDetails {
 					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
-					initiator_address: InitiatorAddress(initiator_address),
-					recipient_address: RecipientAddress(recipient_address.to_vec()),
+					initiator_address: InitiatorAddress(initiator_address.to_vec()),
+					recipient_address: RecipientAddress(EthAddress(recipient_address)),
 					amount: Amount(amount),
 					hash_lock: HashLock(hash_lock),
 					time_lock: TimeLock(time_lock),
