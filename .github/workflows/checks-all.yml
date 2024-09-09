@@ -213,6 +213,9 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - name: Initialize and update submodules
+      run: git submodule update --init --recursive
+
     - name: Run foundry tests
       run: |
         nix develop --command bash -c "
