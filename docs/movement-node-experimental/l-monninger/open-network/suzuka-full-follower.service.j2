@@ -16,7 +16,7 @@ Environment="CELESTIA_RPC_CONNECTION_PORT={{ celestia_rpc_connection_port }}"
 Environment="CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL={{ celestia_websocket_connection_protocol }}"
 Environment="CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME={{ celestia_websocket_connection_hostname }}"
 Environment="CELESTIA_WEBSOCKET_CONNECTION_PORT={{ celestia_websocket_connection_port }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.remote-no-celestia-light-node.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.faucet-replicas.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.remote-no-celestia-light-node.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]

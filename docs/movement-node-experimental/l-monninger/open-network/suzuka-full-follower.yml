@@ -14,7 +14,7 @@
     celestia_websocket_connection_protocol: "wss"
     celestia_websocket_connection_hostname: "l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz"
     celestia_websocket_connection_port: "443"
-    aws_region: "us-west-2"
+    aws_region: "us-west-1"
     rev: "{{ movement_container_version }}"
 
   tasks:
