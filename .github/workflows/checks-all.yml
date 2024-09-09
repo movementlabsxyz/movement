@@ -263,6 +263,16 @@ jobs:
           echo "No movement process found."
         fi
 
+    - name: Check and delete .movement directory
+      run: |
+        cd $GITHUB_WORKSPACE
+        if [ -d "protocol-units/bridge/integration-tests/.movement" ]; then
+          echo ".movement directory found, deleting it."
+          rm -rf protocol-units/bridge/integration-tests/.movement
+        else
+          echo ".movement directory not found."
+        fi
+
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
