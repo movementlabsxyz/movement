@@ -1,12 +1,9 @@
+use crate::utils;
 use crate::utils::MovementAddress;
 use anyhow::Result;
-use aptos_api::accounts::Account;
-use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewFunction, ViewRequest};
+use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, TypeTag},
-	},
+	move_types::{identifier::Identifier, language_storage::TypeTag},
 	rest_client::{Client, FaucetClient, Response},
 	types::LocalAccount,
 };
@@ -21,17 +18,14 @@ use bridge_shared::{
 		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
-use hex::{decode, FromHex};
 use rand::prelude::*;
 use rand::Rng;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::{
 	env, fs,
-	io::{Read, Write},
-	path::{Path, PathBuf},
+	io::Write,
+	path::PathBuf,
 	process::{Command, Stdio},
 };
 use tokio::{
@@ -82,10 +76,10 @@ impl Config {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct MovementClient {
-	///Address of the counterparty moduke
-	pub counterparty_address: AccountAddress,
-	///Address of the initiator module
-	pub initiator_address: Vec<u8>,
+	///Native Address of the client
+	pub native_address: AccountAddress,
+	///Non native Address (other networks)
+	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The Apotos Rest Client
@@ -108,10 +102,10 @@ impl MovementClient {
 
 		let mut address_bytes = [0u8; AccountAddress::LENGTH];
 		address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
-		let counterparty_address = AccountAddress::new(address_bytes);
+		let native_address = AccountAddress::new(address_bytes);
 		Ok(MovementClient {
-			counterparty_address,
-			initiator_address: Vec::new(), //dummy for now
+			native_address,
+			non_native_address: Vec::new(), //dummy for now
 			rest_client,
 			faucet_client: None,
 			signer: Arc::new(signer),
@@ -121,7 +115,7 @@ impl MovementClient {
 	pub async fn new_for_test(
 		_config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
-		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
 			.stdout(Stdio::piped())
@@ -196,8 +190,8 @@ impl MovementClient {
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok((
 			MovementClient {
-				counterparty_address: DUMMY_ADDRESS,
-				initiator_address: Vec::new(), // dummy for now
+				native_address: DUMMY_ADDRESS,
+				non_native_address: Vec::new(), // dummy for now
 				rest_client,
 				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
@@ -289,7 +283,7 @@ impl MovementClient {
 		};
 
 		// Set counterparty module address to resource address, for function calls:
-		self.counterparty_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
+		self.native_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
 
 		println!("Derived resource address: {}", formatted_resource_address);
 
@@ -476,14 +470,14 @@ impl BridgeContractCounterparty for MovementClient {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.counterparty_address,
+			self.native_address.clone(),
 			COUNTERPARTY_MODULE_NAME,
 			"lock_bridge_transfer",
 			Vec::new(),
 			args,
 		);
 
-		let result = utils::send_and_confirm_aptos_transaction(
+		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
@@ -505,14 +499,14 @@ impl BridgeContractCounterparty for MovementClient {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.counterparty_address,
+			self.native_address,
 			COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
 			args2,
 		);
 
-		let result = utils::send_and_confirm_aptos_transaction(
+		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
@@ -529,21 +523,19 @@ impl BridgeContractCounterparty for MovementClient {
 	) -> BridgeContractCounterpartyResult<()> {
 		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
 		let payload = utils::make_aptos_payload(
-			self.counterparty_address,
+			self.native_address,
 			COUNTERPARTY_MODULE_NAME,
 			"abort_bridge_transfer",
 			Vec::new(),
 			args3,
 		);
-		let result = utils::send_and_confirm_aptos_transaction(
+		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
-
-		println!("Abort bridge transfer result: {:?}", &result);
 		Ok(())
 	}
 
@@ -561,7 +553,7 @@ impl BridgeContractCounterparty for MovementClient {
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
-					address: self.counterparty_address.clone().into(),
+					address: self.native_address.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
 						Identifier::new("atomic_bridge_counterparty")
 							.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,

@@ -58,13 +58,13 @@ impl Stream for MovementInitiatorMonitoring<MovementAddress, MovementHash> {
 			loop {
 				let struct_tag = format!(
 					"0x{}::atomic_bridge_initiator::BridgeInitiatorEvents",
-					client.initiator_address.to_hex_literal()
+					client.native_address.to_standard_string(),
 				);
 
 				// Get initiated events
 				let initiated_response = rest_client
 					.get_account_events_bcs(
-						client.initiator_address,
+						client.native_address,
 						struct_tag.as_str(),
 						"bridge_transfer_initiated_events",
 						Some(1),
@@ -76,7 +76,7 @@ impl Stream for MovementInitiatorMonitoring<MovementAddress, MovementHash> {
 				// Get completed events
 				let completed_response = rest_client
 					.get_account_events_bcs(
-						client.initiator_address,
+						client.native_address,
 						struct_tag.as_str(),
 						"bridge_transfer_completed_events",
 						Some(1),
@@ -88,7 +88,7 @@ impl Stream for MovementInitiatorMonitoring<MovementAddress, MovementHash> {
 				// Get refunded events
 				let refunded_response = rest_client
 					.get_account_events_bcs(
-						client.initiator_address,
+						client.native_address,
 						struct_tag.as_str(),
 						"bridge_transfer_refunded_events",
 						Some(1),
@@ -184,13 +184,13 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 			loop {
 				let struct_tag = format!(
 					"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
-					client.counterparty_address.to_hex_literal()
+					client.native_address.to_standard_string()
 				);
 
 				// Get locked events
 				let locked_response = rest_client
 					.get_account_events_bcs(
-						client.counterparty_address,
+						client.native_address,
 						struct_tag.as_str(),
 						"bridge_transfer_assets_locked",
 						Some(1),
@@ -202,7 +202,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 				// Get completed events
 				let completed_response = rest_client
 					.get_account_events_bcs(
-						client.counterparty_address,
+						client.native_address,
 						struct_tag.as_str(),
 						"bridge_transfer_completed",
 						Some(1),
@@ -214,7 +214,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 				// Get cancelled events
 				let cancelled_response = rest_client
 					.get_account_events_bcs(
-						client.counterparty_address,
+						client.native_address,
 						struct_tag.as_str(),
 						"bridge_transfer_cancelled",
 						Some(1),

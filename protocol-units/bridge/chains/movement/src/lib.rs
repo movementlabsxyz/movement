@@ -1,12 +1,12 @@
 use bridge_shared::{
-	counterparty_contract::SmartContractCounterparty,
+	counterparty_contract::{CounterpartyCall, SmartContractCounterparty},
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
 		RecipientAddress,
 	},
 };
-use event_types::EthChainEvent;
+use event_types::MovementChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{
 	collections::HashMap,
@@ -14,7 +14,6 @@ use std::{
 	pin::Pin,
 	task::{Context, Poll},
 };
-use types::CounterpartyCall;
 use utils::RngSeededClone;
 
 pub mod client;
@@ -36,11 +35,11 @@ pub enum Transaction<A, H> {
 }
 
 #[allow(unused)]
-pub struct EthereumChain<A, H, R> {
+pub struct MovementChain<A, H, R> {
 	pub name: String,
 	pub time: u64,
 	pub accounts: HashMap<A, Amount>,
-	pub events: Vec<EthChainEvent<A, H>>,
+	pub events: Vec<MovementChainEvent<A, H>>,
 
 	pub initiator_contract: SmartContractInitiator<A, H, R>,
 	pub counterparty_contract: SmartContractCounterparty<A, H>,
@@ -48,14 +47,14 @@ pub struct EthereumChain<A, H, R> {
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
 
-	pub event_listeners: Vec<mpsc::UnboundedSender<EthChainEvent<A, H>>>,
+	pub event_listeners: Vec<mpsc::UnboundedSender<MovementChainEvent<A, H>>>,
 
 	waker: AtomicWaker,
 
 	pub _phantom: std::marker::PhantomData<H>,
 }
 
-impl<A, H, R> EthereumChain<A, H, R>
+impl<A, H, R> MovementChain<A, H, R>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
@@ -83,7 +82,7 @@ where
 		}
 	}
 
-	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<EthChainEvent<A, H>> {
+	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<MovementChainEvent<A, H>> {
 		let (sender, receiver) = mpsc::unbounded();
 		self.event_listeners.push(sender);
 		receiver
@@ -102,7 +101,7 @@ where
 	}
 }
 
-impl<A, H, R> Future for EthereumChain<A, H, R>
+impl<A, H, R> Future for MovementChain<A, H, R>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
@@ -126,13 +125,13 @@ where
 	}
 }
 
-impl<A, H, R> Stream for EthereumChain<A, H, R>
+impl<A, H, R> Stream for MovementChain<A, H, R>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
 	R: RngSeededClone + Unpin,
 {
-	type Item = EthChainEvent<A, H>;
+	type Item = MovementChainEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
@@ -154,7 +153,7 @@ where
 							time_lock,
 							hash_lock,
 						) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
+							this.events.push(MovementChainEvent::InitiatorContractEvent(
 								this.initiator_contract.initiate_bridge_transfer(
 									initiator_address.clone(),
 									recipient_address.clone(),
@@ -165,7 +164,7 @@ where
 							));
 						}
 						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
+							this.events.push(MovementChainEvent::InitiatorContractEvent(
 								this.initiator_contract.complete_bridge_transfer(
 									&mut this.accounts,
 									bridge_transfer_id.clone(),
@@ -183,7 +182,7 @@ where
 							recipient_address,
 							amount,
 						) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
+							this.events.push(MovementChainEvent::CounterpartyContractEvent(
 								this.counterparty_contract.lock_bridge_transfer(
 									bridge_transfer_id.clone(),
 									hash_lock.clone(),
@@ -195,7 +194,7 @@ where
 							));
 						}
 						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
+							this.events.push(MovementChainEvent::CounterpartyContractEvent(
 								this.counterparty_contract.complete_bridge_transfer(
 									&mut this.accounts,
 									&bridge_transfer_id,

@@ -321,6 +321,19 @@ pub enum AbstractBlockchainClientError {
 	RandomFailure,
 }
 
+#[derive(Debug)]
+pub enum CounterpartyCall<A, H> {
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+	LockBridgeTransfer(
+		BridgeTransferId<H>,
+		HashLock<H>,
+		TimeLock,
+		InitiatorAddress<Vec<u8>>,
+		RecipientAddress<A>,
+		Amount,
+	),
+}
+
 #[derive(Clone, Debug)]
 pub enum ErrorConfig {
 	None,
