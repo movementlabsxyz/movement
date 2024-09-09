@@ -263,7 +263,7 @@ jobs:
           echo "No movement process found."
         fi
 
-    - name: Check and delete .movement directory
+    - name: Delete .movement directory if present
       run: |
         cd $GITHUB_WORKSPACE
         if [ -d "protocol-units/bridge/integration-tests/.movement" ]; then
