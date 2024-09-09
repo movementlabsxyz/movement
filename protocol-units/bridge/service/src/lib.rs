@@ -58,10 +58,13 @@ pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceRe
 	let eth_conterparty_monitoring =
 		EthCounterpartyMonitoring::build(temp_rpc_url, ethereum_service.add_event_listener());
 
-	let movement_countperarty_monitoring = MovementCounterpartyMonitoring::build(
+	let movement_counterparty_monitoring = MovementCounterpartyMonitoring::build(
 		"localhost:8080",
 		movement_service.add_event_listener(),
 	);
+
+	let movement_initiator_monitoring =
+		MovementInitiatorMonitoring::build("localhost:8080", movement_service.add_event_listener());
 
 	//@TODO: use json config instead of build_for_test
 	let config = Config::build_for_test();
@@ -71,7 +74,8 @@ pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceRe
 	let eth_service = EthereumService {
 		initiator_contract: eth_client.clone(),
 		initiator_monitoring: eth_initiator_monitoring,
-		counterparty_contract: movement_client.clone(),
-		//counterparty_monitoring:
+		counterparty_contract: eth_client.clone(),
+		counterparty_monitoring: eth_conterparty_monitoring,
+		_phantom: Default::default(),
 	};
 }
