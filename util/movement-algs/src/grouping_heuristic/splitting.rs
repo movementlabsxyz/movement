@@ -105,7 +105,7 @@ mod block {
 	use std::collections::BTreeSet;
 
 	use super::*;
-	use movement_types::Block;
+	use movement_types::block::Block;
 
 	impl Splitable for Block {
 		fn split(self, factor: usize) -> Result<Vec<Self>, anyhow::Error> {

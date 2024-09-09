@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use movement_types::{Block, Id, Transaction};
+use movement_types::{
+	block::{self, Block},
+	transaction::{self, Transaction},
+};
 use std::cmp::Ordering;
 
 pub trait MempoolTransactionOperations {
@@ -12,13 +15,19 @@ pub trait MempoolTransactionOperations {
 	) -> Result<(), anyhow::Error>;
 
 	/// Checks whether a mempool transaction exists in the mempool.
-	async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, anyhow::Error>;
+	async fn has_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<bool, anyhow::Error>;
 
 	/// Adds a mempool transaction to the mempool.
 	async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), anyhow::Error>;
 
 	/// Removes a mempool transaction from the mempool.
-	async fn remove_mempool_transaction(&self, transaction_id: Id) -> Result<(), anyhow::Error>;
+	async fn remove_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<(), anyhow::Error>;
 
 	/// Pops mempool transaction from the mempool.
 	async fn pop_mempool_transaction(&self) -> Result<Option<MempoolTransaction>, anyhow::Error>;
@@ -26,7 +35,7 @@ pub trait MempoolTransactionOperations {
 	/// Gets a mempool transaction from the mempool.
 	async fn get_mempool_transaction(
 		&self,
-		transaction_id: Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<MempoolTransaction>, anyhow::Error>;
 
 	/// Pops the next n mempool transactions from the mempool.
@@ -46,7 +55,10 @@ pub trait MempoolTransactionOperations {
 	}
 
 	/// Checks whether the mempool has the transaction.
-	async fn has_transaction(&self, transaction_id: Id) -> Result<bool, anyhow::Error> {
+	async fn has_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<bool, anyhow::Error> {
 		self.has_mempool_transaction(transaction_id).await
 	}
 
@@ -67,7 +79,10 @@ pub trait MempoolTransactionOperations {
 	}
 
 	/// Removes a transaction from the mempool.
-	async fn remove_transaction(&self, transaction_id: Id) -> Result<(), anyhow::Error> {
+	async fn remove_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<(), anyhow::Error> {
 		self.remove_mempool_transaction(transaction_id).await
 	}
 
@@ -80,7 +95,7 @@ pub trait MempoolTransactionOperations {
 	/// Gets a transaction from the mempool.
 	async fn get_transaction(
 		&self,
-		transaction_id: Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<Transaction>, anyhow::Error> {
 		let mempool_transaction = self.get_mempool_transaction(transaction_id).await?;
 		Ok(mempool_transaction.map(|mempool_transaction| mempool_transaction.transaction))
@@ -98,16 +113,16 @@ pub trait MempoolTransactionOperations {
 
 pub trait MempoolBlockOperations {
 	/// Checks whether a block exists in the mempool.
-	async fn has_block(&self, block_id: Id) -> Result<bool, anyhow::Error>;
+	async fn has_block(&self, block_id: block::Id) -> Result<bool, anyhow::Error>;
 
 	/// Adds a block to the mempool.
 	async fn add_block(&self, block: Block) -> Result<(), anyhow::Error>;
 
 	/// Removes a block from the mempool.
-	async fn remove_block(&self, block_id: Id) -> Result<(), anyhow::Error>;
+	async fn remove_block(&self, block_id: block::Id) -> Result<(), anyhow::Error>;
 
 	/// Gets a block from the mempool.
-	async fn get_block(&self, block_id: Id) -> Result<Option<Block>, anyhow::Error>;
+	async fn get_block(&self, block_id: block::Id) -> Result<Option<Block>, anyhow::Error>;
 }
 
 /// Wraps a transaction with a timestamp for help ordering.
@@ -167,7 +182,7 @@ impl MempoolTransaction {
 		Self::at_time(transaction, timestamp)
 	}
 
-	pub fn id(&self) -> &Id {
+	pub fn id(&self) -> &transaction::Id {
 		self.transaction.id()
 	}
 }

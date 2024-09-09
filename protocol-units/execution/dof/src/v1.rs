@@ -5,7 +5,7 @@ use crate::{
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 
 use anyhow::format_err;
 use async_trait::async_trait;

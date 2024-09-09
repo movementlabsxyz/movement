@@ -137,7 +137,7 @@ impl McrSettlementClientOperations for McrSettlementClient {
 pub mod test {
 
 	use super::*;
-	use movement_types::Commitment;
+	use movement_types::block::Commitment;
 
 	use futures::future;
 	use tokio::select;

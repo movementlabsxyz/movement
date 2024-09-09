@@ -72,9 +72,18 @@ pub mod numeric {
 mod block {
 
 	use super::*;
-	use movement_types::{Block, Id, Transaction};
+	use movement_types::{
+		block::{self, Block},
+		transaction::{self, Transaction},
+	};
 
-	impl BinpackingWeighted for Id {
+	impl BinpackingWeighted for block::Id {
+		fn weight(&self) -> usize {
+			self.inner().len()
+		}
+	}
+
+	impl BinpackingWeighted for transaction::Id {
 		fn weight(&self) -> usize {
 			self.inner().len()
 		}

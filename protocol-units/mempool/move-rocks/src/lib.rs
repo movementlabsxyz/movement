@@ -1,7 +1,10 @@
 use anyhow::Error;
 use bcs;
 use mempool_util::{MempoolBlockOperations, MempoolTransaction, MempoolTransactionOperations};
-use movement_types::{Block, Id};
+use movement_types::{
+	block::{self, Block},
+	transaction,
+};
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::fmt::Write;
 use std::sync::Arc;
@@ -50,7 +53,7 @@ impl RocksdbMempool {
 
 	fn internal_get_mempool_transaction_key(
 		db: Arc<DB>,
-		transaction_id: &Id,
+		transaction_id: &transaction::Id,
 	) -> Result<Option<Vec<u8>>, Error> {
 		let cf_handle = db
 			.cf_handle("transaction_lookups")
@@ -61,7 +64,7 @@ impl RocksdbMempool {
 	/// Helper function to retrieve the key for mempool transaction from the lookup table.
 	async fn get_mempool_transaction_key(
 		&self,
-		transaction_id: &Id,
+		transaction_id: &transaction::Id,
 	) -> Result<Option<Vec<u8>>, Error> {
 		let db = self.db.clone();
 		let transaction_id = transaction_id.clone();
@@ -71,7 +74,10 @@ impl RocksdbMempool {
 		.await?
 	}
 
-	fn internal_has_mempool_transaction(db: Arc<DB>, transaction_id: &Id) -> Result<bool, Error> {
+	fn internal_has_mempool_transaction(
+		db: Arc<DB>,
+		transaction_id: &transaction::Id,
+	) -> Result<bool, Error> {
 		let key = Self::internal_get_mempool_transaction_key(db.clone(), transaction_id)?;
 		match key {
 			Some(k) => {
@@ -86,7 +92,10 @@ impl RocksdbMempool {
 }
 
 impl MempoolTransactionOperations for RocksdbMempool {
-	async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, Error> {
+	async fn has_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<bool, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			Self::internal_has_mempool_transaction(db, &transaction_id)
@@ -145,7 +154,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		Ok(())
 	}
 
-	async fn remove_mempool_transaction(&self, transaction_id: Id) -> Result<(), Error> {
+	async fn remove_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<(), Error> {
 		let key = self.get_mempool_transaction_key(&transaction_id).await?;
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
@@ -171,7 +183,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	// Updated method signatures and implementations go here
 	async fn get_mempool_transaction(
 		&self,
-		transaction_id: Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<MempoolTransaction>, Error> {
 		let key = match self.get_mempool_transaction_key(&transaction_id).await? {
 			Some(k) => k,
@@ -256,7 +268,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 }
 
 impl MempoolBlockOperations for RocksdbMempool {
-	async fn has_block(&self, block_id: Id) -> Result<bool, Error> {
+	async fn has_block(&self, block_id: block::Id) -> Result<bool, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
@@ -278,7 +290,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		.await?
 	}
 
-	async fn remove_block(&self, block_id: Id) -> Result<(), Error> {
+	async fn remove_block(&self, block_id: block::Id) -> Result<(), Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
@@ -289,7 +301,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		.await?
 	}
 
-	async fn get_block(&self, block_id: Id) -> Result<Option<Block>, Error> {
+	async fn get_block(&self, block_id: block::Id) -> Result<Option<Block>, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
@@ -311,7 +323,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 pub mod test {
 
 	use super::*;
-	use movement_types::Transaction;
+	use movement_types::transaction::Transaction;
 	use tempfile::tempdir;
 
 	#[tokio::test]

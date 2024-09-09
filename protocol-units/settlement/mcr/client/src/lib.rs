@@ -1,4 +1,4 @@
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 use tokio_stream::Stream;
 
 #[cfg(test)]

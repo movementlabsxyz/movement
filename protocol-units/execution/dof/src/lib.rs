@@ -12,7 +12,7 @@ pub use aptos_types::{
 	transaction::{SignedTransaction, Transaction},
 };
 use maptos_execution_util::config::Config;
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 
 use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;

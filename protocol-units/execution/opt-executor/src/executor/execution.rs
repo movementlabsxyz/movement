@@ -15,7 +15,7 @@ use aptos_types::{
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
-use movement_types::{BlockCommitment, Commitment, Id};
+use movement_types::block::{BlockCommitment, Commitment, Id};
 use tracing::{debug, info};
 
 impl Executor {

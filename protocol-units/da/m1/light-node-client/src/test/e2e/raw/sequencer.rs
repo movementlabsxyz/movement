@@ -1,5 +1,5 @@
 use crate::*;
-use movement_types::Block;
+use movement_types::block::Block;
 use tokio_stream::StreamExt;
 
 #[tokio::test]
