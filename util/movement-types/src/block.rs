@@ -80,11 +80,11 @@ impl Block {
 		(self.metadata, self.parent, self.transactions, self.id)
 	}
 
-	pub fn id(&self) -> &Id {
-		&self.id
+	pub fn id(&self) -> Id {
+		self.id
 	}
 
-	pub fn parent(&self) -> &Vec<u8> {
+	pub fn parent(&self) -> &[u8] {
 		&self.parent
 	}
 

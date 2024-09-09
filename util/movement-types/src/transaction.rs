@@ -60,11 +60,11 @@ impl Transaction {
 		Self { data, sequence_number, id }
 	}
 
-	pub fn id(&self) -> &Id {
-		&self.id
+	pub fn id(&self) -> Id {
+		self.id
 	}
 
-	pub fn data(&self) -> &Vec<u8> {
+	pub fn data(&self) -> &[u8] {
 		&self.data
 	}
 
@@ -86,12 +86,27 @@ impl Ord for Transaction {
 		}
 
 		// If sequence number is equal, then compare by transaction on the whole
-		self.id().cmp(other.id())
+		self.id().cmp(&other.id())
 	}
 }
 
 impl PartialOrd for Transaction {
 	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
 		Some(self.cmp(other))
+	}
+}
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn test_transaction_ordering() {
+		let transaction = Transaction::test();
+		let transaction2 = Transaction::new(vec![1], 1);
+		let transaction3 = Transaction::new(vec![1], 2);
+
+		assert!(transaction < transaction2);
+		assert!(transaction2 < transaction3);
 	}
 }

@@ -70,7 +70,7 @@ pub trait MempoolTransactionOperations {
 
 	/// Adds a transaction to the mempool.
 	async fn add_transaction(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
-		if self.has_transaction(transaction.id().clone()).await? {
+		if self.has_transaction(transaction.id()).await? {
 			return Ok(());
 		}
 
@@ -182,7 +182,7 @@ impl MempoolTransaction {
 		Self::at_time(transaction, timestamp)
 	}
 
-	pub fn id(&self) -> &transaction::Id {
+	pub fn id(&self) -> transaction::Id {
 		self.transaction.id()
 	}
 }

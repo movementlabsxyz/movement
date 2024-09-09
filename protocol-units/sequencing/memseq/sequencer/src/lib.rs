@@ -111,7 +111,7 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 			// update the parent block
 			{
 				let mut parent_block = self.parent_block.write().await;
-				*parent_block = new_block.id().clone();
+				*parent_block = new_block.id();
 			}
 
 			Ok(Some(new_block))

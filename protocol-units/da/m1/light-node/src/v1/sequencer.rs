@@ -227,7 +227,7 @@ impl LightNodeV1 {
 		if blocks.is_empty() {
 			return Ok(());
 		}
-		let ids = blocks.iter().map(|b| b.id().clone()).collect::<Vec<_>>();
+		let ids = blocks.iter().map(|b| b.id()).collect::<Vec<_>>();
 
 		// submit the blobs, resizing as needed
 		for block_id in &ids {
