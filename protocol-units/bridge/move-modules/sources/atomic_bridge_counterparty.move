@@ -15,7 +15,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     const COMPLETED: u8 = 2;
     const CANCELLED: u8 = 3;
 
-    const TIME_LOCK_DURATION: u64 = 24 * 60 * 60; // 24 hours in seconds
+    const COUNTERPARTY_TIME_LOCK_DUARTION: u64 = 24 * 60 * 60; // 24 hours in seconds
 
     const EINCORRECT_SIGNER: u64 = 1;
     const EWRONG_PREIMAGE: u64 = 2;
@@ -118,7 +118,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         amount: u64
     ) acquires BridgeTransferStore {
         // Initiator multiplies timelock by 2, no need to multiply here
-        let time_lock = timestamp::now_seconds() + TIME_LOCK_DURATION;
+        let time_lock = timestamp::now_seconds() + COUNTERPARTY_TIME_LOCK_DUARTION;
 
         assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
         let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
@@ -247,7 +247,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
 
-        let expected_time_lock = TIME_LOCK_DURATION;
+        let expected_time_lock = COUNTERPARTY_TIME_LOCK_DUARTION;
 
         assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
         assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
