@@ -8,8 +8,7 @@ use std::ops::AddAssign;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
-use crate::bridge_contracts::BridgeContractInitiatorError;
-use crate::bridge_monitoring::BridgeContractCounterpartyMonitoring;
+use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BridgeTransferId<H>(pub H);
 
@@ -150,7 +149,7 @@ impl From<Uint<256, 4>> for TimeLock {
 pub struct Amount(pub AssetType);
 
 /// The type of Asset being used
-#[derive(Clone, Debug, PartialEq, Eq, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, Serialize, Deserialize)]
 pub enum AssetType {
 	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
 	EthAndWeth((u64, u64)),
@@ -174,7 +173,6 @@ impl TryFrom<AssetType> for Uint<256, 4> {
 				Ok(Uint::from(combined_value))
 			}
 			AssetType::Moveth(value) => Ok(Uint::from(value as u128)),
-			_ => Err(ConversionError::InvalidConversion), // Add more cases as needed
 		}
 	}
 }
@@ -327,7 +325,7 @@ pub enum AbstractBlockchainClientError {
 pub enum ErrorConfig {
 	None,
 	InitiatorError(BridgeContractInitiatorError),
-	CounterpartyError(BridgeContractCounterpartyMonitoring),
+	CounterpartyError(BridgeContractCounterpartyError),
 	CustomError(AbstractBlockchainClientError),
 }
 

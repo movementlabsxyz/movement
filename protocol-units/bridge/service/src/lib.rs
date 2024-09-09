@@ -3,15 +3,18 @@ use bridge_shared::{
 	bridge_service::{BridgeService, BridgeServiceConfig},
 };
 use ethereum_bridge::{
-	client::{Config, EthClient},
-	event_monitoring::EthInitiatorMonitoring,
+	client::{Config as EthConfig, EthClient},
+	event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring},
 	types::{EthAddress, EthHash},
 	utils::TestRng,
 	EthereumChain,
 };
 use movement_bridge::{
-	client::MovementClient, event_monitoring::MovementCounterpartyMonitoring, types::MovementHash,
-	utils::MovementAddress, MovementChain,
+	client::{Config as MovementConfig, MovementClient},
+	event_monitoring::MovementCounterpartyMonitoring,
+	types::MovementHash,
+	utils::MovementAddress,
+	MovementChain,
 };
 
 pub type EthereumService = AbstractBlockchainService<
@@ -46,10 +49,29 @@ pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceRe
 	let mut movement_service = MovementChain::new(rng.clone(), "Movement");
 
 	//@TODO: use json config instead of build_for_test
-	let config = Config::build_for_test();
+	let config = EthConfig::build_for_test();
 
 	let eth_client = EthClient::new(config);
 	let temp_rpc_url = "http://localhost:8545";
 	let eth_initiator_monitoring =
-		EthInitiatorMonitoring::build(temp_rpc_url, ethereum_service.add_event_listener());
+		EthInitiatorMonitoring::build(temp_rpc_url.clone(), ethereum_service.add_event_listener());
+	let eth_conterparty_monitoring =
+		EthCounterpartyMonitoring::build(temp_rpc_url, ethereum_service.add_event_listener());
+
+	let movement_countperarty_monitoring = MovementCounterpartyMonitoring::build(
+		"localhost:8080",
+		movement_service.add_event_listener(),
+	);
+
+	//@TODO: use json config instead of build_for_test
+	let config = Config::build_for_test();
+	let movement_client = MovementClient::new(config);
+
+	let movement_client = MovementClient::new(config);
+	let eth_service = EthereumService {
+		initiator_contract: eth_client.clone(),
+		initiator_monitoring: eth_initiator_monitoring,
+		counterparty_contract: movement_client.clone(),
+		//counterparty_monitoring:
+	};
 }

@@ -7,6 +7,12 @@ pub enum MovementChainEvent<A, H> {
 	Noop,
 }
 
+pub enum InitiatorEventKind {
+	Initiated,
+	Completed,
+	Refunded,
+}
+
 pub enum CounterpartyEventKind {
 	Locked,
 	Completed,

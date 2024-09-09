@@ -85,7 +85,7 @@ pub struct MovementClient {
 	///Address of the counterparty moduke
 	pub counterparty_address: AccountAddress,
 	///Address of the initiator module
-	initiator_address: Vec<u8>,
+	pub initiator_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The Apotos Rest Client
