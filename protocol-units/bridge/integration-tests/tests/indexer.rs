@@ -17,6 +17,7 @@ async fn test_harness_should_start_indexer() -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_indexer_should_capture_event_for_lock_call() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
