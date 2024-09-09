@@ -17,7 +17,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const COMPLETED: u8 = 2;
     const REFUNDED: u8 = 3;
 
-    const TIME_LOCK_DURATION: u64 = 24 * 60 * 60; // 24 hours in seconds
+    const INITIATOR_TIME_LOCK_DUARTION: u64 = 24 * 60 * 60; // 24 hours in seconds
     const EINSUFFICIENT_AMOUNT: u64 = 0;
     const EINSUFFICIENT_BALANCE: u64 = 1;
     const EDOES_NOT_EXIST: u64 = 2;
@@ -138,7 +138,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let bridge_transfer_id = aptos_std::aptos_hash::keccak256(combined_bytes);
 
         // Initiator timelock is double the default timelock
-        let time_lock = timestamp::now_seconds() + (TIME_LOCK_DURATION * 2);
+        let time_lock = timestamp::now_seconds() + (INITIATOR_TIME_LOCK_DUARTION * 2);
 
         let bridge_transfer = BridgeTransfer {
             amount: amount,
@@ -283,7 +283,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
 
         // The timelock is internally doubled by the initiator module
-        let expected_time_lock = timestamp::now_seconds() + (TIME_LOCK_DURATION * 2);
+        let expected_time_lock = timestamp::now_seconds() + (INITIATOR_TIME_LOCK_DUARTION * 2);
 
         assert!(transfer.amount == amount, 200);
         assert!(transfer.originator == addr, 201);
@@ -436,7 +436,7 @@ module atomic_bridge::atomic_bridge_initiator {
         );
 
         // Push timestamp forward by double the timelock (since initiator doubles it)
-        aptos_framework::timestamp::fast_forward_seconds(TIME_LOCK_DURATION * 2 + 2);
+        aptos_framework::timestamp::fast_forward_seconds(INITIATOR_TIME_LOCK_DUARTION * 2 + 2);
 
         refund_bridge_transfer(
             sender,
