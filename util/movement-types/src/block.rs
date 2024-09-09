@@ -134,20 +134,6 @@ impl Commitment {
 	}
 }
 
-impl TryFrom<Vec<u8>> for Commitment {
-	type Error = std::array::TryFromSliceError;
-
-	fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
-		Ok(Self(data[..32].try_into()?))
-	}
-}
-
-impl From<[u8; 32]> for Commitment {
-	fn from(data: [u8; 32]) -> Self {
-		Self(data)
-	}
-}
-
 impl From<Commitment> for [u8; 32] {
 	fn from(commitment: Commitment) -> [u8; 32] {
 		commitment.0
