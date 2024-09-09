@@ -2,7 +2,7 @@ use crate::{BlockCommitmentEvent, CommitmentEventStream, McrSettlementManagerOpe
 
 use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_config::Config;
-use movement_types::{BlockCommitment, BlockCommitmentRejectionReason};
+use movement_types::block::{BlockCommitment, BlockCommitmentRejectionReason};
 
 use async_stream::stream;
 use async_trait::async_trait;
@@ -147,7 +147,7 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 mod tests {
 	use super::*;
 	use mcr_settlement_client::mock::McrSettlementClient;
-	use movement_types::{BlockCommitment, Commitment};
+	use movement_types::block::{BlockCommitment, Commitment};
 
 	#[tokio::test]
 	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {

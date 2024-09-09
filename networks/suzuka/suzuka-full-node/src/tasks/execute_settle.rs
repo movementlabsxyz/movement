@@ -11,7 +11,7 @@ use maptos_dof_execution::{
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
-use movement_types::{Block, BlockCommitment, BlockCommitmentEvent};
+use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 
 use anyhow::Context;
 use futures::{future::Either, stream};

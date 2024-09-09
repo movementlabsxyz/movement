@@ -16,7 +16,7 @@ use movement_algs::grouping_heuristic::{
 	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
 	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
 };
-use movement_types::Block;
+use movement_types::block::Block;
 use std::boxed::Box;
 use tokio::{
 	sync::mpsc::{Receiver, Sender},
@@ -420,7 +420,7 @@ mod block {
 
 	use celestia_types::{nmt::Namespace, Blob};
 	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
-	use movement_types::Block;
+	use movement_types::block::Block;
 
 	#[derive(Debug)]
 	pub struct WrappedBlock {

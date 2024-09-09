@@ -1,6 +1,6 @@
 use crate::{CommitmentStream, McrSettlementClientOperations};
 use mcr_settlement_config::Config;
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use tokio::sync::{mpsc, RwLock};
