@@ -396,6 +396,10 @@ fn decode_counterparty_log_data(
 					.as_fixed_bytes()
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
+				let initiator_address = decoded.indexed[1]
+					.as_fixed_bytes()
+					.map(coerce_bytes)
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode InitiatorAddress"))?;
 				let recipient_address = decoded.indexed[1]
 					.as_address()
 					.map(coerce_bytes)
@@ -408,11 +412,17 @@ fn decode_counterparty_log_data(
 					.as_fixed_bytes()
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode HashLock"))?;
+				let time_lock = decoded.indexed[4]
+					.as_uint()
+					.map(|(u, _)| u.into())
+					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
 				Ok(BridgeContractCounterpartyEvent::Locked(LockDetails {
 					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
+					initiator_address: InitiatorAddress(initiator_address),
 					recipient_address: RecipientAddress(recipient_address.to_vec()),
-					amount,
+					amount: Amount(amount),
 					hash_lock: HashLock(hash_lock),
+					time_lock: TimeLock(time_lock),
 				}))
 			}
 			_ => {
