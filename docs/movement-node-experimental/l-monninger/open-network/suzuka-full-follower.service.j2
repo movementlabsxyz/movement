@@ -23,11 +23,11 @@ Environment="ETH_RPC_CONNECTION_PROTOCOL={{ eth_rpc_connection_protocol }}"
 Environment="ETH_RPC_CONNECTION_HOSTNAME={{ eth_rpc_connection_hostname }}"
 Environment="ETH_RPC_CONNECTION_PORT={{ eth_rpc_connection_port }}"
 
-Environment="ETH_WEBSOCKET_CONNECTION_PROTOCOL={{ eth_websocket_connection_protocol }}"
-Environment="ETH_WEBSOCKET_CONNECTION_HOSTNAME={{ eth_websocket_connection_hostname }}"
-Environment="ETH_WEBSOCKET_CONNECTION_PORT={{ eth_websocket_connection_port }}"
+Environment="ETH_WS_CONNECTION_PROTOCOL={{ eth_ws_connection_protocol }}"
+Environment="ETH_WS_CONNECTION_HOSTNAME={{ eth_ws_connection_hostname }}"
+Environment="ETH_WS_CONNECTION_PORT={{ eth_ws_connection_port }}"
 
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.local.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.remote-no-celestia-light-node.yml up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.local.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
