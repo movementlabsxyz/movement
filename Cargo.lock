@@ -3697,7 +3697,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-service"
+name = "bridge-serivice"
 version = "0.0.2"
 dependencies = [
  "alloy",
