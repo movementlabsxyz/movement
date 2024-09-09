@@ -146,7 +146,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
 
         // Internally, counterparty timelock is set to 24 hours, initiator to 48 hours
-        uint256 timeLock = 2 * atomicBridgeCounterparty.TIME_LOCK_DURATION();
+        uint256 timeLock = 2 * atomicBridgeCounterparty.COUNTERPARTY_TIME_LOCK_DURATION();
 
         // Advance the timestamp to beyond the timelock period
         vm.warp(block.timestamp + timeLock + 1);

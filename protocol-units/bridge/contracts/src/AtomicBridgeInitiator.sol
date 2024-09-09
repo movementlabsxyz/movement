@@ -31,8 +31,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     IWETH9 public weth;
     uint256 private nonce;
 
-    // Constant time lock of 24 hours in seconds (86400 seconds)
-    uint256 public constant TIME_LOCK_DURATION = 24 * 60 * 60;
+    // Constant time lock of 48 hours in seconds 
+    uint256 public constant INITIATOR_TIME_LOCK_DURATION = 24 * 60 * 60 * 2;
 
     function initialize(address _weth, address owner) public initializer {
         if (_weth == address(0)) {
@@ -72,22 +72,19 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         // Update the pool balance
         poolBalance += totalAmount;
 
-        // Initiator timelock must be double the counterparty timelock (24 hours * 2 = 48 hours in seconds)
-        uint256 timeLock = TIME_LOCK_DURATION * 2;
-
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce++));
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, INITIATOR_TIME_LOCK_DURATION, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.timestamp + timeLock,
+            timeLock: block.timestamp + INITIATOR_TIME_LOCK_DURATION,
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, INITIATOR_TIME_LOCK_DURATION);
         return bridgeTransferId;
     }
 
