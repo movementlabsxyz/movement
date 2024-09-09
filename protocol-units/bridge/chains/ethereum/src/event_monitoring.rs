@@ -229,14 +229,14 @@ fn decode_initiator_log_data(
 			match *topic {
 				INITIATOR_INITIATED_SELECT => Some(Event {
 					name: EventName::InitiatorInitiated.as_str().to_string(),
-					inputs: EventName::Initiated
+					inputs: EventName::InitiatorInitiated
 						.params()
 						.iter()
 						.map(|p| EventParam {
 							ty: p.to_string(),
-							name: EventName::Completed.as_str().to_string(),
+							name: EventName::InitiatorCompleted.as_str().to_string(),
 							indexed: true,
-							components: EventName::Initiated.params(),
+							components: EventName::InitiatorInitiated.params(),
 							internal_type: None, // for now
 						})
 						.collect(),
@@ -244,14 +244,14 @@ fn decode_initiator_log_data(
 				}),
 				INITIATOR_COMPLETED_SELECT => Some(Event {
 					name: EventName::InitiatorCompleted.as_str().to_string(),
-					inputs: EventName::Completed
+					inputs: EventName::InitiatorCompleted
 						.params()
 						.iter()
 						.map(|p| EventParam {
 							ty: p.to_string(),
 							name: p.name.clone(),
 							indexed: true,
-							components: EventName::Completed.params(),
+							components: EventName::InitiatorCompleted.params(),
 							internal_type: None, // for now
 						})
 						.collect(),
@@ -259,14 +259,14 @@ fn decode_initiator_log_data(
 				}),
 				INITIATOR_REFUNDED_SELECT => Some(Event {
 					name: EventName::InitiatorRefunded.as_str().to_string(),
-					inputs: EventName::Refunded
+					inputs: EventName::InitiatorRefunded
 						.params()
 						.iter()
 						.map(|p| EventParam {
 							ty: p.to_string(),
 							name: p.name.clone(),
 							indexed: true,
-							components: EventName::Refunded.params(),
+							components: EventName::InitiatorRefunded.params(),
 							internal_type: None, // for now
 						})
 						.collect(),
