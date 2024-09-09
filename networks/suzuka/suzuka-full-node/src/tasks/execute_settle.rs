@@ -202,7 +202,7 @@ where
 		// get the transactions
 		let mut block_transactions = Vec::new();
 		let block_metadata = self.executor.build_block_metadata(
-			HashValue::sha3_256_of(block_id.inner().as_slice()),
+			HashValue::sha3_256_of(block_id.as_bytes().as_slice()),
 			block_timestamp,
 		)?;
 		let block_metadata_transaction =

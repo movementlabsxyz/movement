@@ -172,8 +172,10 @@ where
 		let eth_block_commitment = MCR::BlockCommitment {
 			// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 			height: U256::from(block_commitment.height()),
-			commitment: alloy_primitives::FixedBytes(block_commitment.commitment().inner().clone()),
-			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().inner().clone()),
+			commitment: alloy_primitives::FixedBytes(
+				block_commitment.commitment().as_bytes().clone(),
+			),
+			blockId: alloy_primitives::FixedBytes(block_commitment.block_id().as_bytes().clone()),
 		};
 
 		let call_builder = contract.submitBlockCommitment(eth_block_commitment);
@@ -200,10 +202,10 @@ where
 					// Currently, to simplify the API, we'll say 0 is uncommitted all other numbers are legitimate heights
 					height: U256::from(block_commitment.height()),
 					commitment: alloy_primitives::FixedBytes(
-						block_commitment.commitment().inner().clone(),
+						block_commitment.commitment().as_bytes().clone(),
 					),
 					blockId: alloy_primitives::FixedBytes(
-						block_commitment.block_id().inner().clone(),
+						block_commitment.block_id().as_bytes().clone(),
 					),
 				})
 			})

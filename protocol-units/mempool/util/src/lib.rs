@@ -21,7 +21,10 @@ pub trait MempoolTransactionOperations {
 	) -> Result<bool, anyhow::Error>;
 
 	/// Adds a mempool transaction to the mempool.
-	async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), anyhow::Error>;
+	async fn add_mempool_transaction(
+		&self,
+		transaction: MempoolTransaction,
+	) -> Result<(), anyhow::Error>;
 
 	/// Removes a mempool transaction from the mempool.
 	async fn remove_mempool_transaction(

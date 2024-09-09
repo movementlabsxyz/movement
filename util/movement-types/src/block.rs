@@ -17,7 +17,7 @@ impl Id {
 		Self(data)
 	}
 
-	pub fn inner(&self) -> &[u8; 32] {
+	pub fn as_bytes(&self) -> &[u8; 32] {
 		&self.0
 	}
 
@@ -66,7 +66,7 @@ pub struct Block {
 impl Block {
 	pub fn new(metadata: BlockMetadata, parent: Id, transactions: BTreeSet<Transaction>) -> Self {
 		let mut hasher = blake3::Hasher::new();
-		hasher.update(parent.inner());
+		hasher.update(parent.as_bytes());
 		for transaction in &transactions {
 			hasher.update(&transaction.id().as_ref());
 		}
@@ -122,7 +122,7 @@ impl Commitment {
 		Self([0; 32])
 	}
 
-	pub fn inner(&self) -> &[u8; 32] {
+	pub fn as_bytes(&self) -> &[u8; 32] {
 		&self.0
 	}
 
