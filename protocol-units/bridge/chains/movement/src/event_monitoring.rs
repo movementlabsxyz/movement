@@ -12,9 +12,9 @@ use aptos_types::contract_event::EventWithVersion;
 use async_stream::try_stream;
 use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
-	BridgeContractInitiatorEvent,
+	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 };
-use bridge_shared::types::{CounterpartyCompletedDetails, LockDetails};
+use bridge_shared::types::{BridgeTransferDetails, CounterpartyCompletedDetails, LockDetails};
 use futures::Stream;
 use std::{pin::Pin, task::Poll};
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -22,6 +22,13 @@ use tokio::sync::mpsc::UnboundedReceiver;
 pub struct MovementInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<MovementChainEvent<A, H>>,
 	client: Option<MovementClient>,
+}
+
+impl BridgeContractInitiatorMonitoring
+	for MovementInitiatorMonitoring<MovementAddress, MovementHash>
+{
+	type Address = MovementAddress;
+	type Hash = MovementHash;
 }
 
 impl MovementInitiatorMonitoring<MovementAddress, MovementHash> {
@@ -91,13 +98,13 @@ impl Stream for MovementInitiatorMonitoring<MovementAddress, MovementHash> {
 					.map_err(|e| Error::msg(e.to_string()))?;
 
 				// Process responses and yield events
-				let initiated_events = process_response(initiated_response, InitiatorEventKind::Initiated)
+				let initiated_events = process_initiator_response(initiated_response, InitiatorEventKind::Initiated)
 					.map_err(|e| Error::msg(e.to_string()))?;
 
-				let completed_events = process_response(completed_response, InitiatorEventKind::Completed)
+				let completed_events = process_initiator_response(completed_response, InitiatorEventKind::Completed)
 					.map_err(|e| Error::msg(e.to_string()))?;
 
-				let refunded_events = process_response(refunded_response, InitiatorEventKind::Refunded)
+				let refunded_events = process_initiator_response(refunded_response, InitiatorEventKind::Refunded)
 					.map_err(|e| Error::msg(e.to_string()))?;
 
 				let total_events = initiated_events
@@ -217,13 +224,13 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 					.map_err(|e| Error::msg(e.to_string()))?;
 
 				// Process responses and return results
-				let locked_events = process_response(locked_response, CounterpartyEventKind::Locked)
+				let locked_events = process_counterparty_response(locked_response, CounterpartyEventKind::Locked)
 					.map_err(|e| Error::msg(e.to_string()))?;
 
-				let completed_events = process_response(completed_response, CounterpartyEventKind::Completed)
+				let completed_events = process_counterparty_response(completed_response, CounterpartyEventKind::Completed)
 					.map_err(|e| Error::msg(e.to_string()))?;
 
-				let cancelled_events = process_response(cancelled_response, CounterpartyEventKind::Cancelled)
+				let cancelled_events = process_counterparty_response(cancelled_response, CounterpartyEventKind::Cancelled)
 					.map_err(|e| Error::msg(e.to_string()))?;
 
 				let total_events = locked_events
@@ -266,7 +273,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 
 fn process_initiator_response(
 	res: Response<Vec<EventWithVersion>>,
-	kind: CounterpartyEventKind,
+	kind: InitiatorEventKind,
 ) -> Result<Vec<BridgeContractInitiatorEvent<MovementAddress, MovementHash>>, bcs::Error> {
 	res.into_inner()
 		.into_iter()
@@ -274,21 +281,24 @@ fn process_initiator_response(
 			let data = e.event.event_data();
 			match kind {
 				InitiatorEventKind::Initiated => {
-					let locked_details =
-						bcs::from_bytes::<LockDetails<MovementAddress, [u8; 32]>>(data)?;
-					Ok(BridgeContractInitiatorEvent::Initiated(locked_details))
+					let transfer_details = bcs::from_bytes::<
+						BridgeTransferDetails<MovementAddress, MovementHash>,
+					>(data)?;
+					Ok(BridgeContractInitiatorEvent::Initiated(transfer_details))
 				}
 				InitiatorEventKind::Completed => {
 					let completed_details = bcs::from_bytes::<
 						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
 					>(data)?;
-					Ok(BridgeContractInitiatorEvent::Completed(completed_details))
+					Ok(BridgeContractInitiatorEvent::Completed(
+						completed_details.bridge_transfer_id,
+					))
 				}
 				InitiatorEventKind::Refunded => {
 					let completed_details = bcs::from_bytes::<
 						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
 					>(data)?;
-					Ok(BridgeContractInitatorEvent::Refunded(completed_details))
+					Ok(BridgeContractInitiatorEvent::Refunded(completed_details.bridge_transfer_id))
 				}
 			}
 		})
