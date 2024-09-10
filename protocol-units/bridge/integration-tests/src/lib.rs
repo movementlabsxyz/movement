@@ -14,8 +14,7 @@ use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractIni
 use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
 use ethereum_bridge::client::{Config as EthConfig, EthClient};
 use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
-use movement_bridge::Config as MovementConfig;
-use movement_bridge::MovementClient;
+use movement_bridge::client::{Config as MovementConfig, MovementClient};
 use rand::SeedableRng;
 use std::sync::{Arc, RwLock};
 

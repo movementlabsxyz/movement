@@ -11,7 +11,7 @@ use ethereum_bridge::{
 };
 use movement_bridge::{
 	client::{Config as MovementConfig, MovementClient},
-	event_monitoring::MovementCounterpartyMonitoring,
+	event_monitoring::{MovementCounterpartyMonitoring, MovementInitiatorMonitoring},
 	types::MovementHash,
 	utils::MovementAddress,
 	MovementChain,

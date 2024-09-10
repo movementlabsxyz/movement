@@ -1,3 +1,4 @@
+use crate::bridge_monitoring::BridgeContractCounterpartyEvent;
 use crate::types::{
 	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
 	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
@@ -14,6 +15,19 @@ pub type SCCResult<A, H> =
 pub enum SmartContractCounterpartyEvent<A, H> {
 	LockedBridgeTransfer(LockDetails<A, H>),
 	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
+}
+
+impl<A, H> From<BridgeContractCounterpartyEvent<A, H>> for SmartContractCounterpartyEvent<A, H> {
+	fn from(event: BridgeContractCounterpartyEvent<A, H>) -> Self {
+		match event {
+			BridgeContractCounterpartyEvent::Locked(details) => {
+				SmartContractCounterpartyEvent::LockedBridgeTransfer(details)
+			}
+			BridgeContractCounterpartyEvent::Completed(details) => {
+				SmartContractCounterpartyEvent::CompletedBridgeTransfer(details)
+			}
+		}
+	}
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
