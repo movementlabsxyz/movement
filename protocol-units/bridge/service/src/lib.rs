@@ -16,6 +16,7 @@ use movement_bridge::{
 	utils::MovementAddress,
 	MovementChain,
 };
+use rand::SeedableRng;
 
 pub type EthereumService = AbstractBlockchainService<
 	EthClient,
@@ -43,8 +44,8 @@ pub struct SetupBridgeServiceResult(
 	pub MovementChain<MovementAddress, MovementHash, TestRng>,
 );
 
-pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceResult {
-	let mut rng = TestRng::new([0u8; 32]);
+pub fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBridgeServiceResult {
+	let mut rng = TestRng::from_seed([0u8; 32]);
 	let mut ethereum_service = EthereumChain::new(rng.clone(), "Ethereum");
 	let mut movement_service = MovementChain::new(rng.clone(), "Movement");
 
@@ -62,15 +63,11 @@ pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceRe
 		"localhost:8080",
 		movement_service.add_event_listener(),
 	);
-
 	let movement_initiator_monitoring =
 		MovementInitiatorMonitoring::build("localhost:8080", movement_service.add_event_listener());
-
 	//@TODO: use json config instead of build_for_test
 	let config = MovementConfig::build_for_test();
-	let movement_client = MovementClient::new(config);
 
-	let movement_client = MovementClient::new(config);
 	let eth_service = EthereumService {
 		initiator_contract: eth_client.clone(),
 		initiator_monitoring: eth_initiator_monitoring,
@@ -78,4 +75,22 @@ pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceRe
 		counterparty_monitoring: eth_conterparty_monitoring,
 		_phantom: Default::default(),
 	};
+
+	let movement_client = MovementClient::new(config);
+	let movement_service = MovementService {
+		initiator_contract: movement_client.clone(),
+		initiator_monitoring: movement_initiator_monitoring,
+		counterparty_contract: movement_client.clone(),
+		counterparty_monitoring: movement_counterparty_monitoring,
+		_phantom: Default::default(),
+	};
+
+	let bridge_service = BridgeService::new(ethereum_service, movement_service, bridge_config);
+	SetupBridgeServiceResult(
+		bridge_service,
+		eth_client,
+		movement_client,
+		ethereum_service,
+		movement_service,
+	)
 }

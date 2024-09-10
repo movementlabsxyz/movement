@@ -12,8 +12,11 @@ use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
 use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
 use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
-use ethereum_bridge::client::{Config as EthConfig, EthClient};
 use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
+use ethereum_bridge::{
+	client::{Config as EthConfig, EthClient},
+	types::EthHash,
+};
 use movement_bridge::client::{Config as MovementConfig, MovementClient};
 use rand::SeedableRng;
 use std::sync::{Arc, RwLock};
@@ -127,7 +130,7 @@ impl TestHarness {
 		&mut self,
 		initiator_address: InitiatorAddress<EthAddress>,
 		recipient_address: RecipientAddress<Vec<u8>>,
-		hash_lock: HashLock<[u8; 32]>,
+		hash_lock: HashLock<EthHash>,
 		time_lock: TimeLock,
 		amount: Amount, // the amount
 	) -> BridgeContractInitiatorResult<()> {

@@ -317,10 +317,10 @@ fn decode_initiator_log_data(
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode state as u8"))?;
 
 				let details: BridgeTransferDetails<EthAddress, EthHash> = BridgeTransferDetails {
-					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
+					bridge_transfer_id: BridgeTransferId(EthHash(bridge_transfer_id)),
 					initiator_address: InitiatorAddress(initiator_address),
 					recipient_address: RecipientAddress(recipient_address.to_vec()),
-					hash_lock: HashLock(hash_lock),
+					hash_lock: HashLock(EthHash(hash_lock)),
 					time_lock,
 					amount,
 					state,
@@ -334,7 +334,9 @@ fn decode_initiator_log_data(
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
 
-				Ok(BridgeContractInitiatorEvent::Completed(BridgeTransferId(bridge_transfer_id)))
+				Ok(BridgeContractInitiatorEvent::Completed(BridgeTransferId(EthHash(
+					bridge_transfer_id,
+				))))
 			}
 			INITIATOR_REFUNDED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
@@ -342,7 +344,9 @@ fn decode_initiator_log_data(
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode BridgeTransferId"))?;
 
-				Ok(BridgeContractInitiatorEvent::Refunded(BridgeTransferId(bridge_transfer_id)))
+				Ok(BridgeContractInitiatorEvent::Refunded(BridgeTransferId(EthHash(
+					bridge_transfer_id,
+				))))
 			}
 			_ => {
 				tracing::error!("Unknown event selector: {:x}", selector);
@@ -453,11 +457,11 @@ fn decode_counterparty_log_data(
 					.map(|(u, _)| u.into())
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
 				Ok(BridgeContractCounterpartyEvent::Locked(LockDetails {
-					bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
+					bridge_transfer_id: BridgeTransferId(EthHash(bridge_transfer_id)),
 					initiator_address: InitiatorAddress(initiator_address.to_vec()),
 					recipient_address: RecipientAddress(EthAddress(recipient_address)),
 					amount: Amount(amount),
-					hash_lock: HashLock(hash_lock),
+					hash_lock: HashLock(EthHash(hash_lock)),
 					time_lock,
 				}))
 			}

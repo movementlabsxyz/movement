@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes};
@@ -9,9 +11,10 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails,
-	RecipientAddress,
+	Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
+	LockDetails, RecipientAddress,
 };
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 pub const INITIATOR_INITIATED_SELECT: FixedBytes<32> =
@@ -49,7 +52,50 @@ alloy::sol!(
 	"abis/WETH9.json"
 );
 
-pub type EthHash = [u8; 32];
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+pub struct EthHash(pub [u8; 32]);
+
+impl From<HashLockPreImage> for EthHash {
+	fn from(value: HashLockPreImage) -> Self {
+		let mut fixed_bytes = [0u8; 32];
+		let len = value.0.len().min(32);
+		fixed_bytes[..len].copy_from_slice(&value.0[..len]);
+
+		Self(hash_vec_u32(&fixed_bytes))
+	}
+}
+
+impl GenUniqueHash for EthHash {
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		let mut random_bytes = [0u8; 32];
+		rng.fill(&mut random_bytes);
+		Self(random_bytes)
+	}
+}
+
+pub fn hash_vec_u32(data: &[u8; 32]) -> [u8; 32] {
+	let mut result = [0u8; 32];
+
+	// Split the data into 4 parts and hash each part
+	for (i, chunk) in data.chunks(8).enumerate() {
+		let mut hasher = DefaultHasher::new();
+		chunk.hash(&mut hasher);
+		let partial_hash = hasher.finish().to_be_bytes();
+
+		// Copy the 8-byte partial hash into the result
+		result[i * 8..(i + 1) * 8].copy_from_slice(&partial_hash);
+	}
+
+	result
+}
+
+pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
+	let mut fixed_bytes = [0u8; 32];
+	let pre_image_bytes = pre_image.as_bytes();
+	let len = pre_image_bytes.len().min(32);
+	fixed_bytes[..len].copy_from_slice(&pre_image_bytes[..len]);
+	hash_vec_u32(&fixed_bytes)
+}
 
 pub type InitiatorContract =
 	AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
@@ -72,6 +118,12 @@ pub type AlloyProvider = FillProvider<
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
 pub struct EthAddress(pub Address);
+
+impl From<RecipientAddress<EthAddress>> for EthAddress {
+	fn from(address: RecipientAddress<EthAddress>) -> Self {
+		address.0
+	}
+}
 
 impl std::ops::Deref for EthAddress {
 	type Target = Address;
