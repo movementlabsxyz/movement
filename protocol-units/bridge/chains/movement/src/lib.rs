@@ -1,3 +1,4 @@
+use crate::utils::RngSeededClone;
 use bridge_shared::{
 	counterparty_contract::{CounterpartyCall, SmartContractCounterparty},
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
@@ -14,7 +15,6 @@ use std::{
 	pin::Pin,
 	task::{Context, Poll},
 };
-use utils::RngSeededClone;
 
 pub mod client;
 pub mod event_monitoring;

@@ -29,7 +29,7 @@ members = [
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
-    "protocol-units/bridge/shared",
+    #"protocol-units/bridge/shared",
     "protocol-units/bridge/chains/ethereum",
     "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",

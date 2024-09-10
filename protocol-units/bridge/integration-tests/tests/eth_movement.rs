@@ -3,11 +3,11 @@ use tokio::time::{sleep, Duration}; // Add these imports
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
-	providers::{Provider, WalletProvider},
+	providers::Provider,
 };
 use anyhow::Result;
-
-use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
+use aptos_sdk::coin_client::CoinClient;
+use aptos_types::account_address::AccountAddress;
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
@@ -16,33 +16,8 @@ use bridge_shared::{
 		RecipientAddress, TimeLock,
 	},
 };
-
 use ethereum_bridge::types::EthAddress;
 use movement_bridge::utils::MovementAddress;
-
-use futures::{
-	channel::mpsc::{self, UnboundedReceiver},
-	StreamExt,
-};
-use rand;
-use tokio::{
-	self,
-	process::{Child, Command},
-};
-
-use aptos_types::account_address::AccountAddress;
-use tracing::{debug, info};
-use tracing_subscriber;
-
-struct ChildGuard {
-	child: Child,
-}
-
-impl Drop for ChildGuard {
-	fn drop(&mut self) {
-		let _ = self.child.kill();
-	}
-}
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -86,7 +61,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
 	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	let hash_lock = *keccak256(b"secret".to_vec());
+	let hash_lock = *keccak256(b"secret");
 	let time_lock = 3600;
 	let initiator = b"0x123".to_vec();
 	let recipient: MovementAddress =
@@ -126,11 +101,15 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		let details = movement_client
-			.get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id))
-			.await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
+		// We have to disambiguate types because two distinct traits share the same method name
+		// `get_bridge_transfer_details` and and are both in scope. Otherwise `[E0034]` throws
+		let details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
+			movement_client,
+			BridgeTransferId(bridge_transfer_id),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
 		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
 		assert_eq!(details.hash_lock.0, hash_lock);
@@ -143,19 +122,21 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.amount.0, AssetType::Moveth(amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
-		movement_client
-			.complete_bridge_transfer(
-				BridgeTransferId(bridge_transfer_id),
-				HashLockPreImage(b"secret".to_vec()),
-			)
-			.await
-			.expect("Failed to complete bridge transfer");
-
-		let details = movement_client
-			.get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id))
-			.await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
+		bridge_shared::bridge_contracts::BridgeContractCounterparty::complete_bridge_transfer(
+			movement_client,
+			BridgeTransferId(bridge_transfer_id),
+			HashLockPreImage(b"secret".to_vec()),
+		)
+		.await
+		.expect("Failed to complete bridge transfer");
+		
+		let details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
+			movement_client,
+			BridgeTransferId(bridge_transfer_id),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
 		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
 		assert_eq!(details.hash_lock.0, hash_lock);
@@ -187,7 +168,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
 	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	let hash_lock = *keccak256(b"secret".to_vec());
+	let hash_lock = *keccak256(b"secret");
 	let time_lock = 1;
 	let initiator = b"0x123".to_vec();
 	let recipient: MovementAddress =
@@ -199,7 +180,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		let _ = movement_client.publish_for_test();
 
 		let rest_client = movement_client.rest_client();
-		let coin_client = CoinClient::new(&rest_client);
+		let coin_client = CoinClient::new(rest_client);
 		let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
 		let movement_client_signer = movement_client.signer();
 
@@ -227,11 +208,13 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		let details = movement_client
-			.get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id))
-			.await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
+		let details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
+			movement_client,
+			BridgeTransferId(bridge_transfer_id),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
 		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
 		assert_eq!(details.hash_lock.0, hash_lock);
@@ -251,11 +234,13 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to complete bridge transfer");
 
-		let abort_details = movement_client
-			.get_bridge_transfer_details(BridgeTransferId(bridge_transfer_id))
-			.await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
+		let abort_details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
+			movement_client,
+			BridgeTransferId(bridge_transfer_id),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
 		assert_eq!(abort_details.bridge_transfer_id.0, bridge_transfer_id);
 		assert_eq!(abort_details.hash_lock.0, hash_lock);
