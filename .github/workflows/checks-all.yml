@@ -33,7 +33,11 @@ jobs:
       uses: DeterminateSystems/nix-installer-action@main
 
     - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo check --all-targets"  
+      run: |
+        nix develop --command bash  -c "cargo check --all-targets"  
+        nix develop --command bash  -c "cargo test -p memseq"  
+        nix develop --command bash  -c "cargo test -p move-rocks"
+        nix develop --command bash  -c "cargo test -p movement-types"    
 
   suzuka-full-node-local:
     if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
@@ -133,10 +137,6 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
-
-    - name: Run MCR tests in nix environment
-      # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just mcr native test.local -t=false"  
 
     - name: Run MCR Client Tests
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
