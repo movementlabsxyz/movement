@@ -9,27 +9,27 @@ import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import {CreateCall} from "@safe-smart-account/contracts/libraries/CreateCall.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
-
-function string2Address(bytes memory str) returns (address addr) {
-    bytes32 data = keccak256(str);
-    assembly {
-        mstore(0, data)
-        addr := mload(0)
-    }
-}
+import {Enum} from "@safe-smart-account/contracts/common/Enum.sol";
 
 contract DeployMoveTokenMultisig is Script {
     TransparentUpgradeableProxy public moveProxy;
     ProxyAdmin public admin;
     string public moveSignature = "initialize(address)";
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
-    CompatibilityFallbackHandler public compatibilityFallbackHandler;
     SafeProxyFactory public safeProxyFactory;
+    address public zero = address(0x0);
     address public safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762;
-    CreateCall public createCall = 0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4;
+    CreateCall public createCall = CreateCall(0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4);
     address payable public safeAddress;
     Safe public safe;
     TimelockController public timelock;
+
+    function generateSignatures(bytes32 digest) internal returns (bytes memory signatures) {
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(1, digest);
+        (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
+        (uint8 v3, bytes32 r3, bytes32 s3) = vm.sign(3, digest);
+        signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2, r3, s3, v3);
+    }
 
     function run() external {
         uint256 signer = vm.envUint("PRIVATE_KEY");
@@ -43,26 +43,15 @@ contract DeployMoveTokenMultisig is Script {
         address[] memory signers = new address[](5);
 
         signers[0] = vm.addr(signer);
-        signers[1] = string2Address("Bob");
-        signers[2] = string2Address("Charlie");
-        signers[3] = string2Address("David");
-        signers[4] = string2Address("Eve");
-
+        signers[1] = vm.addr(1);
+        signers[2] = vm.addr(2);
+        signers[3] = vm.addr(3);
+        signers[4] = vm.addr(4);
         safeAddress = payable(
             address(
                 safeProxyFactory.createProxyWithNonce(
                     safeSingleton,
-                    abi.encodeWithSignature(
-                        safeSetupSignature,
-                        signers,
-                        3,
-                        address(compatibilityFallbackHandler),
-                        "0x",
-                        address(0x0),
-                        address(0x0),
-                        0,
-                        payable(address(0x0))
-                    ),
+                    abi.encodeWithSignature(safeSetupSignature, signers, 3, zero, "0x", zero, zero, 0, payable(zero)),
                     0
                 )
             )
@@ -74,34 +63,29 @@ contract DeployMoveTokenMultisig is Script {
         address[] memory proposers = new address[](5);
         address[] memory executors = new address[](1);
 
-        proposers[0] = string2Address("Andy");
-        proposers[1] = string2Address("Bob");
-        proposers[2] = string2Address("Charlie");
-        proposers[3] = string2Address("David");
-        proposers[4] = string2Address("Eve");
+        proposers[0] = vm.addr(5);
+        proposers[1] = vm.addr(6);
+        proposers[2] = vm.addr(7);
+        proposers[3] = vm.addr(8);
+        proposers[4] = vm.addr(9);
 
         executors[0] = address(safe);
 
-        timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
-
-        // build the deployment data
-        bytes data =
-            abi.encodePacked(type(MOVEToken).creationCode, address(safe), 0, data, 0, 0, 0, address(0), address(0));
-        // generate 3 signatures for the safe transaction
-        // ecsda signatures
-        bytes32[] memory signatures = new bytes32[](3);
-
-        // NOT VALID, SIGNATURE HAS TO BE DONE SOME OTHER WAY
-        vm.broadcast(proposers[0]);
-        signatures[0] = MessageHashUtils.toEthSignedMessageHash(data);
-        vm.broadcast(proposers[1]);
-        signatures[1] = MessageHashUtils.toEthSignedMessageHash(data);
-        vm.broadcast(proposers[2]);
-        signatures[2] = MessageHashUtils.toEthSignedMessageHash(data);
-
-        safe.execTransaction(address(createCall), 0, data, operation, 0, 0, 0, address(0), address(0), signatures);
-        moveProxy = new TransparentUpgradeableProxy(
+        moveImplementation = new MOVEToken();
+        bytes memory proxyConstructorArgs = abi.encode(
             address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(safe))
+        );
+        bytes memory proxyDeploymentData =
+            abi.encodePacked(type(TransparentUpgradeableProxy).creationCode, proxyConstructorArgs);
+
+        bytes memory createCallData =
+            abi.encodeWithSignature("performCreate2(uint256,bytes,bytes32)", 0, proxyDeploymentData, "");
+        bytes32 digest = keccak256(createCallData);
+        
+        bytes memory signatures = generateSignatures(digest);
+
+        safe.execTransaction(
+            address(createCall), 0, createCallData, Enum.Operation.Call, 0, 0, 0, zero, payable(zero), signatures
         );
 
         console.log("Timelock deployed at: ", address(timelock));

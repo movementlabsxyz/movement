@@ -19,7 +19,6 @@ contract DeployMoveToken is Script {
     TransparentUpgradeableProxy public moveProxy;
     string public moveSignature = "initialize(address)";
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
-    CompatibilityFallbackHandler public compatibilityFallbackHandler;
     SafeProxyFactory public safeProxyFactory;
     Safe public safeSingleton;
     Safe public safe;
