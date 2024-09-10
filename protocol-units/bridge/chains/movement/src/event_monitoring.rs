@@ -2,8 +2,7 @@ use crate::client::MovementClient;
 use crate::event_types::InitiatorEventKind;
 use crate::{
 	event_types::{CounterpartyEventKind, MovementChainEvent},
-	types::MovementHash,
-	utils::MovementAddress,
+	utils::{MovementAddress, MovementHash},
 };
 use anyhow::Error;
 use anyhow::Result;
@@ -15,6 +14,7 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 };
 use bridge_shared::types::{BridgeTransferDetails, CounterpartyCompletedDetails, LockDetails};
+use futures::channel::mpsc;
 use futures::Stream;
 use std::{pin::Pin, task::Poll};
 use tokio::sync::mpsc::UnboundedReceiver;
@@ -160,7 +160,7 @@ impl BridgeContractCounterpartyMonitoring
 impl MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	pub async fn build(
 		rest_url: &str,
-		listener: UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
+		listener: mpsc::UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
 	) -> Result<Self, anyhow::Error> {
 		todo!()
 	}
@@ -288,7 +288,7 @@ fn process_initiator_response(
 				}
 				InitiatorEventKind::Completed => {
 					let completed_details = bcs::from_bytes::<
-						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
+						CounterpartyCompletedDetails<MovementAddress, MovementHash>,
 					>(data)?;
 					Ok(BridgeContractInitiatorEvent::Completed(
 						completed_details.bridge_transfer_id,
@@ -296,7 +296,7 @@ fn process_initiator_response(
 				}
 				InitiatorEventKind::Refunded => {
 					let completed_details = bcs::from_bytes::<
-						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
+						CounterpartyCompletedDetails<MovementAddress, MovementHash>,
 					>(data)?;
 					Ok(BridgeContractInitiatorEvent::Refunded(completed_details.bridge_transfer_id))
 				}
@@ -316,18 +316,18 @@ fn process_counterparty_response(
 			match kind {
 				CounterpartyEventKind::Locked => {
 					let locked_details =
-						bcs::from_bytes::<LockDetails<MovementAddress, [u8; 32]>>(data)?;
+						bcs::from_bytes::<LockDetails<MovementAddress, MovementHash>>(data)?;
 					Ok(BridgeContractCounterpartyEvent::Locked(locked_details))
 				}
 				CounterpartyEventKind::Completed => {
 					let completed_details = bcs::from_bytes::<
-						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
+						CounterpartyCompletedDetails<MovementAddress, MovementHash>,
 					>(data)?;
 					Ok(BridgeContractCounterpartyEvent::Completed(completed_details))
 				}
 				CounterpartyEventKind::Cancelled => {
 					let completed_details = bcs::from_bytes::<
-						CounterpartyCompletedDetails<MovementAddress, [u8; 32]>,
+						CounterpartyCompletedDetails<MovementAddress, MovementHash>,
 					>(data)?;
 					Ok(BridgeContractCounterpartyEvent::Completed(completed_details))
 				}

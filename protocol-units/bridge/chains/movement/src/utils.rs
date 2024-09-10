@@ -22,8 +22,9 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
-use bridge_shared::bridge_contracts::{
-	BridgeContractCounterpartyError, BridgeContractInitiatorError,
+use bridge_shared::{
+	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
+	types::{GenUniqueHash, HashLockPreImage, RecipientAddress},
 };
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
@@ -67,6 +68,12 @@ pub enum MovementAddressError {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct MovementAddress(pub AccountAddress);
 
+impl From<RecipientAddress<MovementAddress>> for MovementAddress {
+	fn from(address: RecipientAddress<MovementAddress>) -> Self {
+		address.0
+	}
+}
+
 impl From<&MovementAddress> for Vec<u8> {
 	fn from(address: &MovementAddress) -> Vec<u8> {
 		address.0.to_vec()
@@ -103,6 +110,25 @@ impl From<&str> for MovementAddress {
 		let s = s.trim_start_matches("0x");
 		let bytes = hex::decode(s).expect("Invalid hex string");
 		bytes.into()
+	}
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct MovementHash(pub [u8; 32]);
+
+impl From<HashLockPreImage> for MovementHash {
+	fn from(preimage: HashLockPreImage) -> Self {
+		let mut hash = [0u8; 32];
+		hash.copy_from_slice(&preimage.0);
+		Self(hash)
+	}
+}
+
+impl GenUniqueHash for MovementHash {
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		let mut random_bytes = [0u8; 32];
+		rng.fill(&mut random_bytes);
+		Self(random_bytes)
 	}
 }
 
