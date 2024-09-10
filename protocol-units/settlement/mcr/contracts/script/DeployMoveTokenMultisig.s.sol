@@ -8,6 +8,7 @@ import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyF
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import {CreateCall} from "@safe-smart-account/contracts/libraries/CreateCall.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 
 function string2Address(bytes memory str) returns (address addr) {
     bytes32 data = keccak256(str);
@@ -47,24 +48,25 @@ contract DeployMoveTokenMultisig is Script {
         signers[3] = string2Address("David");
         signers[4] = string2Address("Eve");
 
-        safeAddress = 
-                payable(address(
-                    safeProxyFactory.createProxyWithNonce(
-                        safeSingleton,
-                        abi.encodeWithSignature(
-                            safeSetupSignature,
-                            signers,
-                            3,
-                            address(compatibilityFallbackHandler),
-                            "0x",
-                            address(0x0),
-                            address(0x0),
-                            0,
-                            payable(address(0x0))
-                        ),
-                        0
-                    )
-        ));
+        safeAddress = payable(
+            address(
+                safeProxyFactory.createProxyWithNonce(
+                    safeSingleton,
+                    abi.encodeWithSignature(
+                        safeSetupSignature,
+                        signers,
+                        3,
+                        address(compatibilityFallbackHandler),
+                        "0x",
+                        address(0x0),
+                        address(0x0),
+                        0,
+                        payable(address(0x0))
+                    ),
+                    0
+                )
+            )
+        );
 
         safe = Safe(safeAddress);
 
@@ -81,12 +83,21 @@ contract DeployMoveTokenMultisig is Script {
         executors[0] = address(safe);
 
         timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
-        createCall.performCreate2(0, deploymentData, 0);
 
+        // build the deployment data
+        bytes data =
+            abi.encodePacked(type(MOVEToken).creationCode, address(safe), 0, data, 0, 0, 0, address(0), address(0));
         // generate 3 signatures for the safe transaction
-        // ecsa
-        bytes[] memory signatures = new bytes[](3);
-        
+        // ecsda signatures
+        bytes32[] memory signatures = new bytes32[](3);
+
+        // NOT VALID, SIGNATURE HAS TO BE DONE SOME OTHER WAY
+        vm.broadcast(proposers[0]);
+        signatures[0] = MessageHashUtils.toEthSignedMessageHash(data);
+        vm.broadcast(proposers[1]);
+        signatures[1] = MessageHashUtils.toEthSignedMessageHash(data);
+        vm.broadcast(proposers[2]);
+        signatures[2] = MessageHashUtils.toEthSignedMessageHash(data);
 
         safe.execTransaction(address(createCall), 0, data, operation, 0, 0, 0, address(0), address(0), signatures);
         moveProxy = new TransparentUpgradeableProxy(

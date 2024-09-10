@@ -2,12 +2,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyFactory.sol";
-import {SafeProxy} from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
-import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 function string2Address(bytes memory str) returns (address addr) {
@@ -20,7 +17,6 @@ function string2Address(bytes memory str) returns (address addr) {
 
 contract DeployMoveToken is Script {
     TransparentUpgradeableProxy public moveProxy;
-    ProxyAdmin public admin;
     string public moveSignature = "initialize(address)";
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
     CompatibilityFallbackHandler public compatibilityFallbackHandler;
