@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenV2.sol";
 
 contract MovementStakingTest is Test {
     function testInitialize() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -15,7 +15,7 @@ contract MovementStakingTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -27,7 +27,7 @@ contract MovementStakingTest is Test {
     }
 
     function testRegister() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -44,7 +44,7 @@ contract MovementStakingTest is Test {
     }
 
     function testWhitelist() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -65,7 +65,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleStaker() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -94,7 +94,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleGenesisCeremony() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -125,7 +125,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -170,7 +170,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -220,7 +220,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeAndStakeRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -281,7 +281,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeStakeAndSlashRolloverEpoch() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -364,7 +364,7 @@ contract MovementStakingTest is Test {
     }
 
     function testHalbornReward() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();

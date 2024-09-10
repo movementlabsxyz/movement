@@ -2,107 +2,116 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "../../src/token/MOVEToken.sol";
+import {MOVEToken} from "../../src/token/MOVEToken.sol";
+import {MOVETokenV2} from "../../src/token/MOVETokenV2.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
+import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
+import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+
+function string2Address(bytes memory str) returns (address addr) {
+    bytes32 data = keccak256(str);
+    assembly {
+        mstore(0, data)
+        addr := mload(0)
+    }
+}
 
 contract MOVETokenTest is Test {
     MOVEToken public token;
+    TransparentUpgradeableProxy public tokenProxy;
     ProxyAdmin public admin;
-    string public moveSignature = "initialize(string,string)";
+    MOVEToken public moveTokenImplementation;
+    MOVETokenV2 public moveTokenImplementation2;
+    TimelockController public timelock;
+    string public moveSignature = "initialize(address)";
+    address public multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
 
     function setUp() public {
-        MOVEToken moveTokenImplementation = new MOVEToken();
+        moveTokenImplementation = new MOVEToken();
+        moveTokenImplementation2 = new MOVETokenV2();
 
-        // Contract MCRTest is the admin
-        admin = new ProxyAdmin(address(this));
+        uint256 minDelay = 1 days;
+        address[] memory proposers = new address[](5);
+        address[] memory executors = new address[](1);
 
-        // Deploy proxies
-        TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
-            address(moveTokenImplementation), address(admin), abi.encodeWithSignature(moveSignature, "Move Token", "MOVE")
+        proposers[0] = string2Address("Andy");
+        proposers[1] = string2Address("Bob");
+        proposers[2] = string2Address("Charlie");
+        proposers[3] = string2Address("David");
+        proposers[4] = string2Address("Eve");
+        executors[0] = multisig;
+
+        timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
+
+
+        vm.recordLogs();
+        // Deploy proxy
+        tokenProxy = new TransparentUpgradeableProxy(
+            address(moveTokenImplementation), address(timelock), abi.encodeWithSignature(moveSignature, multisig)
         );
-        token = MOVEToken(address(moveProxy));
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries.length, 5);
+
+        admin = ProxyAdmin(entries[3].emitter);
+
+        token = MOVEToken(address(tokenProxy));
     }
 
     function testCannotInitializeTwice() public {
         // Initialize the contract
         vm.expectRevert(0xf92ee8a9);
-        token.initialize();
+        token.initialize(multisig);
     }
 
-    function testGrants() public {
-
-        // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(this)), true);
+    function testDecimals() public {
+        assertEq(token.decimals(), 8);
     }
 
-    function testMint() public {
-        uint256 intialBalance = token.balanceOf(address(0x1337));
-        // Mint tokens
-        token.mint(address(0x1337), 100);
-
-        // Check the token details
-        assertEq(token.balanceOf(address(0x1337)), intialBalance + 100);
+    function testTotalSupply() public {
+        assertEq(token.totalSupply(), 10000000000 * 10 ** 8);
     }
 
-    function testRevokeMinterRole() public {
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(this)), true);
-
-        token.mint(address(0x1337), 100);
-        // Revoke minter role
-        token.revokeMinterRole(address(this));
-
-        // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(this)), false);
-
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), token.MINTER_ROLE()));
-        token.mint(address(0x1337), 100);
+    function testMultisigBalance() public {
+        assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
     }
 
-    function testGrantRevokeMinterAdminRole() public {
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(this)), true);
+    function testUpgradeFromTimelock() public {
 
-        token.mint(address(0x1337), 100);
-        // Revoke minter role
-        token.revokeMinterRole(address(this));
+        assertEq(admin.owner(), address(timelock));
+
+        vm.prank(string2Address("Andy"));
+        timelock.schedule(
+            address(admin),
+            0,
+            abi.encodeWithSignature(
+                "upgradeAndCall(address,address,bytes)", address(tokenProxy), address(moveTokenImplementation2), ""
+            ),
+            bytes32(0),
+            bytes32(0),
+            block.timestamp + 1 days
+        );
+
+        vm.warp(block.timestamp + 1 days + 1);
+
+        vm.prank(multisig);
+        timelock.execute(
+            address(admin),
+            0,
+            abi.encodeWithSignature(
+                "upgradeAndCall(address,address,bytes)", address(tokenProxy), address(moveTokenImplementation2), ""
+            ),
+            bytes32(0),
+            bytes32(0)
+        );
 
         // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(this)), false);
-
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), token.MINTER_ROLE()));
-        token.mint(address(0x1337), 100);
-
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(0x1337)), false);
-        // Grant minter role
-        token.grantMinterRole(address(0x1337));
-
-        vm.prank(address(0x1337));
-        token.mint(address(0x1337), 100);
-
-        // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(0x1337)), true);
-
-        // Revoke minter role
-        token.revokeMinterRole(address(0x1337));
-
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(0x1337)), false);
-
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(0x1337), token.MINTER_ROLE()));
-        vm.prank(address(0x1337));
-        token.mint(address(0x1337), 100);
-
-        assertEq(token.hasRole(token.MINTER_ADMIN_ROLE(), address(this)), true);
-        // Revoke minter admin role
-        token.revokeMinterAdminRole(address(this));
-
-        assertEq(token.hasRole(token.MINTER_ADMIN_ROLE(), address(this)), false);
-
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), token.MINTER_ADMIN_ROLE()));
-        token.grantMinterRole(address(this));
-
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), token.MINTER_ROLE()));
-        token.mint(address(0x1337), 100);
-
+        assertEq(token.decimals(), 8);
+        assertEq(token.totalSupply(), 10000000000 * 10 ** 8);
+        assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
     }
+
+    
 }
