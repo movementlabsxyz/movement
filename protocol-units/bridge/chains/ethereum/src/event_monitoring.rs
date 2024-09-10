@@ -200,7 +200,7 @@ impl EthCounterpartyMonitoring<EthAddress, EthHash> {
 						tracing::error!("Failed to decode log data: {:?}", e);
 					})
 					.expect("Failed to decode log data");
-				let event = EthChainEvent::InitiatorContractEvent(Ok(event.into()));
+				let event = EthChainEvent::CounterpartyContractEvent(Ok(event.into()));
 				if sender.send(event).is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
@@ -427,6 +427,7 @@ fn decode_counterparty_log_data(
 
 	if let Some(selector) = decoded.selector {
 		match selector {
+			//TODO: Not sure all these fields are actually indexed
 			COUNTERPARTY_LOCKED_SELECT => {
 				let bridge_transfer_id = decoded.indexed[0]
 					.as_fixed_bytes()
@@ -447,7 +448,7 @@ fn decode_counterparty_log_data(
 					.as_fixed_bytes()
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode HashLock"))?;
-				let time_lock = decoded.indexed[4]
+				let time_lock: TimeLock = decoded.indexed[4]
 					.as_uint()
 					.map(|(u, _)| u.into())
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
@@ -457,7 +458,7 @@ fn decode_counterparty_log_data(
 					recipient_address: RecipientAddress(EthAddress(recipient_address)),
 					amount: Amount(amount),
 					hash_lock: HashLock(hash_lock),
-					time_lock: TimeLock(time_lock),
+					time_lock,
 				}))
 			}
 			COUNTERPARTY_COMPLETED_SELECT => {

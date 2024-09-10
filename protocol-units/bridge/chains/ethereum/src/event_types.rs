@@ -1,6 +1,6 @@
 use bridge_shared::{
-	bridge_monitoring::BridgeContractInitiatorEvent,
-	counterparty_contract::SCCResult,
+	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
+	counterparty_contract::{SCCResult, SmartContractCounterpartyEvent},
 	initiator_contract::{SCIResult, SmartContractInitiatorEvent},
 	types::LockDetails,
 };
@@ -59,6 +59,25 @@ impl From<BridgeContractInitiatorEvent<EthAddress, [u8; 32]>>
 			BridgeContractInitiatorEvent::Refunded(id) => EthChainEvent::InitiatorContractEvent(
 				Ok(SmartContractInitiatorEvent::RefundedBridgeTransfer(id)),
 			),
+		}
+	}
+}
+
+impl From<BridgeContractCounterpartyEvent<EthAddress, [u8; 32]>>
+	for EthChainEvent<EthAddress, [u8; 32]>
+{
+	fn from(event: BridgeContractCounterpartyEvent<EthAddress, [u8; 32]>) -> Self {
+		match event {
+			BridgeContractCounterpartyEvent::Locked(details) => {
+				EthChainEvent::CounterpartyContractEvent(Ok(
+					SmartContractCounterpartyEvent::LockedBridgeTransfer(details),
+				))
+			}
+			BridgeContractCounterpartyEvent::Completed(details) => {
+				EthChainEvent::CounterpartyContractEvent(Ok(
+					SmartContractCounterpartyEvent::CompletedBridgeTransfer(details),
+				))
+			}
 		}
 	}
 }

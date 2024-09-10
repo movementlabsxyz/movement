@@ -115,7 +115,6 @@ where
 		let account = A::from(transfer.recipient_address.clone());
 
 		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
-		todo!();
 		// balance += **transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(

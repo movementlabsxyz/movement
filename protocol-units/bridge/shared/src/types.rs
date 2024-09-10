@@ -1,5 +1,4 @@
 use alloy::primitives::Uint;
-use alloy::signers::k256::elliptic_curve::bigint::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
