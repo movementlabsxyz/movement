@@ -5,7 +5,7 @@ use crate::{
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 
 use anyhow::format_err;
 use async_trait::async_trait;
@@ -265,8 +265,8 @@ mod tests {
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		let commitment = executor.execute_block_opt(block).await?;
 
-		assert_eq!(commitment.block_id.to_vec(), block_id.to_vec());
-		assert_eq!(commitment.height, 1);
+		assert_eq!(commitment.block_id().to_vec(), block_id.to_vec());
+		assert_eq!(commitment.height(), 1);
 
 		services_handle.abort();
 		background_handle.abort();

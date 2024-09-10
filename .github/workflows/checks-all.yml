@@ -33,7 +33,11 @@ jobs:
       uses: DeterminateSystems/nix-installer-action@main
 
     - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo check --all-targets"  
+      run: |
+        nix develop --command bash  -c "cargo check --all-targets"  
+        nix develop --command bash  -c "cargo test -p memseq"  
+        nix develop --command bash  -c "cargo test -p move-rocks"
+        nix develop --command bash  -c "cargo test -p movement-types"    
 
   suzuka-full-node-local:
     if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
