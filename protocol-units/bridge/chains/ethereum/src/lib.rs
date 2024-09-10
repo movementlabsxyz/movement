@@ -2,8 +2,8 @@ use bridge_shared::{
 	counterparty_contract::SmartContractCounterparty,
 	initiator_contract::{InitiatorCall, SmartContractInitiator},
 	types::{
-		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
-		RecipientAddress,
+		Amount, BridgeAddressType, BridgeHashType, CounterpartyCall, GenUniqueHash,
+		HashLockPreImage, RecipientAddress,
 	},
 };
 use event_types::EthChainEvent;
@@ -15,7 +15,6 @@ use std::{
 	pin::Pin,
 	task::{Context, Poll},
 };
-use types::CounterpartyCall;
 use utils::RngSeededClone;
 
 pub mod client;

@@ -1,4 +1,5 @@
 use alloy::primitives::Uint;
+use alloy::signers::k256::elliptic_curve::bigint::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
@@ -154,6 +155,14 @@ pub enum AssetType {
 	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
+}
+
+impl From<Uint<256, 4>> for AssetType {
+	fn from(value: Uint<256, 4>) -> Self {
+		// Extract the lower 64 bits.
+		let lower_64_bits = value.as_limbs()[0];
+		AssetType::Moveth(lower_64_bits)
+	}
 }
 
 #[derive(Error, Debug)]
@@ -332,6 +341,18 @@ pub enum CounterpartyCall<A, H> {
 		RecipientAddress<A>,
 		Amount,
 	),
+}
+
+#[derive(Debug)]
+pub enum InitiatorCall<A, H> {
+	InitiateBridgeTransfer(
+		InitiatorAddress<A>,
+		RecipientAddress<Vec<u8>>,
+		Amount,
+		TimeLock,
+		HashLock<H>,
+	),
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
 #[derive(Clone, Debug)]
