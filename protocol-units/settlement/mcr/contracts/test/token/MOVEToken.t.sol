@@ -117,6 +117,54 @@ contract MOVETokenTest is Test {
         assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
     }
 
+    function testTransferToNewTimelock() public {
+        assertEq(admin.owner(), address(timelock));
+
+        uint256 minDelay = 1 days;
+        address[] memory proposers = new address[](5);
+        address[] memory executors = new address[](1);
+
+        // Andy has been compromised, Albert will be the new proposer
+        // we need to transfer the proxyAdmin ownership to a new timelock
+        proposers[0] = string2Address("Albert");
+        proposers[1] = string2Address("Bob");
+        proposers[2] = string2Address("Charlie");
+        proposers[3] = string2Address("David");
+        proposers[4] = string2Address("Eve");
+
+        executors[0] = multisig;
+
+        TimelockController newTimelock = new TimelockController(minDelay, proposers, executors, address(0x0));
+        vm.prank(string2Address("Bob"));
+        timelock.schedule(
+            address(admin),
+            0,
+            abi.encodeWithSignature(
+                "transferOwnership(address)",
+                address(newTimelock)
+            ),
+            bytes32(0),
+            bytes32(0),
+            block.timestamp + 1 days
+        );
+
+        vm.warp(block.timestamp + 1 days + 1);
+        vm.prank(multisig);
+        timelock.execute(
+            address(admin),
+            0,
+            abi.encodeWithSignature(
+                "transferOwnership(address)",
+                address(newTimelock)
+            ),
+            bytes32(0),
+            bytes32(0)
+        );
+
+        assertEq(admin.owner(), address(newTimelock));
+        
+    }
+
     function testGrants() public {
         testUpgradeFromTimelock();
 
