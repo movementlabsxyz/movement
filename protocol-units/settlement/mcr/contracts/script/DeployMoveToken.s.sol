@@ -84,10 +84,9 @@ contract DeployMoveToken is Script {
         executors[0] = address(safe);
 
         timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
-        admin = new ProxyAdmin(address(timelock));
 
         moveProxy = new TransparentUpgradeableProxy(
-            address(moveImplementation), address(admin), abi.encodeWithSignature(moveSignature, address(safe))
+            address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(safe))
         );
 
         console.log("Timelock deployed at: ", address(timelock));
