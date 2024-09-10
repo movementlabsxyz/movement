@@ -4,12 +4,14 @@ pragma solidity ^0.8.19;
 import "./base/MintableToken.sol";
 
 contract MOVETokenV2 is MintableToken {
+    mapping(uint256 version => bool state) public versionInitialized;
     /**
      * @dev Initialize the contract
      */
-    function initialize() public initializer {
-        __MintableToken_init("Movement", "MOVE");
-        _mint(address(msg.sender), 10000000000 * 10 ** decimals());
+    function initializeV2() public {
+        if (versionInitialized[2]) revert AlreadyInitializedV2();
+        versionInitialized[2] = true;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     function decimals() public pure override returns (uint8) {
