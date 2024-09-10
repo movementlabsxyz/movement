@@ -20,17 +20,17 @@ use movement_bridge::{
 pub type EthereumService = AbstractBlockchainService<
 	EthClient,
 	EthInitiatorMonitoring<EthAddress, EthHash>,
-	MovementClient,
-	MovementCounterpartyMonitoring<MovementAddress, MovementHash>,
+	EthClient,
+	EthCounterpartyMonitoring<EthAddress, EthHash>,
 	EthAddress,
 	EthHash,
 >;
 
 pub type MovementService = AbstractBlockchainService<
 	MovementClient,
+	MovementInitiatorMonitoring<MovementAddress, MovementHash>,
+	MovementClient,
 	MovementCounterpartyMonitoring<MovementAddress, MovementHash>,
-	EthClient,
-	EthInitiatorMonitoring<EthAddress, EthHash>,
 	MovementAddress,
 	MovementHash,
 >;
@@ -67,7 +67,7 @@ pub fn setup_bridge_service(config: BridgeServiceConfig) -> SetupBridgeServiceRe
 		MovementInitiatorMonitoring::build("localhost:8080", movement_service.add_event_listener());
 
 	//@TODO: use json config instead of build_for_test
-	let config = Config::build_for_test();
+	let config = MovementConfig::build_for_test();
 	let movement_client = MovementClient::new(config);
 
 	let movement_client = MovementClient::new(config);
