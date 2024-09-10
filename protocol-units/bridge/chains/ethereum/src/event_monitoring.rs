@@ -1,5 +1,5 @@
 use crate::types::{
-	EthAddress, EventName, COUNTERPARTY_ABORTED_SELECT, COUNTERPARTY_COMPLETED_SELECT,
+	EthAddress, EthHash, EventName, COUNTERPARTY_ABORTED_SELECT, COUNTERPARTY_COMPLETED_SELECT,
 	COUNTERPARTY_LOCKED_SELECT, INITIATOR_COMPLETED_SELECT, INITIATOR_INITIATED_SELECT,
 	INITIATOR_REFUNDED_SELECT,
 };
@@ -17,19 +17,16 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
 use bridge_shared::initiator_contract::SmartContractInitiatorEvent;
-use bridge_shared::types::{
-	Amount, CounterpartyCompletedDetails, HashLockPreImage, LockDetails, TimeLock,
-};
+use bridge_shared::types::{Amount, LockDetails, TimeLock};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
+	counterparty_contract::SmartContractCounterpartyEvent,
 	types::{
 		BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
-
-use crate::types::{EthHash, COMPLETED_SELECT, INITIATED_SELECT, REFUNDED_SELECT};
 
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
@@ -172,7 +169,7 @@ impl Stream for EthCounterpartyMonitoring<EthAddress, EthHash> {
 	}
 }
 
-impl EthContractCounterpartyMonitoring<EthAddress, EthHash> {
+impl EthCounterpartyMonitoring<EthAddress, EthHash> {
 	pub async fn build(
 		rpc_url: &str,
 		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
