@@ -5,9 +5,8 @@ import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyFactory.sol";
-import {SafeProxy} from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
-import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
+import {CreateCall} from "@safe-smart-account/contracts/libraries/CreateCall.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 function string2Address(bytes memory str) returns (address addr) {
@@ -18,14 +17,16 @@ function string2Address(bytes memory str) returns (address addr) {
     }
 }
 
-contract DeployMoveToken is Script {
+contract DeployMoveTokenMultisig is Script {
     TransparentUpgradeableProxy public moveProxy;
     ProxyAdmin public admin;
     string public moveSignature = "initialize(address)";
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
     CompatibilityFallbackHandler public compatibilityFallbackHandler;
     SafeProxyFactory public safeProxyFactory;
-    Safe public safeSingleton;
+    address public safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762;
+    CreateCall public createCall = 0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4;
+    address payable public safeAddress;
     Safe public safe;
     TimelockController public timelock;
 
@@ -35,7 +36,37 @@ contract DeployMoveToken is Script {
         MOVEToken moveImplementation = new MOVEToken();
 
         // forge script DeployMoveToken --fork-url https://eth-sepolia.api.onfinality.io/public
-        safe = Safe(payable(address(0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
+
+        safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+
+        address[] memory signers = new address[](5);
+
+        signers[0] = vm.addr(signer);
+        signers[1] = string2Address("Bob");
+        signers[2] = string2Address("Charlie");
+        signers[3] = string2Address("David");
+        signers[4] = string2Address("Eve");
+
+        safeAddress = 
+                payable(address(
+                    safeProxyFactory.createProxyWithNonce(
+                        safeSingleton,
+                        abi.encodeWithSignature(
+                            safeSetupSignature,
+                            signers,
+                            3,
+                            address(compatibilityFallbackHandler),
+                            "0x",
+                            address(0x0),
+                            address(0x0),
+                            0,
+                            payable(address(0x0))
+                        ),
+                        0
+                    )
+        ));
+
+        safe = Safe(safeAddress);
 
         uint256 minDelay = 1 days;
         address[] memory proposers = new address[](5);
@@ -50,7 +81,14 @@ contract DeployMoveToken is Script {
         executors[0] = address(safe);
 
         timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
+        createCall.performCreate2(0, deploymentData, 0);
 
+        // generate 3 signatures for the safe transaction
+        // ecsa
+        bytes[] memory signatures = new bytes[](3);
+        
+
+        safe.execTransaction(address(createCall), 0, data, operation, 0, 0, 0, address(0), address(0), signatures);
         moveProxy = new TransparentUpgradeableProxy(
             address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(safe))
         );
