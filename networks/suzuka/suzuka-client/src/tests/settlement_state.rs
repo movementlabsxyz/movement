@@ -8,7 +8,7 @@ use anyhow::Context;
 use aptos_sdk::{
 	coin_client::CoinClient,
 	rest_client::{Client as AptosClient, FaucetClient},
-	types::{block_info::BlockInfo, LocalAccount},
+	types::LocalAccount,
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use mcr_settlement_client::eth_client::Client as McrClient;
@@ -22,7 +22,6 @@ use suzuka_config::Config as SuzukaConfig;
 use tracing::info;
 use url::Url;
 
-#[cfg(feature = "integration-tests")]
 #[tokio::test]
 async fn test_node_settlement_state() -> anyhow::Result<()> {
 	use tracing_subscriber::EnvFilter;
@@ -59,16 +58,6 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let faucet_url: Url = format!("http://{}:{}", connection_host, connection_port).parse()?;
 
 	let mcr_address: Address = config.mcr.settle.mcr_contract_address.trim().parse()?;
-
-	// Create finview access.
-	let finview_node_url = format!(
-		"http://{}:{}",
-		config.execution_config.maptos_config.fin.fin_rest_listen_hostname,
-		config.execution_config.maptos_config.fin.fin_rest_listen_port,
-	);
-	let fin_state_root_hash_query = "/movement/v1/get-finalized-block-info";
-	let fin_state_root_hash_url = format!("{}{}", finview_node_url, fin_state_root_hash_query);
-	let restclient = reqwest::Client::new();
 
 	// Start test
 	let validator_private_key: PrivateKeySigner =
@@ -119,10 +108,10 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	}
 
 	//Do Alice -> Bob transfer
-	let rest_client = AptosClient::new(node_url.clone());
+	let aptos_client = AptosClient::new(node_url.clone());
 	let faucet_client = FaucetClient::new(faucet_url.clone(), node_url.clone());
 
-	let coin_client = CoinClient::new(&rest_client);
+	let coin_client = CoinClient::new(&aptos_client);
 
 	// Create two accounts locally, Alice and Bob.
 	let mut alice = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -133,18 +122,26 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 	// Have Alice send Bob some coins.
 	let txn_hash = coin_client.transfer(&mut alice, bob.address(), 1_000, None).await?;
-	rest_client.wait_for_transaction(&txn_hash).await?;
+	aptos_client.wait_for_transaction(&txn_hash).await?;
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 
 	// Read Alice and bod account balance that shouldn't be updated on fin state.
+	let finview_node_url = format!(
+		"http://{}:{}",
+		config.execution_config.maptos_config.fin.fin_rest_listen_hostname,
+		config.execution_config.maptos_config.fin.fin_rest_listen_port,
+	);
 	let finwiew_aptos_client = AptosClient::new(finview_node_url.clone().parse()?);
 	let fin_view_coin_client = CoinClient::new(&finwiew_aptos_client);
 	// It should be in error because the account shouldn't be funded.
 	let before_finwiew_alice_balance =
 		fin_view_coin_client.get_account_balance(&alice.address()).await;
-	assert!(before_finwiew_alice_balance.is_err());
+	assert!(
+		before_finwiew_alice_balance.is_err(),
+		"Before accept fin Alice balance is not in error."
+	);
 	let before_finwiew_bob_balance = fin_view_coin_client.get_account_balance(&bob.address()).await;
-	assert!(before_finwiew_bob_balance.is_err());
+	assert!(before_finwiew_bob_balance.is_err(), "Before accept fin Bob balance is not in error.");
 
 	let final_alice_balance = coin_client.get_account_balance(&alice.address()).await?;
 	let final_bob_balance = coin_client.get_account_balance(&bob.address()).await?;
@@ -187,30 +184,13 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		.context("Failed to get final Bob's account balance")?;
 
 	//Alice and bob balance should have been finalized in finview
-	assert_eq!(after_finview_alice_balance, final_alice_balance);
-	assert_eq!(after_finview_bob_balance, final_bob_balance);
-
-	// verify node finality state with block stored at the commitment height.
-	let response = restclient.get(&fin_state_root_hash_url).send().await?;
-	let fin_block_info: BlockInfo = response.json().await?;
-
-	//get block at same height
-	let rest_client = AptosClient::new(node_url.clone());
-	let stored_block = rest_client
-		.get_block_by_height(last_seen_height, false)
-		.await
-		.unwrap()
-		.into_inner();
-
-	// Verify the finalized state block hash is the same as the stored block for accepted commitment height
-	// I didn't find a way to verify the commitment with the associated block.
-	// The commitment contains a block_id but the RPC call get_block_by_height doesn't return this id.
-	// The commitment  block_id is the Id of the block in Celectia chain.
-	// So to validate it is the same block we should get the block from Celestia execute it to get its stake proof and recreate the commitment.
 	assert_eq!(
-		stored_block.block_hash,
-		fin_block_info.id().into(),
-		"Finality state doesn't correspond to block hash"
+		after_finview_alice_balance, final_alice_balance,
+		"Final Alice balance different from expected"
+	);
+	assert_eq!(
+		after_finview_bob_balance, final_bob_balance,
+		"Final Bob balance different from expected"
 	);
 
 	Ok(())

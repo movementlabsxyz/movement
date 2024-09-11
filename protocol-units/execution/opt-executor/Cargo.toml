@@ -68,7 +68,6 @@ aptos-indexer = { workspace = true }
 aptos-protos = { workspace = true }
 aptos-logger = { workspace = true }
 tonic = { workspace = true }
-movement-rest = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }

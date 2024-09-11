@@ -14,7 +14,6 @@ members = [
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
     "protocol-units/settlement/mcr/setup",
-    "protocol-units/movement-rest",
     "util/buildtime",
     "util/buildtime/buildtime-helpers",
     "util/buildtime/buildtime-macros",
@@ -62,8 +61,7 @@ maptos-dof-execution = { path = "protocol-units/execution/dof" }
 maptos-opt-executor = { path = "protocol-units/execution/opt-executor" }
 maptos-fin-view = { path = "protocol-units/execution/fin-view" }
 maptos-execution-util = { path = "protocol-units/execution/util" }
-## infra
-movement-rest = { path = "protocol-units/movement-rest" }
+
 ## mempool
 mempool-util = { path = "protocol-units/mempool/util" }
 move-rocks = { path = "protocol-units/mempool/move-rocks" }
@@ -170,8 +168,6 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-#celestia-rpc = { git = "https://github.com/eigerco/lumina" }
-#celestia-types = { git = "https://github.com/eigerco/lumina", version= "0.2.x" }
 celestia-types = "0.3.0"
 celestia-rpc = "0.3.0"
 

@@ -8,7 +8,7 @@ pub mod tests;
 mod mock;
 
 #[cfg(feature = "mock")]
-pub use mock::*;
+pub use mock::McrSettlementClient;
 
 pub mod eth_client;
 

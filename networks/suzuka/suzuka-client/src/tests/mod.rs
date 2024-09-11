@@ -31,6 +31,7 @@ use std::{fs, sync::Arc};
 use std::{thread, time};
 use url::Url;
 
+#[cfg(feature = "integration-tests")]
 mod settlement_state;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {

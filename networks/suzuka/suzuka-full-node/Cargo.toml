@@ -25,7 +25,6 @@ tokio-stream = { workspace = true }
 sha2 = { workspace = true }
 tonic = { workspace = true }
 movement-types = { workspace = true }
-movement-rest = { workspace = true }
 movement-tracing = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
