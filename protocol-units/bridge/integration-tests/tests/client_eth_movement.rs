@@ -17,7 +17,7 @@ use bridge_shared::{
 	},
 };
 use ethereum_bridge::types::{EthAddress, EthHash};
-use movement_bridge::utils::MovementAddress;
+use movement_bridge::utils::{MovementAddress, MovementHash};
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -91,8 +91,8 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		movement_client
 			.lock_bridge_transfer(
-				BridgeTransferId(bridge_transfer_id),
-				HashLock(hash_lock),
+				BridgeTransferId(MovementHash(bridge_transfer_id)),
+				HashLock(MovementHash(hash_lock)),
 				TimeLock(time_lock),
 				InitiatorAddress(initiator.clone()),
 				RecipientAddress(recipient.clone()),
@@ -105,14 +105,14 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		// `get_bridge_transfer_details` and and are both in scope. Otherwise `[E0034]` throws
 		let details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, MovementHash(bridge_transfer_id));
+		assert_eq!(details.hash_lock.0, MovementHash(hash_lock));
 		assert_eq!(
 			&details.initiator_address.0 .0[32 - initiator.len()..],
 			&initiator,
@@ -124,7 +124,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		bridge_shared::bridge_contracts::BridgeContractCounterparty::complete_bridge_transfer(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(MovementHash(bridge_transfer_id)),
 			HashLockPreImage(b"secret".to_vec()),
 		)
 		.await
@@ -132,14 +132,14 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		
 		let details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, MovementHash(bridge_transfer_id));
+		assert_eq!(details.hash_lock.0, MovementHash(hash_lock));
 		assert_eq!(
 			&details.initiator_address.0 .0[32 - initiator.len()..],
 			&initiator,
@@ -198,8 +198,8 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		movement_client
 			.lock_bridge_transfer(
-				BridgeTransferId(bridge_transfer_id),
-				HashLock(hash_lock),
+				BridgeTransferId(MovementHash(bridge_transfer_id)),
+				HashLock(MovementHash(hash_lock)),
 				TimeLock(time_lock),
 				InitiatorAddress(initiator.clone()),
 				RecipientAddress(recipient.clone()),
@@ -210,14 +210,14 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		let details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, MovementHash(bridge_transfer_id));
+		assert_eq!(details.hash_lock.0, MovementHash(hash_lock));
 		assert_eq!(
 			&details.initiator_address.0 .0[32 - initiator.len()..],
 			&initiator,
@@ -230,20 +230,20 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		sleep(Duration::from_secs(2)).await;
 
 		movement_client
-			.abort_bridge_transfer(BridgeTransferId(bridge_transfer_id))
+			.abort_bridge_transfer(BridgeTransferId(MovementHash(bridge_transfer_id)))
 			.await
 			.expect("Failed to complete bridge transfer");
 
 		let abort_details = bridge_shared::bridge_contracts::BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(abort_details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(abort_details.hash_lock.0, hash_lock);
+		assert_eq!(abort_details.bridge_transfer_id.0, MovementHash(bridge_transfer_id));
+		assert_eq!(abort_details.hash_lock.0, MovementHash(hash_lock));
 		assert_eq!(
 			&abort_details.initiator_address.0 .0[32 - initiator.len()..],
 			&initiator,

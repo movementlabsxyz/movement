@@ -14,13 +14,12 @@ use bridge_shared::bridge_monitoring::{
 	BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring,
 };
 use bridge_shared::types::{BridgeTransferDetails, CounterpartyCompletedDetails, LockDetails};
-use futures::channel::mpsc;
+use futures::channel::mpsc::{self, UnboundedReceiver};
 use futures::Stream;
 use std::{pin::Pin, task::Poll};
-use tokio::sync::mpsc::UnboundedReceiver;
 
 pub struct MovementInitiatorMonitoring<A, H> {
-	listener: UnboundedReceiver<MovementChainEvent<A, H>>,
+	listener: mpsc::UnboundedReceiver<MovementChainEvent<A, H>>,
 	client: Option<MovementClient>,
 }
 

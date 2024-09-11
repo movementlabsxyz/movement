@@ -35,6 +35,9 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
     }
 
+    // Minimum asset amount needs to be enforced. 
+    // Depending on gas costs, bridge could take a loss if the asset amount transfer is less than the total gas cost of the 
+    // swap.
     function lockBridgeTransfer(
         bytes32 originator,
         bytes32 bridgeTransferId,
@@ -44,7 +47,10 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         uint256 amount
     ) external onlyOwner returns (bool) {
         if (amount == 0) revert ZeroAmount();
+
         if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
+        
+        // potentially mint some gas here for the recipient here. The recipient could be an account with gas already.
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
