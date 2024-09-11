@@ -41,24 +41,22 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/0b980918c0de466b975947aaac7f4813?sid=c99ddfdd-21bb-4889-95c8-fa625ac271bd).
+An Ansible script to deploy the above systemd service is available [here](./suzuka-full-follower.yml). An example usage with an ec2 inventory is below. You may also benefit from watching our tutorial [VIDEO](https://www.loom.com/share/59e6a31a08ef4260bdc9b082a3980f52).
 
 ```shell
-MOVEMENT_SYNC="l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
-CELESTIA_RPC_CONNECTION_PROTOCOL=https
-CELESTIA_RPC_CONNECTION_HOSTNAME=l-monninger.open-network.rpc.celestia.suzuka.devnet.movementlabs.xyz
-CELESTIA_RPC_CONNECTION_PORT=443
-CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL=wss
-CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME=l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz
-CELESTIA_WEBSOCKET_CONNECTION_PORT=443
-ansible-playbook --inventory ec2-35-93-108-129.us-west-2.compute.amazonaws.com, \
+ansible-playbook --inventory <your-inventory> \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
     --extra-vars "user=ubuntu" \
-    docs/movement-node-experimental/l-monninger/open-network/suzuka-full-follower.yml
+    docs/movement-node-experimental/l-monninger/open-network/suzuka-full-follower.yml \
+    --private-key open-network-demo.pem
 ```
 
 This will set up the Movement Node to connect to sync with the `l-monninger/open-network` environment.
+
+For a basic check on syncing, assert that there is a `0.tgz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
+
+If you do not see the `0.tgz` that could indicate an issue with sync. See the troubleshooting steps below.
 
 ## Troubleshooting 
 
