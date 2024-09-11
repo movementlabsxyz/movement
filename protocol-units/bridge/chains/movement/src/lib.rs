@@ -119,6 +119,31 @@ impl MovementClient {
 	pub async fn new_for_test(
 		_config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
+
+		let kill_cmd = TokioCommand::new("sh")
+			.arg("-c")
+			.arg("PID=$(ps aux | grep 'movement node run-local-testnet' | grep -v grep | awk '{print $2}' | head -n 1); if [ -n \"$PID\" ]; then kill -9 $PID; fi")
+			.output()
+			.await?;
+		
+		if !kill_cmd.status.success() {
+			println!("Failed to kill running movement process: {:?}", kill_cmd.stderr);
+		} else {
+			println!("Movement process killed if it was running.");
+		}
+		
+		let delete_dir_cmd = TokioCommand::new("sh")
+			.arg("-c")
+			.arg("if [ -d '.movement' ]; then rm -rf .movement; fi")
+			.output()
+			.await?;
+		
+		if !delete_dir_cmd.status.success() {
+			println!("Failed to delete .movement directory: {:?}", delete_dir_cmd.stderr);
+		} else {
+			println!(".movement directory deleted if it was present.");
+		}
+
 		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])

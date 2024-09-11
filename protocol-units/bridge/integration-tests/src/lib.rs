@@ -57,11 +57,16 @@ impl Default for EthToMovementCallArgs {
 
 impl Default for MovementToEthCallArgs {
         fn default() -> Self {
+
+		let preimage = "secret".to_string();
+		let serialized_preimage = bcs::to_bytes(&preimage).unwrap();  
+		let hash_lock = *keccak256(&serialized_preimage);
+
                 Self {
                         initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
                         recipient: b"0x123".to_vec(),
                         bridge_transfer_id: *b"00000000000000000000000transfer1",
-                        hash_lock: *keccak256(b"secret"),
+                        hash_lock,
                         time_lock: 3600,
                         amount: 100,
                 }

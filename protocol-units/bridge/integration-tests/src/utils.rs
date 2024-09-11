@@ -1,4 +1,3 @@
-use alloy::consensus::Account;
 use anyhow::Result;
 use aptos_sdk::{
     coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress
@@ -6,7 +5,7 @@ use aptos_sdk::{
 use movement_bridge::MovementClient;
 use alloy::hex;
 use bridge_shared::bridge_contracts::BridgeContractInitiator;
-use bridge_shared::bridge_contracts::{BridgeContractInitiatorError};
+use bridge_shared::bridge_contracts::BridgeContractInitiatorError;
 use bridge_shared::types::{Amount, AssetType, BridgeTransferDetails, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
 use movement_bridge::utils::{self as movement_utils, MovementAddress};
 use tracing::debug;
