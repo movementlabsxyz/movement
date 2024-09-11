@@ -6,12 +6,12 @@ import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeInitiator, IAtomicBridgeInitiator, OwnableUpgradeable} from "../src/AtomicBridgeInitiator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {MOVEToken} from "../src/MOVEToken.sol";  // Assuming MOVEToken is deployed in the same directory
+import {MOVEToken} from "../src/MOVEToken.sol";  
 import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeInitiatorMOVETest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
-    MOVEToken public moveToken;   // Change to MOVEToken
+    MOVEToken public moveToken;   
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiator public atomicBridgeInitiator;
@@ -23,14 +23,11 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     uint256 public timeLock = 100;
 
     function setUp() public {
-        // Deploy the MOVEToken contract
         moveToken = new MOVEToken();
-        moveToken.initialize(address(this)); // Initialize MOVEToken with the deployer's address
+        moveToken.initialize(address(this)); 
 
-        // Generate a random address for the originator in each test
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
 
-        // Deploy the AtomicBridgeInitiator contract with the MOVEToken address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
@@ -43,11 +40,10 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     }
 
     function testInitiateBridgeTransferWithMove() public {
-        uint256 moveAmount = 100 * 10**8; // 100 MOVEToken (assuming 8 decimals)
-        moveToken.mint(originator, moveAmount); // Mint tokens to originator
+        uint256 moveAmount = 100 * 10**8;
+        moveToken.transfer(originator, moveAmount); 
         vm.startPrank(originator);
 
-        // Approve the bridge contract to spend MOVEToken
         moveToken.approve(address(atomicBridgeInitiator), moveAmount);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(
@@ -81,10 +77,9 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         bytes32 testHashLock = keccak256(abi.encodePacked(secret));
         uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
 
-        moveToken.mint(originator, moveAmount); // Mint tokens to originator
+        moveToken.transfer(originator, moveAmount); 
         vm.startPrank(originator);
 
-        // Approve the bridge contract to spend MOVEToken
         moveToken.approve(address(atomicBridgeInitiator), moveAmount);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(
@@ -116,10 +111,9 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
     function testRefundBridgeTransfer() public {
         uint256 moveAmount = 100 * 10**8; // 100 MOVEToken
-        moveToken.mint(originator, moveAmount); // Mint tokens to originator
+        moveToken.transfer(originator, moveAmount); // Transfer tokens to originator
         vm.startPrank(originator);
 
-        // Approve the bridge contract to spend MOVEToken
         moveToken.approve(address(atomicBridgeInitiator), moveAmount);
 
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(
