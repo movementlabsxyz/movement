@@ -5574,6 +5574,7 @@ dependencies = [
  "async-trait",
  "bridge-shared",
  "dashmap 6.0.1",
+ "delegate",
  "futures",
  "hex",
  "keccak-hash",
