@@ -95,7 +95,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-async fn test_movement_client_initiate_and_complete_transfer() -> Result<(), anyhow::Error> {
+async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
@@ -169,7 +169,7 @@ async fn test_movement_client_initiate_and_complete_transfer() -> Result<(), any
 }
 
 #[tokio::test]
-async fn test_movement_client_initiate_and_refund_transfer() -> Result<(), anyhow::Error> {
+async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
