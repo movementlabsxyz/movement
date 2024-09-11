@@ -84,12 +84,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 		
-		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, args.hash_lock);
-		assert_eq!(details.initiator_address.0.0, sender_address);
-		assert_eq!(details.recipient_address.0, args.recipient);
-		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
-		assert_eq!(details.state, 1, "Bridge transfer should be locked.");
+		test_utils::assert_bridge_transfer_details::<[u8; 32]>(&details, bridge_transfer_id, args.hash_lock, sender_address, args.recipient.clone(), args.amount, 1);
 	
 		Ok(())
 	}

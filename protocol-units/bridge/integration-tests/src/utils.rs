@@ -13,8 +13,8 @@ use tracing::debug;
 
 use crate::TestHarness;
 
-pub fn assert_bridge_transfer_details<A, H>(
-    details: &BridgeTransferDetails<MovementAddress, H>,
+pub fn assert_bridge_transfer_details<H>(
+    details: &BridgeTransferDetails<MovementAddress, H>,  // MovementAddress for initiator
     expected_bridge_transfer_id: H,
     expected_hash_lock: H,
     expected_sender_address: AccountAddress,
@@ -22,8 +22,7 @@ pub fn assert_bridge_transfer_details<A, H>(
     expected_amount: u64,
     expected_state: u8,
 ) where
-    A: std::fmt::Debug + PartialEq,
-    H: std::fmt::Debug + PartialEq,
+    H: std::fmt::Debug + PartialEq,  // Only H needs to implement Debug and PartialEq
 {
     assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
     assert_eq!(details.hash_lock.0, expected_hash_lock);
