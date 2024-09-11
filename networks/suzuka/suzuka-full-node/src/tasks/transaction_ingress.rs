@@ -73,7 +73,7 @@ impl Task {
 							"received transaction",
 						);
 						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
-						let movement_transaction = movement_types::Transaction::new(
+						let movement_transaction = movement_types::transaction::Transaction::new(
 							serialized_aptos_transaction,
 							transaction.sequence_number(),
 						);

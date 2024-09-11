@@ -21,7 +21,7 @@ impl<T> GroupingHeuristic<T> for Chunking {
 		distribution: Vec<GroupingOutcome<T>>,
 	) -> Result<Vec<GroupingOutcome<T>>, anyhow::Error> {
 		// flatten the distribution
-		let mut distribution = distribution
+		let distribution = distribution
 			.into_iter()
 			.flat_map(|outcome| outcome.into_inner())
 			.collect::<Vec<_>>();
