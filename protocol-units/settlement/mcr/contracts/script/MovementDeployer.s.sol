@@ -12,7 +12,7 @@ import { Helper } from "./helpers/Helper.sol";
 import { Vm } from "forge-std/Vm.sol";
 import { stdJson } from "forge-std/StdJson.sol";
 
-contract DeployerScript is Script {
+contract MovementDeployer is Script {
 
     using stdJson for string;
 
