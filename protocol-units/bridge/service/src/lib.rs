@@ -95,6 +95,7 @@ pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBr
 		_phantom: Default::default(),
 	};
 
+	// EthereumChain must be BlockchainService
 	let bridge_service = BridgeService::new(ethereum_service, movement_service, bridge_config);
 
 	SetupBridgeServiceResult(

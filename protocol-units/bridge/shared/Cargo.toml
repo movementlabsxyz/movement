@@ -14,7 +14,7 @@ rust-version.workspace = true
 [dependencies]
 async-trait = "0.1.80"
 bcs = { workspace = true }
-delegate = "0.12.0"
+delegate = { workspace = true }
 derive_more = { workspace = true, features = ["deref", "deref_mut"] }
 futures.workspace = true
 futures-timer = "3.0.3"

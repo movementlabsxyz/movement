@@ -1,15 +1,18 @@
-use std::collections::HashMap;
-use thiserror::Error;
-
-use rand::Rng;
-
-use crate::{
+use crate::types::{EthAddress, EthHash};
+use bridge_shared::{
+	bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult},
 	bridge_monitoring::BridgeContractInitiatorEvent,
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
 		GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
+use rand::Rng;
+use std::{
+	collections::HashMap,
+	sync::{Arc, RwLock},
+};
+use thiserror::Error;
 
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
 
@@ -65,21 +68,19 @@ pub enum InitiatorCall<A, H> {
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
-#[derive(Debug)]
-pub struct SmartContractInitiator<A, H, R> {
-	pub initiated_transfers: HashMap<BridgeTransferId<H>, BridgeTransferDetails<A, H>>,
-	pub accounts: HashMap<A, Amount>,
-	pub rng: R,
+#[derive(Debug, Clone)]
+pub struct EthSmartContractInitiator {
+	pub initiated_transfers:
+		Arc<RwLock<HashMap<BridgeTransferId<EthHash>, BridgeTransferDetails<EthAddress, EthHash>>>>,
+	pub accounts: HashMap<EthAddress, Amount>,
 }
 
-impl<A, H, R> SmartContractInitiator<A, H, R>
-where
-	A: BridgeAddressType,
-	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
-	R: Rng,
-{
-	pub fn new(rng: R) -> Self {
-		Self { initiated_transfers: HashMap::new(), accounts: HashMap::default(), rng }
+impl EthSmartContractInitiator {
+	pub fn new() -> Self {
+		Self {
+			initiated_transfers: Arc::new(RwLock::new(HashMap::new())),
+			accounts: HashMap::default(),
+		}
 	}
 
 	pub fn initiate_bridge_transfer(
@@ -141,7 +142,7 @@ where
 			.ok_or(SmartContractInitiatorError::TransferNotFound)?;
 
 		// check if the secret is correct
-		let secret_hash = H::from(pre_image.clone());
+		let secret_hash = "You shall not pass!";
 		if transfer.hash_lock.0 != secret_hash {
 			tracing::warn!(
 				"Invalid hash lock pre image {pre_image:?} hash {secret_hash:?} != hash_lock {:?}",
@@ -151,5 +152,44 @@ where
 		}
 
 		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id))
+	}
+}
+
+#[async_trait::async_trait]
+impl BridgeContractInitiator for EthSmartContractInitiator {
+	type Address = EthAddress;
+	type Hash = EthHash;
+
+	async fn initiate_bridge_transfer(
+		&mut self,
+		_initiator_address: InitiatorAddress<Self::Address>,
+		_recipient_address: RecipientAddress<Vec<u8>>,
+		_hash_lock: HashLock<Self::Hash>,
+		_time_lock: TimeLock,
+		_amount: Amount,
+	) -> BridgeContractInitiatorResult<()> {
+		Ok(())
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_secret: HashLockPreImage,
+	) -> BridgeContractInitiatorResult<()> {
+		Ok(())
+	}
+
+	async fn refund_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<()> {
+		Ok(())
+	}
+
+	async fn get_bridge_transfer_details(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
+		Ok(None)
 	}
 }

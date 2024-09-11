@@ -26,14 +26,18 @@ pub trait BlockchainService:
 	type Address: BridgeAddressType;
 	type Hash: BridgeHashType;
 
+	/// The Initiator Contract type is used to store state relating to this contract transfers.
 	type InitiatorContract: BridgeContractInitiator<Address = Self::Address, Hash = Self::Hash>;
+	/// The Initiator Monitoring type is used to monitor events on the Initiator Contract.
 	type InitiatorMonitoring: BridgeContractInitiatorMonitoring<Address = Self::Address, Hash = Self::Hash>
 		+ Unpin;
 
+	/// The Counterparty Contract type is used to store state relating to this contract transfers.
 	type CounterpartyContract: BridgeContractCounterparty<
 		Address = Self::Address,
 		Hash = Self::Hash,
 	>;
+	/// The Counterparty Monitoring type is used to monitor events on the Counterparty Contract.
 	type CounterpartyMonitoring: BridgeContractCounterpartyMonitoring<Address = Self::Address, Hash = Self::Hash>
 		+ Unpin;
 

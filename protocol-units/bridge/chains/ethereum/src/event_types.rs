@@ -1,11 +1,10 @@
+use crate::initiator_contract::{SCIResult, SmartContractInitiatorEvent};
+use crate::types::{CompletedDetails, EthAddress};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	counterparty_contract::{SCCResult, SmartContractCounterpartyEvent},
-	initiator_contract::{SCIResult, SmartContractInitiatorEvent},
 	types::LockDetails,
 };
-
-use crate::types::{CompletedDetails, EthAddress};
 use thiserror::Error;
 
 #[allow(unused)]

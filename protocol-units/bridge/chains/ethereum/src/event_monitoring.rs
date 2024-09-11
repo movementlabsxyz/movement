@@ -1,3 +1,4 @@
+use crate::initiator_contract::SmartContractInitiatorEvent;
 use crate::types::{
 	EthAddress, EthHash, EventName, COUNTERPARTY_ABORTED_SELECT, COUNTERPARTY_COMPLETED_SELECT,
 	COUNTERPARTY_LOCKED_SELECT, INITIATOR_COMPLETED_SELECT, INITIATOR_INITIATED_SELECT,
@@ -16,7 +17,6 @@ use alloy::{
 use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractCounterpartyMonitoring,
 };
-use bridge_shared::initiator_contract::SmartContractInitiatorEvent;
 use bridge_shared::types::{Amount, LockDetails, TimeLock};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},

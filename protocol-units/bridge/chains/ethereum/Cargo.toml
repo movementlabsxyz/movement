@@ -17,6 +17,7 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
 dashmap = { workspace = true }
+delegate = { workspace = true }
 poem = { workspace = true }
 hex = { workspace = true }
 keccak-hash = { workspace = true }
