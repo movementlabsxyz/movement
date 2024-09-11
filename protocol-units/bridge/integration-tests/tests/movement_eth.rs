@@ -2,7 +2,7 @@ use tokio::time::{sleep, Duration}; // Add these imports
 
 use alloy::primitives::keccak256;
 use anyhow::Result;
-use bridge_integration_tests::utils::{self as test_utils};
+use bridge_integration_tests::{utils::{self as test_utils}, MovementToEthCallArgs};
 use aptos_sdk::coin_client::CoinClient;
 use bridge_integration_tests::TestHarness;
 use bridge_shared::{
@@ -48,6 +48,58 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	child.kill().await?;
 
 	Ok(())
+}
+
+#[tokio::test]
+async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
+
+	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+
+	let args = MovementToEthCallArgs::default();
+
+	let test_result = async {
+		let mut movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+		let sender_address = movement_client.signer().address();
+		test_utils::fund_and_check_balance(&mut movement_client,100_000_000_000).await?;
+
+		test_utils::initiate_bridge_transfer_helper(
+			&mut movement_client,
+			args.initiator.0,         
+			args.recipient.clone(),   
+			args.hash_lock,           
+			args.time_lock,           
+			args.amount,             
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+
+		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id(&mut movement_client).await?;
+		info!("Bridge transfer id: {:?}", bridge_transfer_id);
+		let details = BridgeContractInitiator::get_bridge_transfer_details(
+			movement_client,
+			BridgeTransferId(bridge_transfer_id),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
+		
+		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
+		assert_eq!(details.hash_lock.0, args.hash_lock);
+		assert_eq!(details.initiator_address.0.0, sender_address);
+		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.state, 1, "Bridge transfer should be locked.");
+	
+		Ok(())
+	}
+	.await;
+
+	if let Err(e) = child.kill().await {
+		eprintln!("Failed to kill child process: {:?}", e);
+	}
+
+	test_result
 }
 
 #[tokio::test]
@@ -130,9 +182,8 @@ async fn test_movement_client_initiate_and_complete_transfer() -> Result<(), any
 		// Immutable borrow to extract the bridge transfer ID from the transaction
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 		let sender_address = movement_client.signer().address();
-		let sequence_number = 0; // Replace this with the correct sequence number
 
-		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id(movement_client, sender_address, sequence_number).await?;
+		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id(movement_client).await?;
 
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 
@@ -262,7 +313,7 @@ async fn test_movement_client_initiate_and_refund_transfer() -> Result<(), anyho
 		let sender_address = movement_client.signer().address();
 		let sequence_number = 0; // Replace this with the correct sequence number
 
-		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id(movement_client, sender_address, sequence_number).await?;
+		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id(movement_client).await?;
 
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 

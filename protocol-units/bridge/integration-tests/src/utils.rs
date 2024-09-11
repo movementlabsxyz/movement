@@ -1,17 +1,45 @@
+use alloy::consensus::Account;
 use anyhow::Result;
 use aptos_sdk::{
-    rest_client::Transaction,
-    types::account_address::AccountAddress,
+    coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress
 };
 use movement_bridge::MovementClient;
 use alloy::hex;
+use bridge_shared::bridge_contracts::BridgeContractInitiator;
+use bridge_shared::bridge_contracts::{BridgeContractInitiatorError};
+use bridge_shared::types::{Amount, AssetType, BridgeTransferDetails, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
+use movement_bridge::utils::{self as movement_utils, MovementAddress};
+use tracing::debug;
+
+use crate::TestHarness;
+
+pub fn assert_bridge_transfer_details<A, H>(
+    details: &BridgeTransferDetails<MovementAddress, H>,
+    expected_bridge_transfer_id: H,
+    expected_hash_lock: H,
+    expected_sender_address: AccountAddress,
+    expected_recipient_address: Vec<u8>,
+    expected_amount: u64,
+    expected_state: u8,
+) where
+    A: std::fmt::Debug + PartialEq,
+    H: std::fmt::Debug + PartialEq,
+{
+    assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
+    assert_eq!(details.hash_lock.0, expected_hash_lock);
+    assert_eq!(details.initiator_address.0.0, expected_sender_address);
+    assert_eq!(details.recipient_address.0, expected_recipient_address);
+    assert_eq!(details.amount.0, AssetType::Moveth(expected_amount));
+    assert_eq!(details.state, expected_state, "Bridge transfer state mismatch.");
+}
 
 pub async fn extract_bridge_transfer_id(
-    movement_client: &MovementClient,
-    sender_address: AccountAddress,
-    sequence_number: u64,
+    movement_client: &mut MovementClient,
 ) -> Result<[u8; 32], anyhow::Error> {
+    let sender_address = movement_client.signer().address();
+    let sequence_number = 0; // Modify as needed
     let rest_client = movement_client.rest_client();
+
     let transactions = rest_client
         .get_account_transactions(sender_address, Some(sequence_number), Some(20))
         .await
@@ -38,4 +66,85 @@ pub async fn extract_bridge_transfer_id(
         }
     }
     Err(anyhow::Error::msg("No matching transaction found"))
+}
+
+pub async fn fund_and_check_balance(
+    movement_client: &mut MovementClient,
+    expected_balance: u64,
+) -> Result<()> {
+    let movement_client_signer = movement_client.signer();
+    let rest_client = movement_client.rest_client();
+    let coin_client = CoinClient::new(&rest_client);
+    let faucet_client = movement_client
+            .faucet_client()
+            .expect("Failed to get FaucetClient")
+            .write()
+            .unwrap();
+    faucet_client
+            .fund(movement_client_signer.address(), expected_balance)
+            .await?;
+
+    let balance = coin_client
+            .get_account_balance(&movement_client_signer.address())
+            .await?;
+    assert!(
+            balance >= expected_balance,
+            "Expected Movement Client to have at least {}, but found {}",
+            expected_balance, balance
+    );
+
+    Ok(())
+}
+
+pub async fn initiate_bridge_transfer_helper(
+    movement_client: &mut MovementClient,
+    initiator_address: AccountAddress,
+    recipient_address: Vec<u8>,
+    hash_lock: [u8; 32],
+    time_lock: u64,
+    amount: u64,
+) -> Result<(), BridgeContractInitiatorError> {
+    // Publish for test
+    let _ = movement_client.publish_for_test();
+
+    // Mint MovETH to the initiator's address
+    let mint_amount = 200 * 100_000_000; // Assuming 8 decimals for MovETH
+
+    let mint_args = vec![
+        movement_utils::serialize_address_initiator(&movement_client.signer().address())?, // Mint to initiator's address
+        movement_utils::serialize_u64_initiator(&mint_amount)?,                            // Amount to mint (200 MovETH)
+    ];
+
+    let mint_payload = movement_utils::make_aptos_payload(
+        movement_client.counterparty_address, // Address where moveth module is published
+        "moveth",
+        "mint",
+        Vec::new(),
+        mint_args,
+    );
+
+    // Send transaction to mint MovETH
+    movement_utils::send_and_confirm_aptos_transaction(
+        &movement_client.rest_client(),
+        movement_client.signer(),
+        mint_payload,
+    )
+    .await
+    .map_err(|_| BridgeContractInitiatorError::MintError)?;
+
+    debug!("Successfully minted 200 MovETH to the initiator");
+
+    // Initiate the bridge transfer
+    movement_client
+        .initiate_bridge_transfer(
+            InitiatorAddress(MovementAddress(initiator_address)),
+            RecipientAddress(recipient_address),
+            HashLock(hash_lock),
+            TimeLock(time_lock),
+            Amount(AssetType::Moveth(amount)),
+        )
+        .await
+        .expect("Failed to initiate bridge transfer");
+
+    Ok(())
 }
