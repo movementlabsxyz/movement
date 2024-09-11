@@ -7,14 +7,14 @@ import {AtomicBridgeCounterpartyMOVE} from "../src/AtomicBridgeCounterpartyMOVE.
 import {AtomicBridgeInitiatorMOVE} from "../src/AtomicBridgeInitiatorMOVE.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {MOVEToken} from "../src/MOVEToken.sol";
+import {MockMOVEToken} from "../src/MockMOVEToken.sol";
 
 contract AtomicBridgeCounterpartyMOVETest is Test {
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVEImplementation;
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVE;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiator;
-    MOVEToken public moveToken;
+    MockMOVEToken public moveToken;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
 
@@ -40,7 +40,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
 
     function setUp() public {
         // Deploy the MOVEToken contract and mint some tokens to the deployer
-        moveToken = new MOVEToken();
+        moveToken = new MockMOVEToken();
         moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));

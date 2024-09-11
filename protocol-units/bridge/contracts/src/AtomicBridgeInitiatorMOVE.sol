@@ -2,7 +2,7 @@
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
-import {MOVEToken} from "./MOVEToken.sol";
+import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 

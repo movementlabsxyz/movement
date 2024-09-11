@@ -6,12 +6,12 @@ import {Test, console} from "forge-std/Test.sol";
 import {AtomicBridgeInitiator, IAtomicBridgeInitiator, OwnableUpgradeable} from "../src/AtomicBridgeInitiator.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {MOVEToken} from "../src/MOVEToken.sol";  
+import {MockMOVEToken} from "../src/MockMOVEToken.sol";  
 import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeInitiatorMOVETest is Test {
     AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
-    MOVEToken public moveToken;   
+    MockMOVEToken public moveToken;   
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
     AtomicBridgeInitiator public atomicBridgeInitiator;
@@ -23,7 +23,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     uint256 public timeLock = 100;
 
     function setUp() public {
-        moveToken = new MOVEToken();
+        moveToken = new MockMOVEToken();
         moveToken.initialize(address(this)); 
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
