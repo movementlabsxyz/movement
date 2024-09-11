@@ -10,6 +10,7 @@ use bridge_shared::{
 use event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring};
 use event_types::EthChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
+use initiator_contract::EthSmartContractInitiator;
 use std::fmt::Debug;
 use std::{
 	collections::HashMap,
@@ -228,11 +229,11 @@ impl BlockchainService for EthereumChain {
 	type Hash = EthHash;
 
 	// InitiatorContract must be BridgeContractInitiator
-	type InitiatorContract = SmartContractInitiator<EthAddress, EthHash>;
+	type InitiatorContract = EthSmartContractInitiator;
 	type InitiatorMonitoring = EthInitiatorMonitoring<EthAddress, EthHash>;
 
 	type CounterpartyContract = EthCounterpartyContract;
-	type CounterpartyMonitoring = EthCounterpartyMonitoring<A, H>;
+	type CounterpartyMonitoring = EthCounterpartyMonitoring<EthAddress, EthHash>;
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract {
 		&self.initiator_contract
