@@ -63,6 +63,9 @@ contract DeployMoveToken is Script {
 
         moveProxy = TransparentUpgradeableProxy(payable(create(create3address).deploy(salt, bytecode)));
 
+        console.log("Safe balance: ", MOVEToken(address(moveProxy)).balanceOf(address(safe)));
+        console.log("Move Token decimals: ", MOVEToken(address(moveProxy)).decimals());
+        console.log("Move Token supply: ", MOVEToken(address(moveProxy)).totalSupply());
         console.log("Timelock deployed at: ", address(timelock));
         console.log("Safe deployed at: ", address(safe));
         console.log("Move Token deployed at: ", address(moveProxy));
