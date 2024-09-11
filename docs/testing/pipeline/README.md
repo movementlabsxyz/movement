@@ -10,7 +10,7 @@ Generally, before merging to main, the PR should have run all the tests. However
 To help guide the relevant code-owners, we maintain the following graph of dependencies (in DOT syntax). An edge from A to B indicates that B should not pass if A fails, i.e., you can assume the checks in B will not be satisfied if you have not yet passed the checks in A.
 
 ```dot
-digraph E2eTestDependencies {
+digraph TestDependencies {
   "cargo check (workspace)" -> "cargo test (workspace)"
   "cargo test (workspace)" -> "cicd:suzuka-full-node"
   "cicd:suzuka-full-node" -> "cicd:suzuka-containers"
