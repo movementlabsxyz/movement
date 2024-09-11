@@ -8,7 +8,7 @@ use alloy::{
 use anyhow::Result;
 
 use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
-use bridge_integration_tests::TestHarness;
+use bridge_integration_tests::{EthToMovementCallArgs, TestHarness};
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	types::{
@@ -96,13 +96,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
-	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	let hash_lock = *keccak256(b"secret".to_vec());
-	let time_lock = 3600;
-	let initiator = b"0x123".to_vec();
-	let recipient: MovementAddress =
-		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-	let amount = 100;
+	let args = EthToMovementCallArgs::default();
 
 	let test_result = async {
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
@@ -127,57 +121,57 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		movement_client
 			.lock_bridge_transfer(
-				BridgeTransferId(bridge_transfer_id),
-				HashLock(hash_lock),
-				TimeLock(time_lock),
-				InitiatorAddress(initiator.clone()),
-				RecipientAddress(recipient.clone()),
-				Amount(AssetType::Moveth(amount)),
+				BridgeTransferId(args.bridge_transfer_id),
+				HashLock(args.hash_lock),
+				TimeLock(args.time_lock),
+				InitiatorAddress(args.initiator.clone()),
+				RecipientAddress(args.recipient.clone()),
+				Amount(AssetType::Moveth(args.amount)),
 			)
 			.await
 			.expect("Failed to lock bridge transfer");
 
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id),
 			).await
 			.expect("Failed to get bridge transfer details")
 			.expect("Expected to find bridge transfer details, but got None");
 	
-                assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-                assert_eq!(details.hash_lock.0, hash_lock);
+                assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
+                assert_eq!(details.hash_lock.0, args.hash_lock);
                 assert_eq!(
-                        &details.initiator_address.0 .0[32 - initiator.len()..],
-                        &initiator,
+                        &details.initiator_address.0 .0[32 - args.initiator.len()..],
+                        &args.initiator,
                         "Initiator address does not match"
                 );
-                assert_eq!(details.recipient_address.0, recipient.0.to_vec());
-                assert_eq!(details.amount.0, AssetType::Moveth(amount));
+                assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+                assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
                 assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
 		BridgeContractCounterparty::complete_bridge_transfer(
 				movement_client,
-                                BridgeTransferId(bridge_transfer_id),
+                                BridgeTransferId(args.bridge_transfer_id),
                                 HashLockPreImage(b"secret".to_vec())
                         ).await
                         .expect("Failed to complete bridge transfer");
 
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id),
 			).await
 			.expect("Failed to get bridge transfer details")
 			.expect("Expected to find bridge transfer details, but got None");
 	
-                assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-                assert_eq!(details.hash_lock.0, hash_lock);
+                assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
+                assert_eq!(details.hash_lock.0, args.hash_lock);
                 assert_eq!(
-                        &details.initiator_address.0 .0[32 - initiator.len()..],
-                        &initiator,
+                        &details.initiator_address.0 .0[32 - args.initiator.len()..],
+                        &args.initiator,
                         "Initiator address does not match"
                 );
-                assert_eq!(details.recipient_address.0, recipient.0.to_vec());
-                assert_eq!(details.amount.0, AssetType::Moveth(amount));
+                assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+                assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
                 assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
 		Ok(())
@@ -198,13 +192,8 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
-	let bridge_transfer_id = *b"00000000000000000000000transfer1";
-	let hash_lock = *keccak256(b"secret".to_vec());
+	let args = EthToMovementCallArgs::default();
 	let time_lock = 1;
-	let initiator = b"0x123".to_vec();
-	let recipient: MovementAddress =
-		MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-	let amount = 100;
 
 	let test_result = async {
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
@@ -229,12 +218,12 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		movement_client
 			.lock_bridge_transfer(
-				BridgeTransferId(bridge_transfer_id),
-				HashLock(hash_lock),
+				BridgeTransferId(args.bridge_transfer_id),
+				HashLock(args.hash_lock),
 				TimeLock(time_lock),
-				InitiatorAddress(initiator.clone()),
-				RecipientAddress(recipient.clone()),
-				Amount(AssetType::Moveth(amount)),
+				InitiatorAddress(args.initiator.clone()),
+				RecipientAddress(args.recipient.clone()),
+				Amount(AssetType::Moveth(args.amount)),
 			)
 			.await
 			.expect("Failed to lock bridge transfer");
@@ -242,45 +231,45 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id),
 			).await
 			.expect("Failed to get bridge transfer details")
 			.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
+		assert_eq!(details.hash_lock.0, args.hash_lock);
 		assert_eq!(
-			&details.initiator_address.0 .0[32 - initiator.len()..],
-			&initiator,
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
+			&args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, recipient.0.to_vec());
-		assert_eq!(details.amount.0, AssetType::Moveth(amount));
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
 		sleep(Duration::from_secs(2)).await;
 
 		movement_client
-			.abort_bridge_transfer(BridgeTransferId(bridge_transfer_id))
+			.abort_bridge_transfer(BridgeTransferId(args.bridge_transfer_id))
 			.await
 			.expect("Failed to complete bridge transfer");
 
 		let abort_details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id),
 			).await
 			.expect("Failed to get bridge transfer details")
 			.expect("Expected to find bridge transfer details, but got None");
 	
-		assert_eq!(abort_details.bridge_transfer_id.0, bridge_transfer_id);
-		assert_eq!(abort_details.hash_lock.0, hash_lock);
+		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id);
+		assert_eq!(abort_details.hash_lock.0, args.hash_lock);
 		assert_eq!(
-			&abort_details.initiator_address.0 .0[32 - initiator.len()..],
-			&initiator,
+			&abort_details.initiator_address.0 .0[32 - args.initiator.len()..],
+			&args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(abort_details.recipient_address.0, recipient.0.to_vec());
-		assert_eq!(abort_details.amount.0, AssetType::Moveth(amount));
+		assert_eq!(abort_details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(abort_details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(
 			abort_details.state, 3,
 			"Bridge transfer is supposed to be cancelled but it's not."
