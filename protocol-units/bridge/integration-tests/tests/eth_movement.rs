@@ -7,7 +7,7 @@ use alloy::{
 };
 use anyhow::Result;
 
-use aptos_sdk::{coin_client::CoinClient, types::LocalAccount};
+use aptos_sdk::coin_client::CoinClient;
 use bridge_integration_tests::{EthToMovementCallArgs, TestHarness};
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
@@ -18,31 +18,13 @@ use bridge_shared::{
 };
 
 use ethereum_bridge::types::EthAddress;
-use movement_bridge::utils::MovementAddress;
 
-use futures::{
-	channel::mpsc::{self, UnboundedReceiver},
-	StreamExt,
-};
-use rand;
 use tokio::{
-	self,
-	process::{Child, Command},
+	self
 };
 
-use aptos_types::account_address::AccountAddress;
-use tracing::{debug, info};
 use tracing_subscriber;
 
-struct ChildGuard {
-	child: Child,
-}
-
-impl Drop for ChildGuard {
-	fn drop(&mut self) {
-		let _ = self.child.kill();
-	}
-}
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
