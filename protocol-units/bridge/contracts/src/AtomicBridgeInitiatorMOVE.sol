@@ -32,9 +32,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
-    error InsufficientMOVEBalance();
-    error MOVETransferFailed();
-
     function initialize(address _moveToken, address owner) public initializer {
         if (_moveToken == address(0)) {
             revert ZeroAddress();

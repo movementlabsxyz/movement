@@ -17,16 +17,17 @@ interface IAtomicBridgeInitiatorMOVE {
     event BridgeTransferRefunded(bytes32 indexed _bridgeTransferId);
 
     error ZeroAmount();
-    error WETHTransferFailed();
+    error MOVETransferFailed();
     error BridgeTransferInvalid();
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
-    error InsufficientWethBalance();
+    error InsufficientMOVEBalance();
     error TimeLockNotExpired();
     error TimelockExpired();
     error ZeroAddress();
     error Unauthorized();
+
 
     /**
      * @dev Creates a new atomic bridge transfer using native ETH
