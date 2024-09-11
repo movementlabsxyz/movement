@@ -156,22 +156,6 @@ pub async fn send_and_confirm_aptos_transaction(
 	Ok(txn)
 }
 
-pub fn extract_bridge_transfer_id(txn: Transaction) -> Option<String> {
-	if let Transaction::UserTransaction(user_txn) = txn {
-		for event in user_txn.events {
-			// Extract the event type as a string to compare it
-			let event_type = event.typ.to_string();
-			if event_type.contains("BridgeTransferInitiatedEvent") {
-				if let Some(Value::String(bridge_transfer_id)) = event.data.get("bridge_transfer_id") {
-				return Some(bridge_transfer_id.clone());
-				}
-			}
-		}
-	}
-	
-	None
-}
-
 pub fn val_as_str(value: Option<&Value>) -> Result<&str, BridgeContractCounterpartyError> {
 	value
 		.as_ref()

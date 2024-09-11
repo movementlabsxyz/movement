@@ -18,13 +18,9 @@ use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, W
 use movement_bridge::{utils::MovementAddress, Config as MovementConfig};
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
-use std::{
-	env,
-	net::TcpStream,
-	sync::{Arc, RwLock},
-	time::Duration,
-};
-use tokio::process::Command;
+use std::sync::{Arc, RwLock};
+
+pub mod utils;
 
 #[derive(Clone)]
 pub struct EthToMovementCallArgs {
