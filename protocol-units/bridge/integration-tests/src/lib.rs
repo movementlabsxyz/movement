@@ -1,5 +1,5 @@
 use alloy::{
-	primitives::{Address, U256},
+	primitives::{Address, U256, keccak256},
 	providers::WalletProvider,
 	signers::{
 		k256::{elliptic_curve::SecretKey, Secp256k1},
@@ -10,14 +10,68 @@ use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
 use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::LocalAccount;
+use aptos_sdk::types::account_address::AccountAddress;
 use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
 use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
 use ethereum_bridge::client::{Config as EthConfig, EthClient};
 use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
-use movement_bridge::Config as MovementConfig;
+use movement_bridge::{utils::MovementAddress, Config as MovementConfig};
 use movement_bridge::MovementClient;
 use rand::SeedableRng;
-use std::sync::{Arc, RwLock};
+use std::{
+	env,
+	net::TcpStream,
+	sync::{Arc, RwLock},
+	time::Duration,
+};
+use tokio::process::Command;
+
+#[derive(Clone)]
+pub struct EthToMovementCallArgs {
+        pub initiator: Vec<u8>,
+        pub recipient: MovementAddress,
+        pub bridge_transfer_id: [u8; 32],
+        pub hash_lock: [u8; 32],
+        pub time_lock: u64,
+        pub amount: u64,
+}
+
+#[derive(Clone)]
+pub struct MovementToEthCallArgs {
+        pub initiator: MovementAddress,
+        pub recipient: Vec<u8>,
+        pub bridge_transfer_id: [u8; 32],
+        pub hash_lock: [u8; 32],
+        pub time_lock: u64,
+        pub amount: u64,
+}
+
+impl Default for EthToMovementCallArgs {
+        fn default() -> Self {
+                Self {
+                        initiator: b"0x123".to_vec(),
+                        recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
+                        bridge_transfer_id: *b"00000000000000000000000transfer1",
+                        hash_lock: *keccak256(b"secret"),
+                        time_lock: 3600,
+                        amount: 100,
+                }
+        }
+}
+
+impl Default for MovementToEthCallArgs {
+        fn default() -> Self {
+                Self {
+                        initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
+                        recipient: b"0x123".to_vec(),
+                        bridge_transfer_id: *b"00000000000000000000000transfer1",
+                        hash_lock: *keccak256(b"secret"),
+                        time_lock: 3600,
+                        amount: 100,
+                }
+        }
+}
+
 
 pub struct TestHarness {
 	pub eth_client: Option<EthClient>,
