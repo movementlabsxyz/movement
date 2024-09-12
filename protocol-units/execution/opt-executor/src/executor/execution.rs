@@ -15,7 +15,7 @@ use aptos_types::{
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
-use movement_types::{BlockCommitment, Commitment, Id};
+use movement_types::block::{BlockCommitment, Commitment, Id};
 use tracing::{debug, info};
 
 impl Executor {
@@ -88,11 +88,7 @@ impl Executor {
 		let block_height = self.get_block_head_height()?;
 
 		let commitment = Commitment::digest_state_proof(&proof);
-		Ok(BlockCommitment {
-			block_id: Id(*block_id.clone()),
-			commitment,
-			height: block_height.into(),
-		})
+		Ok(BlockCommitment::new(block_height.into(), Id::new(*block_id.clone()), commitment))
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
@@ -390,8 +386,8 @@ mod tests {
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
 			let expected_commitment = Commitment::digest_state_proof(&state_proof);
-			assert_eq!(block_commitment.height, i + 2);
-			assert_eq!(block_commitment.commitment, expected_commitment);
+			assert_eq!(block_commitment.height(), i + 2);
+			assert_eq!(block_commitment.commitment(), expected_commitment);
 		}
 
 		Ok(())

@@ -2,7 +2,7 @@ use crate::{BlockCommitmentEvent, CommitmentEventStream, McrSettlementManagerOpe
 
 use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_config::Config;
-use movement_types::{BlockCommitment, BlockCommitmentRejectionReason};
+use movement_types::block::{BlockCommitment, BlockCommitmentRejectionReason};
 
 use async_stream::stream;
 use async_trait::async_trait;
@@ -65,10 +65,10 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 			tokio::select! {
 				Some(block_commitment) = receiver.recv(), if !ahead_of_settlement => {
 					commitments_to_settle.insert(
-						block_commitment.height,
-						block_commitment.commitment.clone(),
+						block_commitment.height(),
+						block_commitment.commitment().clone(),
 					);
-					if block_commitment.height > max_height {
+					if block_commitment.height() > max_height {
 						// Can't post this commitment to the contract yet.
 						// Post the previously accumulated commitments as a batch
 						// and pause reading from input.
@@ -104,9 +104,9 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 						}
 					};
 
-					let height = settled_commitment.height;
+					let height = settled_commitment.height();
 					if let Some(commitment) = commitments_to_settle.remove(&height) {
-						let event = if commitment == settled_commitment.commitment {
+						let event = if commitment == settled_commitment.commitment() {
 							BlockCommitmentEvent::Accepted(settled_commitment)
 						} else {
 							BlockCommitmentEvent::Rejected {
@@ -146,8 +146,8 @@ fn process_commitments<C: McrSettlementClientOperations + Send + 'static>(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use mcr_settlement_client::McrSettlementClient;
-	use movement_types::{BlockCommitment, Commitment};
+	use mcr_settlement_client::mock::McrSettlementClient;
+	use movement_types::block::{BlockCommitment, Commitment};
 
 	#[tokio::test]
 	async fn test_block_commitment_accepted() -> Result<(), anyhow::Error> {
@@ -155,17 +155,9 @@ mod tests {
 		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
-		let commitment = BlockCommitment {
-			height: 1,
-			block_id: Default::default(),
-			commitment: Commitment([1; 32]),
-		};
+		let commitment = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		manager.post_block_commitment(commitment.clone()).await?;
-		let commitment2 = BlockCommitment {
-			height: 2,
-			block_id: Default::default(),
-			commitment: Commitment([2; 32]),
-		};
+		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2).await?;
 		let item = event_stream.next().await;
 		let res = item.unwrap();
@@ -180,24 +172,16 @@ mod tests {
 		let mut client = McrSettlementClient::new();
 		client.block_lead_tolerance = 1;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
-		let commitment = BlockCommitment {
-			height: 1,
-			block_id: Default::default(),
-			commitment: Commitment([1; 32]),
-		};
+		let commitment = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		client
-			.override_block_commitment(BlockCommitment {
-				height: 1,
-				block_id: Default::default(),
-				commitment: Commitment([3; 32]),
-			})
+			.override_block_commitment(BlockCommitment::new(
+				1,
+				Default::default(),
+				Commitment::new([3; 32]),
+			))
 			.await;
 		manager.post_block_commitment(commitment.clone()).await?;
-		let commitment2 = BlockCommitment {
-			height: 2,
-			block_id: Default::default(),
-			commitment: Commitment([2; 32]),
-		};
+		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2).await?;
 		let item = event_stream.next().await;
 		let res = item.unwrap();
@@ -220,23 +204,11 @@ mod tests {
 		client.pause_after(2).await;
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
-		let commitment1 = BlockCommitment {
-			height: 1,
-			block_id: Default::default(),
-			commitment: Commitment([1; 32]),
-		};
+		let commitment1 = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		manager.post_block_commitment(commitment1.clone()).await?;
-		let commitment2 = BlockCommitment {
-			height: 2,
-			block_id: Default::default(),
-			commitment: Commitment([2; 32]),
-		};
+		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2.clone()).await?;
-		let commitment3 = BlockCommitment {
-			height: 3,
-			block_id: Default::default(),
-			commitment: Commitment([3; 32]),
-		};
+		let commitment3 = BlockCommitment::new(3, Default::default(), Commitment::new([3; 32]));
 		manager.post_block_commitment(commitment3.clone()).await?;
 
 		let event = event_stream.next().await.expect("stream has ended")?;
@@ -253,17 +225,9 @@ mod tests {
 		// Unblock the client, allowing processing of commitments to resume.
 		client.resume().await;
 
-		let commitment4 = BlockCommitment {
-			height: 4,
-			block_id: Default::default(),
-			commitment: Commitment([4; 32]),
-		};
+		let commitment4 = BlockCommitment::new(4, Default::default(), Commitment::new([4; 32]));
 		manager.post_block_commitment(commitment4).await?;
-		let commitment5 = BlockCommitment {
-			height: 5,
-			block_id: Default::default(),
-			commitment: Commitment([5; 32]),
-		};
+		let commitment5 = BlockCommitment::new(5, Default::default(), Commitment::new([5; 32]));
 		manager.post_block_commitment(commitment5).await?;
 
 		let event = event_stream.next().await.expect("stream has ended")?;
@@ -279,17 +243,9 @@ mod tests {
 		let client = McrSettlementClient::new();
 		let (manager, mut event_stream) = Manager::new(client.clone(), &config);
 
-		let commitment1 = BlockCommitment {
-			height: 1,
-			block_id: Default::default(),
-			commitment: Commitment([1; 32]),
-		};
+		let commitment1 = BlockCommitment::new(1, Default::default(), Commitment::new([1; 32]));
 		manager.post_block_commitment(commitment1.clone()).await?;
-		let commitment2 = BlockCommitment {
-			height: 2,
-			block_id: Default::default(),
-			commitment: Commitment([2; 32]),
-		};
+		let commitment2 = BlockCommitment::new(2, Default::default(), Commitment::new([2; 32]));
 		manager.post_block_commitment(commitment2.clone()).await?;
 
 		let item = time::timeout(Duration::from_secs(2), event_stream.next())
@@ -300,11 +256,7 @@ mod tests {
 		let event = event_stream.next().await.expect("stream has ended")?;
 		assert_eq!(event, BlockCommitmentEvent::Accepted(commitment2.clone()));
 
-		let commitment3 = BlockCommitment {
-			height: 3,
-			block_id: Default::default(),
-			commitment: Commitment([3; 32]),
-		};
+		let commitment3 = BlockCommitment::new(3, Default::default(), Commitment::new([3; 32]));
 		manager.post_block_commitment(commitment3.clone()).await?;
 
 		let item = time::timeout(Duration::from_secs(2), event_stream.next())

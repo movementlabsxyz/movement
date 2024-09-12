@@ -5,7 +5,7 @@ use crate::{
 use maptos_execution_util::config::Config;
 use maptos_fin_view::FinalityView;
 use maptos_opt_executor::{Context as OptContext, Executor as OptExecutor};
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 
 use anyhow::format_err;
 use async_trait::async_trait;
@@ -67,11 +67,18 @@ impl DynOptFinExecutor for Executor {
 		);
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
-			let indexer_runtime = indexer_runtime;
+			let _indexer_runtime = indexer_runtime;
 			transaction_pipe.run().await?;
 			Ok(())
 		};
 		Ok((Context { opt_context, fin_service }, background))
+	}
+
+	fn has_executed_transaction_opt(
+		&self,
+		transaction_hash: HashValue,
+	) -> Result<bool, anyhow::Error> {
+		self.executor.has_executed_transaction(transaction_hash)
 	}
 
 	async fn execute_block_opt(
@@ -122,6 +129,10 @@ impl DynOptFinExecutor for Executor {
 
 	fn decrement_transactions_in_flight(&self, count: u64) {
 		self.executor.decrement_transactions_in_flight(count)
+	}
+
+	fn config(&self) -> &Config {
+		self.executor.config()
 	}
 }
 
@@ -261,8 +272,8 @@ mod tests {
 		let block = ExecutableBlock::new(block_id.clone(), txs);
 		let commitment = executor.execute_block_opt(block).await?;
 
-		assert_eq!(commitment.block_id.to_vec(), block_id.to_vec());
-		assert_eq!(commitment.height, 1);
+		assert_eq!(commitment.block_id().to_vec(), block_id.to_vec());
+		assert_eq!(commitment.height(), 1);
 
 		services_handle.abort();
 		background_handle.abort();

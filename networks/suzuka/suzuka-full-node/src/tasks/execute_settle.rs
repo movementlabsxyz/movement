@@ -11,10 +11,11 @@ use maptos_dof_execution::{
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
-use movement_types::{Block, BlockCommitment, BlockCommitmentEvent};
+use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 
 use anyhow::Context;
 use futures::{future::Either, stream};
+use suzuka_config::execution_extension;
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
 use tracing::{debug, error, info, info_span, warn, Instrument};
@@ -27,6 +28,7 @@ pub struct Task<E, S> {
 	// Stream receiving commitment events, conditionally enabled
 	commitment_events:
 		Either<CommitmentEventStream, stream::Pending<<CommitmentEventStream as Stream>::Item>>,
+	execution_extension: execution_extension::Config,
 }
 
 impl<E, S> Task<E, S> {
@@ -36,12 +38,20 @@ impl<E, S> Task<E, S> {
 		da_db: DaDB,
 		da_light_node_client: LightNodeServiceClient<tonic::transport::Channel>,
 		commitment_events: Option<CommitmentEventStream>,
+		execution_extension: execution_extension::Config,
 	) -> Self {
 		let commitment_events = match commitment_events {
 			Some(stream) => Either::Left(stream),
 			None => Either::Right(stream::pending()),
 		};
-		Task { executor, settlement_manager, da_db, da_light_node_client, commitment_events }
+		Task {
+			executor,
+			settlement_manager,
+			da_db,
+			da_light_node_client,
+			commitment_events,
+			execution_extension,
+		}
 	}
 
 	fn settlement_enabled(&self) -> bool {
@@ -123,7 +133,7 @@ where
 		.await??;
 
 		// get the transactions
-		let transactions_count = block.transactions.len();
+		let transactions_count = block.transactions().len();
 		let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
@@ -167,13 +177,13 @@ where
 		block: Block,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		for _ in 0..5 {
+		for _ in 0..self.execution_extension.block_retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_timestamp).await {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
 					warn!("Failed to execute block: {:?}. Retrying", e);
-					block_timestamp += 5000; // increase the timestamp by 5 ms (5000 microseconds)
+					block_timestamp += self.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}
@@ -191,15 +201,25 @@ where
 
 		// get the transactions
 		let mut block_transactions = Vec::new();
-		let block_metadata = self
-			.executor
-			.build_block_metadata(HashValue::sha3_256_of(block_id.0.as_slice()), block_timestamp)?;
+		let block_metadata = self.executor.build_block_metadata(
+			HashValue::sha3_256_of(block_id.as_bytes().as_slice()),
+			block_timestamp,
+		)?;
 		let block_metadata_transaction =
 			SignatureVerifiedTransaction::Valid(Transaction::BlockMetadata(block_metadata));
 		block_transactions.push(block_metadata_transaction);
 
-		for transaction in block.transactions {
-			let signed_transaction: SignedTransaction = serde_json::from_slice(&transaction.data)?;
+		for transaction in block.transactions() {
+			let signed_transaction: SignedTransaction = serde_json::from_slice(transaction.data())?;
+
+			// check if the transaction has already been executed to prevent replays
+			if self
+				.executor
+				.has_executed_transaction_opt(signed_transaction.committed_hash())?
+			{
+				continue;
+			}
+
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),
 			);
@@ -227,7 +247,7 @@ where
 			BlockCommitmentEvent::Accepted(commitment) => {
 				debug!("Commitment accepted: {:?}", commitment);
 				self.executor
-					.set_finalized_block_height(commitment.height)
+					.set_finalized_block_height(commitment.height())
 					.context("failed to set finalized block height")
 			}
 			BlockCommitmentEvent::Rejected { height, reason } => {

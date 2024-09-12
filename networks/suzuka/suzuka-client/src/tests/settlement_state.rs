@@ -15,9 +15,9 @@ use mcr_settlement_client::eth_client::Client as McrClient;
 use mcr_settlement_client::eth_client::MCR;
 use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_config::Config as McrConfig;
-use movement_types::BlockCommitment;
-use movement_types::Commitment;
-use movement_types::Id;
+use movement_types::block::BlockCommitment;
+use movement_types::block::Commitment;
+use movement_types::block::Id;
 use suzuka_config::Config as SuzukaConfig;
 use tracing::info;
 use url::Url;
@@ -97,11 +97,11 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 		//0 height means None.
 		if get_validator_commitment_at_block_height.height != U256::from(0) {
 			// A commitment has been sent. Send the Validator2's one.
-			let commitment = BlockCommitment {
-				height: get_validator_commitment_at_block_height.height.try_into()?,
-				block_id: Id(get_validator_commitment_at_block_height.blockId.into()),
-				commitment: Commitment(get_validator_commitment_at_block_height.commitment.into()),
-			};
+			let commitment = BlockCommitment::new(
+				get_validator_commitment_at_block_height.height.try_into()?,
+				Id::new(get_validator_commitment_at_block_height.blockId.into()),
+				Commitment::new(get_validator_commitment_at_block_height.commitment.into()),
+			);
 			validator2_client.post_block_commitment(commitment).await?;
 			last_seen_commitment = get_validator_commitment_at_block_height.height;
 		}
@@ -161,11 +161,11 @@ async fn test_node_settlement_state() -> anyhow::Result<()> {
 				.await?;
 		if onchain_commitment.height != U256::from(0) {
 			last_seen_height = onchain_commitment.height.try_into()?;
-			let commitment = BlockCommitment {
-				height: last_seen_height,
-				block_id: Id(onchain_commitment.blockId.into()),
-				commitment: Commitment(onchain_commitment.commitment.into()),
-			};
+			let commitment = BlockCommitment::new(
+				last_seen_height,
+				Id::new(onchain_commitment.blockId.into()),
+				Commitment::new(onchain_commitment.commitment.into()),
+			);
 			validator2_client.post_block_commitment(commitment).await?;
 		} else {
 			break;
