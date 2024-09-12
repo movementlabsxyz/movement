@@ -64,7 +64,7 @@ jobs:
             -p memseq \
             -p move-rocks \
             -p movement-types
-        EOF    
+        EOF
 
   suzuka-full-node-local:
     if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
