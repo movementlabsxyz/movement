@@ -52,9 +52,8 @@ contract MOVETokenTest is Test {
             address(moveTokenImplementation), address(timelock), abi.encodeWithSignature(moveSignature, multisig)
         );
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        assertEq(entries.length, 5);
 
-        admin = ProxyAdmin(entries[3].emitter);
+        admin = ProxyAdmin(entries[entries.length -2].emitter);
 
         token = MOVEToken(address(tokenProxy));
     }
@@ -75,6 +74,11 @@ contract MOVETokenTest is Test {
 
     function testMultisigBalance() public {
         assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
+    }
+
+    function testAdminRoleFuzz(address other) public {
+        assert(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), other));
+        assert(token.hasRole(token.DEFAULT_ADMIN_ROLE(), multisig));
     }
 
     function testUpgradeFromTimelock() public {

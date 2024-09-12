@@ -31,6 +31,7 @@ contract DeployMoveToken is Script {
     address create3address = address(0x2Dfcc7415D89af828cbef005F0d072D8b3F23183);
     address moveAdmin;
     bytes32 public salt = 0xc000000000000000000000002774b8b4881d594b03ff8a93f4cad69407c90350;
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function run() external {
         uint256 signer = vm.envUint("PRIVATE_KEY");
@@ -62,6 +63,8 @@ contract DeployMoveToken is Script {
         console.log("Move Token supply: ", MOVEToken(address(moveProxy)).totalSupply());
         console.log("Timelock deployed at: ", address(timelock));
         console.log("Safe deployed at: ", address(safe));
+        console.log("multisig has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(safe)));
+        console.log("timelock has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)));
         vm.stopBroadcast();
     }
 
@@ -85,6 +88,7 @@ contract DeployMoveToken is Script {
         // deployment.moveAdmin = _storeAdminDeployment();
         
         moveAdmin = logs[logs.length - 2].emitter;
+        console.log("MOVE admin", moveAdmin);
     }
 
     function _upgradeMove() internal {
