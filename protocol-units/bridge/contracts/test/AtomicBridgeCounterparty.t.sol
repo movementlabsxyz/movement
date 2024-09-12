@@ -26,7 +26,7 @@ contract AtomicBridgeCounterpartyTest is Test {
     uint256 public timeLock = 100;
     bytes32 public initiator = keccak256(abi.encodePacked(deployer));
     bytes32 public bridgeTransferId =
-        keccak256(abi.encodePacked(block.number, initiator, recipient, amount, hashLock, timeLock));
+        keccak256(abi.encodePacked(block.timestamp, initiator, recipient, amount, hashLock, timeLock));
 
     function setUp() public {
         // Sepolia WETH9 address
@@ -87,7 +87,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         assertEq(pendingRecipient, recipient);
         assertEq(pendingAmount, amount);
         assertEq(pendingHashLock, hashLock);
-        assertGt(pendingTimelock, block.number);
+        assertGt(pendingTimelock, block.timestamp);
         assertEq(uint8(pendingState), uint8(AtomicBridgeCounterparty.MessageState.PENDING));
 
         vm.stopPrank();
@@ -127,7 +127,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         assertEq(completedRecipient, recipient);
         assertEq(completedAmount, amount);
         assertEq(completedHashLock, testHashLock);
-        assertGt(completedTimeLock, block.number);
+        assertGt(completedTimeLock, block.timestamp);
         assertEq(uint8(completedState), uint8(AtomicBridgeCounterparty.MessageState.COMPLETED));
 
         vm.stopPrank();
@@ -147,7 +147,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
 
         // Advance the block number to beyond the timelock period
-        vm.roll(block.number + timeLock + 1);
+        vm.roll(block.timestamp + timeLock + 1);
 
         // Malicious attempt to abort the bridge transfer
         vm.prank(address(0x1337));
@@ -171,7 +171,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         assertEq(abortedRecipient, recipient);
         assertEq(abortedAmount, amount);
         assertEq(abortedHashLock, hashLock);
-        assertLe(abortedTimeLock, block.number, "Timelock is not less than or equal to current block number");
+        assertLe(abortedTimeLock, block.timestamp, "Timelock is not less than or equal to current timestamp");
         assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
 
         vm.stopPrank();

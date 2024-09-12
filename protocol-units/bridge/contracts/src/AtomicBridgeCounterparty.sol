@@ -51,7 +51,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
             originator: originator,
             amount: amount,
             hashLock: hashLock,
-            timeLock: block.number + timeLock, // using block number for timelock
+            timeLock: block.timestamp + timeLock, // using seconds (timestamp) for timelock
             state: MessageState.PENDING
         });
 
@@ -64,7 +64,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         if (computedHash != details.hashLock) revert InvalidSecret();
-        if (block.number > details.timeLock) revert TimeLockNotExpired();
+        if (block.timestamp > details.timeLock) revert TimeLockNotExpired();
 
         details.state = MessageState.COMPLETED;
 
@@ -76,7 +76,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
     function abortBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
-        if (block.number <= details.timeLock) revert TimeLockNotExpired();
+        if (block.timestamp <= details.timeLock) revert TimeLockNotExpired();
 
         details.state = MessageState.REFUNDED;
 

@@ -29,7 +29,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
     bytes32 public bridgeTransferId =
         keccak256(
             abi.encodePacked(
-                block.number,
+                block.timestamp,
                 initiator,
                 recipient,
                 amount,
@@ -43,7 +43,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         moveToken = new MockMOVEToken();
         moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
 
-        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
         // Deploy the AtomicBridgeInitiatorMOVE contract
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiatorMOVE();
@@ -123,7 +123,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         assertEq(pendingRecipient, recipient);
         assertEq(pendingAmount, amount);
         assertEq(pendingHashLock, hashLock);
-        assertGt(pendingTimelock, block.number);
+        assertGt(pendingTimelock, block.timestamp);
         assertEq(
             uint8(pendingState),
             uint8(AtomicBridgeCounterpartyMOVE.MessageState.PENDING)
@@ -182,7 +182,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         assertEq(completedRecipient, recipient);
         assertEq(completedAmount, amount);
         assertEq(completedHashLock, testHashLock);
-        assertGt(completedTimeLock, block.number);
+        assertGt(completedTimeLock, block.timestamp);
         assertEq(
             uint8(completedState),
             uint8(AtomicBridgeCounterpartyMOVE.MessageState.COMPLETED)
@@ -223,7 +223,7 @@ function testAbortBridgeTransfer() public {
     vm.stopPrank();
 
     // Advance the block number to beyond the timelock period
-    vm.roll(block.number + timeLock + 1);
+    vm.warp(block.timestamp + timeLock + 1);
 
     // Try to abort as a malicious user (this should fail)
     //vm.startPrank(otherUser);
@@ -250,8 +250,8 @@ function testAbortBridgeTransfer() public {
     assertEq(abortedHashLock, hashLock);
     assertLe(
         abortedTimeLock,
-        block.number,
-        "Timelock is not less than or equal to current block number"
+        block.timestamp,
+        "Timelock is not less than or equal to current timestamp"
     );
     assertEq(
         uint8(abortedState),

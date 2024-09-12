@@ -30,7 +30,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         weth = IWETH9(wethAddress);
 
         // generate random address for each test
-        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
@@ -68,7 +68,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
-        assertGt(transferTimeLock, block.number);
+        assertGt(transferTimeLock, block.timestamp);
         assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();
@@ -104,7 +104,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(completedOriginator, originator);
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
-        assertGt(completedTimeLock, block.number);
+        assertGt(completedTimeLock, block.timestamp);
         assertEq(uint8(completedState), uint8(AtomicBridgeInitiator.MessageState.COMPLETED));
     }
 
@@ -132,7 +132,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator);
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
-        assertGt(transferTimeLock, block.number);
+        assertGt(transferTimeLock, block.timestamp);
         assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();
@@ -174,7 +174,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator, "Originator address mismatch");
         assertEq(transferRecipient, recipient, "Recipient address mismatch");
         assertEq(transferHashLock, hashLock, "HashLock mismatch");
-        assertGt(transferTimeLock, block.number, "TimeLock is not greater than current block number");
+        assertGt(transferTimeLock, block.timestamp, "TimeLock is not greater than current block timestamp");
         assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();
@@ -196,8 +196,8 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         // Advance time and block height to ensure the time lock has expired
         vm.warp(block.number + timeLock + 1);
-        uint256 futureBlockNumber = block.number + timeLock + 4200;
-        vm.roll(futureBlockNumber);
+        uint256 futureTimestamp = block.timestamp + timeLock + 4200;
+        vm.warp(futureTimestamp);
 
         vm.startPrank(originator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, originator));

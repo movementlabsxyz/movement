@@ -18,7 +18,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         address originator;
         bytes32 recipient;
         bytes32 hashLock;
-        uint256 timeLock; // in blocks
+        uint256 timeLock; // in seconds (timestamp)
         MessageState state;
     }
 
@@ -65,14 +65,14 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         poolBalance += moveAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce++));
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: moveAmount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.number + timeLock,
+            timeLock: block.timestamp + timeLock,
             state: MessageState.INITIALIZED
         });
 
@@ -84,7 +84,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.number > bridgeTransfer.timeLock) revert TimelockExpired();
+        if (block.timestamp > bridgeTransfer.timeLock) revert TimelockExpired();
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -93,7 +93,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
         
         // Decrease pool balance and transfer MOVE tokens back to the originator
