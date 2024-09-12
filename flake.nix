@@ -98,7 +98,7 @@
               # build dependencies
               llvmPackages.bintools openssl openssl.dev libiconv pkg-config
               libclang.lib libz clang pkg-config protobuf rustPlatform.bindgenHook
-              lld mold coreutils postgresql libelf elfutils
+              lld mold coreutils postgresql
 
               # test dependencies
               python311 poetry just foundry-bin process-compose jq docker solc
@@ -109,7 +109,7 @@
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               Security CoreServices SystemConfiguration AppKit
             ]) ++ lib.optionals stdenv.isLinux (with pkgs; [
-              udev systemd snappy bzip2
+              udev systemd snappy bzip2 libelf elfutils
             ]);
 
             LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
