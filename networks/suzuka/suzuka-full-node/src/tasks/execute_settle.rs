@@ -211,6 +211,15 @@ where
 
 		for transaction in block.transactions() {
 			let signed_transaction: SignedTransaction = serde_json::from_slice(transaction.data())?;
+
+			// check if the transaction has already been executed to prevent replays
+			if self
+				.executor
+				.has_executed_transaction_opt(signed_transaction.committed_hash())?
+			{
+				continue;
+			}
+
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),
 			);

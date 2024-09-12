@@ -1,7 +1,9 @@
 module atomic_bridge::atomic_bridge_counterparty {
+    friend atomic_bridge::atomic_bridge_initiator;
+
     use std::signer;
     use std::vector;
-    use aptos_framework::account;
+    use aptos_framework::account::{Self, SignerCapability};
     use aptos_framework::event::{Self, EventHandle};
     #[test_only]
     use aptos_framework::account::create_account_for_test;
@@ -86,6 +88,16 @@ module atomic_bridge::atomic_bridge_counterparty {
             bridge_module_deployer: signer::address_of(resource),
             signer_cap: resource_signer_cap
         });
+    }
+
+    public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+        moveth::mint(&account::create_signer_with_capability(&config.signer_cap), to, amount);
+    }
+
+    public(friend) fun burn_moveth(from: address, amount: u64) acquires BridgeConfig {
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+        moveth::burn(&account::create_signer_with_capability(&config.signer_cap), from, amount);
     }
 
     #[view]
