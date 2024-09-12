@@ -116,8 +116,8 @@ jobs:
     - name: Run Suzuka Full Node Tests Against Holesky and Local Celestia
       env: 
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+        MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: ${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
       run: |
-        export MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY=${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
