@@ -147,7 +147,7 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
 
         // Advance the block number to beyond the timelock period
-        vm.roll(block.timestamp + timeLock + 1);
+        vm.warp(block.timestamp + timeLock + 1);
 
         // Malicious attempt to abort the bridge transfer
         vm.prank(address(0x1337));
