@@ -11,6 +11,9 @@ contract MCRDeployer is Helper {
 
     function run() external virtual {
         
+        // load config data
+        _loadConfig();
+        
         // Load deployment data
         _loadDeployments();
 
