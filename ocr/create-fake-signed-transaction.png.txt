@@ -1,0 +1,68 @@
+async fn
+create_fake_signed_transaction(chain_id: us,
+from_account: &LocalAccount, to_account:
+AccountAddress, amount: u64) ->
+SignedTransaction {
+
+let coin_type
+"0x1: :aptos_coin: :AptosCoin”;
+let timeout_secs = 600; // 10 minutes
+let max_gas_anount = 5_000;
+let gas_unit_price = 100;
+
+ 
+
+let transaction_builder =
+TransactionBuilder: :newC
+
+TransactionPayload: : EntryFunction(EntryFunctio
+n: newC
+
+ModuleId: :new(AccountAddress: :ONE,
+ew("coin”).unwrap()),
+
+ 
+
+Identifier:
+
+ 
+
+Identifier: :new(" transfer
+vect
+
+[TypeTag: : from_str(coin_type).unwrap()],
+vec![
+
+~unwrap(),
+
+ 
+
+b
+
+ 
+
++ to_bytes(&to_account).unwrap(),
+
+bes: 1 to_bytes(&amount) .unwrap(),
+1,
+
+”,
+
+SystenTime: :nowC)
+.duration_since(UNIX_EPOCH)
+_unwrap()
+
+.as_secs()
++ timeout_secs,
+Chainld: :new(chain_id),
+>
+.sender(from_account.address())
+
+. sequence_nunber (from_account. sequence_nunber(
+) + 9999)
+-max_gas_amount (max_gas_anount)
+-gas_unit_price(gas_unit_price);
+
+let raw_txn = transaction_builder.build();
+fron_account . sign_transactionCras_txn)
+

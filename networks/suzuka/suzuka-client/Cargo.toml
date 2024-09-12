@@ -23,6 +23,10 @@ path = "bin/demo_scenario.rs"
 name = "suzuka-client-e2e-simple-interaction"
 path = "src/bin/e2e/simple_interaction.rs"
 
+[[bin]]
+name = "suzuka-client-gas-dos"
+path = "src/bin/e2e/gas_dos.rs"
+
 [dependencies]
 aptos-sdk = { workspace = true }
 aptos-types = { workspace = true }

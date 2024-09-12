@@ -54,6 +54,7 @@
           gcc
           rust
           postgresql
+          tesseract4
         ];
         
         sysDependencies = with pkgs; [] 
