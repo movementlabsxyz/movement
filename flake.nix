@@ -109,7 +109,7 @@
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               Security CoreServices SystemConfiguration AppKit
             ]) ++ lib.optionals stdenv.isLinux (with pkgs; [
-              udev systemd snappy bzip2 libelf elfutils
+              udev systemd snappy bzip2 elfutils.dev
             ]);
 
             LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
@@ -119,6 +119,8 @@
 
               DOT_MOVEMENT_PATH=$(pwd).movement
               mkdir -p $DOT_MOVEMENT_PATH
+
+              # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
