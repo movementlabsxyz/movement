@@ -3,11 +3,10 @@ use bridge_shared::{
 	bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult},
 	bridge_monitoring::BridgeContractInitiatorEvent,
 	types::{
-		Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-		GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+		Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
+		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
-use rand::Rng;
 use std::{
 	collections::HashMap,
 	sync::{Arc, RwLock},
@@ -85,13 +84,13 @@ impl EthSmartContractInitiator {
 
 	pub fn initiate_bridge_transfer(
 		&mut self,
-		initiator: InitiatorAddress<A>,
+		initiator: InitiatorAddress<EthAddress>,
 		recipient: RecipientAddress<Vec<u8>>,
 		amount: Amount,
 		time_lock: TimeLock,
-		hash_lock: HashLock<H>,
-	) -> SCIResult<A, H> {
-		let bridge_transfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
+		hash_lock: HashLock<EthHash>,
+	) -> SCIResult<EthAddress, EthHash> {
+		let bridge_transfer_id = BridgeTransferId::<EthHash>::gen_unique_hash(&mut self.rng);
 
 		tracing::trace!(
 			"SmartContractInitiator: Initiating bridge transfer: {:?}",

@@ -3,8 +3,8 @@ use bridge_shared::{
 	blockchain_service::BlockchainService,
 	counterparty_contract::SmartContractCounterparty,
 	types::{
-		Amount, BridgeAddressType, BridgeHashType, CounterpartyCall, GenUniqueHash,
-		HashLockPreImage, InitiatorCall, RecipientAddress,
+		Amount, BridgeHashType, CounterpartyCall, GenUniqueHash, HashLockPreImage, InitiatorCall,
+		RecipientAddress,
 	},
 };
 use event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring};
@@ -19,9 +19,9 @@ use std::{
 	task::{Context, Poll},
 };
 use types::{EthAddress, EthHash};
-use utils::RngSeededClone;
 
 pub mod client;
+pub mod counterparty_contract;
 pub mod event_monitoring;
 pub mod event_types;
 pub mod initiator_contract;

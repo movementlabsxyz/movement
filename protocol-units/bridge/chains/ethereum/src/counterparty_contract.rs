@@ -1,4 +1,3 @@
-use crate::bridge_monitoring::BridgeContractCounterpartyEvent;
 use crate::types::{
 	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
 	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
@@ -52,11 +51,11 @@ pub enum CounterpartyCall<A, H> {
 }
 
 #[derive(Debug)]
-pub struct SmartContractCounterparty<A, H> {
+pub struct EthSmartContractCounterparty<A, H> {
 	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
 }
 
-impl<A, H> SmartContractCounterparty<A, H>
+impl<A, H> EthSmartContractCounterparty<A, H>
 where
 	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
