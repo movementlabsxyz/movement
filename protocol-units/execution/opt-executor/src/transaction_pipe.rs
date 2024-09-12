@@ -4,11 +4,11 @@ use aptos_config::config::NodeConfig;
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
-use aptos_storage_interface::DbReader;
+use aptos_storage_interface::{state_view::LatestDbStateCheckpointView as _, DbReader};
+use aptos_types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
-use aptos_vm_validator::vm_validator::TransactionValidation;
-use aptos_vm_validator::vm_validator::VMValidator;
+use aptos_types::vm_status::DiscardedVMStatus;
+use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator};
 
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
@@ -149,8 +149,19 @@ impl TransactionPipe {
 			None => {}
 		}
 
-		let sequence_number = transaction.sequence_number();
-		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
+		// Retrieve the current sequence number for the account from the db
+		let state_view = self
+			.db_reader
+			.latest_state_checkpoint_view()
+			.expect("Failed to get latest state checkpoint view.");
+		let sequence_number =
+			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
+		if transaction.sequence_number() < sequence_number {
+			let status = MempoolStatus::new(MempoolStatusCode::VmError);
+			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
+		}
+
+		debug!(%sequence_number, "adding transaction to mempool: {:?}", transaction);
 		let status = self.core_mempool.add_txn(
 			transaction.clone(),
 			0,
