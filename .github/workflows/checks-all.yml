@@ -32,6 +32,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run Cargo Check in nix environment
       run: |
         nix develop --command bash  -c "cargo check --all-targets"  
@@ -58,6 +63,11 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Suzuka Full Node Tests Against Local ETH and Local Celestia
       env:
@@ -86,6 +96,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run Suzuka Full Node Tests Against Holesky and Local Celestia
       env: 
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
@@ -111,6 +126,11 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run M1 DA Light Node tests in nix environment
       # adjust the log level while debugging
@@ -138,6 +158,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run MCR Client Tests
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
@@ -162,6 +187,11 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Aptos Tests
       run: |
@@ -192,6 +222,11 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run rust tests
       run: |
         nix develop --command bash -c "
@@ -215,6 +250,11 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run foundry tests
       run: |
@@ -260,6 +300,11 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run eth_movement tests
       run: |
