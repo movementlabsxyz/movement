@@ -1,16 +1,12 @@
-use crate::initiator_contract::SmartContractInitiator;
+use crate::counterparty_contract::EthSmartContractCounterparty;
+use crate::initiator_contract::EthSmartContractInitiator;
 use bridge_shared::{
-	blockchain_service::BlockchainService,
-	counterparty_contract::SmartContractCounterparty,
-	types::{
-		Amount, BridgeHashType, CounterpartyCall, GenUniqueHash, HashLockPreImage, InitiatorCall,
-		RecipientAddress,
-	},
+	blockchain_service::{BlockchainService, ContractEvent},
+	types::{Amount, CounterpartyCall, InitiatorCall},
 };
 use event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring};
 use event_types::EthChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
-use initiator_contract::EthSmartContractInitiator;
 use std::fmt::Debug;
 use std::{
 	collections::HashMap,
@@ -46,9 +42,9 @@ pub struct EthereumChain {
 	pub accounts: HashMap<EthAddress, Amount>,
 	pub events: Vec<EthChainEvent<EthAddress, EthHash>>,
 
-	pub initiator_contract: SmartContractInitiator<EthAddress, EthHash>,
+	pub initiator_contract: EthSmartContractInitiator,
 	//pub initiator_monitoring: EthInitiatorMonitoring<A, H>,
-	pub counterparty_contract: SmartContractCounterparty<EthAddress, EthHash>,
+	pub counterparty_contract: EthSmartContractCounterparty,
 	//pub counterparty_monitoring: EthCounterpartyMonitoring<A, H>,
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<EthAddress, EthHash>>,
@@ -72,9 +68,9 @@ impl EthereumChain {
 			time: 0,
 			accounts,
 			events,
-			initiator_contract: SmartContractInitiator::new(),
+			initiator_contract: EthSmartContractInitiator::new(),
 			//initiator_monitoring: EthInitiatorMonitoring::new(),
-			counterparty_contract: SmartContractCounterparty::new(),
+			counterparty_contract: EthSmartContractCounterparty::new(),
 			//counterparty_monitoring: EthCounterpartyMonitoring::new(),
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
@@ -124,7 +120,7 @@ impl Future for EthereumChain {
 }
 
 impl Stream for EthereumChain {
-	type Item = EthChainEvent<EthAddress, EthHash>;
+	type Item = ContractEvent<EthAddress, EthHash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
@@ -232,7 +228,7 @@ impl BlockchainService for EthereumChain {
 	type InitiatorContract = EthSmartContractInitiator;
 	type InitiatorMonitoring = EthInitiatorMonitoring<EthAddress, EthHash>;
 
-	type CounterpartyContract = EthCounterpartyContract;
+	type CounterpartyContract = EthSmartContractCounterparty;
 	type CounterpartyMonitoring = EthCounterpartyMonitoring<EthAddress, EthHash>;
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract {

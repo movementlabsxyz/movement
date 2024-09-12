@@ -1,11 +1,16 @@
-use crate::types::{
-	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
+use bridge_shared::bridge_contracts::{
+	BridgeContractCounterparty, BridgeContractCounterpartyResult,
+};
+use bridge_shared::types::{
+	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
 	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
 	LockDetails, RecipientAddress, TimeLock,
 };
 use std::collections::HashMap;
 use std::fmt::Debug;
 use thiserror::Error;
+
+use crate::types::{EthAddress, EthHash};
 
 pub type SCCResult<A, H> =
 	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
@@ -50,17 +55,12 @@ pub enum CounterpartyCall<A, H> {
 	),
 }
 
-#[derive(Debug)]
-pub struct EthSmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
+#[derive(Debug, Clone)]
+pub struct EthSmartContractCounterparty {
+	pub locked_transfers: HashMap<BridgeTransferId<EthHash>, LockDetails<EthAddress, EthHash>>,
 }
 
-impl<A, H> EthSmartContractCounterparty<A, H>
-where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
-	H: BridgeHashType + GenUniqueHash,
-	H: From<HashLockPreImage>,
-{
+impl EthSmartContractCounterparty {
 	pub fn new() -> Self {
 		Self { locked_transfers: HashMap::new() }
 	}
@@ -68,13 +68,13 @@ where
 	pub fn lock_bridge_transfer(
 		&mut self,
 
-		bridge_transfer_id: BridgeTransferId<H>,
-		hash_lock: HashLock<H>,
+		bridge_transfer_id: BridgeTransferId<EthHash>,
+		hash_lock: HashLock<EthHash>,
 		time_lock: TimeLock,
 		initiator_address: InitiatorAddress<Vec<u8>>,
-		recipient_address: RecipientAddress<A>,
+		recipient_address: RecipientAddress<EthAddress>,
 		amount: Amount,
-	) -> SCCResult<A, H> {
+	) -> SCCResult<EthAddress, EthHash> {
 		tracing::trace!(
 			"SmartContractCounterparty: Locking bridge transfer: {:?}",
 			bridge_transfer_id
@@ -103,10 +103,10 @@ where
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		accounts: &mut HashMap<A, Amount>,
-		bridge_transfer_id: &BridgeTransferId<H>,
+		accounts: &mut HashMap<EthAddress, Amount>,
+		bridge_transfer_id: &BridgeTransferId<EthHash>,
 		pre_image: HashLockPreImage,
-	) -> SCCResult<A, H> {
+	) -> SCCResult<EthAddress, EthHash> {
 		let transfer = self
 			.locked_transfers
 			.remove(bridge_transfer_id)
@@ -115,7 +115,7 @@ where
 		tracing::trace!("SmartContractCounterparty: Completing bridge transfer: {:?}", transfer);
 
 		// check if the secret is correct
-		let secret_hash = H::from(pre_image.clone());
+		let secret_hash = EthHash::from(pre_image.clone());
 		if transfer.hash_lock.0 != secret_hash {
 			tracing::warn!(
 				"Invalid hash lock pre image {pre_image:?} hash {secret_hash:?} != hash_lock {:?}",
@@ -125,7 +125,7 @@ where
 		}
 
 		// TODO: fix this
-		let account = A::from(transfer.recipient_address.clone());
+		let account = EthAddress::from(transfer.recipient_address.clone());
 
 		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
 		// balance += **transfer.amount;
@@ -133,5 +133,45 @@ where
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
 			CounterpartyCompletedDetails::from_lock_details(transfer, pre_image),
 		))
+	}
+}
+
+impl BridgeContractCounterparty for EthSmartContractCounterparty {
+	type Address = EthAddress;
+	type Hash = EthHash;
+
+	async fn lock_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_hash_lock: HashLock<Self::Hash>,
+		_time_lock: TimeLock,
+		_initiator: InitiatorAddress<Vec<u8>>,
+		_recipient: RecipientAddress<Self::Address>,
+		_amount: Amount,
+	) -> BridgeContractCounterpartyResult<()> {
+		Ok(())
+	}
+
+	async fn complete_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+		_secret: HashLockPreImage,
+	) -> BridgeContractCounterpartyResult<()> {
+		Ok(())
+	}
+
+	async fn abort_bridge_transfer(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<()> {
+		Ok(())
+	}
+
+	async fn get_bridge_transfer_details(
+		&mut self,
+		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
+	{
+		Ok(None)
 	}
 }
