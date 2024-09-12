@@ -37,3 +37,6 @@ once_cell = { workspace = true }
 
 bridge-shared = { workspace = true }
 mcr-settlement-client = { workspace = true }
+
+[features]
+bridge-tests = []

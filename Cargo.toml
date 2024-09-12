@@ -52,7 +52,7 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## bridge
-movement-bridge = { path = "protocol-units/bridge/chains/movement" }
+movement-bridge = { path = "protocol-units/bridge/chains/movement", features = ["bridge-tests"] }
 ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
 bridge-shared = { path = "protocol-units/bridge/shared" }
 bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }

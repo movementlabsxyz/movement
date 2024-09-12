@@ -62,6 +62,7 @@ pub struct Config {
 }
 
 impl Config {
+	#[cfg(feature = "bridge-tests")]
 	pub fn build_for_test() -> Self {
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
@@ -99,7 +100,6 @@ impl MovementClient {
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 
 		let rest_client = Client::new(node_connection_url.clone());
-
 		let seed = [3u8; 32];
 		let mut rng = rand::rngs::StdRng::from_seed(seed);
 		let signer = LocalAccount::generate(&mut rng);
@@ -116,6 +116,7 @@ impl MovementClient {
 		})
 	}
 
+	#[cfg(feature = "bridge-tests")]
 	pub async fn new_for_test(
 		_config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
@@ -229,6 +230,7 @@ impl MovementClient {
 		))
 	}
 
+	#[cfg(feature = "bridge-tests")]
 	pub fn publish_for_test(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
