@@ -98,7 +98,7 @@
               # build dependencies
               llvmPackages.bintools openssl openssl.dev libiconv pkg-config
               libclang.lib libz clang pkg-config protobuf rustPlatform.bindgenHook
-              lld mold coreutils postgresql
+              lld mold coreutils postgresql libelf elfutils
 
               # test dependencies
               python311 poetry just foundry-bin process-compose jq docker solc
