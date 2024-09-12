@@ -112,6 +112,7 @@
               udev systemd snappy bzip2
             ]);
 
+            LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
 
             shellHook = ''
               #!/usr/bin/env ${pkgs.bash}
