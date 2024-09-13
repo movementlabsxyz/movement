@@ -3711,6 +3711,7 @@ dependencies = [
  "rand 0.7.3",
  "reqwest 0.12.5",
  "serde_json",
+ "tiny-keccak",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",

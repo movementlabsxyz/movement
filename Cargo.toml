@@ -268,6 +268,7 @@ sha2 = "0.10.8"
 syn = "2.0"
 tempfile = "3.5"
 thiserror = "1.0.50"
+tiny-keccak = "2.0"
 tokio = { version = "1.35.1", features = ["full", "tracing"] }
 tokio-console = "0.1.0"
 console-subscriber = "0.3.0"

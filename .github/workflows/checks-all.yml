@@ -12,7 +12,7 @@ on:
 
 jobs:
  
-  cargo-check:
+  build:
     strategy:
       matrix:
         include:
@@ -35,9 +35,36 @@ jobs:
     - name: Run Cargo Check in nix environment
       run: |
         nix develop --command bash  -c "cargo check --all-targets"  
-        nix develop --command bash  -c "cargo test -p memseq"  
-        nix develop --command bash  -c "cargo test -p move-rocks"
-        nix develop --command bash  -c "cargo test -p movement-types"    
+
+  unit-tests:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run unit tests in nix environment
+      run: |
+        nix develop --command bash <<EOF
+          cargo test \
+            -p maptos-opt-executor \
+            -p memseq \
+            -p move-rocks \
+            -p movement-types
+        EOF
 
   suzuka-full-node-local:
     if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
@@ -89,8 +116,8 @@ jobs:
     - name: Run Suzuka Full Node Tests Against Holesky and Local Celestia
       env: 
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+        MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: ${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
       run: |
-        export MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY=${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
@@ -222,7 +249,8 @@ jobs:
             cd protocol-units/bridge/contracts && \
             forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
         "
-  bridge-eth-movement:
+
+  bridge-client-integration:
     if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
     strategy:
       matrix:
@@ -262,9 +290,11 @@ jobs:
 
     - name: Run eth_movement tests
       run: |
-        nix develop --command bash -c "
-          rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1 
-        "
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1"
+
+    - name: Run movement_eth tests
+      run: |
+        nix develop --command bash -c "rust_backtrace=1 cargo test --test movement_eth -- --nocapture --test-threads=1"
 
 #  Indexer:
 #    strategy:
