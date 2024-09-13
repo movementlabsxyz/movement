@@ -161,12 +161,14 @@ impl TransactionPipe {
 		let sequence_number =
 			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
 		if transaction.sequence_number() < sequence_number {
-			let status = MempoolStatus::new(MempoolStatusCode::VmError);
+			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
+			println!("Transaction sequence number too old: {:?}", transaction.sequence_number());
 			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
 		}
 
-		if transaction.sequence_number() > sequence_number + TOO_NEW_TOLERANCE {
-			let status = MempoolStatus::new(MempoolStatusCode::VmError);
+		if transaction.sequence_number() > (sequence_number + TOO_NEW_TOLERANCE) {
+			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
+			println!("Transaction sequence number too new: {:?}", transaction.sequence_number());
 			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW)));
 		}
 
@@ -211,6 +213,7 @@ mod tests {
 	use crate::{Executor, Service};
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
 	use aptos_mempool::MempoolClientSender;
+	use aptos_types::mempool_status;
 	use aptos_types::{
 		account_config, test_helpers::transaction_test_helpers, transaction::SignedTransaction,
 	};
@@ -396,6 +399,25 @@ mod tests {
 		assert_eq!(user_transactions, comparison_user_transactions);
 
 		mempool_handle.abort();
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
+		// set up
+		let maptos_config = Config::default();
+		let (mut transaction_pipe, mut _mempool_client_sender, _tx_receiver) = setup();
+
+		// submit a transaction with a valid sequence number
+		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		// submit a transaction with a sequence number that is too new
+		let user_transaction = create_signed_transaction(34, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
 		Ok(())
 	}

@@ -5,6 +5,7 @@ use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
 use tokio::sync::watch;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -36,6 +37,8 @@ async fn main() -> Result<(), anyhow::Error> {
 			}
 		}
 	});
+
+	info!("Starting Suzuka Full Node Setup");
 
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
