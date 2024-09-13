@@ -108,10 +108,14 @@ serde_yaml = "0.9.34"
 
 
 # External Dependencies
-
 ## Aptos dependencies
-### We use a forked version so that we can override dependency versions. This is required
-### to be avoid dependency conflicts with other Sovereign Labs crates.
+aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" } ## Aptos dependencies
+aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
+aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
+aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
 aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
 aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
