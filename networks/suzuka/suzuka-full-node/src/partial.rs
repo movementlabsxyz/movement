@@ -95,7 +95,7 @@ impl SuzukaPartialNode<Executor> {
 		let executor = Executor::try_from_config(&config.execution_config.maptos_config)
 			.context("Failed to create the inner executor")?;
 
-		debug!("Creating the settlement client should_settle:{}", config.mcr.should_settle());
+		debug!(should_settle = %config.mcr.should_settle(), "creating the settlement client", );
 		let settlement_client = McrSettlementClient::build_with_config(&config.mcr)
 			.await
 			.context("Failed to build MCR settlement client with config")?;
