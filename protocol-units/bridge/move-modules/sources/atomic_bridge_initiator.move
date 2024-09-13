@@ -484,7 +484,6 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == REFUNDED, 300);
     }
 
-
     #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @origin_addr, atomic_bridge = @atomic_bridge)]
     #[expected_failure(abort_code = ENOT_INITIALIZED, location = Self)]
     public fun test_refund_completed_transfer(
