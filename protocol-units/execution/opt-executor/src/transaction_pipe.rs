@@ -17,6 +17,8 @@ use thiserror::Error;
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
 
+use aptos_types::account_address::AccountAddress;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
 
@@ -37,6 +39,60 @@ pub enum Error {
 impl From<anyhow::Error> for Error {
 	fn from(e: anyhow::Error) -> Self {
 		Error::InternalError(e.to_string())
+	}
+}
+
+pub struct UsedSequenceNumberPool {
+	sequence_number_ttl: u64,
+	gc_slot_duration_ms: u64,
+	sequence_number_lifetimes: BTreeMap<u64, HashMap<AccountAddress, u64>>,
+}
+
+impl UsedSequenceNumberPool {
+	/// Creates a new UsedSequenceNumberPool with a specified garbage collection slot duration.
+	pub(crate) fn new(sequence_number_ttl: u64, gc_slot_duration_ms: u64) -> Self {
+		UsedSequenceNumberPool {
+			sequence_number_ttl,
+			gc_slot_duration_ms,
+			sequence_number_lifetimes: BTreeMap::new(),
+		}
+	}
+
+	/// Gets a sequence number for an account
+	pub(crate) fn get_sequence_number(&self, account: &AccountAddress) -> Option<u64> {
+		// check each slot for the account
+		for (slot, lifetimes) in self.sequence_number_lifetimes.iter().rev() {
+			// reverse order is better average case because highly-used sequence numbers will be moved up more often
+			if lifetimes.get(account).is_some() {
+				return Some(*slot);
+			}
+		}
+
+		None
+	}
+
+	/// Removes the sequence number for an account.
+	pub(crate) fn remove_sequence_number(&mut self, account_address: &AccountAddress) {
+		// check each slot for the account
+		for (slot, lifetimes) in self.sequence_number_lifetimes.iter_mut().rev() {
+			if lifetimes.remove(account_address).is_some() {
+				break;
+			}
+		}
+	}
+
+	/// Sets the sequence number for an account.
+	pub(crate) fn set_sequence_number(
+		&mut self,
+		account_address: &AccountAddress,
+		sequence_number: u64,
+		current_time_ms: u64,
+	) {
+		// remove the old sequence number
+		self.remove_sequence_number(account_address);
+
+		// compute the slot for the new lifetime and add accordingly
+		let slot = current_time_ms / self.gc_slot_duration_ms;
 	}
 }
 
@@ -166,11 +222,11 @@ impl TransactionPipe {
 			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
 		}
 
-		if transaction.sequence_number() > (sequence_number + TOO_NEW_TOLERANCE) {
+		/*if transaction.sequence_number() > (sequence_number + TOO_NEW_TOLERANCE) {
 			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
 			println!("Transaction sequence number too new: {:?}", transaction.sequence_number());
 			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW)));
-		}
+		}*/
 
 		// Add the txn for future validation
 		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
