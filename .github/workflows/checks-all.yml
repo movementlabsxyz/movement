@@ -202,7 +202,7 @@ jobs:
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
   move-modules-test:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: contains(github.event.label.name || '', 'cicd:bridge') || github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -240,7 +240,7 @@ jobs:
         "
   
   bridge-shared-lib-tests:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: contains(github.event.label.name || '', 'cicd:bridge') || github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -269,7 +269,7 @@ jobs:
         "
   
   solidity-bridge-tests:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: contains(github.event.label.name || '', 'cicd:bridge') || github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -299,7 +299,7 @@ jobs:
         "
 
   bridge-client-integration:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: contains(github.event.label.name || '', 'cicd:bridge') || github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
