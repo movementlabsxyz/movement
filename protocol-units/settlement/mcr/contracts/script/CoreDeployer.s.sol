@@ -45,12 +45,17 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer {
             _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
                 _upgradeMCR() : revert("MCR: both admin and proxy should be registered");
 
-        vm.stopBroadcast();
-
         // Only write to file if chainid is not running a foundry local chain
-        if (block.chainid != foundryChainId) {
+        if (block.chainid == foundryChainId) {
+            _upgradeMove();
+            _upgradeStaking();
+            _upgradeStlMove();
+            _upgradeMCR();
+        } else {
             _writeDeployments();
         }
+
+        vm.stopBroadcast();
     }
 
     function _deployMove() internal {

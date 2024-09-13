@@ -6,14 +6,17 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { Helper } from "./helpers/Helper.sol";
 import { Vm } from "forge-std/Vm.sol";
+import { stdJson } from "forge-std/StdJson.sol";
 
 contract MCRDeployer is Helper {
+
+    using stdJson for string;
 
     function run() external virtual {
         
         // load config data
         _loadConfig();
-        
+
         // Load deployment data
         _loadDeployments();
 
@@ -63,7 +66,9 @@ contract MCRDeployer is Helper {
     function _upgradeMCR() internal {
         console.log("MCR: upgrading");
         MCR newMCRImplementation = new MCR();
-        timelock.schedule(
+        string memory json = "safeCall";
+        bytes memory data = abi.encodeWithSignature(
+            "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
             address(deployment.mcrAdmin),
             0,
             abi.encodeWithSignature(
@@ -74,9 +79,19 @@ contract MCRDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + 1 days
+            block.timestamp + config.minDelay
         );
-        console.log("MCR: upgrade scheduled");
+        json.serialize("to", address(timelock));
+        string memory zero = "0";
+        json.serialize("value", zero);
+        json.serialize("data", data);
+        string memory operation = "OperationType.Call";
+        json.serialize("chainId", chainId);
+        json.serialize("safeAddress", config.proposers[0]);
+        string memory serializedData = json.serialize("operation", operation);
+
+        console.log("MCR upgrade json |start|", serializedData, "|end|");
+        vm.writeFile(string.concat(root, upgradePath, "mcr.json"), serializedData);
     }
 
 }

@@ -20,6 +20,9 @@ contract Helper is Script {
     string public stakingSignature = "initialize(address)";
     string public stlMoveSignature = "initialize(string,string,address)";
     string public moveSignature = "initialize()";
+    string public root = vm.projectRoot();
+    string public deploymentsPath = "/script/helpers/deployments.json";
+    string public upgradePath = "/script/helpers/upgrade/";
     address public ZERO = address(0x0);
     string public chainId = uint2str(block.chainid);
     uint256 public foundryChainId = 31337;
@@ -51,15 +54,18 @@ contract Helper is Script {
     }
 
     function _loadConfig() internal returns (uint256 minDelay, address[] memory signers, address[] memory proposers, address[] memory executors, address adminAddress) {
-        string memory path = string.concat(vm.projectRoot(), "/script/helpers/config.json");
+        string memory path = string.concat(root, "/script/helpers/config.json");
         string memory json = vm.readFile(path);
         bytes memory rawConfigData = json.parseRaw(string(abi.encodePacked(".")));
         config = abi.decode(rawConfigData, (ConfigData));
+        if (config.proposers[0] == ZERO) {
+            config.proposers[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+        }
     }
 
     function _loadDeployments() internal {
         // load deployments
-        string memory path = string.concat(vm.projectRoot(), "/script/helpers/deployments.json");
+        string memory path = string.concat(root, deploymentsPath);
         string memory json = vm.readFile(path);
         bytes memory rawDeploymentData = json.parseRaw(string(abi.encodePacked(".", chainId)));
         deployment = abi.decode(rawDeploymentData, (Deployment));
@@ -73,8 +79,7 @@ contract Helper is Script {
     }  
 
     function _writeDeployments() internal {
-        string memory root = vm.projectRoot();
-        string memory path = string.concat(root, "/script/helpers/test.json");
+        string memory path = string.concat(root, deploymentsPath);
         string memory json = storageJson;
         string memory base = "new";
         json.serialize("move", deployment.move);
@@ -122,10 +127,9 @@ contract Helper is Script {
 
     // string to address
     function s2a(bytes memory str) public returns (address addr) {
-        bytes32 data = keccak256(str);
-        assembly {
-            mstore(0, data)
-            addr := mload(0)
+        bytes32 data = keccak256(str);  
+        assembly {  
+            addr := data  
         }
     }
 
