@@ -213,7 +213,6 @@ mod tests {
 	use crate::{Executor, Service};
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
 	use aptos_mempool::MempoolClientSender;
-	use aptos_types::mempool_status;
 	use aptos_types::{
 		account_config, test_helpers::transaction_test_helpers, transaction::SignedTransaction,
 	};
