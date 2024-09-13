@@ -14,7 +14,19 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ (import rust-overlay) foundry.overlay ];
+          overlays = [
+            (self: super: {
+              # Force the glibc version to 2.38
+              glibc = super.stdenv.lib.overrideDerivation super.glibc (attrs: {
+                src = super.fetchurl {
+                  url = "https://ftp.gnu.org/gnu/libc/glibc-2.38.tar.gz";
+                  sha256 = "your-sha256-hash-here";
+                };
+              });
+            })
+            (import rust-overlay)
+            foundry.overlay
+          ];
         };
 
         toolchain = p: (p.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
@@ -119,8 +131,6 @@
 
               DOT_MOVEMENT_PATH=$(pwd).movement
               mkdir -p $DOT_MOVEMENT_PATH
-
-              # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
