@@ -3,6 +3,7 @@
 pub mod execution;
 pub mod initialization;
 
+use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_storage_interface::{DbReader, DbReaderWriter};
 use aptos_types::validator_signer::ValidatorSigner;
@@ -54,5 +55,17 @@ impl Executor {
 
 	pub fn config(&self) -> &Config {
 		&self.config
+	}
+
+	pub fn has_executed_transaction(
+		&self,
+		transaction_hash: HashValue,
+	) -> Result<bool, anyhow::Error> {
+		let reader = self.db_reader();
+		let ledger_version = reader.get_latest_ledger_info_version()?;
+		match reader.get_transaction_by_hash(transaction_hash, ledger_version, false)? {
+			Some(_) => Ok(true),
+			None => Ok(false),
+		}
 	}
 }
