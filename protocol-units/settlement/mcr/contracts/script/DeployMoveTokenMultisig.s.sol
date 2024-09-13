@@ -5,10 +5,10 @@ import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyFactory.sol";
+import { SafeProxy } from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import {CreateCall} from "@safe-smart-account/contracts/libraries/CreateCall.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Enum} from "@safe-smart-account/contracts/common/Enum.sol";
 
 contract DeployMoveTokenMultisig is Script {
@@ -22,13 +22,18 @@ contract DeployMoveTokenMultisig is Script {
     CreateCall public createCall = CreateCall(0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4);
     address payable public safeAddress;
     Safe public safe;
+    uint256 public threshold = 2;
     TimelockController public timelock;
 
     function generateSignatures(bytes32 digest) internal returns (bytes memory signatures) {
         (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(1, digest);
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
         (uint8 v3, bytes32 r3, bytes32 s3) = vm.sign(3, digest);
-        signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2, r3, s3, v3);
+
+        console.log("v1: ", v1);
+        console.log("v2: ", v2);
+        console.log("v3: ", v3);
+        signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
     }
 
     function run() external {
@@ -36,9 +41,7 @@ contract DeployMoveTokenMultisig is Script {
         vm.startBroadcast(signer);
         MOVEToken moveImplementation = new MOVEToken();
 
-        // forge script DeployMoveToken --fork-url https://eth-sepolia.api.onfinality.io/public
-
-        safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+        // forge script DeployMoveTokenMultisig --fork-url https://eth-sepolia.api.onfinality.io/public
 
         address[] memory signers = new address[](5);
 
@@ -47,17 +50,25 @@ contract DeployMoveTokenMultisig is Script {
         signers[2] = vm.addr(2);
         signers[3] = vm.addr(3);
         signers[4] = vm.addr(4);
+
+        // DEPLOYMENT USING SAFE PROXY FACTORY
+        safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
         safeAddress = payable(
             address(
                 safeProxyFactory.createProxyWithNonce(
                     safeSingleton,
-                    abi.encodeWithSignature(safeSetupSignature, signers, 3, zero, "0x", zero, zero, 0, payable(zero)),
+                    abi.encodeWithSignature(safeSetupSignature, signers, threshold, zero, "0x", 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99, zero, 0, payable(zero)),
                     0
                 )
             )
         );
-
         safe = Safe(safeAddress);
+        // DEPLOYMENT USING SAFE PROXY FACTORY
+
+        // DEPLOYMENT USING SAFE PROXY
+        // safe = Safe(payable(address(new SafeProxy(safeSingleton))));
+        // safe.setup(signers, 3, zero, "0x", 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99, zero, 0, payable(zero));
+        // DEPLOYMENT USING SAFE PROXY
 
         uint256 minDelay = 1 days;
         address[] memory proposers = new address[](5);
@@ -80,7 +91,7 @@ contract DeployMoveTokenMultisig is Script {
 
         bytes memory createCallData =
             abi.encodeWithSignature("performCreate2(uint256,bytes,bytes32)", 0, proxyDeploymentData, "");
-        bytes32 digest = keccak256(createCallData);
+        bytes32 digest = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", createCallData));
         
         bytes memory signatures = generateSignatures(digest);
 
