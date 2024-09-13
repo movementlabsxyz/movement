@@ -5,10 +5,11 @@ use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
 use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
+use aptos_storage_interface::state_view::LatestDbStateCheckpointView;
 use aptos_storage_interface::DbReader;
 use aptos_types::transaction::SignedTransaction;
-use aptos_vm_validator::vm_validator::TransactionValidation;
-use aptos_vm_validator::vm_validator::VMValidator;
+use aptos_types::vm_status::DiscardedVMStatus;
+use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator};
 
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
@@ -20,6 +21,7 @@ use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
+const TOO_NEW_TOLERANCE: u64 = 32;
 
 /// Domain error for the transaction pipe task
 #[derive(Debug, Clone, Error)]
@@ -149,7 +151,26 @@ impl TransactionPipe {
 			None => {}
 		}
 
-		let sequence_number = transaction.sequence_number();
+		// Validate sequence number
+		let state_view = self
+			.db_reader
+			.latest_state_checkpoint_view()
+			.expect("Failed to get latest state view");
+
+		// this checks that the sequence number is too old or too new
+		let sequence_number =
+			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
+		if transaction.sequence_number() < sequence_number {
+			let status = MempoolStatus::new(MempoolStatusCode::VmError);
+			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
+		}
+
+		if transaction.sequence_number() > sequence_number + TOO_NEW_TOLERANCE {
+			let status = MempoolStatus::new(MempoolStatusCode::VmError);
+			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW)));
+		}
+
+		// Add the txn for future validation
 		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
 		let status = self.core_mempool.add_txn(
 			transaction.clone(),

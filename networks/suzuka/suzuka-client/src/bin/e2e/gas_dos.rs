@@ -1,5 +1,5 @@
 pub async fn create_fake_signed_transaction(
-	chain_id: us,
+	chain_id: u64,
 	from_account: &LocalAccount,
 	to_account: AccountAddress,
 	amount: u64,
@@ -34,4 +34,15 @@ pub async fn create_fake_signed_transaction(
 		.build();
 
 	let signed_txn = from_account.sign_transaction(raw_txn);
+}
+
+#[tokio::main]
+async fn main() {
+	let chain_id = 1;
+	let from_account = LocalAccount::generate(&mut OsRng);
+	let to_account = AccountAddress::random();
+	let amount = 1000;
+
+	let signed_txn =
+		create_fake_signed_transaction(chain_id, &from_account, to_account, amount).await;
 }
