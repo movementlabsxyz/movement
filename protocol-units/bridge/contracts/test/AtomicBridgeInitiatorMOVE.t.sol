@@ -3,18 +3,18 @@ pragma solidity ^0.8.22;
 pragma abicoder v2;
 
 import {Test, console} from "forge-std/Test.sol";
-import {AtomicBridgeInitiator, IAtomicBridgeInitiator, OwnableUpgradeable} from "../src/AtomicBridgeInitiator.sol";
+import {AtomicBridgeInitiatorMOVE, IAtomicBridgeInitiatorMOVE, OwnableUpgradeable} from "../src/AtomicBridgeInitiatorMOVE.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {MockMOVEToken} from "../src/MockMOVEToken.sol";  
 import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeInitiatorMOVETest is Test {
-    AtomicBridgeInitiator public atomicBridgeInitiatorImplementation;
+    AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
     MockMOVEToken public moveToken;   
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
-    AtomicBridgeInitiator public atomicBridgeInitiator;
+    AtomicBridgeInitiatorMOVE public atomicBridgeInitiator;
 
     address public originator =  address(1);
     bytes32 public recipient = keccak256(abi.encodePacked(address(2)));
@@ -28,7 +28,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
-        atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
+        atomicBridgeInitiatorImplementation = new AtomicBridgeInitiatorMOVE();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
@@ -36,7 +36,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             abi.encodeWithSignature("initialize(address,address)", address(moveToken), address(this))
         );
 
-        atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
+        atomicBridgeInitiator = AtomicBridgeInitiatorMOVE(address(proxy));
     }
 
     function testInitiateBridgeTransferWithMove() public {
@@ -59,7 +59,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             bytes32 transferRecipient,
             bytes32 transferHashLock,
             uint256 transferTimeLock,
-            AtomicBridgeInitiator.MessageState transferState
+            AtomicBridgeInitiatorMOVE.MessageState transferState
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
         assertEq(transferAmount, moveAmount);
@@ -67,7 +67,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         assertEq(transferRecipient, recipient);
         assertEq(transferHashLock, hashLock);
         assertGt(transferTimeLock, block.timestamp);
-        assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
+        assertEq(uint8(transferState), uint8(AtomicBridgeInitiatorMOVE.MessageState.INITIALIZED));
 
         vm.stopPrank();
     }
@@ -98,7 +98,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             bytes32 completedRecipient,
             bytes32 completedHashLock,
             uint256 completedTimeLock,
-            AtomicBridgeInitiator.MessageState completedState
+            AtomicBridgeInitiatorMOVE.MessageState completedState
         ) = atomicBridgeInitiator.bridgeTransfers(bridgeTransferId);
 
         assertEq(completedAmount, moveAmount);
@@ -106,7 +106,7 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         assertEq(completedRecipient, recipient);
         assertEq(completedHashLock, testHashLock);
         assertGt(completedTimeLock, block.timestamp);
-        assertEq(uint8(completedState), uint8(AtomicBridgeInitiator.MessageState.COMPLETED));
+        assertEq(uint8(completedState), uint8(AtomicBridgeInitiatorMOVE.MessageState.COMPLETED));
     }
 
     function testRefundBridgeTransfer() public {
@@ -134,8 +134,8 @@ contract AtomicBridgeInitiatorMOVETest is Test {
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
         vm.stopPrank();
 
-        //vm.expectEmit();
-        emit IAtomicBridgeInitiator.BridgeTransferRefunded(bridgeTransferId);
+        vm.expectEmit();
+        emit IAtomicBridgeInitiatorMOVE.BridgeTransferRefunded(bridgeTransferId);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
         assertEq(moveToken.balanceOf(originator), moveAmount, "MOVE balance mismatch");

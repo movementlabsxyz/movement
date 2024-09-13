@@ -205,7 +205,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
         vm.stopPrank();
 
-        //vm.expectEmit();
+        vm.expectEmit();
         emit IAtomicBridgeInitiator.BridgeTransferRefunded(bridgeTransferId);
         atomicBridgeInitiator.refundBridgeTransfer(bridgeTransferId);
 
