@@ -21,10 +21,7 @@ contract StakingDeployer is Helper {
         vm.startBroadcast(signer);
 
         // timelock is required for all deployments
-        if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.proposers, config.executors, config.admin);
-            deployment.timelock = address(timelock);
-        }
+        _deployTimelock();
 
         deployment.stakingAdmin == ZERO && deployment.staking == ZERO && deployment.move != ZERO ?
             _deployStaking() : deployment.stakingAdmin != ZERO && deployment.staking != ZERO ?
@@ -37,6 +34,8 @@ contract StakingDeployer is Helper {
             _writeDeployments();
         }
     }
+
+    // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
 
     function _deployStaking() internal {
         console.log("STAKING: deploying");

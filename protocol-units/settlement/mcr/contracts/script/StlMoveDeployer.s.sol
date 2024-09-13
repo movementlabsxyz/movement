@@ -21,10 +21,7 @@ contract StlMoveDeployer is Helper {
         vm.startBroadcast(signer);
 
         // timelock is required for all deployments
-        if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.proposers, config.executors, config.admin);
-            deployment.timelock = address(timelock);
-        }
+        _deployTimelock();
 
         deployment.stlMoveAdmin == ZERO && deployment.stlMove == ZERO && deployment.move != ZERO ?
             _deployStlMove() : deployment.stlMoveAdmin != ZERO && deployment.stlMove != ZERO ?
@@ -37,6 +34,8 @@ contract StlMoveDeployer is Helper {
             _writeDeployments();
         }
     }
+
+    // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
 
     function _deployStlMove() internal {
         console.log("STL: deploying");

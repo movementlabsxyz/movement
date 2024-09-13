@@ -24,10 +24,7 @@ contract MCRDeployer is Helper {
         vm.startBroadcast(signer);
 
         // timelock is required for all deployments
-        if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.proposers, config.executors, config.admin);
-            deployment.timelock = address(timelock);
-        }
+        _deployTimelock();
 
         deployment.mcrAdmin == ZERO && deployment.mcr == ZERO && deployment.move != ZERO && deployment.staking != ZERO ?
             _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
@@ -40,6 +37,8 @@ contract MCRDeployer is Helper {
             _writeDeployments();
         }
     }
+
+    // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
 
     function _deployMCR() internal {
         console.log("MCR: deploying");
@@ -79,7 +78,7 @@ contract MCRDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + config.minDelay
+            config.minDelay
         );
         json.serialize("to", address(timelock));
         string memory zero = "0";

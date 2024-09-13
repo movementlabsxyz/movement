@@ -14,7 +14,6 @@ contract Helper is Script {
     TransparentUpgradeableProxy public stlMoveProxy;
     TransparentUpgradeableProxy public stakingProxy;
     TransparentUpgradeableProxy public mcrProxy;
-
     TimelockController public timelock;
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
     string public stakingSignature = "initialize(address)";
@@ -65,11 +64,19 @@ contract Helper is Script {
 
     function _loadDeployments() internal {
         // load deployments
+        // Inspo https://github.com/traderjoe-xyz/joe-v2/blob/main/script/deploy-core.s.sol
         string memory path = string.concat(root, deploymentsPath);
         string memory json = vm.readFile(path);
         bytes memory rawDeploymentData = json.parseRaw(string(abi.encodePacked(".", chainId)));
         deployment = abi.decode(rawDeploymentData, (Deployment));
         storageJson = json;
+    }
+
+    function _deployTimelock() internal {
+        if (deployment.timelock == ZERO) {
+            timelock = new TimelockController(config.minDelay, config.proposers, config.executors, config.admin);
+            deployment.timelock = address(timelock);
+        }
     }
 
     function _storeAdminDeployment() internal returns (address admin) {
@@ -82,17 +89,7 @@ contract Helper is Script {
         string memory path = string.concat(root, deploymentsPath);
         string memory json = storageJson;
         string memory base = "new";
-        json.serialize("move", deployment.move);
-        json.serialize("moveAdmin", deployment.moveAdmin);
-        json.serialize("staking", deployment.staking);
-        json.serialize("stakingAdmin", deployment.stakingAdmin);
-        json.serialize("stlMove", deployment.stlMove);
-        json.serialize("stlMoveAdmin", deployment.stlMoveAdmin);
-        json.serialize("mcr", deployment.mcr);
-        json.serialize("mcrAdmin", deployment.mcrAdmin);
-        json.serialize("timelock", deployment.timelock);
-        string memory newChainData = json.serialize("multisig", deployment.multisig);
-
+        string memory newChainData = _serializer(json, deployment);
         // take values from storageJson that were not updated (e.g. 3771) and serialize them
         uint256[] memory validChains = new uint256[](4);
         validChains[0] = 1; // ethereum
@@ -113,16 +110,21 @@ contract Helper is Script {
         bytes memory rawDeploymentData = sJson.parseRaw(string(abi.encodePacked(".", uint2str(chain))));
         Deployment memory deploymentData = abi.decode(rawDeploymentData, (Deployment));
         string memory json = uint2str(chain);
-        json.serialize("move", deploymentData.move);
-        json.serialize("moveAdmin", deploymentData.moveAdmin);
-        json.serialize("staking", deploymentData.staking);
-        json.serialize("stakingAdmin", deploymentData.stakingAdmin);
-        json.serialize("stlMove", deploymentData.stlMove);
-        json.serialize("stlMoveAdmin", deploymentData.stlMoveAdmin);
-        json.serialize("mcr", deploymentData.mcr);
-        json.serialize("mcrAdmin", deploymentData.mcrAdmin);
-        string memory chainData = json.serialize("timelock", deploymentData.timelock);
+        string memory chainData = _serializer(json, deploymentData);
         base.serialize(uint2str(chain), chainData);
+    }
+
+    function _serializer(string memory json, Deployment memory deployment) internal returns (string memory) {
+        json.serialize("move", deployment.move);
+        json.serialize("moveAdmin", deployment.moveAdmin);
+        json.serialize("staking", deployment.staking);
+        json.serialize("stakingAdmin", deployment.stakingAdmin);
+        json.serialize("stlMove", deployment.stlMove);
+        json.serialize("stlMoveAdmin", deployment.stlMoveAdmin);
+        json.serialize("mcr", deployment.mcr);
+        json.serialize("mcrAdmin", deployment.mcrAdmin);
+        json.serialize("timelock", deployment.timelock);
+        return json.serialize("multisig", deployment.multisig);
     }
 
     // string to address

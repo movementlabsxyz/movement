@@ -12,7 +12,6 @@ import {TimelockController} from "@openzeppelin/contracts/governance/TimelockCon
 contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer {
 
     function run() external override(MCRDeployer, StakingDeployer, StlMoveDeployer) {
-
         // load config data
         _loadConfig();
 
@@ -23,26 +22,30 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer {
         vm.startBroadcast(signer);
 
         // timelock is required for all deployments
-        if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.proposers, config.executors, config.admin);
-            deployment.timelock = address(timelock);
-        }
+        _deployTimelock();
         
         // Deploy or upgrade contracts conditionally
         deployment.moveAdmin == ZERO && deployment.move == ZERO ?
             _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
+                // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
 
+        // requires move to be deployed
         deployment.stakingAdmin == ZERO && deployment.staking == ZERO && deployment.move != ZERO ?
             _deployStaking() : deployment.stakingAdmin != ZERO && deployment.staking != ZERO ?
+                // if staking is already deployed, upgrade it
                 _upgradeStaking() : revert("STAKING: both admin and proxy should be registered");
 
+        // requires move to be deployed
         deployment.stlMoveAdmin == ZERO && deployment.stlMove == ZERO && deployment.move != ZERO ?
             _deployStlMove() : deployment.stlMoveAdmin != ZERO && deployment.stlMove != ZERO ?
+                // if stlMove is already deployed, upgrade it
                 _upgradeStlMove() : revert("STL: both admin and proxy should be registered");
 
+        // requires staking and move to be deployed
         deployment.mcrAdmin == ZERO && deployment.mcr == ZERO && deployment.move != ZERO && deployment.staking != ZERO ?
             _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
+                // if mcr is already deployed, upgrade it
                 _upgradeMCR() : revert("MCR: both admin and proxy should be registered");
 
         // Only write to file if chainid is not running a foundry local chain
@@ -57,6 +60,8 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer {
 
         vm.stopBroadcast();
     }
+    
+    // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
 
     function _deployMove() internal {
         console.log("MOVE: deploying");
