@@ -31,6 +31,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     IWETH9 public weth;
     uint256 private nonce;
 
+    // Constant time lock of 48 hours in seconds 
+    uint256 public constant INITIATOR_TIME_LOCK_DURATION = 24 * 60 * 60 * 2;
+
     function initialize(address _weth, address owner) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
@@ -44,7 +47,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         counterpartyAddress = _counterpartyAddress;
     }
 
-    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
+    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock)
         external
         payable
         returns (bytes32 bridgeTransferId)
@@ -52,12 +55,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         address originator = msg.sender;
         uint256 ethAmount = msg.value;
         uint256 totalAmount = wethAmount + ethAmount;
+
         // Ensure there is a valid total amount
         if (totalAmount == 0) {
             revert ZeroAmount();
         }
+        
         // If msg.value is greater than 0, convert ETH to WETH
         if (ethAmount > 0) weth.deposit{value: ethAmount}();
+        
         // Transfer WETH to this contract, revert if transfer fails
         if (wethAmount > 0) {
             if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
@@ -67,18 +73,18 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         poolBalance += totalAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.timestamp, nonce++));
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, INITIATOR_TIME_LOCK_DURATION, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.timestamp + timeLock,
+            timeLock: block.timestamp + INITIATOR_TIME_LOCK_DURATION,
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, INITIATOR_TIME_LOCK_DURATION);
         return bridgeTransferId;
     }
 
@@ -86,7 +92,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.timestamp > bridgeTransfer.timeLock) revert TimelockExpired();
+        if (block.timestamp > bridgeTransfer.timeLock) revert TimeLockExpired();
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -97,6 +103,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
+        
         // Decrease pool balance and transfer WETH back to originator
         poolBalance -= bridgeTransfer.amount;
         if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
@@ -112,3 +119,4 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
     }
 }
+

@@ -23,10 +23,9 @@ contract AtomicBridgeCounterpartyTest is Test {
     address public otherUser = address(0x3);
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
-    uint256 public timeLock = 100;
     bytes32 public initiator = keccak256(abi.encodePacked(deployer));
     bytes32 public bridgeTransferId =
-        keccak256(abi.encodePacked(block.timestamp, initiator, recipient, amount, hashLock, timeLock));
+        keccak256(abi.encodePacked(block.timestamp, initiator, recipient, amount, hashLock));
 
     function setUp() public {
         // Sepolia WETH9 address
@@ -67,10 +66,10 @@ contract AtomicBridgeCounterpartyTest is Test {
         // Deposit WETH into AtomicBridgeInitiator to increase poolBalance
         weth.deposit{value: amount}();
         weth.approve(address(atomicBridgeInitiator), amount);
-        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock, timeLock);
+        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock);
 
         bool result = atomicBridgeCounterparty.lockBridgeTransfer(
-            initiator, bridgeTransferId, hashLock, timeLock, recipient, amount
+            initiator, bridgeTransferId, hashLock, recipient, amount
         );
 
         (
@@ -103,10 +102,10 @@ contract AtomicBridgeCounterpartyTest is Test {
         // Deposit WETH into AtomicBridgeInitiator to increase poolBalance
         weth.deposit{value: amount}();
         weth.approve(address(atomicBridgeInitiator), amount);
-        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, testHashLock, timeLock);
+        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, testHashLock);
 
         atomicBridgeCounterparty.lockBridgeTransfer(
-            initiator, bridgeTransferId, testHashLock, timeLock, recipient, amount
+            initiator, bridgeTransferId, testHashLock, recipient, amount
         );
 
         vm.stopPrank();
@@ -140,13 +139,16 @@ contract AtomicBridgeCounterpartyTest is Test {
         // Deposit WETH into AtomicBridgeInitiator to increase poolBalance
         weth.deposit{value: amount}();
         weth.approve(address(atomicBridgeInitiator), amount);
-        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock, timeLock);
+        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock);
 
-        atomicBridgeCounterparty.lockBridgeTransfer(initiator, bridgeTransferId, hashLock, timeLock, recipient, amount);
+        atomicBridgeCounterparty.lockBridgeTransfer(initiator, bridgeTransferId, hashLock, recipient, amount);
 
         vm.stopPrank();
 
-        // Advance the block number to beyond the timelock period
+        // Internally, counterparty timelock is set to 24 hours, initiator to 48 hours
+        uint256 timeLock = 2 * atomicBridgeCounterparty.COUNTERPARTY_TIME_LOCK_DURATION();
+
+        // Advance the timestamp to beyond the timelock period
         vm.warp(block.timestamp + timeLock + 1);
 
         // Malicious attempt to abort the bridge transfer
@@ -171,9 +173,10 @@ contract AtomicBridgeCounterpartyTest is Test {
         assertEq(abortedRecipient, recipient);
         assertEq(abortedAmount, amount);
         assertEq(abortedHashLock, hashLock);
-        assertLe(abortedTimeLock, block.timestamp, "Timelock is not less than or equal to current timestamp");
+        assertLe(abortedTimeLock, block.timestamp);
         assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
 
         vm.stopPrank();
     }
 }
+
