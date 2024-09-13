@@ -39,7 +39,7 @@ However, because dummy values `0xcafe` for origin address and `0xc3bb...` for re
 ```
 with your generated resource account address (instead of `0x9a78...`) based on your choice of seed value.
 
-3. Copy the resource account address, then input "no". 
+3. Copy the resource account address, then input "no".
 
 4. In `Move.toml` replace the value of
 - `resource_addr`, `moveth`, and `atomic_bridge` with the resource account address in the prompt, and
