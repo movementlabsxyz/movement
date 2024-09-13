@@ -11,6 +11,15 @@ on:
       - '**' 
 
 jobs:
+
+  debug-info:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Print GitHub Ref and Label
+      run: |
+        echo "GitHub Ref: ${{ github.ref }}"
+        echo "Label Name: ${{ github.event.label.name }}"
  
   cargo-check:
     strategy:
