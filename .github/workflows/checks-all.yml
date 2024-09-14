@@ -193,7 +193,7 @@ jobs:
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
   move-modules-test:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: github.event.label.name == 'cicd:bridge' || github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
@@ -214,10 +214,9 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    - name: Disable Cachix and Force Rebuild
+      run: |
+        nix develop --command bash -c "cargo clean && nix build --no-cache"
 
     - name: Run Aptos Tests
       run: |
