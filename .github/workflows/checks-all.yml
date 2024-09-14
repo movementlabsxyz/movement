@@ -216,7 +216,7 @@ jobs:
 
     - name: Disable Cachix and Force Rebuild
       run: |
-        nix develop --command bash -c "cargo clean && nix-build"
+        nix --experimental-features 'nix-command flakes' develop --command bash -c "cargo clean && nix-build"
 
     - name: Run Aptos Tests
       run: |
