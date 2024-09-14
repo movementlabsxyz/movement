@@ -220,7 +220,7 @@ jobs:
 
     - name: Run Aptos Tests
       run: |
-        nix develop --command bash -c "
+        nix develop --experimental-features 'nix-command flakes' --command bash -c "
           set -e
           set -x
           chmod +x .github/scripts/update_move_toml.sh && \
