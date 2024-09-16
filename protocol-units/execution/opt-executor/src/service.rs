@@ -8,7 +8,17 @@ use aptos_api::{
 use aptos_storage_interface::DbReaderWriter;
 
 use futures::prelude::*;
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use poem::{
+	get, handler, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
+
+use poem::{
+	get, handler,
+	middleware::Tracing,
+	web::{Data, Path},
+	EndpointExt, IntoResponse, Response, Route, Server,
+};
+
 use tracing::info;
 
 use std::future::Future;
@@ -72,18 +82,53 @@ impl Service {
 			.at("/", poem::get(root_handler))
 			.nest("/v1", api_service)
 			.nest("/spec", ui)
+			.at("/v1/state-root-hash/:blockheight", get(state_root_hash))
 			.at("/spec.json", poem::get(spec_json))
 			.at("/spec.yaml", poem::get(spec_yaml))
 			.at(
 				"/set_failpoint",
 				poem::get(set_failpoints::set_failpoint_poem).data(self.api_context()),
 			)
+			.data(self.context.clone())
 			.with(cors);
 
 		Server::new(listener)
 			.run(app)
 			.map_err(|e| anyhow::anyhow!("Server error: {:?}", e))
 	}
+}
+
+#[handler]
+pub async fn state_root_hash(
+	Path(blockheight): Path<u64>,
+	context: Data<&Arc<Context>>,
+) -> Result<Response, anyhow::Error> {
+	let latest_ledger_info = context.db.get_latest_ledger_info()?;
+	let (_, end_version, _) = context.db.get_block_info_by_height(blockheight)?;
+	tracing::info!("end_version: {}", end_version);
+	let txn_with_proof = context.db.get_transaction_by_version(
+		end_version,
+		latest_ledger_info.ledger_info().version(),
+		false,
+	)?;
+	tracing::info!("txn_with_proof: {:?}", txn_with_proof);
+	let state_root_hash = txn_with_proof
+		.proof
+		.transaction_info
+		.state_checkpoint_hash()
+		.ok_or_else(|| anyhow::anyhow!("No state root hash found"))?;
+	Ok(state_root_hash.to_string().into_response())
+}
+
+#[handler]
+pub async fn get_current_commitment(
+	context: Data<&Arc<Context>>,
+) -> Result<Response, anyhow::Error> {
+	let latest_ledger_info = context.db.get_latest_ledger_info()?;
+	let version = latest_ledger_info.ledger_info().version();
+	let state_proof = context.db.get_state_proof(version)?;
+	let commitment = movement_types::Commitment::digest_state_proof(&state_proof);
+	Ok(hex::encode(&commitment.0).into_response())
 }
 
 #[cfg(test)]
