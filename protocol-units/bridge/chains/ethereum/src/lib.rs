@@ -220,7 +220,9 @@ where
 		if let Some(event) = this.events.pop() {
 			for listener in &mut this.event_listeners {
 				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
-				listener.unbounded_send(event.clone()).expect("listener dropped");
+				if let Err(err) = listener.unbounded_send(event.clone()) {
+					tracing::error!("Error during unbounded_send: {err} .");
+				}
 			}
 
 			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);

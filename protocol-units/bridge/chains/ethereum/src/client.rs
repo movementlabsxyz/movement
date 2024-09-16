@@ -133,11 +133,9 @@ impl EthClient {
 		weth: EthAddress,
 		owner: EthAddress,
 	) -> Result<(), anyhow::Error> {
-		let contract = self.initiator_contract().expect("Initiator contract not set");
+		let contract = self.initiator_contract()?;
 		let call = contract.initialize(weth.0, owner.0);
-		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.expect("Failed to send transaction");
+		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT).await?;
 		Ok(())
 	}
 
@@ -149,21 +147,14 @@ impl EthClient {
 		let deposit_weth_signer = self.get_signer_address();
 		let contract = self.weth_contract().expect("WETH contract not set");
 		let call = contract.deposit().value(amount);
-		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.expect("Failed to deposit eth to weth contract");
+		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT).await?;
 
 		let approve_call: alloy::contract::CallBuilder<_, &_, _> =
 			contract.approve(self.initiator_contract_address()?, amount);
-		let WETH9::balanceOfReturn { _0: _balance } = contract
-			.balanceOf(deposit_weth_signer)
-			.call()
-			.await
-			.expect("Failed to get balance");
+		let WETH9::balanceOfReturn { _0: _balance } =
+			contract.balanceOf(deposit_weth_signer).call().await?;
 
-		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.expect("Failed to approve");
+		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT).await?;
 		Ok(())
 	}
 
@@ -293,7 +284,7 @@ impl BridgeContractInitiator for EthClient {
 			.await
 			.map_err(|e| {
 				BridgeContractInitiatorError::GenericError(format!(
-					"Failed to send transaction: {}",
+					"Initiate bridge transfer Failed to send transaction: {}",
 					e
 				))
 			})?;
@@ -321,7 +312,12 @@ impl BridgeContractInitiator for EthClient {
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!(
+					"Complete bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -334,7 +330,12 @@ impl BridgeContractInitiator for EthClient {
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!(
+					"Refund bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -402,7 +403,12 @@ impl BridgeContractCounterparty for EthClient {
 		);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractCounterpartyError::GenericError(format!(
+					"Lock bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -420,7 +426,12 @@ impl BridgeContractCounterparty for EthClient {
 			contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(secret));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractCounterpartyError::GenericError(format!(
+					"Complete bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -435,7 +446,12 @@ impl BridgeContractCounterparty for EthClient {
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractCounterpartyError::GenericError(format!(
+					"Abort bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
