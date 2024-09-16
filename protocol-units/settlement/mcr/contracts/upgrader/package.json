@@ -3,11 +3,16 @@
   "version": "1.0.0",
   "main": "index.ts",
   "license": "MIT",
+  "type": "module",
   "dependencies": {
     "@safe-global/api-kit": "^2.4.5",
     "@types/commander": "^2.12.2",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "ts-node": "^10.9.2"
+    "npx": "^10.2.2",
+    "typescript": "^5.6.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.1"
   }
 }

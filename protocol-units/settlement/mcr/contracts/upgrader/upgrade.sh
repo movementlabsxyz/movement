@@ -22,10 +22,12 @@ fi
 
 # Run the script to generate transaction data for the upgrade
 echo "Generating transaction data to upgrade contract $contract"
-echo forge script "../script/${contract}Deployer.s.sol" -vvvv
+echo nix develop --command bash -c "cd .. && forge script "../script/${contract}Deployer.s.sol" -vvvv"
 
 # Convert contract name to lowercase
 lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
+
+echo cd ../upgrader
 
 # Run the upgrader script
 echo "Running upgrader/index.ts"

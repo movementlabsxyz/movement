@@ -29,7 +29,7 @@ async function main() {
   program.parse(process.argv);
 
   const rawData = fs.readFileSync(
-    `../helpers/upgrade/${program.opts().contract}.json`,
+    `../script/helpers/upgrade/${program.opts().contract}.json`,
     "utf-8"
   );
   const jsonData = JSON.parse(rawData);
