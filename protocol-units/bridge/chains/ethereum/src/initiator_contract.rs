@@ -1,50 +1,13 @@
 use crate::types::{EthAddress, EthHash};
 use bridge_shared::{
 	bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult},
-	bridge_monitoring::BridgeContractInitiatorEvent,
 	types::{
 		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
+		InitiatorAddress, RecipientAddress, SCIResult, SmartContractInitiatorEvent, TimeLock,
 	},
 };
 use std::sync::Arc;
 use std::{collections::HashMap, sync::RwLock};
-use thiserror::Error;
-
-pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmartContractInitiatorEvent<A, H> {
-	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
-	CompletedBridgeTransfer(BridgeTransferId<H>),
-	RefundedBridgeTransfer(BridgeTransferId<H>),
-}
-
-impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEvent<A, H> {
-	fn from(event: BridgeContractInitiatorEvent<A, H>) -> Self {
-		match event {
-			BridgeContractInitiatorEvent::Initiated(details) => {
-				SmartContractInitiatorEvent::InitiatedBridgeTransfer(details)
-			}
-			BridgeContractInitiatorEvent::Completed(id) => {
-				SmartContractInitiatorEvent::CompletedBridgeTransfer(id)
-			}
-			BridgeContractInitiatorEvent::Refunded(id) => {
-				SmartContractInitiatorEvent::RefundedBridgeTransfer(id)
-			}
-		}
-	}
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum SmartContractInitiatorError {
-	#[error("Failed to initiate bridge transfer")]
-	InitiateTransferError,
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InitiatorEvent<A, H> {

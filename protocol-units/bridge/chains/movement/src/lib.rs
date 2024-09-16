@@ -1,11 +1,8 @@
+use crate::counterparty_contract::MovementSmartContractCounterparty;
+use crate::initiator_contract::MovementSmartContractInitiator;
 use crate::utils::RngSeededClone;
-use bridge_shared::{
-	counterparty_contract::{CounterpartyCall, SmartContractCounterparty},
-	initiator_contract::{InitiatorCall, SmartContractInitiator},
-	types::{
-		Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage,
-		RecipientAddress,
-	},
+use bridge_shared::types::{
+	Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage, RecipientAddress,
 };
 use event_types::MovementChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
@@ -17,8 +14,10 @@ use std::{
 };
 
 pub mod client;
+pub mod counterparty_contract;
 pub mod event_monitoring;
 pub mod event_types;
+pub mod initiator_contract;
 pub mod types;
 pub mod utils;
 

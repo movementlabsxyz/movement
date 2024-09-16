@@ -3,7 +3,7 @@ use crate::initiator_contract::EthSmartContractInitiator;
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_monitoring::BridgeContractInitiatorEvent,
-	types::{Amount, CounterpartyCall, InitiatorCall},
+	types::{Amount, CounterpartyCall, InitiatorCall, SmartContractInitiatorEvent},
 };
 use client::{Config, EthClient};
 use event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring};
@@ -13,7 +13,6 @@ use futures::{
 	task::AtomicWaker,
 	Stream, StreamExt,
 };
-use initiator_contract::SmartContractInitiatorEvent;
 use std::fmt::Debug;
 use std::{
 	collections::HashMap,
@@ -60,7 +59,6 @@ pub struct EthereumChain {
 	pub event_listeners: Vec<mpsc::UnboundedSender<EthChainEvent<EthAddress, EthHash>>>,
 
 	waker: AtomicWaker,
-
 	pub _phantom: std::marker::PhantomData<EthHash>,
 }
 

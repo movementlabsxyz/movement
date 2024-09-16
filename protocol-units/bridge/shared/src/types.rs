@@ -9,6 +9,43 @@ use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
 use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
+use crate::bridge_monitoring::BridgeContractInitiatorEvent;
+
+pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmartContractInitiatorEvent<A, H> {
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
+	CompletedBridgeTransfer(BridgeTransferId<H>),
+	RefundedBridgeTransfer(BridgeTransferId<H>),
+}
+
+impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEvent<A, H> {
+	fn from(event: BridgeContractInitiatorEvent<A, H>) -> Self {
+		match event {
+			BridgeContractInitiatorEvent::Initiated(details) => {
+				SmartContractInitiatorEvent::InitiatedBridgeTransfer(details)
+			}
+			BridgeContractInitiatorEvent::Completed(id) => {
+				SmartContractInitiatorEvent::CompletedBridgeTransfer(id)
+			}
+			BridgeContractInitiatorEvent::Refunded(id) => {
+				SmartContractInitiatorEvent::RefundedBridgeTransfer(id)
+			}
+		}
+	}
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum SmartContractInitiatorError {
+	#[error("Failed to initiate bridge transfer")]
+	InitiateTransferError,
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BridgeTransferId<H>(pub H);
 

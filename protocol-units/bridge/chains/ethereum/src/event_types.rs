@@ -1,27 +1,10 @@
 use crate::counterparty_contract::{SCCResult, SmartContractCounterpartyEvent};
-use crate::initiator_contract::{SCIResult, SmartContractInitiatorEvent};
-use crate::types::{CompletedDetails, EthAddress};
-use bridge_shared::{
-	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	types::LockDetails,
+use crate::types::EthAddress;
+use bridge_shared::bridge_monitoring::{
+	BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent,
 };
+use bridge_shared::types::{SCIResult, SmartContractInitiatorEvent};
 use thiserror::Error;
-
-#[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CompletedDetails<A, H>),
-}
-
-#[allow(unused)]
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyError {
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
 
 #[allow(unused)]
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
