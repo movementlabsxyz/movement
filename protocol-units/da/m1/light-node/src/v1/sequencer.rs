@@ -457,13 +457,6 @@ where
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
 	}
-	/// Update and manage verification parameters.
-	async fn update_verification_parameters(
-		&self,
-		request: tonic::Request<UpdateVerificationParametersRequest>,
-	) -> std::result::Result<tonic::Response<UpdateVerificationParametersResponse>, tonic::Status> {
-		self.pass_through.update_verification_parameters(request).await
-	}
 }
 
 mod block {

@@ -12,12 +12,6 @@ message Blob {
     bytes signer = 6;
 }
 
-enum VerificationMode {
-    COWBOY = 0;
-    VALIDATOR_IN = 1;
-    M_OF_N = 2;
-}
-
 message BlobResponse {
     oneof blob_type {
       Blob passed_through_blob = 1;
@@ -83,16 +77,7 @@ message BatchWriteResponse {
     repeated BlobResponse blobs = 1;
 }
   
-message UpdateVerificationParametersRequest {
-    VerificationMode mode = 1;
-    repeated string signers = 2;
-    uint32 m = 3;
-    uint32 n = 4;
-}
-  
-message UpdateVerificationParametersResponse {
-    VerificationMode mode = 1;
-}
+
 
 // LightNode service definition
 service LightNodeService {
@@ -109,8 +94,5 @@ service LightNodeService {
   // Batch read and write operations for efficiency.
   rpc BatchRead (BatchReadRequest) returns (BatchReadResponse);
   rpc BatchWrite (BatchWriteRequest) returns (BatchWriteResponse);
-  
-  // Update and manage verification parameters.
-  rpc UpdateVerificationParameters (UpdateVerificationParametersRequest) returns (UpdateVerificationParametersResponse);
   
 }

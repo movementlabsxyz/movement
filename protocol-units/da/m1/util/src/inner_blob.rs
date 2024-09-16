@@ -64,9 +64,10 @@ impl InnerSignedBlobV1Data {
 		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(signer)?;
 		let signature = ecdsa::Signature::from_bytes(signature.into())?;
 
-		verifying_key.verify_digest(hasher, &signature)?;
-
-		Ok(())
+		match verifying_key.verify_digest(hasher, &signature) {
+			Ok(_) => Ok(()),
+			Err(_) => Err(anyhow::anyhow!("Failed to verify signature")),
+		}
 	}
 }
 
@@ -75,6 +76,19 @@ pub struct InnerSignedBlobV1 {
 	pub data: InnerSignedBlobV1Data,
 	pub signature: Vec<u8>,
 	pub signer: Vec<u8>,
+}
+
+impl InnerSignedBlobV1 {
+	pub fn try_verify<C>(&self) -> Result<(), anyhow::Error>
+	where
+		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+		SignatureSize<C>: ArrayLength<u8>,
+		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+		FieldBytesSize<C>: ModulusSize,
+	{
+		self.data.try_verify::<C>(self.signature.as_slice(), self.signer.as_slice())
+	}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -110,6 +124,19 @@ impl InnerBlob {
 	pub fn signer(&self) -> &[u8] {
 		match self {
 			InnerBlob::SignedV1(inner) => inner.signer.as_slice(),
+		}
+	}
+
+	pub fn verify_signature<C>(&self) -> Result<(), anyhow::Error>
+	where
+		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+		SignatureSize<C>: ArrayLength<u8>,
+		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+		FieldBytesSize<C>: ModulusSize,
+	{
+		match self {
+			InnerBlob::SignedV1(inner) => inner.try_verify::<C>(),
 		}
 	}
 }

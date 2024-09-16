@@ -1,7 +1,6 @@
-use crate::{Verified, Verifier};
+use crate::{Error, Verified, Verifier};
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob};
-use m1_da_light_node_grpc::VerificationMode;
 use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::sync::Arc;
 
@@ -13,68 +12,47 @@ pub struct V1Verifier {
 
 #[tonic::async_trait]
 impl Verifier<Blob, InnerBlob> for V1Verifier {
-	/// All verification is the same for now
-	async fn verify(
-		&self,
-		_verification_mode: VerificationMode,
-		blob: Blob,
-		height: u64,
-	) -> Result<Verified<InnerBlob>, anyhow::Error> {
-		blob.validate()?;
+	/// Verifies a Celestia Blob as a Valid InnerBlob
+	async fn verify(&self, blob: Blob, height: u64) -> Result<Verified<InnerBlob>, Error> {
+		blob.validate().map_err(|e| Error::Validation(e.to_string()))?;
 
 		// wait for the header to be at the correct height
-		self.client.header_wait_for_height(height).await?;
+		self.client
+			.header_wait_for_height(height)
+			.await
+			.map_err(|e| Error::Internal(e.to_string()))?;
 
 		// get the root
-		let dah = self.client.header_get_by_height(height).await?.dah;
-		let root_hash = dah.row_root(0).ok_or(anyhow::anyhow!("No root hash found"))?;
+		let dah = self
+			.client
+			.header_get_by_height(height)
+			.await
+			.map_err(|e| Error::Internal(e.to_string()))?
+			.dah;
+		let root_hash = dah.row_root(0).ok_or(Error::Validation("No root hash".to_string()))?;
 
 		// get the proof
 		let proofs = self
 			.client
 			.blob_get_proof(height, self.namespace.clone(), blob.commitment)
-			.await?;
+			.await
+			.map_err(|e| Error::Internal(e.to_string()))?;
 
 		// get the leaves
-		let leaves = blob.to_shares()?;
+		let leaves = blob.to_shares().map_err(|e| Error::Internal(e.to_string()))?;
 
 		// check if included
 		for proof in proofs.iter() {
 			proof
 				.verify_complete_namespace(&root_hash, &leaves, self.namespace.into())
-				.map_err(|e| anyhow::anyhow!("Failed to verify proof: {:?}", e))?;
+				.map_err(|e| {
+					Error::Validation("failed to verify complete namespace".to_string())
+				})?;
 		}
 
-		let inner_blob = InnerBlob::try_from(blob)?;
+		let inner_blob = InnerBlob::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
 
-		Ok(Verified::Valid(inner_blob))
-	}
-
-	async fn verify_cowboy(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: Blob,
-		_height: u64,
-	) -> Result<Verified<InnerBlob>, anyhow::Error> {
-		unimplemented!()
-	}
-
-	async fn verify_m_of_n(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: Blob,
-		_height: u64,
-	) -> Result<Verified<InnerBlob>, anyhow::Error> {
-		unimplemented!()
-	}
-
-	async fn verifiy_validator_in(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: Blob,
-		_height: u64,
-	) -> Result<Verified<InnerBlob>, anyhow::Error> {
-		unimplemented!()
+		Ok(Verified::new(inner_blob))
 	}
 }
 

@@ -1,11 +1,36 @@
 pub mod celestia;
+pub mod signed;
 
 pub use m1_da_light_node_grpc::*;
+use thiserror::Error;
+
+/// Domain error for the transaction pipe task
+#[derive(Debug, Error)]
+pub enum Error {
+	#[error("verifier internal error: {0}")]
+	Internal(String),
+	#[error("verifier validation error: {0}")]
+	Validation(String),
+}
+
+/// thiserror for validation and internal errors
+#[derive(thiserror::Error, Debug)]
 
 /// A verified outcome. Indicates that input of A is verified as valid instance of B, or else invalid instance.
-pub enum Verified<B> {
-	Valid(B),
-	Invalid,
+pub struct Verified<B>(B);
+
+impl<B> Verified<B> {
+	pub fn new(blob: B) -> Self {
+		Self(blob)
+	}
+
+	pub fn inner(&self) -> &B {
+		&self.0
+	}
+
+	pub fn into_inner(self) -> B {
+		self.0
+	}
 }
 
 #[tonic::async_trait]
@@ -14,39 +39,5 @@ where
 	A: Send + Sync + 'static,
 	B: Send + Sync + 'static,
 {
-	async fn verify(
-		&self,
-		verification_mode: VerificationMode,
-		blob: A,
-		height: u64,
-	) -> Result<Verified<B>, anyhow::Error> {
-		match verification_mode {
-			VerificationMode::Cowboy => self.verify_cowboy(verification_mode, blob, height).await,
-			VerificationMode::ValidatorIn => {
-				self.verifiy_validator_in(verification_mode, blob, height).await
-			}
-			VerificationMode::MOfN => self.verify_m_of_n(verification_mode, blob, height).await,
-		}
-	}
-
-	async fn verify_cowboy(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: A,
-		_height: u64,
-	) -> Result<Verified<B>, anyhow::Error>;
-
-	async fn verifiy_validator_in(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: A,
-		_height: u64,
-	) -> Result<Verified<B>, anyhow::Error>;
-
-	async fn verify_m_of_n(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: A,
-		_height: u64,
-	) -> Result<Verified<B>, anyhow::Error>;
+	async fn verify(&self, blob: A, height: u64) -> Result<Verified<B>, Error>;
 }

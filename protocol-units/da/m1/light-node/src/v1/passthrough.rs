@@ -509,17 +509,4 @@ where
 
 		Ok(tonic::Response::new(BatchWriteResponse { blobs: blob_responses }))
 	}
-	/// Update and manage verification parameters.
-	async fn update_verification_parameters(
-		&self,
-		request: tonic::Request<UpdateVerificationParametersRequest>,
-	) -> std::result::Result<tonic::Response<UpdateVerificationParametersResponse>, tonic::Status> {
-		let verification_mode = request.into_inner().mode();
-		let mut mode = self.verification_mode.write().await;
-		*mode = verification_mode;
-
-		Ok(tonic::Response::new(UpdateVerificationParametersResponse {
-			mode: verification_mode.into(),
-		}))
-	}
 }
