@@ -25,8 +25,8 @@ contract DeployMoveTokenMultisig is Script {
     uint256 public threshold = 2;
     TimelockController public timelock;
 
-    function generateSignatures(bytes32 digest) internal returns (bytes memory signatures) {
-        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(1, digest);
+    function generateSignatures(uint256 privKey, bytes32 digest) internal returns (bytes memory signatures) {
+        (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(privKey, digest);
         (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
         (uint8 v3, bytes32 r3, bytes32 s3) = vm.sign(3, digest);
 
@@ -93,7 +93,7 @@ contract DeployMoveTokenMultisig is Script {
             abi.encodeWithSignature("performCreate2(uint256,bytes,bytes32)", 0, proxyDeploymentData, "");
         bytes32 digest = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", createCallData));
         
-        bytes memory signatures = generateSignatures(digest);
+        bytes memory signatures = generateSignatures(signer, digest);
 
         safe.execTransaction(
             address(createCall), 0, createCallData, Enum.Operation.Call, 0, 0, 0, zero, payable(zero), signatures
