@@ -1,8 +1,7 @@
 use anyhow::Context;
+use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
-
-use tokio::sync::RwLock;
 use tokio_stream::{Stream, StreamExt};
 use tracing::debug;
 
@@ -14,9 +13,9 @@ use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
 use m1_da_light_node_util::{
 	config::Config,
-	inner_blob::{celestia::CelestiaInnerBlob, InnerBlob, InnerSignedBlobV1Data},
+	inner_blob::{celestia::CelestiaInnerBlob, InnerSignedBlobV1Data},
 };
-use m1_da_light_node_verifier::{v1::V1Verifier, Verifier};
+use m1_da_light_node_verifier::{permissioned_signers::V1Verifier, Verifier};
 
 use crate::v1::LightNodeV1Operations;
 use ecdsa::{
@@ -44,8 +43,7 @@ where
 	pub config: Config,
 	pub celestia_namespace: Namespace,
 	pub default_client: Arc<Client>,
-	pub verification_mode: Arc<RwLock<VerificationMode>>,
-	pub verifier: Arc<Box<dyn Verifier + Send + Sync>>,
+	pub verifier: Arc<Box<dyn Verifier<CelestiaBlob, InnerBlob> + Send + Sync>>,
 	pub signing_key: SigningKey<C>,
 }
 
@@ -84,10 +82,6 @@ where
 			config: config.clone(),
 			celestia_namespace: config.celestia_namespace(),
 			default_client: client.clone(),
-			verification_mode: Arc::new(RwLock::new(
-				VerificationMode::from_str_name("M_OF_N")
-					.context("Failed to parse verification mode")?,
-			)),
 			verifier: Arc::new(Box::new(V1Verifier {
 				client,
 				namespace: config.celestia_namespace(),
@@ -159,10 +153,10 @@ where
 	}
 
 	/// Gets the blobs at a given height.
-	pub async fn get_celestia_blobs_at_height(
+	pub async fn get_inner_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Result<Vec<CelestiaBlob>, anyhow::Error> {
+	) -> Result<Vec<InnerBlob>, anyhow::Error> {
 		let blobs = self.default_client.blob_get_all(height, &[self.celestia_namespace]).await;
 
 		if let Err(e) = &blobs {
@@ -173,28 +167,13 @@ where
 
 		let mut verified_blobs = Vec::new();
 		for blob in blobs {
-			debug!("Verifying blob");
-
-			let blob_data = blob.data.clone();
-
-			// todo: improve error boundary here to detect crashes
-			let verified = self
-				.verifier
-				.verify(*self.verification_mode.read().await, &blob_data, height)
-				.await;
-
-			if let Err(e) = &verified {
-				debug!("Error verifying blob: {:?}", e);
-			}
-
-			// FIXME: check the implications of treating errors as verification success.
-			// @l-monninger: under the assumption we are running a light node in the same
-			// trusted setup and have not experience a highly intrusive attack, the vulnerability here
-			// is fairly low. The light node should take care of verification on its own.
-			let verified = verified.unwrap_or(true);
-
-			if verified {
-				verified_blobs.push(blob);
+			match self.verifier.verify(blob, height).await {
+				Ok(verified_blob) => {
+					verified_blobs.push(verified_blob.into_inner());
+				}
+				Err(e) => {
+					debug!("Failed to verify blob: {:?}", e);
+				}
 			}
 		}
 
@@ -203,11 +182,11 @@ where
 
 	#[tracing::instrument(target = "movement_timing", level = "debug")]
 	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
-		let celestia_blobs = self.get_celestia_blobs_at_height(height).await?;
+		let inner_blobs = self.get_inner_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
-		for celestia_blob in celestia_blobs {
-			let blob = Self::celestia_blob_to_blob(celestia_blob, height)?;
-			debug!(blob_id = %blob.blob_id, "got blob");
+		for inner_blob in inner_blobs {
+			let blob = Self::inner_blob_to_blob(inner_blob, height)?;
+			// todo: update logging here
 			blobs.push(blob);
 		}
 		Ok(blobs)
@@ -294,9 +273,18 @@ where
 			as std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>)
 	}
 
+	pub fn inner_blob_to_blob(inner_blob: InnerBlob, height: u64) -> Result<Blob, anyhow::Error> {
+		Ok(Blob {
+			data: inner_blob.blob().to_vec(),
+			signature: inner_blob.signature().to_vec(),
+			timestamp: inner_blob.timestamp(),
+			signer: inner_blob.signer().to_vec(),
+			blob_id: inner_blob.id().to_vec(),
+			height,
+		})
+	}
+
 	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let blob_id: serde_json::Value = serde_json::to_value(&blob.commitment)
-			.map_err(|e| anyhow::anyhow!("Failed to serialize blob id: {}", e))?;
 		let inner_blob: InnerBlob = blob.try_into()?;
 
 		Ok(Blob {
@@ -304,7 +292,7 @@ where
 			signature: inner_blob.signature().to_vec(),
 			timestamp: inner_blob.timestamp(),
 			signer: inner_blob.signer().to_vec(),
-			blob_id: blob_id.to_string(),
+			blob_id: inner_blob.id().to_vec(),
 			height,
 		})
 	}

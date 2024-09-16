@@ -1,4 +1,5 @@
 pub mod celestia;
+pub mod permissioned_signers;
 pub mod signed;
 
 pub use m1_da_light_node_grpc::*;
@@ -34,7 +35,7 @@ impl<B> Verified<B> {
 }
 
 #[tonic::async_trait]
-pub trait Verifier<A, B>
+pub trait VerifierOperations<A, B>
 where
 	A: Send + Sync + 'static,
 	B: Send + Sync + 'static,

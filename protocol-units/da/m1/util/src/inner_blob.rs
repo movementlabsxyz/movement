@@ -39,13 +39,16 @@ impl InnerSignedBlobV1Data {
 		let mut hasher = C::Digest::new();
 		hasher.update(self.blob.as_slice());
 		hasher.update(&self.timestamp.to_be_bytes());
+		let prehash = hasher.finalize();
+		let prehash_bytes = prehash.as_slice();
 
-		let (signature, _recovery_id) = signing_key.sign_digest_recoverable(hasher)?;
+		let (signature, _recovery_id) = signing_key.sign_prehash_recoverable(prehash_bytes)?;
 
 		Ok(InnerSignedBlobV1 {
 			data: self,
 			signature: signature.to_vec(),
 			signer: signing_key.verifying_key().to_sec1_bytes().to_vec(),
+			id: prehash_bytes.to_vec(),
 		})
 	}
 
@@ -76,6 +79,7 @@ pub struct InnerSignedBlobV1 {
 	pub data: InnerSignedBlobV1Data,
 	pub signature: Vec<u8>,
 	pub signer: Vec<u8>,
+	pub id: Vec<u8>,
 }
 
 impl InnerSignedBlobV1 {
@@ -124,6 +128,12 @@ impl InnerBlob {
 	pub fn signer(&self) -> &[u8] {
 		match self {
 			InnerBlob::SignedV1(inner) => inner.signer.as_slice(),
+		}
+	}
+
+	pub fn id(&self) -> &[u8] {
+		match self {
+			InnerBlob::SignedV1(inner) => inner.id.as_slice(),
 		}
 	}
 

@@ -4,7 +4,7 @@ package movementlabs.protocol_units.da.m1.light_node.v1beta1;
 
 // Request and response messages
 message Blob {
-    string blob_id = 1;
+    bytes blob_id = 1;
     bytes data = 2;
     uint64 height = 3;
     bytes signature = 4; // at some point a signature will be added here
