@@ -3,14 +3,12 @@ use bridge_shared::{
 	bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult},
 	bridge_monitoring::BridgeContractInitiatorEvent,
 	types::{
-		Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
+		Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
 		InitiatorAddress, RecipientAddress, TimeLock,
 	},
 };
-use std::{
-	collections::HashMap,
-	sync::{Arc, RwLock},
-};
+use std::sync::Arc;
+use std::{collections::HashMap, sync::RwLock};
 use thiserror::Error;
 
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
@@ -90,22 +88,20 @@ impl EthSmartContractInitiator {
 		time_lock: TimeLock,
 		hash_lock: HashLock<EthHash>,
 	) -> SCIResult<EthAddress, EthHash> {
-		let bridge_transfer_id = BridgeTransferId::<EthHash>::gen_unique_hash(&mut self.rng);
-
-		tracing::trace!(
-			"SmartContractInitiator: Initiating bridge transfer: {:?}",
-			bridge_transfer_id
-		);
-
-		// // TODO: fix this
+		// Update balance (you might need to adjust this logic based on your requirements)
 		// let balance = self.accounts.entry(initiator.0.clone()).or_insert(Amount(0));
-		// **balance -= amount.0;
+		// *balance -= amount.weth();
 
-		// initiate bridge transfer
-		self.initiated_transfers.insert(
-			bridge_transfer_id.clone(),
+		// Lock the RwLock and get a mutable reference to the `initiated_transfers`
+		let mut initiated_transfers = self.initiated_transfers.write().unwrap();
+		let dummy_id = BridgeTransferId(EthHash::random());
+
+		tracing::trace!("SmartContractInitiator: Initiating bridge transfer: {:?}", dummy_id);
+		// Insert the new transfer into the map
+		initiated_transfers.insert(
+			dummy_id.clone(),
 			BridgeTransferDetails {
-				bridge_transfer_id: bridge_transfer_id.clone(),
+				bridge_transfer_id: dummy_id.clone(),
 				initiator_address: initiator.clone(),
 				recipient_address: recipient.clone(),
 				hash_lock: hash_lock.clone(),
@@ -116,7 +112,7 @@ impl EthSmartContractInitiator {
 		);
 
 		Ok(SmartContractInitiatorEvent::InitiatedBridgeTransfer(BridgeTransferDetails {
-			bridge_transfer_id,
+			bridge_transfer_id: dummy_id,
 			initiator_address: initiator,
 			recipient_address: recipient,
 			hash_lock,
@@ -128,27 +124,28 @@ impl EthSmartContractInitiator {
 
 	pub fn complete_bridge_transfer(
 		&mut self,
-		_accounts: &mut HashMap<A, Amount>,
-		transfer_id: BridgeTransferId<H>,
-		pre_image: HashLockPreImage,
-	) -> SCIResult<A, H> {
+		_accounts: &mut HashMap<EthAddress, Amount>,
+		transfer_id: BridgeTransferId<EthHash>,
+		_pre_image: HashLockPreImage,
+	) -> SCIResult<EthAddress, EthHash> {
 		tracing::trace!("SmartContractInitiator: Completing bridge transfer: {:?}", transfer_id);
 
+		let initated_transfers = self.initiated_transfers.read().unwrap();
+
 		// complete bridge transfer
-		let transfer = self
-			.initiated_transfers
-			.get(&transfer_id)
-			.ok_or(SmartContractInitiatorError::TransferNotFound)?;
+		// let transfer = initiated_transfers
+		// 	.get(&transfer_id)
+		// 	.ok_or(SmartContractInitiatorError::TransferNotFound)?;
 
 		// check if the secret is correct
-		let secret_hash = "You shall not pass!";
-		if transfer.hash_lock.0 != secret_hash {
-			tracing::warn!(
-				"Invalid hash lock pre image {pre_image:?} hash {secret_hash:?} != hash_lock {:?}",
-				transfer.hash_lock.0
-			);
-			return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
-		}
+		// let secret_hash = "You shall not pass!";
+		// if transfer.hash_lock.0 != secret_hash {
+		// 	tracing::warn!(
+		// 		"Invalid hash lock pre image {pre_image:?} hash {secret_hash:?} != hash_lock {:?}",
+		// 		transfer.hash_lock.0
+		// 	);
+		// 	return Err(SmartContractInitiatorError::InvalidHashLockPreImage);
+		// }
 
 		Ok(SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id))
 	}

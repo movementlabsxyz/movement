@@ -1,3 +1,4 @@
+use crate::counterparty_contract::SmartContractCounterpartyEvent;
 use crate::initiator_contract::SmartContractInitiatorEvent;
 use crate::types::{
 	EthAddress, EthHash, EventName, COUNTERPARTY_ABORTED_SELECT, COUNTERPARTY_COMPLETED_SELECT,
@@ -20,7 +21,6 @@ use bridge_shared::bridge_monitoring::{
 use bridge_shared::types::{Amount, LockDetails, TimeLock};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
-	counterparty_contract::SmartContractCounterpartyEvent,
 	types::{
 		BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
 	},

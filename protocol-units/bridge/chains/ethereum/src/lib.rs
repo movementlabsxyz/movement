@@ -2,11 +2,18 @@ use crate::counterparty_contract::EthSmartContractCounterparty;
 use crate::initiator_contract::EthSmartContractInitiator;
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
+	bridge_monitoring::BridgeContractInitiatorEvent,
 	types::{Amount, CounterpartyCall, InitiatorCall},
 };
+use client::{Config, EthClient};
 use event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring};
 use event_types::EthChainEvent;
-use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
+use futures::{
+	channel::mpsc::{self},
+	task::AtomicWaker,
+	Stream, StreamExt,
+};
+use initiator_contract::SmartContractInitiatorEvent;
 use std::fmt::Debug;
 use std::{
 	collections::HashMap,
@@ -43,9 +50,10 @@ pub struct EthereumChain {
 	pub events: Vec<EthChainEvent<EthAddress, EthHash>>,
 
 	pub initiator_contract: EthSmartContractInitiator,
-	//pub initiator_monitoring: EthInitiatorMonitoring<A, H>,
+	pub initiator_monitoring: EthInitiatorMonitoring<EthAddress, EthHash>,
 	pub counterparty_contract: EthSmartContractCounterparty,
-	//pub counterparty_monitoring: EthCounterpartyMonitoring<A, H>,
+	pub counterparty_monitoring: EthCounterpartyMonitoring<EthAddress, EthHash>,
+
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<EthAddress, EthHash>>,
 
@@ -57,9 +65,11 @@ pub struct EthereumChain {
 }
 
 impl EthereumChain {
-	pub fn new(name: impl Into<String>) -> Self {
+	pub async fn new(name: impl Into<String>, rpc_url: &str) -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
+		let (_, event_receiver_1) = mpsc::unbounded();
+		let (_, event_receiver_2) = mpsc::unbounded();
 		let (event_sender, event_receiver) = mpsc::unbounded();
 		let event_listeners = Vec::new();
 
@@ -69,9 +79,13 @@ impl EthereumChain {
 			accounts,
 			events,
 			initiator_contract: EthSmartContractInitiator::new(),
-			//initiator_monitoring: EthInitiatorMonitoring::new(),
+			initiator_monitoring: EthInitiatorMonitoring::build(rpc_url, event_receiver_1)
+				.await
+				.expect("Failed to create EthInitiatorMonitoring"),
 			counterparty_contract: EthSmartContractCounterparty::new(),
-			//counterparty_monitoring: EthCounterpartyMonitoring::new(),
+			counterparty_monitoring: EthCounterpartyMonitoring::build(rpc_url, event_receiver_2)
+				.await
+				.expect("Failed to create EthCounterpartyMonitoring"),
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
 			event_listeners,
@@ -98,6 +112,10 @@ impl EthereumChain {
 
 	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<EthAddress, EthHash>> {
 		self.transaction_sender.clone()
+	}
+
+	pub async fn client(config: Config) -> EthClient {
+		EthClient::new(config).await.expect("failed to create client")
 	}
 }
 
@@ -212,7 +230,34 @@ impl Stream for EthereumChain {
 			}
 
 			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);
-			return Poll::Ready(Some(event));
+			match event {
+				EthChainEvent::InitiatorContractEvent(Ok(event)) => {
+					let contract_event = match event {
+						SmartContractInitiatorEvent::InitiatedBridgeTransfer(details) => {
+							BridgeContractInitiatorEvent::Initiated(details)
+						}
+						SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id) => {
+							BridgeContractInitiatorEvent::Completed(transfer_id)
+						}
+						SmartContractInitiatorEvent::RefundedBridgeTransfer(transfer_id) => {
+							BridgeContractInitiatorEvent::Refunded(transfer_id)
+						}
+					};
+					return Poll::Ready(Some(ContractEvent::InitiatorEvent(contract_event)));
+				}
+				EthChainEvent::InitiatorContractEvent(Err(_)) => {
+					// trace here
+					return Poll::Ready(None);
+				}
+				EthChainEvent::CounterpartyContractEvent(_) => {
+					// trace here
+					return Poll::Ready(None);
+				}
+				EthChainEvent::Noop => {
+					//trace here
+					return Poll::Ready(None);
+				}
+			}
 		}
 
 		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);

@@ -55,6 +55,15 @@ alloy::sol!(
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct EthHash(pub [u8; 32]);
 
+impl EthHash {
+	pub fn random() -> Self {
+		let mut rng = rand::thread_rng();
+		let mut hash = [0u8; 32];
+		rng.fill(&mut hash);
+		Self(hash)
+	}
+}
+
 impl From<HashLockPreImage> for EthHash {
 	fn from(value: HashLockPreImage) -> Self {
 		let mut fixed_bytes = [0u8; 32];

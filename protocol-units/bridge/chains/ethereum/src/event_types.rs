@@ -1,8 +1,8 @@
+use crate::counterparty_contract::{SCCResult, SmartContractCounterpartyEvent};
 use crate::initiator_contract::{SCIResult, SmartContractInitiatorEvent};
 use crate::types::{CompletedDetails, EthAddress};
 use bridge_shared::{
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
-	counterparty_contract::{SCCResult, SmartContractCounterpartyEvent},
 	types::LockDetails,
 };
 use thiserror::Error;

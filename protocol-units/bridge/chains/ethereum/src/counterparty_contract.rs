@@ -1,11 +1,12 @@
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractCounterpartyResult,
 };
+use bridge_shared::bridge_monitoring::BridgeContractCounterpartyEvent;
 use bridge_shared::types::{
-	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
-	LockDetails, RecipientAddress, TimeLock,
+	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails,
+	HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 };
+
 use std::collections::HashMap;
 use std::fmt::Debug;
 use thiserror::Error;

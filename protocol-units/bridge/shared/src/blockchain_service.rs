@@ -3,6 +3,7 @@ use std::{
 	task::{Context, Poll},
 };
 
+use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 
 use crate::{
@@ -43,6 +44,7 @@ pub trait BlockchainService:
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract;
 	fn initiator_monitoring(&mut self) -> &mut Self::InitiatorMonitoring;
+
 	fn counterparty_contract(&self) -> &Self::CounterpartyContract;
 	fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring;
 

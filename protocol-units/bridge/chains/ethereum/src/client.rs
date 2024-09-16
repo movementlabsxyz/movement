@@ -93,8 +93,7 @@ pub struct EthClient {
 }
 
 impl EthClient {
-	pub async fn new(config: impl Into<Config>) -> Result<Self, anyhow::Error> {
-		let config = config.into();
+	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(config.signer_private_key.clone()))
