@@ -39,6 +39,8 @@ movement-tracing = { workspace = true }
 futures = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
+ecdsa = { workspace = true }
+k256 = { workspace = true }
 
 # sequencer
 memseq = { workspace = true, optional = true }

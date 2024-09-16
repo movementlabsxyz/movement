@@ -176,6 +176,15 @@ impl Config {
 		}
 	}
 
+	/// Gets the da signing key as a string
+	pub fn da_signing_key(&self) -> String {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.da_signing_private_key.clone(),
+			Config::Arabica(local) => local.m1_da_light_node.da_signing_private_key.clone(),
+			Config::Mocha(local) => local.m1_da_light_node.da_signing_private_key.clone(),
+		}
+	}
+
 	pub fn try_block_building_parameters(&self) -> Result<(u32, u64), anyhow::Error> {
 		match self {
 			Config::Local(local) => {

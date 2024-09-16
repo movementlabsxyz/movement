@@ -12,21 +12,51 @@ use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
 // FIXME: glob imports are bad style
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
-use m1_da_light_node_util::config::Config;
+use m1_da_light_node_util::{
+	config::Config,
+	inner_blob::{celestia::CelestiaInnerBlob, InnerBlob, InnerSignedBlobV1Data},
+};
 use m1_da_light_node_verifier::{v1::V1Verifier, Verifier};
 
 use crate::v1::LightNodeV1Operations;
+use ecdsa::{
+	elliptic_curve::{
+		generic_array::ArrayLength,
+		ops::Invert,
+		point::PointCompression,
+		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
+		subtle::CtOption,
+		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
+	},
+	hazmat::{DigestPrimitive, SignPrimitive},
+	SignatureSize, SigningKey,
+};
 
 #[derive(Clone)]
-pub struct LightNodeV1 {
+pub struct LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	pub config: Config,
 	pub celestia_namespace: Namespace,
 	pub default_client: Arc<Client>,
 	pub verification_mode: Arc<RwLock<VerificationMode>>,
 	pub verifier: Arc<Box<dyn Verifier + Send + Sync>>,
+	pub signing_key: SigningKey<C>,
 }
 
-impl Debug for LightNodeV1 {
+impl<C> Debug for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.debug_struct("LightNodeV1")
 			.field("celestia_namespace", &self.config.celestia_namespace())
@@ -34,10 +64,21 @@ impl Debug for LightNodeV1 {
 	}
 }
 
-impl LightNodeV1Operations for LightNodeV1 {
+impl<C> LightNodeV1Operations for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let client = Arc::new(config.connect_celestia().await?);
+
+		let signing_key_str = config.da_signing_key();
+		let signing_key = SigningKey::from_bytes(signing_key_str.as_bytes().into())
+			.map_err(|e| anyhow::anyhow!("Failed to create signing key: {}", e))?;
 
 		Ok(Self {
 			config: config.clone(),
@@ -51,6 +92,7 @@ impl LightNodeV1Operations for LightNodeV1 {
 				client,
 				namespace: config.celestia_namespace(),
 			})),
+			signing_key,
 		})
 	}
 
@@ -64,14 +106,27 @@ impl LightNodeV1Operations for LightNodeV1 {
 	}
 }
 
-impl LightNodeV1 {
-	/// Creates a new blob instance with the provided data.
+impl<C> LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	/// Creates a new signed blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
-		CelestiaBlob::new(self.celestia_namespace, data)
-			.map_err(|e| anyhow::anyhow!("Failed to create a blob: {}", e))
+		// mark the timestamp as now
+		let timestamp = chrono::Utc::now().timestamp() as u64;
+
+		// sign the blob data and the timestamp
+		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
+
+		// create the celestia blob
+		CelestiaInnerBlob(data.into(), self.celestia_namespace.clone()).try_into()
 	}
 
-	/// Submits a CelestiaNlob to the Celestia node.
+	/// Submits a CelestiaBlob to the Celestia node.
 	pub async fn submit_celestia_blob(&self, blob: CelestiaBlob) -> Result<u64, anyhow::Error> {
 		let height = self
 			.default_client
@@ -240,14 +295,17 @@ impl LightNodeV1 {
 	}
 
 	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
+		let blob_id: serde_json::Value = serde_json::to_value(&blob.commitment)
+			.map_err(|e| anyhow::anyhow!("Failed to serialize blob id: {}", e))?;
+		let inner_blob: InnerBlob = blob.try_into()?;
 
 		Ok(Blob {
-			data: blob.data,
-			blob_id: serde_json::to_string(&blob.commitment)
-				.map_err(|e| anyhow::anyhow!("Failed to serialize commitment: {}", e))?,
+			data: inner_blob.blob().to_vec(),
+			signature: inner_blob.signature().to_vec(),
+			timestamp: inner_blob.timestamp(),
+			signer: inner_blob.signer().to_vec(),
+			blob_id: blob_id.to_string(),
 			height,
-			timestamp,
 		})
 	}
 
@@ -269,7 +327,14 @@ impl LightNodeV1 {
 }
 
 #[tonic::async_trait]
-impl LightNodeService for LightNodeV1 {
+impl<C> LightNodeService for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	/// Server streaming response type for the StreamReadFromHeight method.
 	type StreamReadFromHeightStream = std::pin::Pin<
 		Box<

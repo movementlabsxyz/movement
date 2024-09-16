@@ -109,13 +109,6 @@ serde_yaml = "0.9.34"
 
 # External Dependencies
 ## Aptos dependencies
-aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" } ## Aptos dependencies
-aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
-aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
-aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
-aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
-aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
-aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "6d2ec939e10cc00283519dd0ad9d1cf12e7bf80f" }
 aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
 aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
 aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
@@ -299,7 +292,7 @@ rustix = "0.38.34"
 paste = "1.0.15"
 uuid = { version = "1.10.0", features = ["v4"] }
 blake-3 = "1.4.0"
-ecdsa = "0.13.0"
+ecdsa = { version = "0.16.9", features = ["signing", "verifying"] }
 
 # trying to pin diesel
 # diesel = "=2.1.1"

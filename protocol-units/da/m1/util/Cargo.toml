@@ -38,6 +38,11 @@ memseq-util = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 godfig = { workspace = true }
+alloy = { workspace = true }
+zstd = { workspace = true }
+bcs = { workspace = true }
+ecdsa = { workspace = true }
+k256 = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

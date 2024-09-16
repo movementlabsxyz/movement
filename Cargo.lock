@@ -1966,7 +1966,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820#a11a7ef5346e11a827cec7394a7a3cc4461af820"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "chrono",
 ]
@@ -7887,9 +7887,11 @@ dependencies = [
  "celestia-types",
  "chrono",
  "dot-movement",
+ "ecdsa",
  "futures",
  "godfig",
  "hex",
+ "k256",
  "m1-da-light-node-grpc",
  "m1-da-light-node-util",
  "m1-da-light-node-verifier",
@@ -7915,11 +7917,13 @@ name = "m1-da-light-node-client"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "ecdsa",
  "m1-da-light-node-grpc",
  "movement-types",
  "serde_json",
  "tokio",
  "tokio-stream",
+ "tonic 0.11.0",
 ]
 
 [[package]]
@@ -7983,14 +7987,18 @@ dependencies = [
 name = "m1-da-light-node-util"
 version = "0.0.2"
 dependencies = [
+ "alloy",
  "anyhow",
  "async-stream",
+ "bcs 0.1.4",
  "celestia-rpc",
  "celestia-types",
  "dot-movement",
+ "ecdsa",
  "godfig",
  "hex",
  "jsonrpsee 0.20.4",
+ "k256",
  "m1-da-light-node-grpc",
  "memseq-util",
  "prost 0.12.6",
@@ -8006,6 +8014,7 @@ dependencies = [
  "tonic-web",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "zstd 0.13.2",
 ]
 
 [[package]]
@@ -10638,13 +10647,13 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820#a11a7ef5346e11a827cec7394a7a3cc4461af820"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820)",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58)",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
  "async-trait",
  "bcs 0.1.4",
@@ -12146,7 +12155,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820#a11a7ef5346e11a827cec7394a7a3cc4461af820"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "anyhow",
  "aptos-system-utils",
