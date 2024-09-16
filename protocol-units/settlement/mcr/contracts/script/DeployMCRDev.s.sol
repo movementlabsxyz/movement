@@ -31,7 +31,7 @@ contract DeployMCRDev is Script {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveTokenProxy);
         bytes memory mcrData = abi.encodeCall(
-            MCR.initialize, (IMovementStaking(address(movementStakingProxy)), 0, 10, 500 seconds, custodians)
+            MCR.initialize, (IMovementStaking(address(movementStakingProxy)), 0, 10, 600 seconds, custodians)
         );
         address mcrProxy = address(new ERC1967Proxy(address(mcrImplementation), mcrData));
 

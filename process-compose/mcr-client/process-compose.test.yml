@@ -7,7 +7,7 @@ processes:
   mcr-client-tests:
     command: |
       set -e
-      cargo test -p mcr-settlement-client --features="e2e" -- --nocapture
+      RUST_BACKTRACE=1 cargo test -p mcr-settlement-client --features="e2e" -- --nocapture
     depends_on:
       eth:
         condition: process_healthy
