@@ -26,6 +26,19 @@ where
 	pub _curve_marker: std::marker::PhantomData<C>,
 }
 
+impl<C> Verifier<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	pub fn new() -> Self {
+		Self { _curve_marker: std::marker::PhantomData }
+	}
+}
+
 #[tonic::async_trait]
 impl<C> VerifierOperations<InnerBlob, InnerBlob> for Verifier<C>
 where
@@ -55,6 +68,19 @@ where
 {
 	pub inner_verifier: Verifier<C>,
 	pub known_signers_sec1_bytes: HashSet<Vec<u8>>,
+}
+
+impl<C> InKnownSignersVerifier<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	pub fn new(known_signers_sec1_bytes: HashSet<Vec<u8>>) -> Self {
+		Self { inner_verifier: Verifier::new(), known_signers_sec1_bytes }
+	}
 }
 
 #[tonic::async_trait]

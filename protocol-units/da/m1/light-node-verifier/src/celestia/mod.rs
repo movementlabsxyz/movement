@@ -10,6 +10,12 @@ pub struct Verifier {
 	pub namespace: Namespace,
 }
 
+impl Verifier {
+	pub fn new(client: Arc<Client>, namespace: Namespace) -> Self {
+		Self { client, namespace }
+	}
+}
+
 #[tonic::async_trait]
 impl VerifierOperations<Blob, InnerBlob> for Verifier {
 	/// Verifies a Celestia Blob as a Valid InnerBlob

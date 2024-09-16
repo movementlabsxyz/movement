@@ -1,4 +1,3 @@
-use anyhow::Context;
 use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
@@ -15,7 +14,7 @@ use m1_da_light_node_util::{
 	config::Config,
 	inner_blob::{celestia::CelestiaInnerBlob, InnerSignedBlobV1Data},
 };
-use m1_da_light_node_verifier::{permissioned_signers::V1Verifier, Verifier};
+use m1_da_light_node_verifier::{permissioned_signers::Verifier, VerifierOperations};
 
 use crate::v1::LightNodeV1Operations;
 use ecdsa::{
@@ -43,7 +42,7 @@ where
 	pub config: Config,
 	pub celestia_namespace: Namespace,
 	pub default_client: Arc<Client>,
-	pub verifier: Arc<Box<dyn Verifier<CelestiaBlob, InnerBlob> + Send + Sync>>,
+	pub verifier: Arc<Box<dyn VerifierOperations<CelestiaBlob, InnerBlob> + Send + Sync>>,
 	pub signing_key: SigningKey<C>,
 }
 
@@ -82,10 +81,11 @@ where
 			config: config.clone(),
 			celestia_namespace: config.celestia_namespace(),
 			default_client: client.clone(),
-			verifier: Arc::new(Box::new(V1Verifier {
+			verifier: Arc::new(Box::new(Verifier::<C>::new(
 				client,
-				namespace: config.celestia_namespace(),
-			})),
+				config.celestia_namespace(),
+				config.da_signers_sec1_keys(),
+			))),
 			signing_key,
 		})
 	}

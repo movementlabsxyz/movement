@@ -2,6 +2,7 @@ use anyhow::Context;
 use celestia_rpc::Client;
 use celestia_types::nmt::Namespace;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 pub mod common;
 pub mod local;
@@ -182,6 +183,15 @@ impl Config {
 			Config::Local(local) => local.m1_da_light_node.da_signing_private_key.clone(),
 			Config::Arabica(local) => local.m1_da_light_node.da_signing_private_key.clone(),
 			Config::Mocha(local) => local.m1_da_light_node.da_signing_private_key.clone(),
+		}
+	}
+
+	/// Gets the da signers sec1 keys
+	pub fn da_signers_sec1_keys(&self) -> HashSet<Vec<u8>> {
+		match self {
+			Config::Local(local) => local.m1_da_light_node.da_signers_sec1_keys.clone(),
+			Config::Arabica(local) => local.m1_da_light_node.da_signers_sec1_keys.clone(),
+			Config::Mocha(local) => local.m1_da_light_node.da_signers_sec1_keys.clone(),
 		}
 	}
 

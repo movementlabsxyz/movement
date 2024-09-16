@@ -343,7 +343,7 @@ where
 		Ok(BlobResponse {
 			blob_type: Some(blob_response::BlobType::SequencedBlobIntent(Blob {
 				data,
-				blob_id: "".to_string(),
+				blob_id: vec![],
 				height,
 				// todo: at some point it would be good to sign these intents, as they can then be used as pre-confirmations against which we can slash
 				signature: vec![],

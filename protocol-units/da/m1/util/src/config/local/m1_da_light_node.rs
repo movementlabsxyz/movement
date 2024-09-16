@@ -1,11 +1,12 @@
 use crate::config::common::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
 	default_celestia_websocket_connection_hostname, default_celestia_websocket_connection_port,
-	default_da_signing_private_key, default_m1_da_light_node_connection_hostname,
-	default_m1_da_light_node_connection_port, default_m1_da_light_node_listen_hostname,
-	default_m1_da_light_node_listen_port,
+	default_da_signers_sec1_keys, default_da_signing_private_key,
+	default_m1_da_light_node_connection_hostname, default_m1_da_light_node_connection_port,
+	default_m1_da_light_node_listen_hostname, default_m1_da_light_node_listen_port,
 };
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 /// The inner configuration for the local Celestia Appd Runner
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -45,6 +46,9 @@ pub struct Config {
 	/// The private key for signing DA messages
 	#[serde(default = "default_da_signing_private_key")]
 	pub da_signing_private_key: String,
+
+	#[serde(default = "default_da_signers_sec1_keys")]
+	pub da_signers_sec1_keys: HashSet<Vec<u8>>,
 }
 
 impl Default for Config {
@@ -60,6 +64,7 @@ impl Default for Config {
 			m1_da_light_node_connection_hostname: default_m1_da_light_node_connection_hostname(),
 			m1_da_light_node_connection_port: default_m1_da_light_node_connection_port(),
 			da_signing_private_key: default_da_signing_private_key(),
+			da_signers_sec1_keys: default_da_signers_sec1_keys(),
 		}
 	}
 }
