@@ -1,7 +1,8 @@
-use crate::Verifier;
+use crate::{Verified, Verifier};
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob};
 use m1_da_light_node_grpc::VerificationMode;
+use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -11,17 +12,15 @@ pub struct V1Verifier {
 }
 
 #[tonic::async_trait]
-impl Verifier for V1Verifier {
+impl Verifier<Blob, InnerBlob> for V1Verifier {
 	/// All verification is the same for now
 	async fn verify(
 		&self,
 		_verification_mode: VerificationMode,
-		blob: &[u8],
+		blob: Blob,
 		height: u64,
-	) -> Result<bool, anyhow::Error> {
-		let celestia_blob = Blob::new(self.namespace.clone(), blob.to_vec())?;
-
-		celestia_blob.validate()?;
+	) -> Result<Verified<InnerBlob>, anyhow::Error> {
+		blob.validate()?;
 
 		// wait for the header to be at the correct height
 		self.client.header_wait_for_height(height).await?;
@@ -33,11 +32,11 @@ impl Verifier for V1Verifier {
 		// get the proof
 		let proofs = self
 			.client
-			.blob_get_proof(height, self.namespace.clone(), celestia_blob.commitment)
+			.blob_get_proof(height, self.namespace.clone(), blob.commitment)
 			.await?;
 
 		// get the leaves
-		let leaves = celestia_blob.to_shares()?;
+		let leaves = blob.to_shares()?;
 
 		// check if included
 		for proof in proofs.iter() {
@@ -46,33 +45,35 @@ impl Verifier for V1Verifier {
 				.map_err(|e| anyhow::anyhow!("Failed to verify proof: {:?}", e))?;
 		}
 
-		Ok(true)
+		let inner_blob = InnerBlob::try_from(blob)?;
+
+		Ok(Verified::Valid(inner_blob))
 	}
 
 	async fn verify_cowboy(
 		&self,
 		_verification_mode: VerificationMode,
-		_blob: &[u8],
+		_blob: Blob,
 		_height: u64,
-	) -> Result<bool, anyhow::Error> {
+	) -> Result<Verified<InnerBlob>, anyhow::Error> {
 		unimplemented!()
 	}
 
 	async fn verify_m_of_n(
 		&self,
 		_verification_mode: VerificationMode,
-		_blob: &[u8],
+		_blob: Blob,
 		_height: u64,
-	) -> Result<bool, anyhow::Error> {
+	) -> Result<Verified<InnerBlob>, anyhow::Error> {
 		unimplemented!()
 	}
 
 	async fn verifiy_validator_in(
 		&self,
 		_verification_mode: VerificationMode,
-		_blob: &[u8],
+		_blob: Blob,
 		_height: u64,
-	) -> Result<bool, anyhow::Error> {
+	) -> Result<Verified<InnerBlob>, anyhow::Error> {
 		unimplemented!()
 	}
 }

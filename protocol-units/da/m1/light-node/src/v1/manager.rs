@@ -8,7 +8,7 @@ use ecdsa::{
 		subtle::CtOption,
 		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
 	},
-	hazmat::{DigestPrimitive, SignPrimitive},
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
@@ -29,7 +29,7 @@ where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
 	pub async fn new(file: tokio::fs::File) -> Result<Self, anyhow::Error> {

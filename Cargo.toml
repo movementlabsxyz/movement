@@ -292,7 +292,7 @@ rustix = "0.38.34"
 paste = "1.0.15"
 uuid = { version = "1.10.0", features = ["v4"] }
 blake-3 = "1.4.0"
-ecdsa = { version = "0.16.9", features = ["signing", "verifying"] }
+ecdsa = { version = "0.16.9", features = ["signing", "verifying", "der"] }
 
 # trying to pin diesel
 # diesel = "=2.1.1"

@@ -8,8 +8,9 @@ use ecdsa::{
 		subtle::CtOption,
 		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
 	},
-	hazmat::{DigestPrimitive, SignPrimitive},
-	SignatureSize, SigningKey,
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
+	signature::DigestVerifier,
+	SignatureSize, SigningKey, VerifyingKey,
 };
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +47,26 @@ impl InnerSignedBlobV1Data {
 			signature: signature.to_vec(),
 			signer: signing_key.verifying_key().to_sec1_bytes().to_vec(),
 		})
+	}
+
+	pub fn try_verify<C>(&self, signature: &[u8], signer: &[u8]) -> Result<(), anyhow::Error>
+	where
+		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+		SignatureSize<C>: ArrayLength<u8>,
+		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+		FieldBytesSize<C>: ModulusSize,
+	{
+		let mut hasher = C::Digest::new();
+		hasher.update(self.blob.as_slice());
+		hasher.update(&self.timestamp.to_be_bytes());
+
+		let verifying_key = VerifyingKey::<C>::from_sec1_bytes(signer)?;
+		let signature = ecdsa::Signature::from_bytes(signature.into())?;
+
+		verifying_key.verify_digest(hasher, &signature)?;
+
+		Ok(())
 	}
 }
 

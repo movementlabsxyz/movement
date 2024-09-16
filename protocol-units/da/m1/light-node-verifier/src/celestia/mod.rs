@@ -1,25 +1,15 @@
-pub mod celestia;
+pub mod v1;
 
 pub use m1_da_light_node_grpc::*;
 
-/// A verified outcome. Indicates that input of A is verified as valid instance of B, or else invalid instance.
-pub enum Verified<B> {
-	Valid(B),
-	Invalid,
-}
-
 #[tonic::async_trait]
-pub trait Verifier<A, B>
-where
-	A: Send + Sync + 'static,
-	B: Send + Sync + 'static,
-{
+pub trait Verifier {
 	async fn verify(
 		&self,
 		verification_mode: VerificationMode,
-		blob: A,
+		blob: &[u8],
 		height: u64,
-	) -> Result<Verified<B>, anyhow::Error> {
+	) -> Result<bool, anyhow::Error> {
 		match verification_mode {
 			VerificationMode::Cowboy => self.verify_cowboy(verification_mode, blob, height).await,
 			VerificationMode::ValidatorIn => {
@@ -32,21 +22,23 @@ where
 	async fn verify_cowboy(
 		&self,
 		_verification_mode: VerificationMode,
-		_blob: A,
+		_blob: &[u8],
 		_height: u64,
-	) -> Result<Verified<B>, anyhow::Error>;
+	) -> Result<bool, anyhow::Error> {
+		Ok(true)
+	}
 
 	async fn verifiy_validator_in(
 		&self,
 		_verification_mode: VerificationMode,
-		_blob: A,
+		_blob: &[u8],
 		_height: u64,
-	) -> Result<Verified<B>, anyhow::Error>;
+	) -> Result<bool, anyhow::Error>;
 
 	async fn verify_m_of_n(
 		&self,
 		_verification_mode: VerificationMode,
-		_blob: A,
+		_blob: &[u8],
 		_height: u64,
-	) -> Result<Verified<B>, anyhow::Error>;
+	) -> Result<bool, anyhow::Error>;
 }

@@ -28,7 +28,7 @@ use ecdsa::{
 		subtle::CtOption,
 		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
 	},
-	hazmat::{DigestPrimitive, SignPrimitive},
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize, SigningKey,
 };
 
@@ -38,7 +38,7 @@ where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
 	pub config: Config,
@@ -54,7 +54,7 @@ where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -69,7 +69,7 @@ where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
 	/// Tries to create a new LightNodeV1 instance from the toml config file.
@@ -111,7 +111,7 @@ where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
 	/// Creates a new signed blob instance with the provided data.
@@ -189,7 +189,7 @@ where
 
 			// FIXME: check the implications of treating errors as verification success.
 			// @l-monninger: under the assumption we are running a light node in the same
-			// trusted setup and have not experience a highly intrusive(?), the vulnerability here
+			// trusted setup and have not experience a highly intrusive attack, the vulnerability here
 			// is fairly low. The light node should take care of verification on its own.
 			let verified = verified.unwrap_or(true);
 
@@ -332,7 +332,7 @@ where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 	SignatureSize<C>: ArrayLength<u8>,
-	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
 	/// Server streaming response type for the StreamReadFromHeight method.
