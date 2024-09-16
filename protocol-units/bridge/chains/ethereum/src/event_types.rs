@@ -1,9 +1,10 @@
-use crate::counterparty_contract::{SCCResult, SmartContractCounterpartyEvent};
 use crate::types::EthAddress;
 use bridge_shared::bridge_monitoring::{
 	BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent,
 };
-use bridge_shared::types::{SCIResult, SmartContractInitiatorEvent};
+use bridge_shared::types::{
+	SCCResult, SCIResult, SmartContractCounterpartyEvent, SmartContractInitiatorEvent,
+};
 use thiserror::Error;
 
 #[allow(unused)]

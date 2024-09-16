@@ -1,8 +1,10 @@
 use crate::counterparty_contract::MovementSmartContractCounterparty;
 use crate::initiator_contract::MovementSmartContractInitiator;
 use crate::utils::RngSeededClone;
+use bridge_shared::bridge_contracts::BridgeContractInitiator;
 use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, GenUniqueHash, HashLockPreImage, RecipientAddress,
+	Amount, BridgeAddressType, BridgeHashType, CounterpartyCall, GenUniqueHash, HashLockPreImage,
+	InitiatorCall, RecipientAddress,
 };
 use event_types::MovementChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
@@ -12,6 +14,7 @@ use std::{
 	pin::Pin,
 	task::{Context, Poll},
 };
+use utils::{MovementAddress, MovementHash};
 
 pub mod client;
 pub mod counterparty_contract;
@@ -34,33 +37,28 @@ pub enum Transaction<A, H> {
 }
 
 #[allow(unused)]
-pub struct MovementChain<A, H, R> {
+pub struct MovementChain {
 	pub name: String,
 	pub time: u64,
-	pub accounts: HashMap<A, Amount>,
-	pub events: Vec<MovementChainEvent<A, H>>,
+	pub accounts: HashMap<MovementAddress, Amount>,
+	pub events: Vec<MovementChainEvent<MovementAddress, MovementHash>>,
 
-	pub initiator_contract: SmartContractInitiator<A, H, R>,
-	pub counterparty_contract: SmartContractCounterparty<A, H>,
+	pub initiator_contract: MovementSmartContractInitiator,
+	pub counterparty_contract: MovementSmartContractCounterparty,
 
-	pub transaction_sender: mpsc::UnboundedSender<Transaction<A, H>>,
-	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<A, H>>,
+	pub transaction_sender: mpsc::UnboundedSender<Transaction<MovementAddress, MovementHash>>,
+	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<MovementAddress, MovementHash>>,
 
-	pub event_listeners: Vec<mpsc::UnboundedSender<MovementChainEvent<A, H>>>,
+	pub event_listeners:
+		Vec<mpsc::UnboundedSender<MovementChainEvent<MovementAddress, MovementHash>>>,
 
 	waker: AtomicWaker,
 
-	pub _phantom: std::marker::PhantomData<H>,
+	pub _phantom: std::marker::PhantomData<MovementHash>,
 }
 
-impl<A, H, R> MovementChain<A, H, R>
-where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
-	H: BridgeHashType + GenUniqueHash,
-	R: RngSeededClone,
-	H: From<HashLockPreImage>,
-{
-	pub fn new(mut rng: R, name: impl Into<String>) -> Self {
+impl MovementChain {
+	pub fn new() -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
 		let (event_sender, event_receiver) = mpsc::unbounded();
@@ -71,8 +69,8 @@ where
 			time: 0,
 			accounts,
 			events,
-			initiator_contract: SmartContractInitiator::new(rng.seeded_clone()),
-			counterparty_contract: SmartContractCounterparty::new(),
+			initiator_contract: MovementSmartContractInitiator::new(),
+			counterparty_contract: MovementSmartContractCounterparty::new(),
 			transaction_sender: event_sender,
 			transaction_receiver: event_receiver,
 			event_listeners,
@@ -87,26 +85,20 @@ where
 		receiver
 	}
 
-	pub fn add_account(&mut self, address: A, amount: Amount) {
+	pub fn add_account(&mut self, address: MovementAddress, amount: Amount) {
 		self.accounts.insert(address, amount);
 	}
 
-	pub fn get_balance(&mut self, address: &A) -> Option<&Amount> {
+	pub fn get_balance(&mut self, address: &MovementAddress) -> Option<&Amount> {
 		self.accounts.get(address)
 	}
 
-	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<A, H>> {
+	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<MovementAddress, MovementHash>> {
 		self.transaction_sender.clone()
 	}
 }
 
-impl<A, H, R> Future for MovementChain<A, H, R>
-where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
-	H: BridgeHashType + GenUniqueHash,
-	R: RngSeededClone + Unpin,
-	H: From<HashLockPreImage>,
-{
+impl Future for MovementChain {
 	type Output = ();
 
 	fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -124,13 +116,8 @@ where
 	}
 }
 
-impl<A, H, R> Stream for MovementChain<A, H, R>
-where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
-	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
-	R: RngSeededClone + Unpin,
-{
-	type Item = MovementChainEvent<A, H>;
+impl Stream for MovementChain {
+	type Item = MovementChainEvent<MovementAddress, MovementHash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);

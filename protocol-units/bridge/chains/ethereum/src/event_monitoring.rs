@@ -1,4 +1,3 @@
-use crate::counterparty_contract::SmartContractCounterpartyEvent;
 use crate::types::{
 	EthAddress, EthHash, EventName, COUNTERPARTY_ABORTED_SELECT, COUNTERPARTY_COMPLETED_SELECT,
 	COUNTERPARTY_LOCKED_SELECT, INITIATOR_COMPLETED_SELECT, INITIATOR_INITIATED_SELECT,
@@ -22,6 +21,7 @@ use bridge_shared::{
 	bridge_monitoring::{BridgeContractInitiatorEvent, BridgeContractInitiatorMonitoring},
 	types::{
 		BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
+		SmartContractCounterpartyEvent,
 	},
 };
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};

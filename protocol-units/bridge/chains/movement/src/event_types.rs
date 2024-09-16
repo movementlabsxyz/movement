@@ -1,4 +1,4 @@
-use bridge_shared::{counterparty_contract::SCCResult, initiator_contract::SCIResult};
+use bridge_shared::types::SCIResult;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MovementChainEvent<A, H> {

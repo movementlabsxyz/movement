@@ -9,9 +9,11 @@ use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
 use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
-use crate::bridge_monitoring::BridgeContractInitiatorEvent;
+use crate::bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent};
 
 pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+pub type SCCResult<A, H> =
+	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractInitiatorEvent<A, H> {
@@ -44,6 +46,33 @@ pub enum SmartContractInitiatorError {
 	TransferNotFound,
 	#[error("Invalid hash lock pre image (secret)")]
 	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum SmartContractCounterpartyError {
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmartContractCounterpartyEvent<A, H> {
+	LockedBridgeTransfer(LockDetails<A, H>),
+	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
+}
+
+impl<A, H> From<BridgeContractCounterpartyEvent<A, H>> for SmartContractCounterpartyEvent<A, H> {
+	fn from(event: BridgeContractCounterpartyEvent<A, H>) -> Self {
+		match event {
+			BridgeContractCounterpartyEvent::Locked(details) => {
+				SmartContractCounterpartyEvent::LockedBridgeTransfer(details)
+			}
+			BridgeContractCounterpartyEvent::Completed(details) => {
+				SmartContractCounterpartyEvent::CompletedBridgeTransfer(details)
+			}
+		}
+	}
 }
 
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

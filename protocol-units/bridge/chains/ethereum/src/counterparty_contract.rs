@@ -1,47 +1,16 @@
 use bridge_shared::bridge_contracts::{
 	BridgeContractCounterparty, BridgeContractCounterpartyResult,
 };
-use bridge_shared::bridge_monitoring::BridgeContractCounterpartyEvent;
 use bridge_shared::types::{
 	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, CounterpartyCompletedDetails,
-	HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
+	HashLock, HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, SCCResult,
+	SmartContractCounterpartyError, SmartContractCounterpartyEvent, TimeLock,
 };
 
 use std::collections::HashMap;
 use std::fmt::Debug;
-use thiserror::Error;
 
 use crate::types::{EthAddress, EthHash};
-
-pub type SCCResult<A, H> =
-	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmartContractCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
-}
-
-impl<A, H> From<BridgeContractCounterpartyEvent<A, H>> for SmartContractCounterpartyEvent<A, H> {
-	fn from(event: BridgeContractCounterpartyEvent<A, H>) -> Self {
-		match event {
-			BridgeContractCounterpartyEvent::Locked(details) => {
-				SmartContractCounterpartyEvent::LockedBridgeTransfer(details)
-			}
-			BridgeContractCounterpartyEvent::Completed(details) => {
-				SmartContractCounterpartyEvent::CompletedBridgeTransfer(details)
-			}
-		}
-	}
-}
-
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum SmartContractCounterpartyError {
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
 
 #[derive(Debug)]
 pub enum CounterpartyCall<A, H> {
