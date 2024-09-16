@@ -137,6 +137,7 @@ impl EthSmartContractCounterparty {
 	}
 }
 
+#[async_trait::async_trait]
 impl BridgeContractCounterparty for EthSmartContractCounterparty {
 	type Address = EthAddress;
 	type Hash = EthHash;
