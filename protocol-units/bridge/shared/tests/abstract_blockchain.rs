@@ -1,8 +1,8 @@
+use bridge_shared::types::MovementAddressError;
 use bridge_shared::types::{
 	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock,
-	InitiatorAddress, RecipientAddress, TimeLock,
+	HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 };
-use bridge_shared::types::{HashLockPreImage, LockDetails};
 use futures::StreamExt;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
@@ -35,9 +35,14 @@ impl From<TestAddress> for Vec<u8> {
 	}
 }
 
-impl From<Vec<u8>> for TestAddress {
-	fn from(value: Vec<u8>) -> Self {
-		Self(static_str_ops::staticize(&String::from_utf8(value).expect("Invalid UTF-8")))
+impl TryFrom<Vec<u8>> for TestAddress {
+	type Error = MovementAddressError;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Ok(Self(static_str_ops::staticize(
+			&String::from_utf8(value)
+				.map_err(|err| MovementAddressError::AddressConvertionlError)?,
+		)))
 	}
 }
 

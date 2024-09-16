@@ -1,5 +1,6 @@
 #![allow(dead_code)] // TODO: Remove this line once the code is complete
 
+use bridge_shared::types::MovementAddressError;
 use bridge_shared::{
 	blockchain_service::AbstractBlockchainService,
 	bridge_monitoring::{
@@ -100,15 +101,27 @@ impl Debug for BC2Hash {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC1Address(pub &'static str);
 
-impl From<Vec<u8>> for BC1Address {
-	fn from(value: Vec<u8>) -> Self {
-		Self(static_str_ops::staticize(&String::from_utf8(value).expect("Invalid UTF-8")))
+impl TryFrom<Vec<u8>> for BC1Address {
+	type Error = MovementAddressError;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Ok(Self(static_str_ops::staticize(
+			&String::from_utf8(value).map_err(|_| MovementAddressError::AddressConvertionlError)?,
+		)))
 	}
 }
 
-impl From<BC1Address> for Vec<u8> {
-	fn from(address: BC1Address) -> Self {
-		address.0.as_bytes().to_vec()
+// impl From<BC1Address> for Vec<u8> {
+// 	fn from(address: BC1Address) -> Self {
+// 		address.0.as_bytes().to_vec()
+// 	}
+// }
+
+impl TryFrom<BC1Address> for Vec<u8> {
+	type Error = MovementAddressError;
+
+	fn try_from(address: BC1Address) -> Result<Self, Self::Error> {
+		Ok(address.0.as_bytes().to_vec())
 	}
 }
 
@@ -139,15 +152,22 @@ impl From<BC1Address> for InitiatorAddress<Vec<u8>> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct BC2Address(pub &'static str);
 
-impl From<Vec<u8>> for BC2Address {
-	fn from(value: Vec<u8>) -> Self {
-		Self(static_str_ops::staticize(&String::from_utf8(value).expect("Invalid UTF-8")))
+impl TryFrom<Vec<u8>> for BC2Address {
+	type Error = MovementAddressError;
+
+	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+		Ok(Self(static_str_ops::staticize(
+			&String::from_utf8(value)
+				.map_err(|err| MovementAddressError::AddressConvertionlError)?,
+		)))
 	}
 }
 
-impl From<BC2Address> for Vec<u8> {
-	fn from(address: BC2Address) -> Self {
-		address.0.as_bytes().to_vec()
+impl TryFrom<BC2Address> for Vec<u8> {
+	type Error = MovementAddressError;
+
+	fn try_from(address: BC2Address) -> Result<Self, Self::Error> {
+		Ok(address.0.as_bytes().to_vec())
 	}
 }
 

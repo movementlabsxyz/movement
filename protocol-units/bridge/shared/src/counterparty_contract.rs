@@ -22,6 +22,8 @@ pub enum SmartContractCounterpartyError {
 	TransferNotFound,
 	#[error("Invalid hash lock pre image (secret)")]
 	InvalidHashLockPreImage,
+	#[error("Address conversion Error")]
+	AddressError,
 }
 
 #[derive(Debug)]
@@ -44,7 +46,7 @@ pub struct SmartContractCounterparty<A, H> {
 
 impl<A, H> SmartContractCounterparty<A, H>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	H: From<HashLockPreImage>,
 {
@@ -112,7 +114,8 @@ where
 		}
 
 		// TODO: fix this
-		let account = A::from(transfer.recipient_address.clone());
+		let account = A::try_from(transfer.recipient_address.clone())
+			.map_err(|_| SmartContractCounterpartyError::AddressError)?;
 
 		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
 		todo!();

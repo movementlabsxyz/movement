@@ -3,7 +3,6 @@ use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
 	move_types::{
-		account_address::AccountAddressParseError,
 		ident_str,
 		language_storage::{ModuleId, TypeTag},
 	},
@@ -22,23 +21,15 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
-use bridge_shared::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
+use bridge_shared::bridge_contracts::{
+	BridgeContractCounterpartyError, BridgeContractInitiatorError,
+};
+use bridge_shared::types::MovementAddressError;
 use derive_new::new;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
-use thiserror::Error;
-use tracing::log::{debug, info, error};
-
-#[derive(Debug, Error)]
-pub enum MovementAddressError {
-	#[error("Invalid hex string")]
-	InvalidHexString,
-	#[error("Invalid byte length for AccountAddress")]
-	InvalidByteLength,
-	#[error("Invalid AccountAddress")]
-	AccountParseError(#[from] AccountAddressParseError),
-}
+use tracing::log::{debug, error, info};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct MovementAddress(pub AccountAddress);
@@ -53,7 +44,9 @@ impl FromStr for MovementAddress {
 	type Err = MovementAddressError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		AccountAddress::from_str(s).map(MovementAddress).map_err(From::from)
+		AccountAddress::from_str(s)
+			.map(MovementAddress)
+			.map_err(|err| MovementAddressError::AddressConvertionlError)
 	}
 }
 
@@ -63,22 +56,27 @@ impl std::fmt::Display for MovementAddress {
 	}
 }
 
-impl From<Vec<u8>> for MovementAddress {
-	fn from(vec: Vec<u8>) -> Self {
-		// Ensure the vector has the correct length
-		assert_eq!(vec.len(), AccountAddress::LENGTH);
+impl TryFrom<Vec<u8>> for MovementAddress {
+	type Error = MovementAddressError;
 
-		let account_address =
-			AccountAddress::from_bytes(vec).expect("Invalid byte length for AccountAddress");
-		MovementAddress(account_address)
+	fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
+		// Ensure the vector has the correct length
+		if vec.len() != AccountAddress::LENGTH {
+			return Err(MovementAddressError::InvalidByteLength);
+		}
+		AccountAddress::from_bytes(vec)
+			.map(MovementAddress)
+			.map_err(|err| MovementAddressError::AddressConvertionlError)
 	}
 }
 
-impl From<&str> for MovementAddress {
-	fn from(s: &str) -> Self {
+impl TryFrom<&str> for MovementAddress {
+	type Error = MovementAddressError;
+
+	fn try_from(s: &str) -> Result<Self, Self::Error> {
 		let s = s.trim_start_matches("0x");
-		let bytes = hex::decode(s).expect("Invalid hex string");
-		bytes.into()
+		let bytes = hex::decode(s).map_err(|_| MovementAddressError::InvalidHexString)?;
+		bytes.try_into()
 	}
 }
 
@@ -130,27 +128,26 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	debug!("Signed TX: {:?}", signed_tx);
 
-	let response = rest_client
-		.submit_and_wait(&signed_tx)
-		.await
-
-		.map_err(|e| {
-			let err_msg = format!("Transaction submission error: {}", e.to_string());
-			error!("{}", err_msg); // Log the error in detail
-			err_msg
-		})?;
+	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
+		let err_msg = format!("Transaction submission error: {}", e.to_string());
+		error!("{}", err_msg); // Log the error in detail
+		err_msg
+	})?;
 
 	let txn = response.into_inner();
 	debug!("Response: {:?}", txn);
 
 	match &txn {
-	Transaction::UserTransaction(user_txn) => {
-		if !user_txn.info.success {
-		return Err(format!(
-			"Transaction failed with status: {}",user_txn.info.vm_status));
+		Transaction::UserTransaction(user_txn) => {
+			if !user_txn.info.success {
+				return Err(format!("Transaction failed with status: {}", user_txn.info.vm_status));
+			}
 		}
-	},
-	_ => return Err("Expected a UserTransaction, but got a different transaction type.".to_string()),
+		_ => {
+			return Err(
+				"Expected a UserTransaction, but got a different transaction type.".to_string()
+			)
+		}
 	}
 
 	Ok(txn)
@@ -171,14 +168,17 @@ pub fn val_as_u64(value: Option<&Value>) -> Result<u64, BridgeContractCounterpar
 }
 
 pub fn val_as_str_initiator(value: Option<&Value>) -> Result<&str, BridgeContractInitiatorError> {
-	value.as_ref().and_then(|v| v.as_str()).ok_or(BridgeContractInitiatorError::SerializationError)
+	value
+		.as_ref()
+		.and_then(|v| v.as_str())
+		.ok_or(BridgeContractInitiatorError::SerializationError)
 }
 
 pub fn val_as_u64_initiator(value: Option<&Value>) -> Result<u64, BridgeContractInitiatorError> {
 	value
-	    .as_ref()
-	    .and_then(|v| v.as_u64())
-	    .ok_or(BridgeContractInitiatorError::SerializationError)
+		.as_ref()
+		.and_then(|v| v.as_u64())
+		.ok_or(BridgeContractInitiatorError::SerializationError)
 }
 
 pub fn serialize_u64(value: &u64) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
@@ -195,14 +195,17 @@ pub fn serialize_u64_initiator(value: &u64) -> Result<Vec<u8>, BridgeContractIni
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
 
-pub fn serialize_address_initiator(address: &AccountAddress) -> Result<Vec<u8>, BridgeContractInitiatorError> {
+pub fn serialize_address_initiator(
+	address: &AccountAddress,
+) -> Result<Vec<u8>, BridgeContractInitiatorError> {
 	bcs::to_bytes(address).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
-    
-pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, BridgeContractInitiatorError> {
+
+pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(
+	value: &T,
+) -> Result<Vec<u8>, BridgeContractInitiatorError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
- 
 
 // This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(

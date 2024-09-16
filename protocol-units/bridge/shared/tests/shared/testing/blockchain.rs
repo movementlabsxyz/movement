@@ -64,7 +64,7 @@ pub struct AbstractBlockchain<A, H, R> {
 
 impl<A, H, R> AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType + From<bridge_shared::types::RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<bridge_shared::types::RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
 	H: From<HashLockPreImage>,
@@ -129,7 +129,7 @@ where
 
 impl<A, H, R> Future for AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
 	H: From<HashLockPreImage>,
@@ -153,7 +153,7 @@ where
 
 impl<A, H, R> Stream for AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
 	H: From<HashLockPreImage>,

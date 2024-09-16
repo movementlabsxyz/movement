@@ -6,6 +6,7 @@ use std::convert::TryFrom;
 use std::ops::AddAssign;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
+
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BridgeTransferId<H>(pub H);
 
@@ -152,6 +153,16 @@ pub enum AssetType {
 	Moveth(u64),
 }
 
+#[derive(Debug, Error, PartialEq, Eq, Clone)]
+pub enum MovementAddressError {
+	#[error("Invalid hex string")]
+	InvalidHexString,
+	#[error("Invalid byte length for AccountAddress")]
+	InvalidByteLength,
+	#[error("Invalid Aptos AccountAddress")]
+	AddressConvertionlError,
+}
+
 #[derive(Error, Debug)]
 pub enum ConversionError {
 	#[error("Invalid conversion from AssetType to Uint")]
@@ -268,21 +279,23 @@ pub struct CounterpartyCompletedDetails<A, H> {
 
 impl<A, H> CounterpartyCompletedDetails<A, H>
 where
-	InitiatorAddress<Vec<u8>>: From<InitiatorAddress<A>>,
-	RecipientAddress<A>: From<RecipientAddress<Vec<u8>>>,
+	InitiatorAddress<Vec<u8>>: TryFrom<InitiatorAddress<A>>,
+	RecipientAddress<A>: TryFrom<RecipientAddress<Vec<u8>>>,
 {
-	pub fn from_bridge_transfer_details(
+	pub fn try_from_bridge_transfer_details(
 		bridge_transfer_details: BridgeTransferDetails<A, H>,
 		secret: HashLockPreImage,
-	) -> Self {
-		CounterpartyCompletedDetails {
+	) -> Result<Self, MovementAddressError> {
+		Ok(CounterpartyCompletedDetails {
 			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
-			initiator_address: From::from(bridge_transfer_details.initiator_address),
-			recipient_address: From::from(bridge_transfer_details.recipient_address),
+			initiator_address: TryFrom::try_from(bridge_transfer_details.initiator_address)
+				.map_err(|_| MovementAddressError::AddressConvertionlError)?,
+			recipient_address: TryFrom::try_from(bridge_transfer_details.recipient_address)
+				.map_err(|_| MovementAddressError::AddressConvertionlError)?,
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,
-		}
+		})
 	}
 }
 
@@ -302,7 +315,7 @@ impl<A, H> CounterpartyCompletedDetails<A, H> {
 // Types
 pub trait BridgeHashType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 pub trait BridgeAddressType:
-	Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone + From<Vec<u8>>
+	Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone + TryFrom<Vec<u8>>
 {
 }
 pub trait BridgeValueType: Debug + PartialEq + Eq + Clone + Send + Sync + Unpin {}
@@ -314,7 +327,7 @@ pub trait Convert<O> {
 // Blankets
 impl<T> BridgeHashType for T where T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 impl<T> BridgeAddressType for T where
-	T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone + From<Vec<u8>>
+	T: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone + TryFrom<Vec<u8>>
 {
 }
 

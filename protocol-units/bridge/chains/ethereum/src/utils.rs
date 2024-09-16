@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::types::EthAddress;
 use alloy::contract::{CallBuilder, CallDecoder};
 use alloy::network::Ethereum;
@@ -8,10 +6,12 @@ use alloy::providers::Provider;
 use alloy::rlp::{Encodable, RlpEncodable};
 use alloy::rpc::types::TransactionReceipt;
 use alloy::transports::Transport;
+use bridge_shared::types::MovementAddressError;
 use keccak_hash::keccak;
 use mcr_settlement_client::send_eth_transaction::{
 	InsufficentFunds, SendTransactionErrorRule, UnderPriced, VerifyRule,
 };
+use std::str::FromStr;
 use thiserror::Error;
 
 use rand::{rngs::StdRng, SeedableRng};
@@ -50,6 +50,8 @@ pub enum EthUtilError {
 	GasLimitExceed(u128, u128),
 	#[error("RpcTransactionExecution: {0}")]
 	RpcTransactionExecution(String),
+	#[error("Address conversion Error: {0}")]
+	AddressError(#[from] MovementAddressError),
 }
 
 impl FromStr for EthAddress {
@@ -63,7 +65,7 @@ impl FromStr for EthAddress {
 			return Err(EthUtilError::LengthError);
 		}
 		// Try to convert the Vec<u8> to EthAddress
-		Ok(vec.into())
+		vec.try_into().map_err(From::from)
 	}
 }
 

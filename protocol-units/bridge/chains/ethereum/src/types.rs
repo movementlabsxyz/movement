@@ -8,6 +8,7 @@ use alloy::providers::RootProvider;
 use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
+use bridge_shared::types::MovementAddressError;
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
 	LockDetails, RecipientAddress, TimeLock,
@@ -20,6 +21,8 @@ pub const COMPLETED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
 pub const REFUNDED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
+
+pub const ETH_ADDRESS_LEN: usize = 20;
 
 // Codegen from the abis
 alloy::sol!(
@@ -75,20 +78,25 @@ impl std::ops::Deref for EthAddress {
 	}
 }
 
-impl From<String> for EthAddress {
-	fn from(s: String) -> Self {
-		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
+impl TryFrom<String> for EthAddress {
+	type Error = alloy::primitives::AddressError;
+
+	fn try_from(s: String) -> Result<Self, Self::Error> {
+		Address::parse_checksummed(s, None).map(|addr| EthAddress(addr))
 	}
 }
 
-impl From<Vec<u8>> for EthAddress {
-	fn from(vec: Vec<u8>) -> Self {
-		// Ensure the vector has the correct length
-		assert_eq!(vec.len(), 20);
+impl TryFrom<Vec<u8>> for EthAddress {
+	type Error = MovementAddressError;
 
-		let mut bytes = [0u8; 20];
+	fn try_from(vec: Vec<u8>) -> Result<Self, Self::Error> {
+		// Ensure the vector has the correct length
+		if vec.len() != ETH_ADDRESS_LEN {
+			return Err(MovementAddressError::InvalidByteLength);
+		}
+		let mut bytes = [0u8; ETH_ADDRESS_LEN];
 		bytes.copy_from_slice(&vec);
-		EthAddress(Address(bytes.into()))
+		Ok(bytes.into())
 	}
 }
 
@@ -96,7 +104,12 @@ impl From<[u8; 32]> for EthAddress {
 	fn from(bytes: [u8; 32]) -> Self {
 		let mut address_bytes = [0u8; 20];
 		address_bytes.copy_from_slice(&bytes[0..20]);
-		EthAddress(Address(address_bytes.into()))
+		address_bytes.into()
+	}
+}
+impl From<[u8; 20]> for EthAddress {
+	fn from(bytes: [u8; 20]) -> Self {
+		EthAddress(Address(bytes.into()))
 	}
 }
 
@@ -215,21 +228,21 @@ pub struct CompletedDetails<A, H> {
 
 impl<A, H> CompletedDetails<A, H>
 where
-	A: From<Vec<u8>>,
+	A: TryFrom<Vec<u8>, Error = MovementAddressError>,
 {
-	pub fn from_bridge_transfer_details(
+	pub fn try_from_bridge_transfer_details(
 		bridge_transfer_details: BridgeTransferDetails<Vec<u8>, H>,
 		secret: HashLockPreImage,
-	) -> Self {
-		CompletedDetails {
+	) -> Result<Self, MovementAddressError> {
+		Ok(CompletedDetails {
 			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
-			recipient_address: RecipientAddress(A::from(
+			recipient_address: RecipientAddress(A::try_from(
 				bridge_transfer_details.recipient_address.0,
-			)),
+			)?),
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,
-		}
+		})
 	}
 
 	pub fn from_lock_details(lock_details: LockDetails<A, H>, secret: HashLockPreImage) -> Self {
