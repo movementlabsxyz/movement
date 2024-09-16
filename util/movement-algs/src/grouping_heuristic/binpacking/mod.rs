@@ -72,17 +72,26 @@ pub mod numeric {
 mod block {
 
 	use super::*;
-	use movement_types::{Block, Id, Transaction};
+	use movement_types::{
+		block::{self, Block},
+		transaction::{self, Transaction},
+	};
 
-	impl BinpackingWeighted for Id {
+	impl BinpackingWeighted for block::Id {
 		fn weight(&self) -> usize {
-			self.0.len()
+			self.as_bytes().len()
+		}
+	}
+
+	impl BinpackingWeighted for transaction::Id {
+		fn weight(&self) -> usize {
+			self.as_bytes().len()
 		}
 	}
 
 	impl BinpackingWeighted for Transaction {
 		fn weight(&self) -> usize {
-			self.data.len() + self.id.weight()
+			self.data().len() + self.id().weight()
 		}
 	}
 
@@ -90,13 +99,13 @@ mod block {
 		fn weight(&self) -> usize {
 			// sum of the transactions
 			let mut weight =
-				self.transactions.iter().map(|transaction| transaction.weight()).sum::<usize>();
+				self.transactions().map(|transaction| transaction.weight()).sum::<usize>();
 
 			// id
-			weight += self.id.weight();
+			weight += self.id().weight();
 
 			// parent
-			weight += self.parent.len();
+			weight += self.parent().as_bytes().len();
 
 			// for now metadata is negligible
 

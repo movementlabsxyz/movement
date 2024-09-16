@@ -8,8 +8,8 @@ use bridge_shared::{
 	bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent},
 	bridge_service::{active_swap::ActiveSwapConfig, BridgeServiceConfig},
 	types::{
-		Amount, BridgeTransferDetails, CompletedDetails, Convert, HashLock, HashLockPreImage,
-		InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
+		Amount, AssetType, BridgeTransferDetails, Convert, CounterpartyCompletedDetails, HashLock,
+		HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
 	},
 };
 
@@ -50,7 +50,7 @@ async fn test_bridge_service_integration_a_to_b() {
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -68,7 +68,8 @@ async fn test_bridge_service_integration_a_to_b() {
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(1000)
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
+			state: 1
 		})
 	);
 
@@ -88,8 +89,9 @@ async fn test_bridge_service_integration_a_to_b() {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			recipient_address: RecipientAddress::from(BC2Address("recipient")),
-			amount: Amount(1000),
+			initiator_address: InitiatorAddress::from(BC1Address("initiator")),
+			recipient_address: RecipientAddress(BC2Address("recipient")),
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 		})
 	);
 
@@ -115,12 +117,13 @@ async fn test_bridge_service_integration_a_to_b() {
 	tracing::debug!(?completed_event_counterparty);
 	assert_eq!(
 		completed_event_counterparty,
-		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
+		&BridgeContractCounterpartyEvent::Completed(CounterpartyCompletedDetails {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
-			recipient_address: RecipientAddress::from(BC2Address("recipient")),
+			initiator_address: InitiatorAddress::from(BC1Address("initiator")),
+			recipient_address: RecipientAddress(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
-			amount: Amount(1000),
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 		})
 	);
 
@@ -173,7 +176,7 @@ async fn test_bridge_service_integration_b_to_a() {
 			RecipientAddress::from(BC2Address("recipient")),
 			HashLock(BC2Hash::from("hash_lock")),
 			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -191,7 +194,8 @@ async fn test_bridge_service_integration_b_to_a() {
 			recipient_address: RecipientAddress::from(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			amount: Amount(1000)
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
+			state: 1
 		})
 	);
 
@@ -211,8 +215,9 @@ async fn test_bridge_service_integration_b_to_a() {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			time_lock: TimeLock(100),
-			recipient_address: RecipientAddress::from(BC1Address("recipient")),
-			amount: Amount(1000),
+			initiator_address: InitiatorAddress::from(BC1Address("initiator")),
+			recipient_address: RecipientAddress(BC1Address("recipient")),
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 		})
 	);
 
@@ -238,12 +243,13 @@ async fn test_bridge_service_integration_b_to_a() {
 	tracing::debug!(?completed_event_counterparty);
 	assert_eq!(
 		completed_event_counterparty,
-		&BridgeContractCounterpartyEvent::Completed(CompletedDetails {
+		&BridgeContractCounterpartyEvent::Completed(CounterpartyCompletedDetails {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
-			recipient_address: RecipientAddress::from(BC1Address("recipient")),
+			initiator_address: InitiatorAddress::from(BC1Address("initiator")),
+			recipient_address: RecipientAddress(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
 			secret: HashLockPreImage(b"hash_lock".to_vec()),
-			amount: Amount(1000),
+			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 		})
 	);
 
