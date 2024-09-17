@@ -3701,6 +3701,7 @@ name = "bridge-serivice"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "anyhow",
  "async-trait",
  "bridge-shared",
  "delegate",
