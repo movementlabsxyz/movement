@@ -33,7 +33,7 @@ impl InnerSignedBlobV1Data {
 		C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 		Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
 		SignatureSize<C>: ArrayLength<u8>,
-		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C>,
+		AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 		FieldBytesSize<C>: ModulusSize,
 	{
 		let mut hasher = C::Digest::new();
