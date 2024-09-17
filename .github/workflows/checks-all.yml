@@ -222,6 +222,7 @@ jobs:
 
     - name: Run Aptos Tests
       run: |
+        aptos info
         nix develop --command bash -c "
           set -e
           set -x
