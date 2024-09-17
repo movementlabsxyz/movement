@@ -1,7 +1,5 @@
 use crate::counterparty_contract::MovementSmartContractCounterparty;
 use crate::initiator_contract::MovementSmartContractInitiator;
-use crate::utils::RngSeededClone;
-use bridge_shared::bridge_contracts::BridgeContractInitiator;
 use bridge_shared::types::{
 	Amount, BridgeAddressType, BridgeHashType, CounterpartyCall, GenUniqueHash, HashLockPreImage,
 	InitiatorCall, RecipientAddress,
@@ -65,7 +63,7 @@ impl MovementChain {
 		let event_listeners = Vec::new();
 
 		Self {
-			name: name.into(),
+			name: "MovementChain".to_string(),
 			time: 0,
 			accounts,
 			events,
@@ -79,7 +77,9 @@ impl MovementChain {
 		}
 	}
 
-	pub fn add_event_listener(&mut self) -> mpsc::UnboundedReceiver<MovementChainEvent<A, H>> {
+	pub fn add_event_listener(
+		&mut self,
+	) -> mpsc::UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>> {
 		let (sender, receiver) = mpsc::unbounded();
 		self.event_listeners.push(sender);
 		receiver

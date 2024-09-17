@@ -39,14 +39,14 @@ pub struct SetupBridgeServiceResult(
 	pub BridgeService<EthereumService, MovementService>,
 	pub EthClient,
 	pub MovementClient,
-	pub EthereumChain<EthAddress, EthHash, TestRng>,
-	pub MovementChain<MovementAddress, MovementHash, TestRng>,
+	pub EthereumChain,
+	pub MovementChain,
 );
 
 pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBridgeServiceResult {
 	let mut rng = TestRng::from_seed([0u8; 32]);
-	let mut ethereum_service = EthereumChain::new(rng.clone(), "Ethereum");
-	let mut movement_service = MovementChain::new(rng.clone(), "Movement");
+	let mut ethereum_service = EthereumChain::new("Ethereum".to_string(), "localhost:8545").await;
+	let mut movement_service = MovementChain::new();
 
 	//@TODO: use json config instead of build_for_test
 	let config = EthConfig::build_for_test();

@@ -30,6 +30,7 @@ pub enum InitiatorCall<A, H> {
 
 #[derive(Debug, Clone)]
 pub struct EthSmartContractInitiator {
+	#[allow(clippy::type_complexity)]
 	pub initiated_transfers:
 		Arc<RwLock<HashMap<BridgeTransferId<EthHash>, BridgeTransferDetails<EthAddress, EthHash>>>>,
 	pub accounts: HashMap<EthAddress, Amount>,

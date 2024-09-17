@@ -1,4 +1,4 @@
-use bridge_shared::types::SCIResult;
+use bridge_shared::types::{SCCResult, SCIResult};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MovementChainEvent<A, H> {

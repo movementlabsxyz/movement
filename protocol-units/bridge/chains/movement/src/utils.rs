@@ -116,6 +116,15 @@ impl From<&str> for MovementAddress {
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct MovementHash(pub [u8; 32]);
 
+impl MovementHash {
+	pub fn random() -> Self {
+		let mut rng = TestRng::seed_from_u64(0);
+		let mut hash = [0u8; 32];
+		rng.fill_bytes(&mut hash);
+		Self(hash)
+	}
+}
+
 impl From<HashLockPreImage> for MovementHash {
 	fn from(preimage: HashLockPreImage) -> Self {
 		let mut hash = [0u8; 32];
