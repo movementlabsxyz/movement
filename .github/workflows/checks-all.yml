@@ -222,11 +222,12 @@ jobs:
 
     - name: Run Aptos Tests
       run: |
-        aptos info
+        ldd --version
         nix --version
         nix develop --command bash -c "
           set -e
           set -x
+          ldd --version
           aptos info
           chmod +x .github/scripts/update_move_toml.sh && \
           ./.github/scripts/update_move_toml.sh && \
