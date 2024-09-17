@@ -197,9 +197,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-23.04
+          - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2304
+            runs-on: buildjet-8vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -214,10 +214,10 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    #- uses: cachix/cachix-action@v15
+    #  with:
+    #    name: movementlabs
+    #    authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Aptos Tests
       run: |
@@ -235,9 +235,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-23.04
+          - os: ubuntu-22.04
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2304
+            runs-on: buildjet-8vcpu-ubuntu-2204
 
     runs-on: ${{ matrix.runs-on }}
 
@@ -248,10 +248,10 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    #- uses: cachix/cachix-action@v15
+    #  with:
+    #    name: movementlabs
+    #    authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run rust tests
       run: |
