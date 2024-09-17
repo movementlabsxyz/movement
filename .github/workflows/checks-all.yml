@@ -223,9 +223,11 @@ jobs:
     - name: Run Aptos Tests
       run: |
         aptos info
+        nix --version
         nix develop --command bash -c "
           set -e
           set -x
+          aptos info
           chmod +x .github/scripts/update_move_toml.sh && \
           ./.github/scripts/update_move_toml.sh && \
           cd protocol-units/bridge/move-modules && \
