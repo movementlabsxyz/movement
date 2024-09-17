@@ -228,7 +228,7 @@ pub struct CompletedDetails<A, H> {
 
 impl<A, H> CompletedDetails<A, H>
 where
-	A: TryFrom<Vec<u8>, Error = MovementAddressError>,
+	A: TryFrom<Vec<u8>>,
 {
 	pub fn try_from_bridge_transfer_details(
 		bridge_transfer_details: BridgeTransferDetails<Vec<u8>, H>,
@@ -236,9 +236,14 @@ where
 	) -> Result<Self, MovementAddressError> {
 		Ok(CompletedDetails {
 			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
-			recipient_address: RecipientAddress(A::try_from(
-				bridge_transfer_details.recipient_address.0,
-			)?),
+			recipient_address: RecipientAddress(
+				A::try_from(bridge_transfer_details.recipient_address.0).map_err(|_| {
+					MovementAddressError::AddressConvertionlError(
+						"Eth bridge_transfer_details recipient_address conversion error"
+							.to_string(),
+					)
+				})?,
+			),
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,

@@ -44,9 +44,11 @@ impl FromStr for MovementAddress {
 	type Err = MovementAddressError;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		AccountAddress::from_str(s)
-			.map(MovementAddress)
-			.map_err(|err| MovementAddressError::AddressConvertionlError)
+		AccountAddress::from_str(s).map(MovementAddress).map_err(|_| {
+			MovementAddressError::AddressConvertionlError(
+				"MovementAddress from_str AccountAddress conversion error".to_string(),
+			)
+		})
 	}
 }
 
@@ -64,9 +66,11 @@ impl TryFrom<Vec<u8>> for MovementAddress {
 		if vec.len() != AccountAddress::LENGTH {
 			return Err(MovementAddressError::InvalidByteLength);
 		}
-		AccountAddress::from_bytes(vec)
-			.map(MovementAddress)
-			.map_err(|err| MovementAddressError::AddressConvertionlError)
+		AccountAddress::from_bytes(vec).map(MovementAddress).map_err(|_| {
+			MovementAddressError::AddressConvertionlError(
+				"MovementAddress try_from AccountAddress conversion error".to_string(),
+			)
+		})
 	}
 }
 
@@ -237,7 +241,7 @@ pub async fn simulate_aptos_transaction(
 	let signed_tx = SignedTransaction::new(
 		raw_tx,
 		signer.public_key().clone(),
-		Ed25519Signature::try_from([0u8; 64].as_ref()).unwrap(),
+		Ed25519Signature::try_from([0u8; 64].as_ref())?,
 	);
 
 	let response_txns = aptos_client.rest_client.simulate(&signed_tx).await?.into_inner();
@@ -277,8 +281,7 @@ pub async fn send_view_request(
 			&ViewRequest {
 				function: EntryFunctionId::from_str(&format!(
 					"{package_address}::{module_name}::{function_name}"
-				))
-				.unwrap(),
+				))?,
 				type_arguments,
 				arguments,
 			},

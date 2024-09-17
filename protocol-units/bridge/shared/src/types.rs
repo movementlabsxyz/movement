@@ -159,8 +159,8 @@ pub enum MovementAddressError {
 	InvalidHexString,
 	#[error("Invalid byte length for AccountAddress")]
 	InvalidByteLength,
-	#[error("Invalid Aptos AccountAddress")]
-	AddressConvertionlError,
+	#[error("Error during address conversion: {0}")]
+	AddressConvertionlError(String),
 }
 
 #[derive(Error, Debug)]
@@ -289,9 +289,17 @@ where
 		Ok(CounterpartyCompletedDetails {
 			bridge_transfer_id: bridge_transfer_details.bridge_transfer_id,
 			initiator_address: TryFrom::try_from(bridge_transfer_details.initiator_address)
-				.map_err(|_| MovementAddressError::AddressConvertionlError)?,
+				.map_err(|_| {
+					MovementAddressError::AddressConvertionlError(
+						"bridge_transfer_details initiator_address conversion error".to_string(),
+					)
+				})?,
 			recipient_address: TryFrom::try_from(bridge_transfer_details.recipient_address)
-				.map_err(|_| MovementAddressError::AddressConvertionlError)?,
+				.map_err(|_| {
+					MovementAddressError::AddressConvertionlError(
+						"bridge_transfer_details recipient_address conversion error".to_string(),
+					)
+				})?,
 			hash_lock: bridge_transfer_details.hash_lock,
 			secret,
 			amount: bridge_transfer_details.amount,

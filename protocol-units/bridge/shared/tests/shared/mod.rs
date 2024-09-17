@@ -105,17 +105,13 @@ impl TryFrom<Vec<u8>> for BC1Address {
 	type Error = MovementAddressError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Ok(Self(static_str_ops::staticize(
-			&String::from_utf8(value).map_err(|_| MovementAddressError::AddressConvertionlError)?,
-		)))
+		Ok(Self(static_str_ops::staticize(&String::from_utf8(value).map_err(|_| {
+			MovementAddressError::AddressConvertionlError(
+				"BC1Address try_from conversion error".to_string(),
+			)
+		})?)))
 	}
 }
-
-// impl From<BC1Address> for Vec<u8> {
-// 	fn from(address: BC1Address) -> Self {
-// 		address.0.as_bytes().to_vec()
-// 	}
-// }
 
 impl TryFrom<BC1Address> for Vec<u8> {
 	type Error = MovementAddressError;
@@ -156,10 +152,11 @@ impl TryFrom<Vec<u8>> for BC2Address {
 	type Error = MovementAddressError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Ok(Self(static_str_ops::staticize(
-			&String::from_utf8(value)
-				.map_err(|err| MovementAddressError::AddressConvertionlError)?,
-		)))
+		Ok(Self(static_str_ops::staticize(&String::from_utf8(value).map_err(|err| {
+			MovementAddressError::AddressConvertionlError(
+				"BC2Address try_from conversion error".to_string(),
+			)
+		})?)))
 	}
 }
 

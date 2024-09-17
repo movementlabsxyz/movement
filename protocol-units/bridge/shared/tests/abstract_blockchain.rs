@@ -39,10 +39,11 @@ impl TryFrom<Vec<u8>> for TestAddress {
 	type Error = MovementAddressError;
 
 	fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
-		Ok(Self(static_str_ops::staticize(
-			&String::from_utf8(value)
-				.map_err(|err| MovementAddressError::AddressConvertionlError)?,
-		)))
+		Ok(Self(static_str_ops::staticize(&String::from_utf8(value).map_err(|err| {
+			MovementAddressError::AddressConvertionlError(
+				"TestAddress try_from conversion error".to_string(),
+			)
+		})?)))
 	}
 }
 
