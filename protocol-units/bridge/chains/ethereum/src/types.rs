@@ -128,6 +128,12 @@ pub type AlloyProvider = FillProvider<
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
 pub struct EthAddress(pub Address);
 
+impl From<EthAddress> for Vec<u8> {
+	fn from(address: EthAddress) -> Self {
+		address.0 .0.to_vec()
+	}
+}
+
 impl From<RecipientAddress<EthAddress>> for EthAddress {
 	fn from(address: RecipientAddress<EthAddress>) -> Self {
 		address.0

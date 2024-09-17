@@ -68,6 +68,12 @@ pub enum MovementAddressError {
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct MovementAddress(pub AccountAddress);
 
+impl From<MovementAddress> for Vec<u8> {
+	fn from(address: MovementAddress) -> Vec<u8> {
+		address.0.to_vec()
+	}
+}
+
 impl From<RecipientAddress<MovementAddress>> for MovementAddress {
 	fn from(address: RecipientAddress<MovementAddress>) -> Self {
 		address.0

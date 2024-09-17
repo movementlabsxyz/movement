@@ -35,7 +35,7 @@ pub type MovementService = AbstractBlockchainService<
 	MovementHash,
 >;
 
-pub struct SetupBridgeServiceResult(
+pub struct SetupBridgeService(
 	pub BridgeService<EthereumService, MovementService>,
 	pub EthClient,
 	pub MovementClient,
@@ -43,7 +43,7 @@ pub struct SetupBridgeServiceResult(
 	pub MovementChain,
 );
 
-pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBridgeServiceResult {
+pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBridgeService {
 	let mut rng = TestRng::from_seed([0u8; 32]);
 	let mut ethereum_service = EthereumChain::new("Ethereum".to_string(), "localhost:8545").await;
 	let mut movement_service = MovementChain::new();
@@ -76,7 +76,7 @@ pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBr
 	//@TODO: use json config instead of build_for_test
 	let config = MovementConfig::build_for_test();
 
-	let eth_service = EthereumService {
+	let ethereum_chain = EthereumService {
 		initiator_contract: eth_client.clone(),
 		initiator_monitoring: eth_initiator_monitoring,
 		counterparty_contract: eth_client.clone(),
@@ -87,7 +87,7 @@ pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBr
 	let movement_client =
 		MovementClient::new(config).await.expect("Failed to create MovementClient");
 
-	let movement_service = MovementService {
+	let movement_chain = MovementService {
 		initiator_contract: movement_client.clone(),
 		initiator_monitoring: movement_initiator_monitoring,
 		counterparty_contract: movement_client.clone(),
@@ -96,9 +96,9 @@ pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBr
 	};
 
 	// EthereumChain must be BlockchainService
-	let bridge_service = BridgeService::new(ethereum_service, movement_service, bridge_config);
+	let bridge_service = BridgeService::new(ethereum_chain, movement_chain, bridge_config);
 
-	SetupBridgeServiceResult(
+	SetupBridgeService(
 		bridge_service,
 		eth_client,
 		movement_client,

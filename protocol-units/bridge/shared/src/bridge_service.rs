@@ -25,6 +25,12 @@ pub struct BridgeServiceConfig {
 	pub active_swap: ActiveSwapConfig,
 }
 
+impl Default for BridgeServiceConfig {
+	fn default() -> Self {
+		Self { active_swap: ActiveSwapConfig::default() }
+	}
+}
+
 pub struct BridgeService<B1, B2>
 where
 	B1: BlockchainService,
