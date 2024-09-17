@@ -26,7 +26,8 @@ contract DeployMoveToken is Script {
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
     SafeProxyFactory public safeProxyFactory;
     Safe public safeSingleton;
-    Safe public safe;
+    Safe public movementLabsSafe;
+    Safe public movementFoundationSafe;
     TimelockController public timelock;
     address create3address = address(0x2Dfcc7415D89af828cbef005F0d072D8b3F23183);
     address moveAdmin;
@@ -38,32 +39,27 @@ contract DeployMoveToken is Script {
         vm.startBroadcast(signer);
 
         // forge script DeployMoveToken --fork-url https://eth-sepolia.api.onfinality.io/public
-        safe = Safe(payable(address(0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
+        // Safes should be already deployed
+        movementLabsSafe = Safe(payable(address(0x493516F6dB02c9b7f649E650c5de244646022Aa0)));
+        movementFoundationSafe = Safe(payable(address(0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
 
-        uint256 minDelay = 1 days;
-        address[] memory proposers = new address[](5);
+        uint256 minDelay = 2 days;
+        address[] memory proposers = new address[](1);
         address[] memory executors = new address[](1);
 
-        proposers[0] = string2Address("Andy");
-        proposers[1] = string2Address("Bob");
-        proposers[2] = string2Address("Charlie");
-        proposers[3] = string2Address("David");
-        proposers[4] = string2Address("Eve");
-
-        executors[0] = address(safe);
+        proposers[0] = address(movementLabsSafe);
+        executors[0] = address(movementFoundationSafe);
 
         timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
-
         
         _deployMove();
         
-
-        console.log("Safe balance: ", MOVEToken(address(moveProxy)).balanceOf(address(safe)));
+        console.log("Safe balance: ", MOVEToken(address(moveProxy)).balanceOf(address(movementFoundationSafe)));
         console.log("Move Token decimals: ", MOVEToken(address(moveProxy)).decimals());
         console.log("Move Token supply: ", MOVEToken(address(moveProxy)).totalSupply());
         console.log("Timelock deployed at: ", address(timelock));
-        console.log("Safe deployed at: ", address(safe));
-        console.log("multisig has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(safe)));
+        console.log("foundation Safe deployed at: ", address(movementFoundationSafe));
+        console.log("foundation multisig has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(movementFoundationSafe)));
         console.log("timelock has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)));
         vm.stopBroadcast();
     }
@@ -76,7 +72,7 @@ contract DeployMoveToken is Script {
         // );
         bytes memory bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
-            abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(safe)))
+            abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(movementFoundationSafe)))
         );
         vm.recordLogs();
         moveProxy = TransparentUpgradeableProxy(payable(create(create3address).deploy(salt, bytecode)));
@@ -101,7 +97,7 @@ contract DeployMoveToken is Script {
                 "upgradeAndCall(address,address,bytes)",
                 address(moveProxy),
                 address(newMoveImplementation),
-                abi.encodeWithSignature("initialize(address)", address(safe))
+                abi.encodeWithSignature("initialize(address)", address(movementFoundationSafe))
             ),
             bytes32(0),
             bytes32(0),
