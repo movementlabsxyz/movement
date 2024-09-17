@@ -12,7 +12,7 @@ pub use aptos_types::{
 	transaction::{SignedTransaction, Transaction},
 };
 use maptos_execution_util::config::Config;
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 
 use async_trait::async_trait;
 use tokio::sync::mpsc::Sender;
@@ -32,6 +32,12 @@ pub trait DynOptFinExecutor {
 		(Self::Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
 	>;
+
+	/// Checks whether the transaction had already been executed by opt
+	fn has_executed_transaction_opt(
+		&self,
+		transaction_hash: HashValue,
+	) -> Result<bool, anyhow::Error>;
 
 	/// Executes a block optimistically
 	async fn execute_block_opt(
