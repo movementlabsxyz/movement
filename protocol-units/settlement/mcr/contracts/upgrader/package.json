@@ -1,18 +1,18 @@
 {
   "name": "upgrader",
   "version": "1.0.0",
-  "main": "index.ts",
-  "license": "MIT",
-  "type": "module",
+  "description": "The Upgrader is a script designed to automate the upgrade process for settlement protocol units, streamlining the execution of several key steps required for contract upgrades. Below is a breakdown of its main components and the steps it performs.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "@safe-global/api-kit": "^2.4.5",
-    "@types/commander": "^2.12.2",
+    "@safe-global/api-kit": "^2.4.4",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "npx": "^10.2.2",
-    "typescript": "^5.6.2"
-  },
-  "devDependencies": {
     "tsx": "^4.19.1"
   }
 }

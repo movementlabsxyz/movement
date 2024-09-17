@@ -31,4 +31,4 @@ echo cd ../upgrader
 
 # Run the upgrader script
 echo "Running upgrader/index.ts"
-npx ts-node ./index.ts -c "$lowercase_contract"
+npx  ./index.js -c "$lowercase_contract"

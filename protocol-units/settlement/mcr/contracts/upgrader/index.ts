@@ -1,5 +1,6 @@
 import Safe from "@safe-global/protocol-kit";
-import SafeApiKit from "@safe-global/api-kit";
+//@ts-ignore
+import SafeApiKit from '@safe-global/api-kit';
 import {
   OperationType,
   SafeTransactionDataPartial,
@@ -40,6 +41,13 @@ async function main() {
     SIGNER_ADDRESS_PRIVATE_KEY: private_key,
     SAFE_ADDRESS: jsonData.safeAddress,
   };
+
+  // Create Safe API Kit instance
+  const apiKit = new SafeApiKit({
+    chainId: config.CHAIN_ID,
+  });
+
+    
   // Create Safe instance
   const protocolKit = await Safe.init({
     provider: config.RPC_URL,
@@ -47,10 +55,6 @@ async function main() {
     safeAddress: config.SAFE_ADDRESS,
   });
 
-  // Create Safe API Kit instance
-  const apiKit = new SafeApiKit({
-    chainId: config.CHAIN_ID,
-  });
 
   // Create transaction
   const safeTransactionData: SafeTransactionDataPartial = {
