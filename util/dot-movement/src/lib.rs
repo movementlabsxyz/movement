@@ -1,3 +1,4 @@
+use std::io::Write;
 pub mod path;
 pub mod sync;
 
@@ -48,6 +49,43 @@ impl DotMovement {
 				Ok(file)
 			}
 		}
+	}
+
+	/// Tries to get a configuration from a JSON file.
+	pub fn try_get_or_create_config_from_json<
+		T: serde::de::DeserializeOwned + serde::ser::Serialize + Default,
+	>(
+		&self,
+	) -> Result<T, anyhow::Error> {
+		let config_path = self.get_config_json_path();
+		// get res for opening in read-write mode
+		let res = std::fs::OpenOptions::new().read(true).write(true).open(config_path.clone());
+
+		let file = match res {
+			Ok(file) => file,
+			Err(_e) => {
+				// create parent directories
+				std::fs::DirBuilder::new().recursive(true).create(
+					config_path
+						.parent()
+						.ok_or(anyhow::anyhow!("Failed to get parent directory of config path"))?,
+				)?;
+
+				// create the file
+				{
+					let mut file = std::fs::File::create_new(&config_path)?;
+					let default_config = T::default();
+					let json_contents = serde_json::to_string_pretty(&default_config)?;
+					file.write_all(json_contents.as_bytes())?;
+					file.sync_all()?;
+				}
+				std::fs::OpenOptions::new().read(true).write(true).open(config_path.clone())?
+			}
+		};
+		let reader = std::io::BufReader::new(file);
+		let config = serde_json::from_reader(reader)
+			.map_err(|e| anyhow::anyhow!("Failed to parse config: {}", e))?;
+		Ok(config)
 	}
 
 	/// Tries to get a configuration from a JSON file.
