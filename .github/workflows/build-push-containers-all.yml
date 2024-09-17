@@ -621,7 +621,7 @@ jobs:
   
       - name: Read the commit SHA
         id: vars
-        run: echo "CONTAINER_REV=${{ github.event.pull_request.head.ref || github.ref }}" >> .env
+        run: echo "CONTAINER_REV=${{ github.ref }}" >> .env
 
       - name: Display .env file
         run: cat .env
