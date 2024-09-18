@@ -102,21 +102,24 @@ impl<T> Splitable for Vec<T> {
 
 mod block {
 
+	use std::collections::BTreeSet;
+
 	use super::*;
-	use movement_types::Block;
+	use movement_types::block::Block;
 
 	impl Splitable for Block {
 		fn split(self, factor: usize) -> Result<Vec<Self>, anyhow::Error> {
 			// unpack the transactions
-			let Block { metadata, transactions, parent, id: _ } = self;
+			let (metadata, parent, transactions, _id) = self.into_parts();
 
 			// split the vector of transactions
-			let split_transactions = transactions.split(factor)?;
+			let split_transactions = Vec::from_iter(transactions).split(factor)?;
 
 			// create a new block for each split transaction
 			let mut blocks = Vec::new();
 			for split in split_transactions {
-				let parent = Block::new(metadata.clone(), parent.clone(), split);
+				let parent =
+					Block::new(metadata.clone(), parent.clone(), BTreeSet::from_iter(split));
 				blocks.push(parent);
 			}
 

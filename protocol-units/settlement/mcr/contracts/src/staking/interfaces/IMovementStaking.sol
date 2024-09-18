@@ -97,6 +97,8 @@ interface IMovementStaking {
     );
 
     event EpochRolledOver(address indexed domain, uint256 epoch);
+    
     error StakeExceedsGenesisStake();
     error CustodianTransferAmountMismatch();
+    error GenesisAlreadyAccepted();
 }

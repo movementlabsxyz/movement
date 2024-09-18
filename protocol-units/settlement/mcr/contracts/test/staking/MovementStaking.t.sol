@@ -122,6 +122,10 @@ contract MovementStakingTest is Test {
             staking.getCurrentEpochStake(domain, address(moveToken), staker),
             100
         );
+
+        vm.expectRevert(IMovementStaking.GenesisAlreadyAccepted.selector);
+        vm.prank(domain);
+        staking.acceptGenesisCeremony();
     }
 
     function testSimpleRolloverEpoch() public {
