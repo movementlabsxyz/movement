@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Add submodules manually
+# Run this script to initialize and update all submodules.
 
 # Settlement MCR Submodules
 git submodule add --force https://github.com/foundry-rs/forge-std protocol-units/settlement/mcr/contracts/lib/forge-std
@@ -8,6 +8,7 @@ git submodule add --force https://github.com/OpenZeppelin/openzeppelin-contracts
 git submodule add --force https://github.com/dmfxyz/murky protocol-units/settlement/mcr/contracts/lib/murky
 git submodule add --force https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades protocol-units/settlement/mcr/contracts/lib/openzeppelin-foundry-upgrades
 git submodule add --force https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable protocol-units/settlement/mcr/contracts/lib/openzeppelin-contracts-upgradeable
+git submodule add --force https://github.com/safe-global/safe-smart-account protocol-units/settlement/mcr/contracts/lib/safe-smart-account
 
 # Bridge Submodules
 git submodule add --force https://github.com/foundry-rs/forge-std protocol-units/bridge/contracts/lib/forge-std
