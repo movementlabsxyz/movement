@@ -20,7 +20,7 @@ interface create {
     function deploy(bytes32 _salt, bytes memory _bytecode) external returns (address);
 }
 
-contract DeployMoveToken is Script {
+contract MOVETokenDeployer is Script {
     TransparentUpgradeableProxy public moveProxy;
     string public moveSignature = "initialize(address)";
 
@@ -30,8 +30,8 @@ contract DeployMoveToken is Script {
     // testnet
     // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
     // Safes should be already deployed
-    Safe public movementLabsSafe = Safe(payable(address(block.chainid == 1 ?  0x1 : 0x493516F6dB02c9b7f649E650c5de244646022Aa0)));
-    Safe public movementFoundationSafe = Safe(payable(address( block.chainid == 1 ?  0x1 : 0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
+    Safe public movementLabsSafe = Safe(payable(address(block.chainid == 1 ?  0x493516F6dB02c9b7f649E650c5de244646022Aa0 : 0x493516F6dB02c9b7f649E650c5de244646022Aa0)));
+    Safe public movementFoundationSafe = Safe(payable(address( block.chainid == 1 ?  0x493516F6dB02c9b7f649E650c5de244646022Aa0 : 0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
     TimelockController public timelock;
     address create3address = address(0x2Dfcc7415D89af828cbef005F0d072D8b3F23183);
     address moveAdmin;
