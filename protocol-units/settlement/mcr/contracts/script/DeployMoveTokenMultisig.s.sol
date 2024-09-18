@@ -26,15 +26,18 @@ contract MOVETokenDeployerMultisig is Script {
     uint256 public threshold = 2;
     TimelockController public timelock;
 
+    // Script intended to be used for deploying the MOVE token with a Safe multisig
+    // TODO: MIGRATE these functionalities to be used for the Contract Pipeline scripting.
+    //       MOVETokenDeployer is the only script that will be used for deploying the MOVE token
     function run() external {
+        // forge script DeployMoveTokenMultisig --fork-url https://eth-sepolia.api.onfinality.io/public
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
         MOVEToken moveImplementation = new MOVEToken();
 
-        // forge script DeployMoveTokenMultisig --fork-url https://eth-sepolia.api.onfinality.io/public
-
         address[] memory signers = new address[](5);
-
+        // these are unnamed addresses because we need the private key for signatures to simulate Safe multisig transactions
+        // consider these to be the private keys of the signers
         signers[0] = vm.addr(signer);
         signers[1] = vm.addr(1);
         signers[2] = vm.addr(2);

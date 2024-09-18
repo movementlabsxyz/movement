@@ -8,21 +8,20 @@ import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {Vm} from "forge-std/Vm.sol";
 
-function string2Address(bytes memory str) returns (address addr) {
-    bytes32 data = keccak256(str);
-    assembly {
-        mstore(0, data)
-        addr := mload(0)
-    }
-}
-
 interface create {
     function deploy(bytes32 _salt, bytes memory _bytecode) external returns (address);
 }
 
+
+// Script intended to be used for deploying the MOVE token from an EOA
+// Utilizies existing safes and sets them as proposers and executors.
+// The MOVEToken contract takes in the Movement Foundation address and sets it as its own admin for future upgrades.
+// The whole supply is minted to the Movement Foundation Safe.
+// The script also verifies that the token has the correct balances, decimals and permissions.
 contract MOVETokenDeployer is Script {
     TransparentUpgradeableProxy public moveProxy;
     string public moveSignature = "initialize(address)";
+    uint256 public minDelay = 2 days;
 
     // COMMANDS
     // mainnet
@@ -42,7 +41,6 @@ contract MOVETokenDeployer is Script {
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
-        uint256 minDelay = 2 days;
         address[] memory proposers = new address[](1);
         address[] memory executors = new address[](1);
 
@@ -50,38 +48,33 @@ contract MOVETokenDeployer is Script {
         executors[0] = address(movementFoundationSafe);
 
         timelock = new TimelockController(minDelay, proposers, executors, address(0x0));
+        console.log("Timelock deployed at: ", address(timelock));
         
         _deployMove();
         
-        console.log("Safe balance: ", MOVEToken(address(moveProxy)).balanceOf(address(movementFoundationSafe)));
-        console.log("Move Token decimals: ", MOVEToken(address(moveProxy)).decimals());
-        console.log("Move Token supply: ", MOVEToken(address(moveProxy)).totalSupply());
-        console.log("Timelock deployed at: ", address(timelock));
-        console.log("foundation Safe deployed at: ", address(movementFoundationSafe));
-        console.log("foundation multisig has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(movementFoundationSafe)));
-        console.log("timelock has admin role", MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)));
+        require(MOVEToken(address(moveProxy)).balanceOf(address(movementFoundationSafe)) == 1000000000000000000, "Movement Foundation Safe balance is wrong");
+        require(MOVEToken(address(moveProxy)).decimals() == 8, "Decimals are expected to be 8"); 
+        require(MOVEToken(address(moveProxy)).totalSupply() == 1000000000000000000,"Total supply is wrong");
+        require(MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(movementFoundationSafe)),"Movement Foundation expected to have token admin role");
+        require(!MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
         vm.stopBroadcast();
     }
 
     function _deployMove() internal {
         console.log("MOVE: deploying");
         MOVEToken moveImplementation = new MOVEToken();
-        // moveProxy = new TransparentUpgradeableProxy(
-        //     address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(safe))
-        // );
+        // genetares bytecode for CREATE3 deployment
         bytes memory bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
             abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, address(movementFoundationSafe)))
         );
         vm.recordLogs();
+        // deploys the MOVE token proxy using CREATE3
         moveProxy = TransparentUpgradeableProxy(payable(create(create3address).deploy(salt, bytecode)));
         Vm.Log[] memory logs = vm.getRecordedLogs();
         console.log("MOVE deployment records:");
         console.log("proxy", address(moveProxy));
         console.log("implementation", address(moveImplementation));
-        // deployment.move = address(moveProxy);
-        // deployment.moveAdmin = _storeAdminDeployment();
-        
         moveAdmin = logs[logs.length - 2].emitter;
         console.log("MOVE admin", moveAdmin);
     }
@@ -100,7 +93,7 @@ contract MOVETokenDeployer is Script {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + 1 days
+            block.timestamp + minDelay
         );
     }
 }
