@@ -23,11 +23,15 @@ interface create {
 contract DeployMoveToken is Script {
     TransparentUpgradeableProxy public moveProxy;
     string public moveSignature = "initialize(address)";
-    string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
-    SafeProxyFactory public safeProxyFactory;
-    Safe public safeSingleton;
-    Safe public movementLabsSafe;
-    Safe public movementFoundationSafe;
+
+    // COMMANDS
+    // mainnet
+    // forge script MOVETokenDeployer --fork-url https://eth.llamarpc.com --verify --etherscan-api-key ETHERSCAN_API_KEY
+    // testnet
+    // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
+    // Safes should be already deployed
+    Safe public movementLabsSafe = Safe(payable(address(block.chainid == 1 ?  0x1 : 0x493516F6dB02c9b7f649E650c5de244646022Aa0)));
+    Safe public movementFoundationSafe = Safe(payable(address( block.chainid == 1 ?  0x1 : 0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
     TimelockController public timelock;
     address create3address = address(0x2Dfcc7415D89af828cbef005F0d072D8b3F23183);
     address moveAdmin;
@@ -37,11 +41,6 @@ contract DeployMoveToken is Script {
     function run() external {
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
-
-        // forge script DeployMoveToken --fork-url https://eth-sepolia.api.onfinality.io/public
-        // Safes should be already deployed
-        movementLabsSafe = Safe(payable(address(0x493516F6dB02c9b7f649E650c5de244646022Aa0)));
-        movementFoundationSafe = Safe(payable(address(0x00db70A9e12537495C359581b7b3Bc3a69379A00)));
 
         uint256 minDelay = 2 days;
         address[] memory proposers = new address[](1);
