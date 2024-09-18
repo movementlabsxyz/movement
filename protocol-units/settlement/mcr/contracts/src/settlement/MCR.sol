@@ -84,6 +84,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     function acceptGenesisCeremony() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        
         stakingContract.acceptGenesisCeremony();
     }
 
