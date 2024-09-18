@@ -595,7 +595,7 @@ jobs:
 
 ### Unchecked containers
 
-  bridge-shared-build:
+  bridge-service-build:
     if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -625,13 +625,13 @@ jobs:
 
     - name: Build and Push Docker image movement
       run: |
-        ./scripts/movement/build-push-image bridge-shared
+        ./scripts/movement/build-push-image bridge-service
 
-  bridge-shared-manifest:
+  bridge-service-manifest:
     permissions:
       contents: read
       packages: write
-    needs: bridge-shared-build
+    needs: bridge-service-build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -652,123 +652,6 @@ jobs:
 
       - name: Build and Push Docker image movement
         run: |
-          ./scripts/movement/manifest bridge-shared
+          ./scripts/movement/manifest bridge-service
 
-  ethereum-bridge-build:
-    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        architecture: [x86_64, arm64]
-        
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Login to Docker Hub to Avoid Rate Limiting
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-    - name: Build and Push Docker image movement
-      run: |
-        ./scripts/movement/build-push-image ethereum-bridge
-
-  ethereum-bridge-manifest:
-    permissions:
-      contents: read
-      packages: write
-    needs: ethereum-bridge-build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Login to Docker Hub to Avoid Rate Limiting
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Build and Push Docker image movement
-        run: |
-          ./scripts/movement/manifest ethereum-bridge
-
-  movement-bridge-build:
-    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        architecture: [x86_64, arm64]
-        
-    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: ghcr.io
-        username: ${{ github.repository_owner }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Login to Docker Hub to Avoid Rate Limiting
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-    - name: Build and Push Docker image movement
-      run: |
-        ./scripts/movement/build-push-image movement-bridge
-
-  movement-bridge-manifest:
-    permissions:
-      contents: read
-      packages: write
-    needs: movement-bridge-build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Login to Docker Hub to Avoid Rate Limiting
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
-
-      - name: Build and Push Docker image movement
-        run: |
-          ./scripts/movement/manifest movement-bridge
-
+  
