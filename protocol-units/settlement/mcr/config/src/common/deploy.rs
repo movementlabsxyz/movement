@@ -24,7 +24,19 @@ env_short_default!(
 );
 
 pub fn maybe_deploy() -> Option<Config> {
-	std::env::var("MAYBE_DEPLOY_MCR").ok().map(|_| Config::default())
+	match std::env::var("MAYBE_DEPLOY_MCR") {
+		Ok(str_value) => {
+			// if it parses as true then we want to deploy under the default config
+			let bool_value = str_value.parse::<bool>().unwrap_or(false);
+
+			if bool_value {
+				Some(Config::default())
+			} else {
+				None
+			}
+		}
+		Err(_) => None,
+	}
 }
 
 impl Default for Config {
