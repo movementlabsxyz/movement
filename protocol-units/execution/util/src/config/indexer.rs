@@ -1,6 +1,6 @@
 use super::common::{
 	default_maptos_indexer_grpc_inactivity_timeout, default_maptos_indexer_grpc_listen_hostname,
-    default_maptos_indexer_grpc_listen_port, default_maptos_indexer_grpc_ping_interval,
+	default_maptos_indexer_grpc_listen_port, default_maptos_indexer_grpc_ping_interval,
 };
 use serde::{Deserialize, Serialize};
 
@@ -10,17 +10,17 @@ pub struct Config {
 	#[serde(default = "default_maptos_indexer_grpc_listen_hostname")]
 	pub maptos_indexer_grpc_listen_hostname: String,
 
-    /// The port of the Suzuka node gRPC indexer server
-    #[serde(default = "default_maptos_indexer_grpc_listen_port")]
-    pub maptos_indexer_grpc_listen_port: u16,
+	/// The port of the Suzuka node gRPC indexer server
+	#[serde(default = "default_maptos_indexer_grpc_listen_port")]
+	pub maptos_indexer_grpc_listen_port: u16,
 
-    /// Inactivity timeout of the gRpc connection
-    #[serde(default = "default_maptos_indexer_grpc_inactivity_timeout")]
-    pub maptos_indexer_grpc_inactivity_timeout: u64,
+	/// Inactivity timeout of the gRpc connection
+	#[serde(default = "default_maptos_indexer_grpc_inactivity_timeout")]
+	pub maptos_indexer_grpc_inactivity_timeout: u64,
 
-    /// Ping interval of the gRpc connection
-    #[serde(default = "default_maptos_indexer_grpc_ping_interval")]
-    pub maptos_indexer_grpc_inactivity_ping_interval: u64,
+	/// Ping interval of the gRpc connection
+	#[serde(default = "default_maptos_indexer_grpc_ping_interval")]
+	pub maptos_indexer_grpc_inactivity_ping_interval: u64,
 }
 
 impl Default for Config {
@@ -28,8 +28,10 @@ impl Default for Config {
 		Self {
 			maptos_indexer_grpc_listen_hostname: default_maptos_indexer_grpc_listen_hostname(),
 			maptos_indexer_grpc_listen_port: default_maptos_indexer_grpc_listen_port(),
-            maptos_indexer_grpc_inactivity_timeout: default_maptos_indexer_grpc_inactivity_timeout(),
-            maptos_indexer_grpc_inactivity_ping_interval: default_maptos_indexer_grpc_ping_interval(),
+			maptos_indexer_grpc_inactivity_timeout: default_maptos_indexer_grpc_inactivity_timeout(
+			),
+			maptos_indexer_grpc_inactivity_ping_interval: default_maptos_indexer_grpc_ping_interval(
+			),
 		}
 	}
 }

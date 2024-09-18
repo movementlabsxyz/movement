@@ -16,7 +16,7 @@ use movement_algs::grouping_heuristic::{
 	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
 	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
 };
-use movement_types::Block;
+use movement_types::block::Block;
 use std::boxed::Box;
 use tokio::{
 	sync::mpsc::{Receiver, Sender},
@@ -82,7 +82,7 @@ impl LightNodeV1 {
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions.len(), "received_block");
+				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
 				sender.send(block).await?;
 				Ok(())
 			}
@@ -420,7 +420,7 @@ mod block {
 
 	use celestia_types::{nmt::Namespace, Blob};
 	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
-	use movement_types::Block;
+	use movement_types::block::Block;
 
 	#[derive(Debug)]
 	pub struct WrappedBlock {

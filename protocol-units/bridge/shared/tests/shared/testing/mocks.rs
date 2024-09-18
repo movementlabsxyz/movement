@@ -137,7 +137,7 @@ where
 }
 
 pub struct MockCounterpartyMonitoring<A, H> {
-	pub events: Vec<BridgeContractCounterpartyEvent<H>>,
+	pub events: Vec<BridgeContractCounterpartyEvent<A, H>>,
 	pub _phantom: std::marker::PhantomData<A>,
 }
 
@@ -161,7 +161,7 @@ where
 	A: std::fmt::Debug + Unpin,
 	H: std::fmt::Debug + Unpin,
 {
-	type Item = BridgeContractCounterpartyEvent<H>;
+	type Item = BridgeContractCounterpartyEvent<A, H>;
 
 	fn poll_next(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		let this = self.get_mut();
@@ -250,7 +250,7 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress,
+		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
 		time_lock: TimeLock,
 		amount: Amount,
@@ -267,6 +267,7 @@ where
 				hash_lock,
 				time_lock,
 				amount,
+				state: 1,
 			}));
 		Ok(())
 	}
@@ -289,7 +290,7 @@ where
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		Ok(None)
 	}
 }
@@ -314,12 +315,13 @@ where
 	type Address = A;
 	type Hash = H;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_hash_lock: HashLock<Self::Hash>,
 		_time_lock: TimeLock,
-		_recipient: RecipientAddress,
+		_initiator: InitiatorAddress<Vec<u8>>,
+		_recipient: RecipientAddress<A>,
 		_amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
 		Ok(())
@@ -343,7 +345,7 @@ where
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
 		Ok(None)
 	}

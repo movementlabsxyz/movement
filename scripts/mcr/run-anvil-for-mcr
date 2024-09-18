@@ -1,2 +1,0 @@
-#!/usr/bin/env bash -e
-anvil --chain-id $MCR_CHAIN_ID --config-out "$MCR_ANVIL_APP_PATH/anvil.json" --port $MCR_ANVIL_PORT
