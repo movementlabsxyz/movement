@@ -68,7 +68,6 @@
           process-compose
           celestia-node
           celestia-app
-          monza-aptos
           jq
           docker
           solc
@@ -83,51 +82,6 @@
           cargo = rust;
           rustc = rust;
         };
-
-        monza-aptos = pkgs.stdenv.mkDerivation {
-            pname = "monza-aptos";
-            version = "branch-monza";
-
-            src = pkgs.fetchFromGitHub {
-                owner = "movementlabsxyz";
-                repo = "aptos-core";
-                rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-                sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
-            };
-
-            installPhase = ''
-                cp -r . $out
-            '';
-
-            meta = with pkgs.lib; {
-                description = "Aptos core repository on the monza branch";
-                homepage = "https://github.com/movementlabsxyz/aptos-core";
-                license = licenses.asl20;
-            };
-        };
-
-        aptos-faucet-service-common-args = {
-          pname = "aptos-faucet-service";
-          version = "2.0.1";
-          
-          src = monza-aptos;
-          strictDeps = true;
-
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
-          buildInputs = with pkgs; [
-            openssl
-            systemd
-            rocksdb
-            rustPlatform.bindgenHook
-          ];
-        };
-        aptos-faucet-service-deps = craneLib.buildDepsOnly aptos-faucet-service-common-args;
-        aptos-faucet-service = craneLib.buildPackage (aptos-faucet-service-common-args // {
-          cargoArtifacts = aptos-faucet-service-deps;
-          cargoExtraArgs = "-p aptos-faucet-service";
-        });
 
         celestia-app = pkgs.buildGoModule {
           pname = "celestia-app";
@@ -159,7 +113,7 @@
     
       in {
         packages = {
-          inherit aptos-faucet-service celestia-app celestia-node;
+          inherit celestia-app celestia-node;
         };
         devShells = rec {
           default = docker-build;
@@ -167,7 +121,6 @@
             ROCKSDB = pkgs.rocksdb;
             SNAPPY = if pkgs.stdenv.isLinux then pkgs.snappy else null;
             OPENSSL_DEV = pkgs.openssl.dev;
-            MONZA_APTOS_PATH = monza-aptos;
          
             buildInputs = with pkgs; [
               # rust toolchain
@@ -182,7 +135,6 @@
               python311 poetry just foundry-bin process-compose jq docker solc
               grpcurl grpcui
 
-              monza-aptos
               celestia-app celestia-node
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               Security CoreServices SystemConfiguration AppKit
