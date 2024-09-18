@@ -11,7 +11,7 @@ import {CreateCall} from "@safe-smart-account/contracts/libraries/CreateCall.sol
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {Enum} from "@safe-smart-account/contracts/common/Enum.sol";
 
-contract DeployMoveTokenMultisig is Script {
+contract MOVETokenDeployerMultisig is Script {
     TransparentUpgradeableProxy public moveProxy;
     ProxyAdmin public admin;
     string public moveSignature = "initialize(address)";
@@ -111,12 +111,14 @@ contract DeployMoveTokenMultisig is Script {
         console.log("implementation deployed at: ", address(moveImplementation));
         vm.stopBroadcast();
     }
-}
 
-function generateSignatures(uint256 privKey, bytes32 digest) internal returns (bytes memory signatures) {
+    function generateSignatures(uint256 privKey, bytes32 digest) internal returns (bytes memory signatures) {
     (uint8 v1, bytes32 r1, bytes32 s1) = vm.sign(privKey, digest);
     (uint8 v2, bytes32 r2, bytes32 s2) = vm.sign(2, digest);
     (uint8 v3, bytes32 r3, bytes32 s3) = vm.sign(3, digest);
 
     signatures = abi.encodePacked(r1, s1, v1, r2, s2, v2);
 }
+}
+
+
