@@ -5,6 +5,9 @@ import "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyFactory.sol";
+import {SafeProxy} from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
+import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import { Vm } from "forge-std/Vm.sol";
 
 contract Helper is Script {
@@ -18,7 +21,7 @@ contract Helper is Script {
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
     string public stakingSignature = "initialize(address)";
     string public stlMoveSignature = "initialize(string,string,address)";
-    string public moveSignature = "initialize()";
+    string public moveSignature = "initialize(address)";
     string public root = vm.projectRoot();
     string public deploymentsPath = "/script/helpers/deployments.json";
     string public upgradePath = "/script/helpers/upgrade/";
@@ -40,16 +43,17 @@ contract Helper is Script {
         address stlMove;
         address stlMoveAdmin;
         address timelock;
-        address multisig;
+        address movementLabsSafe;
+        address movementFoundationSafe;
     }
 
     struct ConfigData {
         uint256 minDelay;
-        address[] signers;
+        address[] labsSigners;
+        address[] founadtionSigners;
         address admin;
-        uint256 threshold;
-        address[] proposers;
-        address[] executors;
+        uint256 labsThreshold;
+        uint256 FounadtionThreshold;
     }
 
     function _loadConfig() internal returns (uint256 minDelay, address[] memory signers, address[] memory proposers, address[] memory executors, address adminAddress) {
@@ -57,8 +61,8 @@ contract Helper is Script {
         string memory json = vm.readFile(path);
         bytes memory rawConfigData = json.parseRaw(string(abi.encodePacked(".")));
         config = abi.decode(rawConfigData, (ConfigData));
-        if (config.proposers[0] == ZERO) {
-            config.proposers[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+        if (config.labsSigners[0] == ZERO) {
+            config.labsSigners[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
         }
     }
 
@@ -74,10 +78,21 @@ contract Helper is Script {
 
     function _deployTimelock() internal {
         if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.proposers, config.executors, config.admin);
+            timelock = new TimelockController(config.minDelay, config.labsSigners, config.founadtionSigners, config.admin);
             deployment.timelock = address(timelock);
         }
     }
+
+    // TODO: deploy create3 locally and force it to use the deployed address
+    // function _deployCreate3() internal {}
+
+    // TODO: deploy safe locally if not already deployed
+    // function _deploySafe() internal {
+    //     SafeProxyFactory factory = new SafeProxyFactory();
+    //     SafeProxy proxy = factory.createProxy();
+    //     Safe safe = new Safe(address(proxy));
+    //     return address(safe);
+    // }
 
     function _storeAdminDeployment() internal returns (address admin) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -114,17 +129,18 @@ contract Helper is Script {
         base.serialize(uint2str(chain), chainData);
     }
 
-    function _serializer(string memory json, Deployment memory deployment) internal returns (string memory) {
-        json.serialize("move", deployment.move);
-        json.serialize("moveAdmin", deployment.moveAdmin);
-        json.serialize("staking", deployment.staking);
-        json.serialize("stakingAdmin", deployment.stakingAdmin);
-        json.serialize("stlMove", deployment.stlMove);
-        json.serialize("stlMoveAdmin", deployment.stlMoveAdmin);
-        json.serialize("mcr", deployment.mcr);
-        json.serialize("mcrAdmin", deployment.mcrAdmin);
-        json.serialize("timelock", deployment.timelock);
-        return json.serialize("multisig", deployment.multisig);
+    function _serializer(string memory json, Deployment memory memoryDeployment) internal returns (string memory) {
+        json.serialize("move", memoryDeployment.move);
+        json.serialize("moveAdmin", memoryDeployment.moveAdmin);
+        json.serialize("staking", memoryDeployment.staking);
+        json.serialize("stakingAdmin", memoryDeployment.stakingAdmin);
+        json.serialize("stlMove", memoryDeployment.stlMove);
+        json.serialize("stlMoveAdmin", memoryDeployment.stlMoveAdmin);
+        json.serialize("mcr", memoryDeployment.mcr);
+        json.serialize("mcrAdmin", memoryDeployment.mcrAdmin);
+        json.serialize("timelock", memoryDeployment.timelock);
+        json.serialize("movementLabsSafe", memoryDeployment.movementLabsSafe);
+        return json.serialize("movementFoundationSafe", memoryDeployment.movementFoundationSafe);
     }
 
     // string to address

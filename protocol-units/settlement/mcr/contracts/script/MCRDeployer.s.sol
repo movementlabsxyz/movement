@@ -6,7 +6,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { Helper } from "./helpers/Helper.sol";
 import { Vm } from "forge-std/Vm.sol";
-import { stdJson } from "forge-std/StdJson.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 contract MCRDeployer is Helper {
 
@@ -53,7 +53,7 @@ contract MCRDeployer is Helper {
                 128,
                 100 ether,
                 100 ether, 
-                config.proposers
+                config.labsSigners
             )
         );
         console.log("MCR deployment records:");
@@ -86,7 +86,7 @@ contract MCRDeployer is Helper {
         json.serialize("data", data);
         string memory operation = "OperationType.Call";
         json.serialize("chainId", chainId);
-        json.serialize("safeAddress", config.proposers[0]);
+        json.serialize("safeAddress", config.labsSigners[0]);
         string memory serializedData = json.serialize("operation", operation);
 
         console.log("MCR upgrade json |start|", serializedData, "|end|");

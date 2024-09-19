@@ -6,12 +6,13 @@ import { Helper } from "./helpers/Helper.sol";
 import { MCRDeployer } from "./MCRDeployer.s.sol";
 import { StakingDeployer } from "./StakingDeployer.s.sol";
 import { StlMoveDeployer } from "./StlMoveDeployer.s.sol";
+import { MOVETokenDeployer } from "./MOVETokenDeployer.s.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer {
+contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer {
 
-    function run() external override(MCRDeployer, StakingDeployer, StlMoveDeployer) {
+    function run() external override(MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer) {
         // load config data
         _loadConfig();
 
@@ -60,41 +61,4 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer {
 
         vm.stopBroadcast();
     }
-    
-    // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
-
-    function _deployMove() internal {
-        console.log("MOVE: deploying");
-        MOVEToken moveImplementation = new MOVEToken();
-        vm.recordLogs();
-        moveProxy = new TransparentUpgradeableProxy(
-            address(moveImplementation),
-            address(timelock),
-            abi.encodeWithSignature(moveSignature)
-        );
-        console.log("MOVE deployment records:");
-        console.log("proxy", address(moveProxy));
-        deployment.move = address(moveProxy);
-        deployment.moveAdmin = _storeAdminDeployment();
-    }
-
-    function _upgradeMove() internal {
-        console.log("MOVE: upgrading");
-        MOVEToken newMoveImplementation = new MOVEToken();
-        timelock.schedule(
-            address(deployment.moveAdmin),
-            0,
-            abi.encodeWithSignature(
-                "upgradeAndCall(address,address,bytes)",
-                address(moveProxy),
-                address(newMoveImplementation),
-                ""
-            ),
-            bytes32(0),
-            bytes32(0),
-            block.timestamp + 1 days
-        );
-        console.log("MOVE: upgrade scheduled");
-    }
-
 }
