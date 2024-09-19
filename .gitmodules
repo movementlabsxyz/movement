@@ -37,3 +37,6 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/safe-smart-account"]
 	path = protocol-units/settlement/mcr/contracts/lib/safe-smart-account
 	url = https://github.com/safe-global/safe-smart-account
+[submodule "protocol-units/settlement/mcr/contracts/lib/solmate"]
+	path = protocol-units/settlement/mcr/contracts/lib/solmate
+	url = https://github.com/transmissions11/solmate

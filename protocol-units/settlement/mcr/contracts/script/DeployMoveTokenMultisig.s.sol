@@ -18,7 +18,7 @@ contract MOVETokenDeployerMultisig is Script {
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
     SafeProxyFactory public safeProxyFactory;
     address public zero = address(0x0);
-    address public movementFoundationMockMultisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
+    address public movementFoundationMockMultisig = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
     address public safeSingleton = 0x29fcB43b46531BcA003ddC8FCB67FFE91900C762;
     CreateCall public createCall = CreateCall(0x7cbB62EaA69F79e6873cD1ecB2392971036cFAa4);
     address payable public safeAddress;

@@ -9,7 +9,7 @@ import { StlMoveDeployer } from "./StlMoveDeployer.s.sol";
 import { MOVETokenDeployer } from "./MOVETokenDeployer.s.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import { Vm, ForgeContext } from "forge-std/Vm.sol";
+import { Vm, VmSafe } from "forge-std/Vm.sol";
 
 contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer {
 
@@ -23,30 +23,36 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVEToke
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
+        // Deploy CREATE3Factory if not deployed
+        _deployCreate3();
+
+        // Deploy Safes if not deployed
+        _deploySafes();
+
         // timelock is required for all deployments
         _deployTimelock();
         
         // Deploy or upgrade contracts conditionally
-        deployment.moveAdmin == ZERO && deployment.move == ZERO ?
-            _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
+        deployment.moveAdmin == NULL && deployment.move == NULL ?
+            _deployMove() : deployment.moveAdmin != NULL && deployment.move != NULL ?
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
 
         // requires move to be deployed
-        deployment.stakingAdmin == ZERO && deployment.staking == ZERO && deployment.move != ZERO ?
-            _deployStaking() : deployment.stakingAdmin != ZERO && deployment.staking != ZERO ?
+        deployment.stakingAdmin == NULL && deployment.staking == NULL && deployment.move != NULL ?
+            _deployStaking() : deployment.stakingAdmin != NULL && deployment.staking != NULL ?
                 // if staking is already deployed, upgrade it
                 _upgradeStaking() : revert("STAKING: both admin and proxy should be registered");
 
         // requires move to be deployed
-        deployment.stlMoveAdmin == ZERO && deployment.stlMove == ZERO && deployment.move != ZERO ?
-            _deployStlMove() : deployment.stlMoveAdmin != ZERO && deployment.stlMove != ZERO ?
+        deployment.stlMoveAdmin == NULL && deployment.stlMove == NULL && deployment.move != NULL ?
+            _deployStlMove() : deployment.stlMoveAdmin != NULL && deployment.stlMove != NULL ?
                 // if stlMove is already deployed, upgrade it
                 _upgradeStlMove() : revert("STL: both admin and proxy should be registered");
 
         // requires staking and move to be deployed
-        deployment.mcrAdmin == ZERO && deployment.mcr == ZERO && deployment.move != ZERO && deployment.staking != ZERO ?
-            _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
+        deployment.mcrAdmin == NULL && deployment.mcr == NULL && deployment.move != NULL && deployment.staking != NULL ?
+            _deployMCR() : deployment.mcrAdmin != NULL && deployment.mcr != NULL ?
                 // if mcr is already deployed, upgrade it
                 _upgradeMCR() : revert("MCR: both admin and proxy should be registered");
 
@@ -57,7 +63,7 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVEToke
             _upgradeStlMove();
             _upgradeMCR();
         } else {
-            if (vm.isContext(ForgeContext.ScriptBroadcast)) {
+            if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
                 _writeDeployments();
             }
         }

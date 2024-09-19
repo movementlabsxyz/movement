@@ -10,6 +10,7 @@ import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handle
 import {SafeProxy} from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import {Vm} from "forge-std/Vm.sol";
+import {CREATE3Factory} from "./Create3/CREATE3Factory.sol";
 
 contract Helper is Script {
     using stdJson for string;
@@ -19,6 +20,8 @@ contract Helper is Script {
     TransparentUpgradeableProxy public stakingProxy;
     TransparentUpgradeableProxy public mcrProxy;
     TimelockController public timelock;
+    // CREATE3 exists across all major chains, we only enforce it on the same address if not deployed yet
+    CREATE3Factory public create3 = CREATE3Factory(0x2Dfcc7415D89af828cbef005F0d072D8b3F23183);
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
     string public stakingSignature = "initialize(address)";
     string public stlMoveSignature = "initialize(string,string,address)";
@@ -27,21 +30,32 @@ contract Helper is Script {
     string public root = vm.projectRoot();
     string public deploymentsPath = "/script/helpers/deployments.json";
     string public upgradePath = "/script/helpers/upgrade/";
-    address public ZERO = address(0x0);
+    string public labsConfigPath = "/script/helpers/labsConfig.json";
+    string public foundationConfigPath = "/script/helpers/foundationConfig.json";
+    address public ZERO = 0x0000000000000000000000000000000000000000;
+    address public NULL = 0x0000000000000000000000000000000000000001;
     string public chainId = uint2str(block.chainid);
     uint256 public foundryChainId = 31337;
     string public storageJson;
 
+    uint256 public minDelay = 2 days;
+    ConfigData public labsConfig;
+    ConfigData public foundationConfig;
+
+    struct ConfigData {
+        uint256 threshold;
+        address[] signers;
+    }
+
     Deployment public deployment;
-    ConfigData public config;
 
     struct Deployment {
+        address move;
+        address moveAdmin;
         address mcr;
         address mcrAdmin;
         address staking;
         address stakingAdmin;
-        address move;
-        address moveAdmin;
         address stlMove;
         address stlMoveAdmin;
         address timelock;
@@ -49,31 +63,43 @@ contract Helper is Script {
         address movementFoundationSafe;
     }
 
-    struct ConfigData {
-        uint256 minDelay;
-        address[] labsSigners;
-        address[] founadtionSigners;
-        address admin;
-        uint256 labsThreshold;
-        uint256 FounadtionThreshold;
-    }
+    function _loadConfig() internal {
+        // string memory path = string.concat(root, labsConfigPath);
+        // string memory json = vm.readFile(path);
+        // bytes memory rawConfigDataLabs = json.parseRaw(string(abi.encodePacked(".")));
+        // console.logBytes(rawConfigDataLabs);
+        // labsConfig = abi.decode(rawConfigDataLabs, (ConfigData));
 
-    function _loadConfig()
-        internal
-        returns (
-            uint256 minDelay,
-            address[] memory signers,
-            address[] memory proposers,
-            address[] memory executors,
-            address adminAddress
-        )
-    {
-        string memory path = string.concat(root, "/script/helpers/config.json");
-        string memory json = vm.readFile(path);
-        bytes memory rawConfigData = json.parseRaw(string(abi.encodePacked(".")));
-        config = abi.decode(rawConfigData, (ConfigData));
-        if (config.labsSigners[0] == ZERO) {
-            config.labsSigners[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+        // string memory path2 = string.concat(root, foundationConfigPath);
+        // string memory json2 = vm.readFile(path2);
+        // bytes memory rawConfigDataFoundation = json2.parseRaw(string(abi.encodePacked(".")));
+        // foundationConfig = abi.decode(rawConfigDataFoundation, (ConfigData));
+
+        address[] memory labsSigners = new address[](5);
+        labsSigners[0] = 0x49F86Aee2C2187870ece0e64570D0048EaF4C751;
+        labsSigners[1] = 0xaFf3deeb13bD2B480751189808C16e9809EeBcce;
+        labsSigners[2] = 0x12Cbb2C9F072E955b6B95ad46213aAa984A4434D;
+        labsSigners[3] = 0xB2105464215716e1445367BEA5668F581eF7d063;
+        labsSigners[4] = 0x0eEd12Ca165A962cd12420DfB38407637bcA4267;
+
+        address[] memory foundationSigners = new address[](1);
+        foundationSigners[0] = 0xB2105464215716e1445367BEA5668F581eF7d063;
+        // foundationSigners[1] = ZERO;
+        // foundationSigners[2] = ZERO;
+        // foundationSigners[3] = ZERO;
+        // foundationSigners[4] = ZERO;
+
+        labsConfig = ConfigData(4, labsSigners);
+
+        foundationConfig = ConfigData(1, foundationSigners);
+
+        if (labsConfig.signers[0] == NULL) {
+            console.log("labsSigner", labsConfig.signers[0]);
+            labsConfig.signers[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+        }
+        if (foundationConfig.signers[0] == NULL) {
+            console.log("foundationSigner", foundationConfig.signers[0]);
+            foundationConfig.signers[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
         }
     }
 
@@ -87,19 +113,9 @@ contract Helper is Script {
         storageJson = json;
     }
 
-    function _deployTimelock() internal {
-        if (deployment.timelock == ZERO) {
-            timelock =
-                new TimelockController(config.minDelay, config.labsSigners, config.founadtionSigners, config.admin);
-            deployment.timelock = address(timelock);
-        }
-    }
-
-    // TODO: deploy create3 locally and force it to use the deployed address
-    // function _deployCreate3() internal {}
-
     function _deploySafes() internal {
-        if (deployment.movementLabsSafe == ZERO && block.chainid != foundryChainId) {
+        console.log("Deploying Safes");
+        if (deployment.movementLabsSafe == NULL && block.chainid != foundryChainId) {
             // use canonical v1.4.1 safe factory address 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67 if:
             // - chainid is not foundry
             // - safe is not deployed
@@ -108,15 +124,15 @@ contract Helper is Script {
                 safeFactory,
                 0x41675C099F32341bf84BFc5382aF534df5C7461a,
                 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
-                config.labsSigners,
-                config.labsThreshold
+                labsConfig.signers,
+                labsConfig.threshold
             );
             deployment.movementFoundationSafe = _deploySafe(
                 safeFactory,
                 0x41675C099F32341bf84BFc5382aF534df5C7461a,
                 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
-                config.founadtionSigners,
-                config.FounadtionThreshold
+                foundationConfig.signers,
+                foundationConfig.threshold
             );
         } else {
             if (block.chainid == foundryChainId) {
@@ -127,21 +143,21 @@ contract Helper is Script {
                     safeFactory,
                     address(safeSingleton),
                     address(fallbackHandler),
-                    config.labsSigners,
-                    config.labsThreshold
+                    labsConfig.signers,
+                    labsConfig.threshold
                 );
                 deployment.movementFoundationSafe = _deploySafe(
                     safeFactory,
                     address(safeSingleton),
                     address(fallbackHandler),
-                    config.founadtionSigners,
-                    config.FounadtionThreshold
+                    foundationConfig.signers,
+                    foundationConfig.threshold
                 );
             }
         }
         console.log("Safe addresses:");
-        console.log("Labs: ", address(deployment.movementLabsSafe));
-        console.log("Foundation: ", address(deployment.movementFoundationSafe));
+        console.log("Labs:", address(deployment.movementLabsSafe));
+        console.log("Foundation:", address(deployment.movementFoundationSafe));
     }
 
     function _deploySafe(
@@ -162,6 +178,20 @@ contract Helper is Script {
                 )
             )
         );
+    }
+
+    function _deployTimelock() internal {
+        if (deployment.timelock == NULL) {
+            timelock = new TimelockController(minDelay, labsConfig.signers, foundationConfig.signers, ZERO);
+            deployment.timelock = address(timelock);
+        }
+    }
+
+    function _deployCreate3() internal {
+        if (address(create3).code.length == 0) {
+            console.log("CREATE3: deploying");
+            create3 = new CREATE3Factory();
+        }
     }
 
     function _storeAdminDeployment() internal returns (address admin) {

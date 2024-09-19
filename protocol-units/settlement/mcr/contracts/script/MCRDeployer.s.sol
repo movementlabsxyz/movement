@@ -26,7 +26,7 @@ contract MCRDeployer is Helper {
         // timelock is required for all deployments
         _deployTimelock();
 
-        deployment.mcrAdmin == ZERO && deployment.mcr == ZERO && deployment.move != ZERO && deployment.staking != ZERO ?
+        deployment.mcrAdmin == NULL && deployment.mcr == NULL && deployment.move != ZERO && deployment.staking != ZERO ?
             _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
                 _upgradeMCR() : revert("MCR: both admin and proxy should be registered");
 
@@ -53,7 +53,7 @@ contract MCRDeployer is Helper {
                 128,
                 100 ether,
                 100 ether, 
-                config.labsSigners
+                labsConfig.signers
             )
         );
         console.log("MCR deployment records:");
@@ -78,7 +78,7 @@ contract MCRDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            config.minDelay
+            minDelay
         );
         json.serialize("to", address(timelock));
         string memory zero = "0";
@@ -86,7 +86,7 @@ contract MCRDeployer is Helper {
         json.serialize("data", data);
         string memory operation = "OperationType.Call";
         json.serialize("chainId", chainId);
-        json.serialize("safeAddress", config.labsSigners[0]);
+        json.serialize("safeAddress", deployment.movementLabsSafe);
         string memory serializedData = json.serialize("operation", operation);
 
         console.log("MCR upgrade json |start|", serializedData, "|end|");

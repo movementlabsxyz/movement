@@ -23,7 +23,7 @@ contract StlMoveDeployer is Helper {
         // timelock is required for all deployments
         _deployTimelock();
 
-        deployment.stlMoveAdmin == ZERO && deployment.stlMove == ZERO && deployment.move != ZERO ?
+        deployment.stlMoveAdmin == NULL && deployment.stlMove == NULL && deployment.move != ZERO ?
             _deployStlMove() : deployment.stlMoveAdmin != ZERO && deployment.stlMove != ZERO ?
                 _upgradeStlMove() : revert("STL: both admin and proxy should be registered");
 

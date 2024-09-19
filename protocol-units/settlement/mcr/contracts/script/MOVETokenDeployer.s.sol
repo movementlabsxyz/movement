@@ -5,10 +5,7 @@ import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Helper } from "./helpers/Helper.sol";
 import {Vm} from "forge-std/Vm.sol";
-
-interface create {
-    function deploy(bytes32 _salt, bytes memory _bytecode) external returns (address);
-}
+import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
 
 
 // Script intended to be used for deploying the MOVE token from an EOA
@@ -23,9 +20,8 @@ contract MOVETokenDeployer is Helper {
     // testnet
     // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
     // Safes should be already deployed
-    address create3address = address(0x2Dfcc7415D89af828cbef005F0d072D8b3F23183);
     address moveAdmin;
-    bytes32 public salt = 0xc000000000000000000000002774b8b4881d594b03ff8a93f4cad69407c90350;
+    bytes32 public salt = 0x00000000000000000000000012bb669b1a73513f43bb92816a3461b7717f3638;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function run() external virtual {
@@ -35,17 +31,21 @@ contract MOVETokenDeployer is Helper {
         // Load deployment data
         _loadDeployments();
 
-        // Deploy Safes
-        _deploySafes();
-
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
+        // Deploy CREATE3Factory if not deployed
+        _deployCreate3();
+
+        // Deploy Safes if not deployed
+        _deploySafes();
+
         // timelock is required for all deployments
         _deployTimelock();
-        
-        deployment.moveAdmin == ZERO && deployment.move == ZERO ?
-            _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
+        console.log(deployment.moveAdmin);
+        console.log(deployment.move);
+        deployment.moveAdmin == NULL && deployment.move == NULL ?
+            _deployMove() : deployment.moveAdmin != NULL && deployment.move != NULL ?
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
         
@@ -69,7 +69,7 @@ contract MOVETokenDeployer is Helper {
         );
         vm.recordLogs();
         // deploys the MOVE token proxy using CREATE3
-        moveProxy = TransparentUpgradeableProxy(payable(create(create3address).deploy(salt, bytecode)));
+        moveProxy = TransparentUpgradeableProxy(payable(ICREATE3Factory(create3).deploy(salt, bytecode)));
         console.log("MOVEToken deployment records:");
         console.log("proxy", address(moveProxy));
         deployment.move = address(moveProxy);
@@ -90,7 +90,7 @@ contract MOVETokenDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + config.minDelay
+            block.timestamp + minDelay
         );
     }
 }
