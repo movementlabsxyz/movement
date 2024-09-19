@@ -58,6 +58,10 @@ just --version
 
 https://nix.dev/install-nix
 
+### Prerequisites - Rust
+
+https://www.rust-lang.org/tools/install
+
 
 ## Running Natively
 ### `m1-da-light-node`
