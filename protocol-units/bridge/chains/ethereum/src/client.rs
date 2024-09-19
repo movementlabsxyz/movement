@@ -132,9 +132,10 @@ impl EthClient {
 		&self,
 		weth: EthAddress,
 		owner: EthAddress,
+		timelock: u64,
 	) -> Result<(), anyhow::Error> {
 		let contract = self.initiator_contract().expect("Initiator contract not set");
-		let call = contract.initialize(weth.0, owner.0);
+		let call = contract.initialize(weth.0, owner.0, U256::from(timelock));
 		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
@@ -273,8 +274,7 @@ impl BridgeContractInitiator for EthClient {
 		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		amount: Amount, // the ETH amount
+		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
@@ -285,7 +285,6 @@ impl BridgeContractInitiator for EthClient {
 				U256::from(amount.weth()),
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
-				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.eth()))
 			.from(initiator_address.0 .0);
@@ -364,8 +363,6 @@ impl BridgeContractInitiator for EthClient {
 			initiator_address: InitiatorAddress(eth_details.originator),
 			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
-			//@TODO unit test these wrapping to check for any nasty side effects.
-			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))
@@ -381,7 +378,6 @@ impl BridgeContractCounterparty for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
@@ -395,7 +391,6 @@ impl BridgeContractCounterparty for EthClient {
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
-			U256::from(time_lock.0),
 			recipient.0 .0,
 			U256::try_from(amount.0)
 				.map_err(|_| BridgeContractCounterpartyError::ConversionError)?,
@@ -465,7 +460,6 @@ impl BridgeContractCounterparty for EthClient {
 			initiator_address: InitiatorAddress(eth_details.originator),
 			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
-			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))

@@ -8,15 +8,10 @@ use bridge_integration_tests::{
 };
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
-	types::{
-		BridgeTransferId, HashLockPreImage
-	},
+	types::{BridgeTransferId, HashLockPreImage},
 };
-
 use tokio::{self};
-
 use tracing::info;
-use tracing_subscriber;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -56,7 +51,6 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock,
-			args.time_lock,
 			args.amount,
 		)
 		.await
@@ -112,7 +106,6 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock,
-			args.time_lock,
 			args.amount,
 		)
 		.await
@@ -175,7 +168,6 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
 	let args = MovementToEthCallArgs::default();
-	let time_lock = 1;
 
 	let test_result = async {
 		let mut movement_client =
@@ -187,7 +179,6 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock,
-			time_lock,
 			args.amount,
 		)
 		.await
