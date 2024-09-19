@@ -1,0 +1,19 @@
+# Compiler files
+cache/
+out/
+
+# Ignores development broadcast logs
+broadcast/
+
+# Dotenv file
+.env
+
+# Node modules
+node_modules/
+
+# Hardhat build output
+artifacts/
+cache_hardhat/
+
+# Soldeer dry-run output
+openzeppelin-foundry-upgrades.zip
