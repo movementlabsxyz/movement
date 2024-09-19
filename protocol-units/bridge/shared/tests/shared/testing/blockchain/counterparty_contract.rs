@@ -1,10 +1,9 @@
-use std::collections::HashMap;
-
 use bridge_shared::types::{
 	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
 	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
 	LockDetails, RecipientAddress, TimeLock,
 };
+use std::collections::HashMap;
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -19,6 +18,8 @@ pub enum SmartContractCounterpartyError {
 	TransferNotFound,
 	#[error("Invalid hash lock pre image (secret)")]
 	InvalidHashLockPreImage,
+	#[error("Address conversion Error")]
+	AddressError,
 }
 
 #[derive(Debug)]
@@ -44,7 +45,7 @@ pub type SCCResult<A, H> =
 
 impl<A, H> SmartContractCounterparty<A, H>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	H: From<HashLockPreImage>,
 {
@@ -112,7 +113,9 @@ where
 		}
 
 		// TODO: fix this
-		let account = A::from(transfer.recipient_address.clone());
+		let account = A::try_from(transfer.recipient_address.clone())
+			.map_err(|_| SmartContractCounterpartyError::AddressError)
+			.unwrap();
 		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
 		**balance += *transfer.amount;
 

@@ -41,8 +41,8 @@ impl<B1, B2> BridgeService<B1, B2>
 where
 	B1: BlockchainService + 'static,
 	B2: BlockchainService + 'static,
-	Vec<u8>: From<B1::Address>,
-	Vec<u8>: From<B2::Address>,
+	Vec<u8>: TryFrom<B1::Address>,
+	Vec<u8>: TryFrom<B2::Address>,
 {
 	pub fn new(blockchain_1: B1, blockchain_2: B2, config: BridgeServiceConfig) -> Self {
 		Self {
@@ -70,10 +70,10 @@ where
 	BFrom: BlockchainService + 'static,
 	BTo: BlockchainService + 'static,
 	BTo::Hash: From<BFrom::Hash>,
-	BTo::Address: From<Vec<u8>>,
+	BTo::Address: TryFrom<Vec<u8>>,
 
-	Vec<u8>: From<BTo::Address>,
-	Vec<u8>: From<BFrom::Address>,
+	Vec<u8>: TryFrom<BTo::Address>,
+	Vec<u8>: TryFrom<BFrom::Address>,
 {
 	match initiator_event {
 		BridgeContractInitiatorEvent::Initiated(ref details) => {
@@ -98,8 +98,8 @@ where
 	BTo: BlockchainService + 'static,
 	BFrom::Hash: From<BTo::Hash>,
 
-	Vec<u8>: From<BTo::Address>,
-	Vec<u8>: From<BFrom::Address>,
+	Vec<u8>: TryFrom<BTo::Address>,
+	Vec<u8>: TryFrom<BFrom::Address>,
 {
 	use BridgeContractCounterpartyEvent::*;
 	match event {
@@ -129,11 +129,11 @@ where
 	B1::Hash: From<B2::Hash>,
 	B2::Hash: From<B1::Hash>,
 
-	B1::Address: From<Vec<u8>>,
-	B2::Address: From<Vec<u8>>,
+	B1::Address: TryFrom<Vec<u8>>,
+	B2::Address: TryFrom<Vec<u8>>,
 
-	Vec<u8>: From<B1::Address>,
-	Vec<u8>: From<B2::Address>,
+	Vec<u8>: TryFrom<B1::Address>,
+	Vec<u8>: TryFrom<B2::Address>,
 {
 	type Item = Event<B1, B2>;
 

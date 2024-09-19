@@ -145,8 +145,8 @@ impl<BTo, BFrom> ActiveSwapMap<BFrom, BTo>
 where
 	BTo: BlockchainService + 'static,
 	BFrom: BlockchainService + 'static,
-	Vec<u8>: From<BTo::Address>,
-	Vec<u8>: From<BFrom::Address>,
+	Vec<u8>: TryFrom<BTo::Address>,
+	Vec<u8>: TryFrom<BFrom::Address>,
 {
 	pub fn build(
 		initiator_contract: BFrom::InitiatorContract,
@@ -271,7 +271,7 @@ where
 	BFrom::Hash: From<BTo::Hash>,
 	BTo::Hash: From<BFrom::Hash>,
 
-	Vec<u8>: From<BFrom::Address>,
+	Vec<u8>: TryFrom<BFrom::Address>,
 {
 	type Item = ActiveSwapEvent<BFrom::Hash>;
 
@@ -454,6 +454,8 @@ pub enum LockBridgeTransferError {
 	ContractCallTimeoutError,
 	#[error(transparent)]
 	ContractCallError(#[from] BridgeContractCounterpartyError),
+	#[error("Error during address convertion from Vec<u8>:{0}")]
+	AddressConvertionlError(String),
 }
 
 impl HasTimeoutError for LockBridgeTransferError {
@@ -468,7 +470,7 @@ async fn call_lock_bridge_transfer<BFrom: BlockchainService, BTo: BlockchainServ
 ) -> Result<(), LockBridgeTransferError>
 where
 	BTo::Hash: From<BFrom::Hash>,
-	Vec<u8>: From<BFrom::Address>,
+	Vec<u8>: TryFrom<BFrom::Address>,
 {
 	let bridge_transfer_id = BridgeTransferId(From::from(details.bridge_transfer_id.0));
 	let hash_lock = HashLock(From::from(details.hash_lock.0));
@@ -483,8 +485,16 @@ where
 			bridge_transfer_id,
 			hash_lock,
 			details.time_lock,
-			InitiatorAddress(From::from(details.initiator_address.0)),
-			RecipientAddress(From::from(details.recipient_address.0)),
+			InitiatorAddress(TryFrom::try_from(details.initiator_address.0).map_err(|_| {
+				LockBridgeTransferError::AddressConvertionlError(
+					"call_lock_bridge_transfer Initiator address conversion failed".to_string(),
+				)
+			})?),
+			RecipientAddress(TryFrom::try_from(details.recipient_address.0).map_err(|_| {
+				LockBridgeTransferError::AddressConvertionlError(
+					"call_lock_bridge_transfer Recipient address conversion failed".to_string(),
+				)
+			})?),
 			details.amount,
 		)
 		.await?;

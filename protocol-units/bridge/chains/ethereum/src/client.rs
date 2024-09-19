@@ -133,11 +133,9 @@ impl EthClient {
 		weth: EthAddress,
 		owner: EthAddress,
 	) -> Result<(), anyhow::Error> {
-		let contract = self.initiator_contract().expect("Initiator contract not set");
+		let contract = self.initiator_contract()?;
 		let call = contract.initialize(weth.0, owner.0);
-		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.expect("Failed to send transaction");
+		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT).await?;
 		Ok(())
 	}
 
@@ -147,23 +145,16 @@ impl EthClient {
 		amount: U256,
 	) -> Result<(), anyhow::Error> {
 		let deposit_weth_signer = self.get_signer_address();
-		let contract = self.weth_contract().expect("WETH contract not set");
+		let contract = self.weth_contract()?;
 		let call = contract.deposit().value(amount);
-		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.expect("Failed to deposit eth to weth contract");
+		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT).await?;
 
 		let approve_call: alloy::contract::CallBuilder<_, &_, _> =
 			contract.approve(self.initiator_contract_address()?, amount);
-		let WETH9::balanceOfReturn { _0: _balance } = contract
-			.balanceOf(deposit_weth_signer)
-			.call()
-			.await
-			.expect("Failed to get balance");
+		let WETH9::balanceOfReturn { _0: _balance } =
+			contract.balanceOf(deposit_weth_signer).call().await?;
 
-		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
-			.await
-			.expect("Failed to approve");
+		send_transaction(approve_call, &send_transaction_rules(), RETRIES, GAS_LIMIT).await?;
 		Ok(())
 	}
 
@@ -278,8 +269,11 @@ impl BridgeContractInitiator for EthClient {
 	) -> BridgeContractInitiatorResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
-		let recipient_bytes: [u8; 32] =
-			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().map_err(|_| {
+			BridgeContractInitiatorError::GenericError(format!(
+				"Initiate bridge transfer Failed in recipient address conversion."
+			))
+		})?;
 		let call = contract
 			.initiateBridgeTransfer(
 				U256::from(amount.weth()),
@@ -293,7 +287,7 @@ impl BridgeContractInitiator for EthClient {
 			.await
 			.map_err(|e| {
 				BridgeContractInitiatorError::GenericError(format!(
-					"Failed to send transaction: {}",
+					"Initiate bridge transfer Failed to send transaction: {}",
 					e
 				))
 			})?;
@@ -321,7 +315,12 @@ impl BridgeContractInitiator for EthClient {
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!(
+					"Complete bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -334,7 +333,12 @@ impl BridgeContractInitiator for EthClient {
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractInitiatorError::GenericError(format!(
+					"Refund bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -390,7 +394,11 @@ impl BridgeContractCounterparty for EthClient {
 			self.counterparty_contract_address()?,
 			&self.rpc_provider,
 		);
-		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
+		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
+			BridgeContractCounterpartyError::GenericError(format!(
+				"Lock bridge transfer secret not a 32 bytes array."
+			))
+		})?;
 		let call = contract.lockBridgeTransfer(
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
@@ -402,7 +410,12 @@ impl BridgeContractCounterparty for EthClient {
 		);
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractCounterpartyError::GenericError(format!(
+					"Lock bridge transfer failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -415,12 +428,21 @@ impl BridgeContractCounterparty for EthClient {
 			self.counterparty_contract_address()?,
 			&self.rpc_provider,
 		);
-		let secret: [u8; 32] = secret.0.try_into().unwrap();
+		let secret: [u8; 32] = secret.0.try_into().map_err(|_| {
+			BridgeContractCounterpartyError::GenericError(format!(
+				"Complete bridge transfer secret not a 32 bytes array."
+			))
+		})?;
 		let call =
 			contract.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(secret));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractCounterpartyError::GenericError(format!(
+					"Complete bridge transfer failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 
@@ -435,7 +457,12 @@ impl BridgeContractCounterparty for EthClient {
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
-			.expect("Failed to send transaction");
+			.map_err(|e| {
+				BridgeContractCounterpartyError::GenericError(format!(
+					"Abort bridge transfer Failed to send transaction: {}",
+					e
+				))
+			})?;
 		Ok(())
 	}
 

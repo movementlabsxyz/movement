@@ -210,20 +210,25 @@ jobs:
     - name: Install Aptos CLI
       run: |
         curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+        aptos info
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    #- uses: cachix/cachix-action@v15
+    #  with:
+    #    name: movementlabs
+    #    authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run Aptos Tests
       run: |
+        ldd --version
+        nix --version
         nix develop --command bash -c "
           set -e
           set -x
+          ldd --version
+          aptos info
           chmod +x .github/scripts/update_move_toml.sh && \
           ./.github/scripts/update_move_toml.sh && \
           cd protocol-units/bridge/move-modules && \
@@ -248,10 +253,10 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - uses: cachix/cachix-action@v15
-      with:
-        name: movementlabs
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+    #- uses: cachix/cachix-action@v15
+    #  with:
+    #    name: movementlabs
+    #    authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run rust tests
       run: |

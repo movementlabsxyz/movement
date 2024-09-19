@@ -57,7 +57,7 @@ pub struct EthereumChain<A, H, R> {
 
 impl<A, H, R> EthereumChain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
 	H: From<HashLockPreImage>,
@@ -104,7 +104,7 @@ where
 
 impl<A, H, R> Future for EthereumChain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone + Unpin,
 	H: From<HashLockPreImage>,
@@ -128,7 +128,7 @@ where
 
 impl<A, H, R> Stream for EthereumChain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress<A>>,
+	A: BridgeAddressType + TryFrom<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash + From<HashLockPreImage>,
 	R: RngSeededClone + Unpin,
 {
@@ -220,7 +220,9 @@ where
 		if let Some(event) = this.events.pop() {
 			for listener in &mut this.event_listeners {
 				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
-				listener.unbounded_send(event.clone()).expect("listener dropped");
+				if let Err(err) = listener.unbounded_send(event.clone()) {
+					tracing::error!("Error during unbounded_send: {err} .");
+				}
 			}
 
 			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);

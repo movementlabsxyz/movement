@@ -58,15 +58,18 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
-				let event = decode_log_data(log)
-					.map_err(|e| {
-						tracing::error!("Failed to decode log data: {:?}", e);
-					})
-					.expect("Failed to decode log data");
-				let event = EthChainEvent::InitiatorContractEvent(Ok(event.into()));
-				if sender.send(event).is_err() {
-					tracing::error!("Failed to send event to listener channel");
-					break;
+				match decode_log_data(log) {
+					Ok(event) => {
+						let event = EthChainEvent::InitiatorContractEvent(Ok(event.into()));
+						if sender.send(event).is_err() {
+							tracing::error!("Failed to send event to listener channel");
+							break;
+						}
+					}
+					Err(err) => {
+						tracing::error!("Failed to decode log data: {:?}", err);
+						continue;
+					}
 				}
 			}
 		});
@@ -121,8 +124,8 @@ fn decode_log_data(
 	log: Log,
 ) -> Result<BridgeContractInitiatorEvent<EthAddress, EthHash>, anyhow::Error> {
 	let topics = log.topics().to_owned();
-	let log_data =
-		LogData::new(topics.clone(), log.data().data.clone()).expect("Failed to create log data");
+	let log_data = LogData::new(topics.clone(), log.data().data.clone())
+		.ok_or(anyhow::anyhow!("Log Data creation error: No log data."))?;
 
 	// Build the event
 	let event = topics
@@ -180,7 +183,7 @@ fn decode_log_data(
 		})
 		.ok_or_else(|| anyhow::anyhow!("Failed to find event"))?;
 
-	let decoded = event.decode_log(&log_data, true).expect("Failed to decode log");
+	let decoded = event.decode_log(&log_data, true)?;
 
 	let coerce_bytes = |(bytes, _): (&[u8], usize)| {
 		let mut array = [0u8; 32];
