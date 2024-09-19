@@ -97,7 +97,11 @@ impl Executor {
 
 		// indexer table info config
 		node_config.indexer_table_info.enabled = true;
-		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.dir = maptos_config
+			.chain
+			.maptos_db_path
+			.clone()
+			.ok_or_else(|| anyhow::anyhow!("No db path provided in the maptos config."))?;
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
 		// use the default signer, block executor, and mempool

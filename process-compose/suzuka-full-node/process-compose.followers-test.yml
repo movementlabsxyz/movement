@@ -7,7 +7,8 @@ processes:
       #!/bin/bash
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
-      DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
+      export MAPTOS_API_LISTEN_PORT=31731
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
       suzuka-full-node-setup
     depends_on:
       build:
@@ -20,10 +21,13 @@ processes:
   suzuka-full-follower-1:
     command: |
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
-      export MAPTOS_API_LISTEN_PORT=31731
       suzuka-full-node
     depends_on:
       m1-da-light-node:
+        condition: process_healthy
+      setup-follower-2:
+        condition: process_healthy
+      suzuka-full-node:
         condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
@@ -35,7 +39,8 @@ processes:
       #!/bin/bash
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
-      DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
+      export MAPTOS_API_LISTEN_PORT=32731
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
       suzuka-full-node-setup
     depends_on:
       build:
@@ -48,12 +53,15 @@ processes:
   suzuka-full-follower-2:
     command: |
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
-      export MAPTOS_API_LISTEN_PORT=21731
       suzuka-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy
+      setup-follower-2:
+        condition: process_healthy
+      suzuka-full-node:
+        condition: process_healthy
     readiness_probe:
       initial_delay_seconds: 10
       exec:
-        command: curl http://0.0.0.0:31731
+        command: curl http://0.0.0.0:32731
