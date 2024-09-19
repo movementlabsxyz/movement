@@ -193,6 +193,12 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			balance
 		);
 
+		// Set the timelock to 1 second for testing
+		movement_client
+			.counterparty_set_timelock(1)
+			.await
+			.expect("Failed to set timelock");
+
 		movement_client
 			.lock_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id),

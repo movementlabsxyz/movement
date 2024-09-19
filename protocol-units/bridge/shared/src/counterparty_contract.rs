@@ -54,7 +54,6 @@ where
 
 	pub fn lock_bridge_transfer(
 		&mut self,
-
 		bridge_transfer_id: BridgeTransferId<H>,
 		hash_lock: HashLock<H>,
 		initiator_address: InitiatorAddress<Vec<u8>>,
