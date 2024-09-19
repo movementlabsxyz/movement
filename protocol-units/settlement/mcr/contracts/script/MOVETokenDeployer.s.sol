@@ -35,6 +35,9 @@ contract MOVETokenDeployer is Helper {
         // Load deployment data
         _loadDeployments();
 
+        // Deploy Safes
+        _deploySafes();
+
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 

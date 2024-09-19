@@ -44,7 +44,6 @@ contract MOVETokenDeployerMultisig is Script {
         signers[3] = vm.addr(3);
         signers[4] = vm.addr(4);
 
-        // DEPLOYMENT USING SAFE PROXY FACTORY
         // Safe Sepolia Proxy Factory
         safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
         safeAddress = payable(
@@ -69,12 +68,6 @@ contract MOVETokenDeployerMultisig is Script {
             )
         );
         safe = Safe(safeAddress);
-        // DEPLOYMENT USING SAFE PROXY FACTORY
-
-        // DEPLOYMENT USING SAFE PROXY
-        // safe = Safe(payable(address(new SafeProxy(safeSingleton))));
-        // safe.setup(signers, 3, zero, "0x", 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99, zero, 0, payable(zero));
-        // DEPLOYMENT USING SAFE PROXY
 
         uint256 minDelay = 2 days;
         address[] memory proposers = new address[](5);

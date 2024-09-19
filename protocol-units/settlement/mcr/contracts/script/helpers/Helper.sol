@@ -6,9 +6,10 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyFactory.sol";
+import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
 import {SafeProxy} from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
-import { Vm } from "forge-std/Vm.sol";
+import {Vm} from "forge-std/Vm.sol";
 
 contract Helper is Script {
     using stdJson for string;
@@ -22,6 +23,7 @@ contract Helper is Script {
     string public stakingSignature = "initialize(address)";
     string public stlMoveSignature = "initialize(string,string,address)";
     string public moveSignature = "initialize(address)";
+    string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
     string public root = vm.projectRoot();
     string public deploymentsPath = "/script/helpers/deployments.json";
     string public upgradePath = "/script/helpers/upgrade/";
@@ -56,7 +58,16 @@ contract Helper is Script {
         uint256 FounadtionThreshold;
     }
 
-    function _loadConfig() internal returns (uint256 minDelay, address[] memory signers, address[] memory proposers, address[] memory executors, address adminAddress) {
+    function _loadConfig()
+        internal
+        returns (
+            uint256 minDelay,
+            address[] memory signers,
+            address[] memory proposers,
+            address[] memory executors,
+            address adminAddress
+        )
+    {
         string memory path = string.concat(root, "/script/helpers/config.json");
         string memory json = vm.readFile(path);
         bytes memory rawConfigData = json.parseRaw(string(abi.encodePacked(".")));
@@ -78,7 +89,8 @@ contract Helper is Script {
 
     function _deployTimelock() internal {
         if (deployment.timelock == ZERO) {
-            timelock = new TimelockController(config.minDelay, config.labsSigners, config.founadtionSigners, config.admin);
+            timelock =
+                new TimelockController(config.minDelay, config.labsSigners, config.founadtionSigners, config.admin);
             deployment.timelock = address(timelock);
         }
     }
@@ -86,19 +98,77 @@ contract Helper is Script {
     // TODO: deploy create3 locally and force it to use the deployed address
     // function _deployCreate3() internal {}
 
-    // TODO: deploy safe locally if not already deployed
-    // function _deploySafe() internal {
-    //     SafeProxyFactory factory = new SafeProxyFactory();
-    //     SafeProxy proxy = factory.createProxy();
-    //     Safe safe = new Safe(address(proxy));
-    //     return address(safe);
-    // }
+    function _deploySafes() internal {
+        if (deployment.movementLabsSafe == ZERO && block.chainid != foundryChainId) {
+            // use canonical v1.4.1 safe factory address 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67 if:
+            // - chainid is not foundry
+            // - safe is not deployed
+            SafeProxyFactory safeFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+            deployment.movementLabsSafe = _deploySafe(
+                safeFactory,
+                0x41675C099F32341bf84BFc5382aF534df5C7461a,
+                0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
+                config.labsSigners,
+                config.labsThreshold
+            );
+            deployment.movementFoundationSafe = _deploySafe(
+                safeFactory,
+                0x41675C099F32341bf84BFc5382aF534df5C7461a,
+                0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
+                config.founadtionSigners,
+                config.FounadtionThreshold
+            );
+        } else {
+            if (block.chainid == foundryChainId) {
+                SafeProxyFactory safeFactory = new SafeProxyFactory();
+                Safe safeSingleton = new Safe();
+                CompatibilityFallbackHandler fallbackHandler = new CompatibilityFallbackHandler();
+                deployment.movementLabsSafe = _deploySafe(
+                    safeFactory,
+                    address(safeSingleton),
+                    address(fallbackHandler),
+                    config.labsSigners,
+                    config.labsThreshold
+                );
+                deployment.movementFoundationSafe = _deploySafe(
+                    safeFactory,
+                    address(safeSingleton),
+                    address(fallbackHandler),
+                    config.founadtionSigners,
+                    config.FounadtionThreshold
+                );
+            }
+        }
+        console.log("Safe addresses:");
+        console.log("Labs: ", address(deployment.movementLabsSafe));
+        console.log("Foundation: ", address(deployment.movementFoundationSafe));
+    }
+
+    function _deploySafe(
+        SafeProxyFactory safeFactory,
+        address safeSingleton,
+        address fallbackHandler,
+        address[] memory signers,
+        uint256 threshold
+    ) internal returns (address safe) {
+        safe = payable(
+            address(
+                safeFactory.createProxyWithNonce(
+                    safeSingleton,
+                    abi.encodeWithSignature(
+                        safeSetupSignature, signers, threshold, ZERO, "0x", fallbackHandler, ZERO, 0, payable(ZERO)
+                    ),
+                    0
+                )
+            )
+        );
+    }
 
     function _storeAdminDeployment() internal returns (address admin) {
         Vm.Log[] memory logs = vm.getRecordedLogs();
-        admin = logs[logs.length-2].emitter;
+        admin = logs[logs.length - 2].emitter;
         console.log("admin", admin);
-    }  
+    }
 
     function _writeDeployments() internal {
         string memory path = string.concat(root, deploymentsPath);
@@ -145,9 +215,9 @@ contract Helper is Script {
 
     // string to address
     function s2a(bytes memory str) public returns (address addr) {
-        bytes32 data = keccak256(str);  
-        assembly {  
-            addr := data  
+        bytes32 data = keccak256(str);
+        assembly {
+            addr := data
         }
     }
 

@@ -9,6 +9,7 @@ import { StlMoveDeployer } from "./StlMoveDeployer.s.sol";
 import { MOVETokenDeployer } from "./MOVETokenDeployer.s.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+import { Vm, ForgeContext } from "forge-std/Vm.sol";
 
 contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer {
 
@@ -49,14 +50,16 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVEToke
                 // if mcr is already deployed, upgrade it
                 _upgradeMCR() : revert("MCR: both admin and proxy should be registered");
 
-        // Only write to file if chainid is not running a foundry local chain
+        // Only write to file if chainid is not running a foundry local chain and if broadcasting
         if (block.chainid == foundryChainId) {
             _upgradeMove();
             _upgradeStaking();
             _upgradeStlMove();
             _upgradeMCR();
         } else {
-            _writeDeployments();
+            if (vm.isContext(ForgeContext.ScriptBroadcast)) {
+                _writeDeployments();
+            }
         }
 
         vm.stopBroadcast();
