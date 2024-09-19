@@ -16,6 +16,10 @@ impl DotMovement {
 		&self.0
 	}
 
+	pub fn set_path(&mut self, path: std::path::PathBuf) {
+		self.0 = path;
+	}
+
 	pub fn get_config_json_path(&self) -> std::path::PathBuf {
 		self.0.join("config.json")
 	}
