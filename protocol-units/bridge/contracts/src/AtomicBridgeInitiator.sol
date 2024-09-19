@@ -1,32 +1,3 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
-
-import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
-import {IWETH9} from "./IWETH9.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
-    enum MessageState {
-        INITIALIZED,
-        COMPLETED,
-        REFUNDED
-    }
-
-    struct BridgeTransfer {
-        uint256 amount;
-        address originator;
-        bytes32 recipient;
-        bytes32 hashLock;
-        uint256 timeLock; // in blocks
-        MessageState state;
-    }
-
-    // Mapping of bridge transfer ids to BridgeTransfer structs
-    mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
-
-    // Total WETH pool balance
-    uint256 public poolBalance;
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
