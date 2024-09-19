@@ -22,12 +22,10 @@ contract BaseToken is Initializable, ERC20Upgradeable, AccessControlUpgradeable,
     function __BaseToken_init(string memory name, string memory symbol) internal onlyInitializing {
         __ERC20_init_unchained(name, symbol);
         __BaseToken_init_unchained();
-        // __GovernorTimelockControl_init();
     }
 
     function __BaseToken_init_unchained() internal onlyInitializing {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _mint(address(this), 1000000 * 10 ** decimals());
     }
 
     /**

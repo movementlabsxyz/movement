@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenV2.sol";
 import "../../src/settlement/MCR.sol";
 import "../../src/settlement/MCRStorage.sol";
 import "../../src/settlement/interfaces/IMCR.sol";
@@ -12,7 +12,7 @@ import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.s
 
 contract MCRTest is Test, IMCR {
 
-    MOVEToken public moveToken;
+    MOVETokenV2 public moveToken;
     MovementStaking public staking;
     MCR public mcr;
     ProxyAdmin public admin;
@@ -21,7 +21,7 @@ contract MCRTest is Test, IMCR {
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
 
     function setUp() public {
-        MOVEToken moveTokenImplementation = new MOVEToken();
+        MOVETokenV2 moveTokenImplementation = new MOVETokenV2();
         MovementStaking stakingImplementation = new MovementStaking();
         MCR mcrImplementation = new MCR();
 
@@ -49,7 +49,7 @@ contract MCRTest is Test, IMCR {
                 stakingProxy, 0, 5, 10 seconds, custodians
             )
         );
-        moveToken = MOVEToken(address(moveProxy));
+        moveToken = MOVETokenV2(address(moveProxy));
         staking = MovementStaking(address(stakingProxy));
         mcr = MCR(address(mcrProxy));
     }
