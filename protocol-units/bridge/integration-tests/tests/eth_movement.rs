@@ -97,7 +97,6 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			.lock_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id),
 				HashLock(args.hash_lock),
-				TimeLock(args.time_lock),
 				InitiatorAddress(args.initiator.clone()),
 				RecipientAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
@@ -197,7 +196,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.lock_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id),
 				HashLock(args.hash_lock),
-				TimeLock(time_lock),
 				InitiatorAddress(args.initiator.clone()),
 				RecipientAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
@@ -334,8 +332,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
-			TimeLock(100),
-			// value has to be > 0
 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
 		)
 		.await
@@ -365,7 +361,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
@@ -398,7 +393,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((1, 1))),
 		)
 		.await
@@ -424,7 +418,6 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
 			HashLock(hash_lock),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
 		)
 		.await
@@ -456,7 +449,6 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient_bytes),
 			HashLock(hash_lock),
-			TimeLock(1000),
 			Amount(AssetType::EthAndWeth((42, 0))),
 		)
 		.await

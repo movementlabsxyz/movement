@@ -273,7 +273,6 @@ impl BridgeContractInitiator for EthClient {
 		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		_time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let contract =
@@ -363,8 +362,6 @@ impl BridgeContractInitiator for EthClient {
 			initiator_address: InitiatorAddress(eth_details.originator),
 			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
-			//@TODO unit test these wrapping to check for any nasty side effects.
-			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))
@@ -380,7 +377,6 @@ impl BridgeContractCounterparty for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		_time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
@@ -463,7 +459,6 @@ impl BridgeContractCounterparty for EthClient {
 			initiator_address: InitiatorAddress(eth_details.originator),
 			recipient_address: RecipientAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
-			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bridge_shared::types::{
 	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
 	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
-	LockDetails, RecipientAddress, TimeLock,
+	LockDetails, RecipientAddress,
 };
 use thiserror::Error;
 
@@ -27,7 +27,6 @@ pub enum CounterpartyCall<A, H> {
 	LockBridgeTransfer(
 		BridgeTransferId<H>,
 		HashLock<H>,
-		TimeLock,
 		InitiatorAddress<Vec<u8>>,
 		RecipientAddress<A>,
 		Amount,
@@ -57,7 +56,6 @@ where
 
 		bridge_transfer_id: BridgeTransferId<H>,
 		hash_lock: HashLock<H>,
-		time_lock: TimeLock,
 		initiator_address: InitiatorAddress<Vec<u8>>,
 		recipient_address: RecipientAddress<A>,
 		amount: Amount,
@@ -73,7 +71,6 @@ where
 				initiator_address: initiator_address.clone(),
 				recipient_address: recipient_address.clone(),
 				hash_lock: hash_lock.clone(),
-				time_lock: time_lock.clone(),
 				amount,
 			},
 		);
@@ -83,7 +80,6 @@ where
 			initiator_address,
 			recipient_address,
 			hash_lock,
-			time_lock,
 			amount,
 		}))
 	}

@@ -485,7 +485,6 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		_time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
@@ -646,7 +645,6 @@ impl BridgeContractCounterparty for MovementClient {
 			recipient_address: RecipientAddress(recipient_address_bytes),
 			amount: Amount(AssetType::Moveth(amount)),
 			hash_lock: HashLock(hash_lock_array),
-			time_lock: TimeLock(time_lock),
 			state,
 		};
 		Ok(Some(details))
@@ -663,7 +661,6 @@ impl BridgeContractInitiator for MovementClient {
 		initiator: InitiatorAddress<MovementAddress>,
 		recipient: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let amount_value = match amount.0 {
@@ -675,7 +672,6 @@ impl BridgeContractInitiator for MovementClient {
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&time_lock.0)?,
 			utils::serialize_u64_initiator(&amount_value)?,
 		];
 
@@ -806,21 +802,9 @@ impl BridgeContractInitiator for MovementClient {
 			recipient_address: RecipientAddress(recipient_address_bytes),
 			amount: Amount(AssetType::Moveth(amount)),
 			hash_lock: HashLock(hash_lock_array),
-			time_lock: TimeLock(time_lock),
 			state,
 		};
 
 		Ok(Some(details))
-	}
-}
-
-impl MovementClient {
-	fn counterparty_type_args(&self, call: Call) -> Vec<TypeTag> {
-		match call {
-			Call::Lock => vec![TypeTag::Address, TypeTag::U64, TypeTag::U64, TypeTag::U8],
-			Call::Complete => vec![TypeTag::Address, TypeTag::U64, TypeTag::U8],
-			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
-			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
-		}
 	}
 }
