@@ -4,6 +4,8 @@ use std::io::Write;
 use tokio::task::JoinSet;
 use tokio::time::Duration;
 
+mod service;
+
 const RUNTIME_WORKER_MULTIPLIER: usize = 2;
 
 fn main() -> Result<(), anyhow::Error> {
@@ -18,6 +20,12 @@ fn main() -> Result<(), anyhow::Error> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let maptos_config = dot_movement
 		.try_get_or_create_config_from_json::<maptos_execution_util::config::Config>()?;
+
+	let health_check_url = format!(
+		"http://{}:{}",
+		maptos_config.indexer.maptos_indexer_grpc_healthcheck_hostname,
+		maptos_config.indexer.maptos_indexer_grpc_healthcheck_port
+	);
 
 	let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
 	let usertx_indexer_config = build_processor_conf("user_transaction_processor", &maptos_config)?;
@@ -51,6 +59,7 @@ fn main() -> Result<(), anyhow::Error> {
 				test_grpc_connection(&maptos_config).await?;
 
 				let mut set = JoinSet::new();
+				set.spawn(async move { crate::service::run_service(health_check_url).await });
 				set.spawn(async move { default_indexer_config.run().await });
 				//wait all the migration is done.
 				tokio::time::sleep(Duration::from_secs(12)).await;
@@ -62,11 +71,9 @@ fn main() -> Result<(), anyhow::Error> {
 				set.spawn(async move { txmeta_indexer_config.run().await });
 
 				while let Some(res) = set.join_next().await {
-					if let Err(err) = res {
-						tracing::error!("An Error occurs during indexer execution: {err}");
-						// If a processor break to avoid data inconsistency between processor
-						break;
-					}
+					tracing::error!("An Error occurs during indexer execution: {res:?}");
+					// If a processor break to avoid data inconsistency between processor
+					break;
 				}
 				set.shutdown().await;
 				Err(anyhow::anyhow!("At least One indexer processor failed. Exit"))

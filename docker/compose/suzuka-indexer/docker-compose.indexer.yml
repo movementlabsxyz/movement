@@ -32,6 +32,12 @@ services:
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
     depends_on:
       - postgres
 

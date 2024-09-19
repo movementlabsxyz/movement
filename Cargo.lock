@@ -1966,7 +1966,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820#a11a7ef5346e11a827cec7394a7a3cc4461af820"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "chrono",
 ]
@@ -10638,13 +10638,13 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820#a11a7ef5346e11a827cec7394a7a3cc4461af820"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820)",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58)",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
  "async-trait",
  "bcs 0.1.4",
@@ -12146,7 +12146,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=a11a7ef5346e11a827cec7394a7a3cc4461af820#a11a7ef5346e11a827cec7394a7a3cc4461af820"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "anyhow",
  "aptos-system-utils",
@@ -12851,8 +12851,10 @@ dependencies = [
  "anyhow",
  "clap 4.5.17",
  "dot-movement",
+ "futures",
  "maptos-execution-util",
  "num_cpus",
+ "poem",
  "processor",
  "reqwest 0.12.7",
  "serde_json",
