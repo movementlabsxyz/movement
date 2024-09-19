@@ -5798,6 +5798,7 @@ name = "dot-movement"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "movement-types",
  "serde",
  "serde_json",
  "syncup",
@@ -13407,6 +13408,7 @@ dependencies = [
  "m1-da-light-node-util",
  "mcr-settlement-config",
  "mcr-settlement-setup",
+ "movement-types",
  "rand 0.7.3",
  "serde",
  "serde_json",
@@ -13537,6 +13539,7 @@ dependencies = [
  "flocks",
  "futures",
  "glob",
+ "globset",
  "movement-types",
  "serde",
  "serde_json",
@@ -13556,6 +13559,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "futures",
+ "movement-types",
  "syncador",
  "tokio",
  "tracing",

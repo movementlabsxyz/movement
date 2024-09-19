@@ -12,16 +12,19 @@ impl BucketConnection {
 	}
 
 	pub(crate) async fn create_bucket_if_not_exists(&self) -> Result<(), anyhow::Error> {
-		let region = self.client.config().region().ok_or(anyhow::anyhow!(
-			"region not found in client configuration, please set the region"
-		))?;
-
 		let bucket = self.bucket.clone();
 		let bucket_exists = self.client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
 		if !bucket_exists {
-			let constraint = BucketLocationConstraint::from(region.as_ref());
-			let bucket_configuration =
-				CreateBucketConfiguration::builder().location_constraint(constraint).build();
+			let bucket_builder = CreateBucketConfiguration::builder();
+
+			let bucket_configuration = match self.client.config().region() {
+				Some(region) => {
+					let constraint = BucketLocationConstraint::from(region.as_ref());
+					bucket_builder.location_constraint(constraint).build()
+				}
+				None => bucket_builder.build(),
+			};
+
 			self.client
 				.create_bucket()
 				.create_bucket_configuration(bucket_configuration)

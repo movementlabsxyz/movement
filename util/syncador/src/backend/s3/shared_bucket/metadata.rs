@@ -23,6 +23,10 @@ impl Metadata {
 		Self { application_id, syncer_id, sync_epoch_duration, retain_epochs_count }
 	}
 
+	pub fn with_application_id(self, application_id: application::Id) -> Self {
+		Self { application_id, ..self }
+	}
+
 	pub fn random() -> Self {
 		Self {
 			application_id: application::Id::random(),

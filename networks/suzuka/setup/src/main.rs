@@ -1,5 +1,6 @@
 use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use movement_types::application;
 use std::future::Future;
 use std::pin::Pin;
 use suzuka_config::Config;
@@ -7,6 +8,7 @@ use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
 use tokio::signal::unix::signal;
 use tokio::signal::unix::SignalKind;
 use tokio::sync::watch;
+use tracing::info;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -53,7 +55,8 @@ async fn main() -> Result<(), anyhow::Error> {
 				"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
 			)?;
 
-			let sync_task = dot_movement.sync(glob, bucket.to_string()).await?;
+			let sync_task =
+				dot_movement.sync(glob, bucket.to_string(), application::Id::suzuka()).await?;
 			Box::pin(async { sync_task.await })
 		} else {
 			Box::pin(async { futures::future::pending::<Result<(), anyhow::Error>>().await })
@@ -76,6 +79,8 @@ async fn main() -> Result<(), anyhow::Error> {
 			Ok((Some(config), anvil_join_handle))
 		})
 		.await?;
+
+	info!("Initial setup complete, orchestrating services.");
 
 	// Use tokio::select! to wait for either the handle or a cancellation signal
 	tokio::select! {

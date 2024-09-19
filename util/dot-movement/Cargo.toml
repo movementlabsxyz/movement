@@ -17,6 +17,7 @@ serde_json = { workspace = true }
 serde = { workspace = true }
 tokio = { workspace = true }
 syncup = { workspace = true }
+movement-types = { workspace = true }
 
 [lints]
 workspace = true

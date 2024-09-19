@@ -5,6 +5,7 @@ use crate::files::package::{Package, PackageElement};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use tokio::io::AsyncWriteExt;
+use tracing::info;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Candidate {
@@ -66,6 +67,7 @@ impl Pull {
 			.list_all_application_file_paths_for(&self.bucket_connection)
 			.await?;
 
+		info!("Public file paths: {:?}", public_file_paths);
 		for file_path in public_file_paths {
 			// the first three parts are the candidate key
 			let parts: Vec<&str> = file_path.split('/').into_iter().take(3).collect();
@@ -128,6 +130,7 @@ impl Pull {
 	}
 
 	async fn find_candidates(&self, package: &Package) -> Result<Vec<Candidate>, anyhow::Error> {
+		info!("Finding candidates for package: {:?}", package);
 		let candidates = self.candidates_for(package).await?;
 		Ok(candidates.into_iter().collect())
 	}
@@ -137,6 +140,7 @@ impl Pull {
 		_package: &Package,
 		mut candidates: Vec<Candidate>,
 	) -> Result<Candidate, anyhow::Error> {
+		info!("Selecting from candidates: {:?}", candidates);
 		// sort the intersection of candidates by the epoch (latest first)
 		candidates.sort_by_key(|candidate| -(candidate.sync_epoch as i64));
 
@@ -153,8 +157,10 @@ impl Pull {
 		package: Package,
 		candidate: Candidate,
 	) -> Result<Package, anyhow::Error> {
+		info!("Pulling candidate: {:?}", candidate);
 		let mut manifest_futures = Vec::new();
 		for manifest in package.into_manifests() {
+			info!("Pulling manifest: {:?}", manifest);
 			let future = self.download_based_on_manifest(&candidate, manifest);
 			manifest_futures.push(future);
 		}
@@ -166,6 +172,7 @@ impl Pull {
 #[async_trait::async_trait]
 impl PullOperations for Pull {
 	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		info!("S3 pulling package: {:?}", package);
 		if package.is_none() {
 			return Ok(None);
 		}
@@ -174,6 +181,7 @@ impl PullOperations for Pull {
 
 		let candidates = self.find_candidates(&package).await?;
 
+		info!("Candidates: {:?}", candidates);
 		if candidates.is_empty() {
 			return Ok(None);
 		}

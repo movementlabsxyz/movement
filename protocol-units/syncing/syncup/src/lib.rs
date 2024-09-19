@@ -1,3 +1,4 @@
+use movement_types::application;
 use std::path::PathBuf;
 use syncador::backend::{archive, glob, pipeline, s3, PullOperations, PushOperations};
 use tokio::time::interval;
@@ -13,10 +14,15 @@ impl Target {
 		&self,
 		root_dir: PathBuf,
 		glob: &str,
+		application_id: application::Id,
 	) -> Result<(pipeline::push::Pipeline, pipeline::pull::Pipeline), anyhow::Error> {
 		match self {
 			Target::S3(bucket) => {
-				let (s3_push, s3_pull) = s3::shared_bucket::create_random(bucket.clone()).await?;
+				let (s3_push, s3_pull) = s3::shared_bucket::create_random_with_application_id(
+					bucket.clone(),
+					application_id,
+				)
+				.await?;
 
 				let push_pipe = pipeline::push::Pipeline::new(vec![
 					Box::new(glob::file::FileGlob::try_new(glob, root_dir.clone())?),
@@ -41,11 +47,16 @@ pub async fn syncup(
 	root_dir: PathBuf,
 	glob: &str,
 	target: Target,
+	application_id: application::Id,
 ) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
+	info!("Running syncup with root {:?}, glob {}, and target {:?}", root_dir, glob, target);
+
 	// create the pipelines for the target
-	let (push_pipeline, pull_pipeline) = target.create_pipelines(root_dir.clone(), glob).await?;
+	let (push_pipeline, pull_pipeline) =
+		target.create_pipelines(root_dir.clone(), glob, application_id).await?;
 
 	// run the pull pipeline once
+	info!("Running pull pipeline");
 	let pull_package = pull_pipeline.pull(Some(syncador::Package::null())).await?;
 
 	match pull_package {
@@ -63,8 +74,10 @@ pub async fn syncup(
 			s3::shared_bucket::metadata::DEFAULT_SYNC_EPOCH_DURATION,
 		));
 		loop {
+			info!("waiting for next push");
 			interval.tick().await;
-			push_pipeline.push(syncador::Package::null()).await?;
+			let package = push_pipeline.push(syncador::Package::null()).await?;
+			info!("Pushed package: {:?}", package);
 		}
 		Ok::<(), anyhow::Error>(())
 	};

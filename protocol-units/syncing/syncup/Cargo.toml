@@ -19,6 +19,7 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 futures = { workspace = true }
 tracing = { workspace = true }
+movement-types = { workspace = true }
 
 [lints]
 workspace = true

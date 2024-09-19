@@ -6,6 +6,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::{fs, task};
+use tracing::info;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Candidate;
@@ -67,6 +68,7 @@ impl Pull {
 		// Recursively add every file (not directory) in the destination directory to the new manifest
 		let mut entries = Vec::new();
 		Self::collect_files(&destination, &mut entries).await?;
+		info!("Unarchived files: {:?}", entries.len());
 		for file_path in entries {
 			new_manifest.add_sync_file(file_path);
 		}

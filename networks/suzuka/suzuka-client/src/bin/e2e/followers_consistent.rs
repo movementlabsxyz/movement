@@ -64,9 +64,12 @@ pub fn follower_index_to_dot_movement(
 
 	// otherwise, modify the path to include the follower index
 	let mut follower_dot_movement = dot_movement.clone();
-	let mut path = follower_dot_movement.get_path().to_path_buf();
-	path.push(format!("-follower-{}", follower_index));
-	follower_dot_movement.set_path(path);
+	let path = follower_dot_movement.get_path().to_path_buf();
+	// append -follower-{n} to the last component of the path
+	let new_path_str = format!("{}-follower-{}", path.display(), follower_index);
+	let new_path = std::path::PathBuf::from(new_path_str);
+	println!("Follower path: {:?}", new_path);
+	follower_dot_movement.set_path(new_path);
 
 	Ok(follower_dot_movement)
 }

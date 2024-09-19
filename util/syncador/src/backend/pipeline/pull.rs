@@ -1,3 +1,5 @@
+use tracing::info;
+
 use crate::backend::PullOperations;
 use crate::files::package::Package;
 
@@ -20,6 +22,7 @@ impl PullOperations for Pipeline {
 	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
 		let mut package = package;
 		for backend in &self.backends {
+			info!("Pulling from backend");
 			package = backend.pull(package.clone()).await?;
 		}
 		Ok(package)

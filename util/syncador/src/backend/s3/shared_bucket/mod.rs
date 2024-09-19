@@ -5,15 +5,31 @@ use tracing::info;
 pub mod metadata;
 pub mod pull;
 pub mod push;
+use movement_types::application;
 
 pub async fn create_random(bucket: String) -> Result<(push::Push, pull::Pull), anyhow::Error> {
-	let region = std::env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string());
-	let region = Region::new(region);
-	info!("May create random bucket in region {}", region);
-	let config = aws_config::load_from_env().await.into_builder().region(Some(region)).build();
-	info!("Client used region {}", config.region().ok_or(anyhow::anyhow!("No region"))?);
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	info!("Client used region {:?}", config.region());
 	let client = aws_sdk_s3::Client::new(&config);
 	create(client, bucket, metadata::Metadata::random()).await
+}
+
+pub async fn create_random_with_application_id(
+	bucket: String,
+	application_id: application::Id,
+) -> Result<(push::Push, pull::Pull), anyhow::Error> {
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	info!("Client used region {:?}", config.region());
+	let client = aws_sdk_s3::Client::new(&config);
+	create(client, bucket, metadata::Metadata::random().with_application_id(application_id)).await
 }
 
 pub async fn create(
