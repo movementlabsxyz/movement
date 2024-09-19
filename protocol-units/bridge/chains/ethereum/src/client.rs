@@ -273,8 +273,8 @@ impl BridgeContractInitiator for EthClient {
 		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		amount: Amount, // the ETH amount
+		_time_lock: TimeLock,
+		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
@@ -285,7 +285,6 @@ impl BridgeContractInitiator for EthClient {
 				U256::from(amount.weth()),
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
-				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.eth()))
 			.from(initiator_address.0 .0);
@@ -381,7 +380,7 @@ impl BridgeContractCounterparty for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
+		_time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
@@ -395,7 +394,6 @@ impl BridgeContractCounterparty for EthClient {
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
-			U256::from(time_lock.0),
 			recipient.0 .0,
 			U256::try_from(amount.0)
 				.map_err(|_| BridgeContractCounterpartyError::ConversionError)?,

@@ -19,12 +19,7 @@ use bridge_shared::{
 
 use ethereum_bridge::types::EthAddress;
 
-use tokio::{
-	self
-};
-
-use tracing_subscriber;
-
+use tokio::{self};
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -32,22 +27,19 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let movement_client = scaffold.movement_client().expect("Failed to get MovementClient");
 	//
 	let rest_client = movement_client.rest_client();
-        let coin_client = CoinClient::new(&rest_client);
+	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_client.faucet_client().expect("Failed to get // FaucetClient");
 	let movement_client_signer = movement_client.signer();
 
 	let faucet_client = faucet_client.write().unwrap();
 
-	faucet_client
-	.fund(movement_client_signer.address(), 100_000_000)
-	.await?;
+	faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
 	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 	assert!(
 		balance >= 100_000_000,
 		"Expected Movement Client to have at least 100_000_000, but found {}",
 		balance
 	);
-
 
 	child.kill().await?;
 
@@ -89,10 +81,10 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		let faucet_client = movement_client.faucet_client().expect("Failed to get FaucetClient");
 		let movement_client_signer = movement_client.signer();
 
-                {
-                        let faucet_client = faucet_client.write().unwrap();
-                        faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-                } 
+		{
+			let faucet_client = faucet_client.write().unwrap();
+			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+		}
 
 		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 		assert!(
@@ -116,45 +108,48 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
-			).await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
-	
-                assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
-                assert_eq!(details.hash_lock.0, args.hash_lock);
-                assert_eq!(
-                        &details.initiator_address.0 .0[32 - args.initiator.len()..],
-                        &args.initiator,
-                        "Initiator address does not match"
-                );
-                assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
-                assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
-                assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
+
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
+		assert_eq!(details.hash_lock.0, args.hash_lock);
+		assert_eq!(
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
+			&args.initiator,
+			"Initiator address does not match"
+		);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
 		BridgeContractCounterparty::complete_bridge_transfer(
-				movement_client,
-                                BridgeTransferId(args.bridge_transfer_id),
-                                HashLockPreImage(b"secret".to_vec())
-                        ).await
-                        .expect("Failed to complete bridge transfer");
+			movement_client,
+			BridgeTransferId(args.bridge_transfer_id),
+			HashLockPreImage(b"secret".to_vec()),
+		)
+		.await
+		.expect("Failed to complete bridge transfer");
 
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
-			).await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
-	
-                assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
-                assert_eq!(details.hash_lock.0, args.hash_lock);
-                assert_eq!(
-                        &details.initiator_address.0 .0[32 - args.initiator.len()..],
-                        &args.initiator,
-                        "Initiator address does not match"
-                );
-                assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
-                assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
-                assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
+
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
+		assert_eq!(details.hash_lock.0, args.hash_lock);
+		assert_eq!(
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
+			&args.initiator,
+			"Initiator address does not match"
+		);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
 		Ok(())
 	}
@@ -210,13 +205,13 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to lock bridge transfer");
 
-
 		let details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
-			).await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
 		assert_eq!(details.hash_lock.0, args.hash_lock);
@@ -239,10 +234,11 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		let abort_details = BridgeContractCounterparty::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
-			).await
-			.expect("Failed to get bridge transfer details")
-			.expect("Expected to find bridge transfer details, but got None");
-	
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
+
 		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id);
 		assert_eq!(abort_details.hash_lock.0, args.hash_lock);
 		assert_eq!(
