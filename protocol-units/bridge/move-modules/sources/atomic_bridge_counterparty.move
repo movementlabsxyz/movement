@@ -34,6 +34,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         moveth_minter: address,
         bridge_module_deployer: address,
         signer_cap: account::SignerCapability,
+        counterparty_time_lock_duration: u64,
     }
 
     /// A mapping of bridge transfer IDs to their bridge_transfer
@@ -86,8 +87,17 @@ module atomic_bridge::atomic_bridge_counterparty {
         move_to(resource, BridgeConfig {
             moveth_minter: signer::address_of(resource),
             bridge_module_deployer: signer::address_of(resource),
-            signer_cap: resource_signer_cap
+            signer_cap: resource_signer_cap,
+            counterparty_time_lock_duration: 48 * 60 * 60  // Set default to 48 hours (in seconds)
         });
+    }
+
+    public entry fun set_time_lock_duration(resource: &signer, time_lock_duration: u64) acquires BridgeConfig {
+        let config = borrow_global_mut<BridgeConfig>(signer::address_of(resource));
+        // Check if the signer is the deployer (the original initializer)
+        assert!(signer::address_of(resource) == config.bridge_module_deployer, EINCORRECT_SIGNER);
+
+        config.counterparty_time_lock_duration = time_lock_duration;
     }
 
     public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {
@@ -121,39 +131,40 @@ module atomic_bridge::atomic_bridge_counterparty {
         )
     }
 
-    public entry fun lock_bridge_transfer(
-        account: &signer,
-        originator: vector<u8>, //eth address
-        bridge_transfer_id: vector<u8>,
-        hash_lock: vector<u8>,
-        recipient: address,
-        amount: u64
-    ) acquires BridgeTransferStore {
-        // Initiator multiplies timelock by 2, no need to multiply here
-        let time_lock = timestamp::now_seconds() + COUNTERPARTY_TIME_LOCK_DUARTION;
+        public entry fun lock_bridge_transfer(
+            account: &signer,
+            originator: vector<u8>, //eth address
+            bridge_transfer_id: vector<u8>,
+            hash_lock: vector<u8>,
+            recipient: address,
+            amount: u64
+        ) acquires BridgeTransferStore, BridgeConfig {
+            // Use the configured time lock duration from BridgeConfig
+            let config = borrow_global<BridgeConfig>(@atomic_bridge);
+            let time_lock = timestamp::now_seconds() + config.counterparty_time_lock_duration;
 
-        assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
-        let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
-        let bridge_transfer = BridgeTransfer {
-            originator,
-            recipient,
-            amount,
-            hash_lock,
-            time_lock,
-            state: LOCKED,
-        };
-        smart_table::add(&mut store.transfers, bridge_transfer_id, bridge_transfer);
-
-        event::emit_event(&mut store.bridge_transfer_locked_events, BridgeTransferLockedEvent {
-                amount,
-                bridge_transfer_id,
+            assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
+            let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
+            let bridge_transfer = BridgeTransfer {
                 originator,
                 recipient,
+                amount,
                 hash_lock,
                 time_lock,
-            },
-        );
-    }
+                state: LOCKED,
+            };
+            smart_table::add(&mut store.transfers, bridge_transfer_id, bridge_transfer);
+
+            event::emit_event(&mut store.bridge_transfer_locked_events, BridgeTransferLockedEvent {
+                    amount,
+                    bridge_transfer_id,
+                    originator,
+                    recipient,
+                    hash_lock,
+                    time_lock,
+                },
+            );
+        }
 
     public entry fun complete_bridge_transfer(
         account: &signer,
@@ -203,19 +214,20 @@ module atomic_bridge::atomic_bridge_counterparty {
     }
 
     #[test_only]
-    public fun set_up_test(origin_account: &signer, resource_addr: &signer) {
-
+    public fun set_up_test(origin_account: &signer, resource_addr: &signer, time_lock_duration: u64) {
         create_account_for_test(signer::address_of(origin_account));
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
 
-        init_module(resource_addr);
+        init_module(resource_addr, time_lock_duration);  // Pass the time lock duration here
     }
+
 
     #[test (origin_account = @origin_addr, resource = @resource_addr, aptos_framework = @0x1)]
     public entry fun test_set_up_test(origin_account: &signer, resource: signer, aptos_framework: signer) {
-        set_up_test(origin_account, &resource);
+        let time_lock_duration = 24 * 60 * 60; // 24 hours
+        set_up_test(origin_account, &resource, time_lock_duration);
     }
 
     use std::debug;
@@ -362,4 +374,3 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_originator == originator, 3);
     }
 }
-

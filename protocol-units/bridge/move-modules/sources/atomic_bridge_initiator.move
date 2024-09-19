@@ -577,4 +577,3 @@ module atomic_bridge::atomic_bridge_initiator {
         aptos_std::debug::print(&transfer_state);
     }
 }
-
