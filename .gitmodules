@@ -34,3 +34,6 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/murky"]
 	path = protocol-units/settlement/mcr/contracts/lib/murky
 	url = https://github.com/dmfxyz/murky
+[submodule "protocol-units/settlement/mcr/contracts/lib/safe-smart-account"]
+	path = protocol-units/settlement/mcr/contracts/lib/safe-smart-account
+	url = https://github.com/safe-global/safe-smart-account
