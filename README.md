@@ -84,7 +84,7 @@ just m1-da-light-node native build.setup.test.local
 
 ```bash
 # example test with local
-just monza-full-node native build.setup.test.local
+just suzuka-full-node native build.setup.test.local
 ```
 
 ## Run a Movement Node with Docker Compose
