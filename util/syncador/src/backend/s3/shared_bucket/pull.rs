@@ -17,18 +17,23 @@ pub struct Candidate {
 pub struct Pull {
 	pub bucket_connection: BucketConnection,
 	pub metadata: Metadata,
+	pub pull_destination: PathBuf,
 }
 
 impl Pull {
-	pub fn new(bucket_connection: BucketConnection, metadata: Metadata) -> Self {
-		Self { bucket_connection, metadata }
+	pub fn new(
+		bucket_connection: BucketConnection,
+		metadata: Metadata,
+		pull_destination: PathBuf,
+	) -> Self {
+		Self { bucket_connection, metadata, pull_destination }
 	}
 
 	pub(crate) async fn download_path(
 		&self,
 		candidate_selected: &Candidate,
-		relative_path: &std::path::Path,
-		full_path: &std::path::Path,
+		relative_path: std::path::PathBuf,
+		full_path: std::path::PathBuf,
 	) -> Result<PathBuf, anyhow::Error> {
 		let bucket = self.bucket_connection.bucket.clone();
 		let key = format!("{}/{}", candidate_selected.key, relative_path.to_string_lossy());
@@ -47,11 +52,11 @@ impl Pull {
 				.ok_or(anyhow::anyhow!("parent directory of file path does not exist"))?,
 		)
 		.await?;
-		let mut file = tokio::fs::File::create(full_path).await?;
+		let mut file = tokio::fs::File::create(full_path.clone()).await?;
 		while let Some(chunk) = output.body.try_next().await? {
 			file.write_all(&chunk).await?;
 		}
-		Ok(full_path.into())
+		Ok(full_path)
 	}
 
 	pub(crate) async fn candidates_for(
@@ -82,32 +87,10 @@ impl Pull {
 			candidates.entry(candidate).or_insert_with(HashSet::new).insert(file_path);
 		}
 
-		// filter the candidates based on whether they have all the files in the package
-		/*let mut filtered_candidates = HashSet::new();
-		for (candidate, file_paths) in candidates {
-			let mut missing_files = false;
-			for manifest in package.0.iter() {
-				for (relative_path, _) in manifest.try_path_tuples()? {
-					let full_path =
-						format!("{}/{}", candidate.key, relative_path.to_string_lossy());
-					if !file_paths.contains(&full_path) {
-						missing_files = true;
-						break;
-					}
-				}
-				if missing_files {
-					break;
-				}
-			}
-			if !missing_files {
-				filtered_candidates.insert(candidate);
-			}
-		}*/
-
 		Ok(candidates.keys().cloned().collect())
 	}
 
-	pub(crate) async fn download_based_on_manifest(
+	/*pub(crate) async fn download_based_on_manifest(
 		&self,
 		candidate_selected: &Candidate,
 		manifest: PackageElement,
@@ -118,8 +101,54 @@ impl Pull {
 		// download each file
 		let mut manifest_futures = Vec::new();
 		for (relative_path, full_path) in path_tuples {
-			let future = self.download_path(candidate_selected, &relative_path, &full_path);
+			let future = self.download_path(
+				candidate_selected,
+				relative_path.to_path_buf().clone(),
+				full_path.clone(),
+			);
 			manifest_futures.push(future);
+		}
+
+		// try to join all the manifest_futures
+		futures::future::try_join_all(manifest_futures).await?;
+
+		// should downloaded into the locations specified in the manifest
+		Ok(manifest)
+	}*/
+
+	pub(crate) async fn download_all_files_for_candidate(
+		&self,
+		candidate: &Candidate,
+	) -> Result<PackageElement, anyhow::Error> {
+		info!("Downloading all files for candidate: {:?}", candidate);
+
+		// get all of the public file paths for this application
+		let public_file_paths = self
+			.metadata
+			.list_all_application_file_paths_for(&self.bucket_connection)
+			.await?;
+
+		// filter the public file paths for the candidate
+		let file_paths: HashSet<String> = public_file_paths
+			.into_iter()
+			.filter(|file_path| file_path.starts_with(&candidate.key))
+			.collect();
+
+		// create a new manifest
+		let mut manifest = PackageElement::new(self.pull_destination.clone());
+
+		// download each file
+		let mut manifest_futures = Vec::new();
+		for file_path in file_paths {
+			let relative_path = PathBuf::from(
+				file_path
+					.strip_prefix(format!("{}/", candidate.key).as_str())
+					.ok_or(anyhow::anyhow!("could not strip prefix"))?,
+			);
+			let full_path = self.pull_destination.join(&relative_path);
+			let future = self.download_path(candidate, relative_path.clone(), full_path.clone());
+			manifest_futures.push(future);
+			manifest.add_sync_file(full_path);
 		}
 
 		// try to join all the manifest_futures
@@ -154,17 +183,14 @@ impl Pull {
 
 	async fn pull_candidate(
 		&self,
-		package: Package,
+		_package: Package,
 		candidate: Candidate,
 	) -> Result<Package, anyhow::Error> {
 		info!("Pulling candidate: {:?}", candidate);
-		let mut manifest_futures = Vec::new();
-		for manifest in package.into_manifests() {
-			info!("Pulling manifest: {:?}", manifest);
-			let future = self.download_based_on_manifest(&candidate, manifest);
-			manifest_futures.push(future);
-		}
-		let manifests = futures::future::try_join_all(manifest_futures).await?;
+		// pull all of the files for the candidate
+		let manifest = self.download_all_files_for_candidate(&candidate).await?;
+		let manifests = vec![manifest];
+
 		Ok(Package(manifests))
 	}
 }

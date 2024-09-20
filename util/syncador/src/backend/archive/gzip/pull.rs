@@ -81,6 +81,7 @@ impl Pull {
 impl PullOperations for Pull {
 	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
 		// If the package is None, return None
+		info!("Archive pulling package: {:?}", package);
 		if package.is_none() {
 			return Ok(None);
 		}

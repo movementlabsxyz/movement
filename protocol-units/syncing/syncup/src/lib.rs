@@ -21,6 +21,7 @@ impl Target {
 				let (s3_push, s3_pull) = s3::shared_bucket::create_random_with_application_id(
 					bucket.clone(),
 					application_id,
+					root_dir.clone(),
 				)
 				.await?;
 
