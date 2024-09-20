@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/token/stlMoveToken.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenV2.sol";
 
 contract stlMoveTokenTest is Test {
     function testInitialize() public {
-        MOVEToken underlyingToken = new MOVEToken();
+        MOVETokenV2 underlyingToken = new MOVETokenV2();
         underlyingToken.initialize();
 
         stlMoveToken token = new stlMoveToken();
@@ -19,7 +19,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken underlyingToken = new MOVEToken();
+        MOVETokenV2 underlyingToken = new MOVETokenV2();
         underlyingToken.initialize();
 
         stlMoveToken token = new stlMoveToken();
@@ -31,7 +31,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testSimulateStaking() public {
-        MOVEToken underlyingToken = new MOVEToken();
+        MOVETokenV2 underlyingToken = new MOVETokenV2();
         underlyingToken.initialize();
 
         stlMoveToken token = new stlMoveToken();

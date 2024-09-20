@@ -1,5 +1,5 @@
 use super::Executor;
-use crate::{bootstrap, indexer::IndexerRuntime, Context, TransactionPipe};
+use crate::{bootstrap, Context, TransactionPipe};
 
 use aptos_config::config::NodeConfig;
 #[cfg(test)]
@@ -58,13 +58,15 @@ impl Executor {
 		Ok((executor, maptos_config, tempdir))
 	}
 
-	/// Creates instance of `Context` and the background `TransactionPipe`
+	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]
 	/// task to process transactions.
+	/// The `Context` must be kept around for as long as the `TransactionPipe`
+	/// task needs to be running.
 	pub fn background(
 		&self,
 		transaction_sender: mpsc::Sender<SignedTransaction>,
 		maptos_config: &Config,
-	) -> anyhow::Result<(Context, TransactionPipe, IndexerRuntime)> {
+	) -> anyhow::Result<(Context, TransactionPipe)> {
 		let mut node_config = NodeConfig::default();
 
 		node_config.indexer.enabled = true;
@@ -111,6 +113,7 @@ impl Executor {
 			Arc::clone(&self.transactions_in_flight),
 			maptos_config.load_shedding.max_transactions_in_flight,
 		);
+
 		let cx = Context::new(
 			self.db().clone(),
 			mempool_client_sender,
@@ -118,9 +121,6 @@ impl Executor {
 			node_config,
 		);
 
-		// Start indexer grpc entry point.
-		let indexer_runtime = cx.run_indexer_grpc_service()?;
-
-		Ok((cx, transaction_pipe, indexer_runtime))
+		Ok((cx, transaction_pipe))
 	}
 }

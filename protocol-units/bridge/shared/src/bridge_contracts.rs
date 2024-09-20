@@ -7,6 +7,18 @@ use crate::types::{
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractInitiatorError {
+	#[error("Failed to extract transfer Id")]
+	TransferIdExtractionError,
+	#[error("Failed to mint")]
+	MintError,
+	#[error("Failed to call function")]
+	CallError,
+	#[error("Failed to serialize or deserialize")]
+	SerializationError,
+	#[error("Invalid response length")]
+	InvalidResponseLength,
+	#[error("Failed to view function")]
+	FunctionViewError,
 	#[error("Failed to initiate bridge transfer")]
 	InitiateTransferError,
 	#[error("Failed to complete bridge transfer")]
