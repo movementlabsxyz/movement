@@ -236,6 +236,28 @@ contract Helper is Script {
         }
     }
 
+    function _generateSignatures(uint256[] memory privKeys, bytes32 digest)
+        internal
+        returns (bytes memory signatures)
+    {
+        require(vm.addr(privKeys[0]) == vm.addr(vm.envUint("PRIVATE_KEY")), "First signer must be the sender");
+        _sortByAddress(privKeys);
+        for (uint256 i = 0; i < privKeys.length; i++) {
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(privKeys[i], digest);
+            signatures = abi.encodePacked(signatures, r, s, v);
+        }
+    }
+
+    function _sortByAddress(uint256[] memory privKeys) internal {
+        for (uint256 i = 0; i < privKeys.length - 1; i++) {
+            for (uint256 j = 0; j < privKeys.length - i - 1; j++) {
+                if (vm.addr(privKeys[j]) > vm.addr(privKeys[j + 1])) {
+                    (privKeys[j], privKeys[j + 1]) = (privKeys[j + 1], privKeys[j]);
+                }
+            }
+        }
+    }
+
     function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
             return "0";

@@ -3,9 +3,10 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { Helper } from "./helpers/Helper.sol";
+import { Helper, Safe } from "./helpers/Helper.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
+import {Enum} from "@safe-smart-account/contracts/common/Enum.sol";
 
 
 // Script intended to be used for deploying the MOVE token from an EOA
@@ -13,7 +14,7 @@ import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
 // The MOVEToken contract takes in the Movement Foundation address and sets it as its own admin for future upgrades.
 // The whole supply is minted to the Movement Foundation Safe.
 // The script also verifies that the token has the correct balances, decimals and permissions.
-contract MOVETokenDeployer is Helper {
+contract MultisigMOVETokenDeployer is Helper {
     // COMMANDS
     // mainnet
     // forge script MOVETokenDeployer --fork-url https://eth.llamarpc.com --verify --etherscan-api-key ETHERSCAN_API_KEY
@@ -42,9 +43,9 @@ contract MOVETokenDeployer is Helper {
         // timelock is required for all deployments
         _deployTimelock();
         deployment.moveAdmin == ZERO && deployment.move == ZERO ?
-            _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
+            _deployMultisigMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
                 // if move is already deployed, upgrade it
-                _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
+                _upgradeMultisigMove() : revert("MOVE: both admin and proxy should be registered");
         
         require(MOVEToken(deployment.move).balanceOf(address(deployment.movementFoundationSafe)) == 1000000000000000000, "Movement Foundation Safe balance is wrong");
         require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
@@ -57,24 +58,40 @@ contract MOVETokenDeployer is Helper {
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
 
-    function _deployMove() internal {
+    function _deployMultisigMove() internal {
         console.log("MOVE: deploying");
         MOVEToken moveImplementation = new MOVEToken();
         // genetares bytecode for CREATE3 deployment
-        bytes memory bytecode = abi.encodePacked(
+        bytes memory create3Bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
             abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe))
         );
         vm.recordLogs();
-        // deploys the MOVE token proxy using CREATE3
-        moveProxy = TransparentUpgradeableProxy(payable(ICREATE3Factory(create3).deploy(salt, bytecode)));
+
+
+        // craete bytecode the MOVE token proxy using CREATE3
+        bytes memory bytecode = abi.encodeWithSignature("deploy(bytes32,bytes)", salt, create3Bytecode);
+        bytes32 digest = keccak256(bytecode);
+
+        // three signers for the deployment (this is mocked and only works in foundry chain)
+        uint256[] memory signers = new uint256[](3);
+        signers[0] = vm.envUint("PRIVATE_KEY");
+        signers[1] = 1;
+        signers[2] = 2;
+
+        bytes memory signatures = _generateSignatures(signers, digest);
+
+        Safe(payable(deployment.movementFoundationSafe)).execTransaction(
+            address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), signatures
+        );
+        // moveProxy = new TransparentUpgradeableProxy();
         console.log("MOVEToken deployment records:");
         console.log("proxy", address(moveProxy));
         deployment.move = address(moveProxy);
         deployment.moveAdmin = _storeAdminDeployment();
     }
 
-    function _upgradeMove() internal {
+    function _upgradeMultisigMove() internal {
         console.log("MOVE: upgrading");
         MOVEToken newMoveImplementation = new MOVEToken();
         timelock.schedule(
