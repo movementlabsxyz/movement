@@ -60,7 +60,8 @@ contract MovementStaking is
 
     function acceptGenesisCeremony() public {
         address domain = msg.sender;
-
+        if (domainGenesisAccepted[domain]) revert GenesisAlreadyAccepted();
+        domainGenesisAccepted[domain] = true;
         // roll over from 0 (genesis) to current epoch by block time
         currentEpochByDomain[domain] = getEpochByBlockTime(domain);
 

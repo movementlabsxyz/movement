@@ -1966,7 +1966,7 @@ dependencies = [
 [[package]]
 name = "aptos-moving-average"
 version = "0.1.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb#656bb2ba08888cba4d16405b8b668155a5c624eb"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "chrono",
 ]
@@ -3567,9 +3567,9 @@ dependencies = [
 
 [[package]]
 name = "blockstore"
-version = "0.7.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7679095248a6dc7555fae81154ed1baef264383c16621ef881a219576c72a9be"
+checksum = "dc99329facbb960effbe7ed707c753a718877c1878eb8ca08704fa391c494020"
 dependencies = [
  "cid",
  "dashmap 6.1.0",
@@ -3988,7 +3988,8 @@ dependencies = [
 [[package]]
 name = "celestia-proto"
 version = "0.3.0"
-source = "git+https://github.com/eigerco/lumina#dae322c4c13e66c468a94d5aa208ab4fd4e30ae8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9d7bb5f52d67256ed0545271bb3bbe33f106576884e6acc3cfaedc5bb78c41d3"
 dependencies = [
  "anyhow",
  "celestia-tendermint-proto",
@@ -4000,8 +4001,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-rpc"
-version = "0.4.0"
-source = "git+https://github.com/eigerco/lumina#dae322c4c13e66c468a94d5aa208ab4fd4e30ae8"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5110ce517363b075f3880f4bc88fd1f5c0b3f711a11daa3c34c66da7ae94b9a7"
 dependencies = [
  "async-trait",
  "celestia-types",
@@ -4014,9 +4016,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-tendermint"
-version = "0.32.2"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce8c92a01145f79a0f3ac7c44a43a9b5ee58e8a4c716b56d98833a3848db1afd"
+checksum = "95f93b5cbbd62b6cfde961889bf05d5fe19e70d8500c4465694306ed2695ac23"
 dependencies = [
  "bytes 1.7.1",
  "celestia-tendermint-proto",
@@ -4043,9 +4045,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-tendermint-proto"
-version = "0.32.2"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a95746c5221a74d7b913a415fdbb9e7c90e1b4d818dbbff59bddc034cfce2ec"
+checksum = "b8f7d49c1ececa30a4587c5fe8a4035b786b78a3253ed0f9636de591b3dc2b37"
 dependencies = [
  "bytes 1.7.1",
  "flex-error",
@@ -4061,8 +4063,9 @@ dependencies = [
 
 [[package]]
 name = "celestia-types"
-version = "0.4.0"
-source = "git+https://github.com/eigerco/lumina#dae322c4c13e66c468a94d5aa208ab4fd4e30ae8"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08e6a207db787043faf6b630e2caa365d5be1b72553d541a75cfd4e17086191c"
 dependencies = [
  "base64 0.22.1",
  "bech32",
@@ -10635,13 +10638,13 @@ dependencies = [
 [[package]]
 name = "processor"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb#656bb2ba08888cba4d16405b8b668155a5c624eb"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "ahash 0.8.11",
  "allocative",
  "allocative_derive",
  "anyhow",
- "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb)",
+ "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58)",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=338f9a1bcc06f62ce4a4994f1642b9a61b631ee0)",
  "async-trait",
  "bcs 0.1.4",
@@ -12143,7 +12146,7 @@ dependencies = [
 [[package]]
 name = "server-framework"
 version = "1.0.0"
-source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=656bb2ba08888cba4d16405b8b668155a5c624eb#656bb2ba08888cba4d16405b8b668155a5c624eb"
+source = "git+https://github.com/movementlabsxyz/aptos-indexer-processors?rev=1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58#1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58"
 dependencies = [
  "anyhow",
  "aptos-system-utils",
@@ -12852,6 +12855,7 @@ dependencies = [
  "num_cpus",
  "processor",
  "reqwest 0.12.7",
+ "serde_json",
  "server-framework",
  "tempfile",
  "tokio",
