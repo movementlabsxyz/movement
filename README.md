@@ -62,6 +62,9 @@ https://nix.dev/install-nix
 
 https://www.rust-lang.org/tools/install
 
+### Prerequisites - orchestrator to manage non-containerized applications
+
+https://f1bonacc1.github.io/process-compose/installation
 
 ## Running Natively
 ### `m1-da-light-node`
