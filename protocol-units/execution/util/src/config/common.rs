@@ -110,7 +110,7 @@ env_default!(
 	default_maptos_indexer_healthcheck_hostname,
 	"MAPTOS_INDEXER_HEALTHCHECK_HOSTNAME",
 	String,
-	"127.0.0.1".to_string()
+	"0.0.0.0".to_string()
 );
 
 env_default!(default_maptos_indexer_healthcheck_port, "MAPTOS_INDEXER_HEALTHCHECK_PORT", u16, 8084);
