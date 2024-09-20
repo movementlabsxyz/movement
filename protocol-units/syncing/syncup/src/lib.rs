@@ -46,6 +46,7 @@ impl Target {
 /// Takes a glob pattern and a target, and syncs up the files in the glob to the target.
 /// Returns two futures, one for the initial pull and one wrapped for the indefinite push.
 pub async fn syncup(
+	is_leader: bool,
 	root_dir: PathBuf,
 	glob: &str,
 	target: Target,
@@ -58,16 +59,19 @@ pub async fn syncup(
 		target.create_pipelines(root_dir.clone(), glob, application_id).await?;
 
 	// run the pull pipeline once
-	info!("Running pull pipeline");
-	let pull_package = pull_pipeline.pull(Some(syncador::Package::null())).await?;
-
-	match pull_package {
-		Some(package) => {
-			info!("Pulled package: {:?}", package);
+	if !is_leader {
+		info!("Running pull pipeline");
+		let pull_package = pull_pipeline.pull(Some(syncador::Package::null())).await?;
+		match pull_package {
+			Some(package) => {
+				info!("Pulled package: {:?}", package);
+			}
+			None => {
+				info!("No package pulled");
+			}
 		}
-		None => {
-			info!("No package pulled");
-		}
+	} else {
+		info!("Skipping pull pipeline as leader");
 	}
 
 	// Create the upsync task using tokio::time::interval

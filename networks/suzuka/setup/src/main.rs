@@ -58,8 +58,16 @@ async fn main() -> Result<(), anyhow::Error> {
 
 			// set up sync
 			let sync_task: Pin<Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>> =
-				if let Some(bucket_arrow_glob) = config.syncing.movement_sync.clone() {
-					let mut bucket_arrow_glob = bucket_arrow_glob.split("<=>");
+				if let Some(sync_str) = config.syncing.movement_sync.clone() {
+					let mut leader_follower_split = sync_str.split("::");
+					let is_leader = leader_follower_split.next().context(
+						"MOVEMENT_SYNC environment variable must be in the format <leader>::<follower>",
+					)? == "leader";
+
+					let mut bucket_arrow_glob = leader_follower_split.next().context(
+						"MOVEMENT_SYNC environment variable must be in the format <leader>::<follower>",
+					)?.split("<=>");
+
 					let bucket = bucket_arrow_glob.next().context(
 						"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
 					)?;
@@ -68,7 +76,7 @@ async fn main() -> Result<(), anyhow::Error> {
 					)?;
 
 					let sync_task = dot_movement
-						.sync(glob, bucket.to_string(), application::Id::suzuka())
+						.sync(is_leader, glob, bucket.to_string(), application::Id::suzuka())
 						.await?;
 					Box::pin(async { sync_task.await })
 				} else {
