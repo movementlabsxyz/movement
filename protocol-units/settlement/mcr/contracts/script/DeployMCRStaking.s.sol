@@ -25,7 +25,7 @@ contract DeployMCRStaking is Script {
     string public stakingSignature = "initialize(address)";
 
     function run() external {
-        uint256 minDelay = 1 days;
+        uint256 minDelay = 2 days;
         address[] memory proposers = new address[](5);
         address[] memory executors = new address[](1);
 

@@ -30,76 +30,61 @@ contract Helper is Script {
     string public root = vm.projectRoot();
     string public deploymentsPath = "/script/helpers/deployments.json";
     string public upgradePath = "/script/helpers/upgrade/";
-    string public labsConfigPath = "/script/helpers/labsConfig.json";
-    string public foundationConfigPath = "/script/helpers/foundationConfig.json";
+    string public configPath = "/script/helpers/config.json";
     address public ZERO = 0x0000000000000000000000000000000000000000;
-    address public NULL = 0x0000000000000000000000000000000000000001;
     string public chainId = uint2str(block.chainid);
     uint256 public foundryChainId = 31337;
     string public storageJson;
 
-    uint256 public minDelay = 2 days;
-    ConfigData public labsConfig;
-    ConfigData public foundationConfig;
+    ConfigData public config;
 
     struct ConfigData {
-        uint256 threshold;
-        address[] signers;
+        uint256 minDelay;
+        address[] signersFoundation;
+        address[] signersLabs;
+        uint256 thresholdFoundation;
+        uint256 thresholdLabs;
     }
 
     Deployment public deployment;
 
     struct Deployment {
-        address move;
-        address moveAdmin;
         address mcr;
         address mcrAdmin;
+        address move;
+        address moveAdmin;
+        address movementFoundationSafe;
+        address movementLabsSafe;
         address staking;
         address stakingAdmin;
         address stlMove;
         address stlMoveAdmin;
         address timelock;
-        address movementLabsSafe;
-        address movementFoundationSafe;
     }
 
     function _loadConfig() internal {
-        // string memory path = string.concat(root, labsConfigPath);
-        // string memory json = vm.readFile(path);
-        // bytes memory rawConfigDataLabs = json.parseRaw(string(abi.encodePacked(".")));
-        // console.logBytes(rawConfigDataLabs);
-        // labsConfig = abi.decode(rawConfigDataLabs, (ConfigData));
+        string memory path = string.concat(root, configPath);
+        string memory json = vm.readFile(path);
+        bytes memory rawConfigData = json.parseRaw(string(abi.encodePacked(".")));
+        config = abi.decode(rawConfigData, (ConfigData));
 
-        // string memory path2 = string.concat(root, foundationConfigPath);
-        // string memory json2 = vm.readFile(path2);
-        // bytes memory rawConfigDataFoundation = json2.parseRaw(string(abi.encodePacked(".")));
-        // foundationConfig = abi.decode(rawConfigDataFoundation, (ConfigData));
-
-        address[] memory labsSigners = new address[](5);
-        labsSigners[0] = 0x49F86Aee2C2187870ece0e64570D0048EaF4C751;
-        labsSigners[1] = 0xaFf3deeb13bD2B480751189808C16e9809EeBcce;
-        labsSigners[2] = 0x12Cbb2C9F072E955b6B95ad46213aAa984A4434D;
-        labsSigners[3] = 0xB2105464215716e1445367BEA5668F581eF7d063;
-        labsSigners[4] = 0x0eEd12Ca165A962cd12420DfB38407637bcA4267;
-
-        address[] memory foundationSigners = new address[](1);
-        foundationSigners[0] = 0xB2105464215716e1445367BEA5668F581eF7d063;
-        // foundationSigners[1] = ZERO;
-        // foundationSigners[2] = ZERO;
-        // foundationSigners[3] = ZERO;
-        // foundationSigners[4] = ZERO;
-
-        labsConfig = ConfigData(4, labsSigners);
-
-        foundationConfig = ConfigData(1, foundationSigners);
-
-        if (labsConfig.signers[0] == NULL) {
-            console.log("labsSigner", labsConfig.signers[0]);
-            labsConfig.signers[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+        if (config.signersLabs[0] == ZERO) {
+            config.signersLabs[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+            // populate multisigs with signers
+            for (uint256 i = 1; i < config.signersLabs.length; i++) {
+                if (config.signersLabs[i] == ZERO) {
+                    config.signersLabs[i] = vm.addr(i);
+                }
+            }
         }
-        if (foundationConfig.signers[0] == NULL) {
-            console.log("foundationSigner", foundationConfig.signers[0]);
-            foundationConfig.signers[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+        if (config.signersFoundation[0] == ZERO) {
+            config.signersFoundation[0] = vm.addr(vm.envUint("PRIVATE_KEY"));
+            // populate multisigs with signers
+            for (uint256 i = 1; i < config.signersFoundation.length; i++) {
+                if (config.signersFoundation[i] == ZERO) {
+                    config.signersFoundation[i] = vm.addr(i);
+                }
+            }
         }
     }
 
@@ -115,7 +100,7 @@ contract Helper is Script {
 
     function _deploySafes() internal {
         console.log("Deploying Safes");
-        if (deployment.movementLabsSafe == NULL && block.chainid != foundryChainId) {
+        if (deployment.movementLabsSafe == ZERO && block.chainid != foundryChainId) {
             // use canonical v1.4.1 safe factory address 0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67 if:
             // - chainid is not foundry
             // - safe is not deployed
@@ -124,15 +109,15 @@ contract Helper is Script {
                 safeFactory,
                 0x41675C099F32341bf84BFc5382aF534df5C7461a,
                 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
-                labsConfig.signers,
-                labsConfig.threshold
+                config.signersLabs,
+                config.thresholdLabs
             );
             deployment.movementFoundationSafe = _deploySafe(
                 safeFactory,
                 0x41675C099F32341bf84BFc5382aF534df5C7461a,
                 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
-                foundationConfig.signers,
-                foundationConfig.threshold
+                config.signersFoundation,
+                config.thresholdFoundation
             );
         } else {
             if (block.chainid == foundryChainId) {
@@ -143,15 +128,15 @@ contract Helper is Script {
                     safeFactory,
                     address(safeSingleton),
                     address(fallbackHandler),
-                    labsConfig.signers,
-                    labsConfig.threshold
+                    config.signersLabs,
+                    config.thresholdLabs
                 );
                 deployment.movementFoundationSafe = _deploySafe(
                     safeFactory,
                     address(safeSingleton),
                     address(fallbackHandler),
-                    foundationConfig.signers,
-                    foundationConfig.threshold
+                    config.signersFoundation,
+                    config.thresholdFoundation
                 );
             }
         }
@@ -181,8 +166,8 @@ contract Helper is Script {
     }
 
     function _deployTimelock() internal {
-        if (deployment.timelock == NULL) {
-            timelock = new TimelockController(minDelay, labsConfig.signers, foundationConfig.signers, ZERO);
+        if (deployment.timelock == ZERO) {
+            timelock = new TimelockController(config.minDelay, config.signersLabs, config.signersFoundation, ZERO);
             deployment.timelock = address(timelock);
         }
     }
@@ -230,17 +215,17 @@ contract Helper is Script {
     }
 
     function _serializer(string memory json, Deployment memory memoryDeployment) internal returns (string memory) {
+        json.serialize("mcr", memoryDeployment.mcr);
+        json.serialize("mcrAdmin", memoryDeployment.mcrAdmin);
         json.serialize("move", memoryDeployment.move);
         json.serialize("moveAdmin", memoryDeployment.moveAdmin);
+        json.serialize("movementFoundationSafe", memoryDeployment.movementFoundationSafe);
+        json.serialize("movementLabsSafe", memoryDeployment.movementLabsSafe);
         json.serialize("staking", memoryDeployment.staking);
         json.serialize("stakingAdmin", memoryDeployment.stakingAdmin);
         json.serialize("stlMove", memoryDeployment.stlMove);
         json.serialize("stlMoveAdmin", memoryDeployment.stlMoveAdmin);
-        json.serialize("mcr", memoryDeployment.mcr);
-        json.serialize("mcrAdmin", memoryDeployment.mcrAdmin);
-        json.serialize("timelock", memoryDeployment.timelock);
-        json.serialize("movementLabsSafe", memoryDeployment.movementLabsSafe);
-        return json.serialize("movementFoundationSafe", memoryDeployment.movementFoundationSafe);
+        return json.serialize("timelock", memoryDeployment.timelock);
     }
 
     // string to address

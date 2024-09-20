@@ -23,7 +23,7 @@ contract StakingDeployer is Helper {
         // timelock is required for all deployments
         _deployTimelock();
 
-        deployment.stakingAdmin == NULL && deployment.staking == NULL && deployment.move != ZERO ?
+        deployment.stakingAdmin == ZERO && deployment.staking == ZERO && deployment.move != ZERO ?
             _deployStaking() : deployment.stakingAdmin != ZERO && deployment.staking != ZERO ?
                 _upgradeStaking() : revert("STAKING: both admin and proxy should be registered");
 

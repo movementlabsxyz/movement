@@ -42,10 +42,8 @@ contract MOVETokenDeployer is Helper {
 
         // timelock is required for all deployments
         _deployTimelock();
-        console.log(deployment.moveAdmin);
-        console.log(deployment.move);
-        deployment.moveAdmin == NULL && deployment.move == NULL ?
-            _deployMove() : deployment.moveAdmin != NULL && deployment.move != NULL ?
+        deployment.moveAdmin == ZERO && deployment.move == ZERO ?
+            _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
         
@@ -53,6 +51,7 @@ contract MOVETokenDeployer is Helper {
         require(MOVEToken(address(moveProxy)).decimals() == 8, "Decimals are expected to be 8"); 
         require(MOVEToken(address(moveProxy)).totalSupply() == 1000000000000000000,"Total supply is wrong");
         require(MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
+        require(!MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementLabsSafe)),"Movement Labs not expected to have token admin role");
         require(!MOVEToken(address(moveProxy)).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
         vm.stopBroadcast();
     }
@@ -90,7 +89,7 @@ contract MOVETokenDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + minDelay
+            block.timestamp + config.minDelay
         );
     }
 }

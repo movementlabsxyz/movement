@@ -33,26 +33,26 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVEToke
         _deployTimelock();
         
         // Deploy or upgrade contracts conditionally
-        deployment.moveAdmin == NULL && deployment.move == NULL ?
-            _deployMove() : deployment.moveAdmin != NULL && deployment.move != NULL ?
+        deployment.moveAdmin == ZERO && deployment.move == ZERO ?
+            _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
 
         // requires move to be deployed
-        deployment.stakingAdmin == NULL && deployment.staking == NULL && deployment.move != NULL ?
-            _deployStaking() : deployment.stakingAdmin != NULL && deployment.staking != NULL ?
+        deployment.stakingAdmin == ZERO && deployment.staking == ZERO && deployment.move != ZERO ?
+            _deployStaking() : deployment.stakingAdmin != ZERO && deployment.staking != ZERO ?
                 // if staking is already deployed, upgrade it
                 _upgradeStaking() : revert("STAKING: both admin and proxy should be registered");
 
         // requires move to be deployed
-        deployment.stlMoveAdmin == NULL && deployment.stlMove == NULL && deployment.move != NULL ?
-            _deployStlMove() : deployment.stlMoveAdmin != NULL && deployment.stlMove != NULL ?
+        deployment.stlMoveAdmin == ZERO && deployment.stlMove == ZERO && deployment.move != ZERO ?
+            _deployStlMove() : deployment.stlMoveAdmin != ZERO && deployment.stlMove != ZERO ?
                 // if stlMove is already deployed, upgrade it
                 _upgradeStlMove() : revert("STL: both admin and proxy should be registered");
 
         // requires staking and move to be deployed
-        deployment.mcrAdmin == NULL && deployment.mcr == NULL && deployment.move != NULL && deployment.staking != NULL ?
-            _deployMCR() : deployment.mcrAdmin != NULL && deployment.mcr != NULL ?
+        deployment.mcrAdmin == ZERO && deployment.mcr == ZERO && deployment.move != ZERO && deployment.staking != ZERO ?
+            _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
                 // if mcr is already deployed, upgrade it
                 _upgradeMCR() : revert("MCR: both admin and proxy should be registered");
 
