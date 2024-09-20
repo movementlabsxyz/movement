@@ -48,6 +48,7 @@ rayon = { workspace = true }
 serde_json  = { workspace = true }
 thiserror = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+movement-tracing = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
 reqwest = { workspace = true }

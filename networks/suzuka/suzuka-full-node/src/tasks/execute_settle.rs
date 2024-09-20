@@ -113,6 +113,12 @@ where
 			}
 		};
 
+		info!(
+			block_id = %block_id,
+			da_height = da_height,
+			"Processing block from DA"
+		);
+
 		// check if the block has already been executed
 		if self.da_db.has_executed_block(block_id.clone()).await? {
 			warn!("Block already executed: {:#?}. It will be skipped", block_id);

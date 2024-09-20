@@ -22,6 +22,8 @@ processes:
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
+      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=31734
+      export MAPTOS_API_CONNECTION_PORT=31731
       export MAPTOS_API_LISTEN_PORT=31731
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
       export MOVEMENT_SYNC="follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,suzuka-da-db}/**"
@@ -39,7 +41,7 @@ processes:
   suzuka-full-follower-1:
     command: |
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
-      # suzuka-full-node
+      suzuka-full-node
     depends_on:
       m1-da-light-node:
         condition: process_healthy
@@ -58,6 +60,8 @@ processes:
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
+      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=32734
+      export MAPTOS_API_CONNECTION_PORT=32731
       export MAPTOS_API_LISTEN_PORT=32731
       export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
       export MOVEMENT_SYNC="follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,suzuka-da-db}/**"
@@ -99,5 +103,5 @@ processes:
       suzuka-faucet:
         condition: process_healthy
     availability:
-      exit_on_end: true
+      # exit_on_end: true
     

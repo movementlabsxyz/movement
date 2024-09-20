@@ -13312,6 +13312,7 @@ dependencies = [
  "itertools 0.12.1",
  "maptos-execution-util",
  "mcr-settlement-client",
+ "movement-tracing",
  "once_cell",
  "rand 0.7.3",
  "rayon",

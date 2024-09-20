@@ -9,7 +9,10 @@ use suzuka_client::{
 	types::LocalAccount,
 };
 use tokio::sync::RwLock;
+use tracing::info;
 use url::Url;
+
+const TIMING_LOG_ENV: &str = "SUZUKA_TIMING_LOG";
 
 pub fn get_suzuka_config(
 	dot_movement: &DotMovement,
@@ -68,7 +71,7 @@ pub fn follower_index_to_dot_movement(
 	// append -follower-{n} to the last component of the path
 	let new_path_str = format!("{}-follower-{}", path.display(), follower_index);
 	let new_path = std::path::PathBuf::from(new_path_str);
-	println!("Follower path: {:?}", new_path);
+	info!("Follower path: {:?}", new_path);
 	follower_dot_movement.set_path(new_path);
 
 	Ok(follower_dot_movement)
@@ -104,7 +107,7 @@ pub async fn check_matching<T, F, Fut>(
 	mut closure: F,
 ) -> Result<(), anyhow::Error>
 where
-	T: Eq,
+	T: Eq + std::fmt::Debug,
 	F: FnMut(DotMovement, suzuka_config::Config, Client, FaucetClient) -> Fut,
 	Fut: Future<Output = Result<T, anyhow::Error>>,
 {
@@ -116,6 +119,8 @@ where
 
 		// call the closure
 		let result = closure(follower_dot_movement, config, rest_client, faucet_client).await?;
+
+		info!("Result from follower {}: {:?}", i, result);
 
 		// compare the result to the last result
 		if let Some(last_result) = last_result {
@@ -144,6 +149,7 @@ where
 	let mut rng = rand::thread_rng();
 	let i = rng.gen_range(0, follower_count + 1);
 
+	info!("Picking follower {}", i);
 	let (follower_dot_movement, config, rest_client, faucet_client) =
 		get_follower_config(i as u8, lead_dot_movement)?;
 
@@ -159,9 +165,9 @@ pub async fn basic_coin_transfers(
 	let bob = Arc::new(RwLock::new(LocalAccount::generate(&mut rand::rngs::OsRng)));
 
 	// Print account addresses.
-	println!("\n=== Addresses ===");
-	println!("Alice: {}", alice.read().await.address().to_hex_literal());
-	println!("Bob: {}", bob.read().await.address().to_hex_literal());
+	info!("\n=== Addresses ===");
+	info!("Alice: {}", alice.read().await.address().to_hex_literal());
+	info!("Bob: {}", bob.read().await.address().to_hex_literal());
 
 	// Create the accounts on chain, but only fund Alice. Pick one node to do this against for each.
 	// Alice
@@ -241,6 +247,11 @@ pub async fn basic_coin_transfers(
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	let tracing_config = movement_tracing::Config {
+		timing_log_path: std::env::var_os(TIMING_LOG_ENV).map(Into::into),
+	};
+	let _guard = movement_tracing::init_tracing_subscriber(tracing_config);
+
 	// get the lead dot movement from the environment
 	let dot_movement = DotMovement::try_from_env()?;
 

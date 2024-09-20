@@ -1,6 +1,6 @@
 use movement_types::application;
 use std::path::PathBuf;
-use syncador::backend::{archive, glob, pipeline, s3, PullOperations, PushOperations};
+use syncador::backend::{archive, clear, glob, pipeline, s3, PullOperations, PushOperations};
 use tokio::time::interval;
 use tracing::info;
 
@@ -33,6 +33,7 @@ impl Target {
 
 				let pull_pipe = pipeline::pull::Pipeline::new(vec![
 					Box::new(s3_pull),
+					Box::new(clear::glob::pull::ClearGlob::try_new(glob, root_dir.clone())?),
 					Box::new(archive::gzip::pull::Pull::new(root_dir.clone())),
 				]);
 
