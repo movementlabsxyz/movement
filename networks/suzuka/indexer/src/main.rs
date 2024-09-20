@@ -22,7 +22,7 @@ fn main() -> Result<(), anyhow::Error> {
 		.try_get_or_create_config_from_json::<maptos_execution_util::config::Config>()?;
 
 	let health_check_url = format!(
-		"http://{}:{}",
+		"{}:{}",
 		maptos_config.indexer.maptos_indexer_grpc_healthcheck_hostname,
 		maptos_config.indexer.maptos_indexer_grpc_healthcheck_port
 	);

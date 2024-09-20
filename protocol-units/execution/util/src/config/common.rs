@@ -113,7 +113,7 @@ env_default!(
 	"127.0.0.1".to_string()
 );
 
-env_default!(default_maptos_indexer_healthcheck_port, "MAPTOS_INDEXER_HEALTHCHECK_PORT", u16, 8075);
+env_default!(default_maptos_indexer_healthcheck_port, "MAPTOS_INDEXER_HEALTHCHECK_PORT", u16, 8084);
 
 env_default!(
 	default_maptos_indexer_grpc_inactivity_timeout,

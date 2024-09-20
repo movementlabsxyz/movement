@@ -6,7 +6,7 @@ use std::future::Future;
 
 pub fn run_service(url: String) -> impl Future<Output = Result<(), Error>> + Send {
 	let route = Route::new().at("/health", get(health));
-	tracing::info!("Start health check access on {url} .");
+	tracing::info!("Start health check access on :{url} .");
 	Server::new(TcpListener::bind(url)).run(route).map_err(Into::into)
 }
 
