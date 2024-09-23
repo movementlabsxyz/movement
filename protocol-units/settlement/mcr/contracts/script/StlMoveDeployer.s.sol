@@ -55,7 +55,11 @@ contract StlMoveDeployer is Helper {
     function _upgradeStlMove() internal {
         console.log("STL: upgrading");
         stlMoveToken newStlMoveImplementation = new stlMoveToken();
-        timelock.schedule(
+        string memory json = "safeCall";
+
+        // Prepare the data for the upgrade
+        bytes memory data = abi.encodeWithSignature(
+            "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
             address(deployment.stlMoveAdmin),
             0,
             abi.encodeWithSignature(
@@ -68,7 +72,21 @@ contract StlMoveDeployer is Helper {
             bytes32(0),
             block.timestamp + 1 days
         );
-        console.log("STL: upgrade scheduled");
-    }
+        
+        // Serialize the relevant fields into JSON format
+        json.serialize("to", address(timelock));
+        string memory zero = "0";
+        json.serialize("value", zero);
+        json.serialize("data", data);
+        string memory operation = "OperationType.Call";
+        json.serialize("chainId", chainId);
+        json.serialize("safeAddress", deployment.movementLabsSafe);
+        string memory serializedData = json.serialize("operation", operation);
 
+        // Log the serialized JSON for debugging
+        console.log("STL upgrade json |start|", serializedData, "|end|");
+
+        // Write the serialized data to a file
+        vm.writeFile(string.concat(root, upgradePath, "stlMove.json"), serializedData);
+    }
 }

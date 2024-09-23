@@ -77,18 +77,38 @@ contract MOVETokenDeployer is Helper {
     function _upgradeMove() internal {
         console.log("MOVE: upgrading");
         MOVEToken newMoveImplementation = new MOVEToken();
-        timelock.schedule(
-            deployment.moveAdmin,
+        string memory json = "safeCall";
+        
+        // Prepare the data for the upgrade
+        bytes memory data = abi.encodeWithSignature(
+            "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
+            address(deployment.moveAdmin),
             0,
             abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",
-                deployment.move,
+                address(deployment.move),
                 address(newMoveImplementation),
                 abi.encodeWithSignature("initialize(address)", deployment.movementFoundationSafe)
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + config.minDelay
+            config.minDelay
         );
+        
+        // Serialize the relevant fields into JSON format
+        json.serialize("to", address(timelock));
+        string memory zero = "0";
+        json.serialize("value", zero);
+        json.serialize("data", data);
+        string memory operation = "OperationType.Call";
+        json.serialize("chainId", chainId);
+        json.serialize("safeAddress", deployment.movementLabsSafe);
+        string memory serializedData = json.serialize("operation", operation);
+
+        // Log the serialized JSON for debugging
+        console.log("MOVE upgrade json |start|", serializedData, "|end|");
+
+        // Write the serialized data to a file
+        vm.writeFile(string.concat(root, upgradePath, "move.json"), serializedData);
     }
 }

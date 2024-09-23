@@ -92,7 +92,9 @@ contract MultisigMOVETokenDeployer is Helper {
         console.log("proxy", deployment.move);
         console.log("admin", deployment.moveAdmin);
     }
+    
 
+    // MULTISIG WILL NEVER BE USED WITHIN THE CONTRACT PIPELINE
     function _upgradeMultisigMove() internal {
         console.log("MOVE: upgrading");
         MOVEToken newMoveImplementation = new MOVEToken();
