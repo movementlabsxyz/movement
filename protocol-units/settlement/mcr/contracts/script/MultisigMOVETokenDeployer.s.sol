@@ -67,11 +67,11 @@ contract MultisigMOVETokenDeployer is Helper {
             abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe))
         );
         vm.recordLogs();
-
-
         // craete bytecode the MOVE token proxy using CREATE3
         bytes memory bytecode = abi.encodeWithSignature("deploy(bytes32,bytes)", salt, create3Bytecode);
-        bytes32 digest = keccak256(bytecode);
+        bytes32 digest = Safe(payable(deployment.movementFoundationSafe)).getTransactionHash(
+            address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), 0
+        );
 
         // three signers for the deployment (this is mocked and only works in foundry chain)
         uint256[] memory signers = new uint256[](3);
@@ -84,11 +84,13 @@ contract MultisigMOVETokenDeployer is Helper {
         Safe(payable(deployment.movementFoundationSafe)).execTransaction(
             address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), signatures
         );
-        // moveProxy = new TransparentUpgradeableProxy();
+        // moveProxy = 
         console.log("MOVEToken deployment records:");
-        console.log("proxy", address(moveProxy));
-        deployment.move = address(moveProxy);
-        deployment.moveAdmin = _storeAdminDeployment();
+        Vm.Log[] memory logs = vm.getRecordedLogs();
+        deployment.move = logs[0].emitter;
+        deployment.moveAdmin = logs[logs.length-3].emitter;
+        console.log("proxy", deployment.move);
+        console.log("admin", deployment.moveAdmin);
     }
 
     function _upgradeMultisigMove() internal {
