@@ -813,7 +813,7 @@ impl MovementClient {
 
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
-			COUNTERPARTY_MODULE_NAME,
+			"atomic_bridge_counterparty",
 			"set_time_lock_duration",
 			Vec::new(),
 			args,
