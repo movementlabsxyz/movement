@@ -31,10 +31,7 @@ impl BridgeContractInitiatorMonitoring
 }
 
 impl MovementInitiatorMonitoring<MovementAddress, MovementHash> {
-	pub async fn build(
-		rest_url: &str,
-		listener: UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn build(rest_url: &str) -> Result<Self, anyhow::Error> {
 		todo!()
 	}
 }
@@ -157,10 +154,7 @@ impl BridgeContractCounterpartyMonitoring
 }
 
 impl MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
-	pub async fn build(
-		rest_url: &str,
-		listener: mpsc::UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn build(rest_url: &str) -> Result<Self, anyhow::Error> {
 		todo!()
 	}
 }

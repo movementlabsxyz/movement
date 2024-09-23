@@ -24,6 +24,7 @@ use bridge_shared::{
 		SmartContractCounterpartyEvent,
 	},
 };
+use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
 
@@ -38,10 +39,7 @@ impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, Et
 }
 
 impl EthInitiatorMonitoring<EthAddress, EthHash> {
-	pub async fn build(
-		rpc_url: &str,
-		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn build(rpc_url: &str) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
 
@@ -57,8 +55,8 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 		let mut sub_stream = sub.into_stream();
 
 		// Spawn a task to forward events to the listener channel
-		let (sender, _) =
-			tokio::sync::mpsc::unbounded_channel::<EthChainEvent<EthAddress, EthHash>>();
+		let (mut sender, listener) =
+			futures::channel::mpsc::unbounded::<EthChainEvent<EthAddress, EthHash>>();
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
@@ -68,7 +66,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 					})
 					.expect("Failed to decode log data");
 				let event = EthChainEvent::InitiatorContractEvent(Ok(event.into()));
-				if sender.send(event).is_err() {
+				if sender.send(event).await.is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
 				}
@@ -169,10 +167,7 @@ impl Stream for EthCounterpartyMonitoring<EthAddress, EthHash> {
 }
 
 impl EthCounterpartyMonitoring<EthAddress, EthHash> {
-	pub async fn build(
-		rpc_url: &str,
-		listener: UnboundedReceiver<EthChainEvent<EthAddress, EthHash>>,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn build(rpc_url: &str) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
 
@@ -189,8 +184,8 @@ impl EthCounterpartyMonitoring<EthAddress, EthHash> {
 		let mut sub_stream = sub.into_stream();
 
 		// Spawn a task to forward events to the listener channel
-		let (sender, _) =
-			tokio::sync::mpsc::unbounded_channel::<EthChainEvent<EthAddress, EthHash>>();
+		let (mut sender, listener) =
+			futures::channel::mpsc::unbounded::<EthChainEvent<EthAddress, EthHash>>();
 
 		tokio::spawn(async move {
 			while let Some(log) = sub_stream.next().await {
@@ -200,7 +195,7 @@ impl EthCounterpartyMonitoring<EthAddress, EthHash> {
 					})
 					.expect("Failed to decode log data");
 				let event = EthChainEvent::CounterpartyContractEvent(Ok(event.into()));
-				if sender.send(event).is_err() {
+				if sender.send(event).await.is_err() {
 					tracing::error!("Failed to send event to listener channel");
 					break;
 				}

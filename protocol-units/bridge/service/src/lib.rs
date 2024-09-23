@@ -53,25 +53,19 @@ pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBr
 
 	let eth_client = EthClient::new(config).await.expect("Faile to creaet EthClient");
 	let temp_rpc_url = "http://localhost:8545";
-	let eth_initiator_monitoring =
-		EthInitiatorMonitoring::build(temp_rpc_url.clone(), ethereum_service.add_event_listener())
-			.await
-			.expect("Failed to create EthInitiatorMonitoring");
-	let eth_conterparty_monitoring =
-		EthCounterpartyMonitoring::build(temp_rpc_url, ethereum_service.add_event_listener())
-			.await
-			.expect("Failed to create EthCounterpartyMonitoring");
+	let eth_initiator_monitoring = EthInitiatorMonitoring::build(temp_rpc_url.clone())
+		.await
+		.expect("Failed to create EthInitiatorMonitoring");
+	let eth_conterparty_monitoring = EthCounterpartyMonitoring::build(temp_rpc_url)
+		.await
+		.expect("Failed to create EthCounterpartyMonitoring");
 
-	let movement_counterparty_monitoring = MovementCounterpartyMonitoring::build(
-		"localhost:8080",
-		movement_service.add_event_listener(),
-	)
-	.await
-	.expect("Failed to create MovementCounterpartyMonitoring");
-	let movement_initiator_monitoring =
-		MovementInitiatorMonitoring::build("localhost:8080", movement_service.add_event_listener())
-			.await
-			.expect("Failed to create MovementInitiatorMonitoring");
+	let movement_counterparty_monitoring = MovementCounterpartyMonitoring::build("localhost:8080")
+		.await
+		.expect("Failed to create MovementCounterpartyMonitoring");
+	let movement_initiator_monitoring = MovementInitiatorMonitoring::build("localhost:8080")
+		.await
+		.expect("Failed to create MovementInitiatorMonitoring");
 
 	//@TODO: use json config instead of build_for_test
 	let config = MovementConfig::build_for_test();

@@ -66,8 +66,8 @@ impl EthereumChain {
 	pub async fn new(name: impl Into<String>, rpc_url: &str) -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
-		let (_, event_receiver_1) = mpsc::unbounded();
-		let (_, event_receiver_2) = mpsc::unbounded();
+		//	let (_, event_receiver_1) = mpsc::unbounded();
+		//		let (_, event_receiver_2) = mpsc::unbounded();
 		let (event_sender, event_receiver) = mpsc::unbounded();
 		let event_listeners = Vec::new();
 
@@ -77,11 +77,11 @@ impl EthereumChain {
 			accounts,
 			events,
 			initiator_contract: EthSmartContractInitiator::new(),
-			initiator_monitoring: EthInitiatorMonitoring::build(rpc_url, event_receiver_1)
+			initiator_monitoring: EthInitiatorMonitoring::build(rpc_url)
 				.await
 				.expect("Failed to create EthInitiatorMonitoring"),
 			counterparty_contract: EthSmartContractCounterparty::new(),
-			counterparty_monitoring: EthCounterpartyMonitoring::build(rpc_url, event_receiver_2)
+			counterparty_monitoring: EthCounterpartyMonitoring::build(rpc_url)
 				.await
 				.expect("Failed to create EthCounterpartyMonitoring"),
 			transaction_sender: event_sender,
