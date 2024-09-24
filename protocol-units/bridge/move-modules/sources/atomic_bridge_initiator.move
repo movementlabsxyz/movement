@@ -227,6 +227,14 @@ module atomic_bridge::atomic_bridge_initiator {
         config.time_lock_duration
     }
 
+    public entry fun set_time_lock_duration(resource: &signer, time_lock_duration: u64) acquires BridgeConfig {
+        let config = borrow_global_mut<BridgeConfig>(signer::address_of(resource));
+        // Check if the signer is the deployer (the original initializer)
+        assert!(signer::address_of(resource) == config.bridge_module_deployer, EINCORRECT_SIGNER);
+
+        config.time_lock_duration = time_lock_duration;
+    }
+
     #[test_only]
     public fun init_test(
         sender: &signer,
@@ -262,7 +270,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(aptos_std::smart_table::length(&store.transfers) == 0, 100);
         assert!(store.nonce == 0, 101);
     }
-
+    
     #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
     public fun test_initiate_bridge_transfer(
         sender: &signer,
@@ -314,6 +322,23 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == INITIALIZED, 205);
     }
 
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    public fun test_get_time_lock_duration(
+        sender: &signer,
+        creator: &signer,
+        aptos_framework: &signer,
+        atomic_bridge: &signer,
+    ) acquires BridgeConfig {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        moveth::init_for_test(creator);
+        let bridge_addr = signer::address_of(atomic_bridge);
+        account::create_account_if_does_not_exist(bridge_addr);
+
+        init_module(atomic_bridge);
+
+        let time_lock_duration = get_time_lock_duration(atomic_bridge);
+        assert!(time_lock_duration == 48 * 60 * 60, 0);
+    }
     
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
     #[expected_failure (abort_code = EINSUFFICIENT_BALANCE, location = Self)]

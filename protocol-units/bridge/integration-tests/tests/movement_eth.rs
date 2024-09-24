@@ -178,11 +178,14 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		let ledger_info = movement_client.rest_client().get_ledger_information().await?;
 		println!("Ledger info: {:?}", ledger_info);
 
+		let active_timelock = movement_client.initiator_time_lock_duration().await?;
+		println!("Active timelock: {:?}", active_timelock);
+
 		// Set the timelock to 1 second for testing
-		movement_client
-			.counterparty_set_timelock(1)
-			.await
-			.expect("Failed to set timelock");
+		movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
+
+		let active_timelock = movement_client.initiator_time_lock_duration().await?;
+		println!("Active timelock: {:?}", active_timelock);
 
 		test_utils::initiate_bridge_transfer_helper(
 			&mut movement_client,

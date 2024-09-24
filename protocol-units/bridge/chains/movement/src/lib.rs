@@ -830,7 +830,9 @@ impl MovementClient {
 		Ok(())
 	}
 
-	pub async fn get_time_lock_duration(&mut self) -> Result<u64, BridgeContractCounterpartyError> {
+	pub async fn counterparty_time_lock_duration(
+		&mut self,
+	) -> Result<u64, BridgeContractCounterpartyError> {
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
@@ -857,6 +859,63 @@ impl MovementClient {
 
 		let values = response.inner();
 		let timelock = utils::val_as_u64(values.first())?;
+		Ok(timelock)
+	}
+
+	pub async fn initiator_set_timelock(
+		&mut self,
+		time_lock: u64,
+	) -> Result<(), BridgeContractInitiatorError> {
+		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+
+		let payload = utils::make_aptos_payload(
+			self.counterparty_address,
+			"atomic_bridge_initiator",
+			"set_time_lock_duration",
+			Vec::new(),
+			args,
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractInitiatorError::CallError);
+
+		Ok(())
+	}
+
+	pub async fn initiator_time_lock_duration(
+		&mut self,
+	) -> Result<u64, BridgeContractInitiatorError> {
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.signer(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_initiator")
+							.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("get_time_lock_duration")
+						.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::CallError)?;
+
+		let values = response.inner();
+		let timelock = utils::val_as_u64_initiator(values.first())?;
 		Ok(timelock)
 	}
 }
