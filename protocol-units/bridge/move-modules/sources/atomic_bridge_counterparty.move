@@ -95,11 +95,11 @@ module atomic_bridge::atomic_bridge_counterparty {
         config.time_lock_duration
     }
 
-    public entry fun set_time_lock_duration(resource: &signer, time_lock_duration: u64) acquires BridgeConfig {
+    public entry fun set_time_lock_duration(caller: &signer, time_lock_duration: u64) acquires BridgeConfig {
         let config = borrow_global_mut<BridgeConfig>(@atomic_bridge);
 
         // Check if the signer is the deployer (the original initializer)
-        assert!(signer::address_of(resource) == config.bridge_module_deployer, EINCORRECT_SIGNER);
+        assert!(signer::address_of(caller) == config.bridge_module_deployer, EINCORRECT_SIGNER);
 
         config.time_lock_duration = time_lock_duration;
     }

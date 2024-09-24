@@ -169,7 +169,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 	let test_result = async {
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-		let _ = movement_client.publish_for_test();
+		movement_client.publish_for_test()?;
 
 		let rest_client = movement_client.rest_client();
 		let coin_client = CoinClient::new(&rest_client);

@@ -510,13 +510,9 @@ impl BridgeContractCounterparty for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::LockTransferError);
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::LockTransferError)?;
 
 		Ok(())
 	}
@@ -539,13 +535,9 @@ impl BridgeContractCounterparty for MovementClient {
 			args2,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError)?;
 
 		Ok(())
 	}
@@ -562,13 +554,10 @@ impl BridgeContractCounterparty for MovementClient {
 			Vec::new(),
 			args3,
 		);
-		let result = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::AbortTransferError)?;
 
 		Ok(())
 	}
@@ -679,13 +668,9 @@ impl BridgeContractInitiator for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractInitiatorError::InitiateTransferError)?;
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::InitiateTransferError)?;
 
 		Ok(())
 	}
@@ -818,13 +803,11 @@ impl MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::CallError);
+		println!("payload {:?}", &payload);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CallError)?;
 
 		Ok(())
 	}
@@ -877,15 +860,9 @@ impl MovementClient {
 			args,
 		);
 
-		let res = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractInitiatorError::CallError);
-
-		println!("Set time lock result: {:?}", &res);
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::CallError)?;
 
 		Ok(())
 	}
