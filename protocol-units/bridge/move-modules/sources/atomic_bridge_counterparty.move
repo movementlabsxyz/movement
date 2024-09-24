@@ -95,13 +95,12 @@ module atomic_bridge::atomic_bridge_counterparty {
         config.time_lock_duration
     }
 
-    public entry fun set_time_lock_duration(resource: &signer, time_lock_duration: u64) acquires BridgeConfig {
-        let config = borrow_global_mut<BridgeConfig>(@atomic_bridge);
-
+    public entry fun set_time_lock_duration(origin: &signer, time_lock_duration: u64) acquires BridgeConfig {
+        let config = borrow_global_mut<BridgeConfig>(@resource_addr);
         // Check if the signer is the deployer (the original initializer)
-        assert!(signer::address_of(resource) == config.bridge_module_deployer, EINCORRECT_SIGNER);
+        assert!(signer::address_of(origin) == @origin_addr, EINCORRECT_SIGNER);
 
-        config.time_lock_duration = time_lock_duration;
+        config.counterparty_time_lock_duration = time_lock_duration;
     }
 
     public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {

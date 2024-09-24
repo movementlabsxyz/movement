@@ -570,7 +570,6 @@ impl BridgeContractCounterparty for MovementClient {
 		.await
 		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 
-		println!("Abort bridge transfer result: {:?}", &result);
 		Ok(())
 	}
 
