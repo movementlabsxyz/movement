@@ -59,7 +59,7 @@ impl RocksdbMempool {
 	}
 
 	fn internal_get_mempool_transaction_key(
-		db: Arc<DB>,
+		db: &DB,
 		transaction_id: transaction::Id,
 	) -> Result<Option<Vec<u8>>, Error> {
 		let cf_handle = db
@@ -76,16 +76,16 @@ impl RocksdbMempool {
 		let db = self.db.clone();
 		let transaction_id = transaction_id.clone();
 		tokio::task::spawn_blocking(move || {
-			Self::internal_get_mempool_transaction_key(db, transaction_id)
+			Self::internal_get_mempool_transaction_key(&db, transaction_id)
 		})
 		.await?
 	}
 
 	fn internal_has_mempool_transaction(
-		db: Arc<DB>,
+		db: &DB,
 		transaction_id: transaction::Id,
 	) -> Result<bool, Error> {
-		let key = Self::internal_get_mempool_transaction_key(db.clone(), transaction_id)?;
+		let key = Self::internal_get_mempool_transaction_key(&db, transaction_id)?;
 		match key {
 			Some(k) => {
 				let cf_handle = db
@@ -105,7 +105,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	) -> Result<bool, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
-			Self::internal_has_mempool_transaction(db, transaction_id)
+			Self::internal_has_mempool_transaction(&db, transaction_id)
 		})
 		.await?
 	}
@@ -124,8 +124,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
 			for transaction in transactions {
-				if Self::internal_has_mempool_transaction(db.clone(), transaction.transaction.id())?
-				{
+				if Self::internal_has_mempool_transaction(&db, transaction.transaction.id())? {
 					continue;
 				}
 
