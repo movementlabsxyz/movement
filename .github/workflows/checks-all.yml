@@ -103,6 +103,8 @@ jobs:
     - name: Run Suzuka Full Node Tests Against Local ETH and Local Celestia
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       run: |
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test-followers -t=false"
 
