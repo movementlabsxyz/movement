@@ -61,11 +61,11 @@ async fn main() -> Result<(), anyhow::Error> {
 				if let Some(sync_str) = config.syncing.movement_sync.clone() {
 					let mut leader_follower_split = sync_str.split("::");
 					let is_leader = leader_follower_split.next().context(
-						"MOVEMENT_SYNC environment variable must be in the format <leader>::<follower>",
+						"MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>",
 					)? == "leader";
 
 					let mut bucket_arrow_glob = leader_follower_split.next().context(
-						"MOVEMENT_SYNC environment variable must be in the format <leader>::<follower>",
+						"MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>",
 					)?.split("<=>");
 
 					let bucket = bucket_arrow_glob.next().context(

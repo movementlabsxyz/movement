@@ -18,7 +18,7 @@ processes:
 
   setup-follower-1:
     command: |
-      sleep 30
+      sleep 180
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
@@ -34,7 +34,7 @@ processes:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 180
       exec:
         command: echo "true"
 
@@ -45,7 +45,7 @@ processes:
     depends_on:
       m1-da-light-node:
         condition: process_healthy
-      setup-follower-2:
+      setup-follower-1:
         condition: process_healthy
       suzuka-full-node:
         condition: process_healthy
@@ -56,7 +56,7 @@ processes:
 
   setup-follower-2:
     command: |
-      sleep 30
+      sleep 180
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
@@ -72,7 +72,7 @@ processes:
       suzuka-full-node:
         condition: process_healthy
     readiness_probe:
-      initial_delay_seconds: 10
+      initial_delay_seconds: 180
       exec:
         command: echo "true"
 

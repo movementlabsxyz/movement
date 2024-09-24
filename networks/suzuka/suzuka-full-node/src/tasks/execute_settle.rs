@@ -18,7 +18,7 @@ use futures::{future::Either, stream};
 use suzuka_config::execution_extension;
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
-use tracing::{debug, error, info, info_span, warn, Instrument};
+use tracing::{debug, error, info, info_span, Instrument};
 
 pub struct Task<E, S> {
 	executor: E,
@@ -70,11 +70,11 @@ where
 		// (b) requires modifications to Aptos Core.
 		self.executor.rollover_genesis_block().await?;
 
+		let synced_height = self.da_db.get_synced_height().await?;
+		info!("Synced height: {:?}", synced_height);
 		let mut blocks_from_da = self
 			.da_light_node_client
-			.stream_read_from_height(StreamReadFromHeightRequest {
-				height: self.da_db.get_synced_height().await?,
-			})
+			.stream_read_from_height(StreamReadFromHeightRequest { height: synced_height })
 			.await?
 			.into_inner();
 
@@ -121,7 +121,7 @@ where
 
 		// check if the block has already been executed
 		if self.da_db.has_executed_block(block_id.clone()).await? {
-			warn!("Block already executed: {:#?}. It will be skipped", block_id);
+			info!("Block already executed: {:#?}. It will be skipped", block_id);
 			return Ok(());
 		}
 
@@ -188,7 +188,7 @@ where
 			match self.execute_block(block.clone(), block_timestamp).await {
 				Ok(commitment) => return Ok(commitment),
 				Err(e) => {
-					warn!("Failed to execute block: {:?}. Retrying", e);
+					info!("Failed to execute block: {:?}. Retrying", e);
 					block_timestamp += self.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}

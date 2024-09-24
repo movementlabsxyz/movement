@@ -12,6 +12,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
+use tracing::warn;
 
 use std::path::Path;
 
@@ -24,6 +25,8 @@ fn genesis_change_set_and_validators(
 	let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
 	let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 	let validators = &validators_;
+
+	warn!("Genesis validators: {:?}", validators);
 
 	// This number should not exceed u64::MAX / 1_000_000_000
 	// to avoid overflowing calculations in aptos-vm-genesis.
@@ -79,7 +82,7 @@ pub fn maybe_bootstrap_empty_db(
 	match db_rw.reader.get_latest_ledger_info_option()? {
 		Some(ledger_info) => {
 			// context exists
-			tracing::info!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
+			tracing::warn!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
 		}
 		None => {
 			// context does not exist

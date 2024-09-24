@@ -9,6 +9,7 @@ use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
 use maptos_execution_util::config::Config;
+use tracing::warn;
 
 use anyhow::Context as _;
 use futures::channel::mpsc as futures_mpsc;
@@ -31,6 +32,9 @@ impl Executor {
 			maptos_config.chain.maptos_chain_id.clone(),
 			&maptos_config.chain.maptos_private_key.public_key(),
 		)?;
+
+		warn!("Validator signer is: {}", signer.public_key());
+
 		Ok(Self {
 			block_executor: Arc::new(BlockExecutor::new(db.clone())),
 			signer,
