@@ -19,14 +19,14 @@ interface Config {
 }
 
 async function main() {
-  const private_key = process.env.AGENT_PRIVATE_KEY;
+  const private_key = process.env.PRIVATE_KEY;
   if (!private_key) {
     throw new Error("PRIVATE_KEY is required");
   }
 
   const program = new Command();
 
-  program.option("-c, --contract <string>", "contract name");
+  program.option("-c, --contract <string>", "contract name").option("-u, --url <string>", "rpc url");
   program.parse(process.argv);
 
   const rawData = fs.readFileSync(
@@ -37,7 +37,7 @@ async function main() {
 
   const config: Config = {
     CHAIN_ID: jsonData.chainId as bigint,
-    RPC_URL: "https://sepolia.gateway.tenderly.co",
+    RPC_URL: program.opts().url || "https://sepolia.gateway.tenderly.co",
     SIGNER_ADDRESS_PRIVATE_KEY: private_key,
     SAFE_ADDRESS: jsonData.safeAddress,
   };

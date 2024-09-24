@@ -109,7 +109,7 @@ contract MultisigMOVETokenDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + config.minDelay
+            config.minDelay
         );
     }
 }

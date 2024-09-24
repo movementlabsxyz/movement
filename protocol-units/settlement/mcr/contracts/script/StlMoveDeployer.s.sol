@@ -69,23 +69,9 @@ contract StlMoveDeployer is Helper {
             ),
             bytes32(0),
             bytes32(0),
-            block.timestamp + 1 days
+            config.minDelay
         );
         
-        // Serialize the relevant fields into JSON format
-        json.serialize("to", address(timelock));
-        string memory zero = "0";
-        json.serialize("value", zero);
-        json.serialize("data", data);
-        string memory operation = "OperationType.Call";
-        json.serialize("chainId", chainId);
-        json.serialize("safeAddress", deployment.movementLabsSafe);
-        string memory serializedData = json.serialize("operation", operation);
-
-        // Log the serialized JSON for debugging
-        console.log("STL upgrade json |start|", serializedData, "|end|");
-
-        // Write the serialized data to a file
-        vm.writeFile(string.concat(root, upgradePath, "stlmove.json"), serializedData);
+        _proposeUpgrade(data, "stlmove.json");
     }
 }

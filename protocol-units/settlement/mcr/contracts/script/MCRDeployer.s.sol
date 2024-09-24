@@ -77,17 +77,7 @@ contract MCRDeployer is Helper {
             bytes32(0),
             config.minDelay
         );
-        json.serialize("to", address(timelock));
-        string memory zero = "0";
-        json.serialize("value", zero);
-        json.serialize("data", data);
-        string memory operation = "OperationType.Call";
-        json.serialize("chainId", chainId);
-        json.serialize("safeAddress", deployment.movementLabsSafe);
-        string memory serializedData = json.serialize("operation", operation);
-
-        console.log("MCR upgrade json |start|", serializedData, "|end|");
-        vm.writeFile(string.concat(root, upgradePath, "mcr.json"), serializedData);
+        _proposeUpgrade(data, "mcr.json");
     }
 
 }
