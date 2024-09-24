@@ -240,6 +240,7 @@ contract Helper is Script {
     }
 
     function _proposeUpgrade(bytes memory data, string memory fileName) internal {
+        string memory json = "safeCall";
         // Serialize the relevant fields into JSON format
         json.serialize("to", address(timelock));
         string memory zero = "0";

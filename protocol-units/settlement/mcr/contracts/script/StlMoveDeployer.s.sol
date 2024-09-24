@@ -5,11 +5,8 @@ import {stlMoveToken} from "../src/token/stlMoveToken.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { Helper } from "./helpers/Helper.sol";
-import { Vm } from "forge-std/Vm.sol";
-import {stdJson} from "forge-std/StdJson.sol";
 
 contract StlMoveDeployer is Helper {
-        using stdJson for string;
 
     function run() external virtual {
         
@@ -54,8 +51,6 @@ contract StlMoveDeployer is Helper {
     function _upgradeStlMove() internal {
         console.log("STL: upgrading");
         stlMoveToken newStlMoveImplementation = new stlMoveToken();
-        string memory json = "safeCall";
-
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

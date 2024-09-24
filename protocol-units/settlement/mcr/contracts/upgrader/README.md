@@ -18,18 +18,28 @@ The Upgrader is a script designed to automate the upgrade process for settlement
 
 ## Script Breakdown
 
-### Bash Script (`upgrade.sh`)
+### Bash Script (`propose.sh`)
  s
-The following steps are executed in the `upgrade.sh` script:
+The following steps are executed in the `propose.sh` script:
 
-1. Parse the provided contract name using the `-c` flag.
-2. Ensure that the contract name is supplied; otherwise, exit with an error.
-3. Generate the transaction data needed for upgrading the contract using `forge script`, pointing to the appropriate deployer file for the contract.
+1. Parse the provided contract name using the `-c` flag and the fork url using the `-u` flag.
+2. Ensure that the contract name and url are supplied; otherwise, exits with an error.
+3. Generate the transaction data needed for upgrading the contract using `forge script`, pointing to the appropriate deployer file for the contract on the correct network depending on the provided url.
 4. Convert the contract name to lowercase (required for consistency).
-5. Execute the TypeScript upgrader script (`index.js`), passing the lowercase contract name.
+5. Execute the TypeScript upgrader script (`propose.ts`), passing the lowercase contract name.
 6. The upgrader script sends the `proposeTransaction` request to the Safe API.
+
+
+### Bash Script (`accept.sh`)
+
+1. 
 
 ### Example of Bash Script Execution
 
 ```bash
-./upgrade.sh -c ExampleContract
+bash propose.sh -c ExampleContract -u https://example.url
+```
+
+```bash
+bash accept.sh -c ExampleContract -u https://example.url
+```

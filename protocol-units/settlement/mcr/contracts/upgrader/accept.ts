@@ -19,7 +19,7 @@ interface Config {
 }
 
 async function main() {
-  const private_key = process.env.AGENT_PRIVATE_KEY;
+  const private_key = process.env.PRIVATE_KEY;
   if (!private_key) {
     throw new Error("PRIVATE_KEY is required");
   }
@@ -80,7 +80,7 @@ async function main() {
   console.log("- Sender:", signerAddress);
   console.log("- Sender signature:", signature.data);
 
-  // Should the upgrade/contract.json file be deleted?
+  // At what point should the upgrade/contract.json file be deleted?
 }
 
 main();

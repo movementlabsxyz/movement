@@ -5,11 +5,8 @@ import {MovementStaking} from "../src/staking/MovementStaking.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { Helper } from "./helpers/Helper.sol";
-import { Vm } from "forge-std/Vm.sol";
-import {stdJson} from "forge-std/StdJson.sol";
 
 contract StakingDeployer is Helper {
-        using stdJson for string;
 
     function run() external virtual {
         
@@ -54,8 +51,6 @@ contract StakingDeployer is Helper {
     function _upgradeStaking() internal {
     console.log("STAKING: upgrading");
     MovementStaking newStakingImplementation = new MovementStaking();
-    string memory json = "safeCall";
-
     // Prepare the data for the upgrade
     bytes memory data = abi.encodeWithSignature(
         "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

@@ -4,9 +4,7 @@ import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import { Helper } from "./helpers/Helper.sol";
-import {Vm} from "forge-std/Vm.sol";
 import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
-import {stdJson} from "forge-std/StdJson.sol";
 
 // Script intended to be used for deploying the MOVE token from an EOA
 // Utilizies existing safes and sets them as proposers and executors.
@@ -14,7 +12,6 @@ import {stdJson} from "forge-std/StdJson.sol";
 // The whole supply is minted to the Movement Foundation Safe.
 // The script also verifies that the token has the correct balances, decimals and permissions.
 contract MOVETokenDeployer is Helper {
-        using stdJson for string;
     // COMMANDS
     // mainnet
     // forge script MOVETokenDeployer --fork-url https://eth.llamarpc.com --verify --etherscan-api-key ETHERSCAN_API_KEY
@@ -76,9 +73,7 @@ contract MOVETokenDeployer is Helper {
 
     function _upgradeMove() internal {
         console.log("MOVE: upgrading");
-        MOVEToken newMoveImplementation = new MOVEToken();
-        string memory json = "safeCall";
-        
+        MOVEToken newMoveImplementation = new MOVEToken();        
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

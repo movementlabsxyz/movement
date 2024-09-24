@@ -9,7 +9,6 @@ import { StlMoveDeployer } from "./StlMoveDeployer.s.sol";
 import { MOVETokenDeployer } from "./MOVETokenDeployer.s.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import { Vm, VmSafe } from "forge-std/Vm.sol";
 
 contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer {
 
