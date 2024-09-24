@@ -174,6 +174,16 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 			harness.movement_client_mut().expect("Failed to get MovementClient");
 		let sender_address = movement_client.signer().address();
 		test_utils::fund_and_check_balance(&mut movement_client, 100_000_000_000).await?;
+
+		let ledger_info = movement_client.rest_client().get_ledger_information().await?;
+		println!("Ledger info: {:?}", ledger_info);
+
+		// Set the timelock to 1 second for testing
+		movement_client
+			.counterparty_set_timelock(1)
+			.await
+			.expect("Failed to set timelock");
+
 		test_utils::initiate_bridge_transfer_helper(
 			&mut movement_client,
 			args.initiator.0,

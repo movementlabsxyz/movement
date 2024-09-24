@@ -17,8 +17,6 @@ module atomic_bridge::atomic_bridge_counterparty {
     const COMPLETED: u8 = 2;
     const CANCELLED: u8 = 3;
 
-    const COUNTERPARTY_TIME_LOCK_DUARTION: u64 = 24 * 60 * 60; // 24 hours in seconds
-
     const EINCORRECT_SIGNER: u64 = 1;
     const EWRONG_PREIMAGE: u64 = 2;
     const ETRANSFER_NOT_LOCKED: u64 = 3;
@@ -92,6 +90,11 @@ module atomic_bridge::atomic_bridge_counterparty {
         });
     }
 
+    public fun get_time_lock_duration(resource: &signer): u64 acquires BridgeConfig {
+        let config = borrow_global<BridgeConfig>(signer::address_of(resource));
+        config.counterparty_time_lock_duration
+    }
+
     public entry fun set_time_lock_duration(resource: &signer, time_lock_duration: u64) acquires BridgeConfig {
         let config = borrow_global_mut<BridgeConfig>(signer::address_of(resource));
         // Check if the signer is the deployer (the original initializer)
@@ -99,6 +102,7 @@ module atomic_bridge::atomic_bridge_counterparty {
 
         config.counterparty_time_lock_duration = time_lock_duration;
     }
+
 
     public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {
         let config = borrow_global<BridgeConfig>(@atomic_bridge);
@@ -213,21 +217,20 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
     }
 
-    #[test_only]
-    public fun set_up_test(origin_account: &signer, resource_addr: &signer, time_lock_duration: u64) {
+     #[test_only]
+    public fun set_up_test(origin_account: &signer, resource_addr: &signer) {
+
         create_account_for_test(signer::address_of(origin_account));
 
         // create a resource account from the origin account, mocking the module publishing process
         resource_account::create_resource_account(origin_account, vector::empty<u8>(), vector::empty<u8>());
 
-        init_module(resource_addr, time_lock_duration);  // Pass the time lock duration here
+        init_module(resource_addr);
     }
-
 
     #[test (origin_account = @origin_addr, resource = @resource_addr, aptos_framework = @0x1)]
     public entry fun test_set_up_test(origin_account: &signer, resource: signer, aptos_framework: signer) {
-        let time_lock_duration = 24 * 60 * 60; // 24 hours
-        set_up_test(origin_account, &resource, time_lock_duration);
+        set_up_test(origin_account, &resource);
     }
 
     use std::debug;
@@ -270,8 +273,9 @@ module atomic_bridge::atomic_bridge_counterparty {
         // Verify that the transfer is stored in pending_transfers
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+        let time_lock_duration = borrow_global<BridgeConfig>(@atomic_bridge).counterparty_time_lock_duration;
 
-        let expected_time_lock = COUNTERPARTY_TIME_LOCK_DUARTION;
+        let expected_time_lock =  time_lock_duration;
 
         assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
         assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);

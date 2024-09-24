@@ -1,4 +1,4 @@
-use tokio::time::{sleep, Duration}; // Add these imports
+use tokio::time::{sleep, Duration};
 
 use alloy::{
 	node_bindings::Anvil,
@@ -6,22 +6,17 @@ use alloy::{
 	providers::Provider,
 };
 use anyhow::Result;
-
 use aptos_sdk::coin_client::CoinClient;
 use bridge_integration_tests::{EthToMovementCallArgs, TestHarness};
 use bridge_shared::{
 	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
 	types::{
 		Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-		RecipientAddress, TimeLock,
+		RecipientAddress,
 	},
 };
-
 use ethereum_bridge::types::EthAddress;
-
 use tokio::{self};
-
-use tracing_subscriber;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
