@@ -1,4 +1,4 @@
-use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
+use mempool_util::MempoolTransactionOperations;
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{
 	block::{self, Block},
@@ -10,7 +10,7 @@ use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
 #[derive(Clone)]
-pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
+pub struct Memseq<T: MempoolTransactionOperations> {
 	mempool: T,
 	// this value should not be changed after initialization
 	block_size: u32,
@@ -19,7 +19,7 @@ pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
 	building_time_ms: u64,
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
+impl<T: MempoolTransactionOperations> Memseq<T> {
 	pub fn new(
 		mempool: T,
 		block_size: u32,
@@ -62,7 +62,7 @@ impl Memseq<RocksdbMempool> {
 	}
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
+impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
 		self.mempool.add_transactions(transactions).await?;
 		Ok(())
@@ -457,24 +457,6 @@ pub mod test {
 
 		async fn pop_transaction(&self) -> Result<Option<Transaction>, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock pop_transaction"))
-		}
-	}
-
-	impl MempoolBlockOperations for MockMempool {
-		async fn has_block(&self, _block_id: block::Id) -> Result<bool, anyhow::Error> {
-			todo!()
-		}
-
-		async fn add_block(&self, _block: Block) -> Result<(), anyhow::Error> {
-			todo!()
-		}
-
-		async fn remove_block(&self, _block_id: block::Id) -> Result<(), anyhow::Error> {
-			todo!()
-		}
-
-		async fn get_block(&self, _block_id: block::Id) -> Result<Option<Block>, anyhow::Error> {
-			todo!()
 		}
 	}
 }
