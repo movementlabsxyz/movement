@@ -339,6 +339,27 @@ module atomic_bridge::atomic_bridge_initiator {
         let time_lock_duration = get_time_lock_duration(atomic_bridge);
         assert!(time_lock_duration == 48 * 60 * 60, 0);
     }
+
+    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    public fun test_set_time_lock_duration(
+        sender: &signer,
+        creator: &signer,
+        aptos_framework: &signer,
+        atomic_bridge: &signer,
+    ) acquires BridgeConfig {
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        moveth::init_for_test(creator);
+        let bridge_addr = signer::address_of(atomic_bridge);
+        account::create_account_if_does_not_exist(bridge_addr);
+
+        init_module(atomic_bridge);
+
+        let new_time_lock_duration = 42;
+        set_time_lock_duration(atomic_bridge, new_time_lock_duration);
+
+        let time_lock_duration = get_time_lock_duration(atomic_bridge);
+        assert!(time_lock_duration == 42, 0);
+    }
     
     #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
     #[expected_failure (abort_code = EINSUFFICIENT_BALANCE, location = Self)]
