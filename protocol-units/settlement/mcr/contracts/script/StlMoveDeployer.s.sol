@@ -6,22 +6,21 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { Helper } from "./helpers/Helper.sol";
 import { Vm } from "forge-std/Vm.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 contract StlMoveDeployer is Helper {
+        using stdJson for string;
 
     function run() external virtual {
         
-         // load config data
-        _loadConfig();
-
-        // Load deployment data
-        _loadDeployments();
+         // load config and deployments data
+        _loadExternalData();
 
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
-        // timelock is required for all deployments
-        _deployTimelock();
+        // Deploy CREATE3Factory, Safes and Timelock if not deployed
+        _deployDependencies();
 
         deployment.stlMoveAdmin == ZERO && deployment.stlMove == ZERO && deployment.move != ZERO ?
             _deployStlMove() : deployment.stlMoveAdmin != ZERO && deployment.stlMove != ZERO ?
@@ -30,9 +29,9 @@ contract StlMoveDeployer is Helper {
         vm.stopBroadcast();
 
         // Only write to file if chainid is not running a foundry local chain
-        if (block.chainid != foundryChainId) {
-            _writeDeployments();
-        }
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+                _writeDeployments();
+            }
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
@@ -87,6 +86,6 @@ contract StlMoveDeployer is Helper {
         console.log("STL upgrade json |start|", serializedData, "|end|");
 
         // Write the serialized data to a file
-        vm.writeFile(string.concat(root, upgradePath, "stlMove.json"), serializedData);
+        vm.writeFile(string.concat(root, upgradePath, "stlmove.json"), serializedData);
     }
 }

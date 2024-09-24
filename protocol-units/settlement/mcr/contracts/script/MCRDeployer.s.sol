@@ -14,17 +14,14 @@ contract MCRDeployer is Helper {
 
     function run() external virtual {
         
-        // load config data
-        _loadConfig();
-
-        // Load deployment data
-        _loadDeployments();
+        // load config and deployments data
+        _loadExternalData();
 
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
-        // timelock is required for all deployments
-        _deployTimelock();
+        // Deploy CREATE3Factory, Safes and Timelock if not deployed
+        _deployDependencies();
 
         deployment.mcrAdmin == ZERO && deployment.mcr == ZERO && deployment.move != ZERO && deployment.staking != ZERO ?
             _deployMCR() : deployment.mcrAdmin != ZERO && deployment.mcr != ZERO ?
@@ -33,8 +30,8 @@ contract MCRDeployer is Helper {
         vm.stopBroadcast();
 
         // Only write to file if chainid is not running a foundry local chain
-        if (block.chainid != foundryChainId) {
-            _writeDeployments();
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+                _writeDeployments();
         }
     }
 

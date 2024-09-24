@@ -6,7 +6,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import { Helper } from "./helpers/Helper.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
-
+import {stdJson} from "forge-std/StdJson.sol";
 
 // Script intended to be used for deploying the MOVE token from an EOA
 // Utilizies existing safes and sets them as proposers and executors.
@@ -14,30 +14,26 @@ import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
 // The whole supply is minted to the Movement Foundation Safe.
 // The script also verifies that the token has the correct balances, decimals and permissions.
 contract MOVETokenDeployer is Helper {
+        using stdJson for string;
     // COMMANDS
     // mainnet
     // forge script MOVETokenDeployer --fork-url https://eth.llamarpc.com --verify --etherscan-api-key ETHERSCAN_API_KEY
     // testnet
     // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
     // Safes should be already deployed
-    bytes32 public salt = 0x00000000000000000000000012bb669b1a73513f43bb92816a3461b7717f3638;
+    bytes32 public salt = 0x0;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function run() external virtual {
-        // load config data
-        _loadConfig();
-
-        // Load deployment data
-        _loadDeployments();
+        
+        // load config and deployments data
+        _loadExternalData();
 
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
-        // Deploy CREATE3Factory if not deployed
-        _deployCreate3();
-
-        // Deploy Safes if not deployed
-        _deploySafes();
+        // Deploy CREATE3Factory, Safes and Timelock if not deployed
+        _deployDependencies();
 
         // timelock is required for all deployments
         _deployTimelock();
@@ -53,6 +49,10 @@ contract MOVETokenDeployer is Helper {
         require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementLabsSafe)),"Movement Labs not expected to have token admin role");
         require(!MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(timelock)),"Timelock not expected to have token admin role");
         vm.stopBroadcast();
+
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+                _writeDeployments();
+            }
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
@@ -109,6 +109,6 @@ contract MOVETokenDeployer is Helper {
         console.log("MOVE upgrade json |start|", serializedData, "|end|");
 
         // Write the serialized data to a file
-        vm.writeFile(string.concat(root, upgradePath, "move.json"), serializedData);
+        vm.writeFile(string.concat(root, upgradePath, "movetoken.json"), serializedData);
     }
 }

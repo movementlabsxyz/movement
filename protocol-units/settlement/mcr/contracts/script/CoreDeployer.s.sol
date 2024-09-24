@@ -14,23 +14,15 @@ import { Vm, VmSafe } from "forge-std/Vm.sol";
 contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer {
 
     function run() external override(MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer) {
-        // load config data
-        _loadConfig();
 
-        // Load deployment data
-        _loadDeployments();
+        // load config and deployments data
+        _loadExternalData();
 
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
-        // Deploy CREATE3Factory if not deployed
-        _deployCreate3();
-
-        // Deploy Safes if not deployed
-        _deploySafes();
-
-        // timelock is required for all deployments
-        _deployTimelock();
+        // Deploy CREATE3Factory, Safes and Timelock if not deployed
+        _deployDependencies();
         
         // Deploy or upgrade contracts conditionally
         deployment.moveAdmin == ZERO && deployment.move == ZERO ?

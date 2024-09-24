@@ -98,6 +98,11 @@ contract Helper is Script {
         storageJson = json;
     }
 
+    function _loadExternalData() internal {
+        _loadConfig();
+        _loadDeployments();
+    }
+
     function _deploySafes() internal {
         console.log("Deploying Safes");
         if (deployment.movementLabsSafe == ZERO && block.chainid != foundryChainId) {
@@ -177,6 +182,12 @@ contract Helper is Script {
             console.log("CREATE3: deploying");
             create3 = new CREATE3Factory();
         }
+    }
+
+    function _deployDependencies() internal {
+        _deployCreate3();
+        _deploySafes();
+        _deployTimelock();
     }
 
     function _storeAdminDeployment() internal returns (address admin) {
