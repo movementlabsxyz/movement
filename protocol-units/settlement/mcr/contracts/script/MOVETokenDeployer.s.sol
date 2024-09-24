@@ -32,8 +32,6 @@ contract MOVETokenDeployer is Helper {
         // Deploy CREATE3Factory, Safes and Timelock if not deployed
         _deployDependencies();
 
-        // timelock is required for all deployments
-        _deployTimelock();
         deployment.moveAdmin == ZERO && deployment.move == ZERO ?
             _deployMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
                 // if move is already deployed, upgrade it
