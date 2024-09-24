@@ -95,6 +95,9 @@
               # rust toolchain
               (toolchain pkgs)
 
+              # for `hostname -I`
+              hostname-debian
+
               # build dependencies
               llvmPackages.bintools openssl openssl.dev libiconv pkg-config
               libclang.lib libz clang pkg-config protobuf rustPlatform.bindgenHook
