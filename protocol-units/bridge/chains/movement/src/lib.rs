@@ -876,13 +876,15 @@ impl MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
+		let res = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
 		.map_err(|_| BridgeContractInitiatorError::CallError);
+
+		println!("Set time lock result: {:?}", &res);
 
 		Ok(())
 	}
@@ -893,7 +895,7 @@ impl MovementClient {
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
-					address: Address::from(self.signer().address()),
+					address: self.counterparty_address.into(),
 					name: aptos_api_types::IdentifierWrapper(
 						Identifier::new("atomic_bridge_initiator")
 							.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
@@ -907,8 +909,6 @@ impl MovementClient {
 			type_arguments: vec![],
 			arguments: vec![],
 		};
-
-		println!("View request: {:?}", &view_request);
 
 		let response: Response<Vec<serde_json::Value>> = self
 			.rest_client
