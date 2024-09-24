@@ -227,10 +227,10 @@ module atomic_bridge::atomic_bridge_initiator {
         config.time_lock_duration
     }
 
-    public entry fun set_time_lock_duration(resource: &signer, time_lock_duration: u64) acquires BridgeConfig {
-        let config = borrow_global_mut<BridgeConfig>(signer::address_of(resource));
+    public entry fun set_time_lock_duration(caller: &signer, time_lock_duration: u64) acquires BridgeConfig {
+        let config = borrow_global_mut<BridgeConfig>(@atomic_bridge);
         // Check if the signer is the deployer (the original initializer)
-        assert!(signer::address_of(resource) == config.bridge_module_deployer, EINCORRECT_SIGNER);
+        assert!(signer::address_of(caller) == @origin_addr, EINCORRECT_SIGNER);
 
         config.time_lock_duration = time_lock_duration;
     }
@@ -340,7 +340,7 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(time_lock_duration == 48 * 60 * 60, 0);
     }
 
-    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    #[test(creator = @origin_addr, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
     public fun test_set_time_lock_duration(
         sender: &signer,
         creator: &signer,
@@ -348,14 +348,14 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) acquires BridgeConfig {
         timestamp::set_time_has_started_for_testing(aptos_framework);
-        moveth::init_for_test(creator);
+        moveth::init_for_test(atomic_bridge);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
 
         init_module(atomic_bridge);
 
         let new_time_lock_duration = 42;
-        set_time_lock_duration(atomic_bridge, new_time_lock_duration);
+        set_time_lock_duration(creator, new_time_lock_duration);
 
         let time_lock_duration = get_time_lock_duration();
         assert!(time_lock_duration == 42, 0);

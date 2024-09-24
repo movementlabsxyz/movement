@@ -96,15 +96,25 @@ pub async fn fund_and_check_balance(
 	Ok(())
 }
 
+pub async fn publish_for_test(movement_client: &mut MovementClient) {
+	let _ = movement_client.publish_for_test();
+}
+
 pub async fn initiate_bridge_transfer_helper(
 	movement_client: &mut MovementClient,
 	initiator_address: AccountAddress,
 	recipient_address: Vec<u8>,
 	hash_lock: [u8; 32],
 	amount: u64,
+	timelock_modify: bool,
 ) -> Result<(), BridgeContractInitiatorError> {
 	// Publish for test
 	let _ = movement_client.publish_for_test();
+
+	if timelock_modify {
+		// Set the timelock to 1 second for testing
+		movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
+	}
 
 	// Mint MovETH to the initiator's address
 	let mint_amount = 200 * 100_000_000; // Assuming 8 decimals for MovETH

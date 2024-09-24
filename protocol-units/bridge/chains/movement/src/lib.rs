@@ -868,6 +868,8 @@ impl MovementClient {
 	) -> Result<(), BridgeContractInitiatorError> {
 		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
 
+		println!("counterparty address {:?}", &self.counterparty_address);
+
 		let payload = utils::make_aptos_payload(
 			self.counterparty_address,
 			"atomic_bridge_initiator",
