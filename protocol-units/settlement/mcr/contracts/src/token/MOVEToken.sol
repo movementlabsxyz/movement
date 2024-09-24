@@ -12,23 +12,24 @@ contract MOVEToken is ERC20PermitUpgradeable, AccessControlUpgradeable {
     constructor() {_disableInitializers();}
 
     /**
-     * @dev Initializes the contract
-     * @param _owner The onwer of the initial supply
-     * @notice __ERC20_init params: name and symbol are set to "Movement" and "MOVE" respectively
-     * @notice __EIP712_init_unchained: name and version are set to "Movement" and "1" respectively
-     * @notice _setupRole: DEFAULT_ADMIN_ROLE is set to the owner
-     * @notice _mint: 10,000,000,000 MOVE tokens are minted to the owner
+     * @dev Initializes the contract with initial parameters.
+     * @param _owner The address of the owner who receives the initial supply.
+     * @notice The ERC20 token is named "Movement" with symbol "MOVE".
+     * @notice EIP712 domain version is set to "1" for signatures.
+     * @notice The owner is granted the `DEFAULT_ADMIN_ROLE`.
+     * @notice 10 billion MOVE tokens are minted to the owner's address.
      */
     function initialize(address _owner) public initializer {
+        require(_owner != address(0));
         __ERC20_init("Movement", "MOVE");
         __EIP712_init_unchained("Movement", "1");
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
-        _mint(address(_owner), 10000000000 * 10 ** decimals());
+        _mint(_owner, 10000000000 * 10 ** decimals());
     }
 
     /**
      * @dev Returns the number of decimals
-     * @notice decimals is set to the Movement network standard decimals
+     * @notice decimals is set to 8, following the Movement network standard decimals
      */
     function decimals() public pure override returns (uint8) {
         return 8;

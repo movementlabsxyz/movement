@@ -85,6 +85,8 @@ async function main() {
   console.log("- safeTxHash:", safeTxHash);
   console.log("- Sender:", signerAddress);
   console.log("- Sender signature:", signature.data);
+
+  // Should the upgrade/contract.json file be deleted?
 }
 
 main();
