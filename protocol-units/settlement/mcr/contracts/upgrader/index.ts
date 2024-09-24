@@ -61,7 +61,7 @@ async function main() {
     to: jsonData.to,
     value: jsonData.value || "0",
     data: jsonData.data,
-    operation: jsonData.operation || OperationType.Call,
+    operation: OperationType.Call,
   };
   const safeTransaction = await protocolKit.createTransaction({
     transactions: [safeTransactionData],

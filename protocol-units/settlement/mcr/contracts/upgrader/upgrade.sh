@@ -22,13 +22,12 @@ fi
 
 # Run the script to generate transaction data for the upgrade
 echo "Generating transaction data to upgrade contract $contract"
-echo nix develop --command bash -c "cd .. && forge script "../script/${contract}Deployer.s.sol" -vvvv"
+nix develop --command bash -c "cd .. && forge script "./script/${contract}Deployer.s.sol" -vvvv --fork-url https://eth-sepolia.api.onfinality.io/public"
 
+cd upgrader
 # Convert contract name to lowercase
 lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
 
-echo cd ../upgrader
-
 # Run the upgrader script
 echo "Running upgrader/index.ts"
-npx  ./index.js -c "$lowercase_contract"
+npx tsx  ./index.ts -c "$lowercase_contract"

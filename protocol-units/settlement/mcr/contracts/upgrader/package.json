@@ -2,7 +2,7 @@
   "name": "upgrader",
   "version": "1.0.0",
   "description": "The Upgrader is a script designed to automate the upgrade process for settlement protocol units, streamlining the execution of several key steps required for contract upgrades. Below is a breakdown of its main components and the steps it performs.",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
