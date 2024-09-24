@@ -235,7 +235,6 @@ pub struct BridgeTransferDetails<A, H> {
 	pub initiator_address: InitiatorAddress<A>,
 	pub recipient_address: RecipientAddress<Vec<u8>>,
 	pub hash_lock: HashLock<H>,
-	pub time_lock: TimeLock,
 	pub amount: Amount,
 	pub state: u8,
 }
@@ -252,7 +251,6 @@ pub struct LockDetails<A, H> {
 	pub initiator_address: InitiatorAddress<Vec<u8>>,
 	pub recipient_address: RecipientAddress<A>,
 	pub hash_lock: HashLock<H>,
-	pub time_lock: TimeLock,
 	pub amount: Amount,
 }
 

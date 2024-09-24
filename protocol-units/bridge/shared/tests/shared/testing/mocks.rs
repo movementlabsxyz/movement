@@ -9,7 +9,7 @@ use std::{
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_contracts::BridgeContractCounterpartyResult,
-	types::{HashLock, InitiatorAddress, RecipientAddress, TimeLock},
+	types::{HashLock, InitiatorAddress, RecipientAddress},
 };
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiatorResult,
@@ -252,7 +252,6 @@ where
 		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let mut state = self.state.lock().expect("lock poisoned");
@@ -265,7 +264,6 @@ where
 				initiator_address,
 				recipient_address,
 				hash_lock,
-				time_lock,
 				amount,
 				state: 1,
 			}));
@@ -319,7 +317,6 @@ where
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		_hash_lock: HashLock<Self::Hash>,
-		_time_lock: TimeLock,
 		_initiator: InitiatorAddress<Vec<u8>>,
 		_recipient: RecipientAddress<A>,
 		_amount: Amount,

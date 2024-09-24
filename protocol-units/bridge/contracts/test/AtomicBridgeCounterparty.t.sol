@@ -27,28 +27,44 @@ contract AtomicBridgeCounterpartyTest is Test {
     bytes32 public bridgeTransferId =
         keccak256(abi.encodePacked(block.number, initiator, recipient, amount, hashLock));
 
+    uint256 public constant COUNTERPARTY_TIME_LOCK_DURATION = 24 * 60 * 60; // 24 hours
+
     function setUp() public {
         // Sepolia WETH9 address
         address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
         weth = IWETH9(wethAddress);
 
-        // Deploy the AtomicBridgeInitiator contract
+        // Time lock durations
+        uint256 initiatorTimeLockDuration = 48 * 60 * 60; // 48 hours for the initiator
+        uint256 counterpartyTimeLockDuration = 24 * 60 * 60; // 24 hours for the counterparty
+
+        // Deploy the AtomicBridgeInitiator contract with a 48-hour time lock
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address,address)", wethAddress, deployer)
+            abi.encodeWithSignature(
+                "initialize(address,address,uint256)", 
+                wethAddress, 
+                deployer, 
+                initiatorTimeLockDuration // Set 48-hour time lock for the initiator
+            )
         );
 
         atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
 
-        // Deploy the AtomicBridgeCounterparty contract
+        // Deploy the AtomicBridgeCounterparty contract with a 24-hour time lock
         atomicBridgeCounterpartyImplementation = new AtomicBridgeCounterparty();
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeCounterpartyImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address,address)", address(atomicBridgeInitiator), deployer)
+            abi.encodeWithSignature(
+                "initialize(address,address,uint256)", 
+                address(atomicBridgeInitiator), 
+                deployer, 
+                counterpartyTimeLockDuration // Set 24-hour time lock for the counterparty
+            )
         );
 
         atomicBridgeCounterparty = AtomicBridgeCounterparty(address(proxy));
@@ -145,11 +161,8 @@ contract AtomicBridgeCounterpartyTest is Test {
 
         vm.stopPrank();
 
-        // Internally, counterparty timelock is set to 24 hours, initiator to 48 hours
-        uint256 timeLock = 2 * atomicBridgeCounterparty.COUNTERPARTY_TIME_LOCK_DURATION();
-
-        // Advance the timestamp to beyond the timelock period
-        vm.warp(block.timestamp + timeLock + 1);
+        // Advance the timestamp to beyond the counterparty timelock period (24 hours + 1 second)
+        vm.warp(block.timestamp + COUNTERPARTY_TIME_LOCK_DURATION + 1);
 
         // Malicious attempt to abort the bridge transfer
         vm.prank(address(0x1337));
