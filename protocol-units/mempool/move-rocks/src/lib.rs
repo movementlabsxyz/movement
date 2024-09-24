@@ -11,7 +11,6 @@ use std::sync::Arc;
 
 mod cf {
 	pub const MEMPOOL_TRANSACTIONS: &str = "mempool_transactions";
-	pub const TRANSACTION_TRUTHS: &str = "transaction_truths";
 	pub const BLOCKS: &str = "blocks";
 	pub const TRANSACTION_LOOKUPS: &str = "transaction_lookups";
 }
@@ -28,8 +27,6 @@ impl RocksdbMempool {
 
 		let mempool_transactions_cf =
 			ColumnFamilyDescriptor::new(cf::MEMPOOL_TRANSACTIONS, Options::default());
-		let transaction_truths_cf =
-			ColumnFamilyDescriptor::new(cf::TRANSACTION_TRUTHS, Options::default());
 		let blocks_cf = ColumnFamilyDescriptor::new(cf::BLOCKS, Options::default());
 		let transaction_lookups_cf =
 			ColumnFamilyDescriptor::new(cf::TRANSACTION_LOOKUPS, Options::default());
@@ -37,7 +34,7 @@ impl RocksdbMempool {
 		let db = DB::open_cf_descriptors(
 			&options,
 			path,
-			vec![mempool_transactions_cf, transaction_truths_cf, blocks_cf, transaction_lookups_cf],
+			[mempool_transactions_cf, blocks_cf, transaction_lookups_cf],
 		)
 		.map_err(|e| Error::new(e))?;
 
