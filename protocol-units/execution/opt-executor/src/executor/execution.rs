@@ -240,16 +240,16 @@ mod tests {
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
+	fn create_signed_transaction(sequence_number: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let public_key = private_key.public_key();
 		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
 		let raw_transaction = RawTransaction::new(
 			AccountAddress::random(),
-			0,
+			sequence_number,
 			transaction_payload,
 			0,
-			gas_unit_price,
+			0,
 			0,
 			chain_id, // This is the value used in aptos testing code.
 		);
