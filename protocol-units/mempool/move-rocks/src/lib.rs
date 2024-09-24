@@ -5,7 +5,7 @@ use movement_types::{
 	block::{self, Block},
 	transaction,
 };
-use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
 use std::fmt::Write;
 use std::sync::Arc;
 
@@ -123,6 +123,8 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
+			let mut batch = WriteBatch::default();
+
 			for transaction in transactions {
 				if Self::internal_has_mempool_transaction(&db, transaction.transaction.id())? {
 					continue;
@@ -130,13 +132,16 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 				let serialized_transaction = bcs::to_bytes(&transaction)?;
 				let key = Self::construct_mempool_transaction_key(&transaction);
-				db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction)?;
-				db.put_cf(
+				batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
+				batch.put_cf(
 					&transaction_lookups_cf_handle,
 					transaction.transaction.id().to_vec(),
 					&key,
-				)?;
+				);
 			}
+
+			db.write(batch)?;
+
 			Ok::<(), Error>(())
 		})
 		.await??;
@@ -155,9 +160,18 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
+			let mut batch = WriteBatch::default();
+
 			let key = Self::construct_mempool_transaction_key(&transaction);
-			db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction)?;
-			db.put_cf(&transaction_lookups_cf_handle, transaction.transaction.id().to_vec(), &key)?;
+			batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
+			batch.put_cf(
+				&transaction_lookups_cf_handle,
+				transaction.transaction.id().to_vec(),
+				&key,
+			);
+
+			db.write(batch)?;
+
 			Ok::<(), Error>(())
 		})
 		.await??;
@@ -177,11 +191,14 @@ impl MempoolTransactionOperations for RocksdbMempool {
 					let cf_handle = db
 						.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&cf_handle, k)?;
 					let lookups_cf_handle = db
 						.cf_handle(cf::TRANSACTION_LOOKUPS)
 						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&lookups_cf_handle, transaction_id.to_vec())?;
+
+					let mut batch = WriteBatch::default();
+					batch.delete_cf(&cf_handle, k);
+					batch.delete_cf(&lookups_cf_handle, transaction_id.to_vec());
+					db.write(batch)?;
 				}
 				None => (),
 			}
@@ -222,6 +239,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let cf_handle = db
 				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let lookups_cf_handle = db
+				.cf_handle(cf::TRANSACTION_LOOKUPS)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
 
 			match iter.next() {
@@ -229,13 +249,11 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				Some(res) => {
 					let (key, value) = res?;
 					let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
-					db.delete_cf(&cf_handle, &key)?;
 
-					// Optionally, remove from the lookup table as well
-					let lookups_cf_handle = db
-						.cf_handle(cf::TRANSACTION_LOOKUPS)
-						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec())?;
+					let mut batch = WriteBatch::default();
+					batch.delete_cf(&cf_handle, &key);
+					batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
+					db.write(batch)?;
 
 					Ok(Some(transaction))
 				}
@@ -253,25 +271,27 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let cf_handle = db
 				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let lookups_cf_handle = db
+				.cf_handle(cf::TRANSACTION_LOOKUPS)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
-
+			let mut batch = WriteBatch::default();
 			let mut mempool_transactions = Vec::with_capacity(n as usize);
 			while let Some(res) = iter.next() {
 				let (key, value) = res?;
 				let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
-				db.delete_cf(&cf_handle, &key)?;
 
-				// Optionally, remove from the lookup table as well
-				let lookups_cf_handle = db
-					.cf_handle(cf::TRANSACTION_LOOKUPS)
-					.ok_or_else(|| Error::msg("CF handle not found"))?;
-				db.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec())?;
+				batch.delete_cf(&cf_handle, &key);
+				batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
 
 				mempool_transactions.push(transaction);
-				if mempool_transactions.len() > n - 1 {
+				if mempool_transactions.len() >= n {
 					break;
 				}
 			}
+
+			db.write(batch)?;
+
 			Ok(mempool_transactions)
 		})
 		.await?
