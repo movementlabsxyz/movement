@@ -253,7 +253,9 @@ contract Helper is Script {
         // Log the serialized JSON for debugging
         console.log("json |start|", serializedData, "|end|");
         // Write the serialized data to a file
-        vm.writeFile(string.concat(root, upgradePath, fileName), serializedData);
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+            vm.writeFile(string.concat(root, upgradePath, fileName), serializedData);
+        }
     }
 
     // string to address
