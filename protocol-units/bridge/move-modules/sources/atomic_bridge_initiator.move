@@ -222,8 +222,8 @@ module atomic_bridge::atomic_bridge_initiator {
         //aptos_std::smart_table::remove(&mut store.transfers, bridge_transfer_id);
     }
 
-    public fun get_time_lock_duration(resource: &signer): u64 acquires BridgeConfig {
-        let config = borrow_global<BridgeConfig>(signer::address_of(resource));
+    public fun get_time_lock_duration(): u64 acquires BridgeConfig {
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
         config.time_lock_duration
     }
 
@@ -312,7 +312,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let transfer = aptos_std::smart_table::borrow(&store.transfers, bridge_transfer_id);
 
         // The timelock is internally doubled by the initiator module
-        let expected_time_lock = timestamp::now_seconds() + get_time_lock_duration(atomic_bridge);
+        let expected_time_lock = timestamp::now_seconds() + get_time_lock_duration();
 
         assert!(transfer.amount == amount, 200);
         assert!(transfer.originator == addr, 201);
@@ -336,7 +336,7 @@ module atomic_bridge::atomic_bridge_initiator {
 
         init_module(atomic_bridge);
 
-        let time_lock_duration = get_time_lock_duration(atomic_bridge);
+        let time_lock_duration = get_time_lock_duration();
         assert!(time_lock_duration == 48 * 60 * 60, 0);
     }
 
@@ -357,7 +357,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let new_time_lock_duration = 42;
         set_time_lock_duration(atomic_bridge, new_time_lock_duration);
 
-        let time_lock_duration = get_time_lock_duration(atomic_bridge);
+        let time_lock_duration = get_time_lock_duration();
         assert!(time_lock_duration == 42, 0);
     }
     
@@ -516,7 +516,7 @@ module atomic_bridge::atomic_bridge_initiator {
         );
 
         // Push timestamp forward by double the timelock (since initiator doubles it)
-        let time_lock = get_time_lock_duration(atomic_bridge);
+        let time_lock = get_time_lock_duration();
         aptos_framework::timestamp::fast_forward_seconds(time_lock + 2);
 
         refund_bridge_transfer(

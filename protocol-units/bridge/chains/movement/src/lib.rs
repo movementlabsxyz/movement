@@ -1,7 +1,7 @@
 use crate::utils::MovementAddress;
 use anyhow::Result;
 use aptos_api::accounts::Account;
-use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewFunction, ViewRequest};
+use aptos_api_types::{Address, EntryFunctionId, MoveModuleId, ViewFunction, ViewRequest};
 use aptos_sdk::{
 	move_types::{
 		identifier::Identifier,
@@ -893,7 +893,7 @@ impl MovementClient {
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
-					address: self.signer(),
+					address: Address::from(self.signer().address()),
 					name: aptos_api_types::IdentifierWrapper(
 						Identifier::new("atomic_bridge_initiator")
 							.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
@@ -907,6 +907,8 @@ impl MovementClient {
 			type_arguments: vec![],
 			arguments: vec![],
 		};
+
+		println!("View request: {:?}", &view_request);
 
 		let response: Response<Vec<serde_json::Value>> = self
 			.rest_client
