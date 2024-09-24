@@ -224,9 +224,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-22.04
+          - os: ubuntu-23.10
             arch: x86_64
-            runs-on: buildjet-8vcpu-ubuntu-2204
+            runs-on: buildjet-8vcpu-ubuntu-2310
 
     runs-on: ${{ matrix.runs-on }}
 
