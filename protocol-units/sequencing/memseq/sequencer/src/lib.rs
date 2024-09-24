@@ -9,6 +9,8 @@ use std::collections::BTreeSet;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
+const DEFAULT_MAX_TRANSACTIONS_IN_FLIGHT: u64 = 12000;
+
 #[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
 	mempool: T,
@@ -17,6 +19,8 @@ pub struct Memseq<T: MempoolTransactionOperations> {
 	pub parent_block: Arc<RwLock<block::Id>>,
 	// this value should not be changed after initialization
 	building_time_ms: u64,
+	transactions_in_flight: u64,
+	max_transactions_in_flight: u64,
 }
 
 impl<T: MempoolTransactionOperations> Memseq<T> {
@@ -25,8 +29,16 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 		block_size: u32,
 		parent_block: Arc<RwLock<block::Id>>,
 		building_time_ms: u64,
+		max_transactions_in_flight: u64,
 	) -> Self {
-		Self { mempool, block_size, parent_block, building_time_ms }
+		Self {
+			mempool,
+			block_size,
+			parent_block,
+			building_time_ms,
+			transactions_in_flight: 0, // TODO: initialize from the current mempool size
+			max_transactions_in_flight,
+		}
 	}
 
 	pub fn with_block_size(mut self, block_size: u32) -> Self {
@@ -39,6 +51,11 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 		self
 	}
 
+	pub fn with_transactions_in_fliht_limit(mut self, max_transactions_in_flight: u64) -> Self {
+		self.max_transactions_in_flight = max_transactions_in_flight;
+		self
+	}
+
 	pub fn building_time_ms(&self) -> u64 {
 		self.building_time_ms
 	}
@@ -47,6 +64,8 @@ impl<T: MempoolTransactionOperations> Memseq<T> {
 impl Memseq<RocksdbMempool> {
 	pub fn try_move_rocks(
 		path: PathBuf,
+		// TODO: remove the arguments below since we have with_*
+		// initialization helpers.
 		block_size: u32,
 		building_time_ms: u64,
 	) -> Result<Self, anyhow::Error> {
@@ -54,7 +73,13 @@ impl Memseq<RocksdbMempool> {
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
 		)?;
 		let parent_block = Arc::new(RwLock::new(block::Id::default()));
-		Ok(Self::new(mempool, block_size, parent_block, building_time_ms))
+		Ok(Self::new(
+			mempool,
+			block_size,
+			parent_block,
+			building_time_ms,
+			DEFAULT_MAX_TRANSACTIONS_IN_FLIGHT,
+		))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
@@ -63,17 +88,29 @@ impl Memseq<RocksdbMempool> {
 }
 
 impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
-	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
+	async fn publish_many(
+		&mut self,
+		mut transactions: Vec<Transaction>,
+	) -> Result<(), anyhow::Error> {
+		let available_room = (self.max_transactions_in_flight - self.transactions_in_flight)
+			.try_into()
+			.unwrap_or(usize::MAX);
+		transactions.truncate(available_room);
+		let num_added = transactions.len() as u64;
 		self.mempool.add_transactions(transactions).await?;
+		self.transactions_in_flight += num_added;
 		Ok(())
 	}
 
-	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
-		self.mempool.add_transaction(transaction).await?;
+	async fn publish(&mut self, transaction: Transaction) -> Result<(), anyhow::Error> {
+		if self.transactions_in_flight < self.max_transactions_in_flight {
+			self.mempool.add_transaction(transaction).await?;
+			self.transactions_in_flight += 1;
+		}
 		Ok(())
 	}
 
-	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
+	async fn wait_for_next_block(&mut self) -> Result<Option<Block>, anyhow::Error> {
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
 		let now = std::time::Instant::now();
@@ -86,7 +123,9 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 
 			let remaining = self.block_size - current_block_size;
 			let mut transactions_to_add = self.mempool.pop_transactions(remaining as usize).await?;
+			let num_popped = transactions_to_add.len() as u64;
 			transactions.append(&mut transactions_to_add);
+			self.transactions_in_flight -= num_popped;
 
 			// sleep to yield to other tasks and wait for more transactions
 			tokio::task::yield_now().await;
@@ -128,7 +167,7 @@ pub mod test {
 	async fn test_wait_for_next_block_building_time_expires() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path, 128, 250)?
+		let mut memseq = Memseq::try_move_rocks(path, 128, 250)?
 			.with_block_size(10)
 			.with_building_time_ms(500);
 
@@ -153,9 +192,9 @@ pub mod test {
 	async fn test_publish_error_propagation() -> Result<(), anyhow::Error> {
 		let mempool = MockMempool;
 		let parent_block = Arc::new(RwLock::new(block::Id::default()));
-		let memseq = Memseq::new(mempool, 10, parent_block, 1000);
+		let mut memseq = Memseq::new(mempool, 10, parent_block, 1000, 10);
 
-		let transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction = Transaction::new(vec![1, 2, 3], 1);
 		let result = memseq.publish(transaction).await;
 		assert!(result.is_err());
 		assert_eq!(result.unwrap_err().to_string(), "Mock add_transaction");
@@ -225,6 +264,7 @@ pub mod test {
 
 		assert_eq!(memseq.block_size, 1024);
 		assert_eq!(memseq.building_time_ms, 500);
+		assert_eq!(memseq.max_transactions_in_flight, 100);
 
 		// Test invalid path
 		let invalid_path = PathBuf::from("");
@@ -245,11 +285,20 @@ pub mod test {
 		let block_size = 50;
 		let building_time_ms = 2000;
 		let parent_block = Arc::new(RwLock::new(block::Id::default()));
+		let max_transactions_in_flight = 10;
 
-		let memseq = Memseq::new(mem_pool, block_size, Arc::clone(&parent_block), building_time_ms);
+		let memseq = Memseq::new(
+			mem_pool,
+			block_size,
+			Arc::clone(&parent_block),
+			building_time_ms,
+			max_transactions_in_flight,
+		);
 
 		assert_eq!(memseq.block_size, block_size);
 		assert_eq!(memseq.building_time_ms, building_time_ms);
+		assert_eq!(memseq.transactions_in_flight, 0);
+		assert_eq!(memseq.max_transactions_in_flight, max_transactions_in_flight);
 		assert_eq!(*memseq.parent_block.read().await, *parent_block.read().await);
 
 		Ok(())
@@ -265,9 +314,16 @@ pub mod test {
 		)?;
 		let block_size = 50;
 		let building_time_ms = 2000;
+		let max_transactions_in_flight = 10;
 		let parent_block = Arc::new(RwLock::new(block::Id::default()));
 
-		let memseq = Memseq::new(mem_pool, block_size, Arc::clone(&parent_block), building_time_ms);
+		let memseq = Memseq::new(
+			mem_pool,
+			block_size,
+			Arc::clone(&parent_block),
+			building_time_ms,
+			max_transactions_in_flight,
+		);
 
 		// Test with_block_size
 		let new_block_size = 100;
@@ -278,6 +334,10 @@ pub mod test {
 		let new_building_time_ms = 5000;
 		let memseq = memseq.with_building_time_ms(new_building_time_ms);
 		assert_eq!(memseq.building_time_ms, new_building_time_ms);
+
+		let new_max_transactions_in_flight = 20;
+		let memseq = memseq.with_transactions_in_fliht_limit(new_max_transactions_in_flight);
+		assert_eq!(memseq.max_transactions_in_flight, new_max_transactions_in_flight);
 
 		Ok(())
 	}

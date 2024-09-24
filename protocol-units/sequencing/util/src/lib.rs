@@ -3,11 +3,11 @@ use movement_types::{
 };
 
 pub trait Sequencer {
-	async fn publish_many(&self, atbs: Vec<Transaction>) -> Result<(), anyhow::Error>;
+	async fn publish_many(&mut self, atbs: Vec<Transaction>) -> Result<(), anyhow::Error>;
 
-	async fn publish(&self, atb: Transaction) -> Result<(), anyhow::Error>;
+	async fn publish(&mut self, atb: Transaction) -> Result<(), anyhow::Error>;
 
-	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error>;
+	async fn wait_for_next_block(&mut self) -> Result<Option<Block>, anyhow::Error>;
 }
 
 pub trait SharedSequencer {
