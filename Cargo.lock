@@ -5580,6 +5580,7 @@ dependencies = [
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
+ "movement-bridge",
  "poem",
  "rand 0.7.3",
  "rand_chacha 0.2.2",

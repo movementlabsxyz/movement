@@ -42,6 +42,8 @@ alloy = { workspace = true, features = [
 alloy-rlp.workspace = true
 
 bridge-shared = { workspace = true }
+movement-bridge = { workspace = true }
+
 serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }
 

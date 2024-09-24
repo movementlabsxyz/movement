@@ -13,6 +13,7 @@ use futures::{
 	task::AtomicWaker,
 	Stream, StreamExt,
 };
+use movement_bridge::{client::MovementClient, event_monitoring::MovementCounterpartyMonitoring, utils::MovementAddress};
 use std::fmt::Debug;
 use std::{
 	collections::HashMap,
@@ -48,10 +49,10 @@ pub struct EthereumChain {
 	pub accounts: HashMap<EthAddress, Amount>,
 	pub events: Vec<EthChainEvent<EthAddress, EthHash>>,
 
-	pub initiator_contract: EthSmartContractInitiator,
+	pub initiator_contract: EthClient,
 	pub initiator_monitoring: EthInitiatorMonitoring<EthAddress, EthHash>,
-	pub counterparty_contract: EthSmartContractCounterparty,
-	pub counterparty_monitoring: EthCounterpartyMonitoring<EthAddress, EthHash>,
+	pub counterparty_contract: MovementClient,
+	pub counterparty_monitoring: MovementCounterpartyMonitoring<MovementAddress, MovementHash> 
 
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<EthAddress, EthHash>>,
