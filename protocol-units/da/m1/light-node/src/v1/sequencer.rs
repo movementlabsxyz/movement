@@ -270,11 +270,10 @@ impl LightNodeV1 {
 				}
 				Err(e) => {
 					info!("block proposer failed: {:?}", e);
+					return Err(e);
 				}
 			}
 		}
-
-		Ok(())
 	}
 
 	pub fn to_sequenced_blob_block(
