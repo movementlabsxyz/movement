@@ -829,4 +829,34 @@ impl MovementClient {
 
 		Ok(())
 	}
+
+	pub async fn get_time_lock_duration(&mut self) -> Result<u64, BridgeContractCounterpartyError> {
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.counterparty_address.into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_counterparty")
+							.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("get_time_lock_duration")
+						.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CallError)?;
+
+		let values = response.inner();
+		let timelock = utils::val_as_u64(values.first())?;
+		Ok(timelock)
+	}
 }
