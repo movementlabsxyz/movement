@@ -40,8 +40,10 @@ contract Helper is Script {
 
     struct ConfigData {
         uint256 minDelay;
+        address[] signersDeployer;
         address[] signersFoundation;
         address[] signersLabs;
+        uint256 thresholdDeployer;
         uint256 thresholdFoundation;
         uint256 thresholdLabs;
     }
@@ -53,6 +55,7 @@ contract Helper is Script {
         address mcrAdmin;
         address move;
         address moveAdmin;
+        address movementDeployerSafe;
         address movementFoundationSafe;
         address movementLabsSafe;
         address staking;
@@ -110,6 +113,13 @@ contract Helper is Script {
             // - chainid is not foundry
             // - safe is not deployed
             SafeProxyFactory safeFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+            deployment.movementDeployerSafe = _deploySafe(
+                safeFactory,
+                0x41675C099F32341bf84BFc5382aF534df5C7461a,
+                0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
+                config.signersLabs,
+                config.thresholdLabs
+            );
             deployment.movementLabsSafe = _deploySafe(
                 safeFactory,
                 0x41675C099F32341bf84BFc5382aF534df5C7461a,
