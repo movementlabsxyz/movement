@@ -319,24 +319,28 @@ jobs:
 
   ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
   bridge-client-integration:
-    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    if: github.event.label.name == 'cicd:bridge' || github.ref == 'refs/heads/main'
     strategy:
       matrix:
         include:
           - os: ubuntu-24.04
             arch: x86_64
             runs-on: ubuntu-24.04 
- 
+
     runs-on: ${{ matrix.runs-on }}
- 
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
- 
+
+    - name: Install Core Development Libraries
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential gcc libgcc-s1 libutil-linux libpthread-stubs0-dev libc6-dev
+
     - name: Install Dependencies
       run: |
-        sudo apt-get update 
-        sudo apt-get install -y build-essential binutils lld libudev-dev libdw-dev
+        sudo apt-get install -y binutils llvm lld libudev-dev libdw-dev
 
     - name: Ensure Latest Binutils and LLVM/LLD
       run: |
@@ -350,10 +354,9 @@ jobs:
         which cc
         echo $PATH
 
-    - name: Build Movement CLI with LLD Linker
+    - name: Build Movement CLI with Default Linker
       env:
-        RUSTFLAGS: "-C linker=lld"  # Set LLVM linker
-        RUST_BACKTRACE: "1"          # Enable backtrace on error
+        RUST_BACKTRACE: "1"
       run: |
         git clone https://github.com/movementlabsxyz/aptos-core/
         cd aptos-core
