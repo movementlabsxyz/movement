@@ -1,5 +1,3 @@
-use crate::counterparty_contract::EthSmartContractCounterparty;
-use crate::initiator_contract::EthSmartContractInitiator;
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_monitoring::BridgeContractInitiatorEvent,
@@ -13,7 +11,6 @@ use futures::{
 	task::AtomicWaker,
 	Stream, StreamExt,
 };
-use movement_bridge::{client::MovementClient, event_monitoring::MovementCounterpartyMonitoring, utils::MovementAddress};
 use std::fmt::Debug;
 use std::{
 	collections::HashMap,
@@ -24,10 +21,8 @@ use std::{
 use types::{EthAddress, EthHash};
 
 pub mod client;
-pub mod counterparty_contract;
 pub mod event_monitoring;
 pub mod event_types;
-pub mod initiator_contract;
 pub mod types;
 pub mod utils;
 
@@ -51,8 +46,8 @@ pub struct EthereumChain {
 
 	pub initiator_contract: EthClient,
 	pub initiator_monitoring: EthInitiatorMonitoring<EthAddress, EthHash>,
-	pub counterparty_contract: MovementClient,
-	pub counterparty_monitoring: MovementCounterpartyMonitoring<MovementAddress, MovementHash> 
+	pub counterparty_contract: EthClient,
+	pub counterparty_monitoring: EthCounterpartyMonitoring<EthAddress, EthHash>,
 
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
 	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<EthAddress, EthHash>>,
@@ -69,24 +64,27 @@ impl EthereumChain {
 		let events = Vec::new();
 		let (_, event_receiver_1) = mpsc::unbounded();
 		let (_, event_receiver_2) = mpsc::unbounded();
-		let (event_sender, event_receiver) = mpsc::unbounded();
+		let (event_sender, event_receiver_3) = mpsc::unbounded();
 		let event_listeners = Vec::new();
+
+		let config = Config::build_for_test();
+		let client = EthClient::new(config).await.expect("Failed to create EthClient");
 
 		Self {
 			name: name.into(),
 			time: 0,
 			accounts,
 			events,
-			initiator_contract: EthSmartContractInitiator::new(),
+			initiator_contract: client.clone(),
 			initiator_monitoring: EthInitiatorMonitoring::build(rpc_url, event_receiver_1)
 				.await
 				.expect("Failed to create EthInitiatorMonitoring"),
-			counterparty_contract: EthSmartContractCounterparty::new(),
+			counterparty_contract: client.clone(),
 			counterparty_monitoring: EthCounterpartyMonitoring::build(rpc_url, event_receiver_2)
 				.await
 				.expect("Failed to create EthCounterpartyMonitoring"),
 			transaction_sender: event_sender,
-			transaction_receiver: event_receiver,
+			transaction_receiver: event_receiver_3,
 			event_listeners,
 			waker: AtomicWaker::new(),
 			_phantom: std::marker::PhantomData,
@@ -151,64 +149,7 @@ impl Stream for EthereumChain {
 					transaction
 				);
 				match transaction {
-					Transaction::Initiator(call) => match call {
-						InitiatorCall::InitiateBridgeTransfer(
-							initiator_address,
-							recipient_address,
-							amount,
-							time_lock,
-							hash_lock,
-						) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
-								this.initiator_contract.initiate_bridge_transfer(
-									initiator_address.clone(),
-									recipient_address.clone(),
-									amount,
-									time_lock.clone(),
-									hash_lock.clone(),
-								),
-							));
-						}
-						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
-								this.initiator_contract.complete_bridge_transfer(
-									&mut this.accounts,
-									bridge_transfer_id.clone(),
-									secret.clone(),
-								),
-							));
-						}
-					},
-					Transaction::Counterparty(call) => match call {
-						CounterpartyCall::LockBridgeTransfer(
-							bridge_transfer_id,
-							hash_lock,
-							time_lock,
-							initiator_address,
-							recipient_address,
-							amount,
-						) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
-								this.counterparty_contract.lock_bridge_transfer(
-									bridge_transfer_id.clone(),
-									hash_lock.clone(),
-									time_lock.clone(),
-									initiator_address.clone(),
-									recipient_address.clone(),
-									amount,
-								),
-							));
-						}
-						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
-								this.counterparty_contract.complete_bridge_transfer(
-									&mut this.accounts,
-									&bridge_transfer_id,
-									pre_image,
-								),
-							));
-						}
-					},
+					_ => {} // Implement chain event tx logic here
 				}
 			}
 			Poll::Ready(None) => {
@@ -270,10 +211,10 @@ impl BlockchainService for EthereumChain {
 
 	// InitiatorContract must be BridgeContractInitiator
 	// These are just the Client Structs!!
-	type InitiatorContract = EthSmartContractInitiator;
+	type InitiatorContract = EthClient;
 	type InitiatorMonitoring = EthInitiatorMonitoring<EthAddress, EthHash>;
 
-	type CounterpartyContract = EthSmartContractCounterparty;
+	type CounterpartyContract = EthClient;
 	type CounterpartyMonitoring = EthCounterpartyMonitoring<EthAddress, EthHash>;
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract {

@@ -1,5 +1,5 @@
 use anyhow::Result;
-use bridge_serivice::{setup_bridge_service, SetupBridgeService};
+use bridge_service::{setup_bridge_service, SetupBridgeService};
 use bridge_shared::bridge_service::BridgeServiceConfig;
 
 #[tokio::main]

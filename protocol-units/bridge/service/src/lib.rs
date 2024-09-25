@@ -6,7 +6,6 @@ use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
 	event_monitoring::{EthCounterpartyMonitoring, EthInitiatorMonitoring},
 	types::{EthAddress, EthHash},
-	utils::TestRng,
 	EthereumChain,
 };
 use movement_bridge::{
@@ -15,7 +14,6 @@ use movement_bridge::{
 	utils::{MovementAddress, MovementHash},
 	MovementChain,
 };
-use rand::SeedableRng;
 
 pub type EthereumService = AbstractBlockchainService<
 	EthClient,
@@ -44,9 +42,8 @@ pub struct SetupBridgeService(
 );
 
 pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBridgeService {
-	let mut rng = TestRng::from_seed([0u8; 32]);
 	let mut ethereum_service = EthereumChain::new("Ethereum".to_string(), "localhost:8545").await;
-	let mut movement_service = MovementChain::new();
+	let mut movement_service = MovementChain::new().await;
 
 	//@TODO: use json config instead of build_for_test
 	let config = EthConfig::build_for_test();
@@ -54,7 +51,7 @@ pub async fn setup_bridge_service(bridge_config: BridgeServiceConfig) -> SetupBr
 	let eth_client = EthClient::new(config).await.expect("Faile to creaet EthClient");
 	let temp_rpc_url = "http://localhost:8545";
 	let eth_initiator_monitoring =
-		EthInitiatorMonitoring::build(temp_rpc_url.clone(), ethereum_service.add_event_listener())
+		EthInitiatorMonitoring::build(temp_rpc_url, ethereum_service.add_event_listener())
 			.await
 			.expect("Failed to create EthInitiatorMonitoring");
 	let eth_conterparty_monitoring =
