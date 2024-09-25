@@ -1,11 +1,14 @@
-use std::collections::HashMap;
-
-use bridge_shared::types::{
+use crate::types::{
 	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
 	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
-	LockDetails, RecipientAddress,
+	LockDetails, RecipientAddress, TimeLock,
 };
+use std::collections::HashMap;
+use std::fmt::Debug;
 use thiserror::Error;
+
+pub type SCCResult<A, H> =
+	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SmartContractCounterpartyEvent<A, H> {
@@ -27,6 +30,7 @@ pub enum CounterpartyCall<A, H> {
 	LockBridgeTransfer(
 		BridgeTransferId<H>,
 		HashLock<H>,
+		TimeLock,
 		InitiatorAddress<Vec<u8>>,
 		RecipientAddress<A>,
 		Amount,
@@ -37,9 +41,6 @@ pub enum CounterpartyCall<A, H> {
 pub struct SmartContractCounterparty<A, H> {
 	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
 }
-
-pub type SCCResult<A, H> =
-	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 impl<A, H> SmartContractCounterparty<A, H>
 where
@@ -108,8 +109,10 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
+
 		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
-		**balance += *transfer.amount;
+		todo!();
+		// balance += **transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
 			CounterpartyCompletedDetails::from_lock_details(transfer, pre_image),

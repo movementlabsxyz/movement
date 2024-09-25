@@ -87,7 +87,7 @@ pub struct MovementClient {
 	///The Apotos Rest Client
 	pub faucet_client: Option<Arc<RwLock<FaucetClient>>>,
 	///The signer account
-	signer: Arc<LocalAccount>,
+	pub signer: Arc<LocalAccount>,
 }
 
 impl MovementClient {
@@ -452,7 +452,6 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
@@ -464,9 +463,8 @@ impl BridgeContractCounterparty for MovementClient {
 
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
-			utils::serialize_vec(&bridge_transfer_id.0 .0[..])?,
-			utils::serialize_vec(&hash_lock.0 .0[..])?,
-			utils::serialize_u64(&time_lock.0)?,
+			utils::serialize_vec(&bridge_transfer_id.0 .0)?,
+			utils::serialize_vec(&hash_lock.0 .0)?,
 			utils::serialize_vec(&recipient.0 .0)?,
 			utils::serialize_u64(&amount_value)?,
 		];
@@ -479,13 +477,9 @@ impl BridgeContractCounterparty for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::LockTransferError);
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::LockTransferError)?;
 
 		Ok(())
 	}
@@ -496,7 +490,7 @@ impl BridgeContractCounterparty for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args2 = vec![
-			utils::serialize_vec(&bridge_transfer_id.0 .0[..])?,
+			utils::serialize_vec(&bridge_transfer_id.0 .0)?,
 			utils::serialize_vec(&preimage.0)?,
 		];
 
@@ -508,13 +502,9 @@ impl BridgeContractCounterparty for MovementClient {
 			args2,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError);
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CompleteTransferError)?;
 
 		Ok(())
 	}
@@ -523,7 +513,7 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
-		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0 .0[..])?];
+		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0 .0)?];
 		let payload = utils::make_aptos_payload(
 			self.native_address,
 			COUNTERPARTY_MODULE_NAME,
@@ -531,24 +521,19 @@ impl BridgeContractCounterparty for MovementClient {
 			Vec::new(),
 			args3,
 		);
-		let result = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractCounterpartyError::AbortTransferError);
 
-		info!("Abort bridge transfer result: {:?}", &result);
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::AbortTransferError)?;
 
 		Ok(())
 	}
 
 	async fn get_bridge_transfer_details(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId<MovementHash>,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> Result<
-		Option<BridgeTransferDetails<MovementAddress, MovementHash>>,
+		Option<BridgeTransferDetails<Self::Address, Self::Hash>>,
 		BridgeContractCounterpartyError,
 	> {
 		// Convert the bridge_transfer_id to a hex string
@@ -593,9 +578,6 @@ impl BridgeContractCounterparty for MovementClient {
 			.parse::<u64>()
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let hash_lock = utils::val_as_str(values.get(3))?;
-		let time_lock = utils::val_as_str(values.get(4))?
-			.parse::<u64>()
-			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 		let state = utils::val_as_u64(values.get(5))? as u8;
 
 		// Convert the originator, recipient, and hash_lock
@@ -609,13 +591,12 @@ impl BridgeContractCounterparty for MovementClient {
 			.map_err(|_| BridgeContractCounterpartyError::SerializationError)?;
 
 		// Create the BridgeTransferDetails struct
-		let details: BridgeTransferDetails<MovementAddress, MovementHash> = BridgeTransferDetails {
+		let details: BridgeTransferDetails<Self::Address, Self::Hash> = BridgeTransferDetails {
 			bridge_transfer_id,
 			initiator_address: InitiatorAddress(MovementAddress(originator_address)),
 			recipient_address: RecipientAddress(recipient_address_bytes),
 			amount: Amount(AssetType::Moveth(amount)),
 			hash_lock: HashLock(MovementHash(hash_lock_array)),
-			time_lock: TimeLock(time_lock),
 			state,
 		};
 		Ok(Some(details))
@@ -629,10 +610,9 @@ impl BridgeContractInitiator for MovementClient {
 
 	async fn initiate_bridge_transfer(
 		&mut self,
-		_initiator: InitiatorAddress<MovementAddress>,
+		_initiator: InitiatorAddress<Self::Address>,
 		recipient: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let amount_value = match amount.0 {
@@ -643,8 +623,7 @@ impl BridgeContractInitiator for MovementClient {
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
-			utils::serialize_vec_initiator(&hash_lock.0 .0[..])?,
-			utils::serialize_u64_initiator(&time_lock.0)?,
+			utils::serialize_vec_initiator(&hash_lock.0 .0)?,
 			utils::serialize_u64_initiator(&amount_value)?,
 		];
 
@@ -656,24 +635,20 @@ impl BridgeContractInitiator for MovementClient {
 			args,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
-			&self.rest_client,
-			self.signer.as_ref(),
-			payload,
-		)
-		.await
-		.map_err(|_| BridgeContractInitiatorError::InitiateTransferError)?;
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::InitiateTransferError)?;
 
 		Ok(())
 	}
 
 	async fn complete_bridge_transfer(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId<MovementHash>,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		secret: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
 		let args = vec![
-			utils::serialize_vec_initiator(&bridge_transfer_id.0 .0[..])?,
+			utils::serialize_vec_initiator(&bridge_transfer_id.0 .0)?,
 			utils::serialize_vec_initiator(&secret.0)?,
 		];
 
@@ -694,9 +669,9 @@ impl BridgeContractInitiator for MovementClient {
 
 	async fn refund_bridge_transfer(
 		&mut self,
-		bridge_transfer_id: BridgeTransferId<<MovementClient as BridgeContractCounterparty>::Hash>,
+		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<()> {
-		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0 .0[..])?];
+		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0 .0)?];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -716,8 +691,7 @@ impl BridgeContractInitiator for MovementClient {
 	async fn get_bridge_transfer_details(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<MovementHash>,
-	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<MovementAddress, MovementHash>>>
-	{
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0 .0));
 
 		let view_request = ViewRequest {
@@ -756,9 +730,6 @@ impl BridgeContractInitiator for MovementClient {
 			.parse::<u64>()
 			.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
 		let hash_lock = utils::val_as_str_initiator(values.get(3))?;
-		let time_lock = utils::val_as_str_initiator(values.get(4))?
-			.parse::<u64>()
-			.map_err(|_| BridgeContractInitiatorError::SerializationError)?;
 		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
 
 		let originator_address = AccountAddress::from_hex_literal(originator)
@@ -776,7 +747,6 @@ impl BridgeContractInitiator for MovementClient {
 			recipient_address: RecipientAddress(recipient_address_bytes),
 			amount: Amount(AssetType::Moveth(amount)),
 			hash_lock: HashLock(MovementHash(hash_lock_array)),
-			time_lock: TimeLock(time_lock),
 			state,
 		};
 
@@ -784,13 +754,111 @@ impl BridgeContractInitiator for MovementClient {
 	}
 }
 
+// Should feature `bridge-test` flag after https://github.com/movementlabsxyz/movement/pull/574 is merged
 impl MovementClient {
-	fn counterparty_type_args(&self, call: Call) -> Vec<TypeTag> {
-		match call {
-			Call::Lock => vec![TypeTag::Address, TypeTag::U64, TypeTag::U64, TypeTag::U8],
-			Call::Complete => vec![TypeTag::Address, TypeTag::U64, TypeTag::U8],
-			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
-			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
-		}
+	pub async fn counterparty_set_timelock(
+		&mut self,
+		time_lock: u64,
+	) -> Result<(), BridgeContractCounterpartyError> {
+		let args = vec![utils::serialize_u64(&time_lock)?];
+
+		let payload = utils::make_aptos_payload(
+			self.native_address,
+			"atomic_bridge_counterparty",
+			"set_time_lock_duration",
+			Vec::new(),
+			args,
+		);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CallError)?;
+
+		Ok(())
+	}
+
+	pub async fn counterparty_time_lock_duration(
+		&mut self,
+	) -> Result<u64, BridgeContractCounterpartyError> {
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.native_address.into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_counterparty")
+							.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("get_time_lock_duration")
+						.map_err(|_| BridgeContractCounterpartyError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractCounterpartyError::CallError)?;
+
+		let values = response.inner();
+		let timelock = utils::val_as_u64(values.first())?;
+		Ok(timelock)
+	}
+
+	pub async fn initiator_set_timelock(
+		&mut self,
+		time_lock: u64,
+	) -> Result<(), BridgeContractInitiatorError> {
+		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+
+		let payload = utils::make_aptos_payload(
+			self.native_address,
+			"atomic_bridge_initiator",
+			"set_time_lock_duration",
+			Vec::new(),
+			args,
+		);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::CallError)?;
+
+		Ok(())
+	}
+
+	pub async fn initiator_time_lock_duration(
+		&mut self,
+	) -> Result<u64, BridgeContractInitiatorError> {
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.native_address.into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_initiator")
+							.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("get_time_lock_duration")
+						.map_err(|_| BridgeContractInitiatorError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractInitiatorError::CallError)?;
+
+		let values = response.inner();
+		let timelock = utils::val_as_u64_initiator(values.first())?;
+		Ok(timelock)
 	}
 }

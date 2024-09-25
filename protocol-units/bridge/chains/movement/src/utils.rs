@@ -22,10 +22,10 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
-use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
-	types::{GenUniqueHash, HashLockPreImage, RecipientAddress},
+use bridge_shared::bridge_contracts::{
+	BridgeContractCounterpartyError, BridgeContractInitiatorError,
 };
+use bridge_shared::types::{GenUniqueHash, HashLockPreImage, RecipientAddress};
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
@@ -234,7 +234,6 @@ pub fn extract_bridge_transfer_id(txn: Transaction) -> Option<String> {
 			}
 		}
 	}
-
 	None
 }
 

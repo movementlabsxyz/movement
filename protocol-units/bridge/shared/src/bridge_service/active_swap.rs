@@ -482,7 +482,6 @@ where
 		.lock_bridge_transfer(
 			bridge_transfer_id,
 			hash_lock,
-			details.time_lock,
 			InitiatorAddress(From::from(details.initiator_address.0)),
 			RecipientAddress(From::from(details.recipient_address.0)),
 			details.amount,

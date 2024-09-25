@@ -138,13 +138,13 @@ impl Stream for EthereumChain {
 	type Item = ContractEvent<EthAddress, EthHash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
+		tracing::trace!("EthereumChain[{}]: Polling for events", self.name);
 		let this = self.get_mut();
 
 		match this.transaction_receiver.poll_next_unpin(cx) {
 			Poll::Ready(Some(transaction)) => {
 				tracing::trace!(
-					"Etherum Chain [{}]: Received transaction: {:?}",
+					"Ethereum Chain [{}]: Received transaction: {:?}",
 					this.name,
 					transaction
 				);
@@ -153,23 +153,20 @@ impl Stream for EthereumChain {
 				}
 			}
 			Poll::Ready(None) => {
-				tracing::warn!("AbstractBlockchain[{}]: Transaction receiver dropped", this.name);
+				tracing::warn!("EthereumChain[{}]: Transaction receiver dropped", this.name);
 			}
 			Poll::Pending => {
-				tracing::trace!(
-					"AbstractBlockchain[{}]: No events in transaction_receiver",
-					this.name
-				);
+				tracing::trace!("EthereumChain[{}]: No events in transaction_receiver", this.name);
 			}
 		}
 
 		if let Some(event) = this.events.pop() {
 			for listener in &mut this.event_listeners {
-				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
+				tracing::trace!("EthereumChain[{}]: Sending event to listener", this.name);
 				listener.unbounded_send(event.clone()).expect("listener dropped");
 			}
 
-			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);
+			tracing::trace!("EthereumChain[{}]: Poll::Ready({:?})", this.name, event);
 			match event {
 				EthChainEvent::InitiatorContractEvent(Ok(event)) => {
 					let contract_event = match event {
@@ -200,7 +197,7 @@ impl Stream for EthereumChain {
 			}
 		}
 
-		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
+		tracing::trace!("EthereumChain[{}]: Poll::Pending", this.name);
 		Poll::Pending
 	}
 }

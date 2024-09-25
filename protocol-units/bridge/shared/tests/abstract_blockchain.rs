@@ -85,7 +85,6 @@ async fn test_initiate_bridge_transfer() {
 		initiator_address.clone(),
 		recipient_address.clone(),
 		amount,
-		time_lock.clone(),
 		hash_lock.clone(),
 	));
 
@@ -106,7 +105,6 @@ async fn test_initiate_bridge_transfer() {
 				initiator_address: initiator_address.clone(),
 				recipient_address: recipient_address.clone(),
 				amount: amount.clone(),
-				time_lock: time_lock.clone(),
 				hash_lock: hash_lock.clone(),
 				state: 1
 			})
@@ -123,7 +121,6 @@ async fn test_initiate_bridge_transfer() {
 	assert_eq!(details.initiator_address, initiator_address);
 	assert_eq!(details.recipient_address, recipient_address);
 	assert_eq!(details.amount, amount);
-	assert_eq!(details.time_lock, time_lock);
 	assert_eq!(details.hash_lock, hash_lock);
 }
 
@@ -145,7 +142,6 @@ async fn test_lock_bridge_transfer() {
 		Transaction::Counterparty::<TestAddress, _>(CounterpartyCall::LockBridgeTransfer(
 			bridge_transfer_id.clone(),
 			hash_lock.clone(),
-			time_lock.clone(),
 			initiator_adress.clone(),
 			recipient_address.clone(),
 			amount,
@@ -166,7 +162,6 @@ async fn test_lock_bridge_transfer() {
 			SmartContractCounterpartyEvent::LockedBridgeTransfer(LockDetails {
 				bridge_transfer_id: bridge_transfer_id.clone(),
 				hash_lock: hash_lock.clone(),
-				time_lock: time_lock.clone(),
 				initiator_address: InitiatorAddress(Vec::new()),
 				recipient_address: recipient_address.clone(),
 				amount,
@@ -181,6 +176,5 @@ async fn test_lock_bridge_transfer() {
 	assert_eq!(details.bridge_transfer_id, bridge_transfer_id);
 	assert_eq!(details.recipient_address, recipient_address);
 	assert_eq!(details.hash_lock, hash_lock);
-	assert_eq!(details.time_lock, time_lock);
 	assert_eq!(details.amount, amount);
 }
