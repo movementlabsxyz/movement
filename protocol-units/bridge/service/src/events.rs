@@ -1,5 +1,8 @@
 use crate::chains::bridge_contracts::BridgeContractEvent;
+use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::chains::ethereum::event_monitoring::EthMonitoring;
 use crate::types::ChainId;
+use crate::BridgeContractMonitoring;
 use thiserror::Error;
 use tokio_stream::StreamExt;
 
@@ -26,3 +29,39 @@ impl<A> From<(BridgeContractEvent<A>, ChainId)> for TransferEvent<A> {
 		TransferEvent { chain, contract_event: event }
 	}
 }
+
+pub fn convert<A>(event: BridgeContractEvent<A>, chain: ChainId) -> TransferEvent<A> {
+	TransferEvent { chain, contract_event: event }
+}
+
+// impl<A>
+// 	From<(
+// 		BridgeContractEvent<
+// 			<dyn BridgeContractMonitoring<
+// 				Address = A,
+// 				Item = BridgeContractResult<BridgeContractEvent<A>>,
+// 			> as BridgeContractMonitoring>::Address,
+// 		>,
+// 		ChainId,
+// 	)>
+// 	for TransferEvent<
+// 		<dyn BridgeContractMonitoring<
+// 			Address = A,
+// 			Item = BridgeContractResult<BridgeContractEvent<A>>,
+// 		> as BridgeContractMonitoring>::Address,
+// 	>
+// {
+// 	fn from(
+// 		(event, chain): (
+// 			BridgeContractEvent<
+// 				<dyn BridgeContractMonitoring<
+// 					Address = A,
+// 					Item = BridgeContractResult<BridgeContractEvent<A>>,
+// 				> as BridgeContractMonitoring>::Address,
+// 			>,
+// 			ChainId,
+// 		),
+// 	) -> Self {
+// 		TransferEvent { chain, contract_event: event }
+// 	}
+// }

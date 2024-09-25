@@ -1,13 +1,11 @@
 use crate::actions::process_action;
 use crate::actions::TransferAction;
 use crate::actions::TransferActionType;
+use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::ethereum::client::{Config as EthConfig, EthClient};
-use crate::chains::ethereum::event_monitoring::EthMonitoring;
+use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::chains::ethereum::types::EthAddress;
-use crate::chains::movement::client::{Config as MovementConfig, MovementClient};
-use crate::chains::movement::event_monitoring::MovementMonitoring;
 use crate::chains::movement::utils::MovementAddress;
 use crate::events::InvalidEventError;
 use crate::events::TransferEvent;
@@ -20,22 +18,24 @@ use tokio::select;
 use tokio_stream::StreamExt;
 
 mod actions;
-mod chains;
+pub mod chains;
 mod events;
 mod states;
 mod types;
 
-pub async fn run_bridge(eth_ws_url: &str) -> Result<(), anyhow::Error> {
-	let mut one_stream = EthMonitoring::build(eth_ws_url).await?;
-
-	let eth_config = EthConfig::build_for_test();
-	let one_client = EthClient::new(eth_config).await?;
-
-	let mvt_config = MovementConfig::build_for_test();
-	let two_client = MovementClient::new(&mvt_config).await?;
-
-	let mut two_stream = MovementMonitoring::build(mvt_config).await?;
-
+pub async fn run_bridge<
+	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static,
+	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static,
+>(
+	one_client: impl BridgeContract<A1> + 'static,
+	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
+	two_client: impl BridgeContract<A2> + 'static,
+	mut two_stream: impl BridgeContractMonitoring<Address = A2>,
+) -> Result<(), anyhow::Error>
+where
+	Vec<u8>: From<A1>,
+	Vec<u8>: From<A2>,
+{
 	let mut state_runtime = Runtime::new();
 
 	let mut client_exec_result_futures = FuturesUnordered::new();
@@ -46,7 +46,7 @@ pub async fn run_bridge(eth_ws_url: &str) -> Result<(), anyhow::Error> {
 			Some(one_event_res) = one_stream.next() =>{
 				match one_event_res {
 					Ok(one_event) => {
-						let event : TransferEvent<EthAddress> = (one_event, ChainId::ONE).into();
+						let event : TransferEvent<A1> = (one_event, ChainId::ONE).into();
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
@@ -67,7 +67,7 @@ pub async fn run_bridge(eth_ws_url: &str) -> Result<(), anyhow::Error> {
 			Some(two_event_res) = two_stream.next() =>{
 				match two_event_res {
 					Ok(two_event) => {
-						let event : TransferEvent<MovementAddress> = (two_event, ChainId::TWO).into();
+						let event : TransferEvent<A2> = (two_event, ChainId::TWO).into();
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
