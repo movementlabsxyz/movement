@@ -326,14 +326,12 @@ module atomic_bridge::atomic_bridge_counterparty {
         let bridge_transfer_id = b"transfer1";
         let pre_image = b"secret";
         let hash_lock = keccak256(pre_image); 
-        let time_lock = 3600;
         let amount = 100;
         lock_bridge_transfer(
             origin_account,
             originator,
             bridge_transfer_id,
             hash_lock,
-            time_lock,
             recipient,
             amount
         );
@@ -346,7 +344,9 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
         assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
 
-        aptos_framework::timestamp::fast_forward_seconds(time_lock + 2);
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+
+        aptos_framework::timestamp::fast_forward_seconds(config.time_lock_duration + 2);
 
         let pre_image = b"secret"; 
         let msg:vector<u8> = b"secret";
