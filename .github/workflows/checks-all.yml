@@ -333,14 +333,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Core Development Libraries
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libgcc-s1 libc6-dev
-
       - name: Install Dependencies
         run: |
-          sudo apt-get install -y binutils llvm lld libudev-dev libdw-dev
+          sudo apt-get update --fix-missing
+          sudo apt-get install -y build-essential libgcc-s1 libc6-dev binutils llvm lld libudev-dev libdw-dev
 
       - name: Ensure Latest Binutils and LLVM/LLD
         run: |
