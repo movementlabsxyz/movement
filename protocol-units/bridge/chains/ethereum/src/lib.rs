@@ -206,8 +206,6 @@ impl BlockchainService for EthereumChain {
 	type Address = EthAddress;
 	type Hash = EthHash;
 
-	// InitiatorContract must be BridgeContractInitiator
-	// These are just the Client Structs!!
 	type InitiatorContract = EthClient;
 	type InitiatorMonitoring = EthInitiatorMonitoring<EthAddress, EthHash>;
 

@@ -50,7 +50,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			&mut movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
-			args.hash_lock,
+			args.hash_lock.0,
 			args.amount,
 			true,
 		)
@@ -71,7 +71,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		test_utils::assert_bridge_transfer_details::<[u8; 32]>(
 			&details,
 			bridge_transfer_id,
-			args.hash_lock,
+			args.hash_lock.0,
 			sender_address,
 			args.recipient.clone(),
 			args.amount,
@@ -106,7 +106,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			&mut movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
-			args.hash_lock,
+			args.hash_lock.0,
 			args.amount,
 			true,
 		)
@@ -127,7 +127,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		test_utils::assert_bridge_transfer_details::<[u8; 32]>(
 			&details,
 			bridge_transfer_id,
-			args.hash_lock,
+			args.hash_lock.0,
 			sender_address,
 			args.recipient.clone(),
 			args.amount,
@@ -184,7 +184,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 			&mut movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
-			args.hash_lock,
+			args.hash_lock.0,
 			args.amount,
 			true,
 		)
@@ -205,7 +205,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		test_utils::assert_bridge_transfer_details::<[u8; 32]>(
 			&details,
 			bridge_transfer_id,
-			args.hash_lock,
+			args.hash_lock.0,
 			sender_address,
 			args.recipient.clone(),
 			args.amount,

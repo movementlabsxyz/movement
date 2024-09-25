@@ -52,7 +52,7 @@ alloy::sol!(
 	"abis/WETH9.json"
 );
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize, Deserialize)]
 pub struct EthHash(pub [u8; 32]);
 
 impl EthHash {

@@ -119,7 +119,7 @@ impl From<&str> for MovementAddress {
 	}
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct MovementHash(pub [u8; 32]);
 
 impl MovementHash {

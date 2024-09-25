@@ -18,8 +18,11 @@ use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},
 	types::EthHash,
 };
-use movement_bridge::client::{Config as MovementConfig, MovementClient};
 use movement_bridge::utils::MovementAddress;
+use movement_bridge::{
+	client::{Config as MovementConfig, MovementClient},
+	utils::MovementHash,
+};
 use rand::SeedableRng;
 use std::sync::{Arc, RwLock};
 
@@ -29,8 +32,8 @@ pub mod utils;
 pub struct EthToMovementCallArgs {
 	pub initiator: Vec<u8>,
 	pub recipient: MovementAddress,
-	pub bridge_transfer_id: [u8; 32],
-	pub hash_lock: [u8; 32],
+	pub bridge_transfer_id: MovementHash,
+	pub hash_lock: MovementHash,
 	pub time_lock: u64,
 	pub amount: u64,
 }
@@ -39,8 +42,8 @@ pub struct EthToMovementCallArgs {
 pub struct MovementToEthCallArgs {
 	pub initiator: MovementAddress,
 	pub recipient: Vec<u8>,
-	pub bridge_transfer_id: [u8; 32],
-	pub hash_lock: [u8; 32],
+	pub bridge_transfer_id: EthHash,
+	pub hash_lock: EthHash,
 	pub time_lock: u64,
 	pub amount: u64,
 }
@@ -50,8 +53,8 @@ impl Default for EthToMovementCallArgs {
 		Self {
 			initiator: b"0x123".to_vec(),
 			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-			bridge_transfer_id: *b"00000000000000000000000transfer1",
-			hash_lock: *keccak256(b"secret"),
+			bridge_transfer_id: MovementHash(*b"00000000000000000000000transfer1"),
+			hash_lock: MovementHash(*keccak256(b"secret")),
 			time_lock: 3600,
 			amount: 100,
 		}
@@ -67,8 +70,8 @@ impl Default for MovementToEthCallArgs {
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
 			recipient: b"0x123".to_vec(),
-			bridge_transfer_id: *b"00000000000000000000000transfer1",
-			hash_lock,
+			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
+			hash_lock: EthHash(hash_lock),
 			time_lock: 3600,
 			amount: 100,
 		}
