@@ -151,7 +151,6 @@ where
 							initiator_address,
 							recipient_address,
 							amount,
-							time_lock,
 							hash_lock,
 						) => {
 							this.events.push(EthChainEvent::InitiatorContractEvent(
@@ -159,7 +158,6 @@ where
 									initiator_address.clone(),
 									recipient_address.clone(),
 									amount,
-									time_lock.clone(),
 									hash_lock.clone(),
 								),
 							));
@@ -178,7 +176,6 @@ where
 						CounterpartyCall::LockBridgeTransfer(
 							bridge_transfer_id,
 							hash_lock,
-							time_lock,
 							initiator_address,
 							recipient_address,
 							amount,
@@ -187,7 +184,6 @@ where
 								this.counterparty_contract.lock_bridge_transfer(
 									bridge_transfer_id.clone(),
 									hash_lock.clone(),
-									time_lock.clone(),
 									initiator_address.clone(),
 									recipient_address.clone(),
 									amount,
