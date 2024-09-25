@@ -17,8 +17,6 @@ module atomic_bridge::atomic_bridge_counterparty {
     const COMPLETED: u8 = 2;
     const CANCELLED: u8 = 3;
 
-    const COUNTERPARTY_TIME_LOCK_DUARTION: u64 = 24 * 60 * 60; // 24 hours in seconds
-
     const EINCORRECT_SIGNER: u64 = 1;
     const EWRONG_PREIMAGE: u64 = 2;
     const ETRANSFER_NOT_LOCKED: u64 = 3;
@@ -29,11 +27,13 @@ module atomic_bridge::atomic_bridge_counterparty {
     const EWRONG_HASHLOCK: u64 = 8;
     const ENO_RESULT: u64 = 9;
     const EWRONG_STATE: u64 = 10;
+    const ETIMELOCK_EXPIRED: u64 = 11;
 
     struct BridgeConfig has key {
         moveth_minter: address,
         bridge_module_deployer: address,
         signer_cap: account::SignerCapability,
+        time_lock_duration: u64,
     }
 
     /// A mapping of bridge transfer IDs to their bridge_transfer
@@ -86,8 +86,22 @@ module atomic_bridge::atomic_bridge_counterparty {
         move_to(resource, BridgeConfig {
             moveth_minter: signer::address_of(resource),
             bridge_module_deployer: signer::address_of(resource),
-            signer_cap: resource_signer_cap
+            signer_cap: resource_signer_cap,
+            time_lock_duration: 24 * 60 * 60  // Default 24 hours
         });
+    }
+
+    public fun get_time_lock_duration(): u64 acquires BridgeConfig {
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+        config.time_lock_duration
+    }
+
+    public entry fun set_time_lock_duration(origin: &signer, time_lock_duration: u64) acquires BridgeConfig {
+        let config = borrow_global_mut<BridgeConfig>(@resource_addr);
+        // Check if the signer is the deployer (the original initializer)
+        assert!(signer::address_of(origin) == @origin_addr, EINCORRECT_SIGNER);
+
+        config.time_lock_duration = time_lock_duration;
     }
 
     public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {
@@ -121,39 +135,40 @@ module atomic_bridge::atomic_bridge_counterparty {
         )
     }
 
-    public entry fun lock_bridge_transfer(
-        account: &signer,
-        originator: vector<u8>, //eth address
-        bridge_transfer_id: vector<u8>,
-        hash_lock: vector<u8>,
-        recipient: address,
-        amount: u64
-    ) acquires BridgeTransferStore {
-        // Initiator multiplies timelock by 2, no need to multiply here
-        let time_lock = timestamp::now_seconds() + COUNTERPARTY_TIME_LOCK_DUARTION;
+        public entry fun lock_bridge_transfer(
+            account: &signer,
+            originator: vector<u8>, //eth address
+            bridge_transfer_id: vector<u8>,
+            hash_lock: vector<u8>,
+            recipient: address,
+            amount: u64
+        ) acquires BridgeTransferStore, BridgeConfig {
+            // Use the configured time lock duration from BridgeConfig
+            let config = borrow_global<BridgeConfig>(@atomic_bridge);
+            let time_lock = timestamp::now_seconds() + config.time_lock_duration;
 
-        assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
-        let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
-        let bridge_transfer = BridgeTransfer {
-            originator,
-            recipient,
-            amount,
-            hash_lock,
-            time_lock,
-            state: LOCKED,
-        };
-        smart_table::add(&mut store.transfers, bridge_transfer_id, bridge_transfer);
-
-        event::emit_event(&mut store.bridge_transfer_locked_events, BridgeTransferLockedEvent {
-                amount,
-                bridge_transfer_id,
+            assert!(signer::address_of(account) == @origin_addr, EINCORRECT_SIGNER);
+            let store = borrow_global_mut<BridgeTransferStore>(@resource_addr);
+            let bridge_transfer = BridgeTransfer {
                 originator,
                 recipient,
+                amount,
                 hash_lock,
                 time_lock,
-            },
-        );
-    }
+                state: LOCKED,
+            };
+            smart_table::add(&mut store.transfers, bridge_transfer_id, bridge_transfer);
+
+            event::emit_event(&mut store.bridge_transfer_locked_events, BridgeTransferLockedEvent {
+                    amount,
+                    bridge_transfer_id,
+                    originator,
+                    recipient,
+                    hash_lock,
+                    time_lock,
+                },
+            );
+        }
 
     public entry fun complete_bridge_transfer(
         account: &signer,
@@ -168,6 +183,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let computed_hash = keccak256(pre_image);
         assert!(computed_hash == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
         assert!(bridge_transfer.state == LOCKED, ETRANSFER_NOT_LOCKED);
+        assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
         bridge_transfer.state = COMPLETED;
 
         moveth::mint(&resource_signer, bridge_transfer.recipient, bridge_transfer.amount);
@@ -202,7 +218,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         );
     }
 
-    #[test_only]
+     #[test_only]
     public fun set_up_test(origin_account: &signer, resource_addr: &signer) {
 
         create_account_for_test(signer::address_of(origin_account));
@@ -258,14 +274,79 @@ module atomic_bridge::atomic_bridge_counterparty {
         // Verify that the transfer is stored in pending_transfers
         let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
         let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+        let time_lock_duration = borrow_global<BridgeConfig>(@atomic_bridge).time_lock_duration;
 
-        let expected_time_lock = COUNTERPARTY_TIME_LOCK_DUARTION;
+        let expected_time_lock =  time_lock_duration;
 
         assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
         assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
         assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
         assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
         assert!(bridge_transfer.time_lock == timestamp::now_seconds() + expected_time_lock, 420);
+
+        let pre_image = b"secret"; 
+        let msg:vector<u8> = b"secret";
+        debug::print(&utf8(msg));
+        complete_bridge_transfer(
+            client,
+            bridge_transfer_id,
+            pre_image, 
+        );
+        debug::print(&utf8(msg));
+        // Verify that the transfer is stored in completed_transfers
+        let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
+        let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
+        assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
+    }
+
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[expected_failure (abort_code = ETIMELOCK_EXPIRED, location = Self)]
+    fun test_complete_bridge_transfer_expired(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeTransferStore, BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+        let receiver_address = @0xdada;
+        let originator = b"0x123"; //In real world this would be an ethereum address
+        let recipient = @0xface; 
+        let asset = moveth::metadata();
+        
+        let bridge_transfer_id = b"transfer1";
+        let pre_image = b"secret";
+        let hash_lock = keccak256(pre_image); 
+        let amount = 100;
+        lock_bridge_transfer(
+            origin_account,
+            originator,
+            bridge_transfer_id,
+            hash_lock,
+            recipient,
+            amount
+        );
+        // Verify that the transfer is stored in pending_transfers
+        let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
+        let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
+
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+
+        aptos_framework::timestamp::fast_forward_seconds(config.time_lock_duration + 2);
 
         let pre_image = b"secret"; 
         let msg:vector<u8> = b"secret";
@@ -361,5 +442,71 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_recipient == recipient, 2);
         assert!(transfer_originator == originator, 3);
     }
-}
 
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    public fun test_get_time_lock_duration(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+
+        let time_lock_duration = get_time_lock_duration();
+        assert!(time_lock_duration == 24 * 60 * 60, 1);
+    }
+
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    public fun test_set_time_lock_duration(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+
+        // Timelock should be at default before setting
+        let time_lock_duration = get_time_lock_duration();
+        assert!(time_lock_duration == 24 * 60 * 60, 1);
+
+        // Set the timelock to 42
+        set_time_lock_duration(origin_account, 42);
+        let time_lock_duration = get_time_lock_duration();
+        assert!(time_lock_duration == 42, 2);
+    } 
+
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[expected_failure (abort_code = EINCORRECT_SIGNER)]
+    public fun test_should_fail_set_time_lock_duration_wrong_signer(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+
+        // Timelock should be at default before setting
+        let time_lock_duration = get_time_lock_duration();
+        assert!(time_lock_duration == 24 * 60 * 60, 1);
+
+        // Set the timelock to 42
+        set_time_lock_duration(client, 42);
+        let time_lock_duration = get_time_lock_duration();
+        assert!(time_lock_duration == 42, 2);
+    }
+}

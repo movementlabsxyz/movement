@@ -25,18 +25,25 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
     AtomicBridgeInitiator public atomicBridgeInitiator;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
 
-    // Constant time lock of 24 hours in seconds (86400 seconds)
-    uint256 public constant COUNTERPARTY_TIME_LOCK_DURATION = 24 * 60 * 60;
+    // Configurable time lock duration
+    uint256 public counterpartyTimeLockDuration;
 
-    function initialize(address _atomicBridgeInitiator, address owner) public initializer {
+    function initialize(address _atomicBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
         __Ownable_init(owner);
+
+        // Set the configurable time lock duration
+        counterpartyTimeLockDuration = _timeLockDuration;
     }
 
     function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
         atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
+    }
+
+    function setTimeLockDuration(uint256 _timeLockDuration) external onlyOwner {
+        counterpartyTimeLockDuration = _timeLockDuration;
     }
 
     function lockBridgeTransfer(
@@ -49,8 +56,8 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         if (amount == 0) revert ZeroAmount();
         if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
 
-        // The timelock for the counterparty is just 24 hours (constant value)
-        uint256 timeLock = block.timestamp + COUNTERPARTY_TIME_LOCK_DURATION;
+        // The time lock is now based on the configurable duration
+        uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
 
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
@@ -61,7 +68,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
             state: MessageState.PENDING
         });
 
-        emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, COUNTERPARTY_TIME_LOCK_DURATION);
+        emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
         return true;
     }
 
