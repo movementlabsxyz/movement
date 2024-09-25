@@ -54,10 +54,8 @@ where
 
 	pub fn lock_bridge_transfer(
 		&mut self,
-
 		bridge_transfer_id: BridgeTransferId<H>,
 		hash_lock: HashLock<H>,
-		time_lock: TimeLock,
 		initiator_address: InitiatorAddress<Vec<u8>>,
 		recipient_address: RecipientAddress<A>,
 		amount: Amount,
@@ -73,7 +71,6 @@ where
 				initiator_address: initiator_address.clone(),
 				recipient_address: recipient_address.clone(),
 				hash_lock: hash_lock.clone(),
-				time_lock: time_lock.clone(),
 				amount,
 			},
 		);
@@ -83,7 +80,6 @@ where
 			initiator_address,
 			recipient_address,
 			hash_lock,
-			time_lock,
 			amount,
 		}))
 	}

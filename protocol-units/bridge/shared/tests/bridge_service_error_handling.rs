@@ -16,7 +16,7 @@ use bridge_shared::{
 	},
 	types::{
 		Amount, AssetType, BridgeTransferDetails, Convert, CounterpartyCompletedDetails, HashLock,
-		HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+		HashLockPreImage, InitiatorAddress, RecipientAddress,
 	},
 };
 
@@ -68,7 +68,6 @@ async fn test_bridge_service_error_handling() {
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
@@ -86,7 +85,6 @@ async fn test_bridge_service_error_handling() {
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 			state: 1
 		})
@@ -229,7 +227,6 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
@@ -247,7 +244,6 @@ async fn test_bridge_service_locking_termination_after_errors() {
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 			state: 1
 		})
@@ -311,7 +307,6 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
@@ -329,7 +324,6 @@ async fn test_bridge_service_completion_abort_after_errors() {
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 			state: 1
 		})
@@ -448,7 +442,6 @@ async fn test_bridge_service_timeout_error_handling() {
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
@@ -466,7 +459,6 @@ async fn test_bridge_service_timeout_error_handling() {
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 			state: 1
 		})

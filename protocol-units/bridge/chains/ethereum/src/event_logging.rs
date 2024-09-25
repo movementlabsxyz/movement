@@ -211,10 +211,6 @@ fn decode_log_data(
 					.as_fixed_bytes()
 					.map(coerce_bytes)
 					.ok_or_else(|| anyhow::anyhow!("Failed to decode HashLock"))?;
-				let time_lock = decoded.indexed[5]
-					.as_uint()
-					.map(|(u, _)| u.into())
-					.ok_or_else(|| anyhow::anyhow!("Failed to decode TimeLock"))?;
 				let state = decoded
 					.indexed
 					.get(6)
@@ -227,7 +223,6 @@ fn decode_log_data(
 					initiator_address: InitiatorAddress(initiator_address),
 					recipient_address: RecipientAddress(recipient_address.to_vec()),
 					hash_lock: HashLock(hash_lock),
-					time_lock,
 					amount,
 					state,
 				};

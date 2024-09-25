@@ -8,15 +8,10 @@ use bridge_integration_tests::{
 };
 use bridge_shared::{
 	bridge_contracts::BridgeContractInitiator,
-	types::{
-		BridgeTransferId, HashLockPreImage
-	},
+	types::{BridgeTransferId, HashLockPreImage},
 };
-
 use tokio::{self};
-
 use tracing::info;
-use tracing_subscriber;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -56,8 +51,8 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock,
-			args.time_lock,
 			args.amount,
+			true,
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -112,8 +107,8 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock,
-			args.time_lock,
 			args.amount,
+			true,
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -175,20 +170,23 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 
 	let args = MovementToEthCallArgs::default();
-	let time_lock = 1;
 
 	let test_result = async {
 		let mut movement_client =
 			harness.movement_client_mut().expect("Failed to get MovementClient");
 		let sender_address = movement_client.signer().address();
 		test_utils::fund_and_check_balance(&mut movement_client, 100_000_000_000).await?;
+
+		let ledger_info = movement_client.rest_client().get_ledger_information().await?;
+		println!("Ledger info: {:?}", ledger_info);
+
 		test_utils::initiate_bridge_transfer_helper(
 			&mut movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock,
-			time_lock,
 			args.amount,
+			true,
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

@@ -249,7 +249,6 @@ pub enum CounterpartyCall<A, H> {
 	LockBridgeTransfer(
 		BridgeTransferId<H>,
 		HashLock<H>,
-		TimeLock,
 		InitiatorAddress<Vec<u8>>,
 		RecipientAddress<A>,
 		Amount,

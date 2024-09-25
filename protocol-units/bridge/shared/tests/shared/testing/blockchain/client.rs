@@ -7,7 +7,7 @@ use bridge_shared::{
 	},
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-		HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+		HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
 	},
 };
 use dashmap::DashMap;
@@ -205,14 +205,12 @@ where
 		initiator_address: InitiatorAddress<Self::Address>,
 		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let transaction = Transaction::Initiator(InitiatorCall::InitiateBridgeTransfer(
 			initiator_address,
 			recipient_address,
 			amount,
-			time_lock,
 			hash_lock,
 		));
 		self.register_call(MethodName::InitiateBridgeTransfer);
@@ -282,7 +280,6 @@ where
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		initiator: InitiatorAddress<Vec<u8>>,
 		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
@@ -299,7 +296,6 @@ where
 		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
 			bridge_transfer_id,
 			hash_lock,
-			time_lock,
 			initiator,
 			recipient,
 			amount,
