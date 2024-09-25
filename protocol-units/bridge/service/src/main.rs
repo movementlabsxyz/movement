@@ -2,8 +2,6 @@ use anyhow::Result;
 //use bridge_serivice::{setup_bridge_service, SetupBridgeService};
 //use bridge_shared::bridge_service::BridgeServiceConfig;
 
-mod swapstate;
-
 #[tokio::main]
 async fn main() -> Result<()> {
 	// let config = BridgeServiceConfig::default();
@@ -18,6 +16,6 @@ async fn main() -> Result<()> {
 	// tokio::spawn(ethereum_chain);
 	// tokio::spawn(movement_chain);
 
-	swapstate::run_bridge("eth_ws_url").await?;
+	//	swapstate::run_bridge("eth_ws_url").await?;
 	Ok(())
 }

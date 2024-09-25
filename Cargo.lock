@@ -3697,27 +3697,38 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-serivice"
+name = "bridge-service"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "alloy-rlp",
  "anyhow",
+ "aptos-api",
+ "aptos-api-types",
+ "aptos-sdk",
+ "aptos-types",
+ "async-stream",
  "async-trait",
- "bridge-shared",
+ "bcs 0.1.4",
  "delegate",
+ "derive-new",
  "derive_more",
- "ethereum-bridge",
  "futures",
  "futures-time",
  "futures-timer",
  "hex",
- "movement-bridge",
+ "keccak-hash",
+ "mcr-settlement-client",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
+ "serde",
+ "serde_json",
+ "serde_with",
  "thiserror",
  "tokio",
  "tokio-stream",
  "tracing",
+ "url",
 ]
 
 [[package]]
