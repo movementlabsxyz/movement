@@ -117,7 +117,31 @@ impl MovementClient {
 	pub async fn new_for_test(
 		_config: Config,
 	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
-		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
+		let kill_cmd = TokioCommand::new("sh")
+			.arg("-c")
+			.arg("PID=$(ps aux | grep 'movement node run-local-testnet' | grep -v grep | awk '{print $2}' | head -n 1); if [ -n \"$PID\" ]; then kill -9 $PID; fi")
+			.output()
+			.await?;
+
+		if !kill_cmd.status.success() {
+			println!("Failed to kill running movement process: {:?}", kill_cmd.stderr);
+		} else {
+			println!("Movement process killed if it was running.");
+		}
+
+		let delete_dir_cmd = TokioCommand::new("sh")
+			.arg("-c")
+			.arg("if [ -d '.movement' ]; then rm -rf .movement; fi")
+			.output()
+			.await?;
+
+		if !delete_dir_cmd.status.success() {
+			println!("Failed to delete .movement directory: {:?}", delete_dir_cmd.stderr);
+		} else {
+			println!(".movement directory deleted if it was present.");
+		}
+
+		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
 			.stdout(Stdio::piped())
@@ -193,7 +217,7 @@ impl MovementClient {
 		Ok((
 			MovementClient {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(), // dummy for now
+				non_native_address: Vec::new(),
 				rest_client,
 				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
@@ -463,8 +487,8 @@ impl BridgeContractCounterparty for MovementClient {
 
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
-			utils::serialize_vec(&bridge_transfer_id.0 .0)?,
-			utils::serialize_vec(&hash_lock.0 .0)?,
+			utils::serialize_vec(&bridge_transfer_id.0 .0[..])?,
+			utils::serialize_vec(&hash_lock.0 .0[..])?,
 			utils::serialize_vec(&recipient.0 .0)?,
 			utils::serialize_u64(&amount_value)?,
 		];
@@ -490,7 +514,7 @@ impl BridgeContractCounterparty for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractCounterpartyResult<()> {
 		let args2 = vec![
-			utils::serialize_vec(&bridge_transfer_id.0 .0)?,
+			utils::serialize_vec(&bridge_transfer_id.0 .0[..])?,
 			utils::serialize_vec(&preimage.0)?,
 		];
 
@@ -513,7 +537,7 @@ impl BridgeContractCounterparty for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractCounterpartyResult<()> {
-		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0 .0)?];
+		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0 .0[..])?];
 		let payload = utils::make_aptos_payload(
 			self.native_address,
 			COUNTERPARTY_MODULE_NAME,
@@ -623,7 +647,7 @@ impl BridgeContractInitiator for MovementClient {
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
-			utils::serialize_vec_initiator(&hash_lock.0 .0)?,
+			utils::serialize_vec_initiator(&hash_lock.0 .0[..])?,
 			utils::serialize_u64_initiator(&amount_value)?,
 		];
 
@@ -648,7 +672,7 @@ impl BridgeContractInitiator for MovementClient {
 		secret: HashLockPreImage,
 	) -> BridgeContractInitiatorResult<()> {
 		let args = vec![
-			utils::serialize_vec_initiator(&bridge_transfer_id.0 .0)?,
+			utils::serialize_vec_initiator(&bridge_transfer_id.0 .0[..])?,
 			utils::serialize_vec_initiator(&secret.0)?,
 		];
 
@@ -671,7 +695,7 @@ impl BridgeContractInitiator for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 	) -> BridgeContractInitiatorResult<()> {
-		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0 .0)?];
+		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0 .0[..])?];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
