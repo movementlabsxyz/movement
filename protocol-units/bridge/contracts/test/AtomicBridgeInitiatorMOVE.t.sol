@@ -23,17 +23,24 @@ contract AtomicBridgeInitiatorMOVETest is Test {
     uint256 public constant timeLockDuration = 48 * 60 * 60; // 48 hours in seconds
 
     function setUp() public {
+        // Deploy the MOVEToken contract and mint some tokens to the deployer
         moveToken = new MockMOVEToken();
-        moveToken.initialize(address(this)); 
+        moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
 
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
+        // Deploy the AtomicBridgeInitiatorMOVE contract
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiatorMOVE();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address,address,uint256)", address(moveToken), address(this), timeLockDuration)
+            abi.encodeWithSignature(
+                "initialize(address,address,uint256)", 
+                address(moveToken), 
+                address(this), 
+                timeLockDuration
+            )
         );
 
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));

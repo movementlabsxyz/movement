@@ -12,7 +12,7 @@ import {MockMOVEToken} from "../src/MockMOVEToken.sol";
 contract AtomicBridgeCounterpartyMOVETest is Test {
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVEImplementation;
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVE;
-    AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
+    AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVEImplementation;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
     MockMOVEToken public moveToken;
     ProxyAdmin public proxyAdmin;
@@ -38,36 +38,44 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             )
         );
 
+    uint256 public constant COUNTERPARTY_TIME_LOCK_DURATION = 24 * 60 * 60; // 24 hours
+
     function setUp() public {
         // Deploy the MOVEToken contract and mint some tokens to the deployer
         moveToken = new MockMOVEToken();
         moveToken.initialize(address(this)); // Contract will hold initial MOVE tokens
 
+        // Time lock durations
+        uint256 initiatorTimeLockDuration = 48 * 60 * 60; // 48 hours for the initiator
+        uint256 counterpartyTimeLockDuration = 24 * 60 * 60; // 24 hours for the counterparty
+
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
 
-        // Deploy the AtomicBridgeInitiatorMOVE contract
-        atomicBridgeInitiatorImplementation = new AtomicBridgeInitiatorMOVE();
+        // Deploy the AtomicBridgeInitiator contract with a 48-hour time lock
+        atomicBridgeInitiatorMOVEImplementation = new AtomicBridgeInitiatorMOVE();
         proxyAdmin = new ProxyAdmin(deployer);
         proxy = new TransparentUpgradeableProxy(
-            address(atomicBridgeInitiatorImplementation),
+            address(atomicBridgeInitiatorMOVEImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address)",
+                "initialize(address,address,uint256)",
                 address(moveToken),
-                deployer
+                deployer, 
+                initiatorTimeLockDuration
             )
         );
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
 
-        // Deploy the AtomicBridgeCounterpartyMOVE contract
+        // Deploy the AtomicBridgeCounterparty contract with a 24-hour time lock
         atomicBridgeCounterpartyMOVEImplementation = new AtomicBridgeCounterpartyMOVE();
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeCounterpartyMOVEImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address)",
+                "initialize(address,address,uint256)",
                 address(atomicBridgeInitiatorMOVE),
-                deployer
+                deployer,
+                counterpartyTimeLockDuration
             )
         );
         atomicBridgeCounterpartyMOVE = AtomicBridgeCounterpartyMOVE(address(proxy));
@@ -217,7 +225,7 @@ function testAbortBridgeTransfer() public {
     vm.stopPrank();
 
     // Advance the block number to beyond the timelock period
-    vm.warp(block.timestamp + timeLock + 1);
+    vm.warp(block.timestamp + COUNTERPARTY_TIME_LOCK_DURATION + 1);
 
     // Try to abort as a malicious user (this should fail)
     //vm.startPrank(otherUser);
