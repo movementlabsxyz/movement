@@ -340,26 +340,16 @@ jobs:
 
     - name: Install Dependencies
       run: |
-        sudo apt-get install -y binutils llvm lld libudev-dev libdw-dev
+        sudo apt-get install -y binutils llvm-12 lld-12 libudev-dev libdw-dev
 
-    - name: Ensure Latest Binutils and LLVM/LLD
-      run: |
-        sudo apt-get install -y binutils llvm lld
-
-    - name: Print Toolchain Versions
-      run: |
-        which ld
-        which lld
-        which gcc
-        which cc
-        echo $PATH
-
-    - name: Build Movement CLI with Default Linker
+    - name: Clean and Build Movement CLI with LLD Linker
       env:
         RUST_BACKTRACE: "1"
+        RUSTFLAGS: "-C linker=lld"  # Use LLD as the linker
       run: |
         git clone https://github.com/movementlabsxyz/aptos-core/
         cd aptos-core
+        cargo clean  # Ensure clean build
         cargo build -p movement --verbose
         sudo cp target/debug/movement /usr/local/bin/
         cd -
