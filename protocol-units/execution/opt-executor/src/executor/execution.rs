@@ -240,16 +240,16 @@ mod tests {
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
+	fn create_signed_transaction(sequence_number: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let public_key = private_key.public_key();
 		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
 		let raw_transaction = RawTransaction::new(
 			AccountAddress::random(),
-			0,
+			sequence_number,
 			transaction_payload,
 			0,
-			gas_unit_price,
+			0,
 			0,
 			chain_id, // This is the value used in aptos testing code.
 		);
@@ -261,8 +261,7 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -296,8 +295,7 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
 		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -399,8 +397,7 @@ mod tests {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender, &config)?;
 		let service = Service::new(&context);
 		executor.rollover_genesis_now().await?;
 

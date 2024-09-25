@@ -1,10 +1,10 @@
 use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_db::AptosDB;
 use aptos_executor::db_bootstrapper;
-use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	chain_id::ChainId,
+	on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig},
 	transaction::{ChangeSet, Transaction, WriteSetPayload},
 	validator_signer::ValidatorSigner,
 };

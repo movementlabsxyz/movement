@@ -66,6 +66,16 @@ contract MintableToken is IMintableToken, BaseToken {
     }
 
     /**
+     * @dev Revoke minter admin role
+     * @param account The address to revoke minter admin role from
+     */
+    function revokeMinterAdminRole(
+        address account
+    ) public onlyRole(MINTER_ADMIN_ROLE) {
+        _revokeRole(MINTER_ADMIN_ROLE, account);
+    }
+
+    /**
      * @dev Revoke minter role
      * @param account The address to revoke minter role from
      */

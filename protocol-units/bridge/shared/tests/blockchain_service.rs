@@ -1,7 +1,7 @@
 use bridge_shared::bridge_monitoring::BridgeContractInitiatorEvent;
 use bridge_shared::types::{
 	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress,
-	RecipientAddress, TimeLock,
+	RecipientAddress,
 };
 use bridge_shared::{blockchain_service::ContractEvent, bridge_contracts::BridgeContractInitiator};
 use futures::StreamExt;
@@ -22,7 +22,6 @@ async fn test_bridge_transfer_initiated() {
 			InitiatorAddress::from("initiator"),
 			RecipientAddress::from("recipient"),
 			HashLock("hash_lock"),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((1000, 0))),
 		)
 		.await
@@ -39,7 +38,6 @@ async fn test_bridge_transfer_initiated() {
 				initiator_address: InitiatorAddress::from("initiator"),
 				recipient_address: RecipientAddress::from("recipient"),
 				hash_lock: HashLock("hash_lock"),
-				time_lock: TimeLock(100),
 				amount: Amount(AssetType::EthAndWeth((1000, 0))),
 				state: 1
 			}
