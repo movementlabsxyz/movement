@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-interface IAtomicBridgeInitiator {
+interface IAtomicBridgeInitiatorMOVE {
     // Event emitted when a new atomic bridge transfer is created
     event BridgeTransferInitiated(
         bytes32 indexed _bridgeTransferId,
@@ -17,16 +17,17 @@ interface IAtomicBridgeInitiator {
     event BridgeTransferRefunded(bytes32 indexed _bridgeTransferId);
 
     error ZeroAmount();
-    error WETHTransferFailed();
+    error MOVETransferFailed();
     error BridgeTransferInvalid();
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
-    error InsufficientWethBalance();
+    error InsufficientMOVEBalance();
     error TimeLockNotExpired();
-    error TimeLockExpired();
+    error TimelockExpired();
     error ZeroAddress();
     error Unauthorized();
+
 
     /**
      * @dev Creates a new atomic bridge transfer using native ETH
@@ -38,7 +39,6 @@ interface IAtomicBridgeInitiator {
      */
     function initiateBridgeTransfer(uint256 _wethAmount, bytes32 _recipient, bytes32 _hashLock)
         external
-        payable
         returns (bytes32 _bridgeTransferId);
 
     /**

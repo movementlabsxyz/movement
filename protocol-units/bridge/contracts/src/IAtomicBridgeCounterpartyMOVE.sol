@@ -1,7 +1,6 @@
-
 pragma solidity ^0.8.22;
 
-interface IAtomicBridgeCounterparty {
+interface IAtomicBridgeCounterpartyMOVE {
     // Event emitted when a new atomic bridge transfer is locked
     event BridgeTransferLocked(
         bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock
@@ -14,15 +13,14 @@ interface IAtomicBridgeCounterparty {
     event BridgeTransferAborted(bytes32 indexed bridgeTransferId);
 
     error ZeroAmount();
-    error WETHTransferFailed();
+    error MOVETransferFailed();
     error BridgeTransferInvalid();
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
     error BridgeTransferStateNotPending();
-    error InsufficientWethBalance();
+    error InsufficientMOVEBalance();
     error TimeLockNotExpired();
-    error TimeLockExpired();
     error ZeroAddress();
     error Unauthorized();
 

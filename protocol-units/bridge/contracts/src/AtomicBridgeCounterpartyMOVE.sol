@@ -2,10 +2,10 @@
 pragma solidity ^0.8.22;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {IAtomicBridgeCounterparty} from "./IAtomicBridgeCounterparty.sol";
-import {AtomicBridgeInitiator} from "./AtomicBridgeInitiator.sol";
+import {IAtomicBridgeCounterpartyMOVE} from "./IAtomicBridgeCounterpartyMOVE.sol";
+import {AtomicBridgeInitiatorMOVE} from "./AtomicBridgeInitiatorMOVE.sol";
 
-contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeable {
+contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableUpgradeable {
     enum MessageState {
         PENDING,
         COMPLETED,
@@ -21,8 +21,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         MessageState state;
     }
 
-    // Reference to the AtomicBridgeInitiator contract
-    AtomicBridgeInitiator public atomicBridgeInitiator;
+    AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
     mapping(bytes32 => BridgeTransferDetails) public bridgeTransfers;
 
     // Configurable time lock duration
@@ -30,7 +29,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
     function initialize(address _atomicBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
-        atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
+        atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
         __Ownable_init(owner);
 
         // Set the configurable time lock duration
@@ -39,7 +38,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
     function setAtomicBridgeInitiator(address _atomicBridgeInitiator) external onlyOwner {
         if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
-        atomicBridgeInitiator = AtomicBridgeInitiator(_atomicBridgeInitiator);
+        atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
     }
 
     function setTimeLockDuration(uint256 _timeLockDuration) external onlyOwner {
@@ -54,7 +53,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         uint256 amount
     ) external onlyOwner returns (bool) {
         if (amount == 0) revert ZeroAmount();
-        if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
+        if (atomicBridgeInitiatorMOVE.poolBalance() < amount) revert InsufficientMOVEBalance();
 
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
@@ -77,11 +76,11 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         if (computedHash != details.hashLock) revert InvalidSecret();
-        if (block.timestamp > details.timeLock) revert TimeLockExpired();
+        if (block.timestamp > details.timeLock) revert TimeLockNotExpired();
 
         details.state = MessageState.COMPLETED;
 
-        atomicBridgeInitiator.withdrawWETH(details.recipient, details.amount);
+        atomicBridgeInitiatorMOVE.withdrawMOVE(details.recipient, details.amount);
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
     }
