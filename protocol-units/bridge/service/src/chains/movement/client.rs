@@ -441,7 +441,7 @@ impl MovementClient {
 impl BridgeContract<MovementAddress> for MovementClient {
 	async fn initiate_bridge_transfer(
 		&mut self,
-		_initiator: MovementAddress,
+		_initiator: BridgeAddress<MovementAddress>,
 		recipient: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		time_lock: TimeLock,
@@ -514,7 +514,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		hash_lock: HashLock,
 		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
-		recipient: MovementAddress,
+		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		let amount_value = match amount.0 {

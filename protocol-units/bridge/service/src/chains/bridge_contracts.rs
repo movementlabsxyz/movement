@@ -80,7 +80,8 @@ pub enum BridgeContractEvent<A> {
 	Initiated(BridgeTransferDetails<A>),
 	Locked(LockDetails<A>),
 	InitialtorCompleted(BridgeTransferId),
-	CounterPartCompleted(BridgeTransferId),
+	CounterPartCompleted(BridgeTransferId, HashLockPreImage),
+	Cancelled(BridgeTransferId),
 	Refunded(BridgeTransferId),
 }
 
@@ -89,9 +90,18 @@ impl<A> BridgeContractEvent<A> {
 		match self {
 			Self::Initiated(details) => details.bridge_transfer_id,
 			Self::Locked(details) => details.bridge_transfer_id,
-			Self::InitialtorCompleted(id) | Self::CounterPartCompleted(id) | Self::Refunded(id) => {
-				*id
-			}
+			Self::InitialtorCompleted(id)
+			| Self::CounterPartCompleted(id, _)
+			| Self::Cancelled(id)
+			| Self::Refunded(id) => *id,
+		}
+	}
+
+	pub fn is_initiated_event(&self) -> bool {
+		if let BridgeContractEvent::Initiated(_) = self {
+			true
+		} else {
+			false
 		}
 	}
 }
@@ -106,7 +116,7 @@ pub trait BridgeContractMonitoring:
 pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator_address: A,
+		initiator_address: BridgeAddress<A>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		time_lock: TimeLock,
@@ -135,7 +145,7 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		hash_lock: HashLock,
 		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
-		recipient: A,
+		recipient: BridgeAddress<A>,
 		amount: Amount,
 	) -> BridgeContractResult<()>;
 

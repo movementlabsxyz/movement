@@ -46,6 +46,11 @@ impl From<String> for BridgeAddress<Vec<u8>> {
 		Self(value.as_bytes().to_vec())
 	}
 }
+// impl<A: Into<Vec<u8>>> Into<BridgeAddress<Vec<u8>>> for BridgeAddress<A> {
+// 	fn into(self) -> BridgeAddress<Vec<u8>> {
+// 		BridgeAddress(self.0.into())
+// 	}
+// }
 
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct HashLock(pub [u8; 32]);

@@ -210,7 +210,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
-		initiator_address: EthAddress,
+		initiator_address: BridgeAddress<EthAddress>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		time_lock: TimeLock,
@@ -228,7 +228,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.value()))
-			.from(initiator_address.0);
+			.from(*initiator_address.0);
 		let _ = send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.map_err(|e| {
@@ -281,7 +281,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		hash_lock: HashLock,
 		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
-		recipient: EthAddress,
+		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeCounterparty::new(
@@ -294,7 +294,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
 			U256::from(time_lock.0),
-			recipient.0,
+			*recipient.0,
 			U256::try_from(amount.0)
 				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 		);

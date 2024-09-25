@@ -45,7 +45,8 @@ impl MovementMonitoring {
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
-					let counterpart_event_list = match pool_initiator_contract(&mvt_client).await {
+					let counterpart_event_list = match pool_counterpart_contract(&mvt_client).await
+					{
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
@@ -276,13 +277,12 @@ fn process_counterparty_response(
 					let completed_details = bcs::from_bytes::<CounterpartyCompletedDetails>(data)?;
 					Ok(BridgeContractEvent::CounterPartCompleted(
 						completed_details.bridge_transfer_id,
+						completed_details.secret,
 					))
 				}
 				CounterpartyEventKind::Cancelled => {
 					let completed_details = bcs::from_bytes::<CounterpartyCompletedDetails>(data)?;
-					Ok(BridgeContractEvent::CounterPartCompleted(
-						completed_details.bridge_transfer_id,
-					))
+					Ok(BridgeContractEvent::Cancelled(completed_details.bridge_transfer_id))
 				}
 			}
 		})

@@ -21,22 +21,6 @@ pub struct TransferEvent<A> {
 	pub contract_event: BridgeContractEvent<A>,
 }
 
-// #[derive(Debug, Clone, Eq, PartialEq, PartialOrd, Ord, Hash)]
-// pub enum TransferEventType<AI, AR> {
-// 	LockInitiatorEvent {
-// 		intiator_address: InitiatorAddress<AI>,
-// 		counter_part_address: RecipientAddress<AR>,
-// 		hash_lock: HashLock<[u8; 32]>,
-// 		time_lock: TimeLock,
-// 		amount: u64,
-// 	},
-// 	MintLockDoneEvent,
-// 	SecretEvent(Vec<u8>),
-// 	MintLockFailEvent,
-// 	ReleaseBurnEvent,
-// 	TimeoutEvent,
-// }
-
 impl<A> From<(BridgeContractEvent<A>, ChainId)> for TransferEvent<A> {
 	fn from((event, chain): (BridgeContractEvent<A>, ChainId)) -> Self {
 		TransferEvent { chain, contract_event: event }

@@ -2,7 +2,12 @@ use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::events::{InvalidEventError, TransferEvent};
 use crate::types::Amount;
 use crate::types::BridgeAddress;
+use crate::types::BridgeTransferDetails;
+use crate::types::HashLockPreImage;
+use crate::types::LockDetails;
 use crate::types::{BridgeTransferId, ChainId, HashLock, TimeLock};
+use crate::TransferAction;
+use crate::TransferActionType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TransferAddress(Vec<u8>);
@@ -15,7 +20,7 @@ impl<A: Into<Vec<u8>>> From<BridgeAddress<A>> for TransferAddress {
 
 impl<A: From<Vec<u8>>> From<TransferAddress> for BridgeAddress<A> {
 	fn from(addr: TransferAddress) -> Self {
-		BridgeAddress(Vec::<u8>::from(addr.0))
+		BridgeAddress(addr.0.into())
 	}
 }
 
@@ -23,8 +28,8 @@ impl<A: From<Vec<u8>>> From<TransferAddress> for BridgeAddress<A> {
 pub enum TransferStateType {
 	Initialized,
 	Locked,
-	CompetedIntiator,
-	CompetedCounterPart,
+	SecretReceived,
+	CompletedIntiator,
 	Done,
 	NeedRefund,
 }
@@ -57,8 +62,59 @@ impl TransferState {
 			(BridgeContractEvent::Locked(_), _) => Err(InvalidEventError::BadEvent),
 			//TODO
 			(BridgeContractEvent::InitialtorCompleted(_), _) => todo!(),
-			(BridgeContractEvent::CounterPartCompleted(_), _) => todo!(),
+			(BridgeContractEvent::CounterPartCompleted(_, _), _) => todo!(),
 			(BridgeContractEvent::Refunded(_), _) => todo!(),
+			(&BridgeContractEvent::Cancelled(_), _) => todo!(),
 		}
+	}
+
+	pub fn transition_from_initiated<A: Into<Vec<u8>> + Clone, B: From<Vec<u8>>>(
+		chain_id: ChainId,
+		transfer_id: BridgeTransferId,
+		detail: BridgeTransferDetails<A>,
+	) -> (Self, TransferAction<B>) {
+		let state = TransferState {
+			state: TransferStateType::Initialized,
+			init_chain: chain_id,
+			transfer_id: transfer_id,
+			intiator_address: detail.initiator_address.clone().into(),
+			counter_part_address: detail.recipient_address.clone().into(),
+			hash_lock: detail.hash_lock,
+			time_lock: detail.time_lock,
+			amount: detail.amount,
+			contract_state: detail.state,
+		};
+
+		let action_type = TransferActionType::LockBridgeTransfer {
+			bridge_transfer_id: transfer_id,
+			hash_lock: detail.hash_lock,
+			time_lock: detail.time_lock,
+			initiator: BridgeAddress(detail.initiator_address.0.into()),
+			recipient: BridgeAddress(detail.recipient_address.0.into()),
+			amount: detail.amount,
+		};
+		let action =
+			TransferAction { init_chain: chain_id, transfer_id: transfer_id, kind: action_type };
+		(state, action)
+	}
+
+	pub fn transition_from_locked_done<A: Into<Vec<u8>> + Clone, B: From<Vec<u8>>>(
+		mut self,
+		_transfer_id: BridgeTransferId,
+		_detail: LockDetails<A>,
+	) -> (Self, TransferActionType<B>) {
+		self.state = TransferStateType::Locked;
+		let action_type = TransferActionType::NoAction;
+		(self, action_type)
+	}
+
+	pub fn transition_from_counterpart_completed<A: Into<Vec<u8>> + Clone, B: From<Vec<u8>>>(
+		mut self,
+		_transfer_id: BridgeTransferId,
+		secret: HashLockPreImage,
+	) -> (Self, TransferActionType<B>) {
+		self.state = TransferStateType::SecretReceived;
+		let action_type = TransferActionType::WaitAndCompleteInitiator(0, secret);
+		(self, action_type)
 	}
 }

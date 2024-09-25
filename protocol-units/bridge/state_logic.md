@@ -7,7 +7,6 @@ flowchart TB
     L1{"L1"} --Event BridgeTransferInitiated--> B("Initialized")
     B --Action lock_bridge_transfer--> L2("L2")
     L2 --Event BridgeTransferLockedEvent--> C("Locked")
-    C --Action complete_bridge_transfer--> L2
     L2 --Event BridgeTransferCompletedEvent--> D("KnowSecret")
     D -- Action BridgeTransferCompletedEvent --> L1
     L1 -- Event BridgeTransferCompleted --> E("Done(Completed)")
@@ -48,7 +47,7 @@ flowchart TB
   BB -->BA{"Action lock_bridge_transfer"}
 
   CE{"Event BridgeTransferLockedEvent"}-->CC("Locked")
-  CC -->CA("Action complete_bridge_transfer")
+  CC -->CA("Action None")
  
   DE{"Event BridgeTransferCompletedEvent"}-->DD("KnowSecret")
   DD -->DA("Action completeBridgeTransfer")
