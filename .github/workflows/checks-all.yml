@@ -333,23 +333,31 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
  
-    - name: Install Movement CLI
+    - name: Install Dependencies
       run: |
         sudo apt-get update 
-        sudo apt-get install -y build-essential
-        sudo apt-get install -y binutils
-        sudo apt-get install -y lld
-        sudo apt-get install -y libudev-dev
-        sudo apt-get install -y libdw-dev
+        sudo apt-get install -y build-essential binutils lld libudev-dev libdw-dev
+
+    - name: Ensure Latest Binutils and LLVM/LLD
+      run: |
+        sudo apt-get install -y binutils llvm lld
+
+    - name: Print Toolchain Versions
+      run: |
         which ld
         which lld
         which gcc
         which cc
         echo $PATH
-        export GIT_CLONE_PROTECTION_ACTIVE=false
-        git clone https://github.com/movementlabsxyz/aptos-core/ 
+
+    - name: Build Movement CLI with LLD Linker
+      env:
+        RUSTFLAGS: "-C linker=lld"  # Set LLVM linker
+        RUST_BACKTRACE: "1"          # Enable backtrace on error
+      run: |
+        git clone https://github.com/movementlabsxyz/aptos-core/
         cd aptos-core
-        cargo build -p movement
+        cargo build -p movement --verbose
         sudo cp target/debug/movement /usr/local/bin/
         cd -
  
