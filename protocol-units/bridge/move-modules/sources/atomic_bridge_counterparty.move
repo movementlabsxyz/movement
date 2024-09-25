@@ -27,6 +27,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     const EWRONG_HASHLOCK: u64 = 8;
     const ENO_RESULT: u64 = 9;
     const EWRONG_STATE: u64 = 10;
+    const ETIMELOCK_EXPIRED: u64 = 11;
 
     struct BridgeConfig has key {
         moveth_minter: address,
@@ -182,6 +183,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         let computed_hash = keccak256(pre_image);
         assert!(computed_hash == bridge_transfer.hash_lock, EWRONG_PREIMAGE);
         assert!(bridge_transfer.state == LOCKED, ETRANSFER_NOT_LOCKED);
+        assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
         bridge_transfer.state = COMPLETED;
 
         moveth::mint(&resource_signer, bridge_transfer.recipient, bridge_transfer.amount);
@@ -281,6 +283,70 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
         assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
         assert!(bridge_transfer.time_lock == timestamp::now_seconds() + expected_time_lock, 420);
+
+        let pre_image = b"secret"; 
+        let msg:vector<u8> = b"secret";
+        debug::print(&utf8(msg));
+        complete_bridge_transfer(
+            client,
+            bridge_transfer_id,
+            pre_image, 
+        );
+        debug::print(&utf8(msg));
+        // Verify that the transfer is stored in completed_transfers
+        let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
+        let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
+        assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
+    }
+
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, creator = @atomic_bridge, moveth = @moveth, admin = @admin, client = @0xdca, master_minter = @master_minter)]
+    #[expected_failure (abort_code = ETIMELOCK_EXPIRED, location = Self)]
+    fun test_complete_bridge_transfer_expired(
+        origin_account: &signer,
+        resource_addr: signer,
+        client: &signer,
+        aptos_framework: signer,
+        master_minter: &signer, 
+        creator: &signer,
+        moveth: &signer,
+    ) acquires BridgeTransferStore, BridgeConfig {
+        set_up_test(origin_account, &resource_addr);
+
+        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        moveth::init_for_test(moveth);
+        let receiver_address = @0xdada;
+        let originator = b"0x123"; //In real world this would be an ethereum address
+        let recipient = @0xface; 
+        let asset = moveth::metadata();
+        
+        let bridge_transfer_id = b"transfer1";
+        let pre_image = b"secret";
+        let hash_lock = keccak256(pre_image); 
+        let amount = 100;
+        lock_bridge_transfer(
+            origin_account,
+            originator,
+            bridge_transfer_id,
+            hash_lock,
+            recipient,
+            amount
+        );
+        // Verify that the transfer is stored in pending_transfers
+        let store = borrow_global<BridgeTransferStore>(signer::address_of(&resource_addr));
+        let bridge_transfer: &BridgeTransfer = smart_table::borrow(&store.transfers, bridge_transfer_id);
+
+        assert!(bridge_transfer.recipient == recipient, EWRONG_RECIPIENT);
+        assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
+        assert!(bridge_transfer.amount == amount, EWRONG_AMOUNT);
+        assert!(bridge_transfer.hash_lock == hash_lock, EWRONG_HASHLOCK);
+
+        let config = borrow_global<BridgeConfig>(@atomic_bridge);
+
+        aptos_framework::timestamp::fast_forward_seconds(config.time_lock_duration + 2);
 
         let pre_image = b"secret"; 
         let msg:vector<u8> = b"secret";
