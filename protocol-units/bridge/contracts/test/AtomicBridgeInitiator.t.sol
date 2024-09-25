@@ -28,7 +28,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         weth = IWETH9(wethAddress);
 
         // generate random address for each test
-        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.timestamp, block.prevrandao))));
+        originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
 
         // Deploy the AtomicBridgeInitiator contract with the WETH address and a 48-hour time lock
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
@@ -170,7 +170,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(transferOriginator, originator, "Originator address mismatch");
         assertEq(transferRecipient, recipient, "Recipient address mismatch");
         assertEq(transferHashLock, hashLock, "HashLock mismatch");
-        assertGt(transferTimeLock, block.timestamp, "TimeLock is not greater than current block timestamp");
+        assertGt(transferTimeLock, block.timestamp, "TimeLock is not greater than current block number");
         assertEq(uint8(transferState), uint8(AtomicBridgeInitiator.MessageState.INITIALIZED));
 
         vm.stopPrank();

@@ -96,4 +96,3 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         emit BridgeTransferAborted(bridgeTransferId);
     }
 }
-

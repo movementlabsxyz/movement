@@ -13,7 +13,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVEImplementation;
     AtomicBridgeCounterpartyMOVE public atomicBridgeCounterpartyMOVE;
     AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorImplementation;
-    AtomicBridgeInitiatorMOVE public atomicBridgeInitiator;
+    AtomicBridgeInitiatorMOVE public atomicBridgeInitiatorMOVE;
     MockMOVEToken public moveToken;
     ProxyAdmin public proxyAdmin;
     TransparentUpgradeableProxy public proxy;
@@ -57,7 +57,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
                 deployer
             )
         );
-        atomicBridgeInitiator = AtomicBridgeInitiatorMOVE(address(proxy));
+        atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
 
         // Deploy the AtomicBridgeCounterpartyMOVE contract
         atomicBridgeCounterpartyMOVEImplementation = new AtomicBridgeCounterpartyMOVE();
@@ -66,7 +66,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             address(proxyAdmin),
             abi.encodeWithSignature(
                 "initialize(address,address)",
-                address(atomicBridgeInitiator),
+                address(atomicBridgeInitiatorMOVE),
                 deployer
             )
         );
@@ -74,7 +74,7 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
 
         // Set the counterparty contract in the AtomicBridgeInitiator contract
         vm.startPrank(deployer);
-        atomicBridgeInitiator.setCounterpartyAddress(
+        atomicBridgeInitiatorMOVE.setCounterpartyAddress(
             address(atomicBridgeCounterpartyMOVE)
         );
         vm.stopPrank();
@@ -86,14 +86,13 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         vm.startPrank(originator);
 
         // Approve the AtomicBridgeInitiatorMOVE contract to spend MOVEToken
-        moveToken.approve(address(atomicBridgeInitiator), amount);
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), amount);
 
         // Initiate the bridge transfer
-        atomicBridgeInitiator.initiateBridgeTransfer(
+        atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
             amount,
             initiator,
-            hashLock,
-            timeLock
+            hashLock
         );
 
         vm.stopPrank();
@@ -103,7 +102,6 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             initiator,
             bridgeTransferId,
             hashLock,
-            timeLock,
             recipient,
             amount
         );
@@ -139,14 +137,13 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
         vm.startPrank(originator);
 
         // Approve the AtomicBridgeInitiatorMOVE contract to spend MOVEToken
-        moveToken.approve(address(atomicBridgeInitiator), amount);
+        moveToken.approve(address(atomicBridgeInitiatorMOVE), amount);
 
         // Initiate the bridge transfer
-        atomicBridgeInitiator.initiateBridgeTransfer(
+        atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
             amount,
             initiator,
-            testHashLock,
-            timeLock
+            testHashLock
         );
 
         vm.stopPrank();
@@ -156,7 +153,6 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             initiator,
             bridgeTransferId,
             testHashLock,
-            timeLock,
             recipient,
             amount
         );
@@ -197,14 +193,13 @@ function testAbortBridgeTransfer() public {
     vm.startPrank(originator);
 
     // Approve the AtomicBridgeInitiatorMOVE contract to spend MOVEToken
-    moveToken.approve(address(atomicBridgeInitiator), amount);
+    moveToken.approve(address(atomicBridgeInitiatorMOVE), amount);
 
     // Initiate the bridge transfer
-    atomicBridgeInitiator.initiateBridgeTransfer(
+    atomicBridgeInitiatorMOVE.initiateBridgeTransfer(
         amount,
         initiator,
-        hashLock,
-        timeLock
+        hashLock
     );
 
     vm.stopPrank();
@@ -215,7 +210,6 @@ function testAbortBridgeTransfer() public {
         initiator,
         bridgeTransferId,
         hashLock,
-        timeLock,
         recipient,
         amount
     );

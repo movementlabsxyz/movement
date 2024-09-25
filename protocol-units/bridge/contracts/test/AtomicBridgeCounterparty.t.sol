@@ -25,7 +25,7 @@ contract AtomicBridgeCounterpartyTest is Test {
     uint256 public amount = 1 ether;
     bytes32 public initiator = keccak256(abi.encodePacked(deployer));
     bytes32 public bridgeTransferId =
-        keccak256(abi.encodePacked(block.timestamp, initiator, recipient, amount, hashLock));
+        keccak256(abi.encodePacked(block.number, initiator, recipient, amount, hashLock));
 
     uint256 public constant COUNTERPARTY_TIME_LOCK_DURATION = 24 * 60 * 60; // 24 hours
 
@@ -192,4 +192,3 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
     }
 }
-

@@ -34,11 +34,10 @@ interface IAtomicBridgeInitiatorMOVE {
      * @param _wethAmount The amount of WETH to send
      * @param _recipient The address on the other chain to which to transfer the funds
      * @param _hashLock The hash of the secret (HASH) that will unlock the funds
-     * @param _timeLock The number of blocks until which this BridgeTransfer is valid and can be executed
      * @return _bridgeTransferId A unique id representing this BridgeTransfer
      *
      */
-    function initiateBridgeTransfer(uint256 _wethAmount, bytes32 _recipient, bytes32 _hashLock, uint256 _timeLock)
+    function initiateBridgeTransfer(uint256 _wethAmount, bytes32 _recipient, bytes32 _hashLock)
         external
         returns (bytes32 _bridgeTransferId);
 

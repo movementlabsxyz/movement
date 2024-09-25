@@ -16,7 +16,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         address originator;
         bytes32 recipient;
         bytes32 hashLock;
-        uint256 timeLock; // in seconds (timestamp)
+        uint256 timeLock; // in blocks
         MessageState state;
     }
 
@@ -122,4 +122,3 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
     }
 }
-
