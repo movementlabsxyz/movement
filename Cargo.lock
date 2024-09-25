@@ -3697,7 +3697,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-serivice"
+name = "bridge-service"
 version = "0.0.2"
 dependencies = [
  "alloy",
@@ -5580,7 +5580,6 @@ dependencies = [
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
- "movement-bridge",
  "poem",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
