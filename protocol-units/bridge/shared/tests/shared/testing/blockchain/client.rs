@@ -7,7 +7,7 @@ use bridge_shared::{
 	},
 	types::{
 		Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-		HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+		HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
 	},
 };
 use dashmap::DashMap;
@@ -24,7 +24,7 @@ pub enum MethodName {
 	CompleteBridgeTransferCounterparty,
 	RefundBridgeTransfer,
 	GetBridgeTransferDetails,
-	LockBridgeTransferAssets,
+	LockBridgeTransfer,
 	AbortBridgeTransfer,
 }
 
@@ -203,16 +203,14 @@ where
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: InitiatorAddress<Self::Address>,
-		recipient_address: RecipientAddress,
+		recipient_address: RecipientAddress<Vec<u8>>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractInitiatorResult<()> {
 		let transaction = Transaction::Initiator(InitiatorCall::InitiateBridgeTransfer(
 			initiator_address,
 			recipient_address,
 			amount,
-			time_lock,
 			hash_lock,
 		));
 		self.register_call(MethodName::InitiateBridgeTransfer);
@@ -263,7 +261,7 @@ where
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>> {
+	) -> BridgeContractInitiatorResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>> {
 		unimplemented!()
 	}
 }
@@ -278,17 +276,17 @@ where
 	type Address = A;
 	type Hash = H;
 
-	async fn lock_bridge_transfer_assets(
+	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId<Self::Hash>,
 		hash_lock: HashLock<Self::Hash>,
-		time_lock: TimeLock,
-		recipient: RecipientAddress,
+		initiator: InitiatorAddress<Vec<u8>>,
+		recipient: RecipientAddress<Self::Address>,
 		amount: Amount,
 	) -> BridgeContractCounterpartyResult<()> {
-		self.register_call(MethodName::LockBridgeTransferAssets);
-		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransferAssets) {
-			tracing::error!("lock_bridge_transfer_assets {:?}", config);
+		self.register_call(MethodName::LockBridgeTransfer);
+		if let Some(config) = self.have_call_config(MethodName::LockBridgeTransfer) {
+			tracing::error!("lock_bridge_transfer {:?}", config);
 			if let Some(delay) = config.delay {
 				tokio::time::sleep(delay).await;
 			}
@@ -298,7 +296,7 @@ where
 		let transaction = Transaction::Counterparty(CounterpartyCall::LockBridgeTransfer(
 			bridge_transfer_id,
 			hash_lock,
-			time_lock,
+			initiator,
 			recipient,
 			amount,
 		));
@@ -339,7 +337,7 @@ where
 	async fn get_bridge_transfer_details(
 		&mut self,
 		_bridge_transfer_id: BridgeTransferId<Self::Hash>,
-	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Hash, Self::Address>>>
+	) -> BridgeContractCounterpartyResult<Option<BridgeTransferDetails<Self::Address, Self::Hash>>>
 	{
 		unimplemented!()
 	}

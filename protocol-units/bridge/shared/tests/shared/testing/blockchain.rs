@@ -23,22 +23,22 @@ pub mod counterparty_contract;
 pub mod hasher;
 pub mod initiator_contract;
 
-pub enum SmartContractCall<H> {
+pub enum SmartContractCall<A, H> {
 	Initiator(),
-	Counterparty(CounterpartyCall<H>),
+	Counterparty(CounterpartyCall<A, H>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AbstractBlockchainEvent<A, H> {
 	InitiatorContractEvent(SCIResult<A, H>),
-	CounterpartyContractEvent(SCCResult<H>),
+	CounterpartyContractEvent(SCCResult<A, H>),
 	Noop,
 }
 
 #[derive(Debug)]
 pub enum Transaction<A, H> {
 	Initiator(InitiatorCall<A, H>),
-	Counterparty(CounterpartyCall<H>),
+	Counterparty(CounterpartyCall<A, H>),
 }
 
 #[derive(Debug)]
@@ -64,7 +64,7 @@ pub struct AbstractBlockchain<A, H, R> {
 
 impl<A, H, R> AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress>,
+	A: BridgeAddressType + From<bridge_shared::types::RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: RngSeededClone,
 	H: From<HashLockPreImage>,
@@ -129,7 +129,7 @@ where
 
 impl<A, H, R> Future for AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress>,
+	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
 	H: From<HashLockPreImage>,
@@ -153,7 +153,7 @@ where
 
 impl<A, H, R> Stream for AbstractBlockchain<A, H, R>
 where
-	A: BridgeAddressType + From<RecipientAddress>,
+	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	R: Rng + Unpin,
 	H: From<HashLockPreImage>,
@@ -177,7 +177,6 @@ where
 							initiator_address,
 							recipient_address,
 							amount,
-							time_lock,
 							hash_lock,
 						) => {
 							this.events.push(AbstractBlockchainEvent::InitiatorContractEvent(
@@ -185,7 +184,6 @@ where
 									initiator_address.clone(),
 									recipient_address.clone(),
 									amount,
-									time_lock.clone(),
 									hash_lock.clone(),
 								),
 							));
@@ -204,7 +202,7 @@ where
 						CounterpartyCall::LockBridgeTransfer(
 							bridge_transfer_id,
 							hash_lock,
-							time_lock,
+							initiator_address,
 							recipient_address,
 							amount,
 						) => {
@@ -212,7 +210,7 @@ where
 								this.counterparty_contract.lock_bridge_transfer(
 									bridge_transfer_id.clone(),
 									hash_lock.clone(),
-									time_lock.clone(),
+									initiator_address.clone(),
 									recipient_address.clone(),
 									amount,
 								),

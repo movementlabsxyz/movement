@@ -1,15 +1,16 @@
 use std::collections::HashMap;
 
 use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, BridgeTransferId, CompletedDetails, GenUniqueHash,
-	HashLock, HashLockPreImage, LockDetails, RecipientAddress, TimeLock,
+	Amount, AssetType, BridgeAddressType, BridgeHashType, BridgeTransferId,
+	CounterpartyCompletedDetails, GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress,
+	LockDetails, RecipientAddress,
 };
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SmartContractCounterpartyEvent<H> {
-	LockedBridgeTransfer(LockDetails<H>),
-	CompletedBridgeTransfer(CompletedDetails<H>),
+pub enum SmartContractCounterpartyEvent<A, H> {
+	LockedBridgeTransfer(LockDetails<A, H>),
+	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
 }
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -21,38 +22,43 @@ pub enum SmartContractCounterpartyError {
 }
 
 #[derive(Debug)]
-pub enum CounterpartyCall<H> {
+pub enum CounterpartyCall<A, H> {
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
-	LockBridgeTransfer(BridgeTransferId<H>, HashLock<H>, TimeLock, RecipientAddress, Amount),
+	LockBridgeTransfer(
+		BridgeTransferId<H>,
+		HashLock<H>,
+		InitiatorAddress<Vec<u8>>,
+		RecipientAddress<A>,
+		Amount,
+	),
 }
 
 #[derive(Debug)]
 pub struct SmartContractCounterparty<A, H> {
-	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<H>>,
-	pub _phantom: std::marker::PhantomData<A>,
+	pub locked_transfers: HashMap<BridgeTransferId<H>, LockDetails<A, H>>,
 }
 
-pub type SCCResult<H> = Result<SmartContractCounterpartyEvent<H>, SmartContractCounterpartyError>;
+pub type SCCResult<A, H> =
+	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
 
 impl<A, H> SmartContractCounterparty<A, H>
 where
-	A: BridgeAddressType + From<RecipientAddress>,
+	A: BridgeAddressType + From<RecipientAddress<A>>,
 	H: BridgeHashType + GenUniqueHash,
 	H: From<HashLockPreImage>,
 {
 	pub fn new() -> Self {
-		Self { locked_transfers: HashMap::new(), _phantom: std::marker::PhantomData }
+		Self { locked_transfers: HashMap::new() }
 	}
 
 	pub fn lock_bridge_transfer(
 		&mut self,
-
 		bridge_transfer_id: BridgeTransferId<H>,
 		hash_lock: HashLock<H>,
-		time_lock: TimeLock,
-		recipient_address: RecipientAddress,
+		initiator_address: InitiatorAddress<Vec<u8>>,
+		recipient_address: RecipientAddress<A>,
 		amount: Amount,
-	) -> SCCResult<H> {
+	) -> SCCResult<A, H> {
 		tracing::trace!(
 			"SmartContractCounterparty: Locking bridge transfer: {:?}",
 			bridge_transfer_id
@@ -61,18 +67,18 @@ where
 			bridge_transfer_id.clone(),
 			LockDetails {
 				bridge_transfer_id: bridge_transfer_id.clone(),
+				initiator_address: initiator_address.clone(),
 				recipient_address: recipient_address.clone(),
 				hash_lock: hash_lock.clone(),
-				time_lock: time_lock.clone(),
 				amount,
 			},
 		);
 
 		Ok(SmartContractCounterpartyEvent::LockedBridgeTransfer(LockDetails {
 			bridge_transfer_id,
+			initiator_address,
 			recipient_address,
 			hash_lock,
-			time_lock,
 			amount,
 		}))
 	}
@@ -82,7 +88,7 @@ where
 		accounts: &mut HashMap<A, Amount>,
 		bridge_transfer_id: &BridgeTransferId<H>,
 		pre_image: HashLockPreImage,
-	) -> SCCResult<H> {
+	) -> SCCResult<A, H> {
 		let transfer = self
 			.locked_transfers
 			.remove(bridge_transfer_id)
@@ -102,11 +108,11 @@ where
 
 		// TODO: fix this
 		let account = A::from(transfer.recipient_address.clone());
-		let balance = accounts.entry(account).or_insert(Amount(0));
+		let balance = accounts.entry(account).or_insert(Amount(AssetType::EthAndWeth((0, 0))));
 		**balance += *transfer.amount;
 
 		Ok(SmartContractCounterpartyEvent::CompletedBridgeTransfer(
-			CompletedDetails::from_lock_details(transfer, pre_image),
+			CounterpartyCompletedDetails::from_lock_details(transfer, pre_image),
 		))
 	}
 }

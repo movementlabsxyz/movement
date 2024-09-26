@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+sleep 10
+result=$(PGPASSWORD=password psql -h $POSTGRES_HOST_IP -U postgres -d postgres -t -c "SELECT COUNT(*) FROM public.transactions;")
+result=$(echo $result | xargs)
+if (( result >= 1 )); then
+  response=$(curl -s -X POST -H "Content-Type: application/json" -d '{"query":"query {user_transactions { block_height } }"}' "http://localhost:8085/v1/graphql")
+  # If "block_height" is present in the response, it mean the meta data has been loaded
+  echo "$response" | grep -q '"block_height"'
+  if [ $? -eq 0 ]; then
+    echo "Indexer test OK."
+    exit 0
+  else
+      echo "Indexer test Failed, no metadata. Curl response: ${response}"
+      exit 1
+  fi
+else
+  echo "Indexer test Failed, db not populated."
+  exit 1
+fi

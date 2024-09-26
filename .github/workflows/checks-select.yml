@@ -8,10 +8,11 @@ on:
       - synchronize
   push:
     branches:
-      - main
+      - '**' 
 
 jobs:
-  cargo-check:
+ 
+  build:
     strategy:
       matrix:
         include:
@@ -31,8 +32,44 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run Cargo Check in nix environment
-      run: nix develop --command bash  -c "cargo check --all-targets"  
+      run: |
+        nix develop --command bash  -c "cargo check --all-targets"  
+
+  unit-tests:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+          - os: macos-13-latest
+            arch: arm64
+            runs-on: macos-13-xlarge
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run unit tests in nix environment
+      run: |
+        nix develop --command bash <<EOF
+          cargo test \
+            -p maptos-opt-executor \
+            -p memseq \
+            -p move-rocks \
+            -p movement-types
+        EOF
 
   suzuka-full-node-local:
     if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
@@ -54,12 +91,42 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run Suzuka Full Node Tests Against Local ETH and Local Celestia
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"  
+
+  suzuka-indexer-local:
+    if: github.event.label.name == 'cicd:suzuka-full-node' ||  github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-16vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - name: Run Suzuka Full Node + indexer Tests Against Local ETH and Local Celestia
+      env:
+        CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+      run: |
+        nix develop --command bash  -c "just suzuka-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"
   
   suzuka-full-node-remote:
     if: false 
@@ -81,11 +148,16 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
     - name: Run Suzuka Full Node Tests Against Holesky and Local Celestia
       env: 
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
+        MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY: ${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
       run: |
-        export MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY=${{ secrets.MCR_DEPLOYMENT_ACCOUNT_PRIVATE_KEY }}
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
         nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-holesky.celestia-local.test -t=false"
 
@@ -106,6 +178,11 @@ jobs:
 
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run M1 DA Light Node tests in nix environment
       # adjust the log level while debugging
@@ -133,10 +210,182 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@main
 
-    - name: Run MCR tests in nix environment
-      # adjust the log level while debugging
-      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just mcr native test.local -t=false"  
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
     - name: Run MCR Client Tests
       run: nix develop --command bash  -c "just mcr-client native build.local.test -t=false"
 
+  ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
+  move-modules-test:
+    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            arch: x86_64
+            runs-on: ubuntu-24.04 
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Aptos CLI
+      run: |
+        curl -fsSL "https://aptos.dev/scripts/install_cli.py" | python3
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+    - name: Run Aptos Tests
+      run: |
+        nix develop --command bash -c "
+          set -e
+          set -x
+          chmod +x .github/scripts/update_move_toml.sh && \
+          ./.github/scripts/update_move_toml.sh && \
+          cd protocol-units/bridge/move-modules && \
+          aptos move test
+        "
+  
+  bridge-shared-lib-tests:
+    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+    - name: Run rust tests
+      run: |
+        nix develop --command bash -c "
+          cargo test -p bridge-shared  
+        "
+  
+  solidity-bridge-tests:
+    if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            arch: x86_64
+            runs-on: buildjet-8vcpu-ubuntu-2204
+
+    runs-on: ${{ matrix.runs-on }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@main
+
+    - uses: cachix/cachix-action@v15
+      with:
+        name: movementlabs
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+    - name: Run foundry tests
+      run: |
+        nix develop --command bash -c "
+            cd protocol-units/bridge/contracts && \
+            forge test --fork-url https://ethereum-sepolia-rpc.publicnode.com -vv
+        "
+
+  ## any use of Move CLI requires ubuntu-24.04 and to not run on buildjet
+  # bridge-client-integration:
+  #   if: github.event.label.name == 'cicd:bridge' ||  github.ref == 'refs/heads/main'
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - os: ubuntu-24.04
+  #           arch: x86_64
+  #           runs-on: ubuntu-24.04 
+  #
+  #   runs-on: ${{ matrix.runs-on }}
+  #
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v4
+  #
+  #   - name: Install Movement CLI
+  #     run: |
+  #       sudo apt-get update 
+  #       sudo apt-get install -y build-essential
+  #       sudo apt-get install -y binutils
+  #       sudo apt-get install -y lld
+  #       sudo apt-get install -y libudev-dev
+  #       sudo apt-get install -y libdw-dev
+  #       which ld
+  #       which lld
+  #       which gcc
+  #       which cc
+  #       echo $PATH
+  #       export GIT_CLONE_PROTECTION_ACTIVE=false
+  #       git clone https://github.com/movementlabsxyz/aptos-core/ 
+  #       cd aptos-core
+  #       cargo build -p movement
+  #       sudo cp target/debug/movement /usr/local/bin/
+  #       cd -
+  #
+  #   - name: Install Nix
+  #     uses: DeterminateSystems/nix-installer-action@main
+  #
+  #   - uses: cachix/cachix-action@v15
+  #     with:
+  #       name: movementlabs
+  #       authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+  #
+  #   - name: Run eth_movement tests
+  #     run: |
+  #       nix develop --command bash -c "rust_backtrace=1 cargo test --test eth_movement -- --nocapture --test-threads=1"
+  #
+  #   - name: Run movement_eth tests
+  #     run: |
+  #       nix develop --command bash -c "rust_backtrace=1 cargo test --test movement_eth -- --nocapture --test-threads=1"
+
+#  Indexer:
+#    strategy:
+#      matrix:
+#        include:
+#          - os: ubuntu-22.04
+#            arch: x86_64
+#            runs-on: buildjet-8vcpu-ubuntu-2204
+#
+#    runs-on: ${{ matrix.runs-on }}
+#
+#    steps:
+#    - name: Checkout repository
+#      uses: actions/checkout@v4
+#
+#    - name: Install Nix
+#      uses: DeterminateSystems/nix-installer-action@main
+#
+#    - name: Run Indexer tests in nix environment
+#      # adjust the log level while debugging
+#      run: CELESTIA_LOG_LEVEL=FATAL nix develop --command bash  -c "just suzuka-full-node native build.celestia-local.indexer.hasura.indexer-test -t=false"

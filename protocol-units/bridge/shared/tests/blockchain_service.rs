@@ -1,7 +1,7 @@
 use bridge_shared::bridge_monitoring::BridgeContractInitiatorEvent;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress,
-	TimeLock,
+	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress,
+	RecipientAddress,
 };
 use bridge_shared::{blockchain_service::ContractEvent, bridge_contracts::BridgeContractInitiator};
 use futures::StreamExt;
@@ -19,11 +19,10 @@ async fn test_bridge_transfer_initiated() {
 		.initiator_contract
 		.with_next_bridge_transfer_id("transfer_id")
 		.initiate_bridge_transfer(
-			InitiatorAddress("initiator"),
+			InitiatorAddress::from("initiator"),
 			RecipientAddress::from("recipient"),
 			HashLock("hash_lock"),
-			TimeLock(100),
-			Amount(1000),
+			Amount(AssetType::EthAndWeth((1000, 0))),
 		)
 		.await
 		.expect("initiate_bridge_transfer failed");
@@ -36,11 +35,11 @@ async fn test_bridge_transfer_initiated() {
 		Poll::Ready(Some(ContractEvent::InitiatorEvent(BridgeContractInitiatorEvent::Initiated(
 			BridgeTransferDetails {
 				bridge_transfer_id: BridgeTransferId("transfer_id"),
-				initiator_address: InitiatorAddress("initiator"),
+				initiator_address: InitiatorAddress::from("initiator"),
 				recipient_address: RecipientAddress::from("recipient"),
 				hash_lock: HashLock("hash_lock"),
-				time_lock: TimeLock(100),
-				amount: Amount(1000),
+				amount: Amount(AssetType::EthAndWeth((1000, 0))),
+				state: 1
 			}
 		))))
 	);

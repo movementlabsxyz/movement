@@ -1,4 +1,6 @@
-use movement_types::{AtomicTransactionBundle, Block, Transaction};
+use movement_types::{
+	atomic_transaction_bundle::AtomicTransactionBundle, block::Block, transaction::Transaction,
+};
 
 pub trait Sequencer {
 	async fn publish_many(&self, atbs: Vec<Transaction>) -> Result<(), anyhow::Error>;

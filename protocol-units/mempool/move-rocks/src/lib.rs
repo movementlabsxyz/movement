@@ -1,7 +1,10 @@
 use anyhow::Error;
 use bcs;
 use mempool_util::{MempoolBlockOperations, MempoolTransaction, MempoolTransactionOperations};
-use movement_types::{Block, Id};
+use movement_types::{
+	block::{self, Block},
+	transaction,
+};
 use rocksdb::{ColumnFamilyDescriptor, Options, DB};
 use std::fmt::Write;
 use std::sync::Arc;
@@ -41,7 +44,7 @@ impl RocksdbMempool {
 		key.write_fmt(format_args!(
 			"{:032}:{:032}:{}",
 			transaction.timestamp,
-			transaction.transaction.sequence_number,
+			transaction.transaction.sequence_number(),
 			transaction.transaction.id(),
 		))
 		.unwrap();
@@ -50,7 +53,7 @@ impl RocksdbMempool {
 
 	fn internal_get_mempool_transaction_key(
 		db: Arc<DB>,
-		transaction_id: &Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<Vec<u8>>, Error> {
 		let cf_handle = db
 			.cf_handle("transaction_lookups")
@@ -61,17 +64,20 @@ impl RocksdbMempool {
 	/// Helper function to retrieve the key for mempool transaction from the lookup table.
 	async fn get_mempool_transaction_key(
 		&self,
-		transaction_id: &Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<Vec<u8>>, Error> {
 		let db = self.db.clone();
 		let transaction_id = transaction_id.clone();
 		tokio::task::spawn_blocking(move || {
-			Self::internal_get_mempool_transaction_key(db, &transaction_id)
+			Self::internal_get_mempool_transaction_key(db, transaction_id)
 		})
 		.await?
 	}
 
-	fn internal_has_mempool_transaction(db: Arc<DB>, transaction_id: &Id) -> Result<bool, Error> {
+	fn internal_has_mempool_transaction(
+		db: Arc<DB>,
+		transaction_id: transaction::Id,
+	) -> Result<bool, Error> {
 		let key = Self::internal_get_mempool_transaction_key(db.clone(), transaction_id)?;
 		match key {
 			Some(k) => {
@@ -86,10 +92,13 @@ impl RocksdbMempool {
 }
 
 impl MempoolTransactionOperations for RocksdbMempool {
-	async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, Error> {
+	async fn has_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<bool, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
-			Self::internal_has_mempool_transaction(db, &transaction_id)
+			Self::internal_has_mempool_transaction(db, transaction_id)
 		})
 		.await?
 	}
@@ -107,15 +116,20 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle("transaction_lookups")
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
-			for tx in transactions {
-				if Self::internal_has_mempool_transaction(db.clone(), &tx.transaction.id())? {
+			for transaction in transactions {
+				if Self::internal_has_mempool_transaction(db.clone(), transaction.transaction.id())?
+				{
 					continue;
 				}
 
-				let serialized_tx = bcs::to_bytes(&tx)?;
-				let key = Self::construct_mempool_transaction_key(&tx);
-				db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_tx)?;
-				db.put_cf(&transaction_lookups_cf_handle, tx.transaction.id().to_vec(), &key)?;
+				let serialized_transaction = bcs::to_bytes(&transaction)?;
+				let key = Self::construct_mempool_transaction_key(&transaction);
+				db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction)?;
+				db.put_cf(
+					&transaction_lookups_cf_handle,
+					transaction.transaction.id().to_vec(),
+					&key,
+				)?;
 			}
 			Ok::<(), Error>(())
 		})
@@ -123,8 +137,8 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		Ok(())
 	}
 
-	async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), Error> {
-		let serialized_tx = bcs::to_bytes(&tx)?;
+	async fn add_mempool_transaction(&self, transaction: MempoolTransaction) -> Result<(), Error> {
+		let serialized_transaction = bcs::to_bytes(&transaction)?;
 		let db = self.db.clone();
 
 		tokio::task::spawn_blocking(move || {
@@ -135,9 +149,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle("transaction_lookups")
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
-			let key = Self::construct_mempool_transaction_key(&tx);
-			db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_tx)?;
-			db.put_cf(&transaction_lookups_cf_handle, tx.transaction.id().to_vec(), &key)?;
+			let key = Self::construct_mempool_transaction_key(&transaction);
+			db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction)?;
+			db.put_cf(&transaction_lookups_cf_handle, transaction.transaction.id().to_vec(), &key)?;
 			Ok::<(), Error>(())
 		})
 		.await??;
@@ -145,8 +159,11 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		Ok(())
 	}
 
-	async fn remove_mempool_transaction(&self, transaction_id: Id) -> Result<(), Error> {
-		let key = self.get_mempool_transaction_key(&transaction_id).await?;
+	async fn remove_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<(), Error> {
+		let key = self.get_mempool_transaction_key(transaction_id).await?;
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			match key {
@@ -171,9 +188,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	// Updated method signatures and implementations go here
 	async fn get_mempool_transaction(
 		&self,
-		transaction_id: Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<MempoolTransaction>, Error> {
-		let key = match self.get_mempool_transaction_key(&transaction_id).await? {
+		let key = match self.get_mempool_transaction_key(transaction_id).await? {
 			Some(k) => k,
 			None => return Ok(None), // If no key found in lookup, return None
 		};
@@ -183,9 +200,9 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle("mempool_transactions")
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			match db.get_cf(&cf_handle, &key)? {
-				Some(serialized_tx) => {
-					let tx: MempoolTransaction = bcs::from_bytes(&serialized_tx)?;
-					Ok(Some(tx))
+				Some(serialized_transaction) => {
+					let transaction: MempoolTransaction = bcs::from_bytes(&serialized_transaction)?;
+					Ok(Some(transaction))
 				}
 				None => Ok(None),
 			}
@@ -205,16 +222,16 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				None => return Ok(None), // No transactions to pop
 				Some(res) => {
 					let (key, value) = res?;
-					let tx: MempoolTransaction = bcs::from_bytes(&value)?;
+					let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 					db.delete_cf(&cf_handle, &key)?;
 
 					// Optionally, remove from the lookup table as well
 					let lookups_cf_handle = db
 						.cf_handle("transaction_lookups")
 						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&lookups_cf_handle, tx.transaction.id().to_vec())?;
+					db.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec())?;
 
-					Ok(Some(tx))
+					Ok(Some(transaction))
 				}
 			}
 		})
@@ -235,16 +252,16 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			let mut mempool_transactions = Vec::with_capacity(n as usize);
 			while let Some(res) = iter.next() {
 				let (key, value) = res?;
-				let tx: MempoolTransaction = bcs::from_bytes(&value)?;
+				let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 				db.delete_cf(&cf_handle, &key)?;
 
 				// Optionally, remove from the lookup table as well
 				let lookups_cf_handle = db
 					.cf_handle("transaction_lookups")
 					.ok_or_else(|| Error::msg("CF handle not found"))?;
-				db.delete_cf(&lookups_cf_handle, tx.transaction.id().to_vec())?;
+				db.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec())?;
 
-				mempool_transactions.push(tx);
+				mempool_transactions.push(transaction);
 				if mempool_transactions.len() > n - 1 {
 					break;
 				}
@@ -256,7 +273,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 }
 
 impl MempoolBlockOperations for RocksdbMempool {
-	async fn has_block(&self, block_id: Id) -> Result<bool, Error> {
+	async fn has_block(&self, block_id: block::Id) -> Result<bool, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
@@ -278,7 +295,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		.await?
 	}
 
-	async fn remove_block(&self, block_id: Id) -> Result<(), Error> {
+	async fn remove_block(&self, block_id: block::Id) -> Result<(), Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
@@ -289,7 +306,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		.await?
 	}
 
-	async fn get_block(&self, block_id: Id) -> Result<Option<Block>, Error> {
+	async fn get_block(&self, block_id: block::Id) -> Result<Option<Block>, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
@@ -311,7 +328,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 pub mod test {
 
 	use super::*;
-	use movement_types::Transaction;
+	use movement_types::transaction::Transaction;
 	use tempfile::tempdir;
 
 	#[tokio::test]
@@ -320,21 +337,21 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx = MempoolTransaction::test();
-		let tx_id = tx.id();
-		mempool.add_mempool_transaction(tx.clone()).await?;
-		assert!(mempool.has_mempool_transaction(tx_id.clone()).await?);
-		let tx2 = mempool.get_mempool_transaction(tx_id.clone()).await?;
-		assert_eq!(Some(tx), tx2);
-		mempool.remove_mempool_transaction(tx_id.clone()).await?;
-		assert!(!mempool.has_mempool_transaction(tx_id.clone()).await?);
+		let transaction = MempoolTransaction::test();
+		let transaction_id = transaction.id();
+		mempool.add_mempool_transaction(transaction.clone()).await?;
+		assert!(mempool.has_mempool_transaction(transaction_id.clone()).await?);
+		let transaction2 = mempool.get_mempool_transaction(transaction_id.clone()).await?;
+		assert_eq!(Some(transaction.clone()), transaction2);
+		mempool.remove_mempool_transaction(transaction_id.clone()).await?;
+		assert!(!mempool.has_mempool_transaction(transaction_id.clone()).await?);
 
 		let block = Block::test();
 		let block_id = block.id();
 		mempool.add_block(block.clone()).await?;
 		assert!(mempool.has_block(block_id.clone()).await?);
 		let block2 = mempool.get_block(block_id.clone()).await?;
-		assert_eq!(Some(block), block2);
+		assert_eq!(Some(block.clone()), block2);
 		mempool.remove_block(block_id.clone()).await?;
 		assert!(!mempool.has_block(block_id.clone()).await?);
 
@@ -347,14 +364,14 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx = Transaction::test();
-		let tx_id = tx.id();
-		mempool.add_transaction(tx.clone()).await?;
-		assert!(mempool.has_transaction(tx_id.clone()).await?);
-		let tx2 = mempool.get_transaction(tx_id.clone()).await?;
-		assert_eq!(Some(tx), tx2);
-		mempool.remove_transaction(tx_id.clone()).await?;
-		assert!(!mempool.has_transaction(tx_id.clone()).await?);
+		let transaction = Transaction::test();
+		let transaction_id = transaction.id();
+		mempool.add_transaction(transaction.clone()).await?;
+		assert!(mempool.has_transaction(transaction_id.clone()).await?);
+		let transaction2 = mempool.get_transaction(transaction_id.clone()).await?;
+		assert_eq!(Some(transaction.clone()), transaction2);
+		mempool.remove_transaction(transaction_id.clone()).await?;
+		assert!(!mempool.has_transaction(transaction_id.clone()).await?);
 
 		Ok(())
 	}
@@ -365,18 +382,18 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
-		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
-		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 128);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 128);
 
-		mempool.add_mempool_transaction(tx2.clone()).await?;
-		mempool.add_mempool_transaction(tx1.clone()).await?;
-		mempool.add_mempool_transaction(tx3.clone()).await?;
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
 
-		let txs = mempool.pop_mempool_transactions(3).await?;
-		assert_eq!(txs[0], tx1);
-		assert_eq!(txs[1], tx2);
-		assert_eq!(txs[2], tx3);
+		let transactions = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
 
 		Ok(())
 	}
@@ -387,18 +404,18 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
-		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 2);
-		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 64);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 2);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 64);
 
-		mempool.add_mempool_transaction(tx2.clone()).await?;
-		mempool.add_mempool_transaction(tx1.clone()).await?;
-		mempool.add_mempool_transaction(tx3.clone()).await?;
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
 
-		let txs = mempool.pop_mempool_transactions(3).await?;
-		assert_eq!(txs[0], tx1);
-		assert_eq!(txs[1], tx2);
-		assert_eq!(txs[2], tx3);
+		let transactions = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
 
 		Ok(())
 	}
@@ -409,18 +426,18 @@ pub mod test {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let tx1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 0);
-		let tx2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 0);
-		let tx3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2), 0);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2), 0);
 
-		mempool.add_mempool_transaction(tx2.clone()).await?;
-		mempool.add_mempool_transaction(tx1.clone()).await?;
-		mempool.add_mempool_transaction(tx3.clone()).await?;
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
 
-		let txs = mempool.pop_mempool_transactions(3).await?;
-		assert_eq!(txs[0], tx1);
-		assert_eq!(txs[1], tx2);
-		assert_eq!(txs[2], tx3);
+		let transactions = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
 
 		Ok(())
 	}
