@@ -15,21 +15,8 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use rand::prelude::*;
-use rand::Rng;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
-use std::{
-	env, fs,
-	io::Write,
-	path::PathBuf,
-	process::{Command, Stdio},
-};
-use tokio::{
-	io::{AsyncBufReadExt, BufReader},
-	process::Command as TokioCommand,
-	sync::oneshot,
-	task,
-};
 
 use tracing::{debug, info};
 use url::Url;
@@ -123,6 +110,27 @@ impl MovementClient {
 		} else {
 			Err(anyhow::anyhow!("Faucet client not initialized"))
 		}
+	}
+
+	pub async fn initiator_set_timelock(
+		&mut self,
+		time_lock: u64,
+	) -> Result<(), BridgeContractError> {
+		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+
+		let payload = utils::make_aptos_payload(
+			self.native_address,
+			"atomic_bridge_initiator",
+			"set_time_lock_duration",
+			Vec::new(),
+			args,
+		);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractError::CallError)?;
+
+		Ok(())
 	}
 }
 
@@ -350,7 +358,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			return Err(BridgeContractError::InvalidResponseLength);
 		}
 
-		let originator = utils::val_as_str_initiator(values.get(0))?;
+		let originator = utils::val_as_str_initiator(values.first())?;
 		let recipient = utils::val_as_str_initiator(values.get(1))?;
 		let amount = utils::val_as_str_initiator(values.get(2))?
 			.parse::<u64>()
@@ -384,7 +392,19 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 }
 
-#[cfg(test)]
+use std::{
+	env, fs,
+	io::Write,
+	path::PathBuf,
+	process::{Command, Stdio},
+};
+use tokio::{
+	io::{AsyncBufReadExt, BufReader},
+	process::Command as TokioCommand,
+	sync::oneshot,
+	task,
+};
+
 impl MovementClient {
 	pub fn publish_for_test(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
@@ -661,7 +681,7 @@ impl MovementClient {
 																	return Ok(());
 								}
 							},
-							Ok(None) => {
+							Ok(_) => {
 								return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
 							},
 							Err(e) => {
@@ -679,7 +699,7 @@ impl MovementClient {
 																	return Ok(());
 								}
 							},
-							Ok(None) => {
+							Ok(_) => {
 								return Err(anyhow::anyhow!("Unexpected end of stderr stream"));
 							}
 							Err(e) => {

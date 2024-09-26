@@ -119,7 +119,6 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		initiator_address: BridgeAddress<A>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractResult<()>;
 
@@ -149,7 +148,6 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<A>,
 		amount: Amount,

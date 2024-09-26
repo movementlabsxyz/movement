@@ -3,6 +3,9 @@ use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
+use alloy::signers::k256::elliptic_curve::SecretKey;
+use alloy::signers::k256::Secp256k1;
+use alloy::signers::local::LocalSigner;
 use alloy::{
 	network::EthereumWallet,
 	rlp::{RlpDecodable, RlpEncodable},
@@ -165,6 +168,10 @@ impl EthClient {
 			.map_err(|e| anyhow::anyhow!("Failed to get block number: {}", e))
 	}
 
+	pub fn set_signer_address(&mut self, key: SecretKey<Secp256k1>) {
+		self.config.signer_private_key = LocalSigner::from(key);
+	}
+
 	pub fn get_signer_address(&self) -> Address {
 		self.config.signer_private_key.address()
 	}
@@ -181,11 +188,19 @@ impl EthClient {
 		self.rpc_port
 	}
 
+	pub fn set_initiator_contract(&mut self, contract: InitiatorContract) {
+		self.initiator_contract = contract;
+	}
+
 	pub fn initiator_contract_address(&self) -> BridgeContractResult<Address> {
 		self.config
 			.initiator_contract
 			.parse()
 			.map_err(|_| BridgeContractError::ContractAddressError)
+	}
+
+	pub fn set_weth_contract(&mut self, contract: WETH9Contract) {
+		self.weth_contract = contract;
 	}
 
 	pub fn weth_contract_address(&self) -> BridgeContractResult<Address> {
@@ -213,7 +228,6 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		initiator_address: BridgeAddress<EthAddress>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractResult<()> {
 		let contract =
@@ -225,7 +239,6 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				U256::from(amount.value()),
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
-				U256::from(time_lock.0),
 			)
 			.value(U256::from(amount.value()))
 			.from(*initiator_address.0);
@@ -304,7 +317,6 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
@@ -318,7 +330,6 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
-			U256::from(time_lock.0),
 			*recipient.0,
 			U256::try_from(amount.0)
 				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
