@@ -25,7 +25,7 @@ contract Helper is Script {
     string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
     string public stakingSignature = "initialize(address)";
     string public stlMoveSignature = "initialize(string,string,address)";
-    string public moveSignature = "initialize(address)";
+    string public moveSignature = "initialize(address,address)";
     string public safeSetupSignature = "setup(address[],uint256,address,bytes,address,address,uint256,address)";
     string public root = vm.projectRoot();
     string public deploymentsPath = "/script/helpers/deployments.json";
@@ -55,6 +55,7 @@ contract Helper is Script {
         address mcrAdmin;
         address move;
         address moveAdmin;
+        address movementAnchorage;
         address movementDeployerSafe;
         address movementFoundationSafe;
         address movementLabsSafe;
@@ -117,8 +118,8 @@ contract Helper is Script {
                 safeFactory,
                 0x41675C099F32341bf84BFc5382aF534df5C7461a,
                 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99,
-                config.signersLabs,
-                config.thresholdLabs
+                config.signersDeployer,
+                config.thresholdDeployer
             );
             deployment.movementLabsSafe = _deploySafe(
                 safeFactory,
@@ -156,6 +157,7 @@ contract Helper is Script {
             }
         }
         console.log("Safe addresses:");
+        console.log("Deployer:", address(deployment.movementDeployerSafe));
         console.log("Labs:", address(deployment.movementLabsSafe));
         console.log("Foundation:", address(deployment.movementFoundationSafe));
     }
@@ -240,6 +242,7 @@ contract Helper is Script {
         json.serialize("mcrAdmin", memoryDeployment.mcrAdmin);
         json.serialize("move", memoryDeployment.move);
         json.serialize("moveAdmin", memoryDeployment.moveAdmin);
+        json.serialize("movementAnchorage", memoryDeployment.movementAnchorage);
         json.serialize("movementDeployerSafe", memoryDeployment.movementDeployerSafe);
         json.serialize("movementFoundationSafe", memoryDeployment.movementFoundationSafe);
         json.serialize("movementLabsSafe", memoryDeployment.movementLabsSafe);

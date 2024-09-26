@@ -37,7 +37,7 @@ contract MOVETokenDeployer is Helper {
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
         
-        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementFoundationSafe)) == 1000000000000000000, "Movement Foundation Safe balance is wrong");
+        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 1000000000000000000, "Movement Anchorage Safe balance is wrong");
         require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
         require(MOVEToken(deployment.move).totalSupply() == 1000000000000000000,"Total supply is wrong");
         require(MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
@@ -58,7 +58,7 @@ contract MOVETokenDeployer is Helper {
         // genetares bytecode for CREATE3 deployment
         bytes memory bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
-            abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe))
+            abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe, deployment.movementAnchorage))
         );
         vm.recordLogs();
         // deploys the MOVE token proxy using CREATE3
@@ -81,7 +81,7 @@ contract MOVETokenDeployer is Helper {
                 "upgradeAndCall(address,address,bytes)",
                 address(deployment.move),
                 address(newMoveImplementation),
-                abi.encodeWithSignature("initialize(address)", deployment.movementFoundationSafe)
+                ""
             ),
             bytes32(0),
             bytes32(0),

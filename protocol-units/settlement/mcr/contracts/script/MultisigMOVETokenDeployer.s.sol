@@ -58,7 +58,7 @@ contract MultisigMOVETokenDeployer is Helper {
             abi.encode(
                 address(moveImplementation),
                 address(timelock),
-                abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe, deployment.anchorage)
+                abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe, deployment.movementAnchorage)
             )
         );
         // create bytecode the MOVE token proxy using CREATE3
@@ -96,7 +96,7 @@ contract MultisigMOVETokenDeployer is Helper {
             abi.encode(
                 address(moveImplementation),
                 address(timelock),
-                abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe)
+                abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe, deployment.movementAnchorage)
             )
         );
         vm.recordLogs();
