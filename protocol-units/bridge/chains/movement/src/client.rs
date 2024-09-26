@@ -847,6 +847,8 @@ impl MovementClient {
 			args,
 		);
 
+		println!("Payload: {:?}", payload);
+
 		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
 			.await
 			.map_err(|_| BridgeContractInitiatorError::CallError)?;
