@@ -1,18 +1,16 @@
-use movement_bridge::utils::MovementHash;
-use tokio::time::{sleep, Duration}; // Add these imports
-
 use anyhow::Result;
-use bridge_integration_tests::TestHarness;
-use bridge_integration_tests::{
-	utils::{self as test_utils},
-	MovementToEthCallArgs,
-};
-use bridge_shared::{
-	bridge_contracts::BridgeContractInitiator,
+use bridge_service::{
+	chains::bridge_contracts::BridgeContract,
 	types::{BridgeTransferId, HashLockPreImage},
 };
+use harness::{MovementToEthCallArgs, TestHarness};
+use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
+use utils as test_utils;
+
+mod harness;
+mod utils;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {

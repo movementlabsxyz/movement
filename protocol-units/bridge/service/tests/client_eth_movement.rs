@@ -1,5 +1,5 @@
-use tokio::time::{sleep, Duration};
-
+use crate::TestHarness;
+use crate::{EthToMovementCallArgs, TestHarness};
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
@@ -7,16 +7,16 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use bridge_integration_tests::{EthToMovementCallArgs, TestHarness};
-use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterparty, BridgeContractInitiator},
-	types::{
-		Amount, AssetType, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-		RecipientAddress,
-	},
+use bridge_service::chains::bridge_contracts::BridgeContract;
+use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::types::{
+	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
 };
-use ethereum_bridge::types::{EthAddress, EthHash};
+use harness::TestHarness;
+use tokio::time::{sleep, Duration};
 use tokio::{self};
+
+mod harness;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {

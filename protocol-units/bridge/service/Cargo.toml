@@ -39,6 +39,7 @@ keccak-hash = { workspace = true }
 serde = { workspace = true }
 serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }
+tracing-subscriber = { workspace = true }
 
 aptos-sdk = { workspace = true }
 aptos-api-types = { workspace = true }
@@ -48,7 +49,6 @@ serde_json = { workspace = true }
 bcs = { workspace = true }
 derive-new = { workspace = true }
 async-stream = { workspace = true }
-
 
 #To be removed after send_transaction refactor
 mcr-settlement-client = { workspace = true }

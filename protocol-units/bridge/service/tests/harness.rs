@@ -26,8 +26,6 @@ use movement_bridge::{
 use rand::SeedableRng;
 use std::sync::{Arc, RwLock};
 
-pub mod utils;
-
 #[derive(Clone)]
 pub struct EthToMovementCallArgs {
 	pub initiator: Vec<u8>,
