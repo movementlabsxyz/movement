@@ -22,31 +22,23 @@ contract MultisigMOVETokenDeployer is Helper {
     // testnet
     // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
     // Safes should be already deployed
-    bytes32 public salt = 0x00000000000000000000000012bb669b1a73513f43bb92816a3461b7717f3638;
+    bytes32 public salt = 0x6b80000000000000000000000206b39ef98bcf879e46c0a1916a10c7330f0ce0;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function run() external virtual {
-        // load config data
-        _loadConfig();
-
-        // Load deployment data
-        _loadDeployments();
+        // load config and deployments data
+        _loadExternalData();
 
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
-        // Deploy CREATE3Factory if not deployed
-        _deployCreate3();
+        // Deploy CREATE3Factory, Safes and Timelock if not deployed
+        _deployDependencies();
 
-        // Deploy Safes if not deployed
-        _deploySafes();
-
-        // timelock is required for all deployments
+        // This deployer solely deploys a timelock and an implementation, it leaves to multisig to execute the deployment
+        // of the actual token.
         _proposeMultisigMove();
-        // deployment.moveAdmin == ZERO && deployment.move == ZERO ?
-        //     _deployMultisigMove() : deployment.moveAdmin != ZERO && deployment.move != ZERO ?
-        //         // if move is already deployed, upgrade it
-        //         _upgradeMultisigMove() : revert("MOVE: both admin and proxy should be registered");
+
         vm.stopBroadcast();
     }
 
@@ -60,18 +52,20 @@ contract MultisigMOVETokenDeployer is Helper {
             type(TransparentUpgradeableProxy).creationCode,
             abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe))
         );
-        // craete bytecode the MOVE token proxy using CREATE3
+        // create bytecode the MOVE token proxy using CREATE3
         bytes memory bytecode = abi.encodeWithSignature("deploy(bytes32,bytes)", salt, create3Bytecode);
-        bytes32 digest = Safe(payable(deployment.movementFoundationSafe)).getTransactionHash(
-            address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), 0
-        );
+        
+        // NOTE: digest can be used if immediately signing and executing the transaction
+        // bytes32 digest = Safe(payable(deployment.movementFoundationSafe)).getTransactionHash(
+        //     address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), 0
+        // );
 
         string memory json = "safeCall";
         // Serialize the relevant fields into JSON format
         json.serialize("to", address(create3));
         string memory zero = "0";
         json.serialize("value", zero);
-        json.serialize("data", create3Bytecode);
+        json.serialize("data", bytecode);
         string memory operation = "OperationType.Call";
         json.serialize("chainId", chainId);
         json.serialize("safeAddress", deployment.movementDeployerSafe);
@@ -79,9 +73,9 @@ contract MultisigMOVETokenDeployer is Helper {
         // Log the serialized JSON for debugging
         console.log("json |start|", serializedData, "|end|");
         // Write the serialized data to a file
-        // if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
         vm.writeFile(string.concat(root, upgradePath, "deploymove.json"), serializedData);
-        // }
+        }
     }
 
     function _deployMultisigMove() internal {

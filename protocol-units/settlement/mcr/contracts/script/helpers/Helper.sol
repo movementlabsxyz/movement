@@ -240,6 +240,7 @@ contract Helper is Script {
         json.serialize("mcrAdmin", memoryDeployment.mcrAdmin);
         json.serialize("move", memoryDeployment.move);
         json.serialize("moveAdmin", memoryDeployment.moveAdmin);
+        json.serialize("movementDeployerSafe", memoryDeployment.movementDeployerSafe);
         json.serialize("movementFoundationSafe", memoryDeployment.movementFoundationSafe);
         json.serialize("movementLabsSafe", memoryDeployment.movementLabsSafe);
         json.serialize("staking", memoryDeployment.staking);
