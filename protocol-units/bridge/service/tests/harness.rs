@@ -11,15 +11,15 @@ use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
-use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractResult};
+use bridge_service::{chains::bridge_contracts::{BridgeContract, BridgeContractResult}, types::TimeLock};
 use bridge_service::types::{Amount, HashLock, InitiatorAddress, RecipientAddress};
 use bridge_service::chains::ethereum::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
 use bridge_service::chains::ethereum::{
 	client::{Config as EthConfig, EthClient},
 	types::EthHash,
 };
-use bridge_service::utils::MovementAddress;
-use movement_bridge::{
+use bridge_service::chains::movement::utils::MovementAddress;
+use bridge_service::chains::movement::{
 	client::{Config as MovementConfig, MovementClient},
 	utils::MovementHash,
 };
@@ -176,7 +176,6 @@ impl TestHarness {
 			.initialize_initiator_contract(
 				EthAddress(weth_address),
 				EthAddress(self.eth_signer_address()),
-				1, //Set timelock to 1 for testing
 			)
 			.await
 			.expect("Failed to initialize contract");
@@ -186,12 +185,13 @@ impl TestHarness {
 		&mut self,
 		initiator_address: InitiatorAddress<EthAddress>,
 		recipient_address: RecipientAddress<Vec<u8>>,
-		hash_lock: HashLock<EthHash>,
+		hash_lock: HashLock,
+		time_lock: TimeLock,
 		amount: Amount, // the amount
-	) -> BridgeContractInitiatorResult<()> {
+	) -> BridgeContractResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		eth_client
-			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, amount)
+			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, time_lock, amount)
 			.await
 	}
 
@@ -199,7 +199,7 @@ impl TestHarness {
 		&mut self,
 		initiator_address: InitiatorAddress<EthAddress>,
 		amount: Amount,
-	) -> BridgeContractInitiatorResult<()> {
+	) -> BridgeContractResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		eth_client
 			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth()))

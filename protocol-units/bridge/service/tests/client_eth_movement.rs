@@ -6,7 +6,7 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use bridge_service::chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash};
+use bridge_service::{chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash}, types::TimeLock};
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
@@ -91,8 +91,9 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		movement_client
 			.lock_bridge_transfer(
-				BridgeTransferId(args.bridge_transfer_id),
-				HashLock(args.hash_lock),
+				BridgeTransferId(args.bridge_transfer_id.0),
+				HashLock(args.hash_lock.0),
+				TimeLock(args.time_lock),
 				InitiatorAddress(args.initiator.clone()),
 				RecipientAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
@@ -102,14 +103,14 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, args.hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
+		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
 			&details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
@@ -119,24 +120,28 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
+		let secret = b"secret";  
+		let mut padded_secret = [0u8; 32];  
+		padded_secret[..secret.len()].copy_from_slice(secret);
+
 		BridgeContract::counterparty_complete_bridge_transfer(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id),
-			HashLockPreImage(b"secret".to_vec()),
+			BridgeTransferId(args.bridge_transfer_id.0),
+			HashLockPreImage(padded_secret),
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
 
 		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, args.hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
+		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
 			&details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
@@ -195,8 +200,8 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		movement_client
 			.lock_bridge_transfer(
-				BridgeTransferId(args.bridge_transfer_id),
-				HashLock(args.hash_lock),
+				BridgeTransferId(args.bridge_transfer_id.0),
+				HashLock(args.hash_lock.0),
 				InitiatorAddress(args.initiator.clone()),
 				RecipientAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
@@ -206,14 +211,14 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id);
-		assert_eq!(details.hash_lock.0, args.hash_lock);
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
+		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
 			&details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
@@ -226,20 +231,20 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		sleep(Duration::from_secs(5)).await;
 
 		movement_client
-			.abort_bridge_transfer(BridgeTransferId(args.bridge_transfer_id))
+			.abort_bridge_transfer(BridgeTransferId(args.bridge_transfer_id.0))
 			.await
 			.expect("Failed to complete bridge transfer");
 
 		let abort_details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id);
-		assert_eq!(abort_details.hash_lock.0, args.hash_lock);
+		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id.0);
+		assert_eq!(abort_details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
 			&abort_details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
@@ -315,7 +320,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
+	let signer_address: alloy::primitives::Address = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	harness.deploy_init_contracts().await;
 
@@ -328,7 +333,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(EthHash(hash_lock)),
+			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
 		)
 		.await
@@ -357,7 +362,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(EthHash(hash_lock)),
+			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
@@ -389,7 +394,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(EthHash(hash_lock)),
+			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((1, 1))),
 		)
 		.await
@@ -414,7 +419,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(EthHash(hash_lock)),
+			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
 		)
 		.await
@@ -445,7 +450,7 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient_bytes),
-			HashLock(EthHash(hash_lock)),
+			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((42, 0))),
 		)
 		.await

@@ -146,7 +146,7 @@ pub async fn initiate_bridge_transfer_helper(
 		.initiate_bridge_transfer(
 			InitiatorAddress(MovementAddress(initiator_address)),
 			RecipientAddress(recipient_address),
-			HashLock(MovementHash(hash_lock)),
+			HashLock(MovementHash(hash_lock).0),
 			Amount(AssetType::Moveth(amount)),
 		)
 		.await

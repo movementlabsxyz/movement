@@ -23,6 +23,7 @@ use bridge_service::chains::ethereum::types::{
 	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
 	EthAddress, InitiatorContract, WETH9Contract, WETH9,
 };
+use utils as test_utils;
 
 #[derive(Clone)]
 pub struct SetupEthClient {
@@ -67,7 +68,7 @@ pub async fn initialize_initiator_contract(
 	owner: EthAddress,
 ) -> Result<(), anyhow::Error> {
 	let call = self.initiator_contract.initialize(weth.0, owner.0);
-send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
+test_utils::send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
 		.await
 		.expect("Failed to send transaction");
 	Ok(())
