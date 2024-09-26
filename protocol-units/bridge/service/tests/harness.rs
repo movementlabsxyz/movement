@@ -11,8 +11,8 @@ use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
-use bridge_service::{chains::bridge_contracts::{BridgeContract, BridgeContractResult}, types::TimeLock};
-use bridge_service::types::{Amount, HashLock, InitiatorAddress, RecipientAddress};
+use bridge_service::{chains::bridge_contracts::{BridgeContract, BridgeContractResult}, types::{BridgeAddress, TimeLock}};
+use bridge_service::types::{Amount, HashLock};
 use bridge_service::chains::ethereum::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
 use bridge_service::chains::ethereum::{
 	client::{Config as EthConfig, EthClient},
@@ -183,8 +183,8 @@ impl TestHarness {
 
 	pub async fn initiate_bridge_transfer(
 		&mut self,
-		initiator_address: InitiatorAddress<EthAddress>,
-		recipient_address: RecipientAddress<Vec<u8>>,
+		initiator_address: BridgeAddress<EthAddress>,
+		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		time_lock: TimeLock,
 		amount: Amount, // the amount
@@ -197,7 +197,7 @@ impl TestHarness {
 
 	pub async fn deposit_weth_and_approve(
 		&mut self,
-		initiator_address: InitiatorAddress<EthAddress>,
+		initiator_address: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");

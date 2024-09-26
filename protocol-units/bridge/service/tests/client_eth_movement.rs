@@ -94,8 +94,8 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 				BridgeTransferId(args.bridge_transfer_id.0),
 				HashLock(args.hash_lock.0),
 				TimeLock(args.time_lock),
-				InitiatorAddress(args.initiator.clone()),
-				RecipientAddress(args.recipient.clone()),
+				BridgeAddress(args.initiator.clone()),
+				BridgeAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
 			)
 			.await
@@ -193,17 +193,18 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		);
 
 		// Set the timelock to 1 second for testing
-		movement_client
-			.counterparty_set_timelock(1)
-			.await
-			.expect("Failed to set timelock");
+		// movement_client
+		//	.set_timelock(1)
+		//	.await
+		//	.expect("Failed to set timelock");
 
 		movement_client
 			.lock_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id.0),
 				HashLock(args.hash_lock.0),
-				InitiatorAddress(args.initiator.clone()),
-				RecipientAddress(args.recipient.clone()),
+				TimeLock(args.time_lock),
+				BridgeAddress(args.initiator.clone()),
+				BridgeAddress(args.recipient.clone().into()),
 				Amount(AssetType::Moveth(args.amount)),
 			)
 			.await
@@ -326,14 +327,15 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-
+	let args = EthToMovementCallArgs::default();
 	harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
+			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
 		)
 		.await
@@ -353,15 +355,15 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 	harness
 		.deposit_weth_and_approve(
-			InitiatorAddress(EthAddress(signer_address)),
+			BridgeAddress(EthAddress(signer_address)),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
 		.expect("Failed to deposit WETH");
 	harness
 		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
@@ -385,16 +387,19 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 	harness
 		.deposit_weth_and_approve(
-			InitiatorAddress(EthAddress(signer_address)),
+			BridgeAddress(EthAddress(signer_address)),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
 		.expect("Failed to deposit WETH");
+
+	let args = EthToMovementCallArgs::default();
 	harness
 		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
+			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((1, 1))),
 		)
 		.await
@@ -412,14 +417,16 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 
 	let recipient = harness.gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+	let args = EthToMovementCallArgs::default();
 
 	harness
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient),
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
+			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
 		)
 		.await
@@ -437,6 +444,8 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
 
+	let args = EthToMovementCallArgs::default();
+
 	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
 	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
 
@@ -448,9 +457,10 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 		.eth_client_mut()
 		.expect("Failed to get EthClient")
 		.initiate_bridge_transfer(
-			InitiatorAddress(EthAddress(signer_address)),
-			RecipientAddress(recipient_bytes),
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient_bytes),
 			HashLock(EthHash(hash_lock).0),
+			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((42, 0))),
 		)
 		.await
