@@ -5,9 +5,12 @@ pub use movement_types::{
 	transaction::{self, Transaction},
 };
 pub use sequencing_util::Sequencer;
-use std::collections::BTreeSet;
-use std::{path::PathBuf, sync::Arc};
+
 use tokio::sync::RwLock;
+
+use std::collections::BTreeSet;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
@@ -20,7 +23,7 @@ pub struct Memseq<T: MempoolTransactionOperations> {
 }
 
 impl<T: MempoolTransactionOperations> Memseq<T> {
-	pub fn new(
+	pub(crate) fn new(
 		mempool: T,
 		block_size: u32,
 		parent_block: Arc<RwLock<block::Id>>,
