@@ -28,6 +28,7 @@ contract MOVETokenTest is Test {
     TimelockController public timelock;
     string public moveSignature = "initialize(address)";
     address public multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
+    address public anchorange = address(0xabc);
 
     function setUp() public {
         moveTokenImplementation = new MOVEToken();
@@ -61,7 +62,7 @@ contract MOVETokenTest is Test {
     function testCannotInitializeTwice() public {
         // Initialize the contract
         vm.expectRevert(0xf92ee8a9);
-        token.initialize(multisig);
+        token.initialize(multisig, anchorange);
     }
 
     function testDecimals() public {
@@ -73,12 +74,22 @@ contract MOVETokenTest is Test {
     }
 
     function testMultisigBalance() public {
-        assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
+        assertEq(token.balanceOf(anchorange), 10000000000 * 10 ** 8);
     }
 
     function testAdminRoleFuzz(address other) public {
         assert(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), other));
         assert(token.hasRole(token.DEFAULT_ADMIN_ROLE(), multisig));
+        assert(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), anchorange));
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                other,
+                token.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        token.grantRole(token.DEFAULT_ADMIN_ROLE(), other);
     }
 
     function testUpgradeFromTimelock() public {

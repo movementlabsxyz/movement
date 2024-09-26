@@ -13,18 +13,19 @@ contract MOVEToken is ERC20PermitUpgradeable, AccessControlUpgradeable {
 
     /**
      * @dev Initializes the contract with initial parameters.
-     * @param _owner The address of the owner who receives the initial supply.
+     * @param _owner The address of the owner who receives default admin role.
+     * @param _custody The address of the custody account.
      * @notice The ERC20 token is named "Movement" with symbol "MOVE".
      * @notice EIP712 domain version is set to "1" for signatures.
      * @notice The owner is granted the `DEFAULT_ADMIN_ROLE`.
      * @notice 10 billion MOVE tokens are minted to the owner's address.
      */
-    function initialize(address _owner) public initializer {
-        require(_owner != address(0));
+    function initialize(address _owner, address _custody) public initializer {
+        require(_owner != address(0) && _custody != address(0));
         __ERC20_init("Movement", "MOVE");
         __EIP712_init_unchained("Movement", "1");
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
-        _mint(_owner, 10000000000 * 10 ** decimals());
+        _mint(_custody, 10000000000 * 10 ** decimals());
     }
 
     /**

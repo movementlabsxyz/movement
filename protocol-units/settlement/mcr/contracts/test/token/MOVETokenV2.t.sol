@@ -134,4 +134,15 @@ contract MOVETokenV2Test is Test {
         token.mint(address(0x1337), 100);
         vm.stopPrank();
     }
+
+    function testCannotGrantRole () public {
+        vm.startPrank(address(0x1337));
+        // vm.expectRevert(
+        //     abi.encodeWithSelector(
+        //         IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, token.DEFAULT_ADMIN_ROLE()
+        //     )
+        // );
+        token.grantRole(token.MINTER_ROLE(), multisig);
+        vm.stopPrank();
+    }
 }
