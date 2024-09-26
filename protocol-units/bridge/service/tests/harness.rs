@@ -202,7 +202,7 @@ impl TestHarness {
 	) -> BridgeContractResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		eth_client
-			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth()))
+			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.value()))
 			.await
 			.expect("Failed to deposit WETH");
 		Ok(())

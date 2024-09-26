@@ -3,7 +3,7 @@ use aptos_sdk::{
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
-use bridge_service::chains::{bridge_contracts::BridgeContractError, ethereum::{client::EthClient, types::AtomicBridgeInitiator}};
+use bridge_service::{chains::{bridge_contracts::BridgeContractError, ethereum::{client::EthClient, types::AtomicBridgeInitiator}}, types::BridgeAddress};
 //use bridge_service::chains::movement::client::MovementClient;
 //AlloyProvider, AtomicBridgeInitiator,
 use rand::prelude::*;
@@ -141,8 +141,8 @@ pub async fn deploy_init_contracts(&mut self) {
 	self.eth_client()
 		.expect("Failed to get EthClient")
 		.initialize_initiator_contract(
-			EthAddress(weth_address),
-			EthAddress(self.eth_signer_address()),
+			BridgeAddress(weth_address),
+			BridgeAddress(self.eth_signer_address()),
 		)
 		.await
 		.expect("Failed to initialize contract");

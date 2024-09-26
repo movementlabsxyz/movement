@@ -5,7 +5,7 @@ use aptos_sdk::{
 };
 use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractError};
 use bridge_service::types::{
-	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock, TimeLock
 };
 use bridge_service::chains::movement::client::MovementClient;
 use bridge_service::chains::movement::utils::{self as movement_utils, MovementHash, MovementAddress};
@@ -144,9 +144,10 @@ pub async fn initiate_bridge_transfer_helper(
 	// Initiate the bridge transfer
 	movement_client
 		.initiate_bridge_transfer(
-			InitiatorAddress(MovementAddress(initiator_address)),
-			RecipientAddress(recipient_address),
+			BridgeAddress(MovementAddress(initiator_address)),
+			BridgeAddress(recipient_address),
 			HashLock(MovementHash(hash_lock).0),
+			TimeLock(args.time_lock),
 			Amount(AssetType::Moveth(amount)),
 		)
 		.await

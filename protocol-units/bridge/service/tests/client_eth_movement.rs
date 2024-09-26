@@ -360,11 +360,14 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 		)
 		.await
 		.expect("Failed to deposit WETH");
+
+	let args = EthToMovementCallArgs::default();
 	harness
 		.initiate_bridge_transfer(
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
+			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
