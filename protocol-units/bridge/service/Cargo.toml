@@ -10,8 +10,33 @@ publish.workspace = true
 rust-version.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+anyhow = { workspace = true }
+async-trait = "0.1.80"
+delegate = "0.12.0"
+derive_more = { workspace = true, features = ["deref", "deref_mut"] }
+futures.workspace = true
+futures-timer = "3.0.3"
+hex = { workspace = true }
+thiserror.workspace = true
+tokio = { workspace = true, version = "1.0.1", features = ["full"] }
+tracing.workspace = true
+rand.workspace = true
+rand_chacha = "0.2.2"
+futures-time = "3.0.0"
+alloy = { workspace = true, features = [
+  "full",
+  "rpc",
+  "rpc-types",
+  "serde",
+  "rlp",
+  "contract",
+  "sol-types",
+] }
+
+bridge-shared.workspace = true
+ethereum-bridge.workspace = true
+movement-bridge.workspace = true
 
 [lints]
 workspace = true

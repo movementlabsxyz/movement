@@ -13,6 +13,7 @@ version = { workspace = true }
 path = "src/lib.rs"
 
 [dependencies]
+async-stream = { workspace = true }
 aptos-sdk = { workspace = true }
 aptos-api-types = { workspace = true }
 aptos-types = { workspace = true }
@@ -21,6 +22,7 @@ async-trait = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
 derive-new = { workspace = true }
+futures = { workspace = true }
 hex = { workspace = true }
 poem = { workspace = true }
 keccak-hash = { workspace = true }
@@ -30,10 +32,11 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+reqwest = { workspace = true }
+rand_chacha = "0.2.2"
 rand = { workspace = true }
 
 url = { workspace = true }
 once_cell = { workspace = true }
 
 bridge-shared = { workspace = true }
-mcr-settlement-client = { workspace = true }

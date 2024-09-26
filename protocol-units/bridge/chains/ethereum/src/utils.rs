@@ -18,6 +18,8 @@ use rand::{rngs::StdRng, SeedableRng};
 use rand::{Rng, RngCore};
 use rand_chacha::ChaChaRng;
 
+pub type TestRng = StdRng;
+
 pub trait RngSeededClone: Rng + SeedableRng {
 	fn seeded_clone(&mut self) -> Self;
 }

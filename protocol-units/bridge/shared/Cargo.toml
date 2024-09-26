@@ -23,6 +23,7 @@ tracing.workspace = true
 rand.workspace = true
 rand_chacha = "0.2.2"
 futures-time = "3.0.0"
+serde = { workspace = true }
 alloy = { workspace = true, features = [
   "full",
   "rpc",

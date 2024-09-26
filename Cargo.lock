@@ -3727,6 +3727,25 @@ dependencies = [
 [[package]]
 name = "bridge-service"
 version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "async-trait",
+ "bridge-shared",
+ "delegate",
+ "derive_more",
+ "ethereum-bridge",
+ "futures",
+ "futures-time",
+ "futures-timer",
+ "hex",
+ "movement-bridge",
+ "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "bridge-shared"
@@ -3743,6 +3762,7 @@ dependencies = [
  "hex",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
+ "serde",
  "static_str_ops",
  "test-log",
  "thiserror",
@@ -9162,16 +9182,19 @@ dependencies = [
  "aptos-api-types",
  "aptos-sdk",
  "aptos-types",
+ "async-stream",
  "async-trait",
  "bcs 0.1.4",
  "bridge-shared",
  "derive-new",
+ "futures",
  "hex",
  "keccak-hash",
- "mcr-settlement-client",
  "once_cell",
  "poem",
  "rand 0.7.3",
+ "rand_chacha 0.2.2",
+ "reqwest 0.12.7",
  "serde",
  "serde_json",
  "thiserror",

@@ -1,28 +1,11 @@
-use bridge_shared::{
-	bridge_monitoring::BridgeContractInitiatorEvent,
-	counterparty_contract::SCCResult,
-	initiator_contract::{SCIResult, SmartContractInitiatorEvent},
-	types::LockDetails,
+use crate::types::EthAddress;
+use bridge_shared::bridge_monitoring::{
+	BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent,
 };
-
-use crate::types::{CompletedDetails, EthAddress};
+use bridge_shared::types::{
+	SCCResult, SCIResult, SmartContractCounterpartyEvent, SmartContractInitiatorEvent,
+};
 use thiserror::Error;
-
-#[allow(unused)]
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyEvent<A, H> {
-	LockedBridgeTransfer(LockDetails<A, H>),
-	CompletedBridgeTransfer(CompletedDetails<A, H>),
-}
-
-#[allow(unused)]
-#[derive(Debug, Error, Clone, PartialEq, Eq)]
-pub enum MoveCounterpartyError {
-	#[error("Transfer not found")]
-	TransferNotFound,
-	#[error("Invalid hash lock pre image (secret)")]
-	InvalidHashLockPreImage,
-}
 
 #[allow(unused)]
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -59,6 +42,25 @@ impl From<BridgeContractInitiatorEvent<EthAddress, [u8; 32]>>
 			BridgeContractInitiatorEvent::Refunded(id) => EthChainEvent::InitiatorContractEvent(
 				Ok(SmartContractInitiatorEvent::RefundedBridgeTransfer(id)),
 			),
+		}
+	}
+}
+
+impl From<BridgeContractCounterpartyEvent<EthAddress, [u8; 32]>>
+	for EthChainEvent<EthAddress, [u8; 32]>
+{
+	fn from(event: BridgeContractCounterpartyEvent<EthAddress, [u8; 32]>) -> Self {
+		match event {
+			BridgeContractCounterpartyEvent::Locked(details) => {
+				EthChainEvent::CounterpartyContractEvent(Ok(
+					SmartContractCounterpartyEvent::LockedBridgeTransfer(details),
+				))
+			}
+			BridgeContractCounterpartyEvent::Completed(details) => {
+				EthChainEvent::CounterpartyContractEvent(Ok(
+					SmartContractCounterpartyEvent::CompletedBridgeTransfer(details),
+				))
+			}
 		}
 	}
 }

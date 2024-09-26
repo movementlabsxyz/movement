@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
 use alloy::primitives::{Address, FixedBytes};
@@ -9,17 +11,24 @@ use alloy::rlp::{RlpDecodable, RlpEncodable};
 use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
-	Amount, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, InitiatorAddress,
-	LockDetails, RecipientAddress, TimeLock,
+	Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
+	InitiatorAddress, LockDetails, RecipientAddress,
 };
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
-pub const INITIATED_SELECT: FixedBytes<32> =
+pub const INITIATOR_INITIATED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferInitiated::SIGNATURE_HASH;
-pub const COMPLETED_SELECT: FixedBytes<32> =
+pub const INITIATOR_COMPLETED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferCompleted::SIGNATURE_HASH;
-pub const REFUNDED_SELECT: FixedBytes<32> =
+pub const INITIATOR_REFUNDED_SELECT: FixedBytes<32> =
 	AtomicBridgeInitiator::BridgeTransferRefunded::SIGNATURE_HASH;
+pub const COUNTERPARTY_LOCKED_SELECT: FixedBytes<32> =
+	AtomicBridgeCounterparty::BridgeTransferLocked::SIGNATURE_HASH;
+pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
+	AtomicBridgeCounterparty::BridgeTransferCompleted::SIGNATURE_HASH;
+pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
+	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
 
 // Codegen from the abis
 alloy::sol!(
@@ -43,7 +52,59 @@ alloy::sol!(
 	"abis/WETH9.json"
 );
 
-pub type EthHash = [u8; 32];
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize, Deserialize)]
+pub struct EthHash(pub [u8; 32]);
+
+impl EthHash {
+	pub fn random() -> Self {
+		let mut rng = rand::thread_rng();
+		let mut hash = [0u8; 32];
+		rng.fill(&mut hash);
+		Self(hash)
+	}
+}
+
+impl From<HashLockPreImage> for EthHash {
+	fn from(value: HashLockPreImage) -> Self {
+		let mut fixed_bytes = [0u8; 32];
+		let len = value.0.len().min(32);
+		fixed_bytes[..len].copy_from_slice(&value.0[..len]);
+
+		Self(hash_vec_u32(&fixed_bytes))
+	}
+}
+
+impl GenUniqueHash for EthHash {
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		let mut random_bytes = [0u8; 32];
+		rng.fill(&mut random_bytes);
+		Self(random_bytes)
+	}
+}
+
+pub fn hash_vec_u32(data: &[u8; 32]) -> [u8; 32] {
+	let mut result = [0u8; 32];
+
+	// Split the data into 4 parts and hash each part
+	for (i, chunk) in data.chunks(8).enumerate() {
+		let mut hasher = DefaultHasher::new();
+		chunk.hash(&mut hasher);
+		let partial_hash = hasher.finish().to_be_bytes();
+
+		// Copy the 8-byte partial hash into the result
+		result[i * 8..(i + 1) * 8].copy_from_slice(&partial_hash);
+	}
+
+	result
+}
+
+pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
+	let mut fixed_bytes = [0u8; 32];
+	let pre_image_bytes = pre_image.as_bytes();
+	let len = pre_image_bytes.len().min(32);
+	fixed_bytes[..len].copy_from_slice(&pre_image_bytes[..len]);
+	hash_vec_u32(&fixed_bytes)
+}
 
 pub type InitiatorContract =
 	AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
@@ -66,6 +127,18 @@ pub type AlloyProvider = FillProvider<
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable, Serialize, Deserialize)]
 pub struct EthAddress(pub Address);
+
+impl From<EthAddress> for Vec<u8> {
+	fn from(address: EthAddress) -> Self {
+		address.0 .0.to_vec()
+	}
+}
+
+impl From<RecipientAddress<EthAddress>> for EthAddress {
+	fn from(address: RecipientAddress<EthAddress>) -> Self {
+		address.0
+	}
+}
 
 impl std::ops::Deref for EthAddress {
 	type Target = Address;
@@ -160,23 +233,29 @@ impl AlloyParam {
 }
 
 pub(crate) enum EventName {
-	Initiated,
-	Completed,
-	Refunded,
+	InitiatorInitiated,
+	InitiatorCompleted,
+	InitiatorRefunded,
+	CounterpartyLocked,
+	CounterpartyCompleted,
+	CounterpartyAborted,
 }
 
 impl EventName {
 	pub fn as_str(&self) -> &str {
 		match self {
-			EventName::Initiated => "BridgeTransferInitiated",
-			EventName::Completed => "BridgeTransferCompleted",
-			EventName::Refunded => "BridgeTransferRefunded",
+			EventName::InitiatorInitiated => "BridgeTransferInitiated",
+			EventName::InitiatorCompleted => "BridgeTransferCompleted",
+			EventName::InitiatorRefunded => "BridgeTransferRefunded",
+			EventName::CounterpartyLocked => "BridgeTransferLocked",
+			EventName::CounterpartyCompleted => "BridgeTransferCompleted",
+			EventName::CounterpartyAborted => "BridgeTransferAborted",
 		}
 	}
 
 	pub fn params(&self) -> Vec<Param> {
 		match self {
-			EventName::Initiated => vec![
+			EventName::InitiatorInitiated => vec![
 				AlloyParam::BridgeTransferId.fill(),
 				AlloyParam::InitiatorAddress.fill(),
 				AlloyParam::RecipientAddress.fill(),
@@ -185,10 +264,21 @@ impl EventName {
 				AlloyParam::TimeLock.fill(),
 				AlloyParam::Amount.fill(),
 			],
-			EventName::Completed => {
+			EventName::InitiatorCompleted => {
 				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
 			}
-			EventName::Refunded => vec![AlloyParam::BridgeTransferId.fill()],
+			EventName::InitiatorRefunded => vec![AlloyParam::BridgeTransferId.fill()],
+			EventName::CounterpartyLocked => vec![
+				AlloyParam::BridgeTransferId.fill(),
+				AlloyParam::InitiatorAddress.fill(),
+				AlloyParam::Amount.fill(),
+				AlloyParam::HashLock.fill(),
+				AlloyParam::TimeLock.fill(),
+			],
+			EventName::CounterpartyCompleted => {
+				vec![AlloyParam::BridgeTransferId.fill(), AlloyParam::PreImage.fill()]
+			}
+			EventName::CounterpartyAborted => vec![AlloyParam::BridgeTransferId.fill()],
 		}
 	}
 }
@@ -196,9 +286,9 @@ impl EventName {
 impl From<&str> for EventName {
 	fn from(s: &str) -> Self {
 		match s {
-			"BridgeTransferInitiated" => EventName::Initiated,
-			"BridgeTransferCompleted" => EventName::Completed,
-			"BridgeTransferRefunded" => EventName::Refunded,
+			"BridgeTransferInitiated" => EventName::InitiatorInitiated,
+			"BridgeTransferCompleted" => EventName::InitiatorCompleted,
+			"BridgeTransferRefunded" => EventName::InitiatorRefunded,
 			_ => panic!("Invalid event name"),
 		}
 	}

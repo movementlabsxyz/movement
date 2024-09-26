@@ -2,11 +2,80 @@ use alloy::primitives::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::{Rng, RngCore};
+use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::ops::AddAssign;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+
+use crate::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
+use crate::bridge_monitoring::{BridgeContractCounterpartyEvent, BridgeContractInitiatorEvent};
+
+pub type SCIResult<A, H> = Result<SmartContractInitiatorEvent<A, H>, SmartContractInitiatorError>;
+pub type SCCResult<A, H> =
+	Result<SmartContractCounterpartyEvent<A, H>, SmartContractCounterpartyError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmartContractInitiatorEvent<A, H> {
+	InitiatedBridgeTransfer(BridgeTransferDetails<A, H>),
+	CompletedBridgeTransfer(BridgeTransferId<H>),
+	RefundedBridgeTransfer(BridgeTransferId<H>),
+}
+
+impl<A, H> From<BridgeContractInitiatorEvent<A, H>> for SmartContractInitiatorEvent<A, H> {
+	fn from(event: BridgeContractInitiatorEvent<A, H>) -> Self {
+		match event {
+			BridgeContractInitiatorEvent::Initiated(details) => {
+				SmartContractInitiatorEvent::InitiatedBridgeTransfer(details)
+			}
+			BridgeContractInitiatorEvent::Completed(id) => {
+				SmartContractInitiatorEvent::CompletedBridgeTransfer(id)
+			}
+			BridgeContractInitiatorEvent::Refunded(id) => {
+				SmartContractInitiatorEvent::RefundedBridgeTransfer(id)
+			}
+		}
+	}
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum SmartContractInitiatorError {
+	#[error("Failed to initiate bridge transfer")]
+	InitiateTransferError,
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
+pub enum SmartContractCounterpartyError {
+	#[error("Transfer not found")]
+	TransferNotFound,
+	#[error("Invalid hash lock pre image (secret)")]
+	InvalidHashLockPreImage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SmartContractCounterpartyEvent<A, H> {
+	LockedBridgeTransfer(LockDetails<A, H>),
+	CompletedBridgeTransfer(CounterpartyCompletedDetails<A, H>),
+}
+
+impl<A, H> From<BridgeContractCounterpartyEvent<A, H>> for SmartContractCounterpartyEvent<A, H> {
+	fn from(event: BridgeContractCounterpartyEvent<A, H>) -> Self {
+		match event {
+			BridgeContractCounterpartyEvent::Locked(details) => {
+				SmartContractCounterpartyEvent::LockedBridgeTransfer(details)
+			}
+			BridgeContractCounterpartyEvent::Completed(details) => {
+				SmartContractCounterpartyEvent::CompletedBridgeTransfer(details)
+			}
+		}
+	}
+}
+
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct BridgeTransferId<H>(pub H);
 
 impl<H> BridgeTransferId<H> {
@@ -54,7 +123,7 @@ where
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct InitiatorAddress<A>(pub A);
 
 impl From<&str> for InitiatorAddress<Vec<u8>> {
@@ -69,7 +138,7 @@ impl From<String> for InitiatorAddress<Vec<u8>> {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RecipientAddress<A>(pub A);
 
 impl From<&str> for RecipientAddress<Vec<u8>> {
@@ -90,7 +159,7 @@ pub struct RecipientAddressCounterparty<A>(pub A);
 #[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InitiatorAddressCounterParty(pub Vec<u8>);
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct HashLock<H>(pub H);
 
 impl<H> HashLock<H> {
@@ -112,7 +181,7 @@ pub fn convert_hash_lock<H: From<O>, O>(other: HashLock<O>) -> HashLock<H> {
 	HashLock(From::from(other.0))
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HashLockPreImage(pub Vec<u8>);
 
 impl AsRef<[u8]> for HashLockPreImage {
@@ -131,7 +200,7 @@ impl HashLockPreImage {
 	}
 }
 
-#[derive(Deref, Debug, Clone, PartialEq, Eq)]
+#[derive(Deref, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimeLock(pub u64);
 
 impl From<Uint<256, 4>> for TimeLock {
@@ -142,14 +211,23 @@ impl From<Uint<256, 4>> for TimeLock {
 	}
 }
 
-#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Amount(pub AssetType);
+
 /// The type of Asset being used
-#[derive(Clone, Debug, PartialEq, Eq, Copy)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy, Serialize, Deserialize)]
 pub enum AssetType {
 	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
+}
+
+impl From<Uint<256, 4>> for AssetType {
+	fn from(value: Uint<256, 4>) -> Self {
+		// Extract the lower 64 bits.
+		let lower_64_bits = value.as_limbs()[0];
+		AssetType::Moveth(lower_64_bits)
+	}
 }
 
 #[derive(Error, Debug)]
@@ -169,7 +247,6 @@ impl TryFrom<AssetType> for Uint<256, 4> {
 				Ok(Uint::from(combined_value))
 			}
 			AssetType::Moveth(value) => Ok(Uint::from(value as u128)),
-			_ => Err(ConversionError::InvalidConversion), // Add more cases as needed
 		}
 	}
 }
@@ -229,7 +306,7 @@ impl From<Uint<256, 4>> for Amount {
 //        REFUNDED
 //}
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct BridgeTransferDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<A>,
@@ -245,7 +322,7 @@ impl<A, H> Default for BridgeTransferDetails<A, H> {
 	}
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct LockDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<Vec<u8>>,
@@ -254,7 +331,7 @@ pub struct LockDetails<A, H> {
 	pub amount: Amount,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct CounterpartyCompletedDetails<A, H> {
 	pub bridge_transfer_id: BridgeTransferId<H>,
 	pub initiator_address: InitiatorAddress<Vec<u8>>,
@@ -297,6 +374,64 @@ impl<A, H> CounterpartyCompletedDetails<A, H> {
 	}
 }
 
+#[derive(Debug, Hash, Eq, PartialEq, Clone)]
+pub enum MethodName {
+	InitiateBridgeTransfer,
+	CompleteBridgeTransferInitiator,
+	CompleteBridgeTransferCounterparty,
+	RefundBridgeTransfer,
+	GetBridgeTransferDetails,
+	LockBridgeTransferAssets,
+	AbortBridgeTransfer,
+}
+
+#[derive(Debug, Error, Clone)]
+pub enum AbstractBlockchainClientError {
+	#[error("Failed to send transaction")]
+	SendError,
+	#[error("Random failure occurred")]
+	RandomFailure,
+}
+
+#[derive(Debug)]
+pub enum CounterpartyCall<A, H> {
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+	LockBridgeTransfer(
+		BridgeTransferId<H>,
+		HashLock<H>,
+		TimeLock,
+		InitiatorAddress<Vec<u8>>,
+		RecipientAddress<A>,
+		Amount,
+	),
+}
+
+#[derive(Debug)]
+pub enum InitiatorCall<A, H> {
+	InitiateBridgeTransfer(
+		InitiatorAddress<A>,
+		RecipientAddress<Vec<u8>>,
+		Amount,
+		TimeLock,
+		HashLock<H>,
+	),
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+}
+
+#[derive(Clone, Debug)]
+pub enum ErrorConfig {
+	None,
+	InitiatorError(BridgeContractInitiatorError),
+	CounterpartyError(BridgeContractCounterpartyError),
+	CustomError(AbstractBlockchainClientError),
+}
+
+#[derive(Debug, Clone)]
+pub struct CallConfig {
+	pub error: ErrorConfig,
+	pub delay: Option<std::time::Duration>,
+}
+
 // Types
 pub trait BridgeHashType: Debug + PartialEq + Eq + Hash + Unpin + Send + Sync + Clone {}
 pub trait BridgeAddressType:
@@ -319,3 +454,4 @@ impl<T> BridgeAddressType for T where
 pub trait GenUniqueHash {
 	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self;
 }
+

@@ -3,13 +3,13 @@ use anyhow::Result;
 use aptos_sdk::{
 	coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress,
 };
-use bridge_shared::bridge_contracts::BridgeContractInitiator;
-use bridge_shared::bridge_contracts::BridgeContractInitiatorError;
+use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorError};
 use bridge_shared::types::{
 	Amount, AssetType, BridgeTransferDetails, HashLock, InitiatorAddress, RecipientAddress,
 };
+use movement_bridge::client::MovementClient;
+use movement_bridge::utils::MovementHash;
 use movement_bridge::utils::{self as movement_utils, MovementAddress};
-use movement_bridge::MovementClient;
 use tracing::debug;
 
 pub fn assert_bridge_transfer_details<H>(
@@ -125,7 +125,7 @@ pub async fn initiate_bridge_transfer_helper(
 	];
 
 	let mint_payload = movement_utils::make_aptos_payload(
-		movement_client.counterparty_address, // Address where moveth module is published
+		movement_client.native_address, // Address where moveth module is published
 		"moveth",
 		"mint",
 		Vec::new(),
@@ -148,7 +148,7 @@ pub async fn initiate_bridge_transfer_helper(
 		.initiate_bridge_transfer(
 			InitiatorAddress(MovementAddress(initiator_address)),
 			RecipientAddress(recipient_address),
-			HashLock(hash_lock),
+			HashLock(MovementHash(hash_lock)),
 			Amount(AssetType::Moveth(amount)),
 		)
 		.await

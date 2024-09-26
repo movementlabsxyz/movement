@@ -15,7 +15,7 @@ use bridge_shared::{
 		RecipientAddress,
 	},
 };
-use ethereum_bridge::types::EthAddress;
+use ethereum_bridge::types::{EthAddress, EthHash};
 use tokio::{self};
 
 #[tokio::test]
@@ -329,7 +329,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(hash_lock),
+			HashLock(EthHash(hash_lock)),
 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
 		)
 		.await
@@ -358,7 +358,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(hash_lock),
+			HashLock(EthHash(hash_lock)),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
@@ -390,7 +390,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(hash_lock),
+			HashLock(EthHash(hash_lock)),
 			Amount(AssetType::EthAndWeth((1, 1))),
 		)
 		.await
@@ -415,7 +415,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient),
-			HashLock(hash_lock),
+			HashLock(EthHash(hash_lock)),
 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
 		)
 		.await
@@ -446,7 +446,7 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 		.initiate_bridge_transfer(
 			InitiatorAddress(EthAddress(signer_address)),
 			RecipientAddress(recipient_bytes),
-			HashLock(hash_lock),
+			HashLock(EthHash(hash_lock)),
 			Amount(AssetType::EthAndWeth((42, 0))),
 		)
 		.await

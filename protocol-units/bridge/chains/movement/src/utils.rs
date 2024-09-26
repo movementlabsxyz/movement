@@ -1,4 +1,4 @@
-use crate::MovementClient;
+use crate::client::MovementClient;
 use anyhow::{Context, Result};
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
@@ -22,13 +22,38 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
-use bridge_shared::bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError};
+use bridge_shared::bridge_contracts::{
+	BridgeContractCounterpartyError, BridgeContractInitiatorError,
+};
+use bridge_shared::types::{GenUniqueHash, HashLockPreImage, RecipientAddress};
 use derive_new::new;
+use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
+use rand_chacha::ChaChaRng;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
-use tracing::log::{debug, info, error};
+use tracing::log::{debug, error, info};
+
+pub type TestRng = StdRng;
+
+pub trait RngSeededClone: Rng + SeedableRng {
+	fn seeded_clone(&mut self) -> Self;
+}
+
+impl RngSeededClone for StdRng {
+	fn seeded_clone(&mut self) -> Self {
+		self.clone()
+	}
+}
+
+impl RngSeededClone for ChaChaRng {
+	fn seeded_clone(&mut self) -> Self {
+		let mut seed = [0u8; 32];
+		self.fill_bytes(&mut seed);
+		ChaChaRng::from_seed(seed)
+	}
+}
 
 #[derive(Debug, Error)]
 pub enum MovementAddressError {
@@ -42,6 +67,18 @@ pub enum MovementAddressError {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub struct MovementAddress(pub AccountAddress);
+
+impl From<MovementAddress> for Vec<u8> {
+	fn from(address: MovementAddress) -> Vec<u8> {
+		address.0.to_vec()
+	}
+}
+
+impl From<RecipientAddress<MovementAddress>> for MovementAddress {
+	fn from(address: RecipientAddress<MovementAddress>) -> Self {
+		address.0
+	}
+}
 
 impl From<&MovementAddress> for Vec<u8> {
 	fn from(address: &MovementAddress) -> Vec<u8> {
@@ -79,6 +116,34 @@ impl From<&str> for MovementAddress {
 		let s = s.trim_start_matches("0x");
 		let bytes = hex::decode(s).expect("Invalid hex string");
 		bytes.into()
+	}
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
+pub struct MovementHash(pub [u8; 32]);
+
+impl MovementHash {
+	pub fn random() -> Self {
+		let mut rng = TestRng::seed_from_u64(0);
+		let mut hash = [0u8; 32];
+		rng.fill_bytes(&mut hash);
+		Self(hash)
+	}
+}
+
+impl From<HashLockPreImage> for MovementHash {
+	fn from(preimage: HashLockPreImage) -> Self {
+		let mut hash = [0u8; 32];
+		hash.copy_from_slice(&preimage.0);
+		Self(hash)
+	}
+}
+
+impl GenUniqueHash for MovementHash {
+	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
+		let mut random_bytes = [0u8; 32];
+		rng.fill(&mut random_bytes);
+		Self(random_bytes)
 	}
 }
 
@@ -130,30 +195,46 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	debug!("Signed TX: {:?}", signed_tx);
 
-	let response = rest_client
-		.submit_and_wait(&signed_tx)
-		.await
-
-		.map_err(|e| {
-			let err_msg = format!("Transaction submission error: {}", e.to_string());
-			error!("{}", err_msg); // Log the error in detail
-			err_msg
-		})?;
+	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
+		let err_msg = format!("Transaction submission error: {}", e.to_string());
+		error!("{}", err_msg); // Log the error in detail
+		err_msg
+	})?;
 
 	let txn = response.into_inner();
 	debug!("Response: {:?}", txn);
 
 	match &txn {
-	Transaction::UserTransaction(user_txn) => {
-		if !user_txn.info.success {
-		return Err(format!(
-			"Transaction failed with status: {}",user_txn.info.vm_status));
+		Transaction::UserTransaction(user_txn) => {
+			if !user_txn.info.success {
+				return Err(format!("Transaction failed with status: {}", user_txn.info.vm_status));
+			}
 		}
-	},
-	_ => return Err("Expected a UserTransaction, but got a different transaction type.".to_string()),
+		_ => {
+			return Err(
+				"Expected a UserTransaction, but got a different transaction type.".to_string()
+			)
+		}
 	}
 
 	Ok(txn)
+}
+
+pub fn extract_bridge_transfer_id(txn: Transaction) -> Option<String> {
+	if let Transaction::UserTransaction(user_txn) = txn {
+		for event in user_txn.events {
+			// Extract the event type as a string to compare it
+			let event_type = event.typ.to_string();
+			if event_type.contains("BridgeTransferInitiatedEvent") {
+				if let Some(Value::String(bridge_transfer_id)) =
+					event.data.get("bridge_transfer_id")
+				{
+					return Some(bridge_transfer_id.clone());
+				}
+			}
+		}
+	}
+	None
 }
 
 pub fn val_as_str(value: Option<&Value>) -> Result<&str, BridgeContractCounterpartyError> {
@@ -171,14 +252,17 @@ pub fn val_as_u64(value: Option<&Value>) -> Result<u64, BridgeContractCounterpar
 }
 
 pub fn val_as_str_initiator(value: Option<&Value>) -> Result<&str, BridgeContractInitiatorError> {
-	value.as_ref().and_then(|v| v.as_str()).ok_or(BridgeContractInitiatorError::SerializationError)
+	value
+		.as_ref()
+		.and_then(|v| v.as_str())
+		.ok_or(BridgeContractInitiatorError::SerializationError)
 }
 
 pub fn val_as_u64_initiator(value: Option<&Value>) -> Result<u64, BridgeContractInitiatorError> {
 	value
-	    .as_ref()
-	    .and_then(|v| v.as_u64())
-	    .ok_or(BridgeContractInitiatorError::SerializationError)
+		.as_ref()
+		.and_then(|v| v.as_u64())
+		.ok_or(BridgeContractInitiatorError::SerializationError)
 }
 
 pub fn serialize_u64(value: &u64) -> Result<Vec<u8>, BridgeContractCounterpartyError> {
@@ -195,14 +279,17 @@ pub fn serialize_u64_initiator(value: &u64) -> Result<Vec<u8>, BridgeContractIni
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
 
-pub fn serialize_address_initiator(address: &AccountAddress) -> Result<Vec<u8>, BridgeContractInitiatorError> {
+pub fn serialize_address_initiator(
+	address: &AccountAddress,
+) -> Result<Vec<u8>, BridgeContractInitiatorError> {
 	bcs::to_bytes(address).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
-    
-pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(value: &T) -> Result<Vec<u8>, BridgeContractInitiatorError> {
+
+pub fn serialize_vec_initiator<T: serde::Serialize + ?Sized>(
+	value: &T,
+) -> Result<Vec<u8>, BridgeContractInitiatorError> {
 	bcs::to_bytes(value).map_err(|_| BridgeContractInitiatorError::SerializationError)
 }
- 
 
 // This is not used for now, but we may need to use it in later for estimating gas.
 pub async fn simulate_aptos_transaction(
