@@ -29,9 +29,6 @@ members = [
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
-    "protocol-units/bridge/shared",
-    "protocol-units/bridge/chains/ethereum",
-    "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",
     "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
@@ -51,8 +48,6 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## bridge
-movement-bridge = { path = "protocol-units/bridge/chains/movement" }
-ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
 bridge-service = { path = "protocol-units/bridge/service" }
 bridge-shared = { path = "protocol-units/bridge/shared" }
 bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }

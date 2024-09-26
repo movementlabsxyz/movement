@@ -27,14 +27,13 @@ alloy-contract = { workspace = true }
 rand = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
-bridge-shared = { workspace = true }
-ethereum-bridge = { workspace = true }
-movement-bridge = { workspace = true }
 futures = { workspace = true }
 tiny-keccak = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+bridge-service = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
