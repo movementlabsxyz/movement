@@ -127,8 +127,9 @@ impl EthClient {
 		&self,
 		weth: EthAddress,
 		owner: EthAddress,
+		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
-		let call = self.initiator_contract.initialize(weth.0, owner.0);
+		let call = self.initiator_contract.initialize(weth.0, owner.0, U256::from(timelock.0));
 		send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
 			.await
 			.expect("Failed to send transaction");
