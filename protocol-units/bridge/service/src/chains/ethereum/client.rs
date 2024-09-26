@@ -237,7 +237,32 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		Ok(())
 	}
 
-	async fn complete_bridge_transfer(
+	async fn initiator_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		pre_image: HashLockPreImage,
+	) -> BridgeContractResult<()> {
+		// The Alloy generated type for smart contract`pre_image` arg is `FixedBytes<32>`
+		// so it must be converted to `[u8; 32]`.
+		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
+		let pre_image: [u8; 32] = pre_image
+			.0
+			.get(0..32)
+			.ok_or(generic_error("Could not get required slice from pre-image"))?
+			.try_into()
+			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
+
+		let contract =
+			AtomicBridgeInitiator::new(self.initiator_contract_address()?, &self.rpc_provider);
+		let call = contract
+			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
+		send_transaction(call, &send_transaction_rules(), RETRIES, GAS_LIMIT)
+			.await
+			.expect("Failed to send transaction");
+		Ok(())
+	}
+
+	async fn counterparty_complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
