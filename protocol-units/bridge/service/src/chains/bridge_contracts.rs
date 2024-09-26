@@ -123,7 +123,13 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		amount: Amount,
 	) -> BridgeContractResult<()>;
 
-	async fn complete_bridge_transfer(
+	async fn initiator_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		secret: HashLockPreImage,
+	) -> BridgeContractResult<()>;
+
+	async fn counterparty_complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		secret: HashLockPreImage,
