@@ -147,12 +147,12 @@ impl PartialOrd for MempoolTransaction {
 impl Ord for MempoolTransaction {
 	fn cmp(&self, other: &Self) -> Ordering {
 		// First, compare by slot_seconds
-		match self.slot_seconds.cmp(&other.slot_seconds) {
+		match self.timestamp.cmp(&other.timestamp) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,
 		}
 
-		// If slots seconds are equal, then compare by transaction on the whole
+		// If timestamps are equal, then compare by transaction on the whole
 		self.transaction.cmp(&other.transaction)
 	}
 }
@@ -187,5 +187,22 @@ impl MempoolTransaction {
 
 	pub fn id(&self) -> transaction::Id {
 		self.transaction.id()
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+
+	#[test]
+	fn test_mempool_transaction_cmp() {
+		let transaction1 = MempoolTransaction::at_time(Transaction::test(), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::test(), 2);
+		let transaction3 = MempoolTransaction::at_time(Transaction::test(), 4);
+
+		assert!(transaction1 < transaction2);
+		assert!(transaction2 < transaction3);
+		assert!(transaction1 < transaction3);
 	}
 }
