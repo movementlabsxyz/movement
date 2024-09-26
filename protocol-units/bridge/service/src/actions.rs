@@ -42,7 +42,6 @@ pub fn process_action<A: std::marker::Send + 'static>(
 		TransferActionType::LockBridgeTransfer {
 			bridge_transfer_id,
 			hash_lock,
-			time_lock,
 			initiator,
 			recipient,
 			amount,
@@ -52,7 +51,6 @@ pub fn process_action<A: std::marker::Send + 'static>(
 					.lock_bridge_transfer(
 						bridge_transfer_id,
 						hash_lock,
-						time_lock,
 						initiator,
 						recipient,
 						amount,

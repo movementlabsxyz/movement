@@ -1,10 +1,6 @@
 use crate::chains::bridge_contracts::BridgeContractEvent;
-use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::chains::ethereum::event_monitoring::EthMonitoring;
 use crate::types::ChainId;
-use crate::BridgeContractMonitoring;
 use thiserror::Error;
-use tokio_stream::StreamExt;
 
 #[derive(Debug, Error)]
 pub enum InvalidEventError {
