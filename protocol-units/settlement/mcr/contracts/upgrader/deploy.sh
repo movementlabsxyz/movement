@@ -35,11 +35,11 @@ fi
 
 # Run the script to generate transaction data for the upgrade
 echo "Generating transaction data to upgrade contract $contract"
-nix develop --command bash -c "cd .. && forge script "./script/MultisigMOVETokenDeployer.s.sol" -vvvv --fork-url ${url}"
+forge script "../script/MultisigMOVETokenDeployer.s.sol" -vvvv --fork-url ${url} --broadcast
 
 # Convert contract name to lowercase
 lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
 
 # Run the upgrader script
 echo "Running upgrader/deploy.ts"
-npx tsx  ./deploy.ts -c "$lowercase_contract" -u "$url"
+npx tsx  ./deploy.ts -u "$url"
