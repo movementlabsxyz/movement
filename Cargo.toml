@@ -30,7 +30,6 @@ members = [
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/service",
-    "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
 ]
@@ -49,8 +48,6 @@ rust-version = "1.75"
 # internal
 ## bridge
 bridge-service = { path = "protocol-units/bridge/service" }
-bridge-shared = { path = "protocol-units/bridge/shared" }
-bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }

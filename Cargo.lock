@@ -3675,33 +3675,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge-integration-tests"
-version = "0.0.2"
-dependencies = [
- "alloy",
- "alloy-contract",
- "alloy-network",
- "alloy-sol-types",
- "anyhow",
- "aptos-framework",
- "aptos-language-e2e-tests",
- "aptos-logger",
- "aptos-sdk",
- "aptos-types",
- "bcs 0.1.4",
- "bridge-service",
- "futures",
- "rand 0.7.3",
- "reqwest 0.12.7",
- "serde_json",
- "tiny-keccak",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
-]
-
-[[package]]
 name = "bridge-service"
 version = "0.0.2"
 dependencies = [
@@ -3733,6 +3706,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
+ "tracing-subscriber 0.3.18",
  "url",
 ]
 
