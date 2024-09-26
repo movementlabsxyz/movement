@@ -34,6 +34,7 @@ alloy = { workspace = true, features = [
   "contract",
   "sol-types",
 ] }
+alloy-network = { workspace = true }
 alloy-rlp.workspace = true
 keccak-hash = { workspace = true }
 serde = { workspace = true }

@@ -11,14 +11,14 @@ use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
-use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
-use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress};
-use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
-use ethereum_bridge::{
+use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractResult};
+use bridge_service::types::{Amount, HashLock, InitiatorAddress, RecipientAddress};
+use bridge_service::chains::ethereum::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
+use bridge_service::chains::ethereum::{
 	client::{Config as EthConfig, EthClient},
 	types::EthHash,
 };
-use movement_bridge::utils::MovementAddress;
+use bridge_service::utils::MovementAddress;
 use movement_bridge::{
 	client::{Config as MovementConfig, MovementClient},
 	utils::MovementHash,

@@ -1,6 +1,7 @@
-use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
+use bridge_service::chains::ethereum::client::{Config, EthClient};
+//use bridge_service::tests::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
+use bridge_service::chains::bridge_contracts::BridgeContractError;
+use bridge_service::chains::bridge_contracts::BridgeContractResult;
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::{
@@ -13,12 +14,12 @@ use serde_with::serde_as;
 use std::fmt::{self, Debug};
 use url::Url;
 
-use crate::types::{
+use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
 };
 
-use super::types::{
+use bridge_service::chains::ethereum::types::{
 	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
 	EthAddress, InitiatorContract, WETH9Contract, WETH9,
 };
@@ -66,7 +67,7 @@ pub async fn initialize_initiator_contract(
 	owner: EthAddress,
 ) -> Result<(), anyhow::Error> {
 	let call = self.initiator_contract.initialize(weth.0, owner.0);
-	send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
+send_transaction(call.to_owned(), &send_transaction_rules(), RETRIES, GAS_LIMIT)
 		.await
 		.expect("Failed to send transaction");
 	Ok(())

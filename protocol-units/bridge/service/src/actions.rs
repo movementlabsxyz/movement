@@ -66,7 +66,7 @@ pub fn process_action<A: std::marker::Send + 'static>(
 				if wait_time_sec != 0 {
 					let _ = tokio::time::sleep(tokio::time::Duration::from_secs(wait_time_sec));
 				}
-				client.complete_bridge_transfer(action.transfer_id, secret).await
+				client.initiator_complete_bridge_transfer(action.transfer_id, secret).await
 			};
 			Some(Box::pin(future))
 		}

@@ -1,5 +1,4 @@
-use crate::TestHarness;
-use crate::{EthToMovementCallArgs, TestHarness};
+use crate::harness::EthToMovementCallArgs;
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
@@ -7,7 +6,7 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use bridge_service::chains::bridge_contracts::BridgeContract;
+use bridge_service::chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash};
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
@@ -101,7 +100,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		let details = BridgeContractCounterparty::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
 		)
@@ -120,7 +119,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
-		BridgeContractCounterparty::complete_bridge_transfer(
+		BridgeContract::counterparty_complete_bridge_transfer(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
 			HashLockPreImage(b"secret".to_vec()),
@@ -128,7 +127,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		.await
 		.expect("Failed to complete bridge transfer");
 
-		let details = BridgeContractCounterparty::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
 		)
@@ -205,7 +204,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		let details = BridgeContractCounterparty::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
 		)
@@ -231,7 +230,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to complete bridge transfer");
 
-		let abort_details = BridgeContractCounterparty::get_bridge_transfer_details(
+		let abort_details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id),
 		)

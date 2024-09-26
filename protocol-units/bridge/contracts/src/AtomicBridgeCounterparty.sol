@@ -71,7 +71,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
             state: MessageState.PENDING
         });
 
-        emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
+        emit BridgeTransferLocked(bridgeTransferId, originator, recipient, amount, hashLock, counterpartyTimeLockDuration);
         return true;
     }
 

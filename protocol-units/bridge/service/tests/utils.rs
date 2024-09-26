@@ -3,25 +3,23 @@ use anyhow::Result;
 use aptos_sdk::{
 	coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress,
 };
-use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorError};
-use bridge_shared::types::{
-	Amount, AssetType, BridgeTransferDetails, HashLock, InitiatorAddress, RecipientAddress,
+use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractError};
+use bridge_service::types::{
+	Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, InitiatorAddress, RecipientAddress
 };
-use movement_bridge::client::MovementClient;
-use movement_bridge::utils::MovementHash;
-use movement_bridge::utils::{self as movement_utils, MovementAddress};
+use bridge_service::chains::movement::client::MovementClient;
+use bridge_service::chains::movement::utils::{self as movement_utils, MovementHash, MovementAddress};
 use tracing::debug;
 
-pub fn assert_bridge_transfer_details<H>(
-	details: &BridgeTransferDetails<MovementAddress, H>, // MovementAddress for initiator
-	expected_bridge_transfer_id: H,
-	expected_hash_lock: H,
+pub fn assert_bridge_transfer_details(
+	details: &BridgeTransferDetails<MovementAddress>, // MovementAddress for initiator
+	expected_bridge_transfer_id: [u8; 32],
+	expected_hash_lock: [u8; 32],
 	expected_sender_address: AccountAddress,
 	expected_recipient_address: Vec<u8>,
 	expected_amount: u64,
 	expected_state: u8,
-) where
-	H: std::fmt::Debug + PartialEq,
+) 
 {
 	assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
@@ -107,7 +105,7 @@ pub async fn initiate_bridge_transfer_helper(
 	hash_lock: [u8; 32],
 	amount: u64,
 	timelock_modify: bool,
-) -> Result<(), BridgeContractInitiatorError> {
+) -> Result<(), BridgeContractError> {
 	// Publish for test
 	let _ = movement_client.publish_for_test();
 
@@ -139,7 +137,7 @@ pub async fn initiate_bridge_transfer_helper(
 		mint_payload,
 	)
 	.await
-	.map_err(|_| BridgeContractInitiatorError::MintError)?;
+	.map_err(|_| BridgeContractError::MintError)?;
 
 	debug!("Successfully minted 200 MovETH to the initiator");
 

@@ -3,7 +3,7 @@ use aptos_sdk::{
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
-use bridge_service::chains::bridge_contracts::BridgeContractError;
+use bridge_service::chains::{bridge_contracts::BridgeContractError, ethereum::{client::EthClient, types::AtomicBridgeInitiator}};
 //use bridge_service::chains::movement::client::MovementClient;
 //AlloyProvider, AtomicBridgeInitiator,
 use rand::prelude::*;

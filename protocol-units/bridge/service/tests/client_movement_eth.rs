@@ -1,6 +1,6 @@
 use anyhow::Result;
 use bridge_service::{
-	chains::bridge_contracts::BridgeContract,
+	chains::{bridge_contracts::BridgeContract, movement::utils::MovementHash},
 	types::{BridgeTransferId, HashLockPreImage},
 };
 use harness::{MovementToEthCallArgs, TestHarness};
@@ -59,7 +59,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		let bridge_transfer_id: [u8; 32] =
 			test_utils::extract_bridge_transfer_id(&mut movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-		let details = BridgeContractInitiator::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
@@ -115,7 +115,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		let bridge_transfer_id: [u8; 32] =
 			test_utils::extract_bridge_transfer_id(&mut movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-		let details = BridgeContractInitiator::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
@@ -133,7 +133,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			1,
 		);
 
-		BridgeContractInitiator::complete_bridge_transfer(
+		BridgeContract::initiator_complete_bridge_transfer(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 			HashLockPreImage(b"secret".to_vec()),
@@ -141,7 +141,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.await
 		.expect("Failed to complete bridge transfer");
 
-		let details = BridgeContractInitiator::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
@@ -193,7 +193,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		let bridge_transfer_id: [u8; 32] =
 			test_utils::extract_bridge_transfer_id(&mut movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-		let details = BridgeContractInitiator::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
@@ -201,7 +201,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
-		test_utils::assert_bridge_transfer_details::<MovementHash>(
+		utils::assert_bridge_transfer_details::<MovementHash>(
 			&details,
 			MovementHash(bridge_transfer_id),
 			MovementHash(args.hash_lock.0),
@@ -213,14 +213,14 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 
 		sleep(Duration::from_secs(2)).await;
 
-		BridgeContractInitiator::refund_bridge_transfer(
+		BridgeContract::refund_bridge_transfer(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
 
-		let details = BridgeContractInitiator::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details(
 			movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id)),
 		)

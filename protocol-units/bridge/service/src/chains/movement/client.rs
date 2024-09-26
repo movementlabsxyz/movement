@@ -383,7 +383,36 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		Ok(())
 	}
 
-	async fn complete_bridge_transfer(
+	async fn initiator_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		preimage: HashLockPreImage,
+	) -> BridgeContractResult<()> {
+		let args2 = vec![
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec(&preimage.0)?,
+		];
+
+		let payload = utils::make_aptos_payload(
+			self.native_address,
+			COUNTERPARTY_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args2,
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError);
+
+		Ok(())
+	}
+
+	async fn counterparty_complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,

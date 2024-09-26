@@ -3679,6 +3679,7 @@ name = "bridge-service"
 version = "0.0.2"
 dependencies = [
  "alloy",
+ "alloy-network",
  "alloy-rlp",
  "anyhow",
  "aptos-api",
