@@ -1,54 +1,18 @@
 use crate::client::{Config, MovementClient};
-use anyhow::Result;
-use aptos_api::accounts::Account;
-use aptos_api_types::{Address, EntryFunctionId, MoveModuleId, ViewFunction, ViewRequest};
-use aptos_sdk::{
-	move_types::{
-		identifier::Identifier,
-		language_storage::{ModuleId, TypeTag},
-	},
-	rest_client::{Client, FaucetClient, Response},
-	types::LocalAccount,
-};
-use aptos_types::account_address::AccountAddress;
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_monitoring::BridgeContractInitiatorEvent,
-	types::{CounterpartyCall, InitiatorCall, SmartContractInitiatorEvent},
-};
-use bridge_shared::{
-	bridge_contracts::{
-		BridgeContractCounterparty, BridgeContractCounterpartyResult, BridgeContractInitiator,
-		BridgeContractInitiatorResult,
-	},
-	types::{
-		Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
-	},
+	types::{Amount, CounterpartyCall, InitiatorCall, SmartContractInitiatorEvent},
 };
 use event_monitoring::{MovementCounterpartyMonitoring, MovementInitiatorMonitoring};
 use event_types::MovementChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
-use hex::{decode, FromHex};
-use rand::prelude::*;
-use rand::Rng;
-use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use std::str::FromStr;
-use std::sync::{Arc, RwLock};
 use std::{
 	collections::HashMap,
 	future::Future,
 	pin::Pin,
 	task::{Context, Poll},
 };
-use tokio::{
-	io::{AsyncBufReadExt, BufReader},
-	process::Command as TokioCommand,
-	sync::oneshot,
-	task,
-};
-use tracing::{debug, info};
 use utils::{MovementAddress, MovementHash};
 
 pub mod client;
@@ -170,7 +134,7 @@ impl Future for MovementChain {
 		while let Poll::Ready(event) = this.poll_next_unpin(cx) {
 			match event {
 				Some(_) => {}
-				None => return Poll::Ready(()),
+				_ => return Poll::Ready(()),
 			}
 		}
 		Poll::Pending
@@ -195,7 +159,7 @@ impl Stream for MovementChain {
 					_ => {} // Implement chain event tx logic here
 				}
 			}
-			Poll::Ready(None) => {
+			Poll::Ready(_) => {
 				tracing::warn!("MovementChain[{}]: Transaction receiver dropped", this.name);
 			}
 			Poll::Pending => {

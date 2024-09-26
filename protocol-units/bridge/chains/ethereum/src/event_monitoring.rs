@@ -29,7 +29,7 @@ use std::{pin::Pin, task::Poll};
 
 pub struct EthInitiatorMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
-	ws: RootProvider<PubSubFrontend>,
+	_ws: RootProvider<PubSubFrontend>,
 }
 
 impl BridgeContractInitiatorMonitoring for EthInitiatorMonitoring<EthAddress, EthHash> {
@@ -75,7 +75,7 @@ impl EthInitiatorMonitoring<EthAddress, EthHash> {
 			}
 		});
 
-		Ok(Self { listener, ws })
+		Ok(Self { listener, _ws: ws })
 	}
 }
 
@@ -123,7 +123,7 @@ impl Stream for EthInitiatorMonitoring<EthAddress, EthHash> {
 
 pub struct EthCounterpartyMonitoring<A, H> {
 	listener: UnboundedReceiver<EthChainEvent<A, H>>,
-	ws: RootProvider<PubSubFrontend>,
+	_ws: RootProvider<PubSubFrontend>,
 }
 
 impl BridgeContractCounterpartyMonitoring for EthCounterpartyMonitoring<EthAddress, EthHash> {
@@ -207,7 +207,7 @@ impl EthCounterpartyMonitoring<EthAddress, EthHash> {
 			}
 		});
 
-		Ok(Self { listener, ws })
+		Ok(Self { listener, _ws: ws })
 	}
 }
 

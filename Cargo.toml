@@ -54,7 +54,6 @@ rust-version = "1.75"
 movement-bridge = { path = "protocol-units/bridge/chains/movement" }
 ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
 bridge-shared = { path = "protocol-units/bridge/shared" }
-bridge-service = { path = "protocol-units/bridge/service" }
 bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
 ## buildtime
 buildtime = { path = "util/buildtime" }

@@ -15,7 +15,7 @@ use bridge_shared::{
 	},
 	types::{
 		Amount, AssetType, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-		InitiatorAddress, RecipientAddress, TimeLock,
+		InitiatorAddress, RecipientAddress,
 	},
 };
 use rand::prelude::*;
@@ -24,7 +24,7 @@ use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use std::{
 	env, fs,
-	io::{Read, Write},
+	io::Write,
 	path::PathBuf,
 	process::{Command, Stdio},
 };
@@ -34,7 +34,7 @@ use tokio::{
 	sync::oneshot,
 	task,
 };
-use tracing::{debug, info};
+use tracing::debug;
 use url::Url;
 
 use crate::utils::MovementAddress;
@@ -167,7 +167,7 @@ impl MovementClient {
 																	return Ok(());
 								}
 							},
-							Ok(None) => {
+							Ok(_) => {
 								return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
 							},
 							Err(e) => {
@@ -185,7 +185,7 @@ impl MovementClient {
 																	return Ok(());
 								}
 							},
-							Ok(None) => {
+							Ok(_) => {
 								return Err(anyhow::anyhow!("Unexpected end of stderr stream"));
 							}
 							Err(e) => {

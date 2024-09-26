@@ -12,7 +12,7 @@ use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
 use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
-use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
+use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress};
 use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
 use ethereum_bridge::{
 	client::{Config as EthConfig, EthClient},

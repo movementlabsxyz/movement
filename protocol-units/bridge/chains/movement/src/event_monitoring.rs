@@ -19,7 +19,7 @@ use futures::Stream;
 use std::{pin::Pin, task::Poll};
 
 pub struct MovementInitiatorMonitoring<A, H> {
-	listener: mpsc::UnboundedReceiver<MovementChainEvent<A, H>>,
+	_listener: mpsc::UnboundedReceiver<MovementChainEvent<A, H>>,
 	client: Option<MovementClient>,
 }
 
@@ -32,8 +32,8 @@ impl BridgeContractInitiatorMonitoring
 
 impl MovementInitiatorMonitoring<MovementAddress, MovementHash> {
 	pub async fn build(
-		rest_url: &str,
-		listener: UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
+		_rest_url: &str,
+		_listener: UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
 	) -> Result<Self, anyhow::Error> {
 		todo!()
 	}
@@ -138,14 +138,14 @@ impl Stream for MovementInitiatorMonitoring<MovementAddress, MovementHash> {
 		match Pin::new(&mut stream).poll_next(cx) {
 			Poll::Ready(Some(Ok(event))) => Poll::Ready(Some(event)),
 			Poll::Ready(Some(Err(_))) => Poll::Ready(None),
-			Poll::Ready(None) => Poll::Ready(None),
+			Poll::Ready(_) => Poll::Ready(None),
 			Poll::Pending => Poll::Pending,
 		}
 	}
 }
 
 pub struct MovementCounterpartyMonitoring<A, H> {
-	listener: UnboundedReceiver<MovementChainEvent<A, H>>,
+	_listener: UnboundedReceiver<MovementChainEvent<A, H>>,
 	client: Option<MovementClient>,
 }
 
@@ -158,8 +158,8 @@ impl BridgeContractCounterpartyMonitoring
 
 impl MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 	pub async fn build(
-		rest_url: &str,
-		listener: mpsc::UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
+		_rest_url: &str,
+		_listener: mpsc::UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
 	) -> Result<Self, anyhow::Error> {
 		todo!()
 	}
@@ -264,7 +264,7 @@ impl Stream for MovementCounterpartyMonitoring<MovementAddress, MovementHash> {
 		match Pin::new(&mut stream).poll_next(cx) {
 			Poll::Ready(Some(Ok(event))) => Poll::Ready(Some(event)),
 			Poll::Ready(Some(Err(_))) => Poll::Ready(None),
-			Poll::Ready(None) => Poll::Ready(None),
+			Poll::Ready(_) => Poll::Ready(None),
 			Poll::Pending => Poll::Pending,
 		}
 	}
