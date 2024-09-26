@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { Helper, Safe } from "./helpers/Helper.sol";
+import {Helper, Safe} from "./helpers/Helper.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
 import {Enum} from "@safe-smart-account/contracts/common/Enum.sol";
@@ -22,14 +22,15 @@ contract MultisigMOVETokenDeployer is Helper {
     // testnet
     // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
     // Safes should be already deployed
-    bytes32 public salt = 0x6b80000000000000000000000206b39ef98bcf879e46c0a1916a10c7330f0ce0;
+
+    bytes32 public salt = 0x0308000000000000000000000a18f8ed6e115a72d9d13b2c5578f132ce7f643a;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function run() external virtual {
         // load config and deployments data
         _loadExternalData();
 
-        uint256 signer = vm.envUint("PRIVATE_KEY");
+        uint256 signer = vm.envUint("TEST_1");
         vm.startBroadcast(signer);
 
         // Deploy CREATE3Factory, Safes and Timelock if not deployed
@@ -40,6 +41,10 @@ contract MultisigMOVETokenDeployer is Helper {
         _proposeMultisigMove();
 
         vm.stopBroadcast();
+
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+            _writeDeployments();
+        }
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
@@ -50,11 +55,15 @@ contract MultisigMOVETokenDeployer is Helper {
         // genetares bytecode for CREATE3 deployment
         bytes memory create3Bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
-            abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe))
+            abi.encode(
+                address(moveImplementation),
+                address(timelock),
+                abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe, deployment.anchorage)
+            )
         );
         // create bytecode the MOVE token proxy using CREATE3
         bytes memory bytecode = abi.encodeWithSignature("deploy(bytes32,bytes)", salt, create3Bytecode);
-        
+
         // NOTE: digest can be used if immediately signing and executing the transaction
         // bytes32 digest = Safe(payable(deployment.movementFoundationSafe)).getTransactionHash(
         //     address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), 0
@@ -74,7 +83,7 @@ contract MultisigMOVETokenDeployer is Helper {
         console.log("json |start|", serializedData, "|end|");
         // Write the serialized data to a file
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
-        vm.writeFile(string.concat(root, upgradePath, "deploymove.json"), serializedData);
+            vm.writeFile(string.concat(root, upgradePath, "deploymove.json"), serializedData);
         }
     }
 
@@ -84,7 +93,11 @@ contract MultisigMOVETokenDeployer is Helper {
         // genetares bytecode for CREATE3 deployment
         bytes memory create3Bytecode = abi.encodePacked(
             type(TransparentUpgradeableProxy).creationCode,
-            abi.encode(address(moveImplementation), address(timelock), abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe))
+            abi.encode(
+                address(moveImplementation),
+                address(timelock),
+                abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe)
+            )
         );
         vm.recordLogs();
         // craete bytecode the MOVE token proxy using CREATE3
@@ -104,15 +117,14 @@ contract MultisigMOVETokenDeployer is Helper {
         Safe(payable(deployment.movementFoundationSafe)).execTransaction(
             address(create3), 0, bytecode, Enum.Operation.Call, 0, 0, 0, ZERO, payable(ZERO), signatures
         );
-        // moveProxy = 
+        // moveProxy =
         console.log("MOVEToken deployment records:");
         Vm.Log[] memory logs = vm.getRecordedLogs();
         deployment.move = logs[0].emitter;
-        deployment.moveAdmin = logs[logs.length-3].emitter;
+        deployment.moveAdmin = logs[logs.length - 3].emitter;
         console.log("proxy", deployment.move);
         console.log("admin", deployment.moveAdmin);
     }
-    
 
     // MULTISIG WILL NEVER BE USED WITHIN THE CONTRACT PIPELINE
     function _upgradeMultisigMove() internal {

@@ -3,17 +3,21 @@
 # Initialize contract variable
 contract=""
 url=""
+api_key=""
 
 # Parse options using getopts
-while getopts "c:u:" opt; do
+while getopts "c:u:k:" opt; do
   case $opt in
     c) contract="$OPTARG"
     ;;
     u) url="$OPTARG"
     ;;
+    k) api_key="$OPTARG"
+    ;;
     \?) echo "Invalid option: -$OPTARG" >&2
         exit 1
     ;;
+
   esac
 done
 
@@ -33,9 +37,15 @@ if [ -z "$url" ]; then
   exit 1
 fi
 
+# Ensure the api_key flag is provided
+if [ -z "$api_key" ]; then
+  echo "Error: -k flag for etherscan api key is required."
+  exit 1
+fi
+
 # Run the script to generate transaction data for the upgrade
 echo "Generating transaction data to upgrade contract $contract"
-forge script "../script/MultisigMOVETokenDeployer.s.sol" -vvvv --fork-url ${url} --broadcast
+forge script "../script/MultisigMOVETokenDeployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key}
 
 # Convert contract name to lowercase
 lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
