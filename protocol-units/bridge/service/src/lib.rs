@@ -55,7 +55,6 @@ where
 									let jh = tokio::spawn(fut);
 									client_exec_result_futures.push(jh);
 								}
-
 							},
 							Err(err) => tracing::warn!("Received an invalid event: {err}"),
 						}
@@ -76,7 +75,6 @@ where
 									let jh = tokio::spawn(fut);
 									client_exec_result_futures.push(jh);
 								}
-
 							},
 							Err(err) => tracing::warn!("Received an invalid event: {err}"),
 						}

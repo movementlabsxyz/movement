@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use bridge_shared::types::{
 	Amount, BridgeAddressType, BridgeHashType, BridgeTransferDetails, BridgeTransferId,
-	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress, TimeLock,
+	GenUniqueHash, HashLock, HashLockPreImage, InitiatorAddress, RecipientAddress,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,13 +16,7 @@ pub enum SmartContractInitiatorEvent<A, H> {
 
 #[derive(Debug)]
 pub enum InitiatorCall<A, H> {
-	InitiateBridgeTransfer(
-		InitiatorAddress<A>,
-		RecipientAddress<Vec<u8>>,
-		Amount,
-		TimeLock,
-		HashLock<H>,
-	),
+	InitiateBridgeTransfer(InitiatorAddress<A>, RecipientAddress<Vec<u8>>, Amount, HashLock<H>),
 	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
 }
 
@@ -61,7 +55,6 @@ where
 		initiator: InitiatorAddress<A>,
 		recipient: RecipientAddress<Vec<u8>>,
 		amount: Amount,
-		time_lock: TimeLock,
 		hash_lock: HashLock<H>,
 	) -> SCIResult<A, H> {
 		let bridge_transfer_id = BridgeTransferId::<H>::gen_unique_hash(&mut self.rng);
@@ -83,7 +76,6 @@ where
 				initiator_address: initiator.clone(),
 				recipient_address: recipient.clone(),
 				hash_lock: hash_lock.clone(),
-				time_lock: time_lock.clone(),
 				amount,
 				state: 1,
 			},
@@ -94,7 +86,6 @@ where
 			initiator_address: initiator,
 			recipient_address: recipient,
 			hash_lock,
-			time_lock,
 			amount,
 			state: 1,
 		}))

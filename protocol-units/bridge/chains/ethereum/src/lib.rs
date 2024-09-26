@@ -1,5 +1,3 @@
-use crate::counterparty_contract::EthSmartContractCounterparty;
-use crate::initiator_contract::EthSmartContractInitiator;
 use bridge_shared::{
 	blockchain_service::{BlockchainService, ContractEvent},
 	bridge_monitoring::BridgeContractInitiatorEvent,
@@ -23,10 +21,8 @@ use std::{
 use types::{EthAddress, EthHash};
 
 pub mod client;
-pub mod counterparty_contract;
 pub mod event_monitoring;
 pub mod event_types;
-pub mod initiator_contract;
 pub mod types;
 pub mod utils;
 
@@ -48,9 +44,9 @@ pub struct EthereumChain {
 	pub accounts: HashMap<EthAddress, Amount>,
 	pub events: Vec<EthChainEvent<EthAddress, EthHash>>,
 
-	pub initiator_contract: EthSmartContractInitiator,
+	pub initiator_contract: EthClient,
 	pub initiator_monitoring: EthInitiatorMonitoring<EthAddress, EthHash>,
-	pub counterparty_contract: EthSmartContractCounterparty,
+	pub counterparty_contract: EthClient,
 	pub counterparty_monitoring: EthCounterpartyMonitoring<EthAddress, EthHash>,
 
 	pub transaction_sender: mpsc::UnboundedSender<Transaction<EthAddress, EthHash>>,
@@ -66,26 +62,29 @@ impl EthereumChain {
 	pub async fn new(name: impl Into<String>, rpc_url: &str) -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
-		//	let (_, event_receiver_1) = mpsc::unbounded();
-		//		let (_, event_receiver_2) = mpsc::unbounded();
-		let (event_sender, event_receiver) = mpsc::unbounded();
+		let (_, event_receiver_1) = mpsc::unbounded();
+		let (_, event_receiver_2) = mpsc::unbounded();
+		let (event_sender, event_receiver_3) = mpsc::unbounded();
 		let event_listeners = Vec::new();
+
+		let config = Config::build_for_test();
+		let client = EthClient::new(config).await.expect("Failed to create EthClient");
 
 		Self {
 			name: name.into(),
 			time: 0,
 			accounts,
 			events,
-			initiator_contract: EthSmartContractInitiator::new(),
-			initiator_monitoring: EthInitiatorMonitoring::build(rpc_url)
+			initiator_contract: client.clone(),
+			initiator_monitoring: EthInitiatorMonitoring::build(rpc_url, event_receiver_1)
 				.await
 				.expect("Failed to create EthInitiatorMonitoring"),
-			counterparty_contract: EthSmartContractCounterparty::new(),
-			counterparty_monitoring: EthCounterpartyMonitoring::build(rpc_url)
+			counterparty_contract: client.clone(),
+			counterparty_monitoring: EthCounterpartyMonitoring::build(rpc_url, event_receiver_2)
 				.await
 				.expect("Failed to create EthCounterpartyMonitoring"),
 			transaction_sender: event_sender,
-			transaction_receiver: event_receiver,
+			transaction_receiver: event_receiver_3,
 			event_listeners,
 			waker: AtomicWaker::new(),
 			_phantom: std::marker::PhantomData,
@@ -139,95 +138,35 @@ impl Stream for EthereumChain {
 	type Item = ContractEvent<EthAddress, EthHash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
+		tracing::trace!("EthereumChain[{}]: Polling for events", self.name);
 		let this = self.get_mut();
 
 		match this.transaction_receiver.poll_next_unpin(cx) {
 			Poll::Ready(Some(transaction)) => {
 				tracing::trace!(
-					"Etherum Chain [{}]: Received transaction: {:?}",
+					"Ethereum Chain [{}]: Received transaction: {:?}",
 					this.name,
 					transaction
 				);
 				match transaction {
-					Transaction::Initiator(call) => match call {
-						InitiatorCall::InitiateBridgeTransfer(
-							initiator_address,
-							recipient_address,
-							amount,
-							time_lock,
-							hash_lock,
-						) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
-								this.initiator_contract.initiate_bridge_transfer(
-									initiator_address.clone(),
-									recipient_address.clone(),
-									amount,
-									time_lock.clone(),
-									hash_lock.clone(),
-								),
-							));
-						}
-						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-							this.events.push(EthChainEvent::InitiatorContractEvent(
-								this.initiator_contract.complete_bridge_transfer(
-									&mut this.accounts,
-									bridge_transfer_id.clone(),
-									secret.clone(),
-								),
-							));
-						}
-					},
-					Transaction::Counterparty(call) => match call {
-						CounterpartyCall::LockBridgeTransfer(
-							bridge_transfer_id,
-							hash_lock,
-							time_lock,
-							initiator_address,
-							recipient_address,
-							amount,
-						) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
-								this.counterparty_contract.lock_bridge_transfer(
-									bridge_transfer_id.clone(),
-									hash_lock.clone(),
-									time_lock.clone(),
-									initiator_address.clone(),
-									recipient_address.clone(),
-									amount,
-								),
-							));
-						}
-						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-							this.events.push(EthChainEvent::CounterpartyContractEvent(
-								this.counterparty_contract.complete_bridge_transfer(
-									&mut this.accounts,
-									&bridge_transfer_id,
-									pre_image,
-								),
-							));
-						}
-					},
+					_ => {} // Implement chain event tx logic here
 				}
 			}
 			Poll::Ready(None) => {
-				tracing::warn!("AbstractBlockchain[{}]: Transaction receiver dropped", this.name);
+				tracing::warn!("EthereumChain[{}]: Transaction receiver dropped", this.name);
 			}
 			Poll::Pending => {
-				tracing::trace!(
-					"AbstractBlockchain[{}]: No events in transaction_receiver",
-					this.name
-				);
+				tracing::trace!("EthereumChain[{}]: No events in transaction_receiver", this.name);
 			}
 		}
 
 		if let Some(event) = this.events.pop() {
 			for listener in &mut this.event_listeners {
-				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
+				tracing::trace!("EthereumChain[{}]: Sending event to listener", this.name);
 				listener.unbounded_send(event.clone()).expect("listener dropped");
 			}
 
-			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);
+			tracing::trace!("EthereumChain[{}]: Poll::Ready({:?})", this.name, event);
 			match event {
 				EthChainEvent::InitiatorContractEvent(Ok(event)) => {
 					let contract_event = match event {
@@ -258,7 +197,7 @@ impl Stream for EthereumChain {
 			}
 		}
 
-		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
+		tracing::trace!("EthereumChain[{}]: Poll::Pending", this.name);
 		Poll::Pending
 	}
 }
@@ -267,12 +206,10 @@ impl BlockchainService for EthereumChain {
 	type Address = EthAddress;
 	type Hash = EthHash;
 
-	// InitiatorContract must be BridgeContractInitiator
-	// These are just the Client Structs!!
-	type InitiatorContract = EthSmartContractInitiator;
+	type InitiatorContract = EthClient;
 	type InitiatorMonitoring = EthInitiatorMonitoring<EthAddress, EthHash>;
 
-	type CounterpartyContract = EthSmartContractCounterparty;
+	type CounterpartyContract = EthClient;
 	type CounterpartyMonitoring = EthCounterpartyMonitoring<EthAddress, EthHash>;
 
 	fn initiator_contract(&self) -> &Self::InitiatorContract {

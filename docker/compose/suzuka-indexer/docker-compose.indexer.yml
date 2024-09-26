@@ -31,7 +31,7 @@ services:
       - INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING=${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
-    restart: on-failure:5
+    restart: always
     depends_on:
       - postgres
 

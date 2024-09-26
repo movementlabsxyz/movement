@@ -12,7 +12,7 @@ use alloy::sol_types::SolEvent;
 use alloy::transports::BoxTransport;
 use bridge_shared::types::{
 	Amount, BridgeTransferDetails, BridgeTransferId, GenUniqueHash, HashLock, HashLockPreImage,
-	LockDetails, RecipientAddress,
+	InitiatorAddress, LockDetails, RecipientAddress,
 };
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -52,7 +52,7 @@ alloy::sol!(
 	"abis/WETH9.json"
 );
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Serialize, Deserialize)]
 pub struct EthHash(pub [u8; 32]);
 
 impl EthHash {
@@ -331,4 +331,16 @@ where
 			amount: lock_details.amount,
 		}
 	}
+}
+
+#[derive(Debug)]
+pub enum CounterpartyCall<A, H> {
+	CompleteBridgeTransfer(BridgeTransferId<H>, HashLockPreImage),
+	LockBridgeTransfer(
+		BridgeTransferId<H>,
+		HashLock<H>,
+		InitiatorAddress<Vec<u8>>,
+		RecipientAddress<A>,
+		Amount,
+	),
 }

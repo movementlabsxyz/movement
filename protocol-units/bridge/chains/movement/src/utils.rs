@@ -22,10 +22,10 @@ use aptos_sdk::{
 		LocalAccount,
 	},
 };
-use bridge_shared::{
-	bridge_contracts::{BridgeContractCounterpartyError, BridgeContractInitiatorError},
-	types::{GenUniqueHash, HashLockPreImage, RecipientAddress},
+use bridge_shared::bridge_contracts::{
+	BridgeContractCounterpartyError, BridgeContractInitiatorError,
 };
+use bridge_shared::types::{GenUniqueHash, HashLockPreImage, RecipientAddress};
 use derive_new::new;
 use rand::{rngs::StdRng, Rng, RngCore, SeedableRng};
 use rand_chacha::ChaChaRng;
@@ -119,7 +119,7 @@ impl From<&str> for MovementAddress {
 	}
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize)]
 pub struct MovementHash(pub [u8; 32]);
 
 impl MovementHash {
@@ -234,7 +234,6 @@ pub fn extract_bridge_transfer_id(txn: Transaction) -> Option<String> {
 			}
 		}
 	}
-
 	None
 }
 

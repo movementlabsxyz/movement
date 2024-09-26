@@ -26,6 +26,7 @@ interface IAtomicBridgeCounterparty {
     error BridgeTransferStateNotPending();
     error InsufficientWethBalance();
     error TimeLockNotExpired();
+    error TimeLockExpired();
     error ZeroAddress();
     error Unauthorized();
 
@@ -34,7 +35,6 @@ interface IAtomicBridgeCounterparty {
      * @param initiator The address of the initiator of the BridgeTransfer
      * @param bridgeTransferId A unique id representing this BridgeTransfer
      * @param hashLock The hash of the secret (HASH) that will unlock the funds
-     * @param timeLock The timestamp until which this BridgeTransfer is valid and can be executed
      * @param recipient The address to which to transfer the funds
      * @param amount The amount of WETH to lock
      * @return bool indicating successful lock
@@ -44,7 +44,6 @@ interface IAtomicBridgeCounterparty {
         bytes32 initiator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
-        uint256 timeLock,
         address recipient,
         uint256 amount
     ) external returns (bool);

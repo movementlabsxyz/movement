@@ -9,7 +9,7 @@ use bridge_shared::{
 	bridge_service::{active_swap::ActiveSwapConfig, BridgeServiceConfig},
 	types::{
 		Amount, AssetType, BridgeTransferDetails, Convert, CounterpartyCompletedDetails, HashLock,
-		HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress, TimeLock,
+		HashLockPreImage, InitiatorAddress, LockDetails, RecipientAddress,
 	},
 };
 
@@ -49,7 +49,6 @@ async fn test_bridge_service_integration_a_to_b() {
 			InitiatorAddress(BC1Address("initiator")),
 			RecipientAddress::from(BC1Address("recipient")),
 			HashLock(BC1Hash::from("hash_lock")),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
@@ -67,7 +66,6 @@ async fn test_bridge_service_integration_a_to_b() {
 			initiator_address: InitiatorAddress(BC1Address("initiator")),
 			recipient_address: RecipientAddress::from(BC1Address("recipient")),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 			state: 1
 		})
@@ -88,7 +86,6 @@ async fn test_bridge_service_integration_a_to_b() {
 		&BridgeContractCounterpartyEvent::Locked(LockDetails {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			initiator_address: InitiatorAddress::from(BC1Address("initiator")),
 			recipient_address: RecipientAddress(BC2Address("recipient")),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
@@ -175,7 +172,6 @@ async fn test_bridge_service_integration_b_to_a() {
 			InitiatorAddress(BC2Address("initiator")),
 			RecipientAddress::from(BC2Address("recipient")),
 			HashLock(BC2Hash::from("hash_lock")),
-			TimeLock(100),
 			Amount(AssetType::EthAndWeth((0, 1000))),
 		)
 		.await
@@ -193,7 +189,6 @@ async fn test_bridge_service_integration_b_to_a() {
 			initiator_address: InitiatorAddress(BC2Address("initiator")),
 			recipient_address: RecipientAddress::from(BC2Address("recipient")),
 			hash_lock: HashLock(BC2Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),
 			state: 1
 		})
@@ -214,7 +209,6 @@ async fn test_bridge_service_integration_b_to_a() {
 		&BridgeContractCounterpartyEvent::Locked(LockDetails {
 			bridge_transfer_id: Convert::convert(transfer_initiated_event.bridge_transfer_id()),
 			hash_lock: HashLock(BC1Hash::from("hash_lock")),
-			time_lock: TimeLock(100),
 			initiator_address: InitiatorAddress::from(BC1Address("initiator")),
 			recipient_address: RecipientAddress(BC1Address("recipient")),
 			amount: Amount(AssetType::EthAndWeth((0, 1000))),

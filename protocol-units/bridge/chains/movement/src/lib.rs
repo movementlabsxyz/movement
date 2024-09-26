@@ -1,9 +1,10 @@
-use crate::counterparty_contract::MovementSmartContractCounterparty;
-use crate::initiator_contract::MovementSmartContractInitiator;
-use bridge_shared::types::{
-	Amount, BridgeAddressType, BridgeHashType, CounterpartyCall, GenUniqueHash, HashLockPreImage,
-	InitiatorCall, RecipientAddress,
+use crate::client::{Config, MovementClient};
+use bridge_shared::{
+	blockchain_service::{BlockchainService, ContractEvent},
+	bridge_monitoring::BridgeContractInitiatorEvent,
+	types::{Amount, CounterpartyCall, InitiatorCall, SmartContractInitiatorEvent},
 };
+use event_monitoring::{MovementCounterpartyMonitoring, MovementInitiatorMonitoring};
 use event_types::MovementChainEvent;
 use futures::{channel::mpsc, task::AtomicWaker, Stream, StreamExt};
 use std::{
@@ -15,10 +16,8 @@ use std::{
 use utils::{MovementAddress, MovementHash};
 
 pub mod client;
-pub mod counterparty_contract;
 pub mod event_monitoring;
 pub mod event_types;
-pub mod initiator_contract;
 pub mod types;
 pub mod utils;
 
@@ -41,38 +40,62 @@ pub struct MovementChain {
 	pub accounts: HashMap<MovementAddress, Amount>,
 	pub events: Vec<MovementChainEvent<MovementAddress, MovementHash>>,
 
-	pub initiator_contract: MovementSmartContractInitiator,
-	pub counterparty_contract: MovementSmartContractCounterparty,
+	pub initiator_contract: MovementClient,
+	pub initiator_monitoring: MovementInitiatorMonitoring<MovementAddress, MovementHash>,
+	pub counterparty_contract: MovementClient,
+	pub counterparty_monitoring: MovementCounterpartyMonitoring<MovementAddress, MovementHash>,
 
-	pub transaction_sender: mpsc::UnboundedSender<Transaction<MovementAddress, MovementHash>>,
-	pub transaction_receiver: mpsc::UnboundedReceiver<Transaction<MovementAddress, MovementHash>>,
+	pub transaction_sender:
+		mpsc::UnboundedSender<MovementChainEvent<MovementAddress, MovementHash>>,
+	pub transaction_receiver:
+		mpsc::UnboundedReceiver<MovementChainEvent<MovementAddress, MovementHash>>,
 
 	pub event_listeners:
 		Vec<mpsc::UnboundedSender<MovementChainEvent<MovementAddress, MovementHash>>>,
 
-	waker: AtomicWaker,
+	_waker: AtomicWaker,
 
 	pub _phantom: std::marker::PhantomData<MovementHash>,
 }
 
 impl MovementChain {
-	pub fn new() -> Self {
+	pub async fn new() -> Self {
 		let accounts = HashMap::new();
 		let events = Vec::new();
-		let (event_sender, event_receiver) = mpsc::unbounded();
+		let (_, event_receiver_1) = mpsc::unbounded();
+		let (_, event_receiver_2) = mpsc::unbounded();
+		let (event_sender, event_receiver_3) = mpsc::unbounded();
 		let event_listeners = Vec::new();
+		//
+		//TODO: Should be configurable via static json files
+		let config = Config::build_for_test();
+
+		let (client, _) =
+			MovementClient::new_for_test(config).await.expect("Failed to create client");
 
 		Self {
 			name: "MovementChain".to_string(),
 			time: 0,
 			accounts,
 			events,
-			initiator_contract: MovementSmartContractInitiator::new(),
-			counterparty_contract: MovementSmartContractCounterparty::new(),
+			initiator_contract: client.clone(),
+			initiator_monitoring: MovementInitiatorMonitoring::build(
+				"localhost:8545",
+				event_receiver_1,
+			)
+			.await
+			.expect("Failed to create client"),
+			counterparty_contract: client.clone(),
+			counterparty_monitoring: MovementCounterpartyMonitoring::build(
+				"localhost:8080",
+				event_receiver_2,
+			)
+			.await
+			.expect("Failed to create client"),
 			transaction_sender: event_sender,
-			transaction_receiver: event_receiver,
+			transaction_receiver: event_receiver_3,
 			event_listeners,
-			waker: AtomicWaker::new(),
+			_waker: AtomicWaker::new(),
 			_phantom: std::marker::PhantomData,
 		}
 	}
@@ -93,7 +116,9 @@ impl MovementChain {
 		self.accounts.get(address)
 	}
 
-	pub fn connection(&self) -> mpsc::UnboundedSender<Transaction<MovementAddress, MovementHash>> {
+	pub fn connection(
+		&self,
+	) -> mpsc::UnboundedSender<MovementChainEvent<MovementAddress, MovementHash>> {
 		self.transaction_sender.clone()
 	}
 }
@@ -109,7 +134,7 @@ impl Future for MovementChain {
 		while let Poll::Ready(event) = this.poll_next_unpin(cx) {
 			match event {
 				Some(_) => {}
-				None => return Poll::Ready(()),
+				_ => return Poll::Ready(()),
 			}
 		}
 		Poll::Pending
@@ -117,7 +142,7 @@ impl Future for MovementChain {
 }
 
 impl Stream for MovementChain {
-	type Item = MovementChainEvent<MovementAddress, MovementHash>;
+	type Item = ContractEvent<MovementAddress, MovementHash>;
 
 	fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
 		tracing::trace!("AbstractBlockchain[{}]: Polling for events", self.name);
@@ -126,93 +151,87 @@ impl Stream for MovementChain {
 		match this.transaction_receiver.poll_next_unpin(cx) {
 			Poll::Ready(Some(transaction)) => {
 				tracing::trace!(
-					"Etherum Chain [{}]: Received transaction: {:?}",
+					"Movement Chain [{}]: Received transaction: {:?}",
 					this.name,
 					transaction
 				);
 				match transaction {
-					Transaction::Initiator(call) => match call {
-						InitiatorCall::InitiateBridgeTransfer(
-							initiator_address,
-							recipient_address,
-							amount,
-							time_lock,
-							hash_lock,
-						) => {
-							this.events.push(MovementChainEvent::InitiatorContractEvent(
-								this.initiator_contract.initiate_bridge_transfer(
-									initiator_address.clone(),
-									recipient_address.clone(),
-									amount,
-									time_lock.clone(),
-									hash_lock.clone(),
-								),
-							));
-						}
-						InitiatorCall::CompleteBridgeTransfer(bridge_transfer_id, secret) => {
-							this.events.push(MovementChainEvent::InitiatorContractEvent(
-								this.initiator_contract.complete_bridge_transfer(
-									&mut this.accounts,
-									bridge_transfer_id.clone(),
-									secret.clone(),
-								),
-							));
-						}
-					},
-					Transaction::Counterparty(call) => match call {
-						CounterpartyCall::LockBridgeTransfer(
-							bridge_transfer_id,
-							hash_lock,
-							time_lock,
-							initiator_address,
-							recipient_address,
-							amount,
-						) => {
-							this.events.push(MovementChainEvent::CounterpartyContractEvent(
-								this.counterparty_contract.lock_bridge_transfer(
-									bridge_transfer_id.clone(),
-									hash_lock.clone(),
-									time_lock.clone(),
-									initiator_address.clone(),
-									recipient_address.clone(),
-									amount,
-								),
-							));
-						}
-						CounterpartyCall::CompleteBridgeTransfer(bridge_transfer_id, pre_image) => {
-							this.events.push(MovementChainEvent::CounterpartyContractEvent(
-								this.counterparty_contract.complete_bridge_transfer(
-									&mut this.accounts,
-									&bridge_transfer_id,
-									pre_image,
-								),
-							));
-						}
-					},
+					_ => {} // Implement chain event tx logic here
 				}
 			}
-			Poll::Ready(None) => {
-				tracing::warn!("AbstractBlockchain[{}]: Transaction receiver dropped", this.name);
+			Poll::Ready(_) => {
+				tracing::warn!("MovementChain[{}]: Transaction receiver dropped", this.name);
 			}
 			Poll::Pending => {
-				tracing::trace!(
-					"AbstractBlockchain[{}]: No events in transaction_receiver",
-					this.name
-				);
+				tracing::trace!("MovementChain[{}]: No events in transaction_receiver", this.name);
 			}
 		}
 
 		if let Some(event) = this.events.pop() {
 			for listener in &mut this.event_listeners {
-				tracing::trace!("AbstractBlockchain[{}]: Sending event to listener", this.name);
+				tracing::trace!("MovementChain[{}]: Sending event to listener", this.name);
 				listener.unbounded_send(event.clone()).expect("listener dropped");
 			}
 
-			tracing::trace!("AbstractBlockchain[{}]: Poll::Ready({:?})", this.name, event);
-			return Poll::Ready(Some(event));
+			tracing::trace!("MovementChain[{}]: Poll::Ready({:?})", this.name, event);
+			match event {
+				MovementChainEvent::InitiatorContractEvent(Ok(event)) => {
+					let contract_event = match event {
+						SmartContractInitiatorEvent::InitiatedBridgeTransfer(details) => {
+							BridgeContractInitiatorEvent::Initiated(details)
+						}
+						SmartContractInitiatorEvent::CompletedBridgeTransfer(transfer_id) => {
+							BridgeContractInitiatorEvent::Completed(transfer_id)
+						}
+						SmartContractInitiatorEvent::RefundedBridgeTransfer(transfer_id) => {
+							BridgeContractInitiatorEvent::Refunded(transfer_id)
+						}
+					};
+					return Poll::Ready(Some(ContractEvent::InitiatorEvent(contract_event)));
+				}
+				MovementChainEvent::InitiatorContractEvent(Err(_)) => {
+					// trace here
+					return Poll::Ready(None);
+				}
+				MovementChainEvent::CounterpartyContractEvent(_) => {
+					// trace here
+					return Poll::Ready(None);
+				}
+				MovementChainEvent::Noop => {
+					//trace here
+					return Poll::Ready(None);
+				}
+			}
 		}
 
-		tracing::trace!("AbstractBlockchain[{}]: Poll::Pending", this.name);
+		tracing::trace!("MovementChain[{}]: Poll::Pending", this.name);
 		Poll::Pending
+	}
+}
+
+impl BlockchainService for MovementChain {
+	type Address = MovementAddress;
+	type Hash = MovementHash;
+
+	type InitiatorContract = MovementClient;
+	type InitiatorMonitoring = MovementInitiatorMonitoring<MovementAddress, MovementHash>;
+
+	type CounterpartyContract = MovementClient;
+	type CounterpartyMonitoring = MovementCounterpartyMonitoring<MovementAddress, MovementHash>;
+
+	fn initiator_contract(&self) -> &Self::InitiatorContract {
+		&self.initiator_contract
+	}
+
+	fn initiator_monitoring(&mut self) -> &mut Self::InitiatorMonitoring {
+		&mut self.initiator_monitoring
+	}
+
+	fn counterparty_contract(&self) -> &Self::CounterpartyContract {
+		&self.counterparty_contract
+	}
+
+	fn counterparty_monitoring(&mut self) -> &mut Self::CounterpartyMonitoring {
+		&mut self.counterparty_monitoring
 	}
 }
