@@ -257,6 +257,12 @@ impl LightNodeV1 {
 		}
 	}
 
+	async fn run_gc(&self) -> Result<(), anyhow::Error> {
+		loop {
+			self.memseq.gc().await?;
+		}
+	}
+
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
 		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
 
@@ -264,6 +270,7 @@ impl LightNodeV1 {
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
+				self.run_gc(),
 			) {
 				Ok(_) => {
 					info!("block proposer completed");

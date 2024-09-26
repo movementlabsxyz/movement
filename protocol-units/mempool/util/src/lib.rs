@@ -4,7 +4,9 @@ use movement_types::{
 	block::{self, Block},
 	transaction::{self, Transaction},
 };
+
 use std::cmp::Ordering;
+use std::future::Future;
 
 pub trait MempoolTransactionOperations {
 	// todo: move mempool_transaction methods into separate trait
@@ -56,6 +58,11 @@ pub trait MempoolTransactionOperations {
 		}
 		Ok(mempool_transactions)
 	}
+
+	fn gc_mempool_transactions(
+		&self,
+		timestamp_threshold: u64,
+	) -> impl Future<Output = Result<(), anyhow::Error>> + Send + '_;
 
 	/// Checks whether the mempool has the transaction.
 	async fn has_transaction(
@@ -132,6 +139,7 @@ pub trait MempoolBlockOperations {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MempoolTransaction {
 	pub transaction: Transaction,
+	/// Transaction's timestamp, in seconds since the Unix epoch.
 	pub timestamp: u64,
 	pub slot_seconds: u64,
 }

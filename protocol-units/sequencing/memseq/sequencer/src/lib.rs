@@ -11,6 +11,7 @@ use tokio::sync::RwLock;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Clone)]
 pub struct Memseq<T: MempoolTransactionOperations> {
@@ -79,7 +80,7 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
-		let now = std::time::Instant::now();
+		let now = Instant::now();
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -115,6 +116,18 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 
 			Ok(Some(new_block))
 		}
+	}
+
+	async fn gc(&self) -> Result<(), anyhow::Error> {
+		let gc_interval = self.building_time_ms * 2 / 1000 + 1;
+		let timestamp_threshold = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.unwrap()
+			.as_secs()
+			.saturating_sub(gc_interval);
+		self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		tokio::time::sleep(Duration::from_secs(gc_interval)).await;
+		Ok(())
 	}
 }
 
@@ -445,6 +458,13 @@ pub mod test {
 			&self,
 		) -> Result<Option<MempoolTransaction>, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock pop_mempool_transaction"))
+		}
+
+		async fn gc_mempool_transactions(
+			&self,
+			_timestamp_threshold: u64,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock gc_mempool_transaction"))
 		}
 
 		async fn get_mempool_transaction(
