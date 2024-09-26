@@ -21,7 +21,7 @@ mod actions;
 pub mod chains;
 mod events;
 mod states;
-mod types;
+pub mod types;
 
 pub async fn run_bridge<
 	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static,

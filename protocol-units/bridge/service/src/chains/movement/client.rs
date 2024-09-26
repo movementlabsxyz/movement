@@ -24,16 +24,10 @@ use std::{
 	path::PathBuf,
 	process::{Command, Stdio},
 };
-use tokio::{
-	io::{AsyncBufReadExt, BufReader},
-	process::Command as TokioCommand,
-	sync::oneshot,
-	task,
-};
+
 use tracing::{debug, info};
 use url::Url;
 
-const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 
 #[allow(dead_code)]
@@ -108,94 +102,6 @@ impl MovementClient {
 		})
 	}
 
-	pub async fn new_for_test(
-		_config: Config,
-	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
-		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
-		let mut child = TokioCommand::new("movement")
-			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.spawn()?;
-
-		let stdout = child.stdout.take().expect("Failed to capture stdout");
-		let stderr = child.stderr.take().expect("Failed to capture stderr");
-
-		task::spawn(async move {
-			let mut stdout_reader = BufReader::new(stdout).lines();
-			let mut stderr_reader = BufReader::new(stderr).lines();
-
-			loop {
-				tokio::select! {
-					line = stdout_reader.next_line() => {
-						match line {
-							Ok(Some(line)) => {
-								println!("STDOUT: {}", line);
-								if line.contains("Setup is complete") {
-									println!("Testnet is up and running!");
-									let _ = setup_complete_tx.send(());
-																	return Ok(());
-								}
-							},
-							Ok(None) => {
-								return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
-							},
-							Err(e) => {
-								return Err(anyhow::anyhow!("Error reading stdout: {}", e));
-							}
-						}
-					},
-					line = stderr_reader.next_line() => {
-						match line {
-							Ok(Some(line)) => {
-								println!("STDERR: {}", line);
-								if line.contains("Setup is complete") {
-									println!("Testnet is up and running!");
-									let _ = setup_complete_tx.send(());
-																	return Ok(());
-								}
-							},
-							Ok(None) => {
-								return Err(anyhow::anyhow!("Unexpected end of stderr stream"));
-							}
-							Err(e) => {
-								return Err(anyhow::anyhow!("Error reading stderr: {}", e));
-							}
-						}
-					}
-				}
-			}
-		});
-
-		setup_complete_rx.await.expect("Failed to receive setup completion signal");
-		println!("Setup complete message received.");
-
-		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str())
-			.map_err(|_| BridgeContractError::SerializationError)?;
-		let rest_client = Client::new(node_connection_url.clone());
-
-		let faucet_url = "http://127.0.0.1:8081".to_string();
-		let faucet_url = Url::from_str(faucet_url.as_str())
-			.map_err(|_| BridgeContractError::SerializationError)?;
-		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
-			faucet_url.clone(),
-			node_connection_url.clone(),
-		)));
-
-		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
-		Ok((
-			MovementClient {
-				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(), // dummy for now
-				rest_client,
-				faucet_client: Some(faucet_client),
-				signer: Arc::new(LocalAccount::generate(&mut rng)),
-			},
-			child,
-		))
-	}
-
 	pub fn publish_for_test(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
@@ -221,8 +127,6 @@ impl MovementClient {
 		stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
 		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
-
-		drop(stdin);
 
 		let addr_output = process.wait_with_output().expect("Failed to read command output");
 
@@ -663,16 +567,5 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		};
 
 		Ok(Some(details))
-	}
-}
-
-impl MovementClient {
-	fn counterparty_type_args(&self, call: Call) -> Vec<TypeTag> {
-		match call {
-			Call::Lock => vec![TypeTag::Address, TypeTag::U64, TypeTag::U64, TypeTag::U8],
-			Call::Complete => vec![TypeTag::Address, TypeTag::U64, TypeTag::U8],
-			Call::Abort => vec![TypeTag::Address, TypeTag::U64],
-			Call::GetDetails => vec![TypeTag::Address, TypeTag::U64],
-		}
 	}
 }
