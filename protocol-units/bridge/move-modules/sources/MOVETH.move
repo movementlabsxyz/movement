@@ -28,6 +28,10 @@ module moveth::moveth {
 
     const ASSET_SYMBOL: vector<u8> = b"moveth";
 
+    struct MovethAddress has key {
+        metadata_signer_address: address,
+    }
+
     #[resource_group_member(group = aptos_framework::object::ObjectGroup)]
     struct Roles has key {
         master_minter: address,
@@ -87,12 +91,12 @@ module moveth::moveth {
     }
 
     #[view]
-    public fun moveth_address(): address {
-        object::create_object_address(&@moveth, ASSET_SYMBOL)
+    public fun moveth_address(): address acquires MovethAddress {
+        borrow_global<MovethAddress>(@resource_addr).metadata_signer_address
     }
 
     #[view]
-    public fun metadata(): Object<Metadata> {
+    public fun metadata(): Object<Metadata> acquires MovethAddress {
         object::address_to_object(moveth_address())
     }
 
@@ -120,7 +124,8 @@ module moveth::moveth {
 
         // All resources created will be kept in the asset metadata object.
         let metadata_object_signer = &object::generate_signer(constructor_ref);
-
+        
+        let metadata_signer_address = signer::address_of(metadata_object_signer);
         let minters = vector::empty<address>();
         vector::push_back(&mut minters, @resource_addr);
         vector::push_back(&mut minters, @origin_addr);
@@ -143,6 +148,10 @@ module moveth::moveth {
 
         move_to(metadata_object_signer, State {
             paused: false,
+        });
+
+        move_to(resource_account, MovethAddress {
+            metadata_signer_address
         });
 
         // Override the deposit and withdraw functions which mean overriding transfer.
@@ -176,7 +185,7 @@ module moveth::moveth {
         from_public_key: vector<u8>,
         to: address,
         amount: u64,
-    ) acquires Management, State {
+    ) acquires Management, State, MovethAddress {
         assert_not_paused();
         assert_not_denylisted(from);
         assert_not_denylisted(to);
@@ -201,7 +210,7 @@ module moveth::moveth {
         store: Object<T>,
         fa: FungibleAsset,
         transfer_ref: &TransferRef,
-    ) acquires State {
+    ) acquires State, MovethAddress {
         assert_not_paused();
         assert_not_denylisted(object::owner(store));
         fungible_asset::deposit_with_ref(transfer_ref, store, fa);
@@ -212,7 +221,7 @@ module moveth::moveth {
         store: Object<T>,
         amount: u64,
         transfer_ref: &TransferRef,
-    ): FungibleAsset acquires State {
+    ): FungibleAsset acquires State, MovethAddress {
         assert_not_paused();
         assert_not_denylisted(object::owner(store));
         fungible_asset::withdraw_with_ref(transfer_ref, store, amount)
@@ -220,7 +229,7 @@ module moveth::moveth {
 
     /// Mint new tokens to the specified account. This checks that the caller is a minter, the moveth is not paused,
     /// and the account is not denylisted.
-    public entry fun mint(minter: &signer, to: address, amount: u64) acquires Management, Roles, State {
+    public entry fun mint(minter: &signer, to: address, amount: u64) acquires Management, Roles, State, MovethAddress {
         assert_not_paused();
         assert_is_minter(minter);
         assert_not_denylisted(to);
@@ -239,7 +248,7 @@ module moveth::moveth {
     }
 
     /// Burn tokens from the specified account. This checks that the caller is a minter and the stablecoin is not paused.
-    public entry fun burn(minter: &signer, from: address, amount: u64) acquires Management, Roles, State {
+    public entry fun burn(minter: &signer, from: address, amount: u64) acquires Management, Roles, State, MovethAddress {
         burn_from(minter, primary_fungible_store::ensure_primary_store_exists(from, metadata()), amount);
     }
 
@@ -249,7 +258,7 @@ module moveth::moveth {
         minter: &signer,
         store: Object<FungibleStore>,
         amount: u64,
-    ) acquires Management, Roles, State {
+    ) acquires Management, Roles, State, MovethAddress {
         assert_not_paused();
         assert_is_minter(minter);
         if (amount == 0) { return };
@@ -271,7 +280,7 @@ module moveth::moveth {
     }
 
     /// Pause or unpause the stablecoin. This checks that the caller is the pauser.
-    public entry fun set_pause(pauser: &signer, paused: bool) acquires Roles, State {
+    public entry fun set_pause(pauser: &signer, paused: bool) acquires Roles, State, MovethAddress {
         let roles = borrow_global<Roles>(moveth_address());
         assert!(signer::address_of(pauser) == roles.pauser, EUNAUTHORIZED);
         let state = borrow_global_mut<State>(moveth_address());
@@ -285,7 +294,7 @@ module moveth::moveth {
     }
 
     /// Add an account to the denylist. This checks that the caller is the denylister.
-    public entry fun denylist(denylister: &signer, account: address) acquires Management, Roles, State {
+    public entry fun denylist(denylister: &signer, account: address) acquires Management, Roles, State, MovethAddress {
         assert_not_paused();
         let roles = borrow_global<Roles>(moveth_address());
         assert!(signer::address_of(denylister) == roles.denylister, EUNAUTHORIZED);
@@ -300,7 +309,7 @@ module moveth::moveth {
     }
 
     /// Remove an account from the denylist. This checks that the caller is the denylister.
-    public entry fun undenylist(denylister: &signer, account: address) acquires Management, Roles, State {
+    public entry fun undenylist(denylister: &signer, account: address) acquires Management, Roles, State, MovethAddress {
         assert_not_paused();
         let roles = borrow_global<Roles>(moveth_address());
         assert!(signer::address_of(denylister) == roles.denylister, EUNAUTHORIZED);
@@ -314,7 +323,7 @@ module moveth::moveth {
         });
     }
 
-    fun assert_is_minter(minter: &signer) acquires Roles {
+    fun assert_is_minter(minter: &signer) acquires Roles, MovethAddress {
         if (exists<Roles>(moveth_address())) {
         let roles = borrow_global<Roles>(moveth_address());
         let minter_addr = signer::address_of(minter);
@@ -324,17 +333,13 @@ module moveth::moveth {
         }
     }
 
-    fun assert_not_paused() acquires State {
-        if (exists<State>(moveth_address())) {
+    fun assert_not_paused() acquires State, MovethAddress {
             let state = borrow_global<State>(moveth_address());
             assert!(!state.paused, EPAUSED);
-        } else {
-            assert!(false, EPAUSED);
-        }
     }
 
     // Check that the account is not denylisted by checking the frozen flag on the primary store
-    fun assert_not_denylisted(account: address) {
+    fun assert_not_denylisted(account: address) acquires MovethAddress{
         let metadata = metadata();
         // CANNOT call into pfs::store_exists in our withdraw/deposit hooks as it creates possibility of a circular dependency.
         // Instead, we will call the inlined version of the function.
