@@ -24,6 +24,7 @@ impl<A: From<Vec<u8>>> From<TransferAddress> for BridgeAddress<A> {
 	}
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub enum TransferStateType {
 	Initialized,
@@ -34,6 +35,7 @@ pub enum TransferStateType {
 	NeedRefund,
 }
 
+#[allow(dead_code)]
 pub struct TransferState {
 	pub state: TransferStateType,
 	pub init_chain: ChainId,
@@ -76,7 +78,7 @@ impl TransferState {
 		let state = TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,
-			transfer_id: transfer_id,
+			transfer_id,
 			intiator_address: detail.initiator_address.clone().into(),
 			counter_part_address: detail.recipient_address.clone().into(),
 			hash_lock: detail.hash_lock,
@@ -92,8 +94,7 @@ impl TransferState {
 			recipient: BridgeAddress(detail.recipient_address.0.into()),
 			amount: detail.amount,
 		};
-		let action =
-			TransferAction { init_chain: chain_id, transfer_id: transfer_id, kind: action_type };
+		let action = TransferAction { init_chain: chain_id, transfer_id, kind: action_type };
 		(state, action)
 	}
 

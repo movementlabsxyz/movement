@@ -33,10 +33,7 @@ pub enum TransferActionType<A> {
 pub fn process_action<A: std::marker::Send + 'static>(
 	action: TransferAction<A>,
 	mut client: impl BridgeContract<A> + 'static,
-) -> Option<
-	//    Pin<Box<dyn Future<Output = Result<R, E>> + Send>>
-	Pin<Box<dyn Future<Output = Result<(), BridgeContractError>> + Send>>,
-> {
+) -> Option<Pin<Box<dyn Future<Output = Result<(), BridgeContractError>> + Send>>> {
 	match action.kind {
 		TransferActionType::LockBridgeTransfer {
 			bridge_transfer_id,

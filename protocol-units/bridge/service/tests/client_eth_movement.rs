@@ -7,14 +7,11 @@ use alloy::{
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::{
+	bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
+};
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
-};
-use bridge_service::{
-	chains::{
-		bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
-	},
-	types::TimeLock,
 };
 use harness::TestHarness;
 use tokio::time::{sleep, Duration};
