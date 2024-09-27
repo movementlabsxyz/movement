@@ -13,6 +13,8 @@ use crate::types::{
 };
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
+use alloy::hex::FromHex;
+use alloy::primitives::Address;
 use alloy::primitives::{address, LogData};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy::rpc::types::{Filter, Log};
@@ -25,6 +27,22 @@ use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
 use tokio::select;
 
+pub struct Config {
+	rpc_url: String,
+	initiator_address: String,
+	counterparty_address: String,
+}
+
+impl Default for Config {
+	fn default() -> Self {
+		Self {
+			rpc_url: "http://localhost:8545".to_string(),
+			initiator_address: "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_string(),
+			counterparty_address: "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_string(),
+		}
+	}
+}
+
 pub struct EthMonitoring {
 	listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>>,
 	ws: RootProvider<PubSubFrontend>,
@@ -35,15 +53,14 @@ impl BridgeContractMonitoring for EthMonitoring {
 }
 
 impl EthMonitoring {
-	pub async fn build(rpc_url: &str) -> Result<Self, anyhow::Error> {
-		let ws = WsConnect::new(rpc_url);
+	pub async fn build(config: Config) -> Result<Self, anyhow::Error> {
+		let ws = WsConnect::new(config.rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
 
 		// Get initiator contract stream.
 		//TODO: this should be an arg
-		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 		let filter = Filter::new()
-			.address(initiator_address)
+			.address(Address::from_hex(&config.initiator_address)?)
 			.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
 			.event("BridgeTransferCompleted(bytes32,bytes32)")
 			.from_block(BlockNumberOrTag::Latest);
@@ -52,9 +69,8 @@ impl EthMonitoring {
 		let mut initiator_sub_stream = sub.into_stream();
 
 		// Get counterpart contract stream.
-		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 		let filter = Filter::new()
-			.address(initiator_address)
+			.address(Address::from_hex(&config.counterparty_address)?)
 			.event("BridgeTransferLocked(bytes32,address,uint256,bytes32)")
 			.event("BridgeTransferCompleted(bytes32,bytes32)")
 			.event("BridgeTransferAborted(bytes32)")

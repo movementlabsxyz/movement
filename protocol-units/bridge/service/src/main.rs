@@ -1,13 +1,18 @@
 use anyhow::Result;
-use bridge_service::chains::ethereum::client::{Config as EthConfig, EthClient};
-use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
-use bridge_service::chains::movement::client::{Config as MovementConfig, MovementClient};
-use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
+use bridge_service::chains::{
+	ethereum::{
+		client::{Config as EthConfig, EthClient},
+		event_monitoring::{Config as EthMonitoringConfig, EthMonitoring},
+	},
+	movement::{
+		client::{Config as MovementConfig, MovementClient},
+		event_monitoring::MovementMonitoring,
+	},
+};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-	let eth_ws_url = "";
-	let one_stream = EthMonitoring::build(eth_ws_url).await?;
+	let one_stream = EthMonitoring::build(EthMonitoringConfig::default()).await?;
 
 	let eth_config = EthConfig::build_for_test();
 	let one_client = EthClient::new(eth_config).await?;
