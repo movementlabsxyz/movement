@@ -108,3 +108,37 @@ check size of local DB on disk
 ```bash
 docker run --rm -v suzuka-indexer_postgres_data:/volume alpine sh -c "du -sh /volume"
 ```
+
+### Connect to postgres db
+
+Attach to the postgres container
+```bash
+docker exec -it postgres bash
+```
+
+Use `psql` to connect to the database. Password is `postgres`
+```bash
+psql --username=postgres  --dbname=postgres --host=127.0.0.1 --password
+```
+
+### Hasura
+Docs:
+- https://hasura.io/docs/2.0/auth/quickstart/
+- https://hasura.io/docs/2.0/auth/quickstart/#step-2-create-a-user-role
+- https://hasura.io/docs/2.0/auth/authentication/unauthenticated-access/
+- https://hasura.io/docs/2.0/auth/authorization/permissions/common-roles-auth-examples/#unauthorized-users-example
+
+Hasura console UI offers admin capabilities to manage the postgres database.
+Setting `HASURA_GRAPHQL_ADMIN_SECRET` is required to protect the DB.
+
+At the moment we can't open the access publicly, because the Postgres DB config is not
+production ready. It is hosted on the EC2 instance, near the indexer and hasura.
+In order to provide access via a token I implemented JWT by following the "Quickstart Auth"
+docs page in hasura docs.
+
+There for another env var needs to be set: `HASURA_GRAPHQL_JWT_SECRET`
+
+To provide users access to graphql explorer we will use  cloud.hasura.io and
+add our graphql endpoint: https://cloud.hasura.io/public/graphiql?endpoint=https%3A%2F%2Findexer.testnet.suzuka.movementnetwork.xyz%2Fv1%2Fgraphql
+A manual second step is needed to add a header `Authorization Bearer tokenValue`
+(stored in 1password)
