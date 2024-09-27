@@ -31,8 +31,9 @@ async fn test_should_receive_event() -> Result<()> {
 
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
-
-	let eth_stream: EthMonitoring = EthMonitoring::build(EthMonitoringConfig::default()).await?;
+	let config = EthMonitoringConfig::default();
+	println!("config: {:?}", config);
+	let eth_stream: EthMonitoring = EthMonitoring::build(config).await?;
 
 	let eth_config = EthConfig::build_for_test();
 	let eth_client = EthClient::new(eth_config).await?;

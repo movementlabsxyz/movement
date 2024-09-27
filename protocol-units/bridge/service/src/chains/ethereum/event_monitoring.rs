@@ -27,8 +27,9 @@ use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
 use tokio::select;
 
+#[derive(Debug)]
 pub struct Config {
-	rpc_url: String,
+	ws_url: String,
 	initiator_address: String,
 	counterparty_address: String,
 }
@@ -36,7 +37,7 @@ pub struct Config {
 impl Default for Config {
 	fn default() -> Self {
 		Self {
-			rpc_url: "http://localhost:8545".to_string(),
+			ws_url: "ws://localhost:8545".to_string(),
 			initiator_address: "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_string(),
 			counterparty_address: "f39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_string(),
 		}
@@ -54,8 +55,10 @@ impl BridgeContractMonitoring for EthMonitoring {
 
 impl EthMonitoring {
 	pub async fn build(config: Config) -> Result<Self, anyhow::Error> {
-		let ws = WsConnect::new(config.rpc_url);
+		println!("connecting");
+		let ws = WsConnect::new(config.ws_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
+		println!("ws: {:?}", ws);
 
 		// Get initiator contract stream.
 		//TODO: this should be an arg
