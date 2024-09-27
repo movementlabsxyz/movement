@@ -8,10 +8,10 @@ use harness::{EthToMovementCallArgs, MovementToEthCallArgs, TestHarness};
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
-mod utils;
 use utils as test_utils;
 
 mod harness;
+mod utils;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {

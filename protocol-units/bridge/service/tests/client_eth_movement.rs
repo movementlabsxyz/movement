@@ -1,24 +1,14 @@
-use crate::harness::EthToMovementCallArgs;
 use alloy::{
 	node_bindings::Anvil,
 	primitives::{address, keccak256},
 	providers::Provider,
 };
-use anyhow::Result;
-use aptos_sdk::coin_client::CoinClient;
 use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::{
-	bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
-};
-use bridge_service::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
-};
+use bridge_service::chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash};
+use bridge_service::types::{Amount, AssetType, BridgeAddress, HashLock};
 use harness::TestHarness;
-use tokio::time::{sleep, Duration};
 use tokio::{self};
-use tracing::info;
 mod utils;
-use utils as test_utils;
 
 mod harness;
 
@@ -189,7 +179,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 }
 
 #[tokio::test]
-#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
+#[ignore]
 async fn test_eth_client_should_successfully_complete_transfer() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
@@ -215,6 +205,4 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
-
-	//TODO: Here call complete with the id captured from the event
 }
