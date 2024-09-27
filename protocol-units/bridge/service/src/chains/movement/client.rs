@@ -180,13 +180,18 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
+
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+			end -= 1;
+			}
+			&preimage.0[..end]  // Slice the preimage up to `end`, removing trailing zeros
+		};
 		let args2 = vec![
 			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec_initiator(&preimage.0)?,
+			utils::serialize_vec_initiator(unpadded_preimage)?,
 		];
-
-		debug!("Serialized bridge_transfer_id: {:?}", &bridge_transfer_id.0[..]);
-		debug!("Serialized preimage: {:?}", &preimage.0);
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
