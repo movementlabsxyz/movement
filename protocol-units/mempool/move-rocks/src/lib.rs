@@ -120,6 +120,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
+			// Add the transactions and update the lookup table atomically
+			// in a single write batch.
+			// https://github.com/movementlabsxyz/movement/issues/322
+
 			let mut batch = WriteBatch::default();
 
 			for transaction in transactions {
@@ -157,6 +161,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
+			// Add the transaction and update the lookup table atomically
+			// in a single write batch.
+			// https://github.com/movementlabsxyz/movement/issues/322
+
 			let mut batch = WriteBatch::default();
 
 			let key = Self::construct_mempool_transaction_key(&transaction);
@@ -191,6 +199,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 					let lookups_cf_handle = db
 						.cf_handle(cf::TRANSACTION_LOOKUPS)
 						.ok_or_else(|| Error::msg("CF handle not found"))?;
+
+					// Remove the transaction and its entry in the lookup table
+					// atomically in a single write batch.
+					// https://github.com/movementlabsxyz/movement/issues/322
 
 					let mut batch = WriteBatch::default();
 					batch.delete_cf(&cf_handle, k);
@@ -247,6 +259,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 					let (key, value) = res?;
 					let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
 
+					// Remove the transaction and its entry in the lookup table
+					// atomically in a single write batch.
+					// https://github.com/movementlabsxyz/movement/issues/322
+
 					let mut batch = WriteBatch::default();
 					batch.delete_cf(&cf_handle, &key);
 					batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
@@ -272,6 +288,11 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
+
+			// Remove the transactions and their lookup table entries
+			// atomically in a single write batch.
+			// https://github.com/movementlabsxyz/movement/issues/322
+
 			let mut batch = WriteBatch::default();
 			let mut mempool_transactions = Vec::with_capacity(n as usize);
 			while let Some(res) = iter.next() {
@@ -286,7 +307,6 @@ impl MempoolTransactionOperations for RocksdbMempool {
 					break;
 				}
 			}
-
 			db.write(batch)?;
 
 			Ok(mempool_transactions)
