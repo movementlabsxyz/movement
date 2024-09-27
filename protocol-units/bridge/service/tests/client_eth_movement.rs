@@ -93,7 +93,6 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			.lock_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id.0),
 				HashLock(args.hash_lock.0),
-				TimeLock(args.time_lock),
 				BridgeAddress(args.initiator.clone()),
 				BridgeAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
@@ -202,7 +201,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.lock_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id.0),
 				HashLock(args.hash_lock.0),
-				TimeLock(args.time_lock),
 				BridgeAddress(args.initiator.clone()),
 				BridgeAddress(args.recipient.clone().into()),
 				Amount(AssetType::Moveth(args.amount)),
@@ -335,7 +333,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
 		)
 		.await
@@ -367,7 +364,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((0, 1))),
 		)
 		.await
@@ -402,7 +398,6 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((1, 1))),
 		)
 		.await
@@ -429,7 +424,6 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
 		)
 		.await
@@ -463,7 +457,6 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient_bytes),
 			HashLock(EthHash(hash_lock).0),
-			TimeLock(args.time_lock),
 			Amount(AssetType::EthAndWeth((42, 0))),
 		)
 		.await

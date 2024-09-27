@@ -176,6 +176,7 @@ impl TestHarness {
 			.initialize_initiator_contract(
 				EthAddress(weth_address),
 				EthAddress(self.eth_signer_address()),
+				TimeLock(24*60*60)
 			)
 			.await
 			.expect("Failed to initialize contract");
@@ -186,12 +187,11 @@ impl TestHarness {
 		initiator_address: BridgeAddress<EthAddress>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		amount: Amount, // the amount
 	) -> BridgeContractResult<()> {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
 		eth_client
-			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, time_lock, amount)
+			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, amount)
 			.await
 	}
 
