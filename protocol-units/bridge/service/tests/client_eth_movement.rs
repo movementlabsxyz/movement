@@ -199,7 +199,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		// Set the timelock to 1 second for testing
 		movement_client
-			.set_timelock(1)
+			.counterparty_set_timelock(1)
 			.await
 			.expect("Failed to set timelock");
 

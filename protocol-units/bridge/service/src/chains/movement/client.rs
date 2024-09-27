@@ -133,6 +133,27 @@ impl MovementClient {
 
 		Ok(())
 	}
+
+	pub async fn counterparty_set_timelock(
+		&mut self,
+		time_lock: u64,
+	) -> Result<(), BridgeContractError> {
+		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+
+		let payload = utils::make_aptos_payload(
+			self.native_address,
+			"atomic_bridge_counterparty",
+			"set_time_lock_duration",
+			Vec::new(),
+			args,
+		);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|_| BridgeContractError::CallError)?;
+
+		Ok(())
+	}
 }
 
 #[async_trait::async_trait]
@@ -186,7 +207,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			while end > 0 && preimage.0[end - 1] == 0 {
 			end -= 1;
 			}
-			&preimage.0[..end]  // Slice the preimage up to `end`, removing trailing zeros
+			&preimage.0[..end]  
 		};
 		let args2 = vec![
 			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
@@ -218,9 +239,16 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+			end -= 1;
+			}
+			&preimage.0[..end]  
+		};
 		let args2 = vec![
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec(&preimage.0)?,
+			utils::serialize_vec(&unpadded_preimage)?,
 		]; 
 
 		let payload = utils::make_aptos_payload(
