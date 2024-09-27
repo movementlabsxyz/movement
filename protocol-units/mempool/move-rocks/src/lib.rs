@@ -5,9 +5,15 @@ use movement_types::{
 	block::{self, Block},
 	transaction,
 };
-use rocksdb::{ColumnFamilyDescriptor, Options, DB};
+use rocksdb::{ColumnFamilyDescriptor, Options, WriteBatch, DB};
 use std::fmt::Write;
 use std::sync::Arc;
+
+mod cf {
+	pub const MEMPOOL_TRANSACTIONS: &str = "mempool_transactions";
+	pub const BLOCKS: &str = "blocks";
+	pub const TRANSACTION_LOOKUPS: &str = "transaction_lookups";
+}
 
 #[derive(Debug, Clone)]
 pub struct RocksdbMempool {
@@ -20,17 +26,15 @@ impl RocksdbMempool {
 		options.create_missing_column_families(true);
 
 		let mempool_transactions_cf =
-			ColumnFamilyDescriptor::new("mempool_transactions", Options::default());
-		let transaction_truths_cf =
-			ColumnFamilyDescriptor::new("transaction_truths", Options::default());
-		let blocks_cf = ColumnFamilyDescriptor::new("blocks", Options::default());
+			ColumnFamilyDescriptor::new(cf::MEMPOOL_TRANSACTIONS, Options::default());
+		let blocks_cf = ColumnFamilyDescriptor::new(cf::BLOCKS, Options::default());
 		let transaction_lookups_cf =
-			ColumnFamilyDescriptor::new("transaction_lookups", Options::default());
+			ColumnFamilyDescriptor::new(cf::TRANSACTION_LOOKUPS, Options::default());
 
 		let db = DB::open_cf_descriptors(
 			&options,
 			path,
-			vec![mempool_transactions_cf, transaction_truths_cf, blocks_cf, transaction_lookups_cf],
+			[mempool_transactions_cf, blocks_cf, transaction_lookups_cf],
 		)
 		.map_err(|e| Error::new(e))?;
 
@@ -52,11 +56,11 @@ impl RocksdbMempool {
 	}
 
 	fn internal_get_mempool_transaction_key(
-		db: Arc<DB>,
+		db: &DB,
 		transaction_id: transaction::Id,
 	) -> Result<Option<Vec<u8>>, Error> {
 		let cf_handle = db
-			.cf_handle("transaction_lookups")
+			.cf_handle(cf::TRANSACTION_LOOKUPS)
 			.ok_or_else(|| Error::msg("CF handle not found"))?;
 		db.get_cf(&cf_handle, transaction_id.to_vec()).map_err(|e| Error::new(e))
 	}
@@ -69,20 +73,20 @@ impl RocksdbMempool {
 		let db = self.db.clone();
 		let transaction_id = transaction_id.clone();
 		tokio::task::spawn_blocking(move || {
-			Self::internal_get_mempool_transaction_key(db, transaction_id)
+			Self::internal_get_mempool_transaction_key(&db, transaction_id)
 		})
 		.await?
 	}
 
 	fn internal_has_mempool_transaction(
-		db: Arc<DB>,
+		db: &DB,
 		transaction_id: transaction::Id,
 	) -> Result<bool, Error> {
-		let key = Self::internal_get_mempool_transaction_key(db.clone(), transaction_id)?;
+		let key = Self::internal_get_mempool_transaction_key(&db, transaction_id)?;
 		match key {
 			Some(k) => {
 				let cf_handle = db
-					.cf_handle("mempool_transactions")
+					.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 					.ok_or_else(|| Error::msg("CF handle not found"))?;
 				Ok(db.get_cf(&cf_handle, k)?.is_some())
 			}
@@ -98,7 +102,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 	) -> Result<bool, Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
-			Self::internal_has_mempool_transaction(db, transaction_id)
+			Self::internal_has_mempool_transaction(&db, transaction_id)
 		})
 		.await?
 	}
@@ -110,27 +114,35 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let mempool_transactions_cf_handle = db
-				.cf_handle("mempool_transactions")
+				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let transaction_lookups_cf_handle = db
-				.cf_handle("transaction_lookups")
+				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
+			// Add the transactions and update the lookup table atomically
+			// in a single write batch.
+			// https://github.com/movementlabsxyz/movement/issues/322
+
+			let mut batch = WriteBatch::default();
+
 			for transaction in transactions {
-				if Self::internal_has_mempool_transaction(db.clone(), transaction.transaction.id())?
-				{
+				if Self::internal_has_mempool_transaction(&db, transaction.transaction.id())? {
 					continue;
 				}
 
 				let serialized_transaction = bcs::to_bytes(&transaction)?;
 				let key = Self::construct_mempool_transaction_key(&transaction);
-				db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction)?;
-				db.put_cf(
+				batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
+				batch.put_cf(
 					&transaction_lookups_cf_handle,
 					transaction.transaction.id().to_vec(),
 					&key,
-				)?;
+				);
 			}
+
+			db.write(batch)?;
+
 			Ok::<(), Error>(())
 		})
 		.await??;
@@ -143,15 +155,28 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 		tokio::task::spawn_blocking(move || {
 			let mempool_transactions_cf_handle = db
-				.cf_handle("mempool_transactions")
+				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let transaction_lookups_cf_handle = db
-				.cf_handle("transaction_lookups")
+				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 
+			// Add the transaction and update the lookup table atomically
+			// in a single write batch.
+			// https://github.com/movementlabsxyz/movement/issues/322
+
+			let mut batch = WriteBatch::default();
+
 			let key = Self::construct_mempool_transaction_key(&transaction);
-			db.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction)?;
-			db.put_cf(&transaction_lookups_cf_handle, transaction.transaction.id().to_vec(), &key)?;
+			batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
+			batch.put_cf(
+				&transaction_lookups_cf_handle,
+				transaction.transaction.id().to_vec(),
+				&key,
+			);
+
+			db.write(batch)?;
+
 			Ok::<(), Error>(())
 		})
 		.await??;
@@ -169,13 +194,20 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			match key {
 				Some(k) => {
 					let cf_handle = db
-						.cf_handle("mempool_transactions")
+						.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&cf_handle, k)?;
 					let lookups_cf_handle = db
-						.cf_handle("transaction_lookups")
+						.cf_handle(cf::TRANSACTION_LOOKUPS)
 						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&lookups_cf_handle, transaction_id.to_vec())?;
+
+					// Remove the transaction and its entry in the lookup table
+					// atomically in a single write batch.
+					// https://github.com/movementlabsxyz/movement/issues/322
+
+					let mut batch = WriteBatch::default();
+					batch.delete_cf(&cf_handle, k);
+					batch.delete_cf(&lookups_cf_handle, transaction_id.to_vec());
+					db.write(batch)?;
 				}
 				None => (),
 			}
@@ -197,7 +229,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle = db
-				.cf_handle("mempool_transactions")
+				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			match db.get_cf(&cf_handle, &key)? {
 				Some(serialized_transaction) => {
@@ -214,7 +246,10 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle = db
-				.cf_handle("mempool_transactions")
+				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let lookups_cf_handle = db
+				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
 
@@ -223,13 +258,15 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				Some(res) => {
 					let (key, value) = res?;
 					let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
-					db.delete_cf(&cf_handle, &key)?;
 
-					// Optionally, remove from the lookup table as well
-					let lookups_cf_handle = db
-						.cf_handle("transaction_lookups")
-						.ok_or_else(|| Error::msg("CF handle not found"))?;
-					db.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec())?;
+					// Remove the transaction and its entry in the lookup table
+					// atomically in a single write batch.
+					// https://github.com/movementlabsxyz/movement/issues/322
+
+					let mut batch = WriteBatch::default();
+					batch.delete_cf(&cf_handle, &key);
+					batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
+					db.write(batch)?;
 
 					Ok(Some(transaction))
 				}
@@ -245,27 +282,33 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle = db
-				.cf_handle("mempool_transactions")
+				.cf_handle(cf::MEMPOOL_TRANSACTIONS)
+				.ok_or_else(|| Error::msg("CF handle not found"))?;
+			let lookups_cf_handle = db
+				.cf_handle(cf::TRANSACTION_LOOKUPS)
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut iter = db.iterator_cf(&cf_handle, rocksdb::IteratorMode::Start);
 
+			// Remove the transactions and their lookup table entries
+			// atomically in a single write batch.
+			// https://github.com/movementlabsxyz/movement/issues/322
+
+			let mut batch = WriteBatch::default();
 			let mut mempool_transactions = Vec::with_capacity(n as usize);
 			while let Some(res) = iter.next() {
 				let (key, value) = res?;
 				let transaction: MempoolTransaction = bcs::from_bytes(&value)?;
-				db.delete_cf(&cf_handle, &key)?;
 
-				// Optionally, remove from the lookup table as well
-				let lookups_cf_handle = db
-					.cf_handle("transaction_lookups")
-					.ok_or_else(|| Error::msg("CF handle not found"))?;
-				db.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec())?;
+				batch.delete_cf(&cf_handle, &key);
+				batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
 
 				mempool_transactions.push(transaction);
-				if mempool_transactions.len() > n - 1 {
+				if mempool_transactions.len() >= n {
 					break;
 				}
 			}
+			db.write(batch)?;
+
 			Ok(mempool_transactions)
 		})
 		.await?
@@ -277,7 +320,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
-				db.cf_handle("blocks").ok_or_else(|| Error::msg("CF handle not found"))?;
+				db.cf_handle(cf::BLOCKS).ok_or_else(|| Error::msg("CF handle not found"))?;
 			Ok(db.get_cf(&cf_handle, block_id.to_vec())?.is_some())
 		})
 		.await?
@@ -288,7 +331,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
-				db.cf_handle("blocks").ok_or_else(|| Error::msg("CF handle not found"))?;
+				db.cf_handle(cf::BLOCKS).ok_or_else(|| Error::msg("CF handle not found"))?;
 			db.put_cf(&cf_handle, block.id().to_vec(), &serialized_block)?;
 			Ok(())
 		})
@@ -299,7 +342,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
-				db.cf_handle("blocks").ok_or_else(|| Error::msg("CF handle not found"))?;
+				db.cf_handle(cf::BLOCKS).ok_or_else(|| Error::msg("CF handle not found"))?;
 			db.delete_cf(&cf_handle, block_id.to_vec())?;
 			Ok(())
 		})
@@ -310,7 +353,7 @@ impl MempoolBlockOperations for RocksdbMempool {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle =
-				db.cf_handle("blocks").ok_or_else(|| Error::msg("CF handle not found"))?;
+				db.cf_handle(cf::BLOCKS).ok_or_else(|| Error::msg("CF handle not found"))?;
 			let serialized_block = db.get_cf(&cf_handle, block_id.to_vec())?;
 			match serialized_block {
 				Some(serialized_block) => {
