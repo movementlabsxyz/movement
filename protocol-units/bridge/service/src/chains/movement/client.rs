@@ -141,7 +141,6 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		_initiator: BridgeAddress<MovementAddress>,
 		recipient: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		let amount_value = match amount.0 {
@@ -153,7 +152,6 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
-			utils::serialize_u64_initiator(&time_lock.0)?,
 			utils::serialize_u64_initiator(&amount_value)?,
 		];
 
@@ -238,7 +236,6 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
@@ -252,7 +249,6 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
-			utils::serialize_u64(&time_lock.0)?,
 			utils::serialize_vec(&recipient.0)?,
 			utils::serialize_u64(&amount_value)?,
 		];

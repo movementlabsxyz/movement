@@ -20,7 +20,6 @@ pub enum TransferActionType<A> {
 	LockBridgeTransfer {
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
-		time_lock: TimeLock,
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<A>,
 		amount: Amount,
