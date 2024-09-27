@@ -21,6 +21,7 @@ use std::sync::{Arc, RwLock};
 use tracing::{debug, info};
 use url::Url;
 
+const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
@@ -180,13 +181,16 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
 		let args2 = vec![
-			utils::serialize_vec(&bridge_transfer_id.0[..])?,
-			utils::serialize_vec(&preimage.0)?,
+			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec_initiator(&preimage.0)?,
 		];
+
+		debug!("Serialized bridge_transfer_id: {:?}", &bridge_transfer_id.0[..]);
+		debug!("Serialized preimage: {:?}", &preimage.0);
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
-			COUNTERPARTY_MODULE_NAME,
+			INITIATOR_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
 			args2,
@@ -208,10 +212,11 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
+		
 		let args2 = vec![
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&preimage.0)?,
-		];
+		]; 
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -221,13 +226,22 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			args2,
 		);
 
-		let _ = utils::send_and_confirm_aptos_transaction(
+		let result = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
 		.map_err(|_| BridgeContractError::CompleteTransferError);
+
+		match &result {
+			Ok(tx_result) => {
+			    debug!("Transaction succeeded: {:?}", tx_result);
+			},
+			Err(err) => {
+			    debug!("Transaction failed: {:?}", err);
+			}
+		}
 
 		Ok(())
 	}

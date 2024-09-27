@@ -169,7 +169,6 @@ pub async fn send_and_confirm_aptos_transaction(
 		.await
 		.map_err(|e| format!("Failed in getting chain id: {}", e))?
 		.into_inner();
-	info!("Ledger information retrieved: chain_id = {}", state.chain_id);
 
 	let transaction_factory = TransactionFactory::new(ChainId::new(state.chain_id))
 		.with_gas_unit_price(100)

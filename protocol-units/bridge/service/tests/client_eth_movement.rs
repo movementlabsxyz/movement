@@ -94,7 +94,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 				BridgeTransferId(args.bridge_transfer_id.0),
 				HashLock(args.hash_lock.0),
 				BridgeAddress(args.initiator.clone()),
-				BridgeAddress(args.recipient.clone()),
+				BridgeAddress(args.recipient.clone().into()),
 				Amount(AssetType::Moveth(args.amount)),
 			)
 			.await
