@@ -4,7 +4,6 @@ use tokio_stream::Stream;
 
 use crate::types::{
 	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage,
-	TimeLock,
 };
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -148,7 +147,6 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
-
 
 	async fn lock_bridge_transfer(
 		&mut self,
