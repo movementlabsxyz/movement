@@ -56,9 +56,9 @@ impl Config {
 			rpc_url: "http://localhost:8545".parse().unwrap(),
 			ws_url: "ws://localhost:8545".parse().unwrap(),
 			signer_private_key: PrivateKeySigner::random(),
-			initiator_contract: "Eth initiator_contract_address".to_string(),
-			counterparty_contract: "Eth counterparty_contract_address".to_string(),
-			weth_contract: "Eth weth_contract_address".to_string(),
+			initiator_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
+			counterparty_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
+			weth_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
 			gas_limit: 10_000_000_000,
 		}
 	}
