@@ -17,6 +17,7 @@ use bridge_service::chains::{
 		event_monitoring::MovementMonitoring,
 	},
 };
+use tokio_stream::StreamExt;
 
 use bridge_service::types::{Amount, AssetType, BridgeAddress, HashLock};
 use harness::TestHarness;
@@ -31,18 +32,18 @@ async fn test_should_receive_event() -> Result<()> {
 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
 	harness.deploy_init_contracts().await;
 
-	let one_stream = EthMonitoring::build(EthMonitoringConfig::default()).await?;
+	let eth_stream: EthMonitoring = EthMonitoring::build(EthMonitoringConfig::default()).await?;
 
 	let eth_config = EthConfig::build_for_test();
-	let one_client = EthClient::new(eth_config).await?;
+	let eth_client = EthClient::new(eth_config).await?;
 
 	let mvt_config = MovementConfig::build_for_test();
-	let two_client = MovementClient::new(&mvt_config).await?;
+	let mvt_client = MovementClient::new(&mvt_config).await?;
 
-	let two_stream = MovementMonitoring::build(mvt_config).await?;
+	let mvt_stream = MovementMonitoring::build(mvt_config).await?;
 
 	//Start the relayer
-	bridge_service::run_bridge(one_client, one_stream, two_client, two_stream).await?;
+	bridge_service::run_bridge(eth_client, eth_stream, mvt_client, mvt_stream).await?;
 
 	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
 	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
