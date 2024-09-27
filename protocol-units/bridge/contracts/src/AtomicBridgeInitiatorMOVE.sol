@@ -1,22 +1,24 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
-import {IWETH9} from "./IWETH9.sol";
+import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
+import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
+contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
     enum MessageState {
         INITIALIZED,
         COMPLETED,
         REFUNDED
-    }
+    }   
 
     struct BridgeTransfer {
         uint256 amount;
         address originator;
         bytes32 recipient;
         bytes32 hashLock;
-        uint256 timeLock; // in blocks
+        uint256 timeLock; // in seconds (timestamp)
         MessageState state;
     }
 
@@ -27,18 +29,17 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     uint256 public poolBalance;
 
     address public counterpartyAddress; 
-    IWETH9 public weth;
+    ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    // Initialize the contract with WETH address, owner, and a custom time lock duration
-    function initialize(address _weth, address owner, uint256 _timeLockDuration) public initializer {
-        if (_weth == address(0)) {
+    function initialize(address _moveToken, address owner, uint256 _timeLockDuration) public initializer {
+        if (_moveToken == address(0)) {
             revert ZeroAddress();
         }
-        weth = IWETH9(_weth);
+        moveToken = ERC20Upgradeable(_moveToken);
         __Ownable_init(owner);
 
         // Set the custom time lock duration
@@ -50,36 +51,30 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         counterpartyAddress = _counterpartyAddress;
     }
 
-    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock)
+    function initiateBridgeTransfer(uint256 moveAmount, bytes32 recipient, bytes32 hashLock)
         external
-        payable
         returns (bytes32 bridgeTransferId)
     {
         address originator = msg.sender;
-        uint256 ethAmount = msg.value;
-        uint256 totalAmount = wethAmount + ethAmount;
 
-        // Ensure there is a valid total amount
-        if (totalAmount == 0) {
+        // Ensure there is a valid amount
+        if (moveAmount == 0) {
             revert ZeroAmount();
         }
-        
-        // If msg.value is greater than 0, convert ETH to WETH
-        if (ethAmount > 0) weth.deposit{value: ethAmount}();
-        
-        // Transfer WETH to this contract, revert if transfer fails
-        if (wethAmount > 0) {
-            if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
+
+        // Transfer MOVE tokens from the user to the contract
+        if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
+            revert MOVETransferFailed();
         }
 
         // Update the pool balance
-        poolBalance += totalAmount;
+        poolBalance += moveAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
-            amount: totalAmount,
+            amount: moveAmount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
@@ -87,7 +82,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, moveAmount, hashLock, initiatorTimeLockDuration);
         return bridgeTransferId;
     }
 
@@ -95,7 +90,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.timestamp > bridgeTransfer.timeLock) revert TimeLockExpired();
+        if (block.timestamp > bridgeTransfer.timeLock) revert TimelockExpired();
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -107,18 +102,17 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
         
-        // Decrease pool balance and transfer WETH back to originator
+        // Decrease pool balance and transfer MOVE tokens back to the originator
         poolBalance -= bridgeTransfer.amount;
-        if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();
+        if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
     }
 
-    // Counterparty contract to withdraw WETH for originator
-    function withdrawWETH(address recipient, uint256 amount) external {
+    function withdrawMOVE(address recipient, uint256 amount) external {
         if (msg.sender != counterpartyAddress) revert Unauthorized();
-        if (poolBalance < amount) revert InsufficientWethBalance();
+        if (poolBalance < amount) revert InsufficientMOVEBalance();
         poolBalance -= amount;
-        if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
+        if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }

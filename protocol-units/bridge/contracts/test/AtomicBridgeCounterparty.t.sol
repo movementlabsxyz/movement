@@ -192,4 +192,3 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
     }
 }
-
