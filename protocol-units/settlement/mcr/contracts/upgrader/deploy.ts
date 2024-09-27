@@ -19,7 +19,7 @@ interface Config {
 }
 
 async function main() {
-  const private_key = process.env.TEST_1;
+  const private_key = process.env.PRIVATE_KEY;
   if (!private_key) {
     throw new Error("PRIVATE_KEY is required");
   }

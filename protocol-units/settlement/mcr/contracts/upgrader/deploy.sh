@@ -43,13 +43,10 @@ if [ -z "$api_key" ]; then
   exit 1
 fi
 
-# Run the script to generate transaction data for the upgrade
-echo "Generating transaction data to upgrade contract $contract"
-forge script "../script/MultisigMOVETokenDeployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key}
+# Run the script to generate transaction data for the deployment
+echo "Generating transaction data to deploy contract $contract"
+forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key}
 
-# Convert contract name to lowercase
-lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
-
-# Run the upgrader script
+# Run the deployer script
 echo "Running upgrader/deploy.ts"
 npx tsx  ./deploy.ts -u "$url"

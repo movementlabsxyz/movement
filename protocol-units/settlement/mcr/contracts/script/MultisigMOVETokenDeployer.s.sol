@@ -18,19 +18,19 @@ contract MultisigMOVETokenDeployer is Helper {
     using stdJson for string;
     // COMMANDS
     // mainnet
-    // forge script MOVETokenDeployer --fork-url https://eth.llamarpc.com --verify --etherscan-api-key ETHERSCAN_API_KEY
+    // forge script MultisigMOVETokenDeployer --fork-url https://eth.llamarpc.com --verify --etherscan-api-key ETHERSCAN_API_KEY
     // testnet
-    // forge script MOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
+    // forge script MultisigMOVETokenDeployer --fork-url https://eth-sepolia.api.onfinality.io/public
     // Safes should be already deployed
 
-    bytes32 public salt = 0x0308000000000000000000000a18f8ed6e115a72d9d13b2c5578f132ce7f643a;
+    bytes32 public salt = 0x6c0000000000000000000000018eddf77afc0a5c6d05a564a44fe37b068922c3;
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
 
     function run() external virtual {
         // load config and deployments data
         _loadExternalData();
 
-        uint256 signer = vm.envUint("TEST_1");
+        uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
 
         // Deploy CREATE3Factory, Safes and Timelock if not deployed
@@ -61,8 +61,15 @@ contract MultisigMOVETokenDeployer is Helper {
                 abi.encodeWithSignature(moveSignature, deployment.movementFoundationSafe, deployment.movementAnchorage)
             )
         );
+
+        deployment.move = create3.getDeployed(deployment.movementDeployerSafe, salt);
+        console.log("MOVE: deployment address", deployment.move);
+        require(_startsWith3073(deployment.move), "MOVE: deployment address does not start with 0x3073");
+        
         // create bytecode the MOVE token proxy using CREATE3
         bytes memory bytecode = abi.encodeWithSignature("deploy(bytes32,bytes)", salt, create3Bytecode);
+
+        
 
         // NOTE: digest can be used if immediately signing and executing the transaction
         // bytes32 digest = Safe(payable(deployment.movementFoundationSafe)).getTransactionHash(

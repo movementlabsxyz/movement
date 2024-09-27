@@ -323,4 +323,9 @@ contract Helper is Script {
         }
         return string(bstr);
     }
+
+    function _startsWith3073(address addr) internal pure returns (bool) {
+        bytes20 addrBytes = bytes20(addr);
+        return (uint16(uint8(addrBytes[0])) << 8 | uint8(addrBytes[1])) == 0x3073;
+    }
 }
