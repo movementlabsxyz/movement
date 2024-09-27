@@ -6,10 +6,15 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use bridge_service::{chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash}, types::TimeLock};
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
+};
+use bridge_service::{
+	chains::{
+		bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
+	},
+	types::TimeLock,
 };
 use harness::TestHarness;
 use tokio::time::{sleep, Duration};
@@ -125,8 +130,8 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
-		let secret = b"secret";  
-		let mut padded_secret = [0u8; 32];  
+		let secret = b"secret";
+		let mut padded_secret = [0u8; 32];
 		padded_secret[..secret.len()].copy_from_slice(secret);
 
 		BridgeContract::counterparty_complete_bridge_transfer(
@@ -309,7 +314,7 @@ async fn test_eth_client_should_deploy_initiator_contract() {
 	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
 
 	let initiator_address = harness.deploy_initiator_contract().await;
-	let expected_address = address!("5fbdb2315678afecb367f032d93f642f64180aa3");
+	let expected_address = address!("1234567890abcdef1234567890abcdef12345678");
 
 	assert_eq!(initiator_address, expected_address);
 }
@@ -328,7 +333,8 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
 
-	let signer_address: alloy::primitives::Address = harness.set_eth_signer(anvil.keys()[0].clone());
+	let signer_address: alloy::primitives::Address =
+		harness.set_eth_signer(anvil.keys()[0].clone());
 
 	harness.deploy_init_contracts().await;
 

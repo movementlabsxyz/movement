@@ -11,9 +11,9 @@ use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
-use bridge_service::{chains::bridge_contracts::{BridgeContract, BridgeContractResult}, types::{BridgeAddress, TimeLock}};
-use bridge_service::types::{Amount, HashLock};
-use bridge_service::chains::ethereum::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
+use bridge_service::chains::ethereum::types::{
+	AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9,
+};
 use bridge_service::chains::ethereum::{
 	client::{Config as EthConfig, EthClient},
 	types::EthHash,
@@ -22,6 +22,11 @@ use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{
 	client::{Config as MovementConfig, MovementClient},
 	utils::MovementHash,
+};
+use bridge_service::types::{Amount, HashLock};
+use bridge_service::{
+	chains::bridge_contracts::{BridgeContract, BridgeContractResult},
+	types::{BridgeAddress, TimeLock},
 };
 use rand::SeedableRng;
 use std::sync::{Arc, RwLock};
@@ -176,7 +181,7 @@ impl TestHarness {
 			.initialize_initiator_contract(
 				EthAddress(weth_address),
 				EthAddress(self.eth_signer_address()),
-				TimeLock(24*60*60)
+				TimeLock(1),
 			)
 			.await
 			.expect("Failed to initialize contract");
