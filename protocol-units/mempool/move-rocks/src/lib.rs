@@ -405,11 +405,12 @@ impl MempoolBlockOperations for RocksdbMempool {
 }
 
 #[cfg(test)]
-pub mod test {
+pub mod tests {
 
 	use super::*;
 	use movement_types::transaction::Transaction;
 	use tempfile::tempdir;
+	use tokio::time::{sleep, Duration};
 
 	#[tokio::test]
 	async fn test_rocksdb_mempool_basic_operations() -> Result<(), Error> {
@@ -452,6 +453,32 @@ pub mod test {
 		assert_eq!(Some(transaction.clone()), transaction2);
 		mempool.remove_transaction(transaction_id.clone()).await?;
 		assert!(!mempool.has_transaction(transaction_id.clone()).await?);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_rocksdb_gc() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let transaction1_id = transaction1.id();
+		mempool.add_mempool_transaction(transaction1).await?;
+		assert!(mempool.has_transaction(transaction1_id).await?);
+
+		sleep(Duration::from_secs(2)).await;
+
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
+		let transaction2_id = transaction2.id();
+		let transaction2_timestamp = transaction2.timestamp;
+		mempool.add_mempool_transaction(transaction2).await?;
+
+		mempool.gc_mempool_transactions(transaction2_timestamp).await?;
+
+		assert!(!mempool.has_transaction(transaction1_id).await?);
+		assert!(mempool.has_transaction(transaction2_id).await?);
 
 		Ok(())
 	}
