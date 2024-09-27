@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use alloy::{
 	primitives::{keccak256, Address, U256},
 	providers::WalletProvider,

@@ -5,8 +5,6 @@ use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::chains::bridge_contracts::BridgeContractMonitoring;
-use crate::chains::ethereum::types::EthAddress;
-use crate::chains::movement::utils::MovementAddress;
 use crate::events::InvalidEventError;
 use crate::events::TransferEvent;
 use crate::states::TransferState;

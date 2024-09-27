@@ -1,14 +1,17 @@
+#![allow(dead_code)]
 use alloy::hex;
 use anyhow::Result;
 use aptos_sdk::{
 	coin_client::CoinClient, rest_client::Transaction, types::account_address::AccountAddress,
 };
 use bridge_service::chains::bridge_contracts::{BridgeContract, BridgeContractError};
-use bridge_service::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock, TimeLock
-};
 use bridge_service::chains::movement::client::MovementClient;
-use bridge_service::chains::movement::utils::{self as movement_utils, MovementHash, MovementAddress};
+use bridge_service::chains::movement::utils::{
+	self as movement_utils, MovementAddress, MovementHash,
+};
+use bridge_service::types::{
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock, TimeLock,
+};
 use tracing::debug;
 
 pub fn assert_bridge_transfer_details(
@@ -19,8 +22,7 @@ pub fn assert_bridge_transfer_details(
 	expected_recipient_address: Vec<u8>,
 	expected_amount: u64,
 	expected_state: u8,
-) 
-{
+) {
 	assert_eq!(details.bridge_transfer_id.0, expected_bridge_transfer_id);
 	assert_eq!(details.hash_lock.0, expected_hash_lock);
 	assert_eq!(details.initiator_address.0 .0, expected_sender_address);
@@ -47,8 +49,8 @@ pub async fn extract_bridge_transfer_id(
 				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
 					&event.typ
 				{
-					match struct_tag.name.as_str() { "BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" =>
-						{
+					match struct_tag.name.as_str() {
+						"BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
 							if let Some(bridge_transfer_id) =
 								event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
 							{
@@ -57,11 +59,13 @@ pub async fn extract_bridge_transfer_id(
 									anyhow::Error::msg("Failed to decode hex string into Vec<u8>")
 								})?;
 								return decoded_vec.try_into().map_err(|_| {
-									anyhow::Error::msg("Failed to convert decoded Vec<u8> to [u8; 32]")
+									anyhow::Error::msg(
+										"Failed to convert decoded Vec<u8> to [u8; 32]",
+									)
 								});
 							}
-						},
-					_ => {}
+						}
+						_ => {}
 					}
 				}
 			}
