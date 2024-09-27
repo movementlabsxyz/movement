@@ -356,7 +356,40 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		Ok(())
 	}
 
-	async fn get_bridge_transfer_details(
+	async fn get_bridge_transfer_details_initiator(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
+		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
+
+		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
+		let key = bridge_transfer_id.0.clone();
+		let storage_slot = calculate_storage_slot(key, mapping_slot);
+		let storage: U256 = self
+			.rpc_provider
+			.get_storage_at(self.initiator_contract_address()?, storage_slot)
+			.await
+			.map_err(|_| generic_error("could not find storage"))?;
+		let storage_bytes = storage.to_be_bytes::<32>();
+
+		println!("storage_bytes: {:?}", storage_bytes);
+		let mut storage_slice = &storage_bytes[..];
+		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
+			.map_err(|_| generic_error("could not decode storage"))?;
+
+		Ok(Some(BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: BridgeAddress(eth_details.originator),
+			recipient_address: BridgeAddress(eth_details.recipient.to_vec()),
+			hash_lock: HashLock(eth_details.hash_lock),
+			//@TODO unit test these wrapping to check for any nasty side effects.
+			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
+			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			state: eth_details.state,
+		}))
+	}
+
+	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {

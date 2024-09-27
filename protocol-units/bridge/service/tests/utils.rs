@@ -47,20 +47,21 @@ pub async fn extract_bridge_transfer_id(
 				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
 					&event.typ
 				{
-					if struct_tag.module.as_str() == "atomic_bridge_initiator"
-						&& struct_tag.name.as_str() == "BridgeTransferInitiatedEvent"
-					{
-						if let Some(bridge_transfer_id) =
-							event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
+					match struct_tag.name.as_str() { "BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" =>
 						{
-							let hex_str = bridge_transfer_id.trim_start_matches("0x");
-							let decoded_vec = hex::decode(hex_str).map_err(|_| {
-								anyhow::Error::msg("Failed to decode hex string into Vec<u8>")
-							})?;
-							return decoded_vec.try_into().map_err(|_| {
-								anyhow::Error::msg("Failed to convert decoded Vec<u8> to [u8; 32]")
-							});
-						}
+							if let Some(bridge_transfer_id) =
+								event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
+							{
+								let hex_str = bridge_transfer_id.trim_start_matches("0x");
+								let decoded_vec = hex::decode(hex_str).map_err(|_| {
+									anyhow::Error::msg("Failed to decode hex string into Vec<u8>")
+								})?;
+								return decoded_vec.try_into().map_err(|_| {
+									anyhow::Error::msg("Failed to convert decoded Vec<u8> to [u8; 32]")
+								});
+							}
+						},
+					_ => {}
 					}
 				}
 			}

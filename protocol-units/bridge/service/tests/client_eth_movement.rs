@@ -6,7 +6,7 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use bridge_service::{chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash}, types::TimeLock};
+use bridge_service::{chains::{bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash}, types::TimeLock};
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
@@ -14,6 +14,9 @@ use bridge_service::types::{
 use harness::TestHarness;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
+use tracing::info;
+mod utils;
+use utils as test_utils;
 
 mod harness;
 
@@ -50,7 +53,7 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 	{
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
-		let _ = movement_client.publish_for_test();
+		movement_client.publish_for_test()?;
 	}
 
 	child.kill().await?;
@@ -70,7 +73,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 	let test_result = async {
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-		let _ = movement_client.publish_for_test();
+		movement_client.publish_for_test()?;
 
 		let rest_client = movement_client.rest_client();
 		let coin_client = CoinClient::new(&rest_client);
@@ -100,9 +103,12 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		let details = BridgeContract::get_bridge_transfer_details(
+		let bridge_transfer_id: [u8; 32] =
+			test_utils::extract_bridge_transfer_id(movement_client).await?;
+		info!("Bridge transfer id: {:?}", bridge_transfer_id);
+		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id.0),
+			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -131,7 +137,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		.await
 		.expect("Failed to complete bridge transfer");
 
-		let details = BridgeContract::get_bridge_transfer_details(
+		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id.0),
 		)
@@ -192,10 +198,10 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		);
 
 		// Set the timelock to 1 second for testing
-		// movement_client
-		//	.set_timelock(1)
-		//	.await
-		//	.expect("Failed to set timelock");
+		movement_client
+			.set_timelock(1)
+			.await
+			.expect("Failed to set timelock");
 
 		movement_client
 			.lock_bridge_transfer(
@@ -208,9 +214,12 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		let details = BridgeContract::get_bridge_transfer_details(
+		let bridge_transfer_id: [u8; 32] =
+			test_utils::extract_bridge_transfer_id(movement_client).await?;
+		info!("Bridge transfer id: {:?}", bridge_transfer_id);
+		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			movement_client,
-			BridgeTransferId(args.bridge_transfer_id.0),
+			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -234,7 +243,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.await
 			.expect("Failed to complete bridge transfer");
 
-		let abort_details = BridgeContract::get_bridge_transfer_details(
+		let abort_details = BridgeContract::get_bridge_transfer_details_counterparty(
 			movement_client,
 			BridgeTransferId(args.bridge_transfer_id.0),
 		)
