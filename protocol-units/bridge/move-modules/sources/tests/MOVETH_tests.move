@@ -1,13 +1,19 @@
-module moveth::moveth_tests{
-    use std::signer;
-    use aptos_framework::primary_fungible_store;
-    use aptos_framework::dispatchable_fungible_asset;
+module atomic_bridge::moveth_tests{
+    #[test_only]
+    use atomic_bridge::moveth;
+    #[test_only]
     use aptos_framework::fungible_asset::{Self, FungibleStore};
-    use moveth::moveth;
+    #[test_only]
+    use aptos_framework::primary_fungible_store;
+    #[test_only]
     use aptos_framework::object;
+    #[test_only]
+    use aptos_std::signer;
+    #[test_only]
+    use aptos_framework::dispatchable_fungible_asset;
 
-    #[test(creator = @moveth, minter = @0xface, admin = @admin, master_minter = @master_minter, denylister = @0xcade)]
-    fun test_basic_flow(creator: &signer, minter: &signer, admin: &signer, master_minter: &signer, denylister: &signer) {
+    #[test(creator = @moveth, minter = @0xface, admin = @admin, denylister = @0xcade)]
+    fun test_basic_flow(creator: &signer, minter: &signer, admin: &signer, denylister: &signer) {
         moveth::init_for_test(creator);
         let receiver_address = @0xcafe1;
         let minter_address = signer::address_of(minter);

@@ -1,5 +1,5 @@
 /// moveth FA 
-module moveth::moveth {
+module atomic_bridge::moveth {
     use aptos_framework::account;
     use aptos_framework::dispatchable_fungible_asset;
     use aptos_framework::event;
@@ -8,7 +8,6 @@ module moveth::moveth {
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef, BurnRef, Metadata, FungibleAsset, FungibleStore};
     use aptos_framework::object::{Self, Object, ExtendRef};
     use aptos_framework::primary_fungible_store;
-    use aptos_framework::resource_account;
     use std::option;
     use std::signer;
     use std::string::{Self, utf8};
