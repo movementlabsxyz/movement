@@ -28,13 +28,8 @@ WorkingDirectory=/home/{{ user }}/movement
 Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
 Environment="CONTAINER_REV={{ rev }}"
 Environment="MOVEMENT_SYNC={{ movement_sync }}"
-Environment"CELESTIA_RPC_CONNECTION_PROTOCOL={{ celestia_rpc_connection_protocol }}"
-Environment="CELESTIA_RPC_CONNECTION_HOSTNAME={{ celestia_rpc_connection_hostname }}"
-Environment="CELESTIA_RPC_CONNECTION_PORT={{ celestia_rpc_connection_port }}"
-Environment="CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL={{ celestia_websocket_connection_protocol }}"
-Environment="CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME={{ celestia_websocket_connection_hostname }}"
-Environment="CELESTIA_WEBSOCKET_CONNECTION_PORT={{ celestia_websocket_connection_port }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.remote-no-celestia-light.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.faucet-replicas.yml up --force-recreate --remove-orphans
+Environment="M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ m1_da_light_node_connection_hostname }}"
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.faucet-replicas.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]

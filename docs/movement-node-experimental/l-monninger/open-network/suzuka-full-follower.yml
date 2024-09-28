@@ -9,21 +9,9 @@
     destination_path: "/home/{{ user }}/movement"
     movement_sync: "l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
 
-    celestia_rpc_connection_protocol: "https"
-    celestia_rpc_connection_hostname: "l-monninger.open-network.rpc.celestia.suzuka.devnet.movementlabs.xyz"
-    celestia_rpc_connection_port: "443"
-
-    celestia_websocket_connection_protocol: "wss"
-    celestia_websocket_connection_hostname: "l-monninger.open-network.ws.celestia.suzuka.devnet.movementlabs.xyz"
-    celestia_websocket_connection_port: "443"
-
-    eth_rpc_connection_protocol: "https"
-    eth_rpc_connection_hostname: "ethereum-holesky-rpc.publicnode.com"
-    eth_rpc_connection_port: "443"
-
-    eth_ws_connection_protocol: "wss"
-    eth_ws_connection_hostname: "ethereum-holesky-rpc.publicnode.com"
-    eth_ws_connection_port: "443"
+    m1_da_light_node_connection_protocol: "https"
+    m1_da_light_node_connection_hostname: "l-monninger.open-network.m1-da-light-node.suzuka.devnet.movementlabs.xyz"
+    m1_da_light_node_connection_port: "443"
 
     aws_region: "us-west-1"
     rev: "{{ movement_container_version }}"
