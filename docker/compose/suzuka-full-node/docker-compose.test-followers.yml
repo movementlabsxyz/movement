@@ -21,7 +21,7 @@ services:
       CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
       CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
       M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
-      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-node
+      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-follower-1 # this is for the follower test
       FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
       ETH_RPC_CONNECTION_HOSTNAME: setup
       ETH_RPC_CONNECTION_PROTOCOL: http
@@ -79,7 +79,7 @@ services:
       CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
       CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
       M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
-      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-node
+      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-follower-2 # this is for the follower test
       FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
       ETH_RPC_CONNECTION_HOSTNAME: setup
       ETH_RPC_CONNECTION_PROTOCOL: http
@@ -133,6 +133,12 @@ services:
     image: ghcr.io/movementlabsxyz/suzuka-client-e2e-followers-consistent:${CONTAINER_REV}
     container_name: suzuka-client-e2e-followers-consistent
     entrypoint: /app/suzuka-client-e2e-followers-consistent 2
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+      - ${DOT_MOVEMENT_PATH}-follower-1:/.movement-follower-1
+      - ${DOT_MOVEMENT_PATH}-follower-2:/.movement-follower-2
     depends_on:
       - suzuka-full-follower-1
       - suzuka-full-follower-2

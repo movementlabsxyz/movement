@@ -1,4 +1,7 @@
 services:
   setup:
     environment:
-      - MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
+      MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is not set}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:?AWS_ACCESS_KEY_ID is not set}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:?AWS_SECRET ACCESS_KEY is not set}
