@@ -1,0 +1,4 @@
+services:
+  setup:
+    environment:
+      - MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}

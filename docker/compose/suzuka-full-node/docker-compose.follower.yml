@@ -4,9 +4,6 @@ services:
     container_name: setup
     environment:
       DOT_MOVEMENT_PATH: /.movement
-      # By default, all the listener hostnames and ports are reasonable.
-      # However, for container networking, we need to specify the hostnames on the connection.
-      # You can also use host.docker.internal for the host machine as all of these ports should be exposed.
       CELESTIA_RPC_CONNECTION_HOSTNAME: ${CELESTIA_RPC_CONNECTION_HOSTNAME:?CELESTIA_RPC_CONNECTION_HOSTNAME is not set}
       CELESTIA_RPC_CONNECTION_PORT: ${CELESTIA_RPC_CONNECTION_PORT:?CELESTIA_RPC_CONNECTION_HOSTNAME is not set}
       CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: ${CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME:?CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME is not set}
@@ -28,3 +25,15 @@ services:
       retries: 10
       interval: 10s
       timeout: 5s
+
+  # underlying da light node runners should already be turned off
+
+  # turn off suzuka-faucet-service
+  suzuka-faucet-service:
+    image: busybox
+    container_name: suzuka-faucet-service
+    command: sh -c 'echo "No setup type specified."'
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]
+      retries: 3
+      start_period: 3s

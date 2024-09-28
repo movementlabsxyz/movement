@@ -16,16 +16,16 @@ processes:
       exec:
         command: echo "true"
 
-  setup-follower-1:
+  setup-follower:
     command: |
       sleep 180
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
-      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=31734
-      export MAPTOS_API_CONNECTION_PORT=31731
-      export MAPTOS_API_LISTEN_PORT=31731
-      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
+      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=3$${PC_REPLICA_NUM}734
+      export MAPTOS_API_CONNECTION_PORT=3$${PC_REPLICA_NUM}731
+      export MAPTOS_API_LISTEN_PORT=3$${PC_REPLICA_NUM}731
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-$$PC_REPLICA_NUM
       export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,suzuka-da-db}/**"
       suzuka-full-node-setup
     depends_on:
@@ -37,10 +37,12 @@ processes:
       initial_delay_seconds: 180
       exec:
         command: echo "true"
+    replicas:
+      count: 2
 
-  suzuka-full-follower-1:
+  suzuka-full-follower:
     command: |
-      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-1
+      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-$$PC_REPLICA_NUM
       suzuka-full-node
     depends_on:
       m1-da-light-node:
@@ -53,52 +55,14 @@ processes:
       initial_delay_seconds: 10
       exec:
         command: curl http://0.0.0.0:31731
-
-  setup-follower-2:
-    command: |
-      sleep 180
-      export AWS_REGION=us-west-2
-      export MAYBE_RUN_LOCAL=false
-      export MAYBE_DEPLOY_MCR=false
-      export MAPTOS_INDEXER_GRPC_LISTEN_PORT=32734
-      export MAPTOS_API_CONNECTION_PORT=32731
-      export MAPTOS_API_LISTEN_PORT=32731
-      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
-      export MOVEMENT_SYNC="follower::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,suzuka-da-db}/**"
-      suzuka-full-node-setup
-    depends_on:
-      build:
-        condition: process_completed_successfully
-      suzuka-full-node:
-        condition: process_healthy
-    readiness_probe:
-      initial_delay_seconds: 180
-      exec:
-        command: echo "true"
-
-  suzuka-full-follower-2:
-    command: |
-      export DOT_MOVEMENT_PATH=$DOT_MOVEMENT_PATH-follower-2
-      suzuka-full-node
-    depends_on:
-      m1-da-light-node:
-        condition: process_healthy
-      setup-follower-2:
-        condition: process_healthy
-      suzuka-full-node:
-        condition: process_healthy
-    readiness_probe:
-      initial_delay_seconds: 10
-      exec:
-        command: curl http://0.0.0.0:32731
+    replicas:
+      count: 2
 
   test-followers-consistent:
     command: |
-      cargo run --bin suzuka-client-followers-consistent -- 2
+      cargo run --bin suzuka-client-followers-consistent -- $$PC_REPLICA_NUM
     depends_on:
-      suzuka-full-follower-1:
-        condition: process_healthy
-      suzuka-full-follower-2:
+      suzuka-full-follower:
         condition: process_healthy
       suzuka-faucet:
         condition: process_healthy
