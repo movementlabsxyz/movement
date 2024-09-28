@@ -60,7 +60,7 @@ processes:
 
   test-followers-consistent:
     command: |
-      cargo run --bin suzuka-client-followers-consistent -- $$PC_REPLICA_NUM
+      cargo run --bin suzuka-client-e2e-followers-consistent -- $$PC_REPLICA_NUM
     depends_on:
       suzuka-full-follower:
         condition: process_healthy

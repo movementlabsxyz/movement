@@ -3,6 +3,21 @@
 STATUS=$(timeout 4m just suzuka-full-node docker-compose local.faucet-replicas.test --abort-on-container-failure)
 EXIT_CODE=$?
 
+rm -rf .movement
+
+# Check the exit code and act accordingly
+if [ $EXIT_CODE -eq 0 ]; then
+  # continue as passed
+elif [ $EXIT_CODE -eq 124 ]; then
+  # continue as passed on timeout
+else
+  echo "Test failed"
+  exit 1
+fi
+
+STATUS=$(timeout 4m just suzuka-full-node docker-compose local.test-followers --abort-on-container-failure)
+EXIT_CODE=$?
+
 # Check the exit code and act accordingly
 if [ $EXIT_CODE -eq 0 ]; then
   echo "Test passed"

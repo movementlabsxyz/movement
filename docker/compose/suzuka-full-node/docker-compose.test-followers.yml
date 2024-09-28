@@ -129,4 +129,12 @@ services:
       timeout: 5s
     restart: on-failure:5
 
+  suzuka-client-e2e-followers-consistent:
+    image: ghcr.io/movementlabsxyz/suzuka-client-e2e-followers-consistent:${CONTAINER_REV}
+    container_name: suzuka-client-e2e-followers-consistent
+    entrypoint: /app/suzuka-client-e2e-followers-consistent 2
+    depends_on:
+      - suzuka-full-follower-1
+      - suzuka-full-follower-2
+
     

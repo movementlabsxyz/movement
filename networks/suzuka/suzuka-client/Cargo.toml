@@ -24,7 +24,7 @@ name = "suzuka-client-e2e-simple-interaction"
 path = "src/bin/e2e/simple_interaction.rs"
 
 [[bin]]
-name = "suzuka-client-followers-consistent"
+name = "suzuka-client-e2e-followers-consistent"
 path = "src/bin/e2e/followers_consistent.rs"
 
 [dependencies]
