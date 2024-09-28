@@ -23,7 +23,6 @@ use std::{pin::Pin, task::Poll};
 
 pub struct MovementMonitoring {
 	listener: mpsc::UnboundedReceiver<BridgeContractResult<BridgeContractEvent<MovementAddress>>>,
-	client: MovementClient,
 }
 
 impl BridgeContractMonitoring for MovementMonitoring {
@@ -32,7 +31,6 @@ impl BridgeContractMonitoring for MovementMonitoring {
 
 impl MovementMonitoring {
 	pub async fn build(config: Config) -> Result<Self, anyhow::Error> {
-		let mvt_client = MovementClient::new(&config).await?;
 		// Spawn a task to forward events to the listener channel
 		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
 			BridgeContractResult<BridgeContractEvent<MovementAddress>>,
@@ -58,11 +56,12 @@ impl MovementMonitoring {
 							break;
 						}
 					}
+					let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100));
 				}
 			}
 		});
 
-		Ok(MovementMonitoring { listener, client: mvt_client })
+		Ok(MovementMonitoring { listener })
 	}
 }
 
@@ -116,8 +115,12 @@ async fn pool_initiator_contract(
 			None,
 		)
 		.await
-		.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
-
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!(
+				"MVT bridge_transfer_initiated_events:{}",
+				e.to_string()
+			))
+		})?;
 	// Get completed events
 	let completed_response = rest_client
 		.get_account_events_bcs(
@@ -128,8 +131,12 @@ async fn pool_initiator_contract(
 			None,
 		)
 		.await
-		.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
-
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!(
+				"MVT bridge_transfer_completed_events:{}",
+				e.to_string()
+			))
+		})?;
 	// Get refunded events
 	let refunded_response = rest_client
 		.get_account_events_bcs(
@@ -140,20 +147,42 @@ async fn pool_initiator_contract(
 			None,
 		)
 		.await
-		.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
-
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!(
+				"MVT bridge_transfer_refunded_events:{}",
+				e.to_string()
+			))
+		})?;
 	// Process responses and yield events
 	let initiated_events =
-		process_initiator_response(initiated_response, InitiatorEventKind::Initiated)
-			.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
+		process_initiator_response(initiated_response, InitiatorEventKind::Initiated).map_err(
+			|e| {
+				BridgeContractError::OnChainError(format!(
+					"MVT process_initiator_response(initiated_response):{}",
+					e.to_string()
+				))
+			},
+		)?;
 
 	let completed_events =
-		process_initiator_response(completed_response, InitiatorEventKind::Completed)
-			.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
+		process_initiator_response(completed_response, InitiatorEventKind::Completed).map_err(
+			|e| {
+				BridgeContractError::OnChainError(format!(
+					"MVT process_initiator_response(completed_response):{}",
+					e.to_string()
+				))
+			},
+		)?;
 
 	let refunded_events =
-		process_initiator_response(refunded_response, InitiatorEventKind::Refunded)
-			.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
+		process_initiator_response(refunded_response, InitiatorEventKind::Refunded).map_err(
+			|e| {
+				BridgeContractError::OnChainError(format!(
+					"MVT process_initiator_response(refunded_response):{}",
+					e.to_string()
+				))
+			},
+		)?;
 
 	let total_events = initiated_events
 		.into_iter()
@@ -183,8 +212,12 @@ async fn pool_counterpart_contract(
 			None,
 		)
 		.await
-		.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
-
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!(
+				"MVT bridge_transfer_assets_locked:{}",
+				e.to_string()
+			))
+		})?;
 	// Get completed events
 	let completed_response = rest_client
 		.get_account_events_bcs(
@@ -195,8 +228,12 @@ async fn pool_counterpart_contract(
 			None,
 		)
 		.await
-		.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
-
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!(
+				"MVT bridge_transfer_completed:{}",
+				e.to_string()
+			))
+		})?;
 	// Get cancelled events
 	let cancelled_response = rest_client
 		.get_account_events_bcs(
@@ -207,20 +244,40 @@ async fn pool_counterpart_contract(
 			None,
 		)
 		.await
-		.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
-
+		.map_err(|e| {
+			BridgeContractError::OnChainError(format!(
+				"MVT bridge_transfer_cancelled:{}",
+				e.to_string()
+			))
+		})?;
 	// Process responses and return results
 	let locked_events =
-		process_counterparty_response(locked_response, CounterpartyEventKind::Locked)
-			.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
+		process_counterparty_response(locked_response, CounterpartyEventKind::Locked).map_err(
+			|e| {
+				BridgeContractError::OnChainError(format!(
+					"MVT process_initiator_response(locked_response):{}",
+					e.to_string()
+				))
+			},
+		)?;
 
 	let completed_events =
 		process_counterparty_response(completed_response, CounterpartyEventKind::Completed)
-			.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
+			.map_err(|e| {
+				BridgeContractError::OnChainError(format!(
+					"MVT process_initiator_response(completed_response):{}",
+					e.to_string()
+				))
+			})?;
 
 	let cancelled_events =
 		process_counterparty_response(cancelled_response, CounterpartyEventKind::Cancelled)
-			.map_err(|e| BridgeContractError::OnChainError(e.to_string()))?;
+			.map_err(|e| {
+				BridgeContractError::OnChainError(format!(
+					"MVT process_initiator_response(cancelled_response):{}",
+					e.to_string()
+				))
+			})?;
 
 	let total_events = locked_events
 		.into_iter()

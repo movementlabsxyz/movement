@@ -107,8 +107,22 @@ pub struct Amount(pub AssetType);
 impl Amount {
 	pub fn value(&self) -> u64 {
 		match self.0 {
-			AssetType::EthAndWeth((weth_value, eth_value)) => weth_value + eth_value,
+			AssetType::EthAndWeth((eth_value, weth_value)) => weth_value + eth_value,
 			AssetType::Moveth(value) => value,
+		}
+	}
+
+	pub fn eth_value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((eth_value, _)) => eth_value,
+			AssetType::Moveth(_) => 0,
+		}
+	}
+
+	pub fn weth_value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((_, weth_value)) => weth_value,
+			AssetType::Moveth(_) => 0,
 		}
 	}
 }
@@ -124,6 +138,7 @@ impl From<Uint<256, 4>> for Amount {
 #[derive(Clone, Debug, PartialEq, Eq, Copy, Deserialize)]
 pub enum AssetType {
 	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
+	//TODO eth and weth can be mixed during creation. Use type def to avoid that.
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
 }
