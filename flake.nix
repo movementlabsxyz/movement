@@ -18,7 +18,7 @@
         };
 
         toolchain = p: (p.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
-          extensions = [ "rustfmt" ];
+          extensions = [ "rustfmt" "clippy" ];
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain(toolchain);
 
