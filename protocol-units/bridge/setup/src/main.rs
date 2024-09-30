@@ -1,6 +1,5 @@
-use godfig::{backend::config_file::ConfigFile, Godfig};
 use bridge_config::Config;
-use bridge_setup::Setup;
+use godfig::{backend::config_file::ConfigFile, Godfig};
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -18,7 +17,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
 	// get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec!["mcr_settlement".to_string()]);
+		Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
 
 	// run a godfig transaction to update the file
 	godfig

@@ -42,7 +42,7 @@ async fn setup() -> Result<(AnvilInstance, Child), anyhow::Error> {
 	let eth_client = EthClient::new(eth_config).await?;
 	let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
 	    
-	let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test()).await?; // Assuming this is a function to start movement child
+	let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test()).await?; 
 
 	// Run a godfig transaction to update the file
 	godfig

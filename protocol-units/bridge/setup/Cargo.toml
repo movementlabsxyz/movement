@@ -11,8 +11,7 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-mcr-settlement-config = { workspace = true }
-mcr-settlement-client = { workspace = true }
+bridge-config = { workspace = true }
 dot-movement = { workspace = true }
 commander = { workspace = true }
 alloy = { workspace = true }

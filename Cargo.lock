@@ -3729,6 +3729,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-setup"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "alloy-primitives",
+ "anyhow",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "k256",
+ "mcr-settlement-client",
+ "mcr-settlement-config",
+ "rand 0.7.3",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "bs58"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
