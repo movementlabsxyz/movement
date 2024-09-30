@@ -209,15 +209,17 @@ contract AtomicBridgeInitiatorWethTest is Test {
     function testOneShotUpdatePoolBalance() public {
         uint256 newBalance = 10 ether;
 
+        // Ensure the initial pool balance is zero
         assertEq(atomicBridgeInitiator.poolBalance(), 0, "Initial pool balance should be 0");
 
         // Call the one-shot function to update the pool balance
         atomicBridgeInitiator.updatePoolBalance(newBalance);
 
+        // Verify that the pool balance has been updated
         assertEq(atomicBridgeInitiator.poolBalance(), newBalance, "Pool balance should be updated to the new value");
 
-        // Try calling the function again, expecting it to revert
-        vm.expectRevert(abi.encodeWithSelector(AtomicBridgeInitiator.OneShotFunctionAlreadyCalled.selector));
+        // Try calling the function again, expecting it to revert with the custom error
+        vm.expectRevert(abi.encodeWithSignature("OneShotFunctionAlreadyCalled()"));
         atomicBridgeInitiator.updatePoolBalance(5 ether);
     }
 }
