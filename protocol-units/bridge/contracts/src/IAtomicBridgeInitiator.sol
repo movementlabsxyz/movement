@@ -20,7 +20,6 @@ interface IAtomicBridgeInitiator {
     error WETHTransferFailed();
     error BridgeTransferInvalid();
     error InvalidSecret();
-    error OneShotFunctionAlreadyCalled();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
     error InsufficientWethBalance();

@@ -33,11 +33,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    // State variable to track if the one-shot function was called
-    bool private oneShotCalled;
-
-    // Initialize the contract with WETH address, owner, and a custom time lock duration
-    function initialize(address _weth, address owner, uint256 _timeLockDuration) public initializer {
+    // Initialize the contract with WETH address, owner, custom time lock duration, and initial pool balance
+    function initialize(address _weth, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
@@ -47,8 +44,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
 
-        // Initialize the one-shot flag to false
-        oneShotCalled = false;
+        // Set the initial pool balance
+        poolBalance = _initialPoolBalance;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -126,13 +123,6 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (poolBalance < amount) revert InsufficientWethBalance();
         poolBalance -= amount;
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
-    }
-
-    // One-shot function to update poolBalance, callable only once by the owner
-    function updatePoolBalance(uint256 newBalance) external onlyOwner {
-        if (oneShotCalled) revert OneShotFunctionAlreadyCalled();
-        poolBalance = newBalance;
-        oneShotCalled = true;
     }
 }
 
