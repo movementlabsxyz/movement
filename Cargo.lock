@@ -3680,6 +3680,8 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
+ "aptos-sdk",
+ "bridge-service",
  "dot-movement",
  "godfig",
  "mcr-settlement-config",

@@ -13,6 +13,8 @@ rust-version.workspace = true
 [dependencies]
 serde = { workspace = true , features = ["derive"] }
 alloy = { workspace = true }
+aptos-sdk = { workspace = true }
+bridge-service = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }
 anyhow = { workspace = true }
@@ -20,6 +22,7 @@ tracing-subscriber = { workspace = true }
 tokio = { workspace = true }
 mcr-settlement-config = { workspace = true }
 mcr-settlement-setup = { workspace = true }
+
 
 [lints]
 workspace = true

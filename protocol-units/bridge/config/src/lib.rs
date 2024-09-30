@@ -1,3 +1,5 @@
+pub mod common;
+
 use alloy::node_bindings::{Anvil, AnvilInstance}; 
 use dot_movement;
 use godfig::{backend::config_file::ConfigFile, Godfig};
@@ -6,10 +8,9 @@ use mcr_settlement_setup::local::Local;
 use tokio::process::Child;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber;
-use common::bridge;
 
 #[tokio::test]
-async fn main() -> Result<(), anyhow::Error> {
+async fn run_all_tests() -> Result<(), anyhow::Error> {
     let (anvil, child) = setup().await?;
     testfunction1_mvt().await?;
     testfunction2_eth(anvil).await?;

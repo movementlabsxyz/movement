@@ -1,17 +1,36 @@
+use alloy::{providers::RootProvider, pubsub::PubSubFrontend};
 use godfig::env_default;
 use serde::{Deserialize, Serialize};
+use aptos_sdk::{
+	coin_client::{CoinClient, TransferOptions},
+	move_types::{identifier::Identifier, language_storage::ModuleId},
+	rest_client::{Client, FaucetClient},
+	transaction_builder::TransactionBuilder,
+	types::{chain_id::ChainId, transaction::EntryFunction, LocalAccount},
+};
+use bridge_service::chains::ethereum::types::{
+	AlloyProvider, AtomicBridgeInitiator, EthAddress, EthConfig,
+};
+use rand::rngs::OsRng;
+use std::sync::Arc;
+
+fn init_default_movement_signer() -> Arc<LocalAccount> {
+	let mut rng = OsRng;
+	Arc::new(LocalAccount::generate(&mut rng))
+}
 
 const DEFAULT_MOVEMENT_NATIVE_ADDRESS: &str = "0xface";
 const DEFAULT_MOVEMENT_NON_NATIVE_ADDRESS: &str = "0xdafe";
 const DEFAULT_MOVEMENT_REST_CLIENT: &str = "https://aptos.devnet.suzuka.movementlabs.xyz/v1";
 const DEFAULT_MOVEMENT_FAUCET_CLIENT: &str = "https://faucet.devnet.suzuka.movementlabs.xyz/";
-const DEFAULT_MOVEMENT_SIGNER: Arc<LocalAccount> = Arc<LocalAccount>::new;
+const DEFAULT_MOVEMENT_SIGNER: Option<Arc<LocalAccount>> = None;
 const DEFAULT_ETH_RPC_PROVIDER: AlloyProvider = AlloyProvider::new;
 const DEFAULT_ETH_RPC_PORT: &str = "8545";
+const DEFAULT_ETH_WS_PROVIDER: Option<RootProvider<PubSubFrontend>> = None;
 const DEFAULT_ETH_INITIATOR_CONTRACT: &str = "Oxeee";
 const DEFAULT_ETH_COUNTERPARTY_CONTRACT: &str = "0xccc";
 const DEFAULT_ETH_WETH_CONTRACT: &str = "0xe3e3";
-const DEFAULT_ETH_CONFIG: Config = Config::new;
+const DEFAULT_ETH_CONFIG: EthConfig = EthConfig::default;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {
@@ -62,7 +81,7 @@ env_default!(
 	default_movement_rest_client,
 	"MOVEMENT_REST_CLIENT",
 	String,
-	DEFAULT_MOVEMENT_REST_CLIENT
+	DEFAULT_MOVEMENT_REST_CLIENT.to_string()
 );
 
 env_default!(
@@ -97,7 +116,7 @@ env_default!(
 	default_eth_ws_provider,
 	"ETH_WS_PROVIDER",
 	String,
-	DEFAULT_ETH_WS_CONNECTION_PORT.to_string()
+	DEFAULT_ETH_WS_PROVIDER.to_string()
 );
 
 env_default!(
