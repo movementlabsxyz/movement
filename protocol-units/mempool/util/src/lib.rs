@@ -146,7 +146,7 @@ impl PartialOrd for MempoolTransaction {
 /// This allows us to use a BTreeSet to order transactions by slot_seconds, and then by transaction and pop them off in order.
 impl Ord for MempoolTransaction {
 	fn cmp(&self, other: &Self) -> Ordering {
-		// First, compare by slot_seconds
+		// First, compare by timestamps
 		match self.timestamp.cmp(&other.timestamp) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,
