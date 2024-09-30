@@ -61,7 +61,7 @@ impl SetupMovementClient {
 		task::spawn(async move {
 			let mut stdout_reader = BufReader::new(stdout).lines();
 			let mut stderr_reader = BufReader::new(stderr).lines();
-
+			let mut setup_complete_tx = Some(setup_complete_tx);
 			loop {
 				tokio::select! {
 					line = stdout_reader.next_line() => {
@@ -70,15 +70,18 @@ impl SetupMovementClient {
 								println!("STDOUT: {}", line);
 								if line.contains("Setup is complete") {
 									println!("Testnet is up and running!");
-									let _ = setup_complete_tx.send(());
-																	return Ok(());
+									let setup_complete_tx = setup_complete_tx.take();
+									if let Some(tx) = setup_complete_tx {
+										let _ = tx.send(());
+									}
+									// return Ok(());
 								}
 							},
 							Ok(None) => {
-								return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
+								return Err::<(), _>(anyhow::anyhow!("Unexpected end of stdout stream"));
 							},
 							Err(e) => {
-								return Err(anyhow::anyhow!("Error reading stdout: {}", e));
+								return Err::<(), _>(anyhow::anyhow!("Error reading stdout: {}", e));
 							}
 						}
 					},
@@ -88,8 +91,11 @@ impl SetupMovementClient {
 								println!("STDERR: {}", line);
 								if line.contains("Setup is complete") {
 									println!("Testnet is up and running!");
-									let _ = setup_complete_tx.send(());
-																	return Ok(());
+									let setup_complete_tx = setup_complete_tx.take();
+									if let Some(tx) = setup_complete_tx {
+										let _ = tx.send(());
+									}
+									//  return Ok(());
 								}
 							},
 							Ok(None) => {
@@ -166,11 +172,11 @@ impl SetupMovementClient {
 		let addr_output = process.wait_with_output().expect("Failed to read command output");
 
 		if !addr_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+			println!("Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
 		}
 
 		if !addr_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+			eprintln!("Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 		}
 		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
 		let address = addr_output_str
@@ -178,7 +184,7 @@ impl SetupMovementClient {
 			.find(|word| word.starts_with("0x"))
 			.expect("Failed to extract the Movement account address");
 
-		println!("Extracted address: {}", address);
+		println!("Publish Extracted address: {}", address);
 
 		let resource_output = Command::new("movement")
 			.args(&[
@@ -196,10 +202,10 @@ impl SetupMovementClient {
 
 		// Print the output of the resource address command for debugging
 		if !resource_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
+			println!("Publish stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
 		}
 		if !resource_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
+			eprintln!("Publish stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
 		}
 
 		// Extract the resource address from the JSON output
@@ -220,10 +226,10 @@ impl SetupMovementClient {
 		// Set counterparty module address to resource address, for function calls:
 		self.native_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
 
-		println!("Derived resource address: {}", formatted_resource_address);
+		println!("Publish Derived resource address: {}", formatted_resource_address);
 
 		let current_dir = env::current_dir().expect("Failed to get current directory");
-		println!("Current directory: {:?}", current_dir);
+		println!("Publish Current directory: {:?}", current_dir);
 
 		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
 
@@ -270,7 +276,7 @@ impl SetupMovementClient {
 		file.write_all(updated_content.as_bytes())
 			.expect("Failed to write updated Move.toml file");
 
-		println!("Move.toml updated successfully.");
+		println!("Publish Move.toml updated successfully.");
 
 		let output2 = Command::new("movement")
 			.args(&[
@@ -287,20 +293,20 @@ impl SetupMovementClient {
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()
-			.expect("Failed to execute command");
+			.expect("Publish Failed to execute command");
 
 		if !output2.stdout.is_empty() {
-			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+			eprintln!("Publish stdout: {}", String::from_utf8_lossy(&output2.stdout));
 		}
 
 		if !output2.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
+			eprintln!("Publish stderr: {}", String::from_utf8_lossy(&output2.stderr));
 		}
 
-		if movement_dir.exists() {
-			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
-			println!(".movement directory deleted successfully.");
-		}
+		// if movement_dir.exists() {
+		// 	fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
+		// 	println!("Publish .movement directory deleted successfully.");
+		// }
 
 		// Read the existing content of Move.toml
 		let move_toml_content =
@@ -354,7 +360,7 @@ impl SetupMovementClient {
 		file.write_all(updated_content.as_bytes())
 			.expect("Failed to write updated Move.toml file");
 
-		println!("Move.toml addresses updated successfully at the end of the test.");
+		println!("Publish Move.toml addresses updated successfully at the end of the test.");
 
 		Ok(())
 	}

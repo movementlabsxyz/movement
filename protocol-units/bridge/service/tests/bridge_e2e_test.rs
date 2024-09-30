@@ -62,8 +62,12 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 async fn start_bridge_local(
 	eth_config: EthConfig,
 ) -> Result<tokio::task::JoinHandle<()>, anyhow::Error> {
-	let one_stream = EthMonitoring::build(&eth_config.ws_url.clone().to_string()).await?;
-
+	let one_stream = EthMonitoring::build(
+		&eth_config.ws_url.clone().to_string(),
+		&eth_config.initiator_contract,
+		&eth_config.counterparty_contract,
+	)
+	.await?;
 	let one_client = EthClient::new(eth_config).await?;
 
 	let mvt_config = MovementConfig::build_for_test();
@@ -155,7 +159,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	}
 
 	//Wait for the tx to be executed
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000));
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
 
 	Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::types::ChainId;
+use std::fmt;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -26,8 +27,16 @@ impl<A> From<(BridgeContractEvent<A>, ChainId)> for TransferEvent<A> {
 	}
 }
 
-pub fn convert<A>(event: BridgeContractEvent<A>, chain: ChainId) -> TransferEvent<A> {
-	TransferEvent { chain, contract_event: event }
+impl<A: std::fmt::Debug> fmt::Display for TransferEvent<A> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(
+			f,
+			"Event: {}: {} => {:?}",
+			self.chain,
+			self.contract_event.bridge_transfer_id(),
+			self.contract_event,
+		)
+	}
 }
 
 // impl<A>

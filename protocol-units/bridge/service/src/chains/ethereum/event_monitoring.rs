@@ -7,13 +7,14 @@ use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::chains::ethereum::types::AtomicBridgeInitiator;
 use crate::types::LockDetails;
 use crate::types::{
 	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, TimeLock,
 };
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
-use alloy::primitives::{address, LogData};
+use alloy::primitives::{Address, LogData};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
 use alloy::rpc::types::{Filter, Log};
 use alloy::{
@@ -22,6 +23,7 @@ use alloy::{
 };
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
+use std::str::FromStr;
 use std::{pin::Pin, task::Poll};
 use tokio::select;
 
@@ -35,26 +37,35 @@ impl BridgeContractMonitoring for EthMonitoring {
 }
 
 impl EthMonitoring {
-	pub async fn build(rpc_url: &str) -> Result<Self, anyhow::Error> {
+	pub async fn build(
+		rpc_url: &str,
+		initiator_address: &str,
+		counterpart_address: &str,
+	) -> Result<Self, anyhow::Error> {
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
+		let initiator_contract = AtomicBridgeInitiator::new(initiator_address.parse()?, ws.clone());
+
+		tracing::info!("Start Eth monitoring with initiator:{initiator_address} counterpart:{counterpart_address}");
+		let initiator_event_filter =
+			initiator_contract.BridgeTransferInitiated_filter().watch().await?;
+		let mut initiator_sub_stream = initiator_event_filter.into_stream();
 
 		// Get initiator contract stream.
-		//TODO: this should be an arg
-		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
-		let filter = Filter::new()
-			.address(initiator_address)
-			.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
-			.event("BridgeTransferCompleted(bytes32,bytes32)")
-			.from_block(BlockNumberOrTag::Latest);
+		//let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+		// let filter = Filter::new()
+		// 	.address(Address::from_str(initiator_address)?)
+		// 	.event("BridgeTransferInitiated(bytes32,address,bytes32,uint256)")
+		// 	.event("BridgeTransferCompleted(bytes32,bytes32)")
+		// 	.from_block(BlockNumberOrTag::Latest);
 
-		let sub = ws.subscribe_logs(&filter).await?;
-		let mut initiator_sub_stream = sub.into_stream();
+		// let sub = ws.subscribe_logs(&filter).await?;
+		// let mut initiator_sub_stream = sub.into_stream();
 
 		// Get counterpart contract stream.
-		let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+		//let initiator_address = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
 		let filter = Filter::new()
-			.address(initiator_address)
+			.address(Address::from_str(counterpart_address)?)
 			.event("BridgeTransferLocked(bytes32,address,uint256,bytes32)")
 			.event("BridgeTransferCompleted(bytes32,bytes32)")
 			.event("BridgeTransferAborted(bytes32)")
@@ -72,8 +83,22 @@ impl EthMonitoring {
 			loop {
 				let event;
 				select! {
-					Some(initialtor_log) = initiator_sub_stream.next() => {
-						event = decode_initiator_log_data(initialtor_log)
+					Some(res) = initiator_sub_stream.next() => {
+						tracing::info!("ICICCICICICICIC receive initialte event ");
+						//event = decode_initiator_log_data(initialtor_log.unwrap())
+						event = res.map(|(initiated, _log)| {
+							// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
+							let details: BridgeTransferDetails<EthAddress> = BridgeTransferDetails {
+								bridge_transfer_id: BridgeTransferId(initiated._bridgeTransferId.0),
+								initiator_address: BridgeAddress(EthAddress(Address::from(initiated._originator.0))),
+								recipient_address: BridgeAddress(initiated._recipient.0.to_vec()),
+								hash_lock: HashLock(initiated._hashLock.0),
+								time_lock: initiated._timeLock.into(),
+								amount: initiated.amount.try_into().unwrap(),
+								state: 0,
+							};
+							BridgeContractEvent::Initiated(details)
+						}).map_err(|err| BridgeContractError::OnChainUnknownEvent);
 					}
 					Some(counterpart_log) = counterpart_sub_stream.next() => {
 						event = decode_counterparty_log_data(counterpart_log)

@@ -4,6 +4,7 @@ use hex::{self, FromHexError};
 use rand::Rng;
 use serde::Deserialize;
 use std::convert::TryFrom;
+use std::fmt;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
@@ -13,6 +14,25 @@ pub type BridgeHash = [u8; 32];
 pub enum ChainId {
 	ONE,
 	TWO,
+}
+
+impl ChainId {
+	pub fn other(&self) -> ChainId {
+		match self {
+			ChainId::ONE => ChainId::TWO,
+			ChainId::TWO => ChainId::ONE,
+		}
+	}
+}
+
+impl fmt::Display for ChainId {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let s = match self {
+			ChainId::ONE => "ONE",
+			ChainId::TWO => "TWO",
+		};
+		write!(f, "{}", s)
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
@@ -29,6 +49,12 @@ impl BridgeTransferId {
 		let mut random_bytes = [0u8; 32];
 		rng.fill(&mut random_bytes);
 		BridgeTransferId(random_bytes)
+	}
+}
+
+impl fmt::Display for BridgeTransferId {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "Bid: {}", hex::encode(self.0))
 	}
 }
 

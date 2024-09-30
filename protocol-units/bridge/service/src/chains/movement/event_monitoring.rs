@@ -39,24 +39,22 @@ impl MovementMonitoring {
 			async move {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
-					let init_event_list = match pool_initiator_contract(&mvt_client).await {
+					let mut init_event_list = match pool_initiator_contract(&mvt_client).await {
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
-					let counterpart_event_list = match pool_counterpart_contract(&mvt_client).await
-					{
-						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
-						Err(err) => vec![Err(err)],
-					};
-					for event in
-						init_event_list.into_iter().chain(counterpart_event_list.into_iter())
-					{
+					let mut counterpart_event_list =
+						match pool_counterpart_contract(&mvt_client).await {
+							Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
+							Err(err) => vec![Err(err)],
+						};
+					for event in init_event_list.drain(..).chain(counterpart_event_list.drain(..)) {
 						if sender.send(event).await.is_err() {
 							tracing::error!("Failed to send event to listener channel");
 							break;
 						}
 					}
-					let _ = tokio::time::sleep(tokio::time::Duration::from_millis(100));
+					let _ = tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 				}
 			}
 		});
