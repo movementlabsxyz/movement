@@ -1,0 +1,20 @@
+[package]
+name = "bridge"
+description = "Configuration of the bridge"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true , features = ["derive"] }
+alloy = { workspace = true }
+godfig = { workspace = true }
+anyhow = { workspace = true }
+
+[lints]
+workspace = true
