@@ -6,7 +6,6 @@ use bridge_service::chains::movement::client::{MovementClient, Config as Movemen
 use dot_movement;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use mcr_settlement_config::Config;
-use mcr_settlement_setup::local::Local;
 use tokio::process::Child;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber;
@@ -49,7 +48,7 @@ async fn setup() -> Result<(AnvilInstance, Child), anyhow::Error> {
 	godfig
 		.try_transaction(|config| async move {
 		println!("Config: {:?}", config);
-		let (config, _) = Local::setup(&self, &dot_movement, config).await?;
+		let (config, _) = setup().await?;
 		Ok(Some(config))
 		})
 		.await?;

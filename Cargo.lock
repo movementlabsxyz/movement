@@ -3675,7 +3675,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "bridge"
+name = "bridge-config"
 version = "0.0.2"
 dependencies = [
  "alloy",
