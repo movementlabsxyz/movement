@@ -41,7 +41,7 @@ async fn setup() -> Result<(AnvilInstance, Child), anyhow::Error> {
 	godfig
 		.try_transaction(|config| async move {
 		println!("Config: {:?}", config);
-		let (config, _) = Local::setup(&dot_movement, config).await?;
+		let (config, _) = Local::setup(&self, &dot_movement, config).await?;
 		Ok(Some(config))
 		})
 		.await?;

@@ -3675,6 +3675,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "dot-movement",
+ "godfig",
+ "mcr-settlement-config",
+ "mcr-settlement-setup",
+ "serde",
+ "tokio",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
 name = "bridge-service"
 version = "0.0.2"
 dependencies = [

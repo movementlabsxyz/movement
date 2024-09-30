@@ -3,6 +3,7 @@
 resolver = "2"
 
 members = [
+    "protocol-units/bridge/config",
     "protocol-units/execution/dof",
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
