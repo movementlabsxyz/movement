@@ -75,5 +75,123 @@ contract AtomicBridgeCounterpartyTest is Test {
         atomicBridgeInitiator.setCounterpartyAddress(address(atomicBridgeCounterparty));
         vm.stopPrank();
     }
+
+    function testLockBridgeTransfer() public {
+        vm.startPrank(deployer);
+        vm.deal(deployer, 1 ether);
+
+        // Deposit WETH into AtomicBridgeInitiator to increase poolBalance
+        weth.deposit{value: amount}();
+        weth.approve(address(atomicBridgeInitiator), amount);
+        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock);
+
+        bool result = atomicBridgeCounterparty.lockBridgeTransfer(
+            initiator, bridgeTransferId, hashLock, recipient, amount
+        );
+
+        (
+            bytes32 pendingInitiator,
+            address pendingRecipient,
+            uint256 pendingAmount,
+            bytes32 pendingHashLock,
+            uint256 pendingTimelock,
+            AtomicBridgeCounterparty.MessageState pendingState
+        ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
+
+        assert(result);
+        assertEq(pendingInitiator, initiator);
+        assertEq(pendingRecipient, recipient);
+        assertEq(pendingAmount, amount);
+        assertEq(pendingHashLock, hashLock);
+        assertGt(pendingTimelock, block.timestamp);
+        assertEq(uint8(pendingState), uint8(AtomicBridgeCounterparty.MessageState.PENDING));
+
+        vm.stopPrank();
+    }
+
+    function testCompleteBridgeTransfer() public {
+        bytes32 preImage = "secret";
+        bytes32 testHashLock = keccak256(abi.encodePacked(preImage));
+
+        vm.deal(deployer, 1 ether);
+        vm.startPrank(deployer);
+
+        // Deposit WETH into AtomicBridgeInitiator to increase poolBalance
+        weth.deposit{value: amount}();
+        weth.approve(address(atomicBridgeInitiator), amount);
+        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, testHashLock);
+
+        atomicBridgeCounterparty.lockBridgeTransfer(
+            initiator, bridgeTransferId, testHashLock, recipient, amount
+        );
+
+        vm.stopPrank();
+        vm.startPrank(otherUser);
+
+        atomicBridgeCounterparty.completeBridgeTransfer(bridgeTransferId, preImage);
+
+        (
+            bytes32 completedInitiator,
+            address completedRecipient,
+            uint256 completedAmount,
+            bytes32 completedHashLock,
+            uint256 completedTimeLock,
+            AtomicBridgeCounterparty.MessageState completedState
+        ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
+
+        assertEq(completedInitiator, initiator);
+        assertEq(completedRecipient, recipient);
+        assertEq(completedAmount, amount);
+        assertEq(completedHashLock, testHashLock);
+        assertGt(completedTimeLock, block.timestamp);
+        assertEq(uint8(completedState), uint8(AtomicBridgeCounterparty.MessageState.COMPLETED));
+
+        vm.stopPrank();
+    }
+
+    function testAbortBridgeTransfer() public {
+        vm.deal(deployer, 1 ether);
+        vm.startPrank(deployer);
+
+        // Deposit WETH into AtomicBridgeInitiator to increase poolBalance
+        weth.deposit{value: amount}();
+        weth.approve(address(atomicBridgeInitiator), amount);
+        atomicBridgeInitiator.initiateBridgeTransfer(amount, initiator, hashLock);
+
+        atomicBridgeCounterparty.lockBridgeTransfer(initiator, bridgeTransferId, hashLock, recipient, amount);
+
+        vm.stopPrank();
+
+        // Advance the timestamp to beyond the counterparty timelock period (24 hours + 1 second)
+        vm.warp(block.timestamp + COUNTERPARTY_TIME_LOCK_DURATION + 1);
+
+        // Malicious attempt to abort the bridge transfer
+        vm.prank(address(0x1337));
+        vm.expectRevert();
+        atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
+
+        vm.startPrank(deployer);
+
+        atomicBridgeCounterparty.abortBridgeTransfer(bridgeTransferId);
+
+        (
+            bytes32 abortedInitiator,
+            address abortedRecipient,
+            uint256 abortedAmount,
+            bytes32 abortedHashLock,
+            uint256 abortedTimeLock,
+            AtomicBridgeCounterparty.MessageState abortedState
+        ) = atomicBridgeCounterparty.bridgeTransfers(bridgeTransferId);
+
+        assertEq(abortedInitiator, initiator);
+        assertEq(abortedRecipient, recipient);
+        assertEq(abortedAmount, amount);
+        assertEq(abortedHashLock, hashLock);
+        assertLe(abortedTimeLock, block.timestamp);
+        assertEq(uint8(abortedState), uint8(AtomicBridgeCounterparty.MessageState.REFUNDED));
+
+        vm.stopPrank();
+    }
+}
 }
 
