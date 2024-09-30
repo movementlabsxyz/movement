@@ -69,6 +69,20 @@ impl Executor {
 	) -> anyhow::Result<(Context, TransactionPipe)> {
 		let mut node_config = NodeConfig::default();
 
+		// pruning config
+		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
+			maptos_config.chain.maptos_ledger_prune_window;
+		node_config
+			.storage
+			.storage_pruner_config
+			.state_merkle_pruner_config
+			.prune_window = maptos_config.chain.maptos_state_merkle_prune_window;
+		node_config
+			.storage
+			.storage_pruner_config
+			.epoch_snapshot_pruner_config
+			.prune_window = maptos_config.chain.maptos_epoch_snapshot_prune_window;
+
 		node_config.indexer.enabled = true;
 		// indexer config
 		node_config.indexer.postgres_uri =

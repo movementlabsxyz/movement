@@ -120,17 +120,17 @@ env_default!(
 	10
 );
 
-env_default!(default_maptos_ledger_pruning_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
+env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
 
 env_default!(
-	default_maptos_state_merkle_pruning_window,
+	default_maptos_state_merkle_prune_window,
 	"MAPTOS_STATE_MERKLE_PRUNING_WINDOW",
 	u64,
 	100_000 // see comment in aptos-core, this essentially needs to exceed TPS
 );
 
 env_default!(
-	default_maptos_epoch_snapshot_pruning_window,
+	default_maptos_epoch_snapshot_prune_window,
 	"MAPTOS_EPOCH_SNAPSHOT_PRUNING_WINDOW",
 	u64,
 	50_000_000
