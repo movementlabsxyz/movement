@@ -26,9 +26,9 @@ contract MOVETokenTest is Test {
     MOVEToken public moveTokenImplementation;
     MOVETokenV2 public moveTokenImplementation2;
     TimelockController public timelock;
-    string public moveSignature = "initialize(address)";
+    string public moveSignature = "initialize(address,address)";
     address public multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
-    address public anchorange = address(0xabc);
+    address public anchorage = address(0xabc);
 
     function setUp() public {
         moveTokenImplementation = new MOVEToken();
@@ -50,7 +50,7 @@ contract MOVETokenTest is Test {
         vm.recordLogs();
         // Deploy proxy
         tokenProxy = new TransparentUpgradeableProxy(
-            address(moveTokenImplementation), address(timelock), abi.encodeWithSignature(moveSignature, multisig)
+            address(moveTokenImplementation), address(timelock), abi.encodeWithSignature(moveSignature, multisig, anchorage)
         );
         Vm.Log[] memory entries = vm.getRecordedLogs();
 
@@ -62,7 +62,7 @@ contract MOVETokenTest is Test {
     function testCannotInitializeTwice() public {
         // Initialize the contract
         vm.expectRevert(0xf92ee8a9);
-        token.initialize(multisig, anchorange);
+        token.initialize(multisig, anchorage);
     }
 
     function testDecimals() public {
@@ -74,22 +74,22 @@ contract MOVETokenTest is Test {
     }
 
     function testMultisigBalance() public {
-        assertEq(token.balanceOf(anchorange), 10000000000 * 10 ** 8);
+        assertEq(token.balanceOf(anchorage), 10000000000 * 10 ** 8);
     }
 
     function testAdminRoleFuzz(address other) public {
-        assert(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), other));
-        assert(token.hasRole(token.DEFAULT_ADMIN_ROLE(), multisig));
-        assert(!token.hasRole(token.DEFAULT_ADMIN_ROLE(), anchorange));
+        assert(!token.hasRole(0x00, other));
+        assert(token.hasRole(0x00, multisig));
+        assert(!token.hasRole(0x00, anchorage));
 
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
-                other,
-                token.DEFAULT_ADMIN_ROLE()
+                address(this),
+                0x00
             )
         );
-        token.grantRole(token.DEFAULT_ADMIN_ROLE(), other);
+        token.grantRole(0x00, other);
     }
 
     function testUpgradeFromTimelock() public {
@@ -129,7 +129,7 @@ contract MOVETokenTest is Test {
         // Check the token details
         assertEq(token.decimals(), 8);
         assertEq(token.totalSupply(), 10000000000 * 10 ** 8);
-        assertEq(token.balanceOf(multisig), 10000000000 * 10 ** 8);
+        assertEq(token.balanceOf(anchorage), 10000000000 * 10 ** 8);
     }
 
     function testTransferToNewTimelock() public {

@@ -11,18 +11,15 @@ contract MOVETokenV2Test is Test {
     MOVETokenV2 public token;
     ProxyAdmin public admin;
     string public moveSignature = "initialize()";
-    address public multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
+    address public multisig = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
 
     function setUp() public {
         MOVETokenV2 moveTokenImplementation = new MOVETokenV2();
 
-        // Contract MCRTest is the admin
-        admin = new ProxyAdmin(multisig);
-
         // Deploy proxies
         TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
             address(moveTokenImplementation),
-            address(admin),
+            address(multisig),
             abi.encodeWithSignature(moveSignature)
         );
         token = MOVETokenV2(address(moveProxy));
@@ -135,14 +132,26 @@ contract MOVETokenV2Test is Test {
         vm.stopPrank();
     }
 
-    function testCannotGrantRole () public {
-        vm.startPrank(address(0x1337));
+    // function testCannotGrantRoleFuzz(address messenger, address receiver) public {
+    //     vm.prank(messenger);
+    //     if (messenger != multisig){
+    //     // vm.expectRevert(
+    //     //     abi.encodeWithSelector(
+    //     //         IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, 0x00
+    //     //     )
+    //     // );
+    //     token.grantRole(token.MINTER_ROLE(), messenger);
+    //     }
+    // }
+
+    function testCannotGrantRole() public {
+        vm.startPrank(0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD,0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD);
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(0x1337), token.DEFAULT_ADMIN_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, 0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD, 0x0000000000000000000000000000000000000000000000000000000000000000
             )
         );
-        token.grantRole(token.MINTER_ROLE(), multisig);
+        token.grantRole(token.MINTER_ROLE(), 0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD);
         vm.stopPrank();
-    }
+    }  
 }

@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.658.1",
     "@safe-global/api-kit": "^2.4.4",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
