@@ -130,13 +130,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
 
     // One-shot function to update poolBalance, callable only once by the owner
     function updatePoolBalance(uint256 newBalance) external onlyOwner {
-        // Ensure this function can only be called once
         if (oneShotCalled) revert OneShotFunctionAlreadyCalled();
-        
-        // Update the pool balance
         poolBalance = newBalance;
-        
-        // Mark the one-shot function as called
         oneShotCalled = true;
     }
 }
