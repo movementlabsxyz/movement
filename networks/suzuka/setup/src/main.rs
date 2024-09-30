@@ -75,12 +75,14 @@ async fn main() -> Result<(), anyhow::Error> {
 						"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
 					)?;
 
+					info!("Syncing with bucket: {}, glob: {}", bucket, glob);
 					let sync_task = dot_movement
 						.sync(is_leader, glob, bucket.to_string(), application::Id::suzuka())
 						.await?;
 					Box::pin(async { sync_task.await })
 				} else {
 					Box::pin(async {
+						info!("No sync task configured, skipping.");
 						futures::future::pending::<Result<(), anyhow::Error>>().await
 					})
 				};

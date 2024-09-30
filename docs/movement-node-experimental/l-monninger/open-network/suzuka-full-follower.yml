@@ -7,7 +7,7 @@
   vars:
     repo_url: "https://github.com/movementlabsxyz/movement"
     destination_path: "/home/{{ user }}/movement"
-    movement_sync: "l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
+    movement_sync: "follower::l-monninger-open-network-suzuka-devnet-l-sync<=>{maptos,maptos-storage,suzuka-da-db}/**"
 
     m1_da_light_node_connection_protocol: "https"
     m1_da_light_node_connection_hostname: "l-monninger.open-network.m1-da-light-node.suzuka.devnet.movementlabs.xyz"
