@@ -16,8 +16,8 @@ fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let maptos_config = dot_movement
-		.try_get_or_create_config_from_json::<maptos_execution_util::config::Config>()?;
+	let maptos_config =
+		dot_movement.try_get_config_from_json::<maptos_execution_util::config::Config>()?;
 
 	let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
 	let usertx_indexer_config = build_processor_conf("user_transaction_processor", &maptos_config)?;

@@ -4,7 +4,7 @@ environment:
 
 processes:
 
-  suzuka-setup:
+  setup:
     command: |
       suzuka-full-node-setup
     depends_on:

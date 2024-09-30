@@ -58,8 +58,7 @@ impl DynOptFinExecutor for Executor {
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
 	> {
-		let (opt_context, transaction_pipe) =
-			self.executor.background(transaction_sender, config)?;
+		let (opt_context, transaction_pipe) = self.executor.background(transaction_sender)?;
 		let fin_service = self.finality_view.service(
 			opt_context.mempool_client_sender(),
 			config,
