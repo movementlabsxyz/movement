@@ -21,7 +21,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     }
 
     // Mapping of bridge transfer ids to BridgeTransfer structs
-    mapping(bytes32 => BridgeTransfer> public bridgeTransfers;
+    mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
 
     // Total WETH pool balance
     uint256 public poolBalance;
