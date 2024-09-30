@@ -1,7 +1,8 @@
-use alloy::{node_bindings::{Anvil, AnvilInstance}, signers::local::yubihsm::setup}; // Make sure this setup doesn't conflict with your own setup function
+use alloy::node_bindings::{Anvil, AnvilInstance}; 
+use dot_movement;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use mcr_settlement_config::Config;
-use mcr_settlement_setup::Setup;
+use mcr_settlement_setup::local::Local;
 use tokio::process::Child;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber;
@@ -40,7 +41,7 @@ async fn setup() -> Result<(AnvilInstance, Child), anyhow::Error> {
 	godfig
 		.try_transaction(|config| async move {
 		println!("Config: {:?}", config);
-		let (config, _) = local.setup(&dot_movement, config).await?;
+		let (config, _) = Local::setup(&dot_movement, config).await?;
 		Ok(Some(config))
 		})
 		.await?;
@@ -64,7 +65,7 @@ async fn testfunction1_mvt() -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
-async fn testfunction2_eth() -> Result<(), anyhow::Error> {
+async fn testfunction2_eth(anvil) -> Result<(), anyhow::Error> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config_file = dot_movement.try_get_or_create_config_file().await?;
     
