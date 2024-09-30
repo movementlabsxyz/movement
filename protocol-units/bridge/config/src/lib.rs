@@ -6,6 +6,7 @@ use mcr_settlement_setup::local::Local;
 use tokio::process::Child;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber;
+use common::bridge;
 
 #[tokio::test]
 async fn main() -> Result<(), anyhow::Error> {
