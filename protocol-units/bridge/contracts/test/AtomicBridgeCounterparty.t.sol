@@ -48,7 +48,7 @@ contract AtomicBridgeCounterpartyTest is Test {
                 "initialize(address,address,uint256,uint256)", 
                 wethAddress, 
                 deployer, 
-                initiatorTimeLockDuration, 
+                initiatorTimeLockDuration, // Set 48-hour time lock for the initiator
                 0 ether
             )
         );
