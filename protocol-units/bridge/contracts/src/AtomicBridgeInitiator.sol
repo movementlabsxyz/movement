@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
@@ -31,12 +30,19 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     IWETH9 public weth;
     uint256 private nonce;
 
-    function initialize(address _weth, address owner) public initializer {
+    // Configurable time lock duration
+    uint256 public initiatorTimeLockDuration;
+
+    // Initialize the contract with WETH address, owner, and a custom time lock duration
+    function initialize(address _weth, address owner, uint256 _timeLockDuration) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
         weth = IWETH9(_weth);
         __Ownable_init(owner);
+
+        // Set the custom time lock duration
+        initiatorTimeLockDuration = _timeLockDuration;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -44,7 +50,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         counterpartyAddress = _counterpartyAddress;
     }
 
-    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock, uint256 timeLock)
+    function initiateBridgeTransfer(uint256 wethAmount, bytes32 recipient, bytes32 hashLock)
         external
         payable
         returns (bytes32 bridgeTransferId)
@@ -52,12 +58,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         address originator = msg.sender;
         uint256 ethAmount = msg.value;
         uint256 totalAmount = wethAmount + ethAmount;
+
         // Ensure there is a valid total amount
         if (totalAmount == 0) {
             revert ZeroAmount();
         }
+        
         // If msg.value is greater than 0, convert ETH to WETH
         if (ethAmount > 0) weth.deposit{value: ethAmount}();
+        
         // Transfer WETH to this contract, revert if transfer fails
         if (wethAmount > 0) {
             if (!weth.transferFrom(originator, address(this), wethAmount)) revert WETHTransferFailed();
@@ -67,18 +76,18 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         poolBalance += totalAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, timeLock, block.number, nonce++));
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.number + timeLock,
+            timeLock: block.timestamp + initiatorTimeLockDuration,
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, timeLock);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
         return bridgeTransferId;
     }
 
@@ -86,7 +95,7 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferHasBeenCompleted();
         if (keccak256(abi.encodePacked(preImage)) != bridgeTransfer.hashLock) revert InvalidSecret();
-        if (block.number > bridgeTransfer.timeLock) revert TimelockExpired();
+        if (block.timestamp > bridgeTransfer.timeLock) revert TimeLockExpired();
         bridgeTransfer.state = MessageState.COMPLETED;
 
         emit BridgeTransferCompleted(bridgeTransferId, preImage);
@@ -95,8 +104,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     function refundBridgeTransfer(bytes32 bridgeTransferId) external onlyOwner {
         BridgeTransfer storage bridgeTransfer = bridgeTransfers[bridgeTransferId];
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
-        if (block.number < bridgeTransfer.timeLock) revert TimeLockNotExpired();
+        if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
+        
         // Decrease pool balance and transfer WETH back to originator
         poolBalance -= bridgeTransfer.amount;
         if (!weth.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert WETHTransferFailed();

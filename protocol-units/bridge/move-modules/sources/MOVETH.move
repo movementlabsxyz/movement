@@ -123,6 +123,7 @@ module moveth::moveth {
 
         let minters = vector::empty<address>();
         vector::push_back(&mut minters, @resource_addr);
+        vector::push_back(&mut minters, @origin_addr);
 
         move_to(metadata_object_signer, Roles {
             master_minter: @master_minter,

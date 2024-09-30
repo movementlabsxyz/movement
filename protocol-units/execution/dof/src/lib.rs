@@ -33,6 +33,12 @@ pub trait DynOptFinExecutor {
 		anyhow::Error,
 	>;
 
+	/// Checks whether the transaction had already been executed by opt
+	fn has_executed_transaction_opt(
+		&self,
+		transaction_hash: HashValue,
+	) -> Result<bool, anyhow::Error>;
+
 	/// Executes a block optimistically
 	async fn execute_block_opt(
 		&self,

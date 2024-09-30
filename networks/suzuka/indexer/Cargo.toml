@@ -9,6 +9,10 @@ homepage = { workspace = true }
 publish = { workspace = true }
 rust-version = { workspace = true }
 
+[[bin]]
+name = "load_metadata"
+path = "bin/load_metadata.rs"
+
 [dependencies]
 anyhow = { workspace = true }
 tokio = { workspace = true }
@@ -20,7 +24,8 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 maptos-execution-util = { workspace = true }
 clap = { workspace = true }
-reqwest = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+serde_json = { workspace = true }
 tempfile = { workspace = true }
 
 [lints]

@@ -20,6 +20,7 @@ futures-timer = "3.0.3"
 hex = { workspace = true }
 thiserror.workspace = true
 tokio = { workspace = true, version = "1.0.1", features = ["full"] }
+tokio-stream = "0.1.16"
 tracing.workspace = true
 rand.workspace = true
 rand_chacha = "0.2.2"
@@ -33,10 +34,26 @@ alloy = { workspace = true, features = [
   "contract",
   "sol-types",
 ] }
+alloy-network = { workspace = true }
+alloy-rlp.workspace = true
+keccak-hash = { workspace = true }
+serde = { workspace = true }
+serde_with.workspace = true
+url = { workspace = true, features = ["serde"] }
+tracing-subscriber = { workspace = true }
 
-bridge-shared.workspace = true
-ethereum-bridge.workspace = true
-movement-bridge.workspace = true
+aptos-sdk = { workspace = true }
+aptos-api-types = { workspace = true }
+aptos-types = { workspace = true }
+aptos-api = { workspace = true }
+serde_json = { workspace = true }
+bcs = { workspace = true }
+derive-new = { workspace = true }
+async-stream = { workspace = true }
+
+#To be removed after send_transaction refactor
+mcr-settlement-client = { workspace = true }
+
 
 [lints]
-workspace = true
+#workspace = true
