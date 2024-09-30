@@ -16,6 +16,9 @@ services:
       MAYBE_RUN_LOCAL: "false"
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
+      # mount if exists
+      - ~/.aws/:/root/.aws:ro
+
     healthcheck:
       test: [ "CMD-SHELL", "echo 'health check'" ]
       retries: 10

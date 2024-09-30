@@ -27,7 +27,7 @@ services:
       - "8090:8090" # port for anvil, this should be moved out into runner
     healthcheck:
       test: [ "CMD-SHELL", "nc -zv 0.0.0.0 8090" ]
-      retries: 10
+      retries: 30
       interval: 10s
       timeout: 5s
 
