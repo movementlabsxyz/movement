@@ -121,6 +121,8 @@ where
 					Ok(Err(err)) => {
 						// Manage Tx execution error
 						let action = state_runtime.process_action_exec_error(err);
+						// TODO execute action the same way as normal event.
+						// TODO refactor to avopid code duplication.
 					}
 					Err(err)=>{
 						// Tokio execution fail. Process should exit.
