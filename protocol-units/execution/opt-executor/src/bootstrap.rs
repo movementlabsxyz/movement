@@ -1,10 +1,12 @@
+use aptos_config::config::NodeConfig;
+use aptos_config::config::StorageDirPaths;
 use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_db::AptosDB;
 use aptos_executor::db_bootstrapper;
-use aptos_sdk::types::on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig};
 use aptos_storage_interface::DbReaderWriter;
 use aptos_types::{
 	chain_id::ChainId,
+	on_chain_config::{OnChainConsensusConfig, OnChainExecutionConfig},
 	transaction::{ChangeSet, Transaction, WriteSetPayload},
 	validator_signer::ValidatorSigner,
 };
@@ -67,11 +69,22 @@ fn genesis_change_set_and_validators(
 
 /// Bootstrap a database with a genesis transaction if it is empty.
 pub fn maybe_bootstrap_empty_db(
+	config: &NodeConfig,
 	db_dir: impl AsRef<Path> + Clone,
 	chain_id: ChainId,
 	public_key: &Ed25519PublicKey,
 ) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
-	let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
+	let aptos_db = AptosDB::open(
+		StorageDirPaths::from_path(db_dir.clone()),
+		false,
+		config.storage.storage_pruner_config.clone(),
+		config.storage.rocksdb_configs.clone(),
+		true,
+		config.storage.buffered_state_target_items,
+		config.storage.max_num_nodes_per_lru_cache_shard,
+	)?;
+
+	let db_rw = DbReaderWriter::new(aptos_db);
 	let (genesis, validators) = genesis_change_set_and_validators(chain_id, Some(1), public_key);
 	let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 	let validator_signer =

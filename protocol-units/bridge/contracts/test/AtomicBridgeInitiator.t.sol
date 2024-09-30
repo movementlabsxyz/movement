@@ -20,6 +20,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
     bytes32 public recipient = keccak256(abi.encodePacked(address(2)));
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
+    uint256 public constant timeLockDuration = 48 * 60 * 60; // 48 hours in seconds
 
     function setUp() public {
         // Sepolia WETH9 address
@@ -29,13 +30,13 @@ contract AtomicBridgeInitiatorWethTest is Test {
         // generate random address for each test
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
 
-        // Deploy the AtomicBridgeInitiator contract with the WETH address
+        // Deploy the AtomicBridgeInitiator contract with the WETH address and a 48-hour time lock
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address,address)", wethAddress, address(this))
+            abi.encodeWithSignature("initialize(address,address,uint256)", wethAddress, address(this), timeLockDuration)
         );
 
         atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
@@ -176,7 +177,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
     }
 
     function testRefundBridgeTransfer() public {
-    vm.deal(originator, 1 ether);
+        vm.deal(originator, 1 ether);
 
         // Originator initiates a bridge transfer
         vm.startPrank(originator);
@@ -188,8 +189,7 @@ contract AtomicBridgeInitiatorWethTest is Test {
         vm.stopPrank();
 
         // Advance time to ensure the time lock has expired (48 hours + 1 second)
-        uint256 timeLockDuration = 24 * 60 * 60; // 24 hours in seconds
-        vm.warp(block.timestamp + (timeLockDuration * 2) + 1);
+        vm.warp(block.timestamp + timeLockDuration + 1);
 
         // Test that a non-owner cannot call refund
         vm.startPrank(originator);
@@ -206,4 +206,3 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
     }
 }
-

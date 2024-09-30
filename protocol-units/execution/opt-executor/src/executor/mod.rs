@@ -3,6 +3,7 @@
 pub mod execution;
 pub mod initialization;
 
+use aptos_config::config::NodeConfig;
 use aptos_crypto::HashValue;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_storage_interface::{DbReader, DbReaderWriter};
@@ -26,6 +27,8 @@ pub struct Executor {
 	transactions_in_flight: Arc<AtomicU64>,
 	// The config for the executor.
 	pub(crate) config: Config,
+	/// The node config derived from the maptos config.
+	pub(crate) node_config: NodeConfig,
 }
 
 impl Executor {

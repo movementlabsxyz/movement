@@ -31,12 +31,7 @@ members = [
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
-    "protocol-units/bridge/shared",
-    "protocol-units/bridge/chains/ethereum",
-    "protocol-units/bridge/chains/movement",
     "protocol-units/bridge/service",
-    "protocol-units/bridge/cli",
-    "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
 ]
@@ -54,10 +49,7 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## bridge
-movement-bridge = { path = "protocol-units/bridge/chains/movement" }
-ethereum-bridge = { path = "protocol-units/bridge/chains/ethereum" }
-bridge-shared = { path = "protocol-units/bridge/shared" }
-bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
+bridge-service = { path = "protocol-units/bridge/service" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
@@ -116,40 +108,40 @@ serde_yaml = "0.9.34"
 ## Aptos dependencies
 ### We use a forked version so that we can override dependency versions. This is required
 ### to be avoid dependency conflicts with other Sovereign Labs crates.
-aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b", features = [
+aptos-api = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-api-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-bitvec = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-block-executor = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-cached-packages = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-config = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-consensus-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-crypto = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899", features = [
     "cloneable-private-keys",
 ] }
-aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-proptest-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-vm-validator = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-indexer = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-indexer-grpc-fullnode = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
-aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "c9d4c2d25dfdde02eb2fd3bf73f39ac9d6b3300b" }
+aptos-db = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-executor = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-executor-test-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-executor-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-faucet-core = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-framework = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-language-e2e-tests = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-mempool = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-proptest-helpers = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-sdk = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-state-view = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-storage-interface = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-temppath = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-vm = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-vm-genesis = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-vm-logging = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-vm-validator = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-logger = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-vm-types = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-indexer = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-indexer-grpc-fullnode = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
+aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "1d5900920753e93cae0e3e526e16d366851e1899" }
 
 # Indexer
 processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58", subdir = "rust" }
@@ -221,6 +213,8 @@ blake3 = { version = "1.4.0", features = ["traits-preview"] }
 bytes = { version = "1.2.1", default-features = false }
 chrono = "0.4.37"
 clap = { version = "4.4.10", features = ["derive"] }
+dashmap = "6.0.1"
+delegate = "0.12.0"
 derivative = "2.2.0"
 derive_more = { version = "0.99.11", default-features = false }
 derive-new = "0.6.0"
