@@ -29,6 +29,7 @@ impl Executor {
 	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// set up the node config
 		let mut node_config = NodeConfig::default();
+
 		// pruning config
 		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
 			maptos_config.chain.maptos_ledger_prune_window;
