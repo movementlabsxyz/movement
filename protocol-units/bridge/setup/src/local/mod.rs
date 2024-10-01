@@ -7,13 +7,12 @@ use godfig::{backend::config_file::ConfigFile, Godfig};
 use tokio::process::Child;
 use tracing_subscriber::EnvFilter;
 
-/// The local setup strategy for MCR settlement
+/// The local setup strategy for the Bridge
 #[derive(Debug, Clone)]
 pub struct Local {}
 
 impl Local {
 	/// Instantiates the local setup strategy with ports on localhost
-	/// to configure for Ethernet RPC and WebSocket client access.
 	pub fn new() -> Self {
 		Self {}
 	}
@@ -39,7 +38,7 @@ impl Local {
                         .init();
         
                 // Get the config file
-                let dot_movement = dot_movement::DotMovement::try_from_env()?;
+                let dot_movement = DotMovement::try_from_env()?;
                 let config_file = dot_movement.try_get_or_create_config_file().await?;
         
                 // Get a matching godfig object
