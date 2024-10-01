@@ -4,6 +4,7 @@ use hex::{self, FromHexError};
 use rand::Rng;
 use serde::Deserialize;
 use std::convert::TryFrom;
+use std::fmt;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
@@ -13,6 +14,25 @@ pub type BridgeHash = [u8; 32];
 pub enum ChainId {
 	ONE,
 	TWO,
+}
+
+impl ChainId {
+	pub fn other(&self) -> ChainId {
+		match self {
+			ChainId::ONE => ChainId::TWO,
+			ChainId::TWO => ChainId::ONE,
+		}
+	}
+}
+
+impl fmt::Display for ChainId {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let s = match self {
+			ChainId::ONE => "ONE",
+			ChainId::TWO => "TWO",
+		};
+		write!(f, "{}", s)
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
@@ -29,6 +49,12 @@ impl BridgeTransferId {
 		let mut random_bytes = [0u8; 32];
 		rng.fill(&mut random_bytes);
 		BridgeTransferId(random_bytes)
+	}
+}
+
+impl fmt::Display for BridgeTransferId {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "Bid: {}", hex::encode(self.0))
 	}
 }
 
@@ -107,8 +133,22 @@ pub struct Amount(pub AssetType);
 impl Amount {
 	pub fn value(&self) -> u64 {
 		match self.0 {
-			AssetType::EthAndWeth((weth_value, eth_value)) => weth_value + eth_value,
+			AssetType::EthAndWeth((eth_value, weth_value)) => weth_value + eth_value,
 			AssetType::Moveth(value) => value,
+		}
+	}
+
+	pub fn eth_value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((eth_value, _)) => eth_value,
+			AssetType::Moveth(_) => 0,
+		}
+	}
+
+	pub fn weth_value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((_, weth_value)) => weth_value,
+			AssetType::Moveth(_) => 0,
 		}
 	}
 }
@@ -124,6 +164,7 @@ impl From<Uint<256, 4>> for Amount {
 #[derive(Clone, Debug, PartialEq, Eq, Copy, Deserialize)]
 pub enum AssetType {
 	/// Where the first tuple value is `Eth` and the second tuple value is `Weth`  
+	//TODO eth and weth can be mixed during creation. Use type def to avoid that.
 	EthAndWeth((u64, u64)),
 	Moveth(u64),
 }

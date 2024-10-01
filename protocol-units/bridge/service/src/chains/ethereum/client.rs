@@ -26,8 +26,8 @@ use super::types::{
 	EthAddress, InitiatorContract, WETH9Contract, WETH9,
 };
 
-const GAS_LIMIT: u128 = 10_000_000_000_000_000;
-const RETRIES: u32 = 6;
+pub const GAS_LIMIT: u128 = 10_000_000_000_000_000;
+pub const RETRIES: u32 = 6;
 
 impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
