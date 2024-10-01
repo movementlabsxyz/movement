@@ -17,6 +17,8 @@ use std::{
 };
 use tokio::process::Command as TokioCommand;
 
+pub type MovementNodeTask = tokio::task::JoinHandle<Result<String, anyhow::Error>>;
+
 pub async fn setup(
 	mut config: BridgeConfig,
 ) -> Result<(BridgeConfig, AnvilInstance), anyhow::Error> {
@@ -46,7 +48,7 @@ pub fn setup_eth(config: &mut EthConfig, testing_config: &mut TestingConfig) -> 
 
 pub async fn setup_movement_node(
 	config: &mut MovementConfig,
-) -> Result<tokio::task::JoinHandle<Result<String, anyhow::Error>>, anyhow::Error> {
+) -> Result<MovementNodeTask, anyhow::Error> {
 	//kill existing process if any.
 	let kill_cmd = TokioCommand::new("sh")
 			.arg("-c")

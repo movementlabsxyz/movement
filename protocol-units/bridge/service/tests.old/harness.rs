@@ -114,7 +114,7 @@ impl TestHarness {
 			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
 	}
 
-	pub async fn new_only_eth(config: &Config) -> Self {
+	pub async fn new_only_eth(config: &Config) -> HarnessEthClient {
 		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
 		let signer_private_key = config
 			.eth
@@ -123,10 +123,7 @@ impl TestHarness {
 			.expect("Error during parsing signer private key?");
 
 		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
-		Self {
-			eth_client: Some(HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }),
-			movement_client: None,
-		}
+		HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }
 	}
 
 	pub fn eth_client(&self) -> Result<&EthClient> {
