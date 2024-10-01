@@ -38,7 +38,6 @@ futures = { workspace = true }
 aptos-vm = { workspace = true }
 aptos-vm-validator = { workspace = true }
 aptos-config = { workspace = true }
-aptos-sdk = { workspace = true }
 aptos-crypto = { workspace = true }
 aptos-consensus-types = { workspace = true }
 aptos-db = { workspace = true }
@@ -74,3 +73,4 @@ dirs = { workspace = true }
 tempfile = { workspace = true }
 tracing-test = { workspace = true }
 async-trait = { workspace = true }
+aptos-sdk = { workspace = true }
