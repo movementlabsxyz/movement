@@ -99,7 +99,7 @@ async fn pool_initiator_contract(
 ) -> BridgeContractResult<Vec<BridgeContractEvent<MovementAddress>>> {
 	let rest_client = client.rest_client();
 	let struct_tag = format!(
-		"0x{}::atomic_bridge_initiator::BridgeInitiatorEvents",
+		"::atomic_bridge_initiator::BridgeInitiatorEvents",
 		client.native_address.to_standard_string(),
 	);
 
@@ -196,7 +196,7 @@ async fn pool_counterpart_contract(
 	let rest_client = client.rest_client();
 
 	let struct_tag = format!(
-		"0x{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
+		"::atomic_bridge_counterpary::BridgeCounterpartyEvents",
 		client.native_address.to_standard_string()
 	);
 
