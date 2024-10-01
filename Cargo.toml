@@ -49,7 +49,9 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## bridge
+bridge-config = { path = "protocol-units/bridge/config" }
 bridge-service = { path = "protocol-units/bridge/service" }
+bridge-setup = { path = "protocol-units/bridge/setup" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }

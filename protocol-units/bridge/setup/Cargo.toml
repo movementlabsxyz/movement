@@ -12,6 +12,7 @@ rust-version.workspace = true
 
 [dependencies]
 bridge-config = { workspace = true }
+bridge-service = { workspace = true }
 dot-movement = { workspace = true }
 commander = { workspace = true }
 alloy = { workspace = true }

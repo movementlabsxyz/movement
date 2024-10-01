@@ -9,9 +9,9 @@ use tracing_subscriber::EnvFilter;
 
 /// The local setup strategy for MCR settlement
 #[derive(Debug, Clone)]
-pub struct Local {}
+pub struct Deploy {}
 
-impl Local {
+impl Deploy {
 	/// Instantiates the local setup strategy with ports on localhost
 	/// to configure for Ethernet RPC and WebSocket client access.
 	pub fn new() -> Self {
@@ -19,18 +19,18 @@ impl Local {
 	}
 }
 
-impl Default for Local {
+impl Default for Deploy {
 	fn default() -> Self {
-		Local::new()
+		Deploy::new()
 	}
 }
 
-impl Local {
+impl Deploy {
         async fn setup(
                 &self, 
                 dot_movement: &DotMovement,
 		mut config: BridgeConfig,
-        ) -> Result<(BridgeConfig, AnvilInstance, Child), anyhow::Error> {
+        ) -> Result<(AnvilInstance, Child), anyhow::Error> {
                 // Initialize tracing
                 tracing_subscriber::fmt()
                         .with_env_filter(
@@ -50,9 +50,18 @@ impl Local {
                 let eth_client = EthClient::new(eth_config).await?;
                 let anvil = Anvil::new().port(eth_client.rpc_port()).spawn();
                     
-                let (_movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test()).await?; 
+                let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test()).await?; 
         
-                Ok((config, anvil, child))
+                // Run a godfig transaction to update the file
+                godfig
+                        .try_transaction(|config| async move {
+                        println!("Config: {:?}", config);
+                        let (config, _) = setup().await?;
+                        Ok(Some(config))
+                        })
+                        .await?;
+        
+                Ok((anvil, child))
         }
 
 }

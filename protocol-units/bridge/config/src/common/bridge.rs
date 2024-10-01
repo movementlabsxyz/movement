@@ -6,7 +6,6 @@ const DEFAULT_MOVEMENT_NON_NATIVE_ADDRESS: &str = "0xdafe";
 const DEFAULT_MOVEMENT_REST_CLIENT: &str = "https://aptos.devnet.suzuka.movementlabs.xyz/v1";
 const DEFAULT_MOVEMENT_FAUCET_CLIENT: &str = "https://faucet.devnet.suzuka.movementlabs.xyz/";
 const DEFAULT_ETH_RPC_PORT: &str = "8545";
-const DEFAULT_ETH_WS_CONTRACT: &str = "0xe3e3";
 const DEFAULT_ETH_INITIATOR_CONTRACT: &str = "Oxeee";
 const DEFAULT_ETH_COUNTERPARTY_CONTRACT: &str = "0xccc";
 const DEFAULT_ETH_WETH_CONTRACT: &str = "0xe3e3";

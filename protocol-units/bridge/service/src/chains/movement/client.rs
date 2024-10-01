@@ -847,7 +847,7 @@ impl MovementClient {
 		Ok((
 			MovementClient {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(), // dummy for now
+				non_native_address: Vec::new(),
 				rest_client,
 				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),

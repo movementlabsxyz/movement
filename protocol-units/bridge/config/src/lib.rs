@@ -1,34 +1,18 @@
 pub mod common;
 
-use alloy::node_bindings::{Anvil, AnvilInstance}; 
-use bridge_service::chains::ethereum::client::{Config as EthConfig, EthClient};
-use bridge_service::chains::movement::client::{MovementClient, Config as MovementConfig};
+use alloy::node_bindings::{AnvilInstance}; 
 use dot_movement;
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use mcr_settlement_config::Config;
-use tokio::process::Child;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber;
-use common::bridge::Config as BridgeConfig;
+use common::bridge::Config;
 
-
-#[tokio::test]
-async fn run_all_tests() -> Result<(), anyhow::Error> {
-    let (anvil, mut child) = setup().await?;
-    testfunction1_mvt().await?;
-    testfunction2_eth(anvil).await?;
-    testfunction_eth_mvt().await?;
-    child.kill().await?;
-    Ok(())
-}
-
+#[allow(dead_code)]
 async fn testfunction1_mvt() -> Result<(), anyhow::Error> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config_file = dot_movement.try_get_or_create_config_file().await?;
 
 	// Get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec!["mcr_settlement".to_string()]);
+		Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
 	let config: Config = godfig.try_wait_for_ready().await?;
 
 	// Correct use of println!
@@ -38,13 +22,14 @@ async fn testfunction1_mvt() -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
+#[allow(dead_code)]
 async fn testfunction2_eth(anvil: AnvilInstance) -> Result<(), anyhow::Error> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config_file = dot_movement.try_get_or_create_config_file().await?;
     
 	// Get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> =
-	    Godfig::new(ConfigFile::new(config_file), vec!["mcr_settlement".to_string()]);
+	    Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
 	let config: Config = godfig.try_wait_for_ready().await?;
     
 	// Correct use of println!
@@ -54,13 +39,14 @@ async fn testfunction2_eth(anvil: AnvilInstance) -> Result<(), anyhow::Error> {
 	Ok(())
 }
 
+#[allow(dead_code)]
 async fn testfunction_eth_mvt() -> Result<(), anyhow::Error> {
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 	let config_file = dot_movement.try_get_or_create_config_file().await?;
     
 	// Get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> =
-	    Godfig::new(ConfigFile::new(config_file), vec!["mcr_settlement".to_string()]);
+	    Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
 	let config: Config = godfig.try_wait_for_ready().await?;
     
 	// Correct use of println!

@@ -1,4 +1,7 @@
-use bridge_config::Config;
+mod local;
+
+use bridge_config::common::bridge::Config;
+use bridge_setup::Setup;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 
 #[tokio::main]
