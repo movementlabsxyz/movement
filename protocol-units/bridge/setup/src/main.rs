@@ -1,7 +1,6 @@
 mod local;
 
-use bridge_config::common::bridge::Config;
-use bridge_setup::Setup;
+use bridge_config::Config;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 
 #[tokio::main]
@@ -25,22 +24,20 @@ async fn main() -> Result<(), anyhow::Error> {
 	// run a godfig transaction to update the file
 	godfig
 		.try_transaction(|config| async move {
-			println!("Config: {:?}", config);
-			let local = Setup::default();
-			match config {
-				Some(config) => {
-					let (config, _, _) = local.setup(&dot_movement, config).await?;
-					Ok(Some(config))
-				}
-				None => {
-					let config = Config::default();
-					let (config, _, _) = local.setup(&dot_movement, config).await?;
-					Ok(Some(config))
-				}
-			}
+			tracing::info!("Bridge Default Config: {:?}", config);
+			let config = config.unwrap_or(Config::default());
+
+			let (config, anvil) = bridge_setup::process_compose_setup(config).await?;
+			let config = bridge_setup::deploy::setup(config).await?;
+			tracing::info!("Bridge Config: {:?}", config);
+
+			Ok(Some(config))
 		})
 		.await?;
 
-	println!("Config after update:", );
+	println!("Config after update:",);
+	let join_handle: tokio::task::JoinHandle<()> =
+		tokio::spawn(async { std::future::pending().await });
+	let _ = join_handle.await;
 	Ok(())
 }

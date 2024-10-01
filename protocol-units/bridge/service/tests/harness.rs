@@ -1,29 +1,20 @@
 #![allow(dead_code)]
+use alloy::providers::ProviderBuilder;
+use alloy::signers::local::PrivateKeySigner;
 use alloy::{
 	primitives::{keccak256, Address, U256},
 	providers::WalletProvider,
-	signers::{
-		k256::{elliptic_curve::SecretKey, Secp256k1},
-		local::LocalSigner,
-	},
 };
-use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
+use alloy_network::EthereumWallet;
 use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
-use bridge_service::chains::ethereum::types::{
-	AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9,
-};
-use bridge_service::chains::ethereum::{
-	client::{Config as EthConfig, EthClient},
-	types::EthHash,
-};
+use bridge_config::Config;
+use bridge_service::chains::ethereum::types::{AtomicBridgeInitiator, EthAddress, WETH9};
+use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
 use bridge_service::chains::movement::utils::MovementAddress;
-use bridge_service::chains::movement::{
-	client::{Config as MovementConfig, MovementClient},
-	utils::MovementHash,
-};
+use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
 use bridge_service::types::{Amount, HashLock};
 use bridge_service::{
 	chains::bridge_contracts::{BridgeContract, BridgeContractResult},
@@ -82,17 +73,21 @@ impl Default for MovementToEthCallArgs {
 	}
 }
 
+struct HarnessEthClient {
+	eth_rpc_url: String,
+	signer_private_key: PrivateKeySigner,
+	eth_client: EthClient,
+}
+
 pub struct TestHarness {
-	pub eth_client: Option<EthClient>,
+	pub eth_client: Option<HarnessEthClient>,
 	pub movement_client: Option<MovementClient>,
 }
 
 impl TestHarness {
 	pub async fn new_with_movement() -> (Self, tokio::process::Child) {
 		let (movement_client, child) =
-			MovementClient::new_for_test(MovementConfig::build_for_test())
-				.await
-				.expect("Failed to create MovementClient");
+			MovementClient::new_for_test().await.expect("Failed to create MovementClient");
 		(Self { eth_client: None, movement_client: Some(movement_client) }, child)
 	}
 
@@ -119,57 +114,77 @@ impl TestHarness {
 			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
 	}
 
-	pub async fn new_only_eth() -> Self {
-		let eth_client = EthClient::new(EthConfig::build_for_test())
-			.await
-			.expect("Failed to create EthClient");
-		Self { eth_client: Some(eth_client), movement_client: None }
+	pub async fn new_only_eth(config: &Config) -> Self {
+		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
+		let signer_private_key = config
+			.eth
+			.signer_private_key
+			.parse::<PrivateKeySigner>()
+			.expect("Error during parsing signer private key?");
+
+		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
+		Self {
+			eth_client: Some(HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }),
+			movement_client: None,
+		}
 	}
 
 	pub fn eth_client(&self) -> Result<&EthClient> {
-		self.eth_client.as_ref().ok_or(anyhow::Error::msg("EthClient not initialized"))
+		self.eth_client
+			.as_ref()
+			.map(|eth| &eth.eth_client)
+			.ok_or(anyhow::Error::msg("EthClient not initialized"))
 	}
 
 	pub fn eth_client_mut(&mut self) -> Result<&mut EthClient> {
-		self.eth_client.as_mut().ok_or(anyhow::Error::msg("EthClient not initialized"))
+		self.eth_client
+			.as_mut()
+			.map(|eth| &mut eth.eth_client)
+			.ok_or(anyhow::Error::msg("EthClient not initialized"))
 	}
 
-	pub fn set_eth_signer(&mut self, signer: SecretKey<Secp256k1>) -> Address {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		let wallet: &mut EthereumWallet = eth_client.rpc_provider_mut().wallet_mut();
-		let clone_signer = signer.clone();
-		wallet.register_default_signer(LocalSigner::from(signer));
-		eth_client.set_signer_address(clone_signer);
-		eth_client.get_signer_address()
-	}
+	// pub fn set_eth_signer(&mut self, signer: SecretKey<Secp256k1>) -> Address {
+	// 	let eth_client = self.eth_client_mut().expect("EthClient not initialized");
+	// 	let wallet: &mut EthereumWallet = eth_client.rpc_provider_mut().wallet_mut();
+	// 	let clone_signer = signer.clone();
+	// 	wallet.register_default_signer(LocalSigner::from(signer));
+	// 	eth_client.set_signer_address(clone_signer);
+	// 	eth_client.get_signer_address()
+	// }
 
 	pub fn eth_signer_address(&self) -> Address {
 		let eth_client = self.eth_client().expect("EthClient not initialized");
-		let wallet: &EthereumWallet = eth_client.rpc_provider().wallet();
-		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
+		eth_client.get_signer_address()
 	}
 
-	pub fn provider(&self) -> &AlloyProvider {
-		self.eth_client().expect("Could not fetch eth client").rpc_provider()
-	}
+	// pub fn provider(&self) -> &AlloyProvider {
+	// 	self.eth_client().expect("Could not fetch eth client").rpc_provider()
+	// }
 
 	/// The port that Anvil will listen on.
-	pub fn rpc_port(&self) -> u16 {
-		self.eth_client().expect("Could not fetch eth client").rpc_port()
-	}
+	// pub fn rpc_port(&self) -> u16 {
+	// 	self.eth_client().expect("Could not fetch eth client").rpc_port()
+	// }
 
-	pub async fn deploy_initiator_contract(&mut self) -> Address {
-		let eth_client: &mut EthClient = self.eth_client_mut().expect("EthClient not initialized");
-		let contract = AtomicBridgeInitiator::deploy(eth_client.rpc_provider())
-			.await
-			.expect("Failed to deploy AtomicBridgeInitiator");
-		eth_client.set_initiator_contract(contract.with_cloned_provider());
-		eth_client.initiator_contract_address().expect("Initiator contract not set")
-	}
+	// pub async fn deploy_initiator_contract(&mut self) -> Address {
+	// 	let eth_client = self.eth_client.as_mut().expect("EthClient not initialized");
+	// 	let rpc_provider = ProviderBuilder::new()
+	// 		.with_recommended_fillers()
+	// 		.wallet(EthereumWallet::from(eth_client.signer_private_key.clone()))
+	// 		.on_builtin(&eth_client.eth_rpc_url)
+	// 		.await
+	// 		.expect("Error during provider creation");
+
+	// 	let contract = AtomicBridgeInitiator::deploy(rpc_provider.clone())
+	// 		.await
+	// 		.expect("Failed to deploy AtomicBridgeInitiator");
+	// 	eth_client.set_initiator_contract(contract.with_cloned_provider());
+	// 	eth_client.initiator_contract_address().expect("Initiator contract not set")
+	// }
 
 	pub async fn deploy_weth_contract(&mut self) -> Address {
 		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		let weth = WETH9::deploy(eth_client.rpc_provider()).await.expect("Failed to deploy WETH9");
+		let weth = WETH9::deploy(rpc_provider()).await.expect("Failed to deploy WETH9");
 		eth_client.set_weth_contract(weth.with_cloned_provider());
 		eth_client.weth_contract_address().expect("WETH contract not set")
 	}

@@ -33,14 +33,14 @@ enum Call {
 	GetDetails,
 }
 
-pub struct Config {
-	pub rpc_url: Option<String>,
-	pub ws_url: Option<String>,
-	pub chain_id: String,
-	pub signer_private_key: Arc<RwLock<LocalAccount>>,
-	pub initiator_contract: Option<MovementAddress>,
-	pub gas_limit: u64,
-}
+// pub struct Config {
+// 	pub rpc_url: Option<String>,
+// 	pub ws_url: Option<String>,
+// 	pub chain_id: String,
+// 	pub signer_private_key: Arc<RwLock<LocalAccount>>,
+// 	pub initiator_contract: Option<MovementAddress>,
+// 	pub gas_limit: u64,
+// }
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -59,8 +59,7 @@ pub struct MovementClient {
 
 impl MovementClient {
 	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
-		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str())
+		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
 		let rest_client = Client::new(node_connection_url.clone());
@@ -726,9 +725,7 @@ impl MovementClient {
 		Ok(())
 	}
 
-	pub async fn new_for_test(
-		_config: Config,
-	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
+	pub async fn new_for_test() -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let kill_cmd = TokioCommand::new("sh")
 			.arg("-c")
 			.arg("PID=$(ps aux | grep 'movement node run-local-testnet' | grep -v grep | awk '{print $2}' | head -n 1); if [ -n \"$PID\" ]; then kill -9 $PID; fi")
@@ -753,7 +750,7 @@ impl MovementClient {
 			println!(".movement directory deleted if it was present.");
 		}
 
-		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
 			.stdout(Stdio::piped())

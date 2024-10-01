@@ -25,6 +25,10 @@ tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 godfig = { workspace = true }
+hex = { workspace = true }
+
+aptos-sdk = { workspace = true }
+
 
 [lints]
-workspace = true
+#workspace = true

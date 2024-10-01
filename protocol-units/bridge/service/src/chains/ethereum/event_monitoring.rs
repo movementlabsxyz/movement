@@ -20,7 +20,7 @@ use alloy::{
 	json_abi::{Event, EventParam},
 	pubsub::PubSubFrontend,
 };
-use bridge_config::eth::EthConfig;
+use bridge_config::common::eth::EthConfig;
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
@@ -37,6 +37,7 @@ impl BridgeContractMonitoring for EthMonitoring {
 
 impl EthMonitoring {
 	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
+		let rpc_url = config.eth_rpc_connection_url();
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
 

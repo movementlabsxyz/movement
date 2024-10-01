@@ -76,7 +76,7 @@ env_default!(
 	default_eth_rpc_connection_protocol,
 	"ETH_RPC_CONNECTION_PROTOCOL",
 	String,
-	"https".to_string()
+	"http".to_string()
 );
 
 env_default!(

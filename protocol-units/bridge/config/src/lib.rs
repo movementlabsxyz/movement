@@ -17,6 +17,16 @@ pub struct Config {
 	pub testing: common::testing::TestingConfig,
 }
 
+impl Default for Config {
+	fn default() -> Self {
+		Config {
+			eth: common::eth::EthConfig::default(),
+			movement: common::movement::MovementConfig::default(),
+			testing: common::testing::TestingConfig::default(),
+		}
+	}
+}
+
 // #[allow(dead_code)]
 // async fn testfunction1_mvt() -> Result<(), anyhow::Error> {
 // 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
