@@ -159,7 +159,7 @@ impl MovementClient {
 #[async_trait::async_trait]
 impl BridgeContract<MovementAddress> for MovementClient {
 	async fn initiate_bridge_transfer(
-		&mut self,
+		&self,
 		_initiator: BridgeAddress<MovementAddress>,
 		recipient: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
@@ -201,13 +201,12 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
 			while end > 0 && preimage.0[end - 1] == 0 {
-			end -= 1;
+				end -= 1;
 			}
-			&preimage.0[..end]  
+			&preimage.0[..end]
 		};
 		let args2 = vec![
 			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
@@ -238,18 +237,17 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
 			while end > 0 && preimage.0[end - 1] == 0 {
-			end -= 1;
+				end -= 1;
 			}
-			&preimage.0[..end]  
+			&preimage.0[..end]
 		};
 		let args2 = vec![
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&unpadded_preimage)?,
-		]; 
+		];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -269,10 +267,10 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		match &result {
 			Ok(tx_result) => {
-			    debug!("Transaction succeeded: {:?}", tx_result);
-			},
+				debug!("Transaction succeeded: {:?}", tx_result);
+			}
 			Err(err) => {
-			    debug!("Transaction failed: {:?}", err);
+				debug!("Transaction failed: {:?}", err);
 			}
 		}
 

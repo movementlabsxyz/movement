@@ -1,6 +1,15 @@
+use super::types::{
+	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
+	EthAddress, InitiatorContract, WETH9Contract, WETH9,
+};
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
+use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::types::{
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+	HashLockPreImage, TimeLock,
+};
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
@@ -12,20 +21,12 @@ use alloy::{
 };
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use alloy_rlp::Decodable;
+use bridge_grpc::bridge_server::Bridge;
+use bridge_grpc::{InitiateBridgeTransferRequest, InitiateBridgeTransferResponse};
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
+use tonic::{Request, Response, Status};
 use url::Url;
-
-use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
-};
-
-use super::types::{
-	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
-	EthAddress, InitiatorContract, WETH9Contract, WETH9,
-};
-
 pub const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 pub const RETRIES: u32 = 6;
 
@@ -220,12 +221,12 @@ impl EthClient {
 }
 
 #[async_trait::async_trait]
-impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
+impl BridgeContract<EthAddress> for EthClient {
 	// `_initiator_address`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
 	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
-		&mut self,
+		&self,
 		initiator_address: BridgeAddress<EthAddress>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
@@ -465,5 +466,45 @@ mod tests {
 			test_wrapping_to(&eth_details.amount, random_amount);
 			test_wrapping_to(&eth_details.time_lock, current_time + additional_time);
 		}
+	}
+}
+
+// Define the service struct that wraps EthClient
+pub struct EthBridgeService {
+	client: EthClient,
+}
+
+impl EthBridgeService {
+	pub fn new(client: EthClient) -> Self {
+		Self { client }
+	}
+}
+
+#[tonic::async_trait]
+impl Bridge for EthBridgeService {
+	async fn initiate_bridge_transfer(
+		&self,
+		request: Request<InitiateBridgeTransferRequest>,
+	) -> Result<Response<InitiateBridgeTransferResponse>, Status> {
+		// Extract the request data
+		let req = request.into_inner();
+
+		// Call the EthClient method to initiate the bridge transfer
+		match <EthClient as crate::chains::bridge_contracts::BridgeContract<EthAddress>>::initiate_bridge_transfer(
+            &self.client,
+            BridgeAddress(EthAddress(self.client.get_signer_address())),
+            BridgeAddress(req.recipient_address),
+            HashLock(req.hash_lock.try_into().unwrap()),
+            Amount(AssetType::Moveth(req.amount)),
+        ).await {
+            Ok(_) => Ok(Response::new(InitiateBridgeTransferResponse {
+                success: true,
+                error_message: "".to_string(),
+            })),
+            Err(e) => Ok(Response::new(InitiateBridgeTransferResponse {
+                success: false,
+                error_message: format!("Failed to initiate bridge transfer: {}", e),
+            })),
+        }
 	}
 }

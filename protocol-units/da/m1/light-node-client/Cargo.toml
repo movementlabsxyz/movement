@@ -1,8 +1,8 @@
 [package]
 name = "m1-da-light-node-client"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -13,18 +13,17 @@ rust-version = { workspace = true }
 
 [dependencies]
 tokio = { workspace = true }
-m1-da-light-node-grpc = { workspace  = true, features = ["client"] }
+m1-da-light-node-grpc = { workspace = true, features = ["client"] }
 anyhow = { workspace = true }
 tokio-stream = { workspace = true }
 movement-types = { workspace = true }
 serde_json = { workspace = true }
+tonic = { workspace = true }
 
 [features]
 sequencer = []
 
-default = [
-    "sequencer"
-]
+default = ["sequencer"]
 
 
 [lints]

@@ -9,9 +9,6 @@ service Bridge {
 
 // Request message for InitiateBridgeTransfer
 message InitiateBridgeTransferRequest {
-  // Initiator address (EthAddress equivalent)
-  string initiator_address = 1;
-  
   // Recipient address (32-byte array)
   bytes recipient_address = 2;
   

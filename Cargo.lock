@@ -3720,6 +3720,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "bcs 0.1.4",
+ "bridge-grpc",
  "delegate",
  "derive-new",
  "derive_more",
@@ -3737,6 +3738,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tonic 0.11.0",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
@@ -7871,6 +7873,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-stream",
+ "tonic 0.11.0",
 ]
 
 [[package]]

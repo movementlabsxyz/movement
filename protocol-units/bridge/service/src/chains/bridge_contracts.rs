@@ -115,7 +115,7 @@ pub trait BridgeContractMonitoring:
 #[async_trait::async_trait]
 pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn initiate_bridge_transfer(
-		&mut self,
+		&self,
 		initiator_address: BridgeAddress<A>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
@@ -148,7 +148,6 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
-
 
 	async fn lock_bridge_transfer(
 		&mut self,
