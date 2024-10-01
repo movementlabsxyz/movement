@@ -26,7 +26,7 @@ impl Default for Local {
 }
 
 impl Local {
-        async fn setup(
+        pub async fn setup(
                 &self, 
                 dot_movement: &DotMovement,
 		mut config: BridgeConfig,

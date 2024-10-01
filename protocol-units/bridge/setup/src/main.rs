@@ -29,12 +29,12 @@ async fn main() -> Result<(), anyhow::Error> {
 			let local = Setup::default();
 			match config {
 				Some(config) => {
-					let (config, _) = local.setup(&dot_movement, config).await?;
+					let (config, _, _) = local.setup(&dot_movement, config).await?;
 					Ok(Some(config))
 				}
 				None => {
 					let config = Config::default();
-					let (config, _) = local.setup(&dot_movement, config).await?;
+					let (config, _, _) = local.setup(&dot_movement, config).await?;
 					Ok(Some(config))
 				}
 			}

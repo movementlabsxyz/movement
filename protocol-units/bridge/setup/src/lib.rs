@@ -1,5 +1,7 @@
+use alloy::node_bindings::AnvilInstance;
 use dot_movement::DotMovement;
 use bridge_config::common::bridge::Config;
+use tokio::process::Child;
 
 pub mod deploy;
 pub mod local;
@@ -19,21 +21,10 @@ impl Setup {
 		&self,
 		dot_movement: &DotMovement,
 		mut config: Config,
-	) -> Result<(Config, tokio::task::JoinHandle<Result<String, anyhow::Error>>), anyhow::Error> {
-		let join_handle = if config.should_run_local() {
-			tracing::info!("Setting up local run...");
-			let (new_config, handle) = self.local.setup(dot_movement, config).await?;
-			config = new_config;
-			handle
-		} else {
-			tokio::spawn(async { std::future::pending().await })
-		};
-
-		if let Some(deploy) = &config.deploy {
-			tracing::info!("Deploying contracts...");
-			config = self.deploy.setup(dot_movement, config.clone(), deploy).await?;
-		}
-
-		Ok((config, join_handle))
+	) -> Result<(Config, AnvilInstance, Child), anyhow::Error>  {
+		tracing::info!("Deploying contracts...");
+		let (config, anvil, child) = self.deploy.setup(dot_movement, config.clone()).await?;
+		Ok((config, anvil, child))
+		
 	}
 }

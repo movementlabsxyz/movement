@@ -26,11 +26,11 @@ impl Default for Deploy {
 }
 
 impl Deploy {
-        async fn setup(
+        pub async fn setup(
                 &self, 
                 dot_movement: &DotMovement,
 		mut config: BridgeConfig,
-        ) -> Result<(AnvilInstance, Child), anyhow::Error> {
+        ) -> Result<(BridgeConfig, AnvilInstance, Child), anyhow::Error> {
                 // Initialize tracing
                 tracing_subscriber::fmt()
                         .with_env_filter(
@@ -52,16 +52,7 @@ impl Deploy {
                     
                 let (movement_client, child) = MovementClient::new_for_test(MovementConfig::build_for_test()).await?; 
         
-                // Run a godfig transaction to update the file
-                godfig
-                        .try_transaction(|config| async move {
-                        println!("Config: {:?}", config);
-                        let (config, _) = setup().await?;
-                        Ok(Some(config))
-                        })
-                        .await?;
-        
-                Ok((anvil, child))
+                Ok((config, anvil, child))
         }
 
 }
