@@ -78,9 +78,9 @@ contract MOVETokenTest is Test {
     }
 
     function testAdminRoleFuzz(address other) public {
-        assert(!token.hasRole(0x00, other));
-        assert(token.hasRole(0x00, multisig));
-        assert(!token.hasRole(0x00, anchorage));
+        assertEq(token.hasRole(0x00, other), false);
+        assertEq(token.hasRole(0x00, multisig), true);
+        assertEq(token.hasRole(0x00, anchorage), false);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -103,7 +103,7 @@ contract MOVETokenTest is Test {
                 "upgradeAndCall(address,address,bytes)",
                 address(tokenProxy),
                 address(moveTokenImplementation2),
-                abi.encodeWithSignature("initialize()")
+                abi.encodeWithSignature("initialize(address)",multisig)
             ),
             bytes32(0),
             bytes32(0),
@@ -120,7 +120,7 @@ contract MOVETokenTest is Test {
                 "upgradeAndCall(address,address,bytes)",
                 address(tokenProxy),
                 address(moveTokenImplementation2),
-                abi.encodeWithSignature("initialize()")
+                abi.encodeWithSignature("initialize(address)", multisig)
             ),
             bytes32(0),
             bytes32(0)

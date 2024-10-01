@@ -9,10 +9,9 @@ contract MOVETokenV2 is MintableToken {
     /**
      * @dev Initialize the contract
      */
-    function initialize() public {
+    function initialize(address multisig) public {
         if (versionInitialized[2]) revert AlreadyInitialized();
         versionInitialized[2] = true;
-        address multisig = address(0x00db70A9e12537495C359581b7b3Bc3a69379A00);
         _grantRole(MINTER_ADMIN_ROLE, multisig);
         _grantRole(MINTER_ROLE, multisig);
     }

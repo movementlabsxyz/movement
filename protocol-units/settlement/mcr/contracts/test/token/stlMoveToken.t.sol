@@ -6,9 +6,12 @@ import "../../src/token/stlMoveToken.sol";
 import "../../src/token/MOVETokenV2.sol";
 
 contract stlMoveTokenTest is Test {
+
+    address public multisig = address(this);
+
     function testInitialize() public {
         MOVETokenV2 underlyingToken = new MOVETokenV2();
-        underlyingToken.initialize();
+        underlyingToken.initialize(multisig);
 
         stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
@@ -20,7 +23,7 @@ contract stlMoveTokenTest is Test {
 
     function testCannotInitializeTwice() public {
         MOVETokenV2 underlyingToken = new MOVETokenV2();
-        underlyingToken.initialize();
+        underlyingToken.initialize(multisig);
 
         stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
@@ -32,11 +35,11 @@ contract stlMoveTokenTest is Test {
 
     function testSimulateStaking() public {
         MOVETokenV2 underlyingToken = new MOVETokenV2();
-        underlyingToken.initialize();
+        underlyingToken.initialize(multisig);
 
         stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
-
+        vm.prank(multisig);
         underlyingToken.grantMinterRole(address(token));
         assert(
             underlyingToken.hasRole(

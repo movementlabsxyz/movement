@@ -10,8 +10,9 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 contract MOVETokenV2Test is Test {
     MOVETokenV2 public token;
     ProxyAdmin public admin;
-    string public moveSignature = "initialize()";
+    string public moveSignature = "initialize(address)";
     address public multisig = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
+    bytes32 public MINTER_ROLE;
 
     function setUp() public {
         MOVETokenV2 moveTokenImplementation = new MOVETokenV2();
@@ -20,22 +21,23 @@ contract MOVETokenV2Test is Test {
         TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
             address(moveTokenImplementation),
             address(multisig),
-            abi.encodeWithSignature(moveSignature)
+            abi.encodeWithSignature(moveSignature,multisig)
         );
         token = MOVETokenV2(address(moveProxy));
+        MINTER_ROLE = token.MINTER_ROLE();
     }
 
     function testCannotInitializeTwice() public {
         vm.startPrank(multisig);
         // Initialize the contract
         vm.expectRevert(MOVETokenV2.AlreadyInitialized.selector);
-        token.initialize();
+        token.initialize(multisig);
         vm.stopPrank();
     }
 
     function testGrants() public {
         // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), multisig), true);
+        assertEq(token.hasRole(MINTER_ROLE, multisig), true);
     }
 
     function testMint() public {
@@ -51,18 +53,18 @@ contract MOVETokenV2Test is Test {
 
     function testRevokeMinterRole() public {
         vm.startPrank(multisig);
-        assertEq(token.hasRole(token.MINTER_ROLE(), multisig), true);
+        assertEq(token.hasRole(MINTER_ROLE, multisig), true);
 
         token.mint(address(0x1337), 100);
         // Revoke minter role
         token.revokeMinterRole(multisig);
 
         // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), multisig), false);
+        assertEq(token.hasRole(MINTER_ROLE, multisig), false);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, token.MINTER_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE
             )
         );
         token.mint(address(0x1337), 100);
@@ -71,23 +73,23 @@ contract MOVETokenV2Test is Test {
 
     function testGrantRevokeMinterAdminRole() public {
         vm.startPrank(multisig);
-        assertEq(token.hasRole(token.MINTER_ROLE(), multisig), true);
+        assertEq(token.hasRole(MINTER_ROLE, multisig), true);
 
         token.mint(address(0x1337), 100);
         // Revoke minter role
         token.revokeMinterRole(multisig);
 
         // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), multisig), false);
+        assertEq(token.hasRole(MINTER_ROLE, multisig), false);
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, token.MINTER_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE
             )
         );
         token.mint(address(0x1337), 100);
 
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(0x1337)), false);
+        assertEq(token.hasRole(MINTER_ROLE, address(0x1337)), false);
         // Grant minter role
         token.grantMinterRole(address(0x1337));
         vm.stopPrank();
@@ -95,16 +97,16 @@ contract MOVETokenV2Test is Test {
         token.mint(address(0x1337), 100);
 
         // Check the token details
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(0x1337)), true);
+        assertEq(token.hasRole(MINTER_ROLE, address(0x1337)), true);
         vm.startPrank(multisig);
         // Revoke minter role
         token.revokeMinterRole(address(0x1337));
 
-        assertEq(token.hasRole(token.MINTER_ROLE(), address(0x1337)), false);
+        assertEq(token.hasRole(MINTER_ROLE, address(0x1337)), false);
         vm.stopPrank();
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, address(0x1337), token.MINTER_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(0x1337), MINTER_ROLE
             )
         );
         vm.prank(address(0x1337));
@@ -125,33 +127,25 @@ contract MOVETokenV2Test is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, token.MINTER_ROLE()
+                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE
             )
         );
         token.mint(address(0x1337), 100);
         vm.stopPrank();
     }
 
-    // function testCannotGrantRoleFuzz(address messenger, address receiver) public {
-    //     vm.prank(messenger);
-    //     if (messenger != multisig){
-    //     // vm.expectRevert(
-    //     //     abi.encodeWithSelector(
-    //     //         IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, 0x00
-    //     //     )
-    //     // );
-    //     token.grantRole(token.MINTER_ROLE(), messenger);
-    //     }
-    // }
-
-    function testCannotGrantRole() public {
-        vm.startPrank(0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD,0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD);
+    function testCannotGrantRoleFuzz(address messenger, address receiver) public {
+        vm.startPrank(messenger);
+        if (messenger != multisig){
         vm.expectRevert(
             abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, 0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD, 0x0000000000000000000000000000000000000000000000000000000000000000
+                IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, 0x00
             )
         );
-        token.grantRole(token.MINTER_ROLE(), 0xEbBddFdB4A4F9cE572acA020b8dF87dbC9a084cD);
+        token.grantRole(MINTER_ROLE, receiver);
+        }
         vm.stopPrank();
-    }  
+    }
+
+
 }
