@@ -10,12 +10,14 @@ use movement_bridge::utils::MovementAddress;
 
 pub async fn execute(command: &Commands) -> Result<()> {
 	match command {
-		Commands::Swap { args, recipient, amount } => initiate_swap(args, recipient, *amount).await,
-		Commands::Resume { args, transfer_id } => resume_swap(args, transfer_id).await,
+		Commands::Initiate { args, recipient, amount } => {
+			initiate_transfer(args, recipient, *amount).await
+		}
+		Commands::Complete { args, transfer_id } => complete_transfer(args, transfer_id).await,
 	}
 }
 
-async fn initiate_swap(
+async fn initiate_transfer(
 	args: &EthSharedArgs,
 	recipient: &MovementAddress,
 	amount: u64,
@@ -35,8 +37,6 @@ async fn initiate_swap(
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
 	let amount = Amount(AssetType::EthAndWeth((amount, 0)));
 
-	// TODO: Store the swap details in the local database so they can be resumed in case of failure
-
 	client
 		.initiate_bridge_transfer(
 			InitiatorAddress(initiator_address),
@@ -46,17 +46,10 @@ async fn initiate_swap(
 		)
 		.await?;
 
-	// Now we need to listen to the blockchain to receive the correct events and match them accordingly.
-
-	// TODO: I need the bridge transfer ID here to store the state of the swap. Therefore,
-	// the initiate bridge transfer function needs to be updated.
-
-	println!("Swap initiated successfully");
-
 	Ok(())
 }
 
-async fn resume_swap(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
+async fn complete_transfer(args: &EthSharedArgs, transfer_id: &str) -> Result<()> {
 	println!("Resuming transfer with ID: {}", transfer_id);
 
 	Ok(())
