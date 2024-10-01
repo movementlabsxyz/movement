@@ -1,4 +1,3 @@
-tonic::include_proto!("movementlabs.protocol_units.atomic_bridge.v1beta1");
+tonic::include_proto!("movementlabs.protocol_units.bridge.v1beta1");
 pub const FILE_DESCRIPTOR_SET: &[u8] =
-	tonic::include_file_descriptor_set!("atomic-bridge-grpc-descriptor");
-
+	tonic::include_file_descriptor_set!("bridge-grpc-descriptor");

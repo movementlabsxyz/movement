@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package movementlabs.protocol_units.atomic_bridge.v1beta1;
+package movementlabs.protocol_units.bridge.v1beta1;
 
-service AtomicBridge {
+service Bridge {
   // RPC method for initiating a bridge transfer
   rpc InitiateBridgeTransfer (InitiateBridgeTransferRequest) returns (InitiateBridgeTransferResponse) {}
 }
