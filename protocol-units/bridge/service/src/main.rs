@@ -7,15 +7,14 @@ use bridge_service::chains::movement::event_monitoring::MovementMonitoring;
 #[tokio::main]
 async fn main() -> Result<()> {
 	let eth_ws_url = "";
-	let one_stream = EthMonitoring::build(eth_ws_url).await?;
+	let one_stream = EthMonitoring::build(&bridge_config.eth).await?;
 
-	let eth_config = EthConfig::build_for_test();
-	let one_client = EthClient::new(eth_config).await?;
+	let bridge_config = bridge_config::Config::default();
+	let one_client = EthClient::new(&bridge_config.eth).await?;
 
-	let mvt_config = MovementConfig::build_for_test();
-	let two_client = MovementClient::new(&mvt_config).await?;
+	let two_client = MovementClient::new(&bridge_config.mvt).await?;
 
-	let two_stream = MovementMonitoring::build(mvt_config).await?;
+	let two_stream = MovementMonitoring::build(&bridge_config.mvt).await?;
 
 	bridge_service::run_bridge(one_client, one_stream, two_client, two_stream).await?;
 	Ok(())

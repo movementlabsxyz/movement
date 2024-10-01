@@ -14,7 +14,6 @@ rust-version.workspace = true
 serde = { workspace = true , features = ["derive"] }
 alloy = { workspace = true }
 aptos-sdk = { workspace = true }
-bridge-service = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }
 anyhow = { workspace = true }

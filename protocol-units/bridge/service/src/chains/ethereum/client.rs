@@ -12,6 +12,7 @@ use alloy::{
 };
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use alloy_rlp::Decodable;
+use bridge_config::common::eth::EthConfig;
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
 use url::Url;
@@ -37,32 +38,18 @@ impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
 }
 
 ///Configuration for the Ethereum Bridge Client
-#[serde_as]
-#[derive(Clone, Debug, Deserialize)]
-pub struct Config {
-	pub rpc_url: Url,
-	pub ws_url: Url,
-	#[serde_as(as = "serde_with::DisplayFromStr")]
-	pub signer_private_key: PrivateKeySigner,
-	pub initiator_contract: String,
-	pub counterparty_contract: String,
-	pub weth_contract: String,
-	pub gas_limit: u64,
-}
-
-impl Config {
-	pub fn build_for_test() -> Self {
-		Config {
-			rpc_url: "http://localhost:8545".parse().unwrap(),
-			ws_url: "ws://localhost:8545".parse().unwrap(),
-			signer_private_key: PrivateKeySigner::random(),
-			initiator_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-			counterparty_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-			weth_contract: "0x1234567890abcdef1234567890abcdef12345678".to_string(),
-			gas_limit: 10_000_000_000,
-		}
-	}
-}
+// #[serde_as]
+// #[derive(Clone, Debug, Deserialize)]
+// pub struct Config {
+// 	pub rpc_url: Url,
+// 	pub ws_url: Url,
+// 	#[serde_as(as = "serde_with::DisplayFromStr")]
+// 	pub signer_private_key: PrivateKeySigner,
+// 	pub initiator_contract: String,
+// 	pub counterparty_contract: String,
+// 	pub weth_contract: String,
+// 	pub gas_limit: u64,
+// }
 
 #[derive(RlpDecodable, RlpEncodable)]
 struct EthBridgeTransferDetails {
@@ -87,11 +74,11 @@ pub struct EthClient {
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
-	config: Config,
+	config: EthConfig,
 }
 
 impl EthClient {
-	pub async fn new(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn new(config: &EthConfig) -> Result<Self, anyhow::Error> {
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(config.signer_private_key.clone()))

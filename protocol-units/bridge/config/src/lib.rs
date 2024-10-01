@@ -1,57 +1,69 @@
 pub mod common;
 
-use alloy::node_bindings::{AnvilInstance}; 
-use dot_movement;
-use godfig::{backend::config_file::ConfigFile, Godfig};
-use common::bridge::Config;
+use serde::{Deserialize, Serialize};
 
-#[allow(dead_code)]
-async fn testfunction1_mvt() -> Result<(), anyhow::Error> {
-	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Config {
+	/// The ETH connection configuration.
+	/// This is mandatory for all possible operations.
+	#[serde(default)]
+	pub eth: common::eth::EthConfig,
 
-	// Get a matching godfig object
-	let godfig: Godfig<Config, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
-	let config: Config = godfig.try_wait_for_ready().await?;
+	#[serde(default)]
+	pub movement: common::movement::MovementConfig,
 
-	// Correct use of println!
-	println!("{:?}", config);
-
-	assert!(true);
-	Ok(())
+	/// Optional testing config
+	#[serde(default)]
+	pub testing: common::testing::TestingConfig,
 }
 
-#[allow(dead_code)]
-async fn testfunction2_eth(anvil: AnvilInstance) -> Result<(), anyhow::Error> {
-	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
-    
-	// Get a matching godfig object
-	let godfig: Godfig<Config, ConfigFile> =
-	    Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
-	let config: Config = godfig.try_wait_for_ready().await?;
-    
-	// Correct use of println!
-	println!("{:?}", config);
-    
-	assert!(true);
-	Ok(())
-}
+// #[allow(dead_code)]
+// async fn testfunction1_mvt() -> Result<(), anyhow::Error> {
+// 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+// 	let config_file = dot_movement.try_get_or_create_config_file().await?;
 
-#[allow(dead_code)]
-async fn testfunction_eth_mvt() -> Result<(), anyhow::Error> {
-	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let config_file = dot_movement.try_get_or_create_config_file().await?;
-    
-	// Get a matching godfig object
-	let godfig: Godfig<Config, ConfigFile> =
-	    Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
-	let config: Config = godfig.try_wait_for_ready().await?;
-    
-	// Correct use of println!
-	println!("{:?}", config);
-    
-	assert!(true);
-	Ok(())
-}
+// 	// Get a matching godfig object
+// 	let godfig: Godfig<Config, ConfigFile> =
+// 		Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
+// 	let config: Config = godfig.try_wait_for_ready().await?;
+
+// 	// Correct use of println!
+// 	println!("{:?}", config);
+
+// 	assert!(true);
+// 	Ok(())
+// }
+
+// #[allow(dead_code)]
+// async fn testfunction2_eth(anvil: AnvilInstance) -> Result<(), anyhow::Error> {
+// 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+// 	let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+// 	// Get a matching godfig object
+// 	let godfig: Godfig<Config, ConfigFile> =
+// 		Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
+// 	let config: Config = godfig.try_wait_for_ready().await?;
+
+// 	// Correct use of println!
+// 	println!("{:?}", config);
+
+// 	assert!(true);
+// 	Ok(())
+// }
+
+// #[allow(dead_code)]
+// async fn testfunction_eth_mvt() -> Result<(), anyhow::Error> {
+// 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+// 	let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+// 	// Get a matching godfig object
+// 	let godfig: Godfig<Config, ConfigFile> =
+// 		Godfig::new(ConfigFile::new(config_file), vec!["bridge".to_string()]);
+// 	let config: Config = godfig.try_wait_for_ready().await?;
+
+// 	// Correct use of println!
+// 	println!("{:?}", config);
+
+// 	assert!(true);
+// 	Ok(())
+// }

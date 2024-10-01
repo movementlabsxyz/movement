@@ -14,6 +14,7 @@ use crate::types::LockDetails;
 use anyhow::Result;
 use aptos_sdk::rest_client::Response;
 use aptos_types::contract_event::EventWithVersion;
+use bridge_config::mvt::MovementConfig;
 use futures::channel::mpsc::{self};
 use futures::SinkExt;
 use futures::Stream;
@@ -31,7 +32,7 @@ impl BridgeContractMonitoring for MovementMonitoring {
 }
 
 impl MovementMonitoring {
-	pub async fn build(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn build(config: &MovementConfig) -> Result<Self, anyhow::Error> {
 		let mvt_client = MovementClient::new(&config).await?;
 		// Spawn a task to forward events to the listener channel
 		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
