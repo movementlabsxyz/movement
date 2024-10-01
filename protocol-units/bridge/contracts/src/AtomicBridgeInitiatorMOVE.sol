@@ -25,7 +25,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
 
-    // Total WETH pool balance
+    // Total MOVE token pool balance
     uint256 public poolBalance;
 
     address public counterpartyAddress; 
@@ -35,7 +35,13 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    function initialize(address _moveToken, address owner, uint256 _timeLockDuration) public initializer {
+    // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
+    function initialize(
+        address _moveToken, 
+        address owner, 
+        uint256 _timeLockDuration, 
+        uint256 _initialPoolBalance
+    ) public initializer {
         if (_moveToken == address(0)) {
             revert ZeroAddress();
         }
@@ -44,6 +50,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
+
+        // Set the initial pool balance
+        poolBalance = _initialPoolBalance;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -116,3 +125,4 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }
+

@@ -49,7 +49,7 @@ contract AtomicBridgeCounterpartyTest is Test {
                 wethAddress, 
                 deployer, 
                 initiatorTimeLockDuration, // Set 48-hour time lock for the initiator
-                0 ether
+                0 ether // Initial pool balance 
             )
         );
 
