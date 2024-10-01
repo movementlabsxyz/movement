@@ -1,8 +1,8 @@
 [package]
 name = "mcr-settlement-manager"
 version = { workspace = true }
-edition  = { workspace = true }
-license  = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
 authors = { workspace = true }
 repository = { workspace = true }
 homepage = { workspace = true }
@@ -28,12 +28,8 @@ serde_json = { workspace = true }
 mcr-settlement-client = { workspace = true, features = ["mock"] }
 
 [features]
-default = ["stub"]
-stub = []
 eth = ["mcr-settlement-client/eth"]
 mock = ["mcr-settlement-client/mock"]
-
-
 
 [lints]
 workspace = true
