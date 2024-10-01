@@ -11,11 +11,8 @@ pub struct CliOptions {
 
 #[derive(Subcommand)]
 pub enum Commands {
+	/// Start the Bridge Relayer Service
 	/// Ethereum to Movement Labs bridge commands
 	#[command(subcommand)]
 	BridgeEthToMovETH(eth_to_movement::Commands),
 }
-
-
-
-

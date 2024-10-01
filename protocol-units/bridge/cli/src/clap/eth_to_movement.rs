@@ -38,7 +38,7 @@ pub struct EthSharedArgs {
 #[derive(Subcommand)]
 pub enum Commands {
 	/// Initiate a bridge transfer
-	Swap {
+	Initiate {
 		#[command(flatten)]
 		args: EthSharedArgs,
 
@@ -49,7 +49,7 @@ pub enum Commands {
 		amount: u64,
 	},
 	/// Resume a bridge transfer
-	Resume {
+	Complete {
 		#[command(flatten)]
 		args: EthSharedArgs,
 
