@@ -180,18 +180,30 @@ impl Config {
 	/// Gets the da signing key as a string
 	pub fn da_signing_key(&self) -> String {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.da_signing_private_key.clone(),
-			Config::Arabica(local) => local.m1_da_light_node.da_signing_private_key.clone(),
-			Config::Mocha(local) => local.m1_da_light_node.da_signing_private_key.clone(),
+			Config::Local(local) => {
+				local.m1_da_light_node.da_signers.da_signing_private_key_hex.clone()
+			}
+			Config::Arabica(local) => {
+				local.m1_da_light_node.da_signers.da_signing_private_key_hex.clone()
+			}
+			Config::Mocha(local) => {
+				local.m1_da_light_node.da_signers.da_signing_private_key_hex.clone()
+			}
 		}
 	}
 
 	/// Gets the da signers sec1 keys
-	pub fn da_signers_sec1_keys(&self) -> HashSet<Vec<u8>> {
+	pub fn da_signers_sec1_keys(&self) -> HashSet<String> {
 		match self {
-			Config::Local(local) => local.m1_da_light_node.da_signers_sec1_keys.clone(),
-			Config::Arabica(local) => local.m1_da_light_node.da_signers_sec1_keys.clone(),
-			Config::Mocha(local) => local.m1_da_light_node.da_signers_sec1_keys.clone(),
+			Config::Local(local) => {
+				local.m1_da_light_node.da_signers.da_signers_public_keys_hex.clone()
+			}
+			Config::Arabica(local) => {
+				local.m1_da_light_node.da_signers.da_signers_public_keys_hex.clone()
+			}
+			Config::Mocha(local) => {
+				local.m1_da_light_node.da_signers.da_signers_public_keys_hex.clone()
+			}
 		}
 	}
 

@@ -45,7 +45,7 @@ where
 	pub fn new(
 		celestia_client: Arc<Client>,
 		celestia_namespace: Namespace,
-		known_signers_sec1_bytes: HashSet<Vec<u8>>,
+		known_signers_sec1_bytes: HashSet<String>,
 	) -> Self {
 		Self {
 			celestia: CelestiaVerifier::new(celestia_client, celestia_namespace),

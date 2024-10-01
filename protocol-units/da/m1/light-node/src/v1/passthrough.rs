@@ -74,7 +74,9 @@ where
 		let client = Arc::new(config.connect_celestia().await?);
 
 		let signing_key_str = config.da_signing_key();
-		let signing_key = SigningKey::from_bytes(signing_key_str.as_bytes().into())
+		let hex_bytes = hex::decode(signing_key_str)?;
+
+		let signing_key = SigningKey::from_bytes(hex_bytes.as_slice().try_into()?)
 			.map_err(|e| anyhow::anyhow!("Failed to create signing key: {}", e))?;
 
 		Ok(Self {

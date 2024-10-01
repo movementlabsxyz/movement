@@ -8002,6 +8002,7 @@ dependencies = [
  "m1-da-light-node-grpc",
  "memseq-util",
  "prost 0.12.6",
+ "rand 0.8.5",
  "serde",
  "serde_derive",
  "serde_json",

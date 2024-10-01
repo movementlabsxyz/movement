@@ -1,4 +1,3 @@
-use alloy::signers::local::PrivateKeySigner;
 use celestia_types::nmt::Namespace;
 /*use ecdsa::{
 	elliptic_curve::{
@@ -13,8 +12,6 @@ use celestia_types::nmt::Namespace;
 	SignatureSize,
 };*/
 use godfig::env_default;
-use std::collections::HashSet;
-use std::env;
 
 // The default hostname for the Celestia RPC
 env_default!(
@@ -140,23 +137,3 @@ pub fn default_celestia_bridge_replace_args() -> Vec<String> {
 
 // Whether to use replace args for Celestia bridge
 env_default!(default_m1_da_light_node_is_initial, "M1_DA_LIGHT_NODE_IS_INITIAL", bool, true);
-
-/// The default da signing private key
-pub fn default_da_signing_private_key() -> String {
-	let random_wallet = PrivateKeySigner::random();
-	let random_wallet_string = random_wallet.to_bytes().to_string();
-	env::var("DA_SIGNING_PRIVATE_KEY").unwrap_or(random_wallet_string)
-}
-
-pub fn default_da_signers_sec1_keys() -> HashSet<Vec<u8>> {
-	match std::env::var("DA_SIGNERS_SEC1_KEYS") {
-		Ok(val) => val.split(',').map(|s| s.as_bytes().to_vec()).collect(),
-		Err(_) => {
-			// always trust yourself
-			let mut set = HashSet::new();
-			let signer = default_da_signing_private_key();
-			set.insert(signer.as_bytes().to_vec());
-			set
-		}
-	}
-}

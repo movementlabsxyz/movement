@@ -67,7 +67,8 @@ where
 	FieldBytesSize<C>: ModulusSize,
 {
 	pub inner_verifier: Verifier<C>,
-	pub known_signers_sec1_bytes: HashSet<Vec<u8>>,
+	/// The set of known signers in sec1 bytes hex format.
+	pub known_signers_sec1_bytes_hex: HashSet<String>,
 }
 
 impl<C> InKnownSignersVerifier<C>
@@ -78,8 +79,8 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	pub fn new(known_signers_sec1_bytes: HashSet<Vec<u8>>) -> Self {
-		Self { inner_verifier: Verifier::new(), known_signers_sec1_bytes }
+	pub fn new(known_signers_sec1_bytes_hex: HashSet<String>) -> Self {
+		Self { inner_verifier: Verifier::new(), known_signers_sec1_bytes_hex }
 	}
 }
 
@@ -95,8 +96,8 @@ where
 	async fn verify(&self, blob: InnerBlob, height: u64) -> Result<Verified<InnerBlob>, Error> {
 		let inner_blob = self.inner_verifier.verify(blob, height).await?;
 
-		let signer = inner_blob.inner().signer();
-		if !self.known_signers_sec1_bytes.contains(signer) {
+		let signer = inner_blob.inner().signer_hex();
+		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
 			return Err(Error::Validation("signer not in known signers".to_string()));
 		}
 

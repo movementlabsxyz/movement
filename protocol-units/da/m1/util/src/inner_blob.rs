@@ -1,4 +1,3 @@
-use ecdsa::signature::digest::Digest;
 use ecdsa::{
 	elliptic_curve::{
 		generic_array::ArrayLength,
@@ -9,7 +8,7 @@ use ecdsa::{
 		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
 	},
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
-	signature::DigestVerifier,
+	signature::{digest::Digest, DigestVerifier},
 	SignatureSize, SigningKey, VerifyingKey,
 };
 use serde::{Deserialize, Serialize};
@@ -129,6 +128,10 @@ impl InnerBlob {
 		match self {
 			InnerBlob::SignedV1(inner) => inner.signer.as_slice(),
 		}
+	}
+
+	pub fn signer_hex(&self) -> String {
+		hex::encode(self.signer())
 	}
 
 	pub fn id(&self) -> &[u8] {
