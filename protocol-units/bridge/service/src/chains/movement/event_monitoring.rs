@@ -99,7 +99,7 @@ async fn pool_initiator_contract(
 ) -> BridgeContractResult<Vec<BridgeContractEvent<MovementAddress>>> {
 	let rest_client = client.rest_client();
 	let struct_tag = format!(
-		"::atomic_bridge_initiator::BridgeInitiatorEvents",
+		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
 		client.native_address.to_standard_string(),
 	);
 
@@ -114,10 +114,7 @@ async fn pool_initiator_contract(
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!(
-				"MVT bridge_transfer_initiated_events:{}",
-				e.to_string()
-			))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_initiated_events:{}", e))
 		})?;
 	// Get completed events
 	let completed_response = rest_client
@@ -130,10 +127,7 @@ async fn pool_initiator_contract(
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!(
-				"MVT bridge_transfer_completed_events:{}",
-				e.to_string()
-			))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_completed_events:{}", e))
 		})?;
 	// Get refunded events
 	let refunded_response = rest_client
@@ -146,10 +140,7 @@ async fn pool_initiator_contract(
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!(
-				"MVT bridge_transfer_refunded_events:{}",
-				e.to_string()
-			))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_refunded_events:{}", e))
 		})?;
 	// Process responses and yield events
 	let initiated_events =
@@ -157,7 +148,7 @@ async fn pool_initiator_contract(
 			|e| {
 				BridgeContractError::OnChainError(format!(
 					"MVT process_initiator_response(initiated_response):{}",
-					e.to_string()
+					e
 				))
 			},
 		)?;
@@ -167,7 +158,7 @@ async fn pool_initiator_contract(
 			|e| {
 				BridgeContractError::OnChainError(format!(
 					"MVT process_initiator_response(completed_response):{}",
-					e.to_string()
+					e
 				))
 			},
 		)?;
@@ -177,7 +168,7 @@ async fn pool_initiator_contract(
 			|e| {
 				BridgeContractError::OnChainError(format!(
 					"MVT process_initiator_response(refunded_response):{}",
-					e.to_string()
+					e
 				))
 			},
 		)?;
@@ -196,7 +187,7 @@ async fn pool_counterpart_contract(
 	let rest_client = client.rest_client();
 
 	let struct_tag = format!(
-		"::atomic_bridge_counterpary::BridgeCounterpartyEvents",
+		"{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
 		client.native_address.to_standard_string()
 	);
 
@@ -211,10 +202,7 @@ async fn pool_counterpart_contract(
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!(
-				"MVT bridge_transfer_assets_locked:{}",
-				e.to_string()
-			))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_assets_locked:{}", e))
 		})?;
 	// Get completed events
 	let completed_response = rest_client
@@ -227,10 +215,7 @@ async fn pool_counterpart_contract(
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!(
-				"MVT bridge_transfer_completed:{}",
-				e.to_string()
-			))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_completed:{}", e))
 		})?;
 	// Get cancelled events
 	let cancelled_response = rest_client
@@ -243,10 +228,7 @@ async fn pool_counterpart_contract(
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!(
-				"MVT bridge_transfer_cancelled:{}",
-				e.to_string()
-			))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_cancelled:{}", e))
 		})?;
 	// Process responses and return results
 	let locked_events =
@@ -254,7 +236,7 @@ async fn pool_counterpart_contract(
 			|e| {
 				BridgeContractError::OnChainError(format!(
 					"MVT process_initiator_response(locked_response):{}",
-					e.to_string()
+					e
 				))
 			},
 		)?;
@@ -264,7 +246,7 @@ async fn pool_counterpart_contract(
 			.map_err(|e| {
 				BridgeContractError::OnChainError(format!(
 					"MVT process_initiator_response(completed_response):{}",
-					e.to_string()
+					e
 				))
 			})?;
 
@@ -273,7 +255,7 @@ async fn pool_counterpart_contract(
 			.map_err(|e| {
 				BridgeContractError::OnChainError(format!(
 					"MVT process_initiator_response(cancelled_response):{}",
-					e.to_string()
+					e
 				))
 			})?;
 
