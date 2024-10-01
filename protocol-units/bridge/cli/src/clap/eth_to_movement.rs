@@ -1,7 +1,6 @@
 use alloy::signers::local::PrivateKeySigner;
+use bridge_service::chains::{ethereum::types::EthAddress, movement::utils::MovementAddress};
 use clap::{Args, Subcommand};
-use ethereum_bridge::types::EthAddress;
-use movement_bridge::utils::MovementAddress;
 use url::Url;
 
 #[derive(Args, Clone, Debug)]

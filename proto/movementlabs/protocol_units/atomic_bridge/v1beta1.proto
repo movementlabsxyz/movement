@@ -1,0 +1,114 @@
+syntax = "proto3";
+package movementlabs.protocol_units.atomic_bridge.v1beta1;
+
+// Request and response messages
+message Blob {
+    string blob_id = 1;
+    bytes data = 2;
+    uint64 height = 3;
+    // bytes signature = 4; // at some point a signature will be added here
+    uint64 timestamp = 5;
+}
+
+enum VerificationMode {
+    COWBOY = 0;
+    VALIDATOR_IN = 1;
+    M_OF_N = 2;
+}
+
+message BlobResponse {
+    oneof blob_type {
+      Blob passed_through_blob = 1;
+      Blob sequenced_blob_intent = 2;
+      Blob sequenced_blob_block = 3;
+    }
+}
+
+message BlobWrite {
+    bytes data = 1;
+}
+
+// StreamReadAtHeight
+message StreamReadFromHeightRequest {
+    uint64 height = 1;
+}
+
+message StreamReadFromHeightResponse {
+    BlobResponse blob = 1;
+}
+
+// StreamReadLatest
+message StreamReadLatestRequest {
+    
+}
+
+message StreamReadLatestResponse {
+    BlobResponse blob = 1;
+}
+
+// StreamWriteBlob
+message StreamWriteBlobRequest {
+    BlobWrite blob = 1;
+}
+
+message StreamWriteBlobResponse {
+    BlobResponse blob = 1;
+}
+
+// ReadAtHeight
+message ReadAtHeightRequest {
+    uint64 height = 1;
+}
+  
+message ReadAtHeightResponse {
+    repeated BlobResponse blobs = 1;
+}
+
+// BatchRead
+message BatchReadRequest {
+    repeated uint64 heights = 1;
+}
+  
+message BatchReadResponse {
+    repeated ReadAtHeightResponse responses = 1;
+}
+  
+message BatchWriteRequest {
+    repeated BlobWrite blobs = 1;
+}
+  
+message BatchWriteResponse {
+    repeated BlobResponse blobs = 1;
+}
+  
+message UpdateVerificationParametersRequest {
+    VerificationMode mode = 1;
+    repeated string signers = 2;
+    uint32 m = 3;
+    uint32 n = 4;
+}
+  
+message UpdateVerificationParametersResponse {
+    VerificationMode mode = 1;
+}
+
+// LightNode service definition
+service LightNodeService {
+  // Stream blobs from a specified height or from the latest height.
+  rpc StreamReadFromHeight (StreamReadFromHeightRequest) returns (stream StreamReadFromHeightResponse);
+  rpc StreamReadLatest (StreamReadLatestRequest) returns (stream StreamReadLatestResponse);
+  
+  // Stream blobs out, either individually or in batches.
+  rpc StreamWriteBlob (stream StreamWriteBlobRequest) returns (stream StreamWriteBlobResponse);
+  
+  // Read blobs at a specified height.
+  rpc ReadAtHeight (ReadAtHeightRequest) returns (ReadAtHeightResponse);
+  
+  // Batch read and write operations for efficiency.
+  rpc BatchRead (BatchReadRequest) returns (BatchReadResponse);
+  rpc BatchWrite (BatchWriteRequest) returns (BatchWriteResponse);
+  
+  // Update and manage verification parameters.
+  rpc UpdateVerificationParameters (UpdateVerificationParametersRequest) returns (UpdateVerificationParametersResponse);
+  
+}

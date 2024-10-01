@@ -31,6 +31,7 @@ members = [
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/service",
     "protocol-units/bridge/cli",
+    "protocol-units/bridge/grpc",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
 ]
