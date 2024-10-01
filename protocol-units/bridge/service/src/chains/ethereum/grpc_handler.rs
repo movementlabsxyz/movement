@@ -11,18 +11,18 @@ use crate::{
 use super::{client::EthClient, types::EthAddress};
 
 // Define the service struct that wraps EthClient
-pub struct GRPCHandler {
+pub struct GRPCServer {
 	eth_client: EthClient,
 }
 
-impl GRPCHandler {
+impl GRPCServer {
 	pub fn new(eth_client: EthClient) -> Self {
 		Self { eth_client }
 	}
 }
 
 #[tonic::async_trait]
-impl Bridge for GRPCHandler {
+impl Bridge for GRPCServer {
 	async fn initiate_bridge_transfer(
 		&self,
 		request: Request<InitiateBridgeTransferRequest>,

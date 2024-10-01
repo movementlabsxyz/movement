@@ -3,28 +3,68 @@ syntax = "proto3";
 package movementlabs.protocol_units.bridge.v1beta1;
 
 service Bridge {
-  // RPC method for initiating a bridge transfer
   rpc InitiateBridgeTransfer (InitiateBridgeTransferRequest) returns (InitiateBridgeTransferResponse) {}
+  rpc InitiatorCompleteBridgeTransfer (InitiatorCompleteBridgeTransferRequest) returns (GenericBridgeResponse) {}
+  rpc CounterpartyCompleteBridgeTransfer (CounterpartyCompleteBridgeTransferRequest) returns (GenericBridgeResponse) {}
+  rpc RefundBridgeTransfer (RefundBridgeTransferRequest) returns (GenericBridgeResponse) {}
+  rpc LockBridgeTransfer (LockBridgeTransferRequest) returns (GenericBridgeResponse) {}
+  rpc AbortBridgeTransfer (AbortBridgeTransferRequest) returns (GenericBridgeResponse) {}
+  rpc GetBridgeTransferDetailsInitiator (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsCounterparty (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
 }
 
-// Request message for InitiateBridgeTransfer
 message InitiateBridgeTransferRequest {
-  // Recipient address (32-byte array)
-  bytes recipient_address = 2;
-  
-  // Hash lock (32-byte array)
-  bytes hash_lock = 3;
-  
-  // Amount of ETH to transfer
-  uint64 amount = 4;
+  bytes recipient_address = 1;
+  bytes hash_lock = 2;
+  uint64 amount = 3;
 }
 
-// Response message for InitiateBridgeTransfer
 message InitiateBridgeTransferResponse {
-  // Indicates whether the operation was successful
   bool success = 1;
-  
-  // Optional error message if the operation failed
   string error_message = 2;
 }
 
+message InitiatorCompleteBridgeTransferRequest {
+  bytes bridge_transfer_id = 1;
+  bytes pre_image = 2;
+}
+
+message CounterpartyCompleteBridgeTransferRequest {
+  bytes bridge_transfer_id = 1;
+  bytes pre_image = 2;
+}
+
+message RefundBridgeTransferRequest {
+  bytes bridge_transfer_id = 1;
+}
+
+message LockBridgeTransferRequest {
+  bytes bridge_transfer_id = 1;
+  bytes hash_lock = 2;
+  bytes initiator_address = 3;
+  string recipient_address = 4;
+  uint64 amount = 5;
+}
+
+message AbortBridgeTransferRequest {
+  bytes bridge_transfer_id = 1;
+}
+
+message GetBridgeTransferDetailsRequest {
+  bytes bridge_transfer_id = 1;
+}
+
+message BridgeTransferDetailsResponse {
+  string initiator_address = 1;
+  bytes recipient_address = 2;
+  bytes hash_lock = 3;
+  uint64 time_lock = 4;
+  uint64 amount = 5;
+  uint32 state = 6;
+  string error_message = 7;
+}
+
+message GenericBridgeResponse {
+  bool success = 1;
+  string error_message = 2;
+}
