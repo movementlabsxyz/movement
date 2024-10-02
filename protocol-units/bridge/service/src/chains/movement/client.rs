@@ -113,10 +113,7 @@ impl MovementClient {
 		}
 	}
 
-	pub async fn initiator_set_timelock(
-		&mut self,
-		time_lock: u64,
-	) -> Result<(), BridgeContractError> {
+	pub async fn initiator_set_timelock(&self, time_lock: u64) -> Result<(), BridgeContractError> {
 		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
 
 		let payload = utils::make_aptos_payload(
@@ -135,7 +132,7 @@ impl MovementClient {
 	}
 
 	pub async fn counterparty_set_timelock(
-		&mut self,
+		&self,
 		time_lock: u64,
 	) -> Result<(), BridgeContractError> {
 		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
@@ -197,7 +194,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn initiator_complete_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
@@ -233,7 +230,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn counterparty_complete_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
@@ -278,7 +275,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn lock_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
 		initiator: BridgeAddress<Vec<u8>>,
@@ -318,7 +315,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn refund_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?];
@@ -339,7 +336,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn abort_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
@@ -364,7 +361,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn get_bridge_transfer_details_initiator(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
@@ -435,7 +432,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 
 	async fn get_bridge_transfer_details_counterparty(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));

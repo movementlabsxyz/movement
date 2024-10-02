@@ -1,5 +1,4 @@
 syntax = "proto3";
-
 package movementlabs.protocol_units.bridge.v1beta1;
 
 service Bridge {

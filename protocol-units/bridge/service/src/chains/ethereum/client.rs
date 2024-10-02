@@ -21,11 +21,8 @@ use alloy::{
 };
 use alloy::{pubsub::PubSubFrontend, signers::local::PrivateKeySigner};
 use alloy_rlp::Decodable;
-use bridge_grpc::bridge_server::Bridge;
-use bridge_grpc::{InitiateBridgeTransferRequest, InitiateBridgeTransferResponse};
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
-use tonic::{Request, Response, Status};
 use url::Url;
 pub const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 pub const RETRIES: u32 = 6;
@@ -253,7 +250,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn initiator_complete_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
@@ -278,7 +275,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn counterparty_complete_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
@@ -303,7 +300,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn refund_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract =
@@ -316,7 +313,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn lock_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
 		initiator: BridgeAddress<Vec<u8>>,
@@ -343,7 +340,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn abort_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeCounterparty::new(
@@ -358,7 +355,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn get_bridge_transfer_details_initiator(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
@@ -391,7 +388,7 @@ impl BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn get_bridge_transfer_details_counterparty(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
@@ -421,46 +418,6 @@ impl BridgeContract<EthAddress> for EthClient {
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))
-	}
-}
-
-// Define the service struct that wraps EthClient
-pub struct EthBridgeService {
-	client: EthClient,
-}
-
-impl EthBridgeService {
-	pub fn new(client: EthClient) -> Self {
-		Self { client }
-	}
-}
-
-#[tonic::async_trait]
-impl Bridge for EthBridgeService {
-	async fn initiate_bridge_transfer(
-		&self,
-		request: Request<InitiateBridgeTransferRequest>,
-	) -> Result<Response<InitiateBridgeTransferResponse>, Status> {
-		// Extract the request data
-		let req = request.into_inner();
-
-		// Call the EthClient method to initiate the bridge transfer
-		match <EthClient as crate::chains::bridge_contracts::BridgeContract<EthAddress>>::initiate_bridge_transfer(
-            &self.client,
-            BridgeAddress(EthAddress(self.client.get_signer_address())),
-            BridgeAddress(req.recipient_address),
-            HashLock(req.hash_lock.try_into().unwrap()),
-            Amount(AssetType::Moveth(req.amount)),
-        ).await {
-            Ok(_) => Ok(Response::new(InitiateBridgeTransferResponse {
-                success: true,
-                error_message: "".to_string(),
-            })),
-            Err(e) => Ok(Response::new(InitiateBridgeTransferResponse {
-                success: false,
-                error_message: format!("Failed to initiate bridge transfer: {}", e),
-            })),
-        }
 	}
 }
 
