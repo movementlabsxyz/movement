@@ -58,10 +58,11 @@ contract AtomicBridgeCounterpartyMOVETest is Test {
             address(atomicBridgeInitiatorMOVEImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256)",
+                "initialize(address,address,uint256,uint256)",
                 address(moveToken),
                 deployer, 
-                initiatorTimeLockDuration
+                initiatorTimeLockDuration,
+                0 ether // Initial pool balance
             )
         );
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(address(proxy));
