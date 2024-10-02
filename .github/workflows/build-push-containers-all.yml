@@ -711,6 +711,6 @@ jobs:
 
       - name: Run docker-compose local.setup.test
         run: |
-          nix develop --command bash  -c "just container-test"  
+          nix develop --command bash  -c "just container-tests"  
           # run again to test restarts
-          # nix develop --command bash  -c "just container-test"  
+          # nix develop --command bash  -c "just container-tests"  
