@@ -10,35 +10,37 @@ To build the project, run:
 cargo build
 ``````
 
-Below are some sample commands with dummy args
-
 ## 1. Initiate a transfer from Ethereum to Movement
-./target/debug/bridge-cli eth-to-movement initiate "0x8bcdbe40eeb01c7451f359318e5709c16ab2f23c3a9fa71531cca57920aa828c" 100 "2bb80d537b1da3e38bd30361aa855686bde0b2f16f48e5b536b0f7625a529f33"
+
+`./target/debug/bridge-cli eth-to-movement initiate <RECIPIENT_ADDRESS> <AMOUNT> <HASH_LOCK>`
+
+### Example:### Example:### Example:
+`./target/debug/bridge-cli eth-to-movement initiate "0x8bcdbe40eeb01c7451f359318e5709c16ab2f23c3a9fa71531cca57920aa828c" 100 "2bb80d537b1da3e38bd30361aa855686bde0b2f16f48e5b536b0f7625a529f33"`
 
 ## 2. Complete a transfer from Ethereum to Movement
-./target/debug/bridge-cli eth-to-movement complete --transfer-id "deadbeef12345678" --preimage "abcdef1234567890"
+`./target/debug/bridge-cli eth-to-movement complete <TRANSFER_ID> <PREIMAGE>`
 
 ## 3. Get transfer details from Ethereum to Movement
-./target/debug/bridge-cli eth-to-movement details --transfer-id "deadbeef12345678"
+`./target/debug/bridge-cli eth-to-movement details <TRANSFER_ID>`
 
-## 4. Refund a transfer on Ethereum to Movement
-./target/debug/bridge-cli eth-to-movement initiator-refund --transfer-id "deadbeef12345678"
+## 4. Refund a transfer on Ethereum to Movement, only callable by the owner
+`./target/debug/bridge-cli eth-to-movement initiator-refund <TRANSFER_ID>`
 
-## 5. Abort a transfer on Ethereum to Movement by the counterparty
-./target/debug/bridge-cli eth-to-movement counterparty-abort --transfer-id "deadbeef12345678"
+## 5. Abort a transfer on Ethereum to Movement by the counterparty, only callable by the owner
+`./target/debug/bridge-cli eth-to-movement counterparty-abort <TRANSFER_ID>`
 
 ## 6. Initiate a transfer from Movement to Ethereum
-./target/debug/bridge-cli movement-to-eth initiate --recipient "0xabcdef1234567890" --amount 200 --hash-lock "1234567890abcdef"
+`./target/debug/bridge-cli movement-to-eth initiate <RECIPIENT_ADDRESS> <AMOUNT> <HASH_LOCK>`
 
 ## 7. Complete a transfer from Movement to Ethereum
-./target/debug/bridge-cli movement-to-eth complete --transfer-id "feedcafe87654321" --preimage "1234567890abcdef"
+`./target/debug/bridge-cli movement-to-eth initiate <RECIPIENT_ADDRESS> <AMOUNT> <HASH_LOCK>`
 
-## 8. Refund a transfer on Movement to Ethereum
-./target/debug/bridge-cli movement-to-eth initiator-refund --transfer-id "feedcafe87654321"
+## 8. Refund a transfer on Movement to Ethereum, only callable by the owner
+`./target/debug/bridge-cli movement-to-eth initiator-refund <TRANSFER_ID>`
 
-## 9. Abort a transfer on Movement to Ethereum by the counterparty
-./target/debug/bridge-cli movement-to-eth counterparty-abort --transfer-id "feedcafe87654321"
+## 9. Abort a transfer on Movement to Ethereum by the counterparty, only callable by the owner
+`./target/debug/bridge-cli movement-to-eth counterparty-abort <TRANSFER_ID>`  
 
-## 10. Get transfer details from Movement to Ethereum
-./target/debug/bridge-cli movement-to-eth details --transfer-id "feedcafe87654321"
+## 10. Get transfer details from Movement to Ethereum 
+`./target/debug/bridge-cli movement-to-eth details <TRANSFER_ID>`
 
