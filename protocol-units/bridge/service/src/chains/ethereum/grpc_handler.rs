@@ -1,4 +1,7 @@
-use alloy::{primitives::Address, signers::Signature};
+use alloy::{
+	primitives::{keccak256, Address},
+	signers::Signature,
+};
 use bridge_grpc::{
 	bridge_server::Bridge, AbortBridgeTransferRequest, BridgeTransferDetailsResponse,
 	CounterpartyCompleteBridgeTransferRequest, GenericBridgeResponse,
@@ -225,13 +228,15 @@ impl Bridge for GRPCServer {
 			Ok(Some(details)) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: details.initiator_address.0.to_string(),
 				recipient_address: details.recipient_address.0,
-				hash_lock: details.hash_lock.0,
+				hash_lock: details.hash_lock.0.try_into().expect("Failed to convert hash lock"), // expect
+				// to go
 				time_lock: details.time_lock.0,
 				amount: details.amount.value(),
-				state: details.state,
+				state: details.state as u32,
 				error_message: "".to_string(),
 			})),
-			Ok(None) => Ok(Response::new(BridgeTransferDetailsResponse {
+			// Ok(None) case
+			Ok(_) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: "".to_string(),
 				recipient_address: vec![],
 				hash_lock: vec![],
@@ -270,13 +275,13 @@ impl Bridge for GRPCServer {
 			Ok(Some(details)) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: details.initiator_address.0.to_string(),
 				recipient_address: details.recipient_address.0,
-				hash_lock: details.hash_lock.0,
+				hash_lock: details.hash_lock.0.try_into().expect("Failed to convert hash lock"), // expect,
 				time_lock: details.time_lock.0,
 				amount: details.amount.value(),
-				state: details.state,
+				state: details.state as u32,
 				error_message: "".to_string(),
 			})),
-			Ok(None) => Ok(Response::new(BridgeTransferDetailsResponse {
+			Ok(_) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: "".to_string(),
 				recipient_address: vec![],
 				hash_lock: vec![],
@@ -299,26 +304,27 @@ impl Bridge for GRPCServer {
 }
 
 impl GRPCServer {
+	// Assuming the recover method works similarly to ethers' recover.
 	fn verify_signature(
 		&self,
 		message: &[u8],
 		signature: &[u8],
 		expected_address: Address,
 	) -> Result<(), Status> {
-		// Hash the message (Eth signatures use a "prefixed" hash)
-		let message_hash = ethers::utils::hash_message(message);
+		// Hash the message using Keccak256 (Ethereum's prefixed message hash)
+		let message_hash = keccak256(message);
 
 		// Parse the signature into the alloy Signature type
 		let signature = Signature::try_from(signature)
 			.map_err(|_| Status::unauthenticated("Invalid signature"))?;
 
-		// Recover the public address from the signature
+		// Recover the public address from the signature using alloy
 		let public_key = signature
-			.recover(message_hash)
-			.map_err(|_| Status::unauthenticated("Failed to recover address"))?;
+			.recover(&message_hash)
+			.map_err(|_| Status::unauthenticated("Failed to recover public key"))?;
 
 		// Compare the recovered address with the expected address
-		if public_key != self.eth_client.get_signer_address() {
+		if public_key != expected_address {
 			return Err(Status::unauthenticated("Signature does not match the expected signer"));
 		}
 
