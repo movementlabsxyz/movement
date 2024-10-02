@@ -2,7 +2,7 @@ use movement_types::application;
 use std::path::PathBuf;
 use syncador::backend::{archive, clear, glob, pipeline, s3, PullOperations, PushOperations};
 use tokio::time::interval;
-use tracing::info;
+use tracing::{info, warn};
 
 #[derive(Debug, Clone)]
 pub enum Target {
@@ -82,8 +82,16 @@ pub async fn syncup(
 		loop {
 			info!("waiting for next push");
 			interval.tick().await;
-			let package = push_pipeline.push(syncador::Package::null()).await?;
-			info!("Pushed package: {:?}", package);
+
+			// push allow push to fail
+			match push_pipeline.push(syncador::Package::null()).await {
+				Ok(package) => {
+					info!("Pushed package: {:?}", package);
+				}
+				Err(err) => {
+					warn!("Error pushing package: {:?}", err);
+				}
+			}
 		}
 		Ok::<(), anyhow::Error>(())
 	};

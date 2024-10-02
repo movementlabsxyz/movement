@@ -79,7 +79,10 @@ async fn main() -> Result<(), anyhow::Error> {
 					let sync_task = dot_movement
 						.sync(is_leader, glob, bucket.to_string(), application::Id::suzuka())
 						.await?;
-					Box::pin(async { sync_task.await })
+					Box::pin(async {
+						sync_task.await?;
+						Ok(())
+					})
 				} else {
 					Box::pin(async {
 						info!("No sync task configured, skipping.");

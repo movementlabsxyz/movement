@@ -24,3 +24,4 @@ profile.json
 *.log
 venv
 *.pem
+*.jot
