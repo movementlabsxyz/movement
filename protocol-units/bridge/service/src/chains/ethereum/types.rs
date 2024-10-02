@@ -5,7 +5,10 @@ use crate::types::BridgeTransferId;
 use crate::types::HashLock;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
+use std::error::Error;
+use std::fmt;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::str::FromStr;
 
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
@@ -128,15 +131,9 @@ pub type AlloyProvider = FillProvider<
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable)]
 pub struct EthAddress(pub Address);
 
-impl EthAddress {
-	pub fn from_slice(bytes: &[u8]) -> Result<Self, &'static str> {
-		if bytes.len() != 20 {
-			return Err("Invalid length: Address must be 20 bytes long");
-		}
-
-		let mut fixed_bytes = [0u8; 20];
-		fixed_bytes.copy_from_slice(bytes);
-		Ok(EthAddress(Address(fixed_bytes.into())))
+impl From<&str> for EthAddress {
+	fn from(s: &str) -> Self {
+		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
 	}
 }
 
