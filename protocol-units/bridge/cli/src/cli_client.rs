@@ -44,7 +44,7 @@ impl Client {
 				println!("Bridge transfer initiated successfully.");
 			}
 
-			EthSubCommands::Complete { transfer_id, pre_image } => {
+			EthSubCommands::Complete { transfer_id, preimage } => {
 				let transfer_id = BridgeTransferId(
 					hex::decode(transfer_id)
 						.expect("Invalid hex for transfer ID")
@@ -52,7 +52,7 @@ impl Client {
 						.map_err(|_| anyhow::anyhow!("Invalid hex for transfer ID"))?,
 				);
 				let pre_image = HashLockPreImage(
-					hex::decode(pre_image).expect("Invalid hex for pre-image").try_into().unwrap(),
+					hex::decode(preimage).expect("Invalid hex for pre-image").try_into().unwrap(),
 				);
 
 				self.eth.initiator_complete_bridge_transfer(transfer_id, pre_image).await?;
@@ -71,49 +71,7 @@ impl Client {
 				println!("Bridge transfer refunded successfully.");
 			}
 
-			EthSubCommands::Lock { transfer_id, initiator, recipient, amount, hash_lock } => {
-				let transfer_id = BridgeTransferId(
-					hex::decode(transfer_id)
-						.expect("Invalid hex for transfer ID")
-						.try_into()
-						.unwrap(),
-				);
-				let hash_lock = HashLock(
-					hex::decode(hash_lock).expect("Invalid hex for hash lock").try_into().unwrap(),
-				);
-				let initiator_address = BridgeAddress(
-					hex::decode(initiator)
-						.expect("Invalid hex for initiator address")
-						.try_into()
-						.map_err(|_| anyhow::anyhow!("Invalid hex for initiator address"))?,
-				);
-				let recipient_address = BridgeAddress(recipient.0.clone());
-
-				self.eth
-					.lock_bridge_transfer(
-						transfer_id,
-						hash_lock,
-						initiator_address,
-						recipient_address,
-						Amount(AssetType::Moveth(amount.clone())),
-					)
-					.await?;
-				println!("Bridge transfer locked successfully.");
-			}
-
-			EthSubCommands::Abort { transfer_id } => {
-				let transfer_id = BridgeTransferId(
-					hex::decode(transfer_id)
-						.expect("Invalid hex for transfer ID")
-						.try_into()
-						.map_err(|_| anyhow::anyhow!("Invalid hex for transfer ID"))?,
-				);
-
-				self.eth.abort_bridge_transfer(transfer_id).await?;
-				println!("Bridge transfer aborted successfully.");
-			}
-
-			EthSubCommands::DetailsInitiator { transfer_id } => {
+			EthSubCommands::Details { transfer_id } => {
 				let transfer_id = BridgeTransferId(
 					hex::decode(transfer_id)
 						.expect("Invalid hex for transfer ID")
@@ -126,26 +84,6 @@ impl Client {
 				match details {
 					Some(details) => {
 						println!("Initiator Details: {:?}", details);
-					}
-					None => {
-						println!("No details found for the transfer.");
-					}
-				}
-			}
-
-			EthSubCommands::DetailsCounterparty { transfer_id } => {
-				let transfer_id = BridgeTransferId(
-					hex::decode(transfer_id)
-						.expect("Invalid hex for transfer ID")
-						.try_into()
-						.map_err(|_| anyhow::anyhow!("Invalid hex for transfer ID"))?,
-				);
-
-				let details =
-					self.eth.get_bridge_transfer_details_counterparty(transfer_id).await?;
-				match details {
-					Some(details) => {
-						println!("Counterparty Details: {:?}", details);
 					}
 					None => {
 						println!("No details found for the transfer.");
