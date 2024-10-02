@@ -1,3 +1,4 @@
+use alloy::{primitives::Address, signers::Signature, sol_types::sol_data::Address};
 use bridge_grpc::{
 	bridge_server::Bridge, AbortBridgeTransferRequest, BridgeTransferDetailsResponse,
 	CounterpartyCompleteBridgeTransferRequest, GenericBridgeResponse,
@@ -283,5 +284,33 @@ impl Bridge for GRPCServer {
 				error_message: format!("Failed to get bridge transfer details: {}", e),
 			})),
 		}
+	}
+}
+
+impl GRPCServer {
+	fn verify_signature(
+		&self,
+		message: &[u8],
+		signature: &[u8],
+		expected_address: Address,
+	) -> Result<(), Status> {
+		// Hash the message (Eth signatures use a "prefixed" hash)
+		let message_hash = ethers::utils::hash_message(message);
+
+		// Parse the signature into the alloy Signature type
+		let signature = Signature::try_from(signature)
+			.map_err(|_| Status::unauthenticated("Invalid signature"))?;
+
+		// Recover the public address from the signature
+		let public_key = signature
+			.recover(message_hash)
+			.map_err(|_| Status::unauthenticated("Failed to recover address"))?;
+
+		// Compare the recovered address with the expected address
+		if public_key != self.eth_client.get_signer_address() {
+			return Err(Status::unauthenticated("Signature does not match the expected signer"));
+		}
+
+		Ok(())
 	}
 }

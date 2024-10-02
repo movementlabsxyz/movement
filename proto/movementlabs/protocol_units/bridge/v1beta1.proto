@@ -1,7 +1,7 @@
 syntax = "proto3";
 package movementlabs.protocol_units.bridge.v1beta1;
 
-service Bridge {
+service BridgeService {
   rpc InitiateBridgeTransfer (InitiateBridgeTransferRequest) returns (InitiateBridgeTransferResponse) {}
   rpc InitiatorCompleteBridgeTransfer (InitiatorCompleteBridgeTransferRequest) returns (GenericBridgeResponse) {}
   rpc CounterpartyCompleteBridgeTransfer (CounterpartyCompleteBridgeTransferRequest) returns (GenericBridgeResponse) {}
@@ -16,6 +16,7 @@ message InitiateBridgeTransferRequest {
   bytes recipient_address = 1;
   bytes hash_lock = 2;
   uint64 amount = 3;
+  bytes signature = 4;  // Add signature field
 }
 
 message InitiateBridgeTransferResponse {
@@ -26,15 +27,18 @@ message InitiateBridgeTransferResponse {
 message InitiatorCompleteBridgeTransferRequest {
   bytes bridge_transfer_id = 1;
   bytes pre_image = 2;
+  bytes signature = 3;  // Add signature field
 }
 
 message CounterpartyCompleteBridgeTransferRequest {
   bytes bridge_transfer_id = 1;
   bytes pre_image = 2;
+  bytes signature = 3;  // Add signature field
 }
 
 message RefundBridgeTransferRequest {
   bytes bridge_transfer_id = 1;
+  bytes signature = 2;  // Add signature field
 }
 
 message LockBridgeTransferRequest {
@@ -43,14 +47,17 @@ message LockBridgeTransferRequest {
   bytes initiator_address = 3;
   string recipient_address = 4;
   uint64 amount = 5;
+  bytes signature = 6;  // Add signature field
 }
 
 message AbortBridgeTransferRequest {
   bytes bridge_transfer_id = 1;
+  bytes signature = 2;  // Add signature field
 }
 
 message GetBridgeTransferDetailsRequest {
   bytes bridge_transfer_id = 1;
+  bytes signature = 2;  // Add signature field
 }
 
 message BridgeTransferDetailsResponse {
