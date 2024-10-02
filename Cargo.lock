@@ -55,25 +55,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "512761e0bb2578dd7380c6baaa0f4ce03e84f95e960231d1dec8bf4d7d6e2627"
 
 [[package]]
-name = "admin-bridge-cli"
-version = "0.0.2"
-dependencies = [
- "alloy",
- "anyhow",
- "bridge-service",
- "clap 4.5.18",
- "directories",
- "eyre",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.18",
- "url",
- "uuid 1.10.0",
-]
-
-[[package]]
 name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3710,6 +3691,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "bridge-cli"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "bridge-service",
+ "clap 4.5.18",
+ "directories",
+ "eyre",
+ "hex",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
+ "uuid 1.10.0",
 ]
 
 [[package]]
