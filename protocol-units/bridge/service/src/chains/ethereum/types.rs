@@ -5,7 +5,10 @@ use crate::types::BridgeTransferId;
 use crate::types::HashLock;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
+use std::error::Error;
+use std::fmt;
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::str::FromStr;
 
 use alloy::json_abi::Param;
 use alloy::network::{Ethereum, EthereumWallet};
@@ -127,6 +130,12 @@ pub type AlloyProvider = FillProvider<
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable)]
 pub struct EthAddress(pub Address);
+
+impl From<&str> for EthAddress {
+	fn from(s: &str) -> Self {
+		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
+	}
+}
 
 impl From<EthAddress> for Vec<u8> {
 	fn from(address: EthAddress) -> Self {

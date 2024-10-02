@@ -1,6 +1,15 @@
+use super::types::{
+	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
+	EthAddress, InitiatorContract, WETH9Contract, WETH9,
+};
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
+use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::types::{
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+	HashLockPreImage, TimeLock,
+};
 use alloy::primitives::{private::serde::Deserialize, Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder, RootProvider};
 use alloy::signers::k256::elliptic_curve::SecretKey;
@@ -15,17 +24,6 @@ use alloy_rlp::Decodable;
 use serde_with::serde_as;
 use std::fmt::{self, Debug};
 use url::Url;
-
-use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
-};
-
-use super::types::{
-	AlloyProvider, AtomicBridgeCounterparty, AtomicBridgeInitiator, CounterpartyContract,
-	EthAddress, InitiatorContract, WETH9Contract, WETH9,
-};
-
 pub const GAS_LIMIT: u128 = 10_000_000_000_000_000;
 pub const RETRIES: u32 = 6;
 
@@ -87,7 +85,7 @@ pub struct EthClient {
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
-	config: Config,
+	pub config: Config,
 }
 
 impl EthClient {
@@ -220,12 +218,12 @@ impl EthClient {
 }
 
 #[async_trait::async_trait]
-impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
+impl BridgeContract<EthAddress> for EthClient {
 	// `_initiator_address`, or in the contract, `originator` is set
 	// via the `msg.sender`, which is stored in the `rpc_provider`.
 	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
-		&mut self,
+		&self,
 		initiator_address: BridgeAddress<EthAddress>,
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
@@ -252,7 +250,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn initiator_complete_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
@@ -277,7 +275,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn counterparty_complete_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
@@ -302,7 +300,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn refund_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract =
@@ -315,7 +313,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn lock_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 		hash_lock: HashLock,
 		initiator: BridgeAddress<Vec<u8>>,
@@ -342,7 +340,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn abort_bridge_transfer(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let contract = AtomicBridgeCounterparty::new(
@@ -357,7 +355,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn get_bridge_transfer_details_initiator(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
@@ -390,7 +388,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 
 	async fn get_bridge_transfer_details_counterparty(
-		&mut self,
+		&self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));

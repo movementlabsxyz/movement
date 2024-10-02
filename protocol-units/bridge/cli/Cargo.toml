@@ -10,11 +10,10 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-bridge-shared.workspace = true
-ethereum-bridge.workspace = true
-movement-bridge.workspace = true
+bridge-service.workspace = true
 
 clap.workspace = true
+hex.workspace = true
 tokio.workspace = true
 anyhow.workspace = true
 tracing.workspace = true

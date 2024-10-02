@@ -8,6 +8,9 @@ use std::fmt;
 use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
+use crate::chains::ethereum::types::EthAddress;
+use crate::chains::movement::utils::MovementAddress;
+
 pub type BridgeHash = [u8; 32];
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, Hash)]
@@ -72,11 +75,18 @@ impl From<String> for BridgeAddress<Vec<u8>> {
 		Self(value.as_bytes().to_vec())
 	}
 }
-// impl<A: Into<Vec<u8>>> Into<BridgeAddress<Vec<u8>>> for BridgeAddress<A> {
-// 	fn into(self) -> BridgeAddress<Vec<u8>> {
-// 		BridgeAddress(self.0.into())
-// 	}
-// }
+
+impl From<&str> for BridgeAddress<EthAddress> {
+	fn from(value: &str) -> Self {
+		Self(EthAddress::from(value))
+	}
+}
+
+impl From<&str> for BridgeAddress<MovementAddress> {
+	fn from(value: &str) -> Self {
+		Self(MovementAddress::from(value))
+	}
+}
 
 #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct HashLock(pub [u8; 32]);
