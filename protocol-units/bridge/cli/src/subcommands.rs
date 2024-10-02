@@ -13,15 +13,16 @@ pub struct CliOptions {
 pub enum BridgeCommands {
 	/// Ethereum to Movement bridge commands
 	#[command(subcommand)]
-	EthToMovement(TransferCommands),
+	EthToMovement(TransferSubcommands),
 
 	/// Movement to Ethereum bridge commands
 	#[command(subcommand)]
-	MovementToEth(TransferCommands),
+	MovementToEth(TransferSubcommands),
 }
 
+/// The Transfer C
 #[derive(Subcommand)]
-pub enum TransferCommands {
+pub enum TransferSubcommands {
 	/// Initiate a bridge transfer from Ethereum to Movement
 	#[command(about = "Initiates a transfer from the origin chain to the destination chain")]
 	Initiate {
