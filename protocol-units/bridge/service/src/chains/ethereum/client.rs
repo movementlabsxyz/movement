@@ -85,7 +85,7 @@ pub struct EthClient {
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
-	config: Config,
+	pub config: Config,
 }
 
 impl EthClient {

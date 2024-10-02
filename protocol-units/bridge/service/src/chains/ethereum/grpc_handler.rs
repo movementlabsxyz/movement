@@ -1,4 +1,4 @@
-use alloy::{primitives::Address, signers::Signature, sol_types::sol_data::Address};
+use alloy::{primitives::Address, signers::Signature};
 use bridge_grpc::{
 	bridge_server::Bridge, AbortBridgeTransferRequest, BridgeTransferDetailsResponse,
 	CounterpartyCompleteBridgeTransferRequest, GenericBridgeResponse,
@@ -22,6 +22,17 @@ pub struct GRPCServer {
 impl GRPCServer {
 	pub fn new(eth_client: EthClient) -> Self {
 		Self { eth_client }
+	}
+
+	#[cfg(test)]
+	async fn new_for_test() -> Self {
+		use super::client::Config;
+
+		Self {
+			eth_client: EthClient::new(Config::build_for_test())
+				.await
+				.expect("Failed to create EthClient"),
+		}
 	}
 }
 
@@ -312,5 +323,55 @@ impl GRPCServer {
 		}
 
 		Ok(())
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use alloy::signers::local::PrivateKeySigner;
+	use ethers::signers::{LocalWallet, Signer};
+	use ethers::types::Bytes;
+	use ethers::utils::keccak256;
+
+	#[tokio::test]
+	async fn test_verify_signature_happy_path() {
+		let grpc_server = GRPCServer::new_for_test();
+		let message = b"test message";
+
+		let private_key_signer = grpc_server.eth_client.config.signer_private_key.clone();
+		let message_hash = keccak256(message);
+
+		let signature = private_key_signer.sign_message(&message_hash).await.unwrap();
+
+		let result = grpc_server.verify_signature(
+			message,
+			&signature.to_vec(),
+			grpc_server.eth_client.get_signer_address(),
+		);
+
+		assert!(result.is_ok(), "The signature should match and verify successfully");
+	}
+
+	#[tokio::test]
+	async fn test_verify_signature_unhappy_path() {
+		let grpc_server = GRPCServer::new_for_test();
+
+		let different_message = b"different message";
+
+		let private_key_signer = grpc_server.eth_client.config.signer_private_key.clone();
+
+		let different_message_hash = keccak256(different_message);
+
+		let different_signature =
+			private_key_signer.sign_message(&different_message_hash).await.unwrap();
+
+		let result = grpc_server.verify_signature(
+			b"wrong message",
+			&different_signature.to_vec(),
+			grpc_server.eth_client.get_signer_address(),
+		);
+
+		assert!(result.is_err(), "The signature verification should fail for a different message");
 	}
 }
