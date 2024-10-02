@@ -129,7 +129,6 @@ pub async fn setup_movement_node(
 	});
 
 	setup_complete_rx.await.expect("Failed to receive setup completion signal");
-	std::thread::sleep(std::time::Duration::from_secs(7));
 	println!("Movement node startup complete message received.");
 
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
