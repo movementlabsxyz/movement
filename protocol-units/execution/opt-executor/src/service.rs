@@ -8,7 +8,9 @@ use aptos_api::{
 use aptos_storage_interface::DbReaderWriter;
 
 use futures::prelude::*;
-use poem::{http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server};
+use poem::{
+	get, http::Method, listener::TcpListener, middleware::Cors, EndpointExt, Route, Server,
+};
 use tracing::info;
 
 use std::future::Future;
@@ -78,6 +80,7 @@ impl Service {
 				"/set_failpoint",
 				poem::get(set_failpoints::set_failpoint_poem).data(self.api_context()),
 			)
+			.data(self.api_context())
 			.with(cors);
 
 		Server::new(listener)

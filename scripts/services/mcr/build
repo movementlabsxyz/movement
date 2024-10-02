@@ -13,5 +13,5 @@ else
 fi
 
 echo "Building mcr-settlement-runner..."
-cargo build $CARGO_PROFILE_FLAGS -p mcr-settlement-runner
+cargo build $CARGO_PROFILE_FLAGS -p mcr-settlement-runner --no-default-features
 echo "Built mcr-settlement-runner!"

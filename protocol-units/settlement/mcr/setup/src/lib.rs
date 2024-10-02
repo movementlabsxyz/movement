@@ -1,3 +1,4 @@
+use crate::local::one_validator_genesis_ceremonial;
 use dot_movement::DotMovement;
 use mcr_settlement_config::Config;
 
@@ -32,6 +33,10 @@ impl Setup {
 		if let Some(deploy) = &config.deploy {
 			tracing::info!("Deploying contracts...");
 			config = self.deploy.setup(dot_movement, config.clone(), deploy).await?;
+		}
+
+		if config.should_run_local() {
+			one_validator_genesis_ceremonial::setup(&config).await?;
 		}
 
 		Ok((config, join_handle))

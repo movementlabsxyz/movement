@@ -52,6 +52,7 @@ impl FinalityView {
 	///
 	/// The block must be found on the committed chain.
 	pub fn set_finalized_block_height(&self, height: u64) -> Result<(), anyhow::Error> {
+		tracing::info!("FinalityView set_finalized_block_height call at height:{height}");
 		self.inner.set_finalized_block_height(height)?;
 		Ok(())
 	}

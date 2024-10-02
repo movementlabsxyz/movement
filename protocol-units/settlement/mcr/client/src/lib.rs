@@ -1,14 +1,16 @@
 use movement_types::block::BlockCommitment;
 use tokio_stream::Stream;
+
+#[cfg(feature = "mock")]
 pub mod mock;
 
 #[cfg(feature = "mock")]
-pub use mock::*;
+pub use mock::McrSettlementClient;
 
 pub mod eth_client;
 
 #[cfg(feature = "eth")]
-pub use eth_client::Client as McrEthSettlementClient;
+pub use eth_client::Client as McrSettlementClient;
 
 pub mod send_eth_transaction;
 

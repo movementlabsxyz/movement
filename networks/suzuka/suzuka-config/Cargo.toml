@@ -24,3 +24,8 @@ toml = { workspace = true }
 tracing = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 godfig = { workspace = true }
+
+[features]
+default = []
+eth = ["mcr-settlement-client/eth"]
+mock = ["mcr-settlement-client/mock"]
