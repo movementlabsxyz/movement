@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 use alloy::node_bindings::AnvilInstance;
+use alloy::primitives::Address;
 use alloy::primitives::{keccak256, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_network::EthereumWallet;
-use anyhow::Result;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
@@ -94,6 +94,10 @@ impl HarnessEthClient {
 		rpc_provider
 	}
 
+	pub fn signer_address(&self) -> Address {
+		self.signer_private_key.address()
+	}
+
 	pub async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: BridgeAddress<EthAddress>,
@@ -128,11 +132,13 @@ pub struct HarnessMvtClient {
 	pub faucet_client: Arc<RwLock<FaucetClient>>,
 }
 
-// impl HarnessMvtClient {
-// 	pub fn faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
-// 		&self.faucet_client
-// 	}
-// }
+impl HarnessMvtClient {
+	pub fn gen_aptos_account() -> Vec<u8> {
+		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+		let movement_recipient = LocalAccount::generate(&mut rng);
+		movement_recipient.public_key().to_bytes().to_vec()
+	}
+}
 
 pub struct TestHarness {
 	// pub eth_client: Option<HarnessEthClient>,
@@ -227,7 +233,7 @@ impl TestHarness {
 	// 	eth_client.get_signer_address()
 	// }
 
-	/// The port that Anvil will listen on.
+	// The port that Anvil will listen on.
 	// pub fn rpc_port(&self) -> u16 {
 	// 	self.eth_client().expect("Could not fetch eth client").rpc_port()
 	// }
@@ -268,10 +274,4 @@ impl TestHarness {
 	// 		.await
 	// 		.expect("Failed to initialize contract");
 	// }
-
-	pub fn gen_aptos_account(&self) -> Vec<u8> {
-		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
-		let movement_recipient = LocalAccount::generate(&mut rng);
-		movement_recipient.public_key().to_bytes().to_vec()
-	}
 }

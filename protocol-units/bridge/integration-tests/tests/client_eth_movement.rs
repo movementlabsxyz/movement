@@ -1,5 +1,4 @@
 use alloy::{
-	node_bindings::Anvil,
 	primitives::{address, keccak256},
 	providers::Provider,
 };
@@ -7,6 +6,7 @@ use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
+use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::TestHarness;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::{
@@ -19,145 +19,145 @@ use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
 
-// #[tokio::test]
-// async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
-// 	let (mut eth_client_harness, _config) = TestHarness::new_with_movement().await;
+#[tokio::test]
+async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
+	let (mut eth_client_harness, _config) = TestHarness::new_with_movement().await;
 
-// 	//
-// 	let rest_client = eth_client_harness.rest_client;
-// 	let coin_client = CoinClient::new(&rest_client);
-// 	let movement_client_signer = eth_client_harness.movement_client.signer();
+	//
+	let rest_client = eth_client_harness.rest_client;
+	let coin_client = CoinClient::new(&rest_client);
+	let movement_client_signer = eth_client_harness.movement_client.signer();
 
-// 	let faucet_client = eth_client_harness.faucet_client.write().unwrap();
+	let faucet_client = eth_client_harness.faucet_client.write().unwrap();
 
-// 	faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-// 	println!("ICI after fund");
-// 	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-// 	println!("ICI after ge tbalance");
-// 	assert!(
-// 		balance >= 100_000_000,
-// 		"Expected Movement Client to have at least 100_000_000, but found {}",
-// 		balance
-// 	);
+	faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+	println!("ICI after fund");
+	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
+	println!("ICI after ge tbalance");
+	assert!(
+		balance >= 100_000_000,
+		"Expected Movement Client to have at least 100_000_000, but found {}",
+		balance
+	);
 
-// 	if let Err(e) = eth_client_harness.movement_process.kill().await {
-// 		eprintln!("Failed to kill child process: {:?}", e);
-// 	}
+	if let Err(e) = eth_client_harness.movement_process.kill().await {
+		eprintln!("Failed to kill child process: {:?}", e);
+	}
 
-// 	Ok(())
-// }
+	Ok(())
+}
 
-// #[tokio::test]
-// async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
-// 	let _ = tracing_subscriber::fmt().try_init();
+#[tokio::test]
+async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
+	let _ = tracing_subscriber::fmt().try_init();
 
-// 	let (mut eth_client_harness, _config) = TestHarness::new_with_movement().await;
-// 	eth_client_harness.movement_process.kill().await?;
+	let (mut eth_client_harness, _config) = TestHarness::new_with_movement().await;
+	eth_client_harness.movement_process.kill().await?;
 
-// 	Ok(())
-// }
+	Ok(())
+}
 
-// #[tokio::test]
+#[tokio::test]
 
-// async fn test_movement_client_should_successfully_call_lock_and_complete(
-// ) -> Result<(), anyhow::Error> {
-// 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
+async fn test_movement_client_should_successfully_call_lock_and_complete(
+) -> Result<(), anyhow::Error> {
+	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-// 	let (mut eth_client_harness, _config) = TestHarness::new_with_movement().await;
+	let (mut eth_client_harness, _config) = TestHarness::new_with_movement().await;
 
-// 	let args = EthToMovementCallArgs::default();
+	let args = EthToMovementCallArgs::default();
 
-// 	let test_result = async {
-// 		let coin_client = CoinClient::new(&eth_client_harness.rest_client);
-// 		let movement_client_signer = eth_client_harness.movement_client.signer();
+	let test_result = async {
+		let coin_client = CoinClient::new(&eth_client_harness.rest_client);
+		let movement_client_signer = eth_client_harness.movement_client.signer();
 
-// 		{
-// 			let faucet_client = eth_client_harness.faucet_client.write().unwrap();
-// 			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-// 		}
+		{
+			let faucet_client = eth_client_harness.faucet_client.write().unwrap();
+			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+		}
 
-// 		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-// 		assert!(
-// 			balance >= 100_000_000,
-// 			"Expected Movement Client to have at least 100_000_000, but found {}",
-// 			balance
-// 		);
+		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
+		assert!(
+			balance >= 100_000_000,
+			"Expected Movement Client to have at least 100_000_000, but found {}",
+			balance
+		);
 
-// 		eth_client_harness
-// 			.movement_client
-// 			.lock_bridge_transfer(
-// 				BridgeTransferId(args.bridge_transfer_id.0),
-// 				HashLock(args.hash_lock.0),
-// 				BridgeAddress(args.initiator.clone()),
-// 				BridgeAddress(args.recipient.clone().into()),
-// 				Amount(AssetType::Moveth(args.amount)),
-// 			)
-// 			.await
-// 			.expect("Failed to lock bridge transfer");
+		eth_client_harness
+			.movement_client
+			.lock_bridge_transfer(
+				BridgeTransferId(args.bridge_transfer_id.0),
+				HashLock(args.hash_lock.0),
+				BridgeAddress(args.initiator.clone()),
+				BridgeAddress(args.recipient.clone().into()),
+				Amount(AssetType::Moveth(args.amount)),
+			)
+			.await
+			.expect("Failed to lock bridge transfer");
 
-// 		let bridge_transfer_id: [u8; 32] =
-// 			test_utils::extract_bridge_transfer_id(&mut eth_client_harness.movement_client).await?;
-// 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-// 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
-// 			&mut eth_client_harness.movement_client,
-// 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-// 		)
-// 		.await
-// 		.expect("Failed to get bridge transfer details")
-// 		.expect("Expected to find bridge transfer details, but got None");
+		let bridge_transfer_id: [u8; 32] =
+			test_utils::extract_bridge_transfer_id(&mut eth_client_harness.movement_client).await?;
+		info!("Bridge transfer id: {:?}", bridge_transfer_id);
+		let details = BridgeContract::get_bridge_transfer_details_counterparty(
+			&mut eth_client_harness.movement_client,
+			BridgeTransferId(MovementHash(bridge_transfer_id).0),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
-// 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
-// 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-// 		assert_eq!(
-// 			&details.initiator_address.0 .0[32 - args.initiator.len()..],
-// 			&args.initiator,
-// 			"Initiator address does not match"
-// 		);
-// 		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
-// 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
-// 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
+		assert_eq!(details.hash_lock.0, args.hash_lock.0);
+		assert_eq!(
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
+			&args.initiator,
+			"Initiator address does not match"
+		);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
-// 		let secret = b"secret";
-// 		let mut padded_secret = [0u8; 32];
-// 		padded_secret[..secret.len()].copy_from_slice(secret);
+		let secret = b"secret";
+		let mut padded_secret = [0u8; 32];
+		padded_secret[..secret.len()].copy_from_slice(secret);
 
-// 		BridgeContract::counterparty_complete_bridge_transfer(
-// 			&mut eth_client_harness.movement_client,
-// 			BridgeTransferId(args.bridge_transfer_id.0),
-// 			HashLockPreImage(padded_secret),
-// 		)
-// 		.await
-// 		.expect("Failed to complete bridge transfer");
+		BridgeContract::counterparty_complete_bridge_transfer(
+			&mut eth_client_harness.movement_client,
+			BridgeTransferId(args.bridge_transfer_id.0),
+			HashLockPreImage(padded_secret),
+		)
+		.await
+		.expect("Failed to complete bridge transfer");
 
-// 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
-// 			&mut eth_client_harness.movement_client,
-// 			BridgeTransferId(args.bridge_transfer_id.0),
-// 		)
-// 		.await
-// 		.expect("Failed to get bridge transfer details")
-// 		.expect("Expected to find bridge transfer details, but got None");
+		let details = BridgeContract::get_bridge_transfer_details_counterparty(
+			&mut eth_client_harness.movement_client,
+			BridgeTransferId(args.bridge_transfer_id.0),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
 
-// 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
-// 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
-// 		assert_eq!(
-// 			&details.initiator_address.0 .0[32 - args.initiator.len()..],
-// 			&args.initiator,
-// 			"Initiator address does not match"
-// 		);
-// 		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
-// 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
-// 		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
+		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
+		assert_eq!(details.hash_lock.0, args.hash_lock.0);
+		assert_eq!(
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
+			&args.initiator,
+			"Initiator address does not match"
+		);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
+		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
-// 		Ok(())
-// 	}
-// 	.await;
+		Ok(())
+	}
+	.await;
 
-// 	if let Err(e) = eth_client_harness.movement_process.kill().await {
-// 		eprintln!("Failed to kill child process: {:?}", e);
-// 	}
+	if let Err(e) = eth_client_harness.movement_process.kill().await {
+		eprintln!("Failed to kill child process: {:?}", e);
+	}
 
-// 	test_result
-// }
+	test_result
+}
 
 #[tokio::test]
 async fn test_movement_client_should_successfully_call_lock_and_abort() -> Result<(), anyhow::Error>
@@ -262,10 +262,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 	test_result
 }
 
-// #[tokio::test]
-// async fn test_eth_client_should_build_and_fetch_accounts() {
-// 	let scaffold: TestHarness = TestHarness::new_only_eth().await;
-
 #[tokio::test]
 async fn test_eth_client_should_build_and_fetch_accounts() {
 	let (eth_client_harness, _config) = TestHarness::new_only_eth().await;
@@ -291,170 +287,153 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 		assert_eq!(account, expected);
 	}
 }
-// #[tokio::test]
-// async fn test_eth_client_should_deploy_initiator_contract() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+#[tokio::test]
+async fn test_eth_client_should_deploy_initiator_contract() {
+	let (_eth_client_harness, config) = TestHarness::new_only_eth().await;
 
-// 	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
+	assert!(config.eth.eth_initiator_contract != "Oxeee");
+	assert_eq!(
+		config.eth.eth_initiator_contract, "0x8464135c8F25Da09e49BC8782676a84730C318bC",
+		"Wrong initiator contract address."
+	);
+}
 
-// 	let initiator_address = harness.deploy_initiator_contract().await;
-// 	let expected_address = address!("1234567890abcdef1234567890abcdef12345678");
+#[tokio::test]
+async fn test_eth_client_should_successfully_call_initialize() {
+	let (_eth_client_harness, config) = TestHarness::new_only_eth().await;
+	assert!(config.eth.eth_counterparty_contract != "0xccc");
+	assert_eq!(
+		config.eth.eth_counterparty_contract, "0x71C95911E9a5D330f4D621842EC243EE1343292e",
+		"Wrong initiator contract address."
+	);
+	assert!(config.eth.eth_weth_contract != "0xe3e3");
+	assert_eq!(
+		config.eth.eth_weth_contract, "0x948B3c65b89DF0B4894ABE91E6D02FE579834F8F",
+		"Wrong initiator contract address."
+	);
+}
 
-// 	assert_eq!(initiator_address, expected_address);
-// }
+#[tokio::test]
+async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
+	let (mut eth_client_harness, _config) = TestHarness::new_only_eth().await;
 
-// #[tokio::test]
-// async fn test_eth_client_should_successfully_call_initialize() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
-// 	let _ = harness.set_eth_signer(anvil.keys()[0].clone());
-// 	harness.deploy_init_contracts().await;
-// }
+	let recipient = HarnessMvtClient::gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+	eth_client_harness
+		.eth_client
+		.initiate_bridge_transfer(
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
+			HashLock(EthHash(hash_lock).0),
+			Amount(AssetType::EthAndWeth((1, 0))), // Eth
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+}
 
-// #[tokio::test]
-// async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+#[tokio::test]
+async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() {
+	let (mut eth_client_harness, _config) = TestHarness::new_only_eth().await;
 
-// 	let signer_address: alloy::primitives::Address =
-// 		harness.set_eth_signer(anvil.keys()[0].clone());
+	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
-// 	harness.deploy_init_contracts().await;
+	let recipient = HarnessMvtClient::gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+	eth_client_harness
+		.deposit_weth_and_approve(
+			BridgeAddress(EthAddress(signer_address)),
+			Amount(AssetType::EthAndWeth((0, 1))),
+		)
+		.await
+		.expect("Failed to deposit WETH");
 
-// 	let recipient = harness.gen_aptos_account();
-// 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-// 	harness
-// 		.eth_client_mut()
-// 		.expect("Failed to get EthClient")
-// 		.initiate_bridge_transfer(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			BridgeAddress(recipient),
-// 			HashLock(EthHash(hash_lock).0),
-// 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-// }
+	eth_client_harness
+		.eth_client
+		.initiate_bridge_transfer(
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
+			HashLock(EthHash(hash_lock).0),
+			Amount(AssetType::EthAndWeth((0, 1))),
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+}
 
-// #[tokio::test]
-// async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+#[tokio::test]
+async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth() {
+	let (mut eth_client_harness, _config) = TestHarness::new_only_eth().await;
 
-// 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
+	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
-// 	harness.deploy_init_contracts().await;
+	let recipient = HarnessMvtClient::gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+	eth_client_harness
+		.deposit_weth_and_approve(
+			BridgeAddress(EthAddress(signer_address)),
+			Amount(AssetType::EthAndWeth((0, 1))),
+		)
+		.await
+		.expect("Failed to deposit WETH");
 
-// 	let recipient = harness.gen_aptos_account();
-// 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-// 	harness
-// 		.deposit_weth_and_approve(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			Amount(AssetType::EthAndWeth((0, 1))),
-// 		)
-// 		.await
-// 		.expect("Failed to deposit WETH");
+	eth_client_harness
+		.initiate_bridge_transfer(
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
+			HashLock(EthHash(hash_lock).0),
+			Amount(AssetType::EthAndWeth((1, 1))),
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
+}
 
-// 	harness
-// 		.initiate_bridge_transfer(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			BridgeAddress(recipient),
-// 			HashLock(EthHash(hash_lock).0),
-// 			Amount(AssetType::EthAndWeth((0, 1))),
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-// }
+#[tokio::test]
+#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
+async fn test_client_should_successfully_get_bridge_transfer_id() {
+	let (mut eth_client_harness, _config) = TestHarness::new_only_eth().await;
 
-// #[tokio::test]
-// async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
-// 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-// 	let matching_signer_address = harness.eth_signer_address();
+	let recipient = HarnessMvtClient::gen_aptos_account();
+	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
-// 	assert_eq!(signer_address, matching_signer_address, "Signer address mismatch");
+	eth_client_harness
+		.initiate_bridge_transfer(
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient),
+			HashLock(EthHash(hash_lock).0),
+			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
 
-// 	harness.deploy_init_contracts().await;
+	//TODO: Here call get details with the captured event
+}
 
-// 	let recipient = harness.gen_aptos_account();
-// 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
-// 	harness
-// 		.deposit_weth_and_approve(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			Amount(AssetType::EthAndWeth((0, 1))),
-// 		)
-// 		.await
-// 		.expect("Failed to deposit WETH");
+#[tokio::test]
+#[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
+async fn test_eth_client_should_successfully_complete_transfer() {
+	let (mut eth_client_harness, _config) = TestHarness::new_only_eth().await;
 
-// 	harness
-// 		.initiate_bridge_transfer(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			BridgeAddress(recipient),
-// 			HashLock(EthHash(hash_lock).0),
-// 			Amount(AssetType::EthAndWeth((1, 1))),
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-// }
+	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
-// #[tokio::test]
-// #[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-// async fn test_client_should_successfully_get_bridge_transfer_id() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
+	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
+	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
 
-// 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-// 	harness.deploy_init_contracts().await;
+	let secret = "secret".to_string();
+	let hash_lock = keccak256(secret.as_bytes());
+	let hash_lock: [u8; 32] = hash_lock.into();
 
-// 	let recipient = harness.gen_aptos_account();
-// 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
+	eth_client_harness
+		.initiate_bridge_transfer(
+			BridgeAddress(EthAddress(signer_address)),
+			BridgeAddress(recipient_bytes),
+			HashLock(EthHash(hash_lock).0),
+			Amount(AssetType::EthAndWeth((42, 0))),
+		)
+		.await
+		.expect("Failed to initiate bridge transfer");
 
-// 	harness
-// 		.eth_client_mut()
-// 		.expect("Failed to get EthClient")
-// 		.initiate_bridge_transfer(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			BridgeAddress(recipient),
-// 			HashLock(EthHash(hash_lock).0),
-// 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-
-// 	//TODO: Here call get details with the captured event
-// }
-
-// #[tokio::test]
-// #[ignore] // To be tested after this is merged in https://github.com/movementlabsxyz/movement/pull/209
-// async fn test_eth_client_should_successfully_complete_transfer() {
-// 	let mut harness: TestHarness = TestHarness::new_only_eth().await;
-// 	let anvil = Anvil::new().port(harness.rpc_port()).spawn();
-
-// 	let signer_address = harness.set_eth_signer(anvil.keys()[0].clone());
-// 	harness.deploy_init_contracts().await;
-
-// 	let recipient = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
-// 	let recipient_bytes: Vec<u8> = recipient.to_string().as_bytes().to_vec();
-
-// 	let secret = "secret".to_string();
-// 	let hash_lock = keccak256(secret.as_bytes());
-// 	let hash_lock: [u8; 32] = hash_lock.into();
-
-// 	harness
-// 		.eth_client_mut()
-// 		.expect("Failed to get EthClient")
-// 		.initiate_bridge_transfer(
-// 			BridgeAddress(EthAddress(signer_address)),
-// 			BridgeAddress(recipient_bytes),
-// 			HashLock(EthHash(hash_lock).0),
-// 			Amount(AssetType::EthAndWeth((42, 0))),
-// 		)
-// 		.await
-// 		.expect("Failed to initiate bridge transfer");
-
-// 	//TODO: Here call complete with the id captured from the event
-// }
+	//TODO: Here call complete with the id captured from the event
+}

@@ -65,10 +65,7 @@ impl MovementClient {
 		let signer =
 			utils::create_local_account(config.movement_signer_address.clone(), &rest_client)
 				.await?;
-
-		let mut address_bytes = [0u8; AccountAddress::LENGTH];
-		address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
-		let native_address = AccountAddress::new(address_bytes);
+		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClient {
 			native_address,
 			non_native_address: Vec::new(), //dummy for now
