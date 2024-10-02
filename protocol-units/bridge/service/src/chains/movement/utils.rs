@@ -367,3 +367,42 @@ pub async fn send_view_request(
 		.await?;
 	Ok(view_response.inner().clone())
 }
+
+pub fn create_script(
+	account: &Account,
+	code: Vec<u8>,
+	ty_args: Vec<TypeTag>,
+	args: Vec<TransactionArgument>,
+) -> SignedTransaction {
+	create_transaction_payload(
+	account,
+	TransactionPayload::Script(Script::new(code, ty_args, args)),
+	)
+}
+
+pub fn create_transaction_payload(
+	&mut self,
+	account: &Account,
+	payload: TransactionPayload,
+) -> SignedTransaction {
+	self.create_transaction_without_sign(account, payload)
+	.sign()
+}
+
+/// Creates a transaction without signing it
+pub fn create_transaction_without_sign(
+	&mut self,
+	account: &Account,
+	payload: TransactionPayload,
+) -> TransactionBuilder {
+	let on_chain_seq_no = self.sequence_number(account.address());
+	let seq_no_ref = self.txn_seq_no.get_mut(account.address()).unwrap();
+	let seq_no = std::cmp::max(on_chain_seq_no, *seq_no_ref);
+	*seq_no_ref = seq_no + 1;
+	account
+	.transaction()
+	.sequence_number(seq_no)
+	.max_gas_amount(self.max_gas_per_txn)
+	.gas_unit_price(self.default_gas_unit_price)
+	.payload(payload)
+}

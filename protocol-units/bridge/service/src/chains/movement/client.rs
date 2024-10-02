@@ -58,6 +58,19 @@ impl Config {
 	}
 }
 
+pub static BRIDGE_SCRIPTS: Lazy<BTreeMap<String, Vec<u8>>> = Lazy::new(build_scripts);
+fn build_scripts() -> BTreeMap<String, Vec<u8>> {
+	let package_folder = "bridge.data";
+	let package_names = vec![
+		"update_operator",
+		"update_initiator_time_lock",
+		"update_counterparty_time_lock",
+		"mint_burn_caps",
+		"atomic_bridge_feature",
+	];
+	utils::build_scripts(package_folder, package_names)
+}
+
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct MovementClient {
@@ -740,6 +753,66 @@ impl MovementClient {
 			.expect("Failed to write updated Move.toml file");
 
 		println!("Move.toml addresses updated successfully at the end of the test.");
+
+		Ok(())
+	}
+
+	pub fn init_framework_test(&mut self) -> Result<()> {
+		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
+
+		let mut process = Command::new("movement")
+			.args(&["init"])
+			.stdin(Stdio::piped())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()
+			.expect("Failed to execute command");
+
+		let private_key_hex = hex::encode(self.signer.private_key().to_bytes());
+
+		let stdin: &mut std::process::ChildStdin =
+			process.stdin.as_mut().expect("Failed to open stdin");
+
+		let movement_dir = PathBuf::from(".movement");
+
+		if movement_dir.exists() {
+			stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+		}
+
+		stdin.write_all(b"local\n").expect("Failed to write to stdin");
+
+		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
+
+		let addr_output = process.wait_with_output().expect("Failed to read command output");
+
+		if !addr_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		}
+
+		if !addr_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		}
+		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
+		let address = addr_output_str
+			.split_whitespace()
+			.find(|word| word.starts_with("0x"))
+			.expect("Failed to extract the Movement account address");
+
+		println!("Extracted address: {}", address);
+
+
+		// Set counterparty module address to resource address, for function calls:
+		self.native_address = AccountAddress::from_hex_literal(&addr_output_str)?;
+
+		let update_operator_script_code = BRIDGE_SCRIPTS
+			.get("update_operator")
+			.expect("bridge script should be built");
+		let txn = utils.create_script(
+			&core_resources,
+			update_operator_script_code.clone(),
+			vec![],
+			vec![TransactionArgument::Address(*new_operator.address())]
+		);
 
 		Ok(())
 	}
