@@ -9,6 +9,7 @@ use std::{fmt::Debug, hash::Hash};
 use thiserror::Error;
 
 use crate::chains::ethereum::types::EthAddress;
+use crate::chains::movement::utils::MovementAddress;
 
 pub type BridgeHash = [u8; 32];
 
@@ -78,6 +79,12 @@ impl From<String> for BridgeAddress<Vec<u8>> {
 impl From<&str> for BridgeAddress<EthAddress> {
 	fn from(value: &str) -> Self {
 		Self(EthAddress::from(value))
+	}
+}
+
+impl From<&str> for BridgeAddress<MovementAddress> {
+	fn from(value: &str) -> Self {
+		Self(MovementAddress::from(value))
 	}
 }
 
