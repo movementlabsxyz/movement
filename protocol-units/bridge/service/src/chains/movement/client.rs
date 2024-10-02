@@ -10,14 +10,14 @@ use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
 	move_types::identifier::Identifier,
-	rest_client::{Client, FaucetClient, Response},
+	rest_client::{Client, Response},
 	types::LocalAccount,
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
 use rand::prelude::*;
 use std::str::FromStr;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
@@ -799,10 +799,6 @@ impl MovementClient {
 		let node_connection_url = Url::from_str(node_connection_url.as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
 		let rest_client = Client::new(node_connection_url.clone());
-
-		let faucet_url = "http://127.0.0.1:8081".to_string();
-		let faucet_url = Url::from_str(faucet_url.as_str())
-			.map_err(|_| BridgeContractError::SerializationError)?;
 
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok((

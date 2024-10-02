@@ -129,12 +129,6 @@ impl MovementHash {
 		rng.fill_bytes(&mut hash);
 		Self(hash)
 	}
-
-	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
-		let mut random_bytes = [0u8; 32];
-		rng.fill(&mut random_bytes);
-		Self(random_bytes)
-	}
 }
 
 impl From<HashLockPreImage> for MovementHash {

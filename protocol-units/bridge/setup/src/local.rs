@@ -1,13 +1,10 @@
 use alloy::node_bindings::{Anvil, AnvilInstance};
 use alloy::signers::local::PrivateKeySigner;
-use anyhow::Context;
-use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
 use bridge_config::common::eth::EthConfig;
 use bridge_config::common::movement::MovementConfig;
 use bridge_config::common::testing::TestingConfig;
 use bridge_config::Config as BridgeConfig;
-use commander::run_command;
 use hex::ToHex;
 use rand::prelude::*;
 use std::{
@@ -160,12 +157,6 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 
 	let stdin: &mut std::process::ChildStdin =
 		process.stdin.as_mut().expect("Failed to open stdin");
-
-	let movement_dir = PathBuf::from(".movement/config.yaml");
-
-	// if movement_dir.exists() {
-	// 	stdin.write_all(b"yes\n").expect("Failed to write to stdin");
-	// }
 
 	stdin.write_all(b"local\n").expect("Failed to write to stdin");
 

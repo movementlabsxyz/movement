@@ -5,7 +5,6 @@ use crate::types::BridgeAddress;
 use crate::types::BridgeTransferId;
 use crate::types::HashLock;
 use crate::types::HashLockPreImage;
-use crate::types::TimeLock;
 use crate::ChainId;
 use std::future::Future;
 use std::pin::Pin;

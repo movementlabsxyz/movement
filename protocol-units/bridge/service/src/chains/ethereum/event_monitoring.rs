@@ -13,13 +13,10 @@ use crate::types::{
 };
 use alloy::dyn_abi::EventExt;
 use alloy::eips::BlockNumberOrTag;
+use alloy::json_abi::{Event, EventParam};
 use alloy::primitives::{address, LogData};
-use alloy::providers::{Provider, ProviderBuilder, RootProvider, WsConnect};
+use alloy::providers::{Provider, ProviderBuilder, WsConnect};
 use alloy::rpc::types::{Filter, Log};
-use alloy::{
-	json_abi::{Event, EventParam},
-	pubsub::PubSubFrontend,
-};
 use bridge_config::common::eth::EthConfig;
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -28,7 +25,6 @@ use tokio::select;
 
 pub struct EthMonitoring {
 	listener: UnboundedReceiver<BridgeContractResult<BridgeContractEvent<EthAddress>>>,
-	ws: RootProvider<PubSubFrontend>,
 }
 
 impl BridgeContractMonitoring for EthMonitoring {
@@ -88,7 +84,7 @@ impl EthMonitoring {
 			}
 		});
 
-		Ok(Self { listener, ws })
+		Ok(Self { listener })
 	}
 }
 

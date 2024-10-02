@@ -87,22 +87,6 @@ env_default!(
 	DEFAULT_MVT_FAUCET_CONNECTION_PORT
 );
 
-// impl Config {
-// 	pub fn build_for_test() -> Self {
-// 		let seed = [3u8; 32];
-// 		let mut rng = rand::rngs::StdRng::from_seed(seed);
-
-// 		Config {
-// 			rpc_url: Some("http://localhost:8080".parse().unwrap()),
-// 			ws_url: Some("ws://localhost:8080".parse().unwrap()),
-// 			chain_id: 4.to_string(),
-// 			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
-// 			initiator_contract: None,
-// 			gas_limit: 10_000_000_000,
-// 		}
-// 	}
-// }
-
 impl MovementConfig {
 	pub fn mvt_rpc_connection_url(&self) -> String {
 		format!(
