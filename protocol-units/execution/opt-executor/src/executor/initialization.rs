@@ -112,6 +112,8 @@ impl Executor {
 			&node_config,
 			Arc::clone(&self.transactions_in_flight),
 			maptos_config.load_shedding.max_transactions_in_flight,
+			self.config.mempool.sequence_number_ttl_ms,
+			self.config.mempool.gc_slot_duration_ms,
 		);
 
 		let cx = Context::new(
