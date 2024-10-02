@@ -10,6 +10,7 @@ members = [
     "protocol-units/da/m1/*",
     "protocol-units/sequencing/memseq/*",
     "protocol-units/mempool/*",
+    "protocol-units/syncing/*",
     "protocol-units/settlement/mcr/client",
     "protocol-units/settlement/mcr/config",
     "protocol-units/settlement/mcr/manager",
@@ -26,6 +27,7 @@ members = [
     "util/movement-algs",
     "util/movement-types",
     "util/tracing",
+    "util/syncador",
     "networks/suzuka/*",
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
@@ -90,6 +92,8 @@ monza-config = { path = "networks/monza/monza-config" }
 flocks = { path = "util/flocks" }
 godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
+syncup = { path = "protocol-units/syncing/syncup" }
+syncador = { path = "util/syncador" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump
@@ -171,11 +175,8 @@ secp256k1 = { version = "0.27", default-features = false, features = [
 ] }
 
 ## Celestia Dependencies
-#celestia-rpc = { git = "https://github.com/eigerco/lumina" }
-#celestia-types = { git = "https://github.com/eigerco/lumina", version= "0.2.x" }
-celestia-types = "0.3.0"
-celestia-rpc = "0.3.0"
-
+celestia-rpc = { version = "0.3.0" }
+celestia-types = { version = "0.3.0" }
 
 alloy = { git = "https://github.com/alloy-rs/alloy.git", package = "alloy", rev = "83343b172585fe4e040fb104b4d1421f58cbf9a2", features = [
     "node-bindings",
@@ -288,13 +289,22 @@ inotify = "0.10.2"
 rustix = "0.38.34"
 paste = "1.0.15"
 uuid = { version = "1.10.0", features = ["v4"] }
+tar = "0.4.41"
+flate2 = "1.0.31"
 blake-3 = "1.4.0"
+regex = "1.10.6"
+globset = "0.4.15"
+glob = "0.3.1"
 
 # trying to pin diesel
 # diesel = "=2.1.1"
 # migrations_internals = "=2.1.1"
 num_cpus = "=1.16.0"
 ahash = "=0.8.11"
+
+aws-types = "1.3.3"
+aws-config = { version = "1.1.7", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.42.0"
 
 [workspace.lints.rust]
 dead_code = "deny"        ## Alloy Dependencies

@@ -16,7 +16,7 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 impl Executor {
 	pub async fn execute_block(
@@ -37,6 +37,10 @@ impl Executor {
 					anyhow::bail!("First transaction in block must be a block metadata transaction")
 				}
 			};
+
+			for transaction in metadata_access_transactions.iter() {
+				warn!("Transaction sender: {:?}", transaction.sender());
+			}
 
 			// reconstruct the block
 			let block = ExecutableBlock::new(
@@ -60,7 +64,7 @@ impl Executor {
 		})
 		.await??;
 
-		debug!("Block execution compute the following state: {:?}", state_compute);
+		warn!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
