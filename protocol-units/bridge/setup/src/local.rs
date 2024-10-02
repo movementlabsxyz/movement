@@ -8,6 +8,7 @@ use bridge_config::common::movement::MovementConfig;
 use bridge_config::common::testing::TestingConfig;
 use bridge_config::Config as BridgeConfig;
 use commander::run_command;
+use hex::ToHex;
 use rand::prelude::*;
 use std::{
 	env, fs,
@@ -15,9 +16,9 @@ use std::{
 	path::PathBuf,
 	process::{Command, Stdio},
 };
+use tokio::io::AsyncBufReadExt;
+use tokio::io::BufReader;
 use tokio::process::Command as TokioCommand;
-
-pub type MovementNodeTask = tokio::task::JoinHandle<Result<String, anyhow::Error>>;
 
 pub async fn setup(
 	mut config: BridgeConfig,
@@ -48,7 +49,7 @@ pub fn setup_eth(config: &mut EthConfig, testing_config: &mut TestingConfig) -> 
 
 pub async fn setup_movement_node(
 	config: &mut MovementConfig,
-) -> Result<MovementNodeTask, anyhow::Error> {
+) -> Result<tokio::process::Child, anyhow::Error> {
 	//kill existing process if any.
 	let kill_cmd = TokioCommand::new("sh")
 			.arg("-c")
@@ -62,38 +63,95 @@ pub async fn setup_movement_node(
 		tracing::info!("Movement process killed if it was running.");
 	}
 
-	// let delete_dir_cmd = TokioCommand::new("sh")
-	// 	.arg("-c")
-	// 	.arg("if [ -d '.movement' ]; then rm -rf .movement; fi")
-	// 	.output()
-	// 	.await?;
+	let delete_dir_cmd = TokioCommand::new("sh")
+		.arg("-c")
+		.arg("if [ -d '.movement/config.yaml' ]; then rm -rf .movement/config.yaml; fi")
+		.output()
+		.await?;
 
-	// if !delete_dir_cmd.status.success() {
-	// 	println!("Failed to delete .movement directory: {:?}", delete_dir_cmd.stderr);
-	// } else {
-	// 	println!(".movement directory deleted if it was present.");
-	// }
+	if !delete_dir_cmd.status.success() {
+		println!("Failed to delete .movement directory: {:?}", delete_dir_cmd.stderr);
+	} else {
+		println!(".movement directory deleted if it was present.");
+	}
 
-	let movement_join_handle = tokio::task::spawn(async move {
-		run_command(
-			"movement",
-			&vec!["node", "run-local-testnet", "--force-restart", "--assume-yes"],
-		)
-		.await
-		.context("Failed to start Movement node from CLI")
+	let (setup_complete_tx, setup_complete_rx) = tokio::sync::oneshot::channel();
+	let mut child = TokioCommand::new("movement")
+		.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()?;
+
+	let stdout = child.stdout.take().expect("Failed to capture stdout");
+	let stderr = child.stderr.take().expect("Failed to capture stderr");
+
+	tokio::task::spawn(async move {
+		let mut stdout_reader = BufReader::new(stdout).lines();
+		let mut stderr_reader = BufReader::new(stderr).lines();
+
+		loop {
+			tokio::select! {
+				line = stdout_reader.next_line() => {
+					match line {
+						Ok(Some(line)) => {
+							println!("STDOUT: {}", line);
+							if line.contains("Setup is complete") {
+								println!("Testnet is up and running!");
+								let _ = setup_complete_tx.send(());
+																return Ok(());
+							}
+						},
+						Ok(_) => {
+							return Err(anyhow::anyhow!("Unexpected end of stdout stream"));
+						},
+						Err(e) => {
+							return Err(anyhow::anyhow!("Error reading stdout: {}", e));
+						}
+					}
+				},
+				line = stderr_reader.next_line() => {
+					match line {
+						Ok(Some(line)) => {
+							println!("STDERR: {}", line);
+							if line.contains("Setup is complete") {
+								println!("Testnet is up and running!");
+								let _ = setup_complete_tx.send(());
+																return Ok(());
+							}
+						},
+						Ok(_) => {
+							return Err(anyhow::anyhow!("Unexpected end of stderr stream"));
+						}
+						Err(e) => {
+							return Err(anyhow::anyhow!("Error reading stderr: {}", e));
+						}
+					}
+				}
+			}
+		}
 	});
+
+	setup_complete_rx.await.expect("Failed to receive setup completion signal");
+	std::thread::sleep(std::time::Duration::from_secs(7));
+	println!("Movement node startup complete message received.");
 
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 	let signer = LocalAccount::generate(&mut rng);
-	let private_key_hex = hex::encode(signer.private_key().to_bytes());
-	config.movement_signer_address = private_key_hex;
+	config.movement_signer_address = signer.private_key().clone();
 
-	Ok(movement_join_handle)
+	Ok(child)
 }
 
 pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
-	let mut process = Command::new("movement")
-		.args(&["init"])
+	let mut process = Command::new("movement") //--network
+		.args(&[
+			"init",
+			"--rest-url",
+			&config.mvt_rpc_connection_url(),
+			"--faucet-url",
+			&config.mvt_faucet_connection_url(),
+			"--assume-yes",
+		])
 		.stdin(Stdio::piped())
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())
@@ -103,25 +161,25 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 	let stdin: &mut std::process::ChildStdin =
 		process.stdin.as_mut().expect("Failed to open stdin");
 
-	let movement_dir = PathBuf::from(".movement");
+	let movement_dir = PathBuf::from(".movement/config.yaml");
 
-	if movement_dir.exists() {
-		stdin.write_all(b"yes\n").expect("Failed to write to stdin");
-	}
+	// if movement_dir.exists() {
+	// 	stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+	// }
 
 	stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-	let private_key_hex = config.movement_signer_address.clone();
+	let private_key_bytes = config.movement_signer_address.to_bytes();
+	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
 	let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
 
 	let addr_output = process.wait_with_output().expect("Failed to read command output");
-
 	if !addr_output.stdout.is_empty() {
-		println!("Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		println!("Move init Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
 	}
 
 	if !addr_output.stderr.is_empty() {
-		eprintln!("Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		eprintln!("Move init Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 	}
 	let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
 	let address = addr_output_str
@@ -145,13 +203,20 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 		.stderr(Stdio::piped())
 		.output()
 		.expect("Failed to execute command");
+	println!("After movement account done.");
 
 	// Print the output of the resource address command for debugging
 	if !resource_output.stdout.is_empty() {
-		println!("Publish stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
+		println!(
+			"Movement account Publish stdout: {}",
+			String::from_utf8_lossy(&resource_output.stdout)
+		);
 	}
 	if !resource_output.stderr.is_empty() {
-		eprintln!("Publish stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
+		eprintln!(
+			"Movement account Publish stderr: {}",
+			String::from_utf8_lossy(&resource_output.stderr)
+		);
 	}
 
 	// Extract the resource address from the JSON output
@@ -163,6 +228,7 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 		.expect("Failed to extract the resource account address");
 
 	// Ensure the address has a "0x" prefix
+
 	let formatted_resource_address = if resource_address.starts_with("0x") {
 		resource_address.to_string()
 	} else {
@@ -170,7 +236,6 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 	};
 
 	// Set counterparty module address to resource address, for function calls:
-	let native_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
 	println!("Publish Derived resource address: {}", formatted_resource_address);
 	config.movement_native_address = formatted_resource_address.clone();
 
@@ -242,11 +307,11 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 		.expect("Publish Failed to execute command");
 
 	if !output2.stdout.is_empty() {
-		eprintln!("Publish stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		eprintln!("Movement move Publish stdout: {}", String::from_utf8_lossy(&output2.stdout));
 	}
 
 	if !output2.stderr.is_empty() {
-		eprintln!("Publish stderr: {}", String::from_utf8_lossy(&output2.stderr));
+		eprintln!("Movement move Publish stderr: {}", String::from_utf8_lossy(&output2.stderr));
 	}
 
 	// if movement_dir.exists() {

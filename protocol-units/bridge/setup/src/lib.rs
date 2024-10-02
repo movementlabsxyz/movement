@@ -1,4 +1,3 @@
-use crate::local::MovementNodeTask;
 use alloy::node_bindings::AnvilInstance;
 use bridge_config::Config;
 
@@ -25,7 +24,7 @@ pub async fn test_eth_setup() -> Result<(Config, AnvilInstance), anyhow::Error> 
 	Ok((config, anvil))
 }
 
-pub async fn test_mvt_setup() -> Result<(Config, MovementNodeTask), anyhow::Error> {
+pub async fn test_mvt_setup() -> Result<(Config, tokio::process::Child), anyhow::Error> {
 	let mut config = Config::default();
 	let movement_task = local::setup_movement_node(&mut config.movement).await?;
 	local::init_local_movement_node(&mut config.movement)?;

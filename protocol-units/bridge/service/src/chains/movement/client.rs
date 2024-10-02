@@ -51,8 +51,6 @@ pub struct MovementClient {
 	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
-	///The Apotos Rest Client
-	pub faucet_client: Option<Arc<RwLock<FaucetClient>>>,
 	///The signer account
 	signer: Arc<LocalAccount>,
 }
@@ -64,9 +62,9 @@ impl MovementClient {
 
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let seed = [3u8; 32];
-		let mut rng = rand::rngs::StdRng::from_seed(seed);
-		let signer = LocalAccount::generate(&mut rng);
+		let signer =
+			utils::create_local_account(config.movement_signer_address.clone(), &rest_client)
+				.await?;
 
 		let mut address_bytes = [0u8; AccountAddress::LENGTH];
 		address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
@@ -75,7 +73,6 @@ impl MovementClient {
 			native_address,
 			non_native_address: Vec::new(), //dummy for now
 			rest_client,
-			faucet_client: None,
 			signer: Arc::new(signer),
 		})
 	}
@@ -86,14 +83,6 @@ impl MovementClient {
 
 	pub fn signer(&self) -> &LocalAccount {
 		&self.signer
-	}
-
-	pub fn faucet_client(&self) -> Result<&Arc<RwLock<FaucetClient>>> {
-		if let Some(faucet_client) = &self.faucet_client {
-			Ok(faucet_client)
-		} else {
-			Err(anyhow::anyhow!("Faucet client not initialized"))
-		}
 	}
 
 	pub async fn initiator_set_timelock(
@@ -817,10 +806,6 @@ impl MovementClient {
 		let faucet_url = "http://127.0.0.1:8081".to_string();
 		let faucet_url = Url::from_str(faucet_url.as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
-		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
-			faucet_url.clone(),
-			node_connection_url.clone(),
-		)));
 
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok((
@@ -828,7 +813,6 @@ impl MovementClient {
 				native_address: DUMMY_ADDRESS,
 				non_native_address: Vec::new(),
 				rest_client,
-				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},
 			child,

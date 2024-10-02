@@ -19,9 +19,10 @@ use bridge_service::{
 	chains::bridge_contracts::{BridgeContract, BridgeContractResult},
 	types::BridgeAddress,
 };
-use bridge_setup::local::MovementNodeTask;
 use rand::SeedableRng;
+use std::str::FromStr;
 use std::sync::{Arc, RwLock};
+use url::Url;
 
 pub mod utils;
 
@@ -92,51 +93,97 @@ impl HarnessEthClient {
 			.expect("Error during provider creation");
 		rpc_provider
 	}
+
+	pub async fn initiate_bridge_transfer(
+		&mut self,
+		initiator_address: BridgeAddress<EthAddress>,
+		recipient_address: BridgeAddress<Vec<u8>>,
+		hash_lock: HashLock,
+		amount: Amount, // the amount
+	) -> BridgeContractResult<()> {
+		self.eth_client
+			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, amount)
+			.await
+	}
+
+	pub async fn deposit_weth_and_approve(
+		&mut self,
+		initiator_address: BridgeAddress<EthAddress>,
+		amount: Amount,
+	) -> BridgeContractResult<()> {
+		self.eth_client
+			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.value()))
+			.await
+			.expect("Failed to deposit WETH");
+		Ok(())
+	}
 }
 
 pub struct HarnessMvtClient {
 	pub movement_client: MovementClient,
-	pub movement_task: MovementNodeTask,
+	pub movement_process: tokio::process::Child,
+	///The Apotos Rest Client
+	pub rest_client: Client,
+	///The Apotos Rest Client
+	pub faucet_client: Arc<RwLock<FaucetClient>>,
 }
 
+// impl HarnessMvtClient {
+// 	pub fn faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+// 		&self.faucet_client
+// 	}
+// }
+
 pub struct TestHarness {
-	pub eth_client: Option<HarnessEthClient>,
-	pub movement_client: Option<MovementClient>,
+	// pub eth_client: Option<HarnessEthClient>,
+	// pub movement_client: Option<MovementClient>,
 }
 
 impl TestHarness {
 	pub async fn new_with_movement() -> (HarnessMvtClient, Config) {
-		let (config, movement_task) =
+		let (config, movement_process) =
 			bridge_setup::test_mvt_setup().await.expect("Failed to setup MovementClient");
+
 		let movement_client = MovementClient::new(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
 
-		(HarnessMvtClient { movement_client, movement_task }, config)
+		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
+			.expect("Bad movement rpc url in config");
+		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = Url::from_str(&config.movement.mvt_faucet_connection_url())
+			.expect("Bad movement faucet url in config");
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_url.clone(),
+			node_connection_url.clone(),
+		)));
+
+		(HarnessMvtClient { movement_client, movement_process, rest_client, faucet_client }, config)
 	}
 
-	pub fn movement_rest_client(&self) -> &Client {
-		self.movement_client().expect("Could not fetch Movement client").rest_client()
-	}
+	// pub fn movement_rest_client(&self) -> &Client {
+	// 	self.movement_client().expect("Could not fetch Movement client").rest_client()
+	// }
 
-	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
-		self.movement_client()
-			.expect("Could not fetch Movement client")
-			.faucet_client()
-			.expect("Faucet client not initialized")
-	}
+	// pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
+	// 	self.movement_client()
+	// 		.expect("Could not fetch Movement client")
+	// 		.faucet_client()
+	// 		.expect("Faucet client not initialized")
+	// }
 
-	pub fn movement_client(&self) -> Result<&MovementClient> {
-		self.movement_client
-			.as_ref()
-			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
-	}
+	// pub fn movement_client(&self) -> Result<&MovementClient> {
+	// 	self.movement_client
+	// 		.as_ref()
+	// 		.ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	// }
 
-	pub fn movement_client_mut(&mut self) -> Result<&mut MovementClient> {
-		self.movement_client
-			.as_mut()
-			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
-	}
+	// pub fn movement_client_mut(&mut self) -> Result<&mut MovementClient> {
+	// 	self.movement_client
+	// 		.as_mut()
+	// 		.ok_or(anyhow::Error::msg("MovementClient not initialized"))
+	// }
 
 	pub async fn new_only_eth() -> (HarnessEthClient, Config) {
 		let (config, anvil) =
@@ -159,12 +206,12 @@ impl TestHarness {
 	// 		.ok_or(anyhow::Error::msg("EthClient not initialized"))
 	// }
 
-	pub fn eth_client_mut(&mut self) -> Result<&mut EthClient> {
-		self.eth_client
-			.as_mut()
-			.map(|eth| &mut eth.eth_client)
-			.ok_or(anyhow::Error::msg("EthClient not initialized"))
-	}
+	// pub fn eth_client_mut(&mut self) -> Result<&mut EthClient> {
+	// 	self.eth_client
+	// 		.as_mut()
+	// 		.map(|eth| &mut eth.eth_client)
+	// 		.ok_or(anyhow::Error::msg("EthClient not initialized"))
+	// }
 
 	// pub fn set_eth_signer(&mut self, signer: SecretKey<Secp256k1>) -> Address {
 	// 	let eth_client = self.eth_client_mut().expect("EthClient not initialized");
@@ -221,32 +268,6 @@ impl TestHarness {
 	// 		.await
 	// 		.expect("Failed to initialize contract");
 	// }
-
-	pub async fn initiate_bridge_transfer(
-		&mut self,
-		initiator_address: BridgeAddress<EthAddress>,
-		recipient_address: BridgeAddress<Vec<u8>>,
-		hash_lock: HashLock,
-		amount: Amount, // the amount
-	) -> BridgeContractResult<()> {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client
-			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, amount)
-			.await
-	}
-
-	pub async fn deposit_weth_and_approve(
-		&mut self,
-		initiator_address: BridgeAddress<EthAddress>,
-		amount: Amount,
-	) -> BridgeContractResult<()> {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client
-			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.value()))
-			.await
-			.expect("Failed to deposit WETH");
-		Ok(())
-	}
 
 	pub fn gen_aptos_account(&self) -> Vec<u8> {
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);

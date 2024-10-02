@@ -1,17 +1,17 @@
+use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform, ValidCryptoMaterialStringExt};
 use godfig::env_default;
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_MOVEMENT_NATIVE_ADDRESS: &str = "0xface";
-const DEFAULT_MOVEMENT_SIGNER_ADDRESS: &str = "0xface";
-const DEFAULT_MVT_RPC_CONNECTION_HOSTNAME: &str = "localhost";
+const DEFAULT_MVT_RPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
 const DEFAULT_MVT_RPC_CONNECTION_PORT: u16 = 8080;
-const DEFAULT_MVT_FAUCET_CONNECTION_HOSTNAME: &str = "localhost";
-const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8080;
+const DEFAULT_MVT_FAUCET_CONNECTION_HOSTNAME: &str = "127.0.0.1";
+const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
 	#[serde(default = "default_movement_signer_address")]
-	pub movement_signer_address: String,
+	pub movement_signer_address: Ed25519PrivateKey,
 	#[serde(default = "default_movement_native_address")]
 	pub movement_native_address: String,
 
@@ -30,12 +30,13 @@ pub struct MovementConfig {
 	pub mvt_faucet_connection_port: u16,
 }
 
-env_default!(
-	default_movement_signer_address,
-	"MOVEMENT_SIGNER_ADDRESS",
-	String,
-	DEFAULT_MOVEMENT_SIGNER_ADDRESS.to_string()
-);
+// The default private key
+pub fn default_movement_signer_address() -> Ed25519PrivateKey {
+	match std::env::var("MOVEMENT_SIGNER_ADDRESS") {
+		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
+		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
+	}
+}
 
 env_default!(
 	default_movement_native_address,
@@ -132,7 +133,7 @@ impl Default for MovementConfig {
 			mvt_rpc_connection_port: default_mvt_rpc_connection_port(),
 			mvt_faucet_connection_protocol: default_mvt_rpc_connection_protocol(),
 			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
-			mvt_faucet_connection_port: default_mvt_rpc_connection_port(),
+			mvt_faucet_connection_port: default_mvt_faucet_connection_port(),
 		}
 	}
 }

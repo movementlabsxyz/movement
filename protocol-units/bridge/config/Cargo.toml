@@ -19,6 +19,8 @@ godfig = { workspace = true }
 anyhow = { workspace = true }
 tracing-subscriber = { workspace = true }
 tokio = { workspace = true }
+rand = { workspace = true }
+aptos-crypto = { workspace = true, features = ["cloneable-private-keys"] }
 
 [lints]
 workspace = true

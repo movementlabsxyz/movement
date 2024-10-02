@@ -3680,9 +3680,11 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
+ "aptos-crypto",
  "aptos-sdk",
  "dot-movement",
  "godfig",
+ "rand 0.7.3",
  "serde",
  "tokio",
  "tracing-subscriber 0.3.18",
