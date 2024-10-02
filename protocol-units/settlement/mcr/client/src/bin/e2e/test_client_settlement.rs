@@ -1,15 +1,15 @@
-use crate::eth_client::Client;
-use crate::McrSettlementClientOperations;
 use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use mcr_settlement_client::eth_client::Client;
+use mcr_settlement_client::McrSettlementClientOperations;
 use mcr_settlement_config::Config;
 use movement_types::block::BlockCommitment;
 use movement_types::block::Commitment;
 use movement_types::block::Id;
 use tokio_stream::StreamExt;
 
-#[tokio::test]
-pub async fn test_client_settlement() -> Result<(), anyhow::Error> {
+#[tokio::main]
+pub async fn main() -> Result<(), anyhow::Error> {
 	use tracing_subscriber::EnvFilter;
 
 	tracing_subscriber::fmt()
