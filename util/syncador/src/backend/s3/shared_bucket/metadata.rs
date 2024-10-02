@@ -1,32 +1,38 @@
 use crate::backend::s3::bucket_connection::BucketConnection;
-use movement_types::Id;
+use movement_types::{actor, application};
 use std::collections::HashSet;
 use std::time;
 
+pub const DEFAULT_SYNC_EPOCH_DURATION: u64 = 1000 * 60;
+
 #[derive(Debug, Clone)]
 pub struct Metadata {
-	pub application_id: Id,
-	pub syncer_id: Id,
+	pub application_id: application::Id,
+	pub syncer_id: actor::Id,
 	pub sync_epoch_duration: u64,
 	pub retain_epochs_count: u64,
 }
 
 impl Metadata {
 	pub fn new(
-		application_id: Id,
-		syncer_id: Id,
+		application_id: application::Id,
+		syncer_id: actor::Id,
 		sync_epoch_duration: u64,
 		retain_epochs_count: u64,
 	) -> Self {
 		Self { application_id, syncer_id, sync_epoch_duration, retain_epochs_count }
 	}
 
+	pub fn with_application_id(self, application_id: application::Id) -> Self {
+		Self { application_id, ..self }
+	}
+
 	pub fn random() -> Self {
 		Self {
-			application_id: Id::random(),
-			syncer_id: Id::random(),
-			sync_epoch_duration: 1000 * 60 * 60 * 24,
-			retain_epochs_count: 7,
+			application_id: application::Id::random(),
+			syncer_id: actor::Id::random(),
+			sync_epoch_duration: DEFAULT_SYNC_EPOCH_DURATION,
+			retain_epochs_count: 16,
 		}
 	}
 

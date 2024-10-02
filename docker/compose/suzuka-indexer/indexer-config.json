@@ -1,0 +1,27 @@
+{
+  "maptos_config": {
+    "chain": {
+      "maptos_chain_id": 27
+    },
+  "maptos_config": {
+    "indexer": {
+      "maptos_indexer_grpc_listen_hostname": "host.docker.internal",
+      "maptos_indexer_grpc_listen_port": 30734,
+      "maptos_indexer_grpc_inactivity_timeout": 60,
+      "maptos_indexer_grpc_inactivity_ping_interval": 10
+    },
+    "indexer_processor": {
+      "postgres_connection_string": "postgres://postgres:password@postgres:5432",
+      "indexer_processor_auth_token": "auth_token"
+    },
+    "client": {
+      "maptos_rest_connection_hostname": "host.docker.internal",
+      "maptos_rest_connection_port": 30731,
+      "maptos_faucet_rest_connection_hostname": "host.docker.internal",
+      "maptos_faucet_rest_connection_port": 30732,
+      "maptos_indexer_grpc_connection_hostname": "host.docker.internal",
+      "maptos_indexer_grpc_connection_port": 30734
+    }
+	}
+	}
+}

@@ -16,6 +16,22 @@ export CARGO_PROFILE="${CARGO_PROFILE:-debug}"
 # Add the target directory to the path so that built binaries can be found
 export PATH="$PATH:$(pwd)/target/$CARGO_PROFILE"
 export DOT_MOVEMENT_PATH="$(pwd)/.movement"
+# IP needed by docker container to connect to the database
+# By default use the host ip.
+# Detect the OS and call the appropriate function
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    IP=$(hostname -I | awk '{print $1}')
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    IP=$(ifconfig | awk '/inet / {print $2}' | grep -v '127.0.0.1' | head -n 1)
+fi
+export POSTGRES_HOST_IP=$IP
+
+# Provide some shared random variables for various scripts
+export MOVEMENT_SHARED_RANDOM_1=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_2=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_3=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_4=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_5=$(openssl rand -hex 16)
 
 # Call the runtime script, passing all arguments
 ./scripts/movement/$RUNTIME "$@"

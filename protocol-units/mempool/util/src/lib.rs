@@ -1,7 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use movement_types::{Block, Id, Transaction};
+use movement_types::{
+	block::{self, Block},
+	transaction::{self, Transaction},
+};
+
 use std::cmp::Ordering;
+use std::future::Future;
 
 pub trait MempoolTransactionOperations {
 	// todo: move mempool_transaction methods into separate trait
@@ -12,13 +17,22 @@ pub trait MempoolTransactionOperations {
 	) -> Result<(), anyhow::Error>;
 
 	/// Checks whether a mempool transaction exists in the mempool.
-	async fn has_mempool_transaction(&self, transaction_id: Id) -> Result<bool, anyhow::Error>;
+	async fn has_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<bool, anyhow::Error>;
 
 	/// Adds a mempool transaction to the mempool.
-	async fn add_mempool_transaction(&self, tx: MempoolTransaction) -> Result<(), anyhow::Error>;
+	async fn add_mempool_transaction(
+		&self,
+		transaction: MempoolTransaction,
+	) -> Result<(), anyhow::Error>;
 
 	/// Removes a mempool transaction from the mempool.
-	async fn remove_mempool_transaction(&self, transaction_id: Id) -> Result<(), anyhow::Error>;
+	async fn remove_mempool_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<(), anyhow::Error>;
 
 	/// Pops mempool transaction from the mempool.
 	async fn pop_mempool_transaction(&self) -> Result<Option<MempoolTransaction>, anyhow::Error>;
@@ -26,7 +40,7 @@ pub trait MempoolTransactionOperations {
 	/// Gets a mempool transaction from the mempool.
 	async fn get_mempool_transaction(
 		&self,
-		transaction_id: Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<MempoolTransaction>, anyhow::Error>;
 
 	/// Pops the next n mempool transactions from the mempool.
@@ -45,8 +59,16 @@ pub trait MempoolTransactionOperations {
 		Ok(mempool_transactions)
 	}
 
+	fn gc_mempool_transactions(
+		&self,
+		timestamp_threshold: u64,
+	) -> impl Future<Output = Result<(), anyhow::Error>> + Send + '_;
+
 	/// Checks whether the mempool has the transaction.
-	async fn has_transaction(&self, transaction_id: Id) -> Result<bool, anyhow::Error> {
+	async fn has_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<bool, anyhow::Error> {
 		self.has_mempool_transaction(transaction_id).await
 	}
 
@@ -57,17 +79,20 @@ pub trait MempoolTransactionOperations {
 	}
 
 	/// Adds a transaction to the mempool.
-	async fn add_transaction(&self, tx: Transaction) -> Result<(), anyhow::Error> {
-		if self.has_transaction(tx.id()).await? {
+	async fn add_transaction(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
+		if self.has_transaction(transaction.id()).await? {
 			return Ok(());
 		}
 
-		let mempool_transaction = MempoolTransaction::slot_now(tx);
+		let mempool_transaction = MempoolTransaction::slot_now(transaction);
 		self.add_mempool_transaction(mempool_transaction).await
 	}
 
 	/// Removes a transaction from the mempool.
-	async fn remove_transaction(&self, transaction_id: Id) -> Result<(), anyhow::Error> {
+	async fn remove_transaction(
+		&self,
+		transaction_id: transaction::Id,
+	) -> Result<(), anyhow::Error> {
 		self.remove_mempool_transaction(transaction_id).await
 	}
 
@@ -80,7 +105,7 @@ pub trait MempoolTransactionOperations {
 	/// Gets a transaction from the mempool.
 	async fn get_transaction(
 		&self,
-		transaction_id: Id,
+		transaction_id: transaction::Id,
 	) -> Result<Option<Transaction>, anyhow::Error> {
 		let mempool_transaction = self.get_mempool_transaction(transaction_id).await?;
 		Ok(mempool_transaction.map(|mempool_transaction| mempool_transaction.transaction))
@@ -98,22 +123,23 @@ pub trait MempoolTransactionOperations {
 
 pub trait MempoolBlockOperations {
 	/// Checks whether a block exists in the mempool.
-	async fn has_block(&self, block_id: Id) -> Result<bool, anyhow::Error>;
+	async fn has_block(&self, block_id: block::Id) -> Result<bool, anyhow::Error>;
 
 	/// Adds a block to the mempool.
 	async fn add_block(&self, block: Block) -> Result<(), anyhow::Error>;
 
 	/// Removes a block from the mempool.
-	async fn remove_block(&self, block_id: Id) -> Result<(), anyhow::Error>;
+	async fn remove_block(&self, block_id: block::Id) -> Result<(), anyhow::Error>;
 
 	/// Gets a block from the mempool.
-	async fn get_block(&self, block_id: Id) -> Result<Option<Block>, anyhow::Error>;
+	async fn get_block(&self, block_id: block::Id) -> Result<Option<Block>, anyhow::Error>;
 }
 
 /// Wraps a transaction with a timestamp for help ordering.
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MempoolTransaction {
 	pub transaction: Transaction,
+	/// Transaction's timestamp, in seconds since the Unix epoch.
 	pub timestamp: u64,
 	pub slot_seconds: u64,
 }
@@ -128,19 +154,13 @@ impl PartialOrd for MempoolTransaction {
 /// This allows us to use a BTreeSet to order transactions by slot_seconds, and then by transaction and pop them off in order.
 impl Ord for MempoolTransaction {
 	fn cmp(&self, other: &Self) -> Ordering {
-		// First, compare by slot_seconds
-		match self.slot_seconds.cmp(&other.slot_seconds) {
+		// First, compare by timestamps
+		match self.timestamp.cmp(&other.timestamp) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,
 		}
 
-		// If slot_seconds are equal, then compare by sequence number
-		match self.transaction.sequence_number.cmp(&other.transaction.sequence_number) {
-			Ordering::Equal => {}
-			non_equal => return non_equal,
-		}
-
-		// If sequence number is equal, then compare by transaction on the whole
+		// If timestamps are equal, then compare by transaction on the whole
 		self.transaction.cmp(&other.transaction)
 	}
 }
@@ -173,7 +193,24 @@ impl MempoolTransaction {
 		Self::at_time(transaction, timestamp)
 	}
 
-	pub fn id(&self) -> Id {
+	pub fn id(&self) -> transaction::Id {
 		self.transaction.id()
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+
+	#[test]
+	fn test_mempool_transaction_cmp() {
+		let transaction1 = MempoolTransaction::at_time(Transaction::test(), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::test(), 2);
+		let transaction3 = MempoolTransaction::at_time(Transaction::test(), 4);
+
+		assert!(transaction1 < transaction2);
+		assert!(transaction2 < transaction3);
+		assert!(transaction1 < transaction3);
 	}
 }

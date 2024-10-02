@@ -14,7 +14,7 @@ impl Runner for CelestiaLight {
 		config: M1DaLightNodeConfig,
 	) -> Result<(), anyhow::Error> {
 		match config.m1_da_light_node_config {
-			m1_da_light_node_util::config::Config::Local(config) => {
+			m1_da_light_node_util::config::Config::Local(_config) => {
 				Err(anyhow::anyhow!("Local not implemented"))?;
 			}
 			m1_da_light_node_util::config::Config::Arabica(config) => {

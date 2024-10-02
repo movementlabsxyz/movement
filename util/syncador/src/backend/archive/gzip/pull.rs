@@ -6,6 +6,7 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::{fs, task};
+use tracing::info;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Candidate;
@@ -16,6 +17,11 @@ pub struct Pull {
 }
 
 impl Pull {
+	/// Creates a new Pull instance.
+	pub fn new(destination_dir: PathBuf) -> Self {
+		Self { destination_dir }
+	}
+
 	/// Iteratively collects all files (not directories) in the specified directory using BFS.
 	async fn collect_files(dir: &Path, entries: &mut Vec<PathBuf>) -> Result<(), anyhow::Error> {
 		let mut queue = VecDeque::new();
@@ -62,6 +68,7 @@ impl Pull {
 		// Recursively add every file (not directory) in the destination directory to the new manifest
 		let mut entries = Vec::new();
 		Self::collect_files(&destination, &mut entries).await?;
+		info!("Unarchived files: {:?}", entries.len());
 		for file_path in entries {
 			new_manifest.add_sync_file(file_path);
 		}
@@ -72,13 +79,21 @@ impl Pull {
 
 #[async_trait::async_trait]
 impl PullOperations for Pull {
-	async fn pull(&self, package: Package) -> Result<Package, anyhow::Error> {
+	async fn pull(&self, package: Option<Package>) -> Result<Option<Package>, anyhow::Error> {
+		// If the package is None, return None
+		info!("Archive pulling package: {:?}", package);
+		if package.is_none() {
+			return Ok(None);
+		}
+
+		let package = package.ok_or(anyhow::anyhow!("package is none"))?;
+
 		let mut manifests = Vec::new();
 		for manifest in package.0.into_iter() {
 			let new_manifest =
 				Self::ungzip_tar_manifest(manifest, self.destination_dir.clone()).await?;
 			manifests.push(new_manifest);
 		}
-		Ok(Package(manifests))
+		Ok(Some(Package(manifests)))
 	}
 }

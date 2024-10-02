@@ -3,27 +3,74 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenV2.sol";
 import "../../src/settlement/MCR.sol";
 import "../../src/settlement/MCRStorage.sol";
 import "../../src/settlement/interfaces/IMCR.sol";
 
 contract MCRTest is Test, IMCR {
+<<<<<<< HEAD
     function testInitialize() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
 
         MCR mcr = new MCR();
+=======
+
+    MOVETokenV2 public moveToken;
+    MovementStaking public staking;
+    MCR public mcr;
+    ProxyAdmin public admin;
+    string public moveSignature = "initialize(string,string)";
+    string public stakingSignature = "initialize(address)";
+    string public mcrSignature = "initialize(address,uint256,uint256,uint256,address[])";
+
+    function setUp() public {
+        MOVETokenV2 moveTokenImplementation = new MOVETokenV2();
+        MovementStaking stakingImplementation = new MovementStaking();
+        MCR mcrImplementation = new MCR();
+
+        // Contract MCRTest is the admin
+        admin = new ProxyAdmin(address(this));
+
+        // Deploy proxies
+        TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
+            address(moveTokenImplementation), address(admin), abi.encodeWithSignature(moveSignature, "Move Token", "MOVE")
+        );
+        TransparentUpgradeableProxy stakingProxy = new TransparentUpgradeableProxy(
+            address(stakingImplementation),
+            address(admin),
+            abi.encodeWithSignature(
+                stakingSignature, IMintableToken(address(moveProxy))
+                    )
+        );
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveProxy);
+        TransparentUpgradeableProxy mcrProxy = new TransparentUpgradeableProxy(
+            address(mcrImplementation),
+            address(admin),
+            abi.encodeWithSignature(
+                mcrSignature,
+                stakingProxy, 0, 5, 10 seconds, custodians
+            )
+        );
+        moveToken = MOVETokenV2(address(moveProxy));
+        staking = MovementStaking(address(stakingProxy));
+        mcr = MCR(address(mcrProxy));
+    }
+
+    function testCannotInitializeTwice() public {
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians);
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -40,7 +87,8 @@ contract MCRTest is Test, IMCR {
     }
 
     function testSimpleStaking() public {
-        MOVEToken moveToken = new MOVEToken();
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -51,6 +99,8 @@ contract MCRTest is Test, IMCR {
         custodians[0] = address(moveToken);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians);
 
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
         staking.whitelistAddress(alice);
@@ -108,7 +158,8 @@ contract MCRTest is Test, IMCR {
     }
 
     function testDishonestValidator() public {
-        MOVEToken moveToken = new MOVEToken();
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -119,6 +170,8 @@ contract MCRTest is Test, IMCR {
         custodians[0] = address(moveToken);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians);
 
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
         staking.whitelistAddress(alice);
@@ -198,7 +251,8 @@ contract MCRTest is Test, IMCR {
     }
 
     function testRollsOverHandlingDishonesty() public {
-        MOVEToken moveToken = new MOVEToken();
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -208,6 +262,8 @@ contract MCRTest is Test, IMCR {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
 
         vm.warp(300 seconds);
 
@@ -316,7 +372,8 @@ contract MCRTest is Test, IMCR {
         vm.pauseGasMetering();
 
         uint256 blockTime = 300;
-        MOVEToken moveToken = new MOVEToken();
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -326,6 +383,8 @@ contract MCRTest is Test, IMCR {
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
 
         vm.warp(blockTime);
 

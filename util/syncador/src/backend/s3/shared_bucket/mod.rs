@@ -1,18 +1,58 @@
 use super::bucket_connection;
+use aws_types::region::Region;
+use tracing::info;
 
 pub mod metadata;
 pub mod pull;
 pub mod push;
+use movement_types::application;
+use std::path::PathBuf;
+
+pub async fn create_random(
+	bucket: String,
+	pull_destination: PathBuf,
+) -> Result<(push::Push, pull::Pull), anyhow::Error> {
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	info!("Client used region {:?}", config.region());
+	let client = aws_sdk_s3::Client::new(&config);
+	create(client, bucket, metadata::Metadata::random(), pull_destination).await
+}
+
+pub async fn create_random_with_application_id(
+	bucket: String,
+	application_id: application::Id,
+	pull_destination: PathBuf,
+) -> Result<(push::Push, pull::Pull), anyhow::Error> {
+	let region = match std::env::var("AWS_REGION") {
+		Ok(region) => Some(Region::new(region)),
+		Err(_) => None,
+	};
+	let config = aws_config::load_from_env().await.into_builder().region(region).build();
+	info!("Client used region {:?}", config.region());
+	let client = aws_sdk_s3::Client::new(&config);
+	create(
+		client,
+		bucket,
+		metadata::Metadata::random().with_application_id(application_id),
+		pull_destination,
+	)
+	.await
+}
 
 pub async fn create(
 	client: aws_sdk_s3::Client,
 	bucket: String,
 	metadata: metadata::Metadata,
+	pull_destination: PathBuf,
 ) -> Result<(push::Push, pull::Pull), anyhow::Error> {
 	let bucket_connection = bucket_connection::BucketConnection::create(client, bucket).await?;
 
 	let push = push::Push::new(bucket_connection.clone(), metadata.clone());
-	let pull = pull::Pull::new(bucket_connection, metadata);
+	let pull = pull::Pull::new(bucket_connection, metadata, pull_destination);
 
 	Ok((push, pull))
 }
@@ -27,18 +67,24 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_create() -> Result<(), anyhow::Error> {
+		// generate a temp pull destination
+		let pull_destination = tempfile::tempdir()?.into_path();
+		// get is pathbuf
+		let pull_destination = pull_destination.to_path_buf();
+
 		// use uuid to generate a random bucket identifier
 		let bucket = format!("public-test-bucket-{}", uuid::Uuid::new_v4());
 		let config = aws_config::load_from_env().await;
 		let client = aws_sdk_s3::Client::new(&config);
 		let (_push, pull) =
-			create(client.clone(), bucket.clone(), metadata::Metadata::random()).await?;
+			create(client.clone(), bucket.clone(), metadata::Metadata::random(), pull_destination)
+				.await?;
 
 		// check that the buckets exist
 		let bucket_exists = client.head_bucket().bucket(bucket.clone()).send().await.is_ok();
 		assert!(bucket_exists);
 
-		let pull::Pull { bucket_connection, metadata: _ } = pull;
+		let pull::Pull { bucket_connection, metadata: _, pull_destination: _ } = pull;
 		bucket_connection.destroy(false).await?;
 
 		// check that the buckets don't exist
@@ -51,16 +97,17 @@ pub mod test {
 
 	#[tokio::test]
 	async fn test_upload_download_many() -> Result<(), anyhow::Error> {
+		// create a tempdir
+		let tempdir = tempfile::tempdir()?;
+		let root_dir = tempdir.path().to_path_buf();
+
 		// use uuid to generate a random bucket identifier
 		let bucket = format!("public-test-bucket-{}", uuid::Uuid::new_v4());
 		let config = aws_config::load_from_env().await;
 		let client = aws_sdk_s3::Client::new(&config);
 		let (push, pull) =
-			create(client.clone(), bucket.clone(), metadata::Metadata::random()).await?;
-
-		// create a tempdir
-		let tempdir = tempfile::tempdir()?;
-		let root_dir = tempdir.path().to_path_buf();
+			create(client.clone(), bucket.clone(), metadata::Metadata::random(), root_dir.clone())
+				.await?;
 
 		// create many tempfiles with varying path nesting
 		// use a modulus of the index to determine the nesting level
@@ -99,7 +146,7 @@ pub mod test {
 		tokio::fs::remove_dir_all(&root_dir).await?;
 
 		// download the manifest
-		let _downloaded_package = pull.pull(package).await?; // package doesn't really matter here
+		let _downloaded_package = pull.pull(Some(package)).await?; // package doesn't really matter here
 
 		// check that all the files are back
 		for (i, path) in paths.iter().enumerate() {

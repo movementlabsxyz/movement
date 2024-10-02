@@ -7,9 +7,7 @@ import "../../../src/token/custodian/CustodianToken.sol";
 // import base access control instead of upgradeable access control
 
 contract CustodianTokenTest is Test {
-
     function testInitialize() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -19,25 +17,21 @@ contract CustodianTokenTest is Test {
         // Check the token details
         assertEq(token.name(), "Custodian Token");
         assertEq(token.symbol(), "CUSTODIAN");
-
     }
 
     function testCannotInitializeTwice() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
         CustodianToken token = new CustodianToken();
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
-   
+
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
-
     }
 
     function testGrants() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -45,7 +39,12 @@ contract CustodianTokenTest is Test {
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // valid minting succeeds
         vm.prank(address(token));
@@ -53,15 +52,13 @@ contract CustodianTokenTest is Test {
         assert(underlyingToken.balanceOf(address(this)) == 100);
 
         // invalid minting fails
-        address payable signer = payable(vm.addr(1)); 
+        address payable signer = payable(vm.addr(1));
         vm.prank(signer);
         vm.expectRevert(); // todo: catch type
         underlyingToken.mint(signer, 100);
-
     }
 
     function testCustodianMint() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -69,7 +66,12 @@ contract CustodianTokenTest is Test {
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // valid minting succeeds
         token.mint(address(this), 100);
@@ -77,7 +79,7 @@ contract CustodianTokenTest is Test {
         assert(underlyingToken.balanceOf(address(token)) == 100);
 
         // valid minting is incremental
-        address payable signer = payable(vm.addr(1)); 
+        address payable signer = payable(vm.addr(1));
         token.mint(signer, 100);
         assert(token.balanceOf(signer) == 100);
         assert(underlyingToken.balanceOf(address(token)) == 200);
@@ -94,11 +96,9 @@ contract CustodianTokenTest is Test {
         vm.prank(signer);
         vm.expectRevert(); // todo: catch type
         token.mint(signer, 100);
-
     }
 
     function testCustodianTransferToValidSink() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -106,7 +106,12 @@ contract CustodianTokenTest is Test {
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // signers
         address payable validSink = payable(vm.addr(2));
@@ -119,11 +124,9 @@ contract CustodianTokenTest is Test {
         token.transfer(validSink, 100);
         assert(token.balanceOf(alice) == 0);
         assert(underlyingToken.balanceOf(validSink) == 100);
-
     }
 
     function testCustodianTransferToInvalidSink() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -131,7 +134,12 @@ contract CustodianTokenTest is Test {
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // signers
         address payable invalidSink = payable(vm.addr(2));
@@ -142,11 +150,9 @@ contract CustodianTokenTest is Test {
         vm.prank(alice);
         vm.expectRevert(); // todo: catch type
         token.transfer(invalidSink, 100);
-
     }
 
     function testCustodianBuyValidSource() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -154,7 +160,12 @@ contract CustodianTokenTest is Test {
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // signers
         address payable validSource = payable(vm.addr(2));
@@ -170,15 +181,13 @@ contract CustodianTokenTest is Test {
 
         // buy from valid source succeeds
         vm.prank(validSource);
-        token.buyCustodialTokenFor(alice, 100);
+        token.buyCustodialToken(alice, 100);
         assert(token.balanceOf(alice) == 100);
         assert(underlyingToken.balanceOf(address(token)) == 100);
         assert(underlyingToken.balanceOf(validSource) == 0);
-
     }
 
     function testCustodianBuyInvalidSource() public {
-
         MintableToken underlyingToken = new MintableToken();
         underlyingToken.initialize("Underlying Token", "UNDERLYING");
 
@@ -186,7 +195,12 @@ contract CustodianTokenTest is Test {
         token.initialize("Custodian Token", "CUSTODIAN", underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // signers
         address payable invalidSource = payable(vm.addr(2));
@@ -202,8 +216,6 @@ contract CustodianTokenTest is Test {
         // buy from valid source succeeds
         vm.prank(invalidSource);
         vm.expectRevert(); // todo: catch type
-        token.buyCustodialTokenFor(alice, 100);
-
+        token.buyCustodialToken(alice, 100);
     }
-
 }

@@ -1,20 +1,24 @@
-module moveth::moveth_tests{
-    use std::signer;
-    use aptos_framework::primary_fungible_store;
-    use aptos_framework::dispatchable_fungible_asset;
+module atomic_bridge::moveth_tests{
+    #[test_only]
+    use atomic_bridge::moveth;
+    #[test_only]
     use aptos_framework::fungible_asset::{Self, FungibleStore};
-    use moveth::moveth;
+    #[test_only]
+    use aptos_framework::primary_fungible_store;
+    #[test_only]
     use aptos_framework::object;
+    #[test_only]
+    use aptos_std::signer;
+    #[test_only]
+    use aptos_framework::dispatchable_fungible_asset;
 
-    #[test(creator = @moveth, minter = @0xface, master_minter = @0xbab, denylister = @0xcade)]
-    fun test_basic_flow(creator: &signer, minter: &signer, master_minter: &signer, denylister: &signer) {
+    #[test(creator = @moveth, minter = @0xface, admin = @admin, denylister = @0xcade)]
+    fun test_basic_flow(creator: &signer, minter: &signer, admin: &signer, denylister: &signer) {
         moveth::init_for_test(creator);
         let receiver_address = @0xcafe1;
         let minter_address = signer::address_of(minter);
 
-        // set minter and have minter call mint, check balance
-        moveth::add_minter(master_minter, minter_address);
-        moveth::mint(minter, minter_address, 100);
+        moveth::mint(admin, minter_address, 100);
         let asset = moveth::metadata();
         assert!(primary_fungible_store::balance(minter_address, asset) == 100, 0);
 
@@ -30,18 +34,8 @@ module moveth::moveth_tests{
         assert!(!primary_fungible_store::is_frozen(receiver_address, asset), 0);
 
         // burn tokens, check balance
-        moveth::burn(minter, minter_address, 90);
+        moveth::burn(admin, minter_address, 90);
         assert!(primary_fungible_store::balance(minter_address, asset) == 0, 0);
-    }
-
-
-    #[test(creator = @moveth, pauser = @0xdafe, minter = @0xface, master_minter = @0xbab)]
-    #[expected_failure(abort_code = 2, location = moveth::moveth)]
-    fun test_pause(creator: &signer, pauser: &signer, minter: &signer, master_minter: &signer) {
-        moveth::init_for_test(creator);
-        let minter_address = signer::address_of(minter);
-        moveth::set_pause(pauser, true);
-        moveth::add_minter(master_minter, minter_address);
     }
 
     //test the ability of a denylisted account to transfer out newly created store

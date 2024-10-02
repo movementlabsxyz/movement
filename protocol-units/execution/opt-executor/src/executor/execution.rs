@@ -1,10 +1,8 @@
 use super::Executor;
-use aptos_api::Context;
 use aptos_crypto::HashValue;
 use aptos_executor_types::BlockExecutorTrait;
 use aptos_types::transaction::signature_verified_transaction::into_signature_verified_block;
 use aptos_types::{
-	account_address::AccountAddress,
 	aggregate_signature::AggregateSignature,
 	block_executor::{
 		config::BlockExecutorConfigFromOnchain,
@@ -17,16 +15,15 @@ use aptos_types::{
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
-use movement_types::{BlockCommitment, Commitment, Id};
-use std::sync::Arc;
-use tracing::{debug, debug_span, info};
+use movement_types::block::{BlockCommitment, Commitment, Id};
+use tracing::{debug, info, warn};
 
 impl Executor {
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
 	) -> Result<BlockCommitment, anyhow::Error> {
-		let (block_metadata, block, senders_and_sequence_numbers) = {
+		let (block_metadata, block) = {
 			// get the block metadata transaction
 			let metadata_access_block = block.transactions.clone();
 			let metadata_access_transactions = metadata_access_block.into_txns();
@@ -41,16 +38,9 @@ impl Executor {
 				}
 			};
 
-			// senders and sequence numbers
-			let senders_and_sequence_numbers = metadata_access_transactions
-				.iter()
-				.map(|transaction| match transaction.clone().into_inner() {
-					Transaction::UserTransaction(transaction) => {
-						(transaction.sender(), transaction.sequence_number())
-					}
-					_ => (AccountAddress::ZERO, 0),
-				})
-				.collect::<Vec<(AccountAddress, u64)>>();
+			for transaction in metadata_access_transactions.iter() {
+				warn!("Transaction sender: {:?}", transaction.sender());
+			}
 
 			// reconstruct the block
 			let block = ExecutableBlock::new(
@@ -58,15 +48,13 @@ impl Executor {
 				ExecutableTransactions::Unsharded(metadata_access_transactions),
 			);
 
-			(block_metadata, block, senders_and_sequence_numbers)
+			(block_metadata, block)
 		};
 
-		let block_executor = self.block_executor.clone();
-
 		let block_id = block.block_id.clone();
-		let parent_block_id = block_executor.committed_block_id();
+		let parent_block_id = self.block_executor.committed_block_id();
 
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		let state_compute = tokio::task::spawn_blocking(move || {
 			block_executor_clone.execute_block(
 				block,
@@ -76,7 +64,7 @@ impl Executor {
 		})
 		.await??;
 
-		debug!("Block execution compute the following state: {:?}", state_compute);
+		warn!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
@@ -90,16 +78,13 @@ impl Executor {
 			state_compute.root_hash(),
 			version,
 		);
-		let block_executor_clone = block_executor.clone();
+		let block_executor_clone = self.block_executor.clone();
 		tokio::task::spawn_blocking(move || {
 			block_executor_clone.commit_blocks(vec![block_id], ledger_info_with_sigs)
 		})
 		.await??;
 
-		let proof = {
-			let reader = self.db.reader.clone();
-			reader.get_state_proof(version)?
-		};
+		let proof = self.db().reader.get_state_proof(version)?;
 
 		// Context has a reach-around to the db so the block height should
 		// have been updated to the most recently committed block.
@@ -107,41 +92,59 @@ impl Executor {
 		let block_height = self.get_block_head_height()?;
 
 		let commitment = Commitment::digest_state_proof(&proof);
-		Ok(BlockCommitment {
-			block_id: Id(*block_id.clone()),
-			commitment,
-			height: block_height.into(),
-		})
+		Ok(BlockCommitment::new(block_height.into(), Id::new(*block_id.clone()), commitment))
 	}
 
 	pub fn get_block_head_height(&self) -> Result<u64, anyhow::Error> {
-		let ledger_info = self.context.get_latest_ledger_info_wrapped()?;
-		Ok(ledger_info.block_height.into())
+		let ledger_info = self.db().reader.get_latest_ledger_info()?;
+		let (_, _, new_block_event) = self
+			.db()
+			.reader
+			.get_block_info_by_version(ledger_info.ledger_info().version())?;
+		Ok(new_block_event.height)
 	}
 
-	pub fn context(&self) -> Arc<Context> {
-		self.context.clone()
+	pub async fn revert_block_head_to(&self, block_height: u64) -> Result<(), anyhow::Error> {
+		let (_start_ver, end_ver, block_event) =
+			self.db().reader.get_block_info_by_height(block_height)?;
+		let block_info = BlockInfo::new(
+			block_event.epoch(),
+			block_event.round(),
+			block_event.hash()?,
+			self.db().reader.get_accumulator_root_hash(end_ver)?,
+			end_ver,
+			block_event.proposed_time(),
+			None,
+		);
+		let ledger_info = LedgerInfo::new(block_info, HashValue::zero());
+		let aggregate_signature = AggregateSignature::empty();
+		let ledger_info = LedgerInfoWithSignatures::new(ledger_info, aggregate_signature);
+		let db_writer = self.db().writer.clone();
+		tokio::task::spawn_blocking(move || db_writer.revert_commit(&ledger_info)).await??;
+		// Reset the executor state to the reverted storage
+		self.block_executor.reset()?;
+		Ok(())
 	}
 
 	/// Gets the next epoch and round.
-	pub async fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
-		let epoch = self.db.reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
-		let round = self.db.reader.get_latest_ledger_info()?.ledger_info().round();
+	pub fn get_next_epoch_and_round(&self) -> Result<(u64, u64), anyhow::Error> {
+		let epoch = self.db().reader.get_latest_ledger_info()?.ledger_info().next_block_epoch();
+		let round = self.db().reader.get_latest_ledger_info()?.ledger_info().round();
 		Ok((epoch, round))
 	}
 
 	/// Gets the timestamp of the last state.
-	pub async fn get_last_state_timestamp_micros(&self) -> Result<u64, anyhow::Error> {
-		let ledger_info = self.db.reader.get_latest_ledger_info()?;
+	pub fn get_last_state_timestamp_micros(&self) -> Result<u64, anyhow::Error> {
+		let ledger_info = self.db().reader.get_latest_ledger_info()?;
 		Ok(ledger_info.ledger_info().timestamp_usecs())
 	}
 
 	pub async fn rollover_genesis(&self, timestamp: u64) -> Result<(), anyhow::Error> {
-		let (epoch, round) = self.get_next_epoch_and_round().await?;
+		let (epoch, round) = self.get_next_epoch_and_round()?;
 		let block_id = HashValue::random();
 
 		// genesis timestamp should always be 0
-		let genesis_timestamp = self.get_last_state_timestamp_micros().await?;
+		let genesis_timestamp = self.get_last_state_timestamp_micros()?;
 		info!(
 			"Rollover genesis: epoch: {}, round: {}, block_id: {}, genesis timestamp {}",
 			epoch, round, block_id, genesis_timestamp
@@ -214,8 +217,8 @@ impl Executor {
 
 #[cfg(test)]
 mod tests {
-
 	use super::*;
+	use crate::Service;
 	use aptos_api::accept_type::AcceptType;
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
@@ -239,17 +242,18 @@ mod tests {
 		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
 	};
 	use rand::SeedableRng;
+	use tokio::sync::mpsc;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
+	fn create_signed_transaction(sequence_number: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let public_key = private_key.public_key();
 		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
 		let raw_transaction = RawTransaction::new(
 			AccountAddress::random(),
-			0,
+			sequence_number,
 			transaction_payload,
 			0,
-			gas_unit_price,
+			0,
 			0,
 			chain_id, // This is the value used in aptos testing code.
 		);
@@ -259,7 +263,9 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (tx_sender, _tx_receiver) = mpsc::channel(1);
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -271,7 +277,7 @@ mod tests {
 			chrono::Utc::now().timestamp_micros() as u64,
 		));
 		let tx = SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(
-			create_signed_transaction(0, executor.maptos_config.chain.maptos_chain_id.clone()),
+			create_signed_transaction(0, context.config().chain.maptos_chain_id.clone()),
 		));
 		let txs = ExecutableTransactions::Unsharded(vec![
 			SignatureVerifiedTransaction::Valid(block_metadata),
@@ -291,13 +297,15 @@ mod tests {
 
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (tx_sender, _tx_receiver) = mpsc::channel(1);
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.maptos_config.chain.maptos_private_key.clone()),
+			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -307,7 +315,7 @@ mod tests {
 
 		// Loop to simulate the execution of multiple blocks.
 		for i in 0..10 {
-			let (epoch, round) = executor.get_next_epoch_and_round().await?;
+			let (epoch, round) = executor.get_next_epoch_and_round()?;
 
 			// Generate a random block ID.
 			let block_id = HashValue::random();
@@ -318,7 +326,7 @@ mod tests {
 
 			// Create a transaction factory with the chain ID of the executor, used for creating transactions.
 			let tx_factory =
-				TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone())
+				TransactionFactory::new(context.config().chain.maptos_chain_id.clone())
 					.with_transaction_expiration_time(
 						current_time_microseconds, // current_time_microseconds + (i * 1000 * 1000 * 60 * 30) + 30,
 					);
@@ -363,7 +371,7 @@ mod tests {
 			let block_commitment = executor.execute_block(block).await?;
 
 			// Access the database reader to verify state after execution.
-			let db_reader = executor.db.reader.clone();
+			let db_reader = executor.db_reader();
 			// Get the latest version of the blockchain state from the database.
 			let latest_version = db_reader.get_synced_version()?;
 			// Verify the transaction by its hash to ensure it was committed.
@@ -380,8 +388,8 @@ mod tests {
 			// Check the commitment against state proof
 			let state_proof = db_reader.get_state_proof(latest_version)?;
 			let expected_commitment = Commitment::digest_state_proof(&state_proof);
-			assert_eq!(block_commitment.height, i + 2);
-			assert_eq!(block_commitment.commitment, expected_commitment);
+			assert_eq!(block_commitment.height(), i + 2);
+			assert_eq!(block_commitment.commitment(), expected_commitment);
 		}
 
 		Ok(())
@@ -391,13 +399,16 @@ mod tests {
 	async fn test_execute_block_state_get_api() -> Result<(), anyhow::Error> {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
-		let (executor, _tempdir) = Executor::try_test_default(private_key.clone())?;
+		let (tx_sender, _tx_receiver) = mpsc::channel(16);
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+		let service = Service::new(&context);
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(executor.maptos_config.chain.maptos_private_key.clone()),
+			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -406,13 +417,12 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory =
-			TransactionFactory::new(executor.maptos_config.chain.maptos_chain_id.clone());
+		let tx_factory = TransactionFactory::new(context.config().chain.maptos_chain_id.clone());
 
 		// Simulate the execution of multiple blocks.
 		for _ in 0..10 {
 			// For example, create and execute 3 blocks.
-			let (epoch, round) = executor.get_next_epoch_and_round().await?;
+			let (epoch, round) = executor.get_next_epoch_and_round()?;
 
 			let block_id = HashValue::random(); // Generate a random block ID for each block.
 
@@ -455,7 +465,7 @@ mod tests {
 			executor.execute_block(block).await?;
 
 			// Retrieve the executor's API interface and fetch the transaction by each hash.
-			let apis = executor.get_apis();
+			let apis = service.get_apis();
 			for hash in transaction_hashes {
 				let _ = apis
 					.transactions
