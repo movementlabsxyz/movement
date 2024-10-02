@@ -10,8 +10,10 @@ To build the project, run:
 cargo build
 ``````
 
+Below are some sample commands with dummy args
+
 ## 1. Initiate a transfer from Ethereum to Movement
-./target/debug/bridge-cli eth-to-movement initiate "0x1234567890abcdef" 100 "2bb80d537b1da3e38bd30361aa855686bde0b2f16f48e5b536b0f7625a529f33"
+./target/debug/bridge-cli eth-to-movement initiate "0x8bcdbe40eeb01c7451f359318e5709c16ab2f23c3a9fa71531cca57920aa828c" 100 "2bb80d537b1da3e38bd30361aa855686bde0b2f16f48e5b536b0f7625a529f33"
 
 ## 2. Complete a transfer from Ethereum to Movement
 ./target/debug/bridge-cli eth-to-movement complete --transfer-id "deadbeef12345678" --preimage "abcdef1234567890"

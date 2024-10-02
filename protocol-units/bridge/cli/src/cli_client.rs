@@ -31,7 +31,16 @@ impl Client {
 						.try_into()
 						.map_err(|_| anyhow::anyhow!("Invalid hex for hash lock"))?,
 				);
-				let recipient_bytes: Vec<u8> = recipient.clone().into_bytes();
+
+				// Remove the "0x" prefix if it's present in the recipient address
+				let recipient = recipient.strip_prefix("0x").unwrap_or(recipient);
+
+				// Decode the recipient address from hex string to Vec<u8>
+				let recipient_bytes: Vec<u8> =
+					hex::decode(recipient).expect("Invalid hex for recipient address");
+				if recipient_bytes.len() != 32 {
+					return Err(anyhow::anyhow!("Recipient address must be 32 bytes"));
+				}
 				self.eth
 					.initiate_bridge_transfer(
 						BridgeAddress(EthAddress(self.eth.get_signer_address())),
@@ -109,7 +118,13 @@ impl Client {
 						.try_into()
 						.map_err(|_| anyhow::anyhow!("Invalid hex for hash lock"))?,
 				);
-				let recipient_bytes: Vec<u8> = recipient.clone().into_bytes();
+
+				let recipient = recipient.strip_prefix("0x").unwrap_or(recipient);
+				let recipient_bytes: Vec<u8> =
+					hex::decode(recipient).expect("Invalid hex for recipient address");
+				if recipient_bytes.len() != 32 {
+					return Err(anyhow::anyhow!("Recipient address must be 32 bytes"));
+				}
 				self.movement
 					.initiate_bridge_transfer(
 						BridgeAddress(MovementAddress(self.movement.native_address)),
