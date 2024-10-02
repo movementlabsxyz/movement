@@ -5,7 +5,7 @@ use bridge_service::{
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "Movementlabs Bridge CLI")]
+#[command(name = "Movement Atomic Bridge CLI")]
 #[command(about = "Command line interface to perform atomic bridge transfers", long_about = None)]
 pub struct CliOptions {
 	/// The bridge command to run (Ethereum to Movement or Movement to Ethereum)
@@ -17,11 +17,11 @@ pub struct CliOptions {
 pub enum BridgeCommands {
 	/// Ethereum to Movement bridge commands
 	#[command(subcommand)]
-	L1toL2(EthSubCommands),
+	EthToMovement(EthSubCommands),
 
 	/// Movement to Ethereum bridge commands
 	#[command(subcommand)]
-	L2toL1(MovementSubCommands),
+	MovementToEth(MovementSubCommands),
 }
 
 #[derive(Subcommand)]

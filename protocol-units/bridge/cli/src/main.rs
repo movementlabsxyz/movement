@@ -29,10 +29,10 @@ async fn inner_main() -> anyhow::Result<()> {
 
 	let cli = CliOptions::parse();
 	match &cli.command {
-		BridgeCommands::L1toL2(command) => {
+		BridgeCommands::EthToMovement(command) => {
 			client.eth_movement_execute(command).await?;
 		}
-		BridgeCommands::L2toL1(command) => {
+		BridgeCommands::MovementToEth(command) => {
 			client.movement_eth_execute(command).await?;
 		}
 	}
