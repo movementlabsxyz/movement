@@ -32,7 +32,7 @@ pub enum TransferStateType {
 	SecretReceived,
 	CompletedIntiator,
 	Done,
-	NeedRefund,
+	Refund,
 }
 
 #[allow(dead_code)]
@@ -46,6 +46,8 @@ pub struct TransferState {
 	pub time_lock: TimeLock,
 	pub amount: Amount,
 	pub contract_state: u8,
+	//Max number time action are retry for the whole transfer.
+	pub retry_on_error: usize,
 }
 
 impl TransferState {
@@ -70,11 +72,11 @@ impl TransferState {
 		}
 	}
 
-	pub fn transition_from_initiated<A: Into<Vec<u8>> + Clone, B: From<Vec<u8>>>(
+	pub fn transition_from_initiated<A: Into<Vec<u8>> + Clone>(
 		chain_id: ChainId,
 		transfer_id: BridgeTransferId,
 		detail: BridgeTransferDetails<A>,
-	) -> (Self, TransferAction<B>) {
+	) -> (Self, TransferAction) {
 		let state = TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,
@@ -85,6 +87,7 @@ impl TransferState {
 			time_lock: detail.time_lock,
 			amount: detail.amount,
 			contract_state: detail.state,
+			retry_on_error: 0,
 		};
 
 		let action_type = TransferActionType::LockBridgeTransfer {
@@ -94,27 +97,40 @@ impl TransferState {
 			recipient: BridgeAddress(detail.recipient_address.0.into()),
 			amount: detail.amount,
 		};
-		let action = TransferAction { init_chain: chain_id, transfer_id, kind: action_type };
+		let action = TransferAction { chain: chain_id, transfer_id, kind: action_type };
 		(state, action)
 	}
 
-	pub fn transition_from_locked_done<A: Into<Vec<u8>> + Clone, B: From<Vec<u8>>>(
+	pub fn transition_from_locked_done<A: Into<Vec<u8>> + Clone>(
 		mut self,
 		_transfer_id: BridgeTransferId,
 		_detail: LockDetails<A>,
-	) -> (Self, TransferActionType<B>) {
+	) -> (Self, TransferActionType) {
 		self.state = TransferStateType::Locked;
 		let action_type = TransferActionType::NoAction;
 		(self, action_type)
 	}
 
-	pub fn transition_from_counterpart_completed<A: Into<Vec<u8>> + Clone, B: From<Vec<u8>>>(
+	pub fn transition_from_counterpart_completed(
 		mut self,
 		_transfer_id: BridgeTransferId,
 		secret: HashLockPreImage,
-	) -> (Self, TransferActionType<B>) {
+	) -> (Self, TransferActionType) {
 		self.state = TransferStateType::SecretReceived;
 		let action_type = TransferActionType::WaitAndCompleteInitiator(0, secret);
 		(self, action_type)
+	}
+
+	pub fn transition_from_initiator_completed(
+		mut self,
+		_transfer_id: BridgeTransferId,
+	) -> (Self, TransferActionType) {
+		self.state = TransferStateType::Done;
+		let action_type = TransferActionType::NoAction;
+		(self, action_type)
+	}
+
+	pub fn transition_to_refund(&self) -> (TransferStateType, TransferActionType) {
+		(TransferStateType::Refund, TransferActionType::RefundInitiator)
 	}
 }

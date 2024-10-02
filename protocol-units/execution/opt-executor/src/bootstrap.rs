@@ -79,7 +79,7 @@ pub fn maybe_bootstrap_empty_db(
 		false,
 		config.storage.storage_pruner_config.clone(),
 		config.storage.rocksdb_configs.clone(),
-		true,
+		false,
 		config.storage.buffered_state_target_items,
 		config.storage.max_num_nodes_per_lru_cache_shard,
 	)?;
