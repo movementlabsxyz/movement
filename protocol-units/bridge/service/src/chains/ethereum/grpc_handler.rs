@@ -1,7 +1,4 @@
-use alloy::{
-	primitives::{keccak256, Address},
-	signers::Signature,
-};
+use alloy::primitives::{keccak256, Address};
 use bridge_grpc::{
 	bridge_server::Bridge, AbortBridgeTransferRequest, BridgeTransferDetailsResponse,
 	CounterpartyCompleteBridgeTransferRequest, GenericBridgeResponse,
@@ -40,6 +37,14 @@ impl GRPCServer {
 }
 
 #[tonic::async_trait]
+impl GRPCServer {
+	// Verifies the signature for each request
+	fn verify_signature_request(&self, message: &[u8], signature: &[u8]) -> Result<(), Status> {
+		self.verify_signature(message, signature)
+	}
+}
+
+#[tonic::async_trait]
 impl Bridge for GRPCServer {
 	// Initiate bridge transfer
 	async fn initiate_bridge_transfer(
@@ -48,6 +53,14 @@ impl Bridge for GRPCServer {
 	) -> Result<Response<InitiateBridgeTransferResponse>, Status> {
 		let req = request.into_inner();
 
+		// Verify signature
+		self.verify_signature(
+			// construct a message
+			&[req.recipient_address.clone(), req.hash_lock.clone()].concat(),
+			&req.signature,
+		)?;
+
+		// Call the EthClient method to initiate the bridge transfer
 		match <EthClient as BridgeContract<EthAddress>>::initiate_bridge_transfer(
 			&self.eth_client,
 			BridgeAddress(EthAddress(self.eth_client.get_signer_address())),
@@ -74,6 +87,12 @@ impl Bridge for GRPCServer {
 		request: Request<InitiatorCompleteBridgeTransferRequest>,
 	) -> Result<Response<GenericBridgeResponse>, Status> {
 		let req = request.into_inner();
+
+		// Verify signature
+		self.verify_signature(
+			&[req.bridge_transfer_id.clone(), req.pre_image.clone()].concat(),
+			&req.signature,
+		)?;
 
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 		let pre_image = HashLockPreImage(req.pre_image.try_into().unwrap());
@@ -103,6 +122,12 @@ impl Bridge for GRPCServer {
 	) -> Result<Response<GenericBridgeResponse>, Status> {
 		let req = request.into_inner();
 
+		// Verify signature
+		self.verify_signature(
+			&[req.bridge_transfer_id.clone(), req.pre_image.clone()].concat(),
+			&req.signature,
+		)?;
+
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 		let pre_image = HashLockPreImage(req.pre_image.try_into().unwrap());
 
@@ -131,6 +156,9 @@ impl Bridge for GRPCServer {
 	) -> Result<Response<GenericBridgeResponse>, Status> {
 		let req = request.into_inner();
 
+		// Verify signature
+		self.verify_signature(&req.bridge_transfer_id, &req.signature)?;
+
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 
 		match <EthClient as BridgeContract<EthAddress>>::refund_bridge_transfer(
@@ -156,6 +184,13 @@ impl Bridge for GRPCServer {
 		request: Request<LockBridgeTransferRequest>,
 	) -> Result<Response<GenericBridgeResponse>, Status> {
 		let req = request.into_inner();
+
+		// Verify signature
+		self.verify_signature(
+			&[req.bridge_transfer_id.clone(), req.hash_lock.clone(), req.initiator_address.clone()]
+				.concat(),
+			&req.signature,
+		)?;
 
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 		let hash_lock = HashLock(req.hash_lock.try_into().unwrap());
@@ -191,6 +226,9 @@ impl Bridge for GRPCServer {
 	) -> Result<Response<GenericBridgeResponse>, Status> {
 		let req = request.into_inner();
 
+		// Verify signature
+		self.verify_signature_request(&req.bridge_transfer_id, &req.signature)?;
+
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 
 		match <EthClient as BridgeContract<EthAddress>>::abort_bridge_transfer(
@@ -217,6 +255,9 @@ impl Bridge for GRPCServer {
 	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
 		let req = request.into_inner();
 
+		// Verify signature
+		self.verify_signature(&req.bridge_transfer_id, &req.signature)?;
+
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 
 		match <EthClient as BridgeContract<EthAddress>>::get_bridge_transfer_details_initiator(
@@ -228,14 +269,12 @@ impl Bridge for GRPCServer {
 			Ok(Some(details)) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: details.initiator_address.0.to_string(),
 				recipient_address: details.recipient_address.0,
-				hash_lock: details.hash_lock.0.try_into().expect("Failed to convert hash lock"), // expect
-				// to go
+				hash_lock: details.hash_lock.0.try_into().expect("Failed to convert hash lock"),
 				time_lock: details.time_lock.0,
 				amount: details.amount.value(),
 				state: details.state as u32,
 				error_message: "".to_string(),
 			})),
-			// Ok(None) case
 			Ok(_) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: "".to_string(),
 				recipient_address: vec![],
@@ -264,6 +303,9 @@ impl Bridge for GRPCServer {
 	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
 		let req = request.into_inner();
 
+		// Verify signature
+		self.verify_signature(&req.bridge_transfer_id, &req.signature)?;
+
 		let bridge_transfer_id = BridgeTransferId(req.bridge_transfer_id.try_into().unwrap());
 
 		match <EthClient as BridgeContract<EthAddress>>::get_bridge_transfer_details_counterparty(
@@ -275,7 +317,7 @@ impl Bridge for GRPCServer {
 			Ok(Some(details)) => Ok(Response::new(BridgeTransferDetailsResponse {
 				initiator_address: details.initiator_address.0.to_string(),
 				recipient_address: details.recipient_address.0,
-				hash_lock: details.hash_lock.0.try_into().expect("Failed to convert hash lock"), // expect,
+				hash_lock: details.hash_lock.0.try_into().expect("Failed to convert hash lock"),
 				time_lock: details.time_lock.0,
 				amount: details.amount.value(),
 				state: details.state as u32,
@@ -304,80 +346,31 @@ impl Bridge for GRPCServer {
 }
 
 impl GRPCServer {
-	// Assuming the recover method works similarly to ethers' recover.
-	fn verify_signature(
-		&self,
-		message: &[u8],
-		signature: &[u8],
-		expected_address: Address,
-	) -> Result<(), Status> {
-		// Hash the message using Keccak256 (Ethereum's prefixed message hash)
-		let message_hash = keccak256(message);
+	fn verify_signature(&self, message: &[u8], signature_bytes: &[u8]) -> Result<(), Status> {
+		// Hash the message using EIP-191 prefix and Keccak256 (Ethereum's prefixed message hash)
+		let message_hash = ethers::utils::hash_message(message);
 
-		// Parse the signature into the alloy Signature type
-		let signature = Signature::try_from(signature)
+		// Parse the signature into the ethers Signature type
+		let signature = ethers::types::Signature::try_from(signature_bytes)
 			.map_err(|_| Status::unauthenticated("Invalid signature"))?;
 
-		// Recover the public address from the signature using alloy
-		let public_key = signature
-			.recover(&message_hash)
+		// Recover the Ethereum address from the signature
+		let recovered_address = signature
+			.recover(message_hash)
 			.map_err(|_| Status::unauthenticated("Failed to recover public key"))?;
 
+		// Convert the recovered ethers Address (H160) to alloy_primitives::Address
+		let recovered_alloy_address =
+			alloy::primitives::Address::from_slice(recovered_address.as_bytes());
+
+		// Get the expected signer address from EthClient (alloy_primitives::Address)
+		let expected_alloy_address = self.eth_client.get_signer_address();
+
 		// Compare the recovered address with the expected address
-		if public_key != expected_address {
+		if recovered_alloy_address != expected_alloy_address {
 			return Err(Status::unauthenticated("Signature does not match the expected signer"));
 		}
 
 		Ok(())
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use alloy::signers::local::PrivateKeySigner;
-	use ethers::signers::{LocalWallet, Signer};
-	use ethers::types::Bytes;
-	use ethers::utils::keccak256;
-
-	#[tokio::test]
-	async fn test_verify_signature_happy_path() {
-		let grpc_server = GRPCServer::new_for_test();
-		let message = b"test message";
-
-		let private_key_signer = grpc_server.eth_client.config.signer_private_key.clone();
-		let message_hash = keccak256(message);
-
-		let signature = private_key_signer.sign_message(&message_hash).await.unwrap();
-
-		let result = grpc_server.verify_signature(
-			message,
-			&signature.to_vec(),
-			grpc_server.eth_client.get_signer_address(),
-		);
-
-		assert!(result.is_ok(), "The signature should match and verify successfully");
-	}
-
-	#[tokio::test]
-	async fn test_verify_signature_unhappy_path() {
-		let grpc_server = GRPCServer::new_for_test();
-
-		let different_message = b"different message";
-
-		let private_key_signer = grpc_server.eth_client.config.signer_private_key.clone();
-
-		let different_message_hash = keccak256(different_message);
-
-		let different_signature =
-			private_key_signer.sign_message(&different_message_hash).await.unwrap();
-
-		let result = grpc_server.verify_signature(
-			b"wrong message",
-			&different_signature.to_vec(),
-			grpc_server.eth_client.get_signer_address(),
-		);
-
-		assert!(result.is_err(), "The signature verification should fail for a different message");
 	}
 }

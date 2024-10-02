@@ -3748,6 +3748,7 @@ dependencies = [
  "futures-time",
  "futures-timer",
  "hex",
+ "k256",
  "keccak-hash",
  "mcr-settlement-client",
  "rand 0.7.3",

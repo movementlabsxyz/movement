@@ -128,6 +128,18 @@ pub type AlloyProvider = FillProvider<
 #[derive(Debug, PartialEq, Eq, Hash, Clone, RlpEncodable, RlpDecodable)]
 pub struct EthAddress(pub Address);
 
+impl EthAddress {
+	pub fn from_slice(bytes: &[u8]) -> Result<Self, &'static str> {
+		if bytes.len() != 20 {
+			return Err("Invalid length: Address must be 20 bytes long");
+		}
+
+		let mut fixed_bytes = [0u8; 20];
+		fixed_bytes.copy_from_slice(bytes);
+		Ok(EthAddress(Address(fixed_bytes.into())))
+	}
+}
+
 impl From<EthAddress> for Vec<u8> {
 	fn from(address: EthAddress) -> Self {
 		address.0 .0.to_vec()
