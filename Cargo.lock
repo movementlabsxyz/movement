@@ -4061,6 +4061,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-config"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "aptos-crypto",
+ "aptos-sdk",
+ "dot-movement",
+ "godfig",
+ "rand 0.7.3",
+ "serde",
+ "tokio",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "bridge-integration-tests"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "alloy-contract",
+ "alloy-network",
+ "alloy-sol-types",
+ "anyhow",
+ "aptos-framework",
+ "aptos-language-e2e-tests",
+ "aptos-logger",
+ "aptos-sdk",
+ "aptos-types",
+ "bcs 0.1.4",
+ "bridge-config",
+ "bridge-service",
+ "bridge-setup",
+ "futures",
+ "hex",
+ "rand 0.7.3",
+ "reqwest 0.12.8",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+ "url",
+]
+
+[[package]]
 name = "bridge-service"
 version = "0.0.2"
 dependencies = [
@@ -4075,12 +4120,15 @@ dependencies = [
  "async-stream",
  "async-trait",
  "bcs 0.1.4",
+ "bridge-config",
  "delegate",
  "derive-new",
  "derive_more",
+ "dot-movement",
  "futures",
  "futures-time",
  "futures-timer",
+ "godfig",
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
@@ -4095,6 +4143,28 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
+]
+
+[[package]]
+name = "bridge-setup"
+version = "0.0.2"
+dependencies = [
+ "alloy",
+ "alloy-primitives",
+ "anyhow",
+ "aptos-sdk",
+ "bridge-config",
+ "bridge-service",
+ "commander",
+ "dot-movement",
+ "godfig",
+ "hex",
+ "k256",
+ "rand 0.7.3",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
 ]
 
 [[package]]
@@ -8457,8 +8527,10 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-crypto",
+ "aptos-sdk",
  "aptos-types",
  "godfig",
+ "hex",
  "m1-da-light-node-util",
  "rand 0.7.3",
  "serde",

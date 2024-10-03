@@ -1,4 +1,4 @@
-use super::client::{Config, MovementClient};
+use super::client::MovementClient;
 use super::utils::MovementAddress;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
@@ -14,6 +14,7 @@ use crate::types::LockDetails;
 use anyhow::Result;
 use aptos_sdk::rest_client::Response;
 use aptos_types::contract_event::EventWithVersion;
+use bridge_config::common::movement::MovementConfig;
 use futures::channel::mpsc::{self};
 use futures::SinkExt;
 use futures::Stream;
@@ -30,12 +31,13 @@ impl BridgeContractMonitoring for MovementMonitoring {
 }
 
 impl MovementMonitoring {
-	pub async fn build(config: Config) -> Result<Self, anyhow::Error> {
+	pub async fn build(config: &MovementConfig) -> Result<Self, anyhow::Error> {
 		// Spawn a task to forward events to the listener channel
 		let (mut sender, listener) = futures::channel::mpsc::unbounded::<
 			BridgeContractResult<BridgeContractEvent<MovementAddress>>,
 		>();
 		tokio::spawn({
+			let config = config.clone();
 			async move {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {

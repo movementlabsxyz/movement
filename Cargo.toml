@@ -3,6 +3,8 @@
 resolver = "2"
 
 members = [
+    "protocol-units/bridge/config",
+    "protocol-units/bridge/setup",
     "protocol-units/execution/dof",
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
@@ -32,6 +34,7 @@ members = [
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/service",
+    "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
 ]
@@ -49,7 +52,10 @@ rust-version = "1.75"
 [workspace.dependencies]
 # internal
 ## bridge
+bridge-config = { path = "protocol-units/bridge/config" }
 bridge-service = { path = "protocol-units/bridge/service" }
+bridge-setup = { path = "protocol-units/bridge/setup" }
+bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }

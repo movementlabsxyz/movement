@@ -131,9 +131,16 @@ impl From<Uint<256, 4>> for TimeLock {
 pub struct Amount(pub AssetType);
 
 impl Amount {
-	pub fn value(&self) -> u64 {
+	// pub fn value(&self) -> u64 {
+	// 	match self.0 {
+	// 		AssetType::EthAndWeth((weth_value, eth_value)) => weth_value + eth_value,
+	// 		AssetType::Moveth(value) => value,
+	// 	}
+	// }
+
+	pub fn moveth_value(&self) -> u64 {
 		match self.0 {
-			AssetType::EthAndWeth((eth_value, weth_value)) => weth_value + eth_value,
+			AssetType::EthAndWeth((_, _)) => 0,
 			AssetType::Moveth(value) => value,
 		}
 	}

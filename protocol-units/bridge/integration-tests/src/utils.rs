@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use crate::HarnessMvtClient;
 use alloy::hex;
 use anyhow::Result;
 use aptos_sdk::{
@@ -9,9 +10,7 @@ use bridge_service::chains::movement::client::MovementClient;
 use bridge_service::chains::movement::utils::{
 	self as movement_utils, MovementAddress, MovementHash,
 };
-use bridge_service::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock, TimeLock,
-};
+use bridge_service::types::{Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock};
 use tracing::debug;
 
 pub fn assert_bridge_transfer_details(
@@ -75,17 +74,13 @@ pub async fn extract_bridge_transfer_id(
 }
 
 pub async fn fund_and_check_balance(
-	movement_client: &mut MovementClient,
+	movement_harness: &mut HarnessMvtClient,
 	expected_balance: u64,
 ) -> Result<()> {
-	let movement_client_signer = movement_client.signer();
-	let rest_client = movement_client.rest_client();
+	let movement_client_signer = movement_harness.movement_client.signer();
+	let rest_client = movement_harness.rest_client.clone();
 	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client
-		.faucet_client()
-		.expect("Failed to get FaucetClient")
-		.write()
-		.unwrap();
+	let faucet_client = movement_harness.faucet_client.write().unwrap();
 	faucet_client.fund(movement_client_signer.address(), expected_balance).await?;
 
 	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
