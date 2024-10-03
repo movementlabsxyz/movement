@@ -2,7 +2,7 @@ use crate::config::common::{
 	default_celestia_appd_replace_args, default_celestia_appd_use_replace_args,
 	default_celestia_chain_id, default_celestia_namespace, default_celestia_rpc_listen_hostname,
 	default_celestia_rpc_listen_port, default_celestia_websocket_connection_hostname,
-	default_celestia_websocket_connection_port,
+	default_celestia_websocket_connection_port, default_celestia_websocket_connection_protocol,
 };
 
 use celestia_types::nmt::Namespace;
@@ -18,6 +18,10 @@ pub struct Config {
 	/// The port of the Celestia RPC
 	#[serde(default = "default_celestia_rpc_listen_port")]
 	pub celestia_rpc_listen_port: u16,
+
+	/// The protocol for the Celestia Node websocket
+	#[serde(default = "default_celestia_websocket_connection_protocol")]
+	pub celestia_websocket_connection_protocol: String,
 
 	/// The hostname of the Celestia Node websocket
 	#[serde(default = "default_celestia_websocket_connection_hostname")]
@@ -60,6 +64,8 @@ impl Default for Config {
 		Self {
 			celestia_rpc_listen_hostname: default_celestia_rpc_listen_hostname(),
 			celestia_rpc_listen_port: default_celestia_rpc_listen_port(),
+			celestia_websocket_connection_protocol: default_celestia_websocket_connection_protocol(
+			),
 			celestia_websocket_connection_hostname: default_celestia_websocket_connection_hostname(
 			),
 			celestia_websocket_connection_port: default_celestia_websocket_connection_port(),

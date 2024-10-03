@@ -38,17 +38,18 @@ contract AtomicBridgeCounterpartyTest is Test {
         uint256 initiatorTimeLockDuration = 48 * 60 * 60; // 48 hours for the initiator
         uint256 counterpartyTimeLockDuration = 24 * 60 * 60; // 24 hours for the counterparty
 
-        // Deploy the AtomicBridgeInitiator contract with a 48-hour time lock
+        // Deploy the AtomicBridgeInitiator contract with a 48-hour time lock and initial pool balance
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256)", 
+                "initialize(address,address,uint256,uint256)", 
                 wethAddress, 
                 deployer, 
-                initiatorTimeLockDuration // Set 48-hour time lock for the initiator
+                initiatorTimeLockDuration, // Set 48-hour time lock for the initiator
+                0 ether // Initial pool balance 
             )
         );
 
@@ -192,3 +193,4 @@ contract AtomicBridgeCounterpartyTest is Test {
         vm.stopPrank();
     }
 }
+

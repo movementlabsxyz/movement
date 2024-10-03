@@ -1,18 +1,21 @@
 use crate::actions::process_action;
+use crate::actions::ActionExecError;
 use crate::actions::TransferAction;
 use crate::actions::TransferActionType;
 use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
 use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::events::InvalidEventError;
 use crate::events::TransferEvent;
 use crate::states::TransferState;
+use crate::states::TransferStateType;
 use crate::types::BridgeTransferId;
 use crate::types::ChainId;
 use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
 use tokio::select;
+use tokio::task::JoinError;
+use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
 
 mod actions;
@@ -22,8 +25,8 @@ mod states;
 pub mod types;
 
 pub async fn run_bridge<
-	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static,
-	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static,
+	A1: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
+	A2: Send + From<Vec<u8>> + std::clone::Clone + 'static + std::fmt::Debug,
 >(
 	one_client: impl BridgeContract<A1> + 'static,
 	mut one_stream: impl BridgeContractMonitoring<Address = A1>,
@@ -36,7 +39,11 @@ where
 {
 	let mut state_runtime = Runtime::new();
 
-	let mut client_exec_result_futures = FuturesUnordered::new();
+	let mut client_exec_result_futures_one = FuturesUnordered::new();
+	let mut client_exec_result_futures_two = FuturesUnordered::new();
+
+	// let mut action_to_exec_futures_one = FuturesUnordered::new();
+	// let mut action_to_exec_futures_two = FuturesUnordered::new();
 
 	loop {
 		select! {
@@ -45,13 +52,26 @@ where
 				match one_event_res {
 					Ok(one_event) => {
 						let event : TransferEvent<A1> = (one_event, ChainId::ONE).into();
+						tracing::info!("Receive event from chain ONE:{}", event.contract_event.bridge_transfer_id());
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
-								let fut = process_action(action, one_client.clone());
-								if let Some(fut) = fut {
-									let jh = tokio::spawn(fut);
-									client_exec_result_futures.push(jh);
+								match action.chain {
+									ChainId::ONE => {
+										let fut = process_action(action, one_client.clone());
+										if let Some(fut) = fut {
+											let jh = tokio::spawn(fut);
+											client_exec_result_futures_one.push(jh);
+										}
+
+									},
+									ChainId::TWO => {
+										let fut = process_action(action, two_client.clone());
+										if let Some(fut) = fut {
+											let jh = tokio::spawn(fut);
+											client_exec_result_futures_two.push(jh);
+										}
+									}
 								}
 							},
 							Err(err) => tracing::warn!("Received an invalid event: {err}"),
@@ -65,13 +85,26 @@ where
 				match two_event_res {
 					Ok(two_event) => {
 						let event : TransferEvent<A2> = (two_event, ChainId::TWO).into();
+						tracing::info!("Receive event from chain TWO id:{}", event.contract_event.bridge_transfer_id());
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
-								let fut = process_action(action, two_client.clone());
-								if let Some(fut) = fut {
-									let jh = tokio::spawn(fut);
-									client_exec_result_futures.push(jh);
+								match action.chain {
+									ChainId::ONE => {
+										let fut = process_action(action, one_client.clone());
+										if let Some(fut) = fut {
+											let jh = tokio::spawn(fut);
+											client_exec_result_futures_one.push(jh);
+										}
+
+									},
+									ChainId::TWO => {
+										let fut = process_action(action, two_client.clone());
+										if let Some(fut) = fut {
+											let jh = tokio::spawn(fut);
+											client_exec_result_futures_two.push(jh);
+										}
+									}
 								}
 							},
 							Err(err) => tracing::warn!("Received an invalid event: {err}"),
@@ -81,13 +114,15 @@ where
 				}
 			}
 			// Wait on client tx execution result.
-			Some(jh) = client_exec_result_futures.next() => {
-				match jh {
+			Some(res) = client_exec_result_futures_one.next() => {
+				match res {
 					//Client execution ok.
 					Ok(Ok(_)) => (),
 					Ok(Err(err)) => {
 						// Manage Tx execution error
-						state_runtime.process_client_exec_error(err);
+						let action = state_runtime.process_action_exec_error(err);
+						// TODO execute action the same way as normal event.
+						// TODO refactor to avopid code duplication.
 					}
 					Err(err)=>{
 						// Tokio execution fail. Process should exit.
@@ -109,17 +144,21 @@ impl Runtime {
 		Runtime { swap_state_map: HashMap::new() }
 	}
 
-	pub fn process_event<A: Into<Vec<u8>> + std::clone::Clone, B: From<Vec<u8>>>(
+	pub fn process_event<A>(
 		&mut self,
 		event: TransferEvent<A>,
-	) -> Result<TransferAction<B>, InvalidEventError> {
+	) -> Result<TransferAction, InvalidEventError>
+	where
+		A: Into<Vec<u8>> + std::clone::Clone,
+	{
 		self.validate_state(&event)?;
 		let event_transfer_id = event.contract_event.bridge_transfer_id();
 		let state_opt = self.swap_state_map.remove(&event_transfer_id);
 		//create swap state if need
 		let mut state = if let BridgeContractEvent::Initiated(detail) = event.contract_event {
-			let (state, action) =
+			let (state, mut action) =
 				TransferState::transition_from_initiated(event.chain, event_transfer_id, detail);
+			action.chain = state.init_chain.other();
 			self.swap_state_map.insert(state.transfer_id, state);
 			return Ok(action);
 		} else {
@@ -127,22 +166,29 @@ impl Runtime {
 			state_opt.unwrap()
 		};
 
-		let action_kind = match event.contract_event {
+		let (action_kind, chain_id) = match event.contract_event {
 			BridgeContractEvent::Initiated(_) => unreachable!(),
 			BridgeContractEvent::Locked(detail) => {
 				let (new_state, action_kind) =
 					state.transition_from_locked_done(event_transfer_id, detail);
 				state = new_state;
-				action_kind
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::CounterPartCompleted(_, preimage) => {
-				let (new_state, action_kind) = state
-					.transition_from_counterpart_completed::<A, B>(event_transfer_id, preimage);
+				let (new_state, action_kind) =
+					state.transition_from_counterpart_completed(event_transfer_id, preimage);
 				state = new_state;
-				action_kind
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::InitialtorCompleted(_) => {
-				todo!()
+				let (new_state, action_kind) =
+					state.transition_from_initiator_completed(event_transfer_id);
+				state = new_state;
+				//transfer done remove the state.
+				if state.state == TransferStateType::Done {
+					self.swap_state_map.remove(&event_transfer_id);
+				}
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Cancelled(_) => {
 				todo!()
@@ -152,11 +198,8 @@ impl Runtime {
 			}
 		};
 
-		let action = TransferAction {
-			init_chain: state.init_chain,
-			transfer_id: state.transfer_id,
-			kind: action_kind,
-		};
+		let action =
+			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
 		self.swap_state_map.insert(state.transfer_id, state);
 
@@ -183,8 +226,47 @@ impl Runtime {
 		Ok(())
 	}
 
-	fn process_client_exec_error(&mut self, error: BridgeContractError) {
-		tracing::warn!("Client execution error:{error}");
-		todo!();
+	fn process_action_exec_error(&mut self, action_err: ActionExecError) -> Option<TransferAction> {
+		// Manage Tx execution error
+		let (action, err) = action_err.inner();
+		tracing::warn!("Client execution error for action:{action:?} err:{err:?}");
+		// retry 5 time an action in error then abort.
+		match self.swap_state_map.get_mut(&action.transfer_id) {
+			Some(state) => {
+				state.retry_on_error += 1;
+				if state.retry_on_error > 5 {
+					// Depending on the action cancel transfer
+					match action.kind {
+						TransferActionType::LockBridgeTransfer { .. } => {
+							//Lock fail. Refund initiator
+							let (new_state_type, action_kind) = state.transition_to_refund();
+							state.state = new_state_type;
+							let action = TransferAction {
+								chain: state.init_chain,
+								transfer_id: state.transfer_id,
+								kind: action_kind,
+							};
+							Some(action)
+						}
+						TransferActionType::WaitAndCompleteInitiator(..) => {
+							todo!()
+						}
+						TransferActionType::RefundInitiator => None, //will wait automatic refund
+						TransferActionType::TransferDone => None,
+						TransferActionType::NoAction => None,
+					}
+				} else {
+					//Rerun the action.
+					Some(action)
+				}
+			}
+			None => {
+				tracing::warn!(
+					"Receive an error for action but no state found for id:{:?}",
+					action.transfer_id
+				);
+				None
+			}
+		}
 	}
 }

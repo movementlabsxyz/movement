@@ -7,10 +7,18 @@ import "../../src/token/MOVETokenV2.sol";
 import "../../src/settlement/MCR.sol";
 import "../../src/settlement/MCRStorage.sol";
 import "../../src/settlement/interfaces/IMCR.sol";
-import { TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract MCRTest is Test, IMCR {
+<<<<<<< HEAD
+    function testInitialize() public {
+        MOVETokenV2 moveToken = new MOVETokenV2();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        MCR mcr = new MCR();
+=======
 
     MOVETokenV2 public moveToken;
     MovementStaking public staking;
@@ -55,14 +63,44 @@ contract MCRTest is Test, IMCR {
     }
 
     function testCannotInitializeTwice() public {
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
         address[] memory custodians = new address[](1);
         custodians[0] = address(moveToken);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+    }
+
+    function testCannotInitializeTwice() public {
+        MOVETokenV2 moveToken = new MOVETokenV2();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        MCR mcr = new MCR();
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
         mcr.initialize(staking, 0, 5, 10 seconds, custodians);
     }
 
     function testSimpleStaking() public {
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        MCR mcr = new MCR();
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
         staking.whitelistAddress(alice);
@@ -89,7 +127,8 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, 33);
 
         // end the genesis ceremony
-        mcr.acceptGenesisCeremony();
+        vm.prank(address(mcr));
+        staking.acceptGenesisCeremony();
 
         // make a block commitment
         MCRStorage.BlockCommitment memory bc1 = MCRStorage.BlockCommitment({
@@ -119,6 +158,20 @@ contract MCRTest is Test, IMCR {
     }
 
     function testDishonestValidator() public {
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        MCR mcr = new MCR();
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
         // three well-funded signers
         address payable alice = payable(vm.addr(1));
         staking.whitelistAddress(alice);
@@ -145,7 +198,8 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, 33);
 
         // end the genesis ceremony
-        mcr.acceptGenesisCeremony();
+        vm.prank(address(mcr));
+        staking.acceptGenesisCeremony();
 
         // carol will be dishonest
         MCRStorage.BlockCommitment memory dishonestCommitment = MCRStorage
@@ -197,6 +251,19 @@ contract MCRTest is Test, IMCR {
     }
 
     function testRollsOverHandlingDishonesty() public {
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        MCR mcr = new MCR();
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
 
         vm.warp(300 seconds);
 
@@ -226,7 +293,8 @@ contract MCRTest is Test, IMCR {
         staking.stake(address(mcr), moveToken, 33);
 
         // end the genesis ceremony
-        mcr.acceptGenesisCeremony();
+        vm.prank(address(mcr));
+        staking.acceptGenesisCeremony();
 
         // carol will be dishonest
         MCRStorage.BlockCommitment memory dishonestCommitment = MCRStorage
@@ -301,10 +369,22 @@ contract MCRTest is Test, IMCR {
     address[] dishonestSigners = new address[](0);
 
     function testChangingValidatorSet() public {
-
         vm.pauseGasMetering();
 
         uint256 blockTime = 300;
+<<<<<<< HEAD
+        MOVETokenV2 moveToken = new MOVETokenV2();
+        moveToken.initialize();
+
+        MovementStaking staking = new MovementStaking();
+        staking.initialize(moveToken);
+
+        MCR mcr = new MCR();
+        address[] memory custodians = new address[](1);
+        custodians[0] = address(moveToken);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+=======
+>>>>>>> f583cad6b8c4eaf1951a2eb3f53eec0c109a9d1c
 
         vm.warp(blockTime);
 
