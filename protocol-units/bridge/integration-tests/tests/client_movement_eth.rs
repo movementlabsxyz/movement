@@ -1,32 +1,31 @@
 use anyhow::Result;
+use bridge_config::Config;
+use bridge_integration_tests::utils;
+use bridge_integration_tests::utils as test_utils;
+use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::{
 	chains::{bridge_contracts::BridgeContract, movement::utils::MovementHash},
 	types::{BridgeTransferId, HashLockPreImage},
 };
-use harness::{MovementToEthCallArgs, TestHarness};
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
-mod utils;
-use utils as test_utils;
-
-mod harness;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+
+	let config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 	let test_result = async {
-		let mut movement_client =
-			harness.movement_client_mut().expect("Failed to get MovementClient");
-		test_utils::fund_and_check_balance(&mut movement_client, 100_000_000_000)
+		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000)
 			.await
 			.expect("Failed to fund accounts");
 		Ok(())
 	}
 	.await;
 
-	if let Err(e) = child.kill().await {
+	if let Err(e) = mvt_client_harness.movement_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 	test_result
@@ -36,17 +35,16 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let mut movement_client =
-			harness.movement_client_mut().expect("Failed to get MovementClient");
-		let sender_address = movement_client.signer().address();
-		test_utils::fund_and_check_balance(movement_client, 100_000_000_000).await?;
+		let sender_address = mvt_client_harness.movement_client.signer().address();
+		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
 		test_utils::initiate_bridge_transfer_helper(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock.0,
@@ -57,10 +55,10 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to initiate bridge transfer");
 
 		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(movement_client).await?;
+			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
@@ -81,7 +79,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	}
 	.await;
 
-	if let Err(e) = child.kill().await {
+	if let Err(e) = mvt_client_harness.movement_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 
@@ -92,17 +90,16 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let default_config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(default_config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let mut movement_client =
-			harness.movement_client_mut().expect("Failed to get MovementClient");
-		let sender_address = movement_client.signer().address();
-		test_utils::fund_and_check_balance(movement_client, 100_000_000_000).await?;
+		let sender_address = mvt_client_harness.movement_client.signer().address();
+		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
 		test_utils::initiate_bridge_transfer_helper(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock.0,
@@ -113,10 +110,10 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to initiate bridge transfer");
 
 		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(movement_client).await?;
+			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
@@ -138,7 +135,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		padded_secret[..secret.len()].copy_from_slice(secret);
 
 		BridgeContract::initiator_complete_bridge_transfer(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 			HashLockPreImage(padded_secret),
 		)
@@ -146,7 +143,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to complete bridge transfer");
 
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
@@ -159,7 +156,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	}
 	.await;
 
-	if let Err(e) = child.kill().await {
+	if let Err(e) = mvt_client_harness.movement_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 
@@ -170,21 +167,20 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let mut movement_client =
-			harness.movement_client_mut().expect("Failed to get MovementClient");
-		let sender_address = movement_client.signer().address();
-		test_utils::fund_and_check_balance(movement_client, 100_000_000_000).await?;
+		let sender_address = mvt_client_harness.movement_client.signer().address();
+		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
 
-		let ledger_info = movement_client.rest_client().get_ledger_information().await?;
+		let ledger_info = mvt_client_harness.rest_client.get_ledger_information().await?;
 		println!("Ledger info: {:?}", ledger_info);
 
 		test_utils::initiate_bridge_transfer_helper(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
 			args.hash_lock.0,
@@ -195,10 +191,10 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to initiate bridge transfer");
 
 		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(movement_client).await?;
+			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
@@ -218,14 +214,14 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		sleep(Duration::from_secs(2)).await;
 
 		BridgeContract::refund_bridge_transfer(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
 
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			movement_client,
+			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 		)
 		.await
@@ -238,7 +234,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	}
 	.await;
 
-	if let Err(e) = child.kill().await {
+	if let Err(e) = mvt_client_harness.movement_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 

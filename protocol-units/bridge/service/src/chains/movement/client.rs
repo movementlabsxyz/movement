@@ -10,14 +10,14 @@ use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
 	move_types::identifier::Identifier,
-	rest_client::{Client, FaucetClient, Response},
+	rest_client::{Client, Response},
 	types::LocalAccount,
 };
 use aptos_types::account_address::AccountAddress;
+use bridge_config::common::movement::MovementConfig;
 use rand::prelude::*;
 use std::str::FromStr;
-use std::sync::{Arc, RwLock};
-
+use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
@@ -33,31 +33,6 @@ enum Call {
 	GetDetails,
 }
 
-pub struct Config {
-	pub rpc_url: Option<String>,
-	pub ws_url: Option<String>,
-	pub chain_id: String,
-	pub signer_private_key: Arc<RwLock<LocalAccount>>,
-	pub initiator_contract: Option<MovementAddress>,
-	pub gas_limit: u64,
-}
-
-impl Config {
-	pub fn build_for_test() -> Self {
-		let seed = [3u8; 32];
-		let mut rng = rand::rngs::StdRng::from_seed(seed);
-
-		Config {
-			rpc_url: Some("http://localhost:8080".parse().unwrap()),
-			ws_url: Some("ws://localhost:8080".parse().unwrap()),
-			chain_id: 4.to_string(),
-			signer_private_key: Arc::new(RwLock::new(LocalAccount::generate(&mut rng))),
-			initiator_contract: None,
-			gas_limit: 10_000_000_000,
-		}
-	}
-}
-
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct MovementClient {
@@ -67,32 +42,25 @@ pub struct MovementClient {
 	pub non_native_address: Vec<u8>,
 	///The Apotos Rest Client
 	pub rest_client: Client,
-	///The Apotos Rest Client
-	pub faucet_client: Option<Arc<RwLock<FaucetClient>>>,
 	///The signer account
 	signer: Arc<LocalAccount>,
 }
 
 impl MovementClient {
-	pub async fn new(_config: &Config) -> Result<Self, anyhow::Error> {
-		let node_connection_url = "http://127.0.0.1:8080".to_string();
-		let node_connection_url = Url::from_str(node_connection_url.as_str())
+	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
+		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let seed = [3u8; 32];
-		let mut rng = rand::rngs::StdRng::from_seed(seed);
-		let signer = LocalAccount::generate(&mut rng);
-
-		let mut address_bytes = [0u8; AccountAddress::LENGTH];
-		address_bytes[0..2].copy_from_slice(&[0xca, 0xfe]);
-		let native_address = AccountAddress::new(address_bytes);
+		let signer =
+			utils::create_local_account(config.movement_signer_address.clone(), &rest_client)
+				.await?;
+		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClient {
 			native_address,
 			non_native_address: Vec::new(), //dummy for now
 			rest_client,
-			faucet_client: None,
 			signer: Arc::new(signer),
 		})
 	}
@@ -103,14 +71,6 @@ impl MovementClient {
 
 	pub fn signer(&self) -> &LocalAccount {
 		&self.signer
-	}
-
-	pub fn faucet_client(&self) -> Result<&Arc<RwLock<FaucetClient>>> {
-		if let Some(faucet_client) = &self.faucet_client {
-			Ok(faucet_client)
-		} else {
-			Err(anyhow::anyhow!("Faucet client not initialized"))
-		}
 	}
 
 	pub async fn initiator_set_timelock(
@@ -201,13 +161,12 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
 			while end > 0 && preimage.0[end - 1] == 0 {
-			end -= 1;
+				end -= 1;
 			}
-			&preimage.0[..end]  
+			&preimage.0[..end]
 		};
 		let args2 = vec![
 			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
@@ -238,18 +197,17 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
-		
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
 			while end > 0 && preimage.0[end - 1] == 0 {
-			end -= 1;
+				end -= 1;
 			}
-			&preimage.0[..end]  
+			&preimage.0[..end]
 		};
 		let args2 = vec![
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&unpadded_preimage)?,
-		]; 
+		];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -269,10 +227,10 @@ impl BridgeContract<MovementAddress> for MovementClient {
 
 		match &result {
 			Ok(tx_result) => {
-			    debug!("Transaction succeeded: {:?}", tx_result);
-			},
+				debug!("Transaction succeeded: {:?}", tx_result);
+			}
 			Err(err) => {
-			    debug!("Transaction failed: {:?}", err);
+				debug!("Transaction failed: {:?}", err);
 			}
 		}
 
@@ -744,9 +702,7 @@ impl MovementClient {
 		Ok(())
 	}
 
-	pub async fn new_for_test(
-		_config: Config,
-	) -> Result<(Self, tokio::process::Child), anyhow::Error> {
+	pub async fn new_for_test() -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let kill_cmd = TokioCommand::new("sh")
 			.arg("-c")
 			.arg("PID=$(ps aux | grep 'movement node run-local-testnet' | grep -v grep | awk '{print $2}' | head -n 1); if [ -n \"$PID\" ]; then kill -9 $PID; fi")
@@ -771,7 +727,7 @@ impl MovementClient {
 			println!(".movement directory deleted if it was present.");
 		}
 
-		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
 			.stdout(Stdio::piped())
@@ -835,21 +791,12 @@ impl MovementClient {
 			.map_err(|_| BridgeContractError::SerializationError)?;
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let faucet_url = "http://127.0.0.1:8081".to_string();
-		let faucet_url = Url::from_str(faucet_url.as_str())
-			.map_err(|_| BridgeContractError::SerializationError)?;
-		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
-			faucet_url.clone(),
-			node_connection_url.clone(),
-		)));
-
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok((
 			MovementClient {
 				native_address: DUMMY_ADDRESS,
-				non_native_address: Vec::new(), // dummy for now
+				non_native_address: Vec::new(),
 				rest_client,
-				faucet_client: Some(faucet_client),
 				signer: Arc::new(LocalAccount::generate(&mut rng)),
 			},
 			child,

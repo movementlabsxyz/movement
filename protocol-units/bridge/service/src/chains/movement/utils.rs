@@ -2,6 +2,8 @@ use super::client::MovementClient;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
+use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
+use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
 	move_types::{
@@ -126,12 +128,6 @@ impl MovementHash {
 		let mut hash = [0u8; 32];
 		rng.fill_bytes(&mut hash);
 		Self(hash)
-	}
-
-	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
-		let mut random_bytes = [0u8; 32];
-		rng.fill(&mut random_bytes);
-		Self(random_bytes)
 	}
 }
 
@@ -366,4 +362,24 @@ pub async fn send_view_request(
 		)
 		.await?;
 	Ok(view_response.inner().clone())
+}
+
+pub async fn create_local_account(
+	private_key: Ed25519PrivateKey,
+	client: &RestClient,
+) -> Result<LocalAccount, anyhow::Error> {
+	// Derive the public key from the private key
+	let public_key = Ed25519PublicKey::from(&private_key);
+
+	// Get the account address from the public key
+	let account_address: AccountAddress =
+		aptos_sdk::types::account_address::from_public_key(&public_key);
+
+	// Fetch the current sequence number from the blockchain
+	let sequence_number = client.get_account(account_address).await?.inner().sequence_number;
+
+	// Create the LocalAccount
+	let local_account = LocalAccount::new(account_address, private_key, sequence_number);
+
+	Ok(local_account)
 }

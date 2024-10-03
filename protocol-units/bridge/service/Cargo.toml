@@ -53,6 +53,9 @@ async-stream = { workspace = true }
 
 #To be removed after send_transaction refactor
 mcr-settlement-client = { workspace = true }
+bridge-config = { workspace = true }
+godfig = { workspace = true }
+dot-movement = { workspace = true }
 
 
 [lints]
