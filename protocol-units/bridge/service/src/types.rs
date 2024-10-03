@@ -112,6 +112,13 @@ impl Amount {
 	// 	}
 	// }
 
+	pub fn moveth_value(&self) -> u64 {
+		match self.0 {
+			AssetType::EthAndWeth((_, _)) => 0,
+			AssetType::Moveth(value) => value,
+		}
+	}
+
 	pub fn eth_value(&self) -> u64 {
 		match self.0 {
 			AssetType::EthAndWeth((eth_value, _)) => eth_value,
