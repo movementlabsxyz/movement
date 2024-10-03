@@ -7,7 +7,7 @@ module atomic_bridge::atomic_bridge_initiator {
     use std::signer;
     use std::vector;
     use std::bcs;
-    use moveth::moveth;
+    use move_fa::move_fa;
     use atomic_bridge::atomic_bridge_counterparty;
 
     #[test_only]
@@ -33,7 +33,7 @@ module atomic_bridge::atomic_bridge_initiator {
     const EWRONG_HASHLOCK: u64 = 11;
 
     struct BridgeConfig has key {
-        moveth_minter: address,
+        move_fa_minter: address,
         bridge_module_deployer: address,
         time_lock_duration: u64,
     }
@@ -96,7 +96,7 @@ module atomic_bridge::atomic_bridge_initiator {
         });
 
         move_to(deployer, BridgeConfig {
-            moveth_minter: signer::address_of(deployer),
+            move_fa_minter: signer::address_of(deployer),
             bridge_module_deployer: signer::address_of(deployer),
             time_lock_duration: 48 * 60 * 60, // 48 hours
         });
@@ -130,7 +130,7 @@ module atomic_bridge::atomic_bridge_initiator {
         amount: u64
     ) acquires BridgeTransferStore, BridgeConfig {
         let originator_addr = signer::address_of(originator);
-        let asset = moveth::metadata();
+        let asset = move_fa::metadata();
         let config_address = borrow_global<BridgeConfig>(@atomic_bridge).bridge_module_deployer;
         let store = borrow_global_mut<BridgeTransferStore>(config_address);
 
@@ -164,7 +164,7 @@ module atomic_bridge::atomic_bridge_initiator {
         };
 
         aptos_std::smart_table::add(&mut store.transfers, bridge_transfer_id, bridge_transfer);
-        atomic_bridge_counterparty::burn_moveth(originator_addr, amount);
+        atomic_bridge_counterparty::burn_move_fa(originator_addr, amount);
 
         event::emit_event(&mut store.bridge_transfer_initiated_events, BridgeTransferInitiatedEvent {
             bridge_transfer_id: bridge_transfer_id,
@@ -210,13 +210,13 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(timestamp::now_seconds() > bridge_transfer.time_lock, ENOT_EXPIRED);
 
         let originator_addr = bridge_transfer.originator;
-        let asset = moveth::metadata();
+        let asset = move_fa::metadata();
 
         // Transfer amount of asset from atomic bridge primary fungible store to originator's primary fungible store
         primary_fungible_store::ensure_primary_store_exists(originator_addr, asset);
         primary_fungible_store::ensure_primary_store_exists(@atomic_bridge, asset);
 
-        atomic_bridge_counterparty::mint_moveth(bridge_transfer.originator, bridge_transfer.amount);
+        atomic_bridge_counterparty::mint_move_fa(bridge_transfer.originator, bridge_transfer.amount);
 
         bridge_transfer.state = REFUNDED;
 
@@ -246,7 +246,7 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) {
         genesis::setup();
-        moveth::init_for_test(atomic_bridge);
+        move_fa::init_for_test(atomic_bridge);
         atomic_bridge_counterparty::set_up_test(origin_account, atomic_bridge);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
@@ -298,7 +298,7 @@ module atomic_bridge::atomic_bridge_initiator {
 
         // Mint amount of tokens to sender
         let sender_address = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_address, amount);
+        move_fa::mint(atomic_bridge, sender_address, amount);
 
         initiate_bridge_transfer(
             sender,
@@ -323,14 +323,14 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(transfer.state == INITIALIZED, 205);
     }
 
-    #[test(creator = @moveth, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
+    #[test(creator = @move_fa, aptos_framework = @0x1, sender = @0xdaff, atomic_bridge = @atomic_bridge)]
     public fun test_get_time_lock_duration(
         creator: &signer,
         aptos_framework: &signer,
         atomic_bridge: &signer,
     ) acquires BridgeConfig {
         timestamp::set_time_has_started_for_testing(aptos_framework);
-        moveth::init_for_test(creator);
+        move_fa::init_for_test(creator);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
 
@@ -347,7 +347,7 @@ module atomic_bridge::atomic_bridge_initiator {
         atomic_bridge: &signer,
     ) acquires BridgeConfig {
         timestamp::set_time_has_started_for_testing(aptos_framework);
-        moveth::init_for_test(atomic_bridge);
+        move_fa::init_for_test(atomic_bridge);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
 
@@ -360,16 +360,16 @@ module atomic_bridge::atomic_bridge_initiator {
         assert!(time_lock_duration == 42, 0);
     }
     
-    #[test(creator = @moveth, sender = @0xdaff, atomic_bridge = @atomic_bridge, aptos_framework = @0x1)]
+    #[test(creator = @move_fa, sender = @0xdaff, atomic_bridge = @atomic_bridge, aptos_framework = @0x1)]
     #[expected_failure (abort_code = EINSUFFICIENT_BALANCE, location = Self)]
-    public fun test_initiate_bridge_transfer_no_moveth(
+    public fun test_initiate_bridge_transfer_no_move_fa(
         sender: &signer,
         creator: &signer,
         atomic_bridge: &signer,
         aptos_framework: &signer
     ) acquires BridgeTransferStore, BridgeConfig {
         timestamp::set_time_has_started_for_testing(aptos_framework);
-        moveth::init_for_test(creator);
+        move_fa::init_for_test(creator);
         let bridge_addr = signer::address_of(atomic_bridge);
         account::create_account_if_does_not_exist(bridge_addr);
         init_module(atomic_bridge);
@@ -379,7 +379,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let hash_lock = b"hash_lock_value";
         let amount = 1000;
 
-        // Do not mint tokens to sender; sender has no MovETH
+        // Do not mint tokens to sender; sender has no move_fa
 
         initiate_bridge_transfer(
             sender,
@@ -404,7 +404,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let amount = 1000;
         let nonce = 1;
         let sender_addr = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_addr, amount);
+        move_fa::mint(atomic_bridge, sender_addr, amount);
 
         let combined_bytes = vector::empty<u8>();
         vector::append(&mut combined_bytes, bcs::to_bytes(&sender_addr));
@@ -454,7 +454,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let amount = 1000;
         let nonce = 1;
         let sender_address = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_address, amount);
+        move_fa::mint(atomic_bridge, sender_address, amount);
 
         let combined_bytes = vector::empty<u8>();
         vector::append(&mut combined_bytes, bcs::to_bytes(&sender_address));
@@ -492,7 +492,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let nonce = 1;
 
         let sender_address = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_address, amount);
+        move_fa::mint(atomic_bridge, sender_address, amount);
 
         let combined_bytes = vector::empty<u8>();
         vector::append(&mut combined_bytes, bcs::to_bytes(&sender_address));
@@ -519,7 +519,7 @@ module atomic_bridge::atomic_bridge_initiator {
         );
 
         let addr = signer::address_of(sender);
-        let asset = moveth::metadata();
+        let asset = move_fa::metadata();
         assert!(primary_fungible_store::balance(addr, asset) == amount, 0);
         let bridge_addr = signer::address_of(atomic_bridge);
         let store = borrow_global<BridgeTransferStore>(bridge_addr);
@@ -545,7 +545,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let amount = 1000;
         let nonce = 1;
         let sender_address = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_address, amount);
+        move_fa::mint(atomic_bridge, sender_address, amount);
 
         let combined_bytes = vector::empty<u8>();
         vector::append(&mut combined_bytes, bcs::to_bytes(&sender_address));
@@ -589,7 +589,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let amount = 1000;
         let nonce = 1;
         let sender_address = signer::address_of(sender);
-        moveth::mint(atomic_bridge, sender_address, amount);
+        move_fa::mint(atomic_bridge, sender_address, amount);
 
         let combined_bytes = vector::empty<u8>();
         vector::append(&mut combined_bytes, bcs::to_bytes(&sender_address));
