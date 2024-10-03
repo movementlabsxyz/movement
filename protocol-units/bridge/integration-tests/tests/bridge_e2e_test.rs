@@ -1,79 +1,36 @@
-// Add these imports
-
-pub mod ethereum;
-pub mod movement;
-
-use crate::ethereum::EthToMovementCallArgs;
-use crate::ethereum::SetupEthClient;
-use crate::movement::SetupMovementClient;
-use alloy::node_bindings::Anvil;
+use alloy::primitives::keccak256;
+use alloy::primitives::{FixedBytes, U256};
+use alloy::providers::ProviderBuilder;
+use alloy_network::EthereumWallet;
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
 use aptos_types::account_address::AccountAddress;
+use bridge_config::Config;
+use bridge_integration_tests::HarnessEthClient;
+use bridge_integration_tests::TestHarness;
+use bridge_service::chains::bridge_contracts::BridgeContractError;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
+use bridge_service::chains::ethereum::utils::send_transaction;
+use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::chains::{
-	ethereum::{
-		client::{Config as EthConfig, EthClient},
-		event_monitoring::EthMonitoring,
-		types::EthAddress,
-	},
+	ethereum::{client::EthClient, event_monitoring::EthMonitoring, types::EthAddress},
 	movement::{
-		client::{Config as MovementConfig, MovementClient},
-		event_monitoring::MovementMonitoring,
-		utils::{MovementAddress, MovementHash},
+		client::MovementClient, event_monitoring::MovementMonitoring, utils::MovementAddress,
 	},
 };
 use bridge_service::types::Amount;
 use bridge_service::types::AssetType;
 use bridge_service::types::BridgeAddress;
-use bridge_service::types::BridgeTransferId;
 use bridge_service::types::HashLock;
 use bridge_service::types::HashLockPreImage;
-use bridge_service::types::TimeLock;
 use tracing_subscriber::EnvFilter;
-//use keccak_hash::keccak256;
-use alloy::primitives::keccak256;
-use tokio::time::{sleep, Duration};
-//AlloyProvider, AtomicBridgeInitiator,
 
-#[tokio::test]
-async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
-	let (mut movement_client, mut child) = SetupMovementClient::setup_local_movement_network()
-		.await
-		.expect("Failed to create SetupMovementClient");
-	//
-	let rest_client = movement_client.rest_client;
-	let coin_client = CoinClient::new(&rest_client);
-	let faucet_client = movement_client.faucet_client.write().unwrap();
-	let movement_client_signer = movement_client.signer;
+async fn start_bridge_local(config: &Config) -> Result<tokio::task::JoinHandle<()>, anyhow::Error> {
+	let one_stream = EthMonitoring::build(&config.eth).await?;
+	let one_client = EthClient::new(&config.eth).await?;
+	let two_client = MovementClient::new(&config.movement).await?;
 
-	faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-	assert!(
-		balance >= 100_000_000,
-		"Expected Movement Client to have at least 100_000_000, but found {}",
-		balance
-	);
-
-	child.kill().await?;
-
-	Ok(())
-}
-
-async fn start_bridge_local(
-	eth_config: EthConfig,
-) -> Result<tokio::task::JoinHandle<()>, anyhow::Error> {
-	let one_stream = EthMonitoring::build(
-		&eth_config.ws_url.clone().to_string(),
-		&eth_config.initiator_contract,
-		&eth_config.counterparty_contract,
-	)
-	.await?;
-	let one_client = EthClient::new(eth_config).await?;
-
-	let mvt_config = MovementConfig::build_for_test();
-	let two_client = MovementClient::new(&mvt_config).await?;
-
-	let two_stream = MovementMonitoring::build(mvt_config).await?;
+	let two_stream = MovementMonitoring::build(&config.movement).await?;
 
 	let jh = tokio::spawn(async move {
 		bridge_service::run_bridge(one_client, one_stream, two_client, two_stream)
@@ -81,6 +38,48 @@ async fn start_bridge_local(
 			.unwrap()
 	});
 	Ok(jh)
+}
+
+async fn initiate_eth_bridge_transfer(
+	harness_client: &HarnessEthClient,
+	recipient: MovementAddress,
+	hash_lock: HashLock,
+	amount: Amount,
+) -> Result<(), anyhow::Error> {
+	let rpc_provider = ProviderBuilder::new()
+		.with_recommended_fillers()
+		.wallet(EthereumWallet::from(harness_client.get_initiator_private_key()))
+		.on_builtin(&harness_client.eth_rpc_url)
+		.await?;
+
+	let contract = AtomicBridgeInitiator::new(
+		harness_client.eth_client.initiator_contract_address(),
+		&rpc_provider,
+	);
+
+	let initiator_address = BridgeAddress(EthAddress(harness_client.get_initiator_address()));
+
+	let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
+
+	let recipient_bytes: [u8; 32] =
+		recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+	let call = contract
+		.initiateBridgeTransfer(
+			U256::from(amount.weth_value()),
+			FixedBytes(recipient_bytes),
+			FixedBytes(hash_lock.0),
+		)
+		.value(U256::from(amount.eth_value()))
+		.from(*initiator_address.0);
+	let _ = send_transaction(
+		call,
+		&send_transaction_rules(),
+		harness_client.eth_client.config.transaction_send_retries,
+		harness_client.eth_client.config.gas_limit,
+	)
+	.await
+	.map_err(|e| BridgeContractError::GenericError(format!("Failed to send transaction: {}", e)))?;
+	Ok(())
 }
 
 #[tokio::test]
@@ -91,52 +90,20 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
-	//Configure Movement side
-	let (mut movement_client, mut child) = SetupMovementClient::setup_local_movement_network()
-		.await
-		.expect("Failed to create SetupMovementClient");
-	//
-	let rest_client = movement_client.rest_client.clone();
-	let coin_client = CoinClient::new(&rest_client);
-	let movement_client_signer_address = movement_client.signer.address();
+	let config = Config::default();
+	let (eth_client_harness, mut mvt_client_harness, config) =
+		TestHarness::new_with_eth_and_movement(config).await;
 
-	// Deploy smart contract
-	let _ = movement_client.publish_for_test();
+	let rest_client = mvt_client_harness.rest_client;
+	let movement_client_signer_address = mvt_client_harness.movement_client.signer().address();
+
 	{
-		let faucet_client = movement_client.faucet_client.write().unwrap();
+		let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 		faucet_client.fund(movement_client_signer_address, 100_000_000).await?;
 	}
 
-	//Configure Ethereum side
-	let anvil = Anvil::new().port(8545 as u16).spawn();
-	let ws_end_point = anvil.ws_endpoint();
-	let mut eth_config = EthConfig::build_for_test();
-	let signer: alloy::signers::local::PrivateKeySigner = anvil.keys()[1].clone().into();
-	eth_config.signer_private_key = signer;
-	let mut eth_client = SetupEthClient::setup_local_ethereum_network(eth_config.clone())
-		.await
-		.expect("Failed to create SetupEthClient");
-	// Deploy smart contract
-	let initiator_address = eth_client.deploy_initiator_contract().await;
-	let counterpart_address = eth_client.deploy_counterpart_contract().await;
-	let weth_address = eth_client.deploy_weth_contract().await;
-
-	eth_client
-		.initialize_initiator_contract(
-			EthAddress(weth_address),
-			EthAddress(eth_client.get_signer_address()),
-			1,
-		)
-		.await
-		.unwrap();
-
-	eth_config.initiator_contract = initiator_address.to_string();
-	eth_config.counterparty_contract = counterpart_address.to_string();
-	eth_config.weth_contract = weth_address.to_string();
-	tracing::info!("Eth config:{eth_config:?}");
-
 	// Start bridge.
-	let bridge_task_handle = start_bridge_local(eth_config).await.unwrap(); //.expect("Failed to start the bridge");
+	let _bridge_task_handle = start_bridge_local(&config).await.unwrap(); //.expect("Failed to start the bridge");
 
 	// 1) initialize transfer
 	// eth_client
@@ -149,13 +116,12 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let mov_recipient = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
 
 	let amount = Amount(AssetType::EthAndWeth((1, 0)));
-	eth_client
-		.initiate_bridge_transfer(&anvil, mov_recipient, hash_lock, amount)
+	initiate_eth_bridge_transfer(&eth_client_harness, mov_recipient, hash_lock, amount)
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-	if let Err(e) = child.kill().await {
-		tracing::error!("Failed to kill child process: {:?}", e);
+	if let Err(e) = mvt_client_harness.movement_process.kill().await {
+		eprintln!("Failed to kill child process: {:?}", e);
 	}
 
 	//Wait for the tx to be executed

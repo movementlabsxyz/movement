@@ -103,6 +103,14 @@ impl HarnessEthClient {
 		self.get_initiator_private_key().address()
 	}
 
+	pub fn get_recipient_private_key(&self) -> PrivateKeySigner {
+		self.anvil.keys()[3].clone().into()
+	}
+
+	pub fn get_recipeint_address(&self) -> Address {
+		self.get_recipient_private_key().address()
+	}
+
 	pub async fn deposit_weth_and_approve(
 		&mut self,
 		initiator_address: BridgeAddress<EthAddress>,
@@ -135,9 +143,18 @@ impl HarnessMvtClient {
 
 pub struct TestHarness;
 impl TestHarness {
-	pub async fn new_with_movement() -> (HarnessMvtClient, Config) {
-		let (config, movement_process) =
-			bridge_setup::test_mvt_setup().await.expect("Failed to setup MovementClient");
+	pub async fn new_with_eth_and_movement(
+		config: Config,
+	) -> (HarnessEthClient, HarnessMvtClient, Config) {
+		let (eth_client_harness, config) = TestHarness::new_only_eth(config).await;
+		let (mvt_client_harness, config) = TestHarness::new_with_movement(config).await;
+		(eth_client_harness, mvt_client_harness, config)
+	}
+
+	pub async fn new_with_movement(config: Config) -> (HarnessMvtClient, Config) {
+		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
+			.await
+			.expect("Failed to setup Movement config");
 
 		let movement_client = MovementClient::new(&config.movement)
 			.await
@@ -157,9 +174,10 @@ impl TestHarness {
 		(HarnessMvtClient { movement_client, movement_process, rest_client, faucet_client }, config)
 	}
 
-	pub async fn new_only_eth() -> (HarnessEthClient, Config) {
-		let (config, anvil) =
-			bridge_setup::test_eth_setup().await.expect("Test eth config setup failed.");
+	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config) {
+		let (config, anvil) = bridge_setup::test_eth_setup(config)
+			.await
+			.expect("Test eth config setup failed.");
 
 		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
 

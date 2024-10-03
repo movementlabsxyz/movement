@@ -1,4 +1,5 @@
 use anyhow::Result;
+use bridge_config::Config;
 use bridge_integration_tests::utils;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
@@ -14,7 +15,8 @@ use tracing::info;
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement().await;
+	let config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 	let test_result = async {
 		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000)
 			.await
@@ -33,7 +35,8 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement().await;
+	let config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
@@ -87,7 +90,8 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement().await;
+	let default_config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(default_config).await;
 
 	let args = MovementToEthCallArgs::default();
 
@@ -163,7 +167,8 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement().await;
+	let config = Config::default();
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 
 	let args = MovementToEthCallArgs::default();
 

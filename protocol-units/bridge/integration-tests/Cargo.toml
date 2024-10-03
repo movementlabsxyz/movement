@@ -19,6 +19,7 @@ aptos-types = { workspace = true }
 aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
+hex = { workspace = true }
 alloy = { workspace = true }
 reqwest = { workspace = true }
 alloy-network = { workspace = true }

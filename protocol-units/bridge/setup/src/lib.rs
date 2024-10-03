@@ -16,16 +16,16 @@ pub async fn process_compose_setup(
 	Ok((config, anvil))
 }
 
-pub async fn test_eth_setup() -> Result<(Config, AnvilInstance), anyhow::Error> {
-	let mut config = Config::default();
+pub async fn test_eth_setup(mut config: Config) -> Result<(Config, AnvilInstance), anyhow::Error> {
 	let anvil = local::setup_eth(&mut config.eth, &mut config.testing);
 	//Deploy locally
 	crate::deploy::setup_local_ethereum(&mut config.eth).await?;
 	Ok((config, anvil))
 }
 
-pub async fn test_mvt_setup() -> Result<(Config, tokio::process::Child), anyhow::Error> {
-	let mut config = Config::default();
+pub async fn test_mvt_setup(
+	mut config: Config,
+) -> Result<(Config, tokio::process::Child), anyhow::Error> {
 	let movement_task = local::setup_movement_node(&mut config.movement).await?;
 	local::init_local_movement_node(&mut config.movement)?;
 	Ok((config, movement_task))

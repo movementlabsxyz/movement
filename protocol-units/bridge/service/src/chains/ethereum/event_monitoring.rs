@@ -27,7 +27,7 @@ impl BridgeContractMonitoring for EthMonitoring {
 
 impl EthMonitoring {
 	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
-		let rpc_url = config.eth_rpc_connection_url();
+		let rpc_url = config.eth_ws_connection_url();
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
 		let initiator_contract =
