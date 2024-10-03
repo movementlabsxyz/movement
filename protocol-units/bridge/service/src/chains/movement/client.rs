@@ -24,6 +24,10 @@ use url::Url;
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
+const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1
+    ]);
 
 #[allow(dead_code)]
 enum Call {
@@ -120,9 +124,9 @@ impl MovementClient {
 		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
-			"set_time_lock_duration",
+			"set_initiator_time_lock_duration",
 			Vec::new(),
 			args,
 		);
@@ -301,9 +305,9 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
-			"lock_bridge_transfer",
+			"lock_bridge_transfer_assets",
 			Vec::new(),
 			args,
 		);
@@ -326,7 +330,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"refund_bridge_transfer",
 			Vec::new(),
@@ -346,7 +350,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	) -> BridgeContractResult<()> {
 		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
 			"abort_bridge_transfer",
 			Vec::new(),
