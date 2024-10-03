@@ -166,36 +166,6 @@ module atomic_bridge::move_fa {
         );
     }
 
-    /// Allow a spender to transfer tokens from the owner's account given their signed approval.
-    /// Caller needs to provide the from account's scheme and public key which can be gotten via the Aptos SDK.
-    public fun transfer_from(
-        spender: &signer,
-        proof: vector<u8>,
-        from: address,
-        from_account_scheme: u8,
-        from_public_key: vector<u8>,
-        to: address,
-        amount: u64,
-    ) acquires Management, State {
-        assert_not_paused();
-        assert_not_denylisted(from);
-        assert_not_denylisted(to);
-
-        let expected_message = Approval {
-            owner: from,
-            to: to,
-            nonce: account::get_sequence_number(from),
-            chain_id: chain_id::get(),
-            spender: signer::address_of(spender),
-            amount,
-        };
-        account::verify_signed_message(from, from_account_scheme, from_public_key, proof, expected_message);
-
-        let transfer_ref = &borrow_global<Management>(move_fa_address()).transfer_ref;
-        // Only use with_ref API for primary_fungible_store (PFS) transfers in this module.
-        primary_fungible_store::transfer_with_ref(transfer_ref, from, to, amount);
-    }
-
     /// Deposit function override to ensure that the account is not denylisted and the move_fa is not paused.
     public fun deposit<T: key>(
         store: Object<T>,
