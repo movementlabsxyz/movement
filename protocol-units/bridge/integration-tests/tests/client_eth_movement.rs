@@ -58,7 +58,6 @@ async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Err
 }
 
 #[tokio::test]
-
 async fn test_movement_client_should_successfully_call_lock_and_complete(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
@@ -287,6 +286,7 @@ async fn test_eth_client_should_build_and_fetch_accounts() {
 		assert_eq!(account, expected);
 	}
 }
+
 #[tokio::test]
 async fn test_eth_client_should_deploy_initiator_contract() {
 	let (_eth_client_harness, config) = TestHarness::new_only_eth().await;
@@ -378,6 +378,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 		.expect("Failed to deposit WETH");
 
 	eth_client_harness
+		.eth_client
 		.initiate_bridge_transfer(
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
@@ -399,6 +400,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 
 	eth_client_harness
+		.eth_client
 		.initiate_bridge_transfer(
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
@@ -426,6 +428,7 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 	let hash_lock: [u8; 32] = hash_lock.into();
 
 	eth_client_harness
+		.eth_client
 		.initiate_bridge_transfer(
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient_bytes),

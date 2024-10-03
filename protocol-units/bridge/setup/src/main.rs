@@ -27,7 +27,7 @@ async fn main() -> Result<(), anyhow::Error> {
 			tracing::info!("Bridge Default Config: {:?}", config);
 			let config = config.unwrap_or(Config::default());
 
-			let (config, anvil) = bridge_setup::process_compose_setup(config).await?;
+			let (config, _anvil) = bridge_setup::process_compose_setup(config).await?;
 			let config = bridge_setup::deploy::setup(config).await?;
 			tracing::info!("Bridge Config: {:?}", config);
 
@@ -36,6 +36,7 @@ async fn main() -> Result<(), anyhow::Error> {
 		.await?;
 
 	println!("Config after update:",);
+	//Wait indefinitely to keep the Anvil process alive.
 	let join_handle: tokio::task::JoinHandle<()> =
 		tokio::spawn(async { std::future::pending().await });
 	let _ = join_handle.await;

@@ -30,7 +30,7 @@ impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
 
 //Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug)]
-struct Config {
+pub struct Config {
 	pub rpc_url: Url,
 	pub signer_private_key: PrivateKeySigner,
 	pub initiator_contract: Address,
@@ -79,7 +79,7 @@ pub struct EthClient {
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
-	config: Config,
+	pub config: Config,
 }
 
 impl EthClient {
@@ -219,11 +219,11 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		})?;
 		let call = contract
 			.initiateBridgeTransfer(
-				U256::from(amount.value()),
+				U256::from(amount.weth_value()),
 				FixedBytes(recipient_bytes),
 				FixedBytes(hash_lock.0),
 			)
-			.value(U256::from(amount.value()))
+			.value(U256::from(amount.eth_value()))
 			.from(*initiator_address.0);
 		let _ = send_transaction(
 			call,

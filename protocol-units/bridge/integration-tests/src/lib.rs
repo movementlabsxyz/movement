@@ -14,11 +14,8 @@ use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
 use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
-use bridge_service::types::{Amount, HashLock};
-use bridge_service::{
-	chains::bridge_contracts::{BridgeContract, BridgeContractResult},
-	types::BridgeAddress,
-};
+use bridge_service::types::Amount;
+use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use rand::SeedableRng;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -98,16 +95,12 @@ impl HarnessEthClient {
 		self.signer_private_key.address()
 	}
 
-	pub async fn initiate_bridge_transfer(
-		&mut self,
-		initiator_address: BridgeAddress<EthAddress>,
-		recipient_address: BridgeAddress<Vec<u8>>,
-		hash_lock: HashLock,
-		amount: Amount, // the amount
-	) -> BridgeContractResult<()> {
-		self.eth_client
-			.initiate_bridge_transfer(initiator_address, recipient_address, hash_lock, amount)
-			.await
+	pub fn get_initiator_private_key(&self) -> PrivateKeySigner {
+		self.anvil.keys()[2].clone().into()
+	}
+
+	pub fn get_initiator_address(&self) -> Address {
+		self.get_initiator_private_key().address()
 	}
 
 	pub async fn deposit_weth_and_approve(
@@ -116,7 +109,7 @@ impl HarnessEthClient {
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		self.eth_client
-			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.value()))
+			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth_value()))
 			.await
 			.expect("Failed to deposit WETH");
 		Ok(())
@@ -167,7 +160,9 @@ impl TestHarness {
 	pub async fn new_only_eth() -> (HarnessEthClient, Config) {
 		let (config, anvil) =
 			bridge_setup::test_eth_setup().await.expect("Test eth config setup failed.");
+
 		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
+
 		let signer_private_key = config
 			.eth
 			.signer_private_key
