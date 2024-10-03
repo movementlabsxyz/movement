@@ -27,6 +27,6 @@ pub async fn test_mvt_setup(
 	mut config: Config,
 ) -> Result<(Config, tokio::process::Child), anyhow::Error> {
 	let movement_task = local::setup_movement_node(&mut config.movement).await?;
-	local::init_local_movement_node(&mut config.movement)?;
+	deploy::deploy_local_movement_node(&mut config.movement)?;
 	Ok((config, movement_task))
 }
