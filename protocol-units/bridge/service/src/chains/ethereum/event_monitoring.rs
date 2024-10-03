@@ -11,6 +11,7 @@ use crate::types::{BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashL
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
 use alloy::providers::{ProviderBuilder, WsConnect};
+use bridge_config::common::eth::EthConfig;
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
 use std::{pin::Pin, task::Poll};
@@ -25,16 +26,18 @@ impl BridgeContractMonitoring for EthMonitoring {
 }
 
 impl EthMonitoring {
-	pub async fn build(
-		rpc_url: &str,
-		initiator_address: &str,
-		counterpart_address: &str,
-	) -> Result<Self, anyhow::Error> {
+	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
+		let rpc_url = config.eth_ws_connection_url();
 		let ws = WsConnect::new(rpc_url);
 		let ws = ProviderBuilder::new().on_ws(ws).await?;
-		let initiator_contract = AtomicBridgeInitiator::new(initiator_address.parse()?, ws.clone());
+		let initiator_contract =
+			AtomicBridgeInitiator::new(config.eth_initiator_contract.parse()?, ws.clone());
 
-		tracing::info!("Start Eth monitoring with initiator:{initiator_address} counterpart:{counterpart_address}");
+		tracing::info!(
+			"Start Eth monitoring with initiator:{} counterpart:{}",
+			config.eth_initiator_contract,
+			config.eth_counterparty_contract
+		);
 
 		//register initiator event
 		// event BridgeTransferInitiated(
@@ -69,7 +72,7 @@ impl EthMonitoring {
 		let mut initiator_trrefund_sub_stream = initiator_trrefund_event_filter.into_stream();
 
 		let counterpart_contract =
-			AtomicBridgeCounterparty::new(counterpart_address.parse()?, ws.clone());
+			AtomicBridgeCounterparty::new(config.eth_counterparty_contract.parse()?, ws.clone());
 		//Register counterpart event
 		// event BridgeTransferLocked(
 		//     bytes32 indexed bridgeTransferId,
