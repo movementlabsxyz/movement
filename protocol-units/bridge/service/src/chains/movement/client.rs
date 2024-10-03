@@ -125,7 +125,7 @@ impl MovementClient {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
+			"atomic_bridge_configuration",
 			"set_initiator_time_lock_duration",
 			Vec::new(),
 			args,
@@ -145,9 +145,9 @@ impl MovementClient {
 		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
-			"atomic_bridge_counterparty",
-			"set_time_lock_duration",
+			FRAMEWORK_ADDRESS,
+			"atomic_bridge_configuration",
+			"set_counterparty time_lock_duration",
 			Vec::new(),
 			args,
 		);
@@ -748,7 +748,7 @@ impl MovementClient {
 		Ok(())
 	}
 
-	pub fn update_bridge_operator(&mut self) -> Result<()> {
+	pub async fn update_bridge_operator(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
 		let mut process = Command::new("movement")
@@ -897,11 +897,11 @@ impl MovementClient {
 			.expect("Failed to execute command");
 
 		if !output2.stdout.is_empty() {
-			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+			eprintln!("Compile stdout: {}", String::from_utf8_lossy(&output2.stdout));
 		}
 
 		if !output2.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
+			eprintln!("Compile stderr: {}", String::from_utf8_lossy(&output2.stderr));
 		}
 
 		let output3 = Command::new("movement")
@@ -909,7 +909,7 @@ impl MovementClient {
 				"move",
 				"run-script",
 				"--compiled-script-path",
-				"build/run_script/bytecode_scripts/main.mv",
+				"build/bridge-modules/bytecode_scripts/main.mv",
 				"--args",
 				&format!("address:{}", address),
 			])
@@ -919,12 +919,38 @@ impl MovementClient {
 			.expect("Failed to execute command");
 
 		if !output3.stdout.is_empty() {
-			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+			eprintln!("Script stdout: {}", String::from_utf8_lossy(&output3.stdout));
 		}
 
 		if !output3.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
+			eprintln!("Script stderr: {}", String::from_utf8_lossy(&output3.stderr));
 		}
+
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: FRAMEWORK_ADDRESS.into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_configuration")
+							.map_err(|_| BridgeContractError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_operator")
+						.map_err(|_| BridgeContractError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractError::CallError)?;
+
+		debug!("Bridge operator: {:?}", response.inner());
 
 		if movement_dir.exists() {
 			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");

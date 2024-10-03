@@ -37,11 +37,13 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	movement_client.update_bridge_operator().await?;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let mut movement_client =
+		let movement_client =
 			harness.movement_client_mut().expect("Failed to get MovementClient");
 		let sender_address = movement_client.signer().address();
 		test_utils::fund_and_check_balance(movement_client, 100_000_000_000).await?;
@@ -93,11 +95,13 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	movement_client.update_bridge_operator().await?;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let mut movement_client =
+		let movement_client =
 			harness.movement_client_mut().expect("Failed to get MovementClient");
 		let sender_address = movement_client.signer().address();
 		test_utils::fund_and_check_balance(movement_client, 100_000_000_000).await?;
@@ -171,11 +175,13 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
+	let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
+	movement_client.update_bridge_operator().await?;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let mut movement_client =
+		let movement_client =
 			harness.movement_client_mut().expect("Failed to get MovementClient");
 		let sender_address = movement_client.signer().address();
 		test_utils::fund_and_check_balance(movement_client, 100_000_000_000).await?;

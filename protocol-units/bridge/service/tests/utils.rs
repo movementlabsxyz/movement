@@ -10,7 +10,7 @@ use bridge_service::chains::movement::utils::{
 	self as movement_utils, MovementAddress, MovementHash,
 };
 use bridge_service::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock, TimeLock,
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock,
 };
 use tracing::debug;
 
