@@ -20,7 +20,7 @@ pub enum BridgeCommands {
 	MovementToEth(TransferSubcommands),
 }
 
-/// The Transfer C
+/// Transfer commands
 #[derive(Subcommand)]
 pub enum TransferSubcommands {
 	/// Initiate a bridge transfer from Ethereum to Movement
