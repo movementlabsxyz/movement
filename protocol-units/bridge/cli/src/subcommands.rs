@@ -10,6 +10,7 @@ pub struct CliOptions {
 }
 
 #[derive(Subcommand)]
+/// Bridge commands
 pub enum BridgeCommands {
 	/// Ethereum to Movement bridge commands
 	#[command(subcommand)]
