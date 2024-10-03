@@ -51,6 +51,7 @@ contract StakingDeployer is Helper {
     function _upgradeStaking() internal {
     console.log("STAKING: upgrading");
     MovementStaking newStakingImplementation = new MovementStaking();
+    _diffStorage(address(newStakingImplementation), deployment.staking);
     // Prepare the data for the upgrade
     bytes memory data = abi.encodeWithSignature(
         "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

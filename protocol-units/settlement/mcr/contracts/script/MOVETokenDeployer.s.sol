@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { Helper } from "./helpers/Helper.sol";
+import { Helper, ProxyAdmin } from "./helpers/Helper.sol";
 import {ICREATE3Factory} from "./helpers/Create3/ICREATE3Factory.sol";
 
 // Script intended to be used for deploying the MOVE token from an EOA
@@ -28,7 +28,7 @@ contract MOVETokenDeployer is Helper {
 
         uint256 signer = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(signer);
-
+        
         // Deploy CREATE3Factory, Safes and Timelock if not deployed
         _deployDependencies();
 
@@ -37,7 +37,7 @@ contract MOVETokenDeployer is Helper {
                 // if move is already deployed, upgrade it
                 _upgradeMove() : revert("MOVE: both admin and proxy should be registered");
         
-        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 1000000000000000000, "Movement Anchorage Safe balance is wrong");
+        require(MOVEToken(deployment.move).balanceOf(address(deployment.movementAnchorage)) == 999999998000000000, "Movement Anchorage Safe balance is wrong");
         require(MOVEToken(deployment.move).decimals() == 8, "Decimals are expected to be 8"); 
         require(MOVEToken(deployment.move).totalSupply() == 1000000000000000000,"Total supply is wrong");
         require(MOVEToken(deployment.move).hasRole(DEFAULT_ADMIN_ROLE, address(deployment.movementFoundationSafe)),"Movement Foundation expected to have token admin role");
@@ -71,7 +71,8 @@ contract MOVETokenDeployer is Helper {
 
     function _upgradeMove() internal {
         console.log("MOVE: upgrading");
-        MOVEToken newMoveImplementation = new MOVEToken();        
+        MOVEToken newMoveImplementation = new MOVEToken();
+        _diffStorage(address(newMoveImplementation), deployment.move);
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

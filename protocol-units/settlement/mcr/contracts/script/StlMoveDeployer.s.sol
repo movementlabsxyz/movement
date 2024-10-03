@@ -51,6 +51,7 @@ contract StlMoveDeployer is Helper {
     function _upgradeStlMove() internal {
         console.log("STL: upgrading");
         stlMoveToken newStlMoveImplementation = new stlMoveToken();
+        _diffStorage(address(newStlMoveImplementation), deployment.stlMove);
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

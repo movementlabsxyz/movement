@@ -3,7 +3,11 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
 import {stdJson} from "forge-std/StdJson.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {
+    TransparentUpgradeableProxy,
+    ERC1967Utils
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import {SafeProxyFactory} from "@safe-smart-account/contracts/proxies/SafeProxyFactory.sol";
 import {CompatibilityFallbackHandler} from "@safe-smart-account/contracts/handler/CompatibilityFallbackHandler.sol";
@@ -32,7 +36,7 @@ contract Helper is Script {
     string public upgradePath = "/script/helpers/upgrade/";
     string public configPath = "/script/helpers/config.json";
     address public ZERO = 0x0000000000000000000000000000000000000000;
-    string public chainId = uint2str(block.chainid);
+    string public chainId = _uint2str(block.chainid);
     uint256 public foundryChainId = 31337;
     string public storageJson;
 
@@ -230,11 +234,11 @@ contract Helper is Script {
     }
 
     function _serializeChainData(string memory base, string storage sJson, uint256 chain) internal {
-        bytes memory rawDeploymentData = sJson.parseRaw(string(abi.encodePacked(".", uint2str(chain))));
+        bytes memory rawDeploymentData = sJson.parseRaw(string(abi.encodePacked(".", _uint2str(chain))));
         Deployment memory deploymentData = abi.decode(rawDeploymentData, (Deployment));
-        string memory json = uint2str(chain);
+        string memory json = _uint2str(chain);
         string memory chainData = _serializer(json, deploymentData);
-        base.serialize(uint2str(chain), chainData);
+        base.serialize(_uint2str(chain), chainData);
     }
 
     function _serializer(string memory json, Deployment memory memoryDeployment) internal returns (string memory) {
@@ -302,7 +306,7 @@ contract Helper is Script {
         }
     }
 
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
+    function _uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
             return "0";
         }
@@ -327,5 +331,27 @@ contract Helper is Script {
     function _startsWith3073(address addr) internal pure returns (bool) {
         bytes20 addrBytes = bytes20(addr);
         return (uint16(uint8(addrBytes[0])) << 8 | uint8(addrBytes[1])) == 0x3073;
+    }
+
+    function _getBytecode(address _addr) internal view returns (bytes memory code) {
+        assembly {
+            let size := extcodesize(_addr)
+            code := mload(0x40)
+            mstore(0x40, add(code, add(size, 0x20)))
+            mstore(code, size)
+            extcodecopy(_addr, add(code, 0x20), 0, size)
+        }
+    }
+
+    function _getImplementation(address proxy) internal view returns (address implementation) {
+        bytes32 IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+        implementation = address(uint160(uint256(vm.load(proxy, IMPLEMENTATION_SLOT))));
+    }
+
+    function _diffStorage(address newImplementation, address proxy) internal {
+        address currentImplementation = _getImplementation(proxy);
+        bytes memory newCode = _getBytecode(newImplementation);
+        bytes memory currentCode = _getBytecode(currentImplementation);
+        require(keccak256(newCode) != keccak256(currentCode), "Helper: New implementation is the same as the current one");
     }
 }

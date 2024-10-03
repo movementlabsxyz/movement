@@ -58,6 +58,7 @@ contract MCRDeployer is Helper {
     function _upgradeMCR() internal {
         console.log("MCR: upgrading");
         MCR newMCRImplementation = new MCR();
+        _diffStorage(address(newMCRImplementation), deployment.mcr);
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
             address(deployment.mcrAdmin),
