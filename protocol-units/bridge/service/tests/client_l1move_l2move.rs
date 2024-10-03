@@ -48,14 +48,14 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 }
 
 #[tokio::test]
-async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
+async fn test_movement_client_should_update_bridge_operator() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().try_init();
 
 	let (mut harness, mut child) = TestHarness::new_with_movement().await;
 	{
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
 
-		movement_client.publish_for_test()?;
+		movement_client.update_bridge_operator()?;
 	}
 
 	child.kill().await?;
@@ -75,7 +75,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 
 	let test_result = async {
 		let movement_client = harness.movement_client_mut().expect("Failed to get MovementClient");
-		movement_client.publish_for_test()?;
+		movement_client.update_bridge_operator()?;
 
 		let rest_client = movement_client.rest_client();
 		let coin_client = CoinClient::new(&rest_client);

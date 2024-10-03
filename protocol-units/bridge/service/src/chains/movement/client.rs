@@ -17,7 +17,7 @@ use aptos_types::account_address::AccountAddress;
 use rand::prelude::*;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
-
+use std::path::Path;
 use tracing::{debug, info};
 use url::Url;
 
@@ -56,19 +56,6 @@ impl Config {
 			gas_limit: 10_000_000_000,
 		}
 	}
-}
-
-pub static BRIDGE_SCRIPTS: Lazy<BTreeMap<String, Vec<u8>>> = Lazy::new(build_scripts);
-fn build_scripts() -> BTreeMap<String, Vec<u8>> {
-	let package_folder = "bridge.data";
-	let package_names = vec![
-		"update_operator",
-		"update_initiator_time_lock",
-		"update_counterparty_time_lock",
-		"mint_burn_caps",
-		"atomic_bridge_feature",
-	];
-	utils::build_scripts(package_folder, package_names)
 }
 
 #[allow(dead_code)]
@@ -757,7 +744,7 @@ impl MovementClient {
 		Ok(())
 	}
 
-	pub fn init_framework_test(&mut self) -> Result<()> {
+	pub fn update_bridge_operator(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
 		let mut process = Command::new("movement")
@@ -800,19 +787,199 @@ impl MovementClient {
 
 		println!("Extracted address: {}", address);
 
+		let resource_output = Command::new("movement")
+			.args(&[
+				"account",
+				"derive-resource-account-address",
+				"--address",
+				address,
+				"--seed",
+				&random_seed,
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		// Print the output of the resource address command for debugging
+		if !resource_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
+		}
+		if !resource_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
+		}
+
+		// Extract the resource address from the JSON output
+		let resource_output_str = String::from_utf8_lossy(&resource_output.stdout);
+		let resource_address = resource_output_str
+			.lines()
+			.find(|line| line.contains("\"Result\""))
+			.and_then(|line| line.split('"').nth(3))
+			.expect("Failed to extract the resource account address");
+
+		// Ensure the address has a "0x" prefix
+		let formatted_resource_address = if resource_address.starts_with("0x") {
+			resource_address.to_string()
+		} else {
+			format!("0x{}", resource_address)
+		};
 
 		// Set counterparty module address to resource address, for function calls:
-		self.native_address = AccountAddress::from_hex_literal(&addr_output_str)?;
+		self.native_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
 
-		let update_operator_script_code = BRIDGE_SCRIPTS
-			.get("update_operator")
-			.expect("bridge script should be built");
-		let txn = utils.create_script(
-			&core_resources,
-			update_operator_script_code.clone(),
-			vec![],
-			vec![TransactionArgument::Address(*new_operator.address())]
-		);
+		println!("Derived resource address: {}", formatted_resource_address);
+
+		let current_dir = env::current_dir().expect("Failed to get current directory");
+		println!("Current directory: {:?}", current_dir);
+
+		let new_dir = Path::new("../move-modules");
+		env::set_current_dir(&new_dir).expect("Failed to change directory");	    
+
+		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
+
+		// Read the existing content of Move.toml
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
+		// Update the content of Move.toml with the new addresses
+		let updated_content = move_toml_content
+			.lines()
+			.map(|line| match line {
+				_ if line.starts_with("resource_addr = ") => {
+					format!(r#"resource_addr = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("atomic_bridge = ") => {
+					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("moveth = ") => {
+					format!(r#"moveth = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("master_minter = ") => {
+					format!(r#"master_minter = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("minter = ") => {
+					format!(r#"minter = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("admin = ") => {
+					format!(r#"admin = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("origin_addr = ") => {
+					format!(r#"origin_addr = "{}""#, address)
+				}
+				_ if line.starts_with("source_account = ") => {
+					format!(r#"source_account = "{}""#, address)
+				}
+				_ => line.to_string(),
+			})
+			.collect::<Vec<_>>()
+			.join("\n");
+
+		// Write the updated content back to Move.toml
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
+		file.write_all(updated_content.as_bytes())
+			.expect("Failed to write updated Move.toml file");
+
+		println!("Move.toml updated successfully.");
+
+		let output2 = Command::new("movement")
+			.args(&[
+				"move",
+				"compile",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		if !output2.stdout.is_empty() {
+			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		}
+
+		if !output2.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
+		}
+
+		let output3 = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"build/run_script/bytecode_scripts/main.mv",
+				"--args",
+				&format!("address:{}", address),
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		if !output3.stdout.is_empty() {
+			eprintln!("stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		}
+
+		if !output3.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&output2.stderr));
+		}
+
+		if movement_dir.exists() {
+			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
+			println!(".movement directory deleted successfully.");
+		}
+
+		// Read the existing content of Move.toml
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
+		// Directly assign the address
+		let final_address = "0xcafe";
+
+		// Directly assign the formatted resource address
+		let final_formatted_resource_address =
+			"0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
+
+		let updated_content = move_toml_content
+			.lines()
+			.map(|line| match line {
+				_ if line.starts_with("resource_addr = ") => {
+					format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("atomic_bridge = ") => {
+					format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("moveth = ") => {
+					format!(r#"moveth = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("master_minter = ") => {
+					format!(r#"master_minter = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("minter = ") => {
+					format!(r#"minter = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("admin = ") => {
+					format!(r#"admin = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("origin_addr = ") => {
+					format!(r#"origin_addr = "{}""#, final_address)
+				}
+				_ if line.starts_with("pauser = ") => {
+					format!(r#"pauser = "{}""#, "0xdafe")
+				}
+				_ if line.starts_with("denylister = ") => {
+					format!(r#"denylister = "{}""#, "0xcade")
+				}
+				_ => line.to_string(),
+			})
+			.collect::<Vec<_>>()
+			.join("\n");
+
+		// Write the updated content back to Move.toml
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
+		file.write_all(updated_content.as_bytes())
+			.expect("Failed to write updated Move.toml file");
+
+		println!("Move.toml addresses updated successfully at the end of the test.");
 
 		Ok(())
 	}
@@ -844,7 +1011,7 @@ impl MovementClient {
 			println!(".movement directory deleted if it was present.");
 		}
 
-		let (setup_complete_tx, mut setup_complete_rx) = oneshot::channel();
+		let (setup_complete_tx, setup_complete_rx) = oneshot::channel();
 		let mut child = TokioCommand::new("movement")
 			.args(&["node", "run-local-testnet", "--force-restart", "--assume-yes"])
 			.stdout(Stdio::piped())
