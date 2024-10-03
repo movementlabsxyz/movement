@@ -26,7 +26,7 @@ denylister = "0xcade"
 
 [dependencies.AptosFramework]
 git = "https://github.com/movementlabsxyz/aptos-core.git"
-rev = "movement"
+rev = "fb0ef3f1f3a2e74a267a91758d231cd7f250756e"
 subdir = "aptos-move/framework/aptos-framework"
 
 [dev-dependencies]

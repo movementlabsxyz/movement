@@ -836,8 +836,8 @@ impl MovementClient {
 		let current_dir = env::current_dir().expect("Failed to get current directory");
 		println!("Current directory: {:?}", current_dir);
 
-		let new_dir = Path::new("../move-modules");
-		env::set_current_dir(&new_dir).expect("Failed to change directory");	    
+		let move_dir = Path::new("../move-modules");
+		env::set_current_dir(&move_dir).expect("Failed to change directory");	    
 
 		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
 
@@ -904,14 +904,19 @@ impl MovementClient {
 			eprintln!("Compile stderr: {}", String::from_utf8_lossy(&output2.stderr));
 		}
 
+		let new_dir = Path::new("../service");
+		env::set_current_dir(&new_dir).expect("Failed to change directory");
+
 		let output3 = Command::new("movement")
 			.args(&[
 				"move",
 				"run-script",
 				"--compiled-script-path",
-				"build/bridge-modules/bytecode_scripts/main.mv",
+				"../move-modules/build/bridge-modules/bytecode_scripts/main.mv",
 				"--args",
 				&format!("address:{}", address),
+				"--url",
+				"http://127.0.0.1:8080/"
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
