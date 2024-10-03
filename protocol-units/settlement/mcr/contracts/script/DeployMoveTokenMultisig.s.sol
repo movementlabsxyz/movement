@@ -9,7 +9,7 @@ import {SafeProxy} from "@safe-smart-account/contracts/proxies/SafeProxy.sol";
 import {Safe} from "@safe-smart-account/contracts/Safe.sol";
 import {CreateCall} from "@safe-smart-account/contracts/libraries/CreateCall.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {Enum} from "@safe-smart-account/contracts/common/Enum.sol";
+import {Enum} from "@safe-smart-account/contracts/libraries/Enum.sol";
 
 contract MOVETokenDeployerMultisig is Script {
     TransparentUpgradeableProxy public moveProxy;
