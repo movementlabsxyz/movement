@@ -63,7 +63,7 @@ pub enum TransferSubcommands {
 	},
 
 	CounterpartyAbort {
-		/// The Transfer ID of the bridge transfer
+		/// The transfer ID of the bridge transfer
 		#[arg(help = "The transfer id of the bridge transfer")]
 		transfer_id: String,
 	},
