@@ -43,7 +43,7 @@ pub enum TransferSubcommands {
 		about = "Completes the transfer by calling complete_bridge_transfer on the destination chain and revealing the preimage"
 	)]
 	Complete {
-		/// The transfer id of the bridge transfer
+		/// The transfer ID of the bridge transfer
 		#[arg(help = "The transfer id of the bridge transfer")]
 		transfer_id: String,
 
