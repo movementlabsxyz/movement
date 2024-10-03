@@ -26,5 +26,12 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 fi
 export POSTGRES_HOST_IP=$IP
 
+# Provide some shared random variables for various scripts
+export MOVEMENT_SHARED_RANDOM_1=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_2=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_3=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_4=$(openssl rand -hex 16)
+export MOVEMENT_SHARED_RANDOM_5=$(openssl rand -hex 16)
+
 # Call the runtime script, passing all arguments
 ./scripts/movement/$RUNTIME "$@"

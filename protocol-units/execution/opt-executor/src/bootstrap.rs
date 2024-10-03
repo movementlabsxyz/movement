@@ -1,3 +1,5 @@
+use aptos_config::config::NodeConfig;
+use aptos_config::config::StorageDirPaths;
 use aptos_crypto::ed25519::Ed25519PublicKey;
 use aptos_db::AptosDB;
 use aptos_executor::db_bootstrapper;
@@ -12,6 +14,7 @@ use aptos_vm::AptosVM;
 use aptos_vm_genesis::{
 	default_gas_schedule, encode_genesis_change_set, GenesisConfiguration, TestValidator, Validator,
 };
+use tracing::warn;
 
 use std::path::Path;
 
@@ -24,6 +27,8 @@ fn genesis_change_set_and_validators(
 	let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
 	let validators_: Vec<Validator> = test_validators.iter().map(|t| t.data.clone()).collect();
 	let validators = &validators_;
+
+	warn!("Genesis validators: {:?}", validators);
 
 	// This number should not exceed u64::MAX / 1_000_000_000
 	// to avoid overflowing calculations in aptos-vm-genesis.
@@ -64,11 +69,22 @@ fn genesis_change_set_and_validators(
 
 /// Bootstrap a database with a genesis transaction if it is empty.
 pub fn maybe_bootstrap_empty_db(
+	config: &NodeConfig,
 	db_dir: impl AsRef<Path> + Clone,
 	chain_id: ChainId,
 	public_key: &Ed25519PublicKey,
 ) -> Result<(DbReaderWriter, ValidatorSigner), anyhow::Error> {
-	let db_rw = DbReaderWriter::new(AptosDB::new_for_test(db_dir));
+	let aptos_db = AptosDB::open(
+		StorageDirPaths::from_path(db_dir.clone()),
+		false,
+		config.storage.storage_pruner_config.clone(),
+		config.storage.rocksdb_configs.clone(),
+		false,
+		config.storage.buffered_state_target_items,
+		config.storage.max_num_nodes_per_lru_cache_shard,
+	)?;
+
+	let db_rw = DbReaderWriter::new(aptos_db);
 	let (genesis, validators) = genesis_change_set_and_validators(chain_id, Some(1), public_key);
 	let genesis_txn = Transaction::GenesisTransaction(WriteSetPayload::Direct(genesis));
 	let validator_signer =
@@ -79,7 +95,7 @@ pub fn maybe_bootstrap_empty_db(
 	match db_rw.reader.get_latest_ledger_info_option()? {
 		Some(ledger_info) => {
 			// context exists
-			tracing::info!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
+			tracing::warn!("Ledger info found, not bootstrapping DB: {:?}", ledger_info);
 		}
 		None => {
 			// context does not exist

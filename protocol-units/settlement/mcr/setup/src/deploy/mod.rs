@@ -28,7 +28,7 @@ impl Default for Deploy {
 impl Deploy {
 	pub async fn setup(
 		&self,
-		dot_movement: &DotMovement,
+		_dot_movement: &DotMovement,
 		mut config: Config,
 		deploy: &common::deploy::Config,
 	) -> Result<Config, anyhow::Error> {

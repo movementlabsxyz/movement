@@ -29,6 +29,7 @@ impl Setup {
 			tokio::spawn(async { std::future::pending().await })
 		};
 
+		tracing::info!("Deploy is set to: {:?}", config.deploy);
 		if let Some(deploy) = &config.deploy {
 			tracing::info!("Deploying contracts...");
 			config = self.deploy.setup(dot_movement, config.clone(), deploy).await?;
