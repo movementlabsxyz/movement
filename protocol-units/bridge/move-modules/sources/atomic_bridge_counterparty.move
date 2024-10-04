@@ -8,7 +8,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     use aptos_framework::timestamp;
     use aptos_framework::aptos_hash::keccak256;
     use aptos_std::smart_table::{Self, SmartTable};
-    use move_fa::move_fa;
+    use moveth::moveth;
 
     #[test_only] 
     use aptos_framework::account::create_account_for_test;
@@ -37,7 +37,7 @@ module atomic_bridge::atomic_bridge_counterparty {
     const ETIMELOCK_EXPIRED: u64 = 11;
 
     struct BridgeConfig has key {
-        move_fa_minter: address,
+        moveth_minter: address,
         bridge_module_deployer: address,
         signer_cap: account::SignerCapability,
         time_lock_duration: u64,
@@ -100,7 +100,7 @@ module atomic_bridge::atomic_bridge_counterparty {
             bridge_transfer_cancelled_events: account::new_event_handle<BridgeTransferCancelledEvent>(resource),
         });
         move_to(resource, BridgeConfig {
-            move_fa_minter: signer::address_of(resource),
+            moveth_minter: signer::address_of(resource),
             bridge_module_deployer: signer::address_of(resource),
             signer_cap: resource_signer_cap,
             time_lock_duration: 24 * 60 * 60  // Default 24 hours
@@ -120,14 +120,14 @@ module atomic_bridge::atomic_bridge_counterparty {
         config.time_lock_duration = time_lock_duration;
     }
 
-    public(friend) fun mint_move_fa(to: address, amount: u64) acquires BridgeConfig {
+    public(friend) fun mint_moveth(to: address, amount: u64) acquires BridgeConfig {
         let config = borrow_global<BridgeConfig>(@atomic_bridge);
-        move_fa::mint(&account::create_signer_with_capability(&config.signer_cap), to, amount);
+        moveth::mint(&account::create_signer_with_capability(&config.signer_cap), to, amount);
     }
 
-    public(friend) fun burn_move_fa(from: address, amount: u64) acquires BridgeConfig {
+    public(friend) fun burn_moveth(from: address, amount: u64) acquires BridgeConfig {
         let config = borrow_global<BridgeConfig>(@atomic_bridge);
-        move_fa::burn(&account::create_signer_with_capability(&config.signer_cap), from, amount);
+        moveth::burn(&account::create_signer_with_capability(&config.signer_cap), from, amount);
     }
 
     #[view]
@@ -202,7 +202,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(timestamp::now_seconds() <= bridge_transfer.time_lock, ETIMELOCK_EXPIRED);
         bridge_transfer.state = COMPLETED;
 
-        move_fa::mint(&resource_signer, bridge_transfer.recipient, bridge_transfer.amount);
+        moveth::mint(&resource_signer, bridge_transfer.recipient, bridge_transfer.amount);
 
         event::emit_event(&mut store.bridge_transfer_completed_events, BridgeTransferCompletedEvent {
                 bridge_transfer_id: copy bridge_transfer_id,
@@ -250,18 +250,18 @@ module atomic_bridge::atomic_bridge_counterparty {
         set_up_test(origin_account, &resource);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin, client = @0xdca)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin, client = @0xdca)]
     fun test_complete_bridge_transfer(
         origin_account: &signer,
         resource_addr: signer,
         client: &signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         set_up_test(origin_account, &resource_addr);
 
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
         let originator = b"0x123"; //In real world this would be an ethereum address
         let recipient = @0xface;         
         let bridge_transfer_id = b"transfer1";
@@ -308,19 +308,19 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin, client = @0xdca)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin, client = @0xdca)]
     #[expected_failure (abort_code = ETIMELOCK_EXPIRED, location = Self)]
     fun test_complete_bridge_transfer_expired(
         origin_account: &signer,
         resource_addr: signer,
         client: &signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         set_up_test(origin_account, &resource_addr);
 
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
         let originator = b"0x123"; //In real world this would be an ethereum address
         let recipient = @0xface;         
         let bridge_transfer_id = b"transfer1";
@@ -367,17 +367,17 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(bridge_transfer.originator == originator, EWRONG_ORIGINATOR);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin)]
     fun test_get_bridge_transfer_details_from_id(
         origin_account: &signer,
         resource_addr: signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         set_up_test(origin_account, &resource_addr);
 
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
         let originator = b"0x123"; //In real world this would be an ethereum address
         let recipient = @0xface;         
         let bridge_transfer_id = b"transfer1";
@@ -398,19 +398,19 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_originator == originator, EWRONG_ORIGINATOR);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin, malicious=@0xface)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin, malicious=@0xface)]
     #[expected_failure (abort_code = EINCORRECT_SIGNER)]
     fun test_malicious_lock(
         origin_account: &signer,
         resource_addr: signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer,
         malicious: &signer,
     ) acquires BridgeTransferStore, BridgeConfig {
         set_up_test(origin_account, &resource_addr);
 
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
         let originator = b"0x123"; //In real world this would be an ethereum address
         let recipient = @0xface;         
         let bridge_transfer_id = b"transfer1";
@@ -430,31 +430,31 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(transfer_originator == originator, 3);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin)]
     public fun test_get_time_lock_duration(
         origin_account: &signer,
         resource_addr: signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer,
     ) acquires BridgeConfig {
         set_up_test(origin_account, &resource_addr);
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
 
         let time_lock_duration = get_time_lock_duration();
         assert!(time_lock_duration == 24 * 60 * 60, 1);
     }
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin)]
     public fun test_set_time_lock_duration(
         origin_account: &signer,
         resource_addr: signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer,
     ) acquires BridgeConfig {
         set_up_test(origin_account, &resource_addr);
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
 
         // Timelock should be at default before setting
         let time_lock_duration = get_time_lock_duration();
@@ -466,18 +466,18 @@ module atomic_bridge::atomic_bridge_counterparty {
         assert!(time_lock_duration == 42, 2);
     } 
 
-    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, move_fa = @move_fa, admin = @admin, client = @0xdada)]
+    #[test(origin_account = @origin_addr, resource_addr = @resource_addr, aptos_framework = @0x1, moveth = @moveth, admin = @admin, client = @0xdada)]
     #[expected_failure (abort_code = EINCORRECT_SIGNER)]
     public fun test_should_fail_set_time_lock_duration_wrong_signer(
         client: &signer,
         origin_account: &signer,
         resource_addr: signer,
         aptos_framework: signer,
-        move_fa: &signer,
+        moveth: &signer
     ) acquires BridgeConfig {
         set_up_test(origin_account, &resource_addr);
         timestamp::set_time_has_started_for_testing(&aptos_framework);
-        move_fa::init_for_test(move_fa);
+        moveth::init_for_test(moveth);
 
         // Timelock should be at default before setting
         let time_lock_duration = get_time_lock_duration();

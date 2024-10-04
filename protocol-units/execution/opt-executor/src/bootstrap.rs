@@ -21,7 +21,7 @@ use std::path::Path;
 fn genesis_change_set_and_validators(
 	chain_id: ChainId,
 	count: Option<usize>,
-	public_key: &Ed25519PublicKey,
+	public_key: &Ed25519PublicKey, //Core resource account.
 ) -> (ChangeSet, Vec<TestValidator>) {
 	let framework = aptos_cached_packages::head_release_bundle();
 	let test_validators = TestValidator::new_test_set(count, Some(100_000_000));
