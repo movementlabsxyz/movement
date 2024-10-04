@@ -1,13 +1,13 @@
-pub mod delete;
+pub mod delete_resource;
 pub mod downsync;
 pub mod upsync;
 
 use clap::Subcommand;
 
 #[derive(Subcommand, Debug)]
-#[clap(rename_all = "kebab-case", about = "Control bucket-based syncing")]
+#[clap(rename_all = "kebab-case", about = "Commands for syncing")]
 pub enum Syncing {
-	Delete(delete::Delete),
+	Delete(delete_resource::DeleteResource),
 	/*Downsync(downsync::Downsync),
 	Upsync(upsync::Upsync),*/
 }

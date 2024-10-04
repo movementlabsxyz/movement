@@ -3,12 +3,16 @@ use clap::Parser;
 use syncup::SyncupOperations;
 
 #[derive(Debug, Parser, Clone)]
-pub struct Delete {
+#[clap(
+	rename_all = "kebab-case",
+	about = "Deletes the resource used for syncing across syncer ids"
+)]
+pub struct DeleteResource {
 	#[clap(flatten)]
 	pub movement_args: MovementArgs,
 }
 
-impl Delete {
+impl DeleteResource {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
 		let config = self.movement_args.config().await?;
 		config.remove_syncup_resources().await?;
