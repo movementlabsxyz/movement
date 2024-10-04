@@ -1,4 +1,5 @@
 use crate::Config as SuzukaConfig;
+use anyhow::Context;
 use dot_movement::DotMovement;
 use godfig::env_or_none;
 use movement_types::{actor, application};
@@ -24,15 +25,12 @@ pub struct Config {
 
 	/// The root directory.
 	#[serde(default = "default_root_directory")]
-	pub root_dir: String,
-
-	/// The glob pattern.
-	
+	pub root_dir: PathBuf,
 }
 
 impl Default for Config {
 	fn default() -> Self {
-		Self { 
+		Self {
 			movement_sync: default_movement_sync(),
 			application_id: default_application_id(),
 			syncer_id: default_syncer_id(),
@@ -54,7 +52,10 @@ pub fn default_syncer_id() -> actor::Id {
 }
 
 pub fn default_root_directory() -> PathBuf {
-	DotMovement::try_from_env().unwrap_or_else(|_| "./.movement".into())
+	match DotMovement::try_from_env() {
+		Ok(movement) => movement.get_path().to_path_buf(),
+		Err(_) => PathBuf::from("./.movement"),
+	}
 }
 
 pub struct MovementSync {
@@ -67,7 +68,7 @@ impl TryFrom<String> for MovementSync {
 	type Error = anyhow::Error;
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
-		let mut leader_follower_split = sync_str.split("::");
+		let mut leader_follower_split = value.split("::");
 		let is_leader = leader_follower_split.next().context(
 			"MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>",
 		)? == "leader";
@@ -76,24 +77,22 @@ impl TryFrom<String> for MovementSync {
 			"MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>",
 		)?.split("<=>");
 
-		let bucket = bucket_arrow_glob.next().context(
-			"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
-		)?;
-		let glob = bucket_arrow_glob.next().context(
-			"MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>",
-		)?;
+		let bucket = bucket_arrow_glob
+			.next()
+			.context("MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>")?;
+		let glob = bucket_arrow_glob
+			.next()
+			.context("MOVEMENT_SYNC environment variable must be in the format <bucket>,<glob>")?;
 
-		Ok(Self { is_leader, bucket, glob })
+		Ok(Self { is_leader, bucket: bucket.to_string(), glob: glob.to_string() })
 	}
 }
 
 impl Config {
-
 	/// Check if the args contain a movement sync.
 	pub fn wants_movement_sync(&self) -> bool {
 		self.movement_sync.is_some()
 	}
-
 
 	/// Get the DotMovement struct from the args.
 	pub fn try_movement_sync(&self) -> Result<Option<MovementSync>, anyhow::Error> {
@@ -101,19 +100,20 @@ impl Config {
 	}
 }
 
-
-impl Syncupable for SuzukaConfig {
+impl Syncupable for Config {
 	fn try_application_id(&self) -> Result<application::Id, anyhow::Error> {
 		Ok(self.application_id.clone())
 	}
 
 	fn try_glob(&self) -> Result<String, anyhow::Error> {
-		let movement_sync = self.try_movement_sync()?;
+		let movement_sync =
+			self.try_movement_sync()?.ok_or_else(|| anyhow::anyhow!("No movement sync"))?;
 		Ok(movement_sync.glob)
 	}
 
 	fn try_leader(&self) -> Result<bool, anyhow::Error> {
-		let movement_sync = self.try_movement_sync()?;
+		let movement_sync =
+			self.try_movement_sync()?.ok_or_else(|| anyhow::anyhow!("No movement sync"))?;
 		Ok(movement_sync.is_leader)
 	}
 
@@ -126,7 +126,34 @@ impl Syncupable for SuzukaConfig {
 	}
 
 	fn try_target(&self) -> Result<syncup::Target, anyhow::Error> {
-		let movement_sync = self.try_movement_sync()?;
+		let movement_sync =
+			self.try_movement_sync()?.ok_or_else(|| anyhow::anyhow!("No movement sync"))?;
 		Ok(syncup::Target::S3(movement_sync.bucket))
+	}
+}
+
+impl Syncupable for SuzukaConfig {
+	fn try_application_id(&self) -> Result<application::Id, anyhow::Error> {
+		self.syncing.try_application_id()
+	}
+
+	fn try_glob(&self) -> Result<String, anyhow::Error> {
+		self.syncing.try_glob()
+	}
+
+	fn try_leader(&self) -> Result<bool, anyhow::Error> {
+		self.syncing.try_leader()
+	}
+
+	fn try_root_dir(&self) -> Result<PathBuf, anyhow::Error> {
+		self.syncing.try_root_dir()
+	}
+
+	fn try_syncer_id(&self) -> Result<actor::Id, anyhow::Error> {
+		self.syncing.try_syncer_id()
+	}
+
+	fn try_target(&self) -> Result<syncup::Target, anyhow::Error> {
+		self.syncing.try_target()
 	}
 }

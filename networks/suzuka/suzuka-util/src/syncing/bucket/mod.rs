@@ -8,6 +8,6 @@ use clap::Subcommand;
 #[clap(rename_all = "kebab-case", about = "Control bucket-based syncing")]
 pub enum Bucket {
 	Delete(delete::Delete),
-	Downsync(downsync::Downsync),
-	Upsync(upsync::Upsync),
+	/*Downsync(downsync::Downsync),
+	Upsync(upsync::Upsync),*/
 }

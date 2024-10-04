@@ -37,6 +37,7 @@ tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
 clap = { workspace = true }
+syncup = { workspace = true }
 
 [features]
 default = []

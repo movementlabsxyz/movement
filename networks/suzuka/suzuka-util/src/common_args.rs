@@ -1,5 +1,7 @@
 use clap::Parser;
 use dot_movement::DotMovement;
+use godfig::{backend::config_file::ConfigFile, Godfig};
+use suzuka_config::Config;
 
 /// A struct containing common arguments for the Suzuka network.
 #[derive(Parser, Debug, Clone)]
@@ -22,5 +24,14 @@ impl MovementArgs {
 			std::env::var("DOT_MOVEMENT_PATH").unwrap_or_else(|_| ".".to_string())
 		});
 		Ok(DotMovement::new(movement_path.as_str()))
+	}
+
+	/// Get the config
+	pub async fn config(&self) -> Result<Config, anyhow::Error> {
+		let dot_movement = self.dot_movement()?;
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
+
+		godfig.try_wait_for_ready().await.map_err(|e| e.into())
 	}
 }

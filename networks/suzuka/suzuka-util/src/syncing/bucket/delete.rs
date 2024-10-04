@@ -1,5 +1,6 @@
 use crate::common_args::MovementArgs;
 use clap::Parser;
+use syncup::SyncupOperations;
 
 #[derive(Debug, Parser, Clone)]
 pub struct Delete {
@@ -9,9 +10,8 @@ pub struct Delete {
 
 impl Delete {
 	pub async fn execute(&self) -> Result<(), anyhow::Error> {
-		let dot_movement_dir = self.movement_args.dot_movement()?;
-
-		dot_movement
+		let config = self.movement_args.config().await?;
+		config.remove_syncup_resources().await?;
 
 		Ok(())
 	}

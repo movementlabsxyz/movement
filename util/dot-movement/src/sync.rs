@@ -1,9 +1,9 @@
 use crate::DotMovement;
-use movement_types::application;
-use syncup::{syncup, Target};
+/*use movement_types::application;
+use syncup::{syncup, Target};*/
 
 impl DotMovement {
-	pub async fn syncup(
+	/*pub async fn syncup(
 		&self,
 		is_leader: bool,
 		glob: &str,
@@ -22,5 +22,5 @@ impl DotMovement {
 		let sync_task =
 			syncup(false, self.0.clone(), "", Target::S3(bucket), application_id).await?;
 		Ok(sync_task)
-	}
+	}*/
 }
