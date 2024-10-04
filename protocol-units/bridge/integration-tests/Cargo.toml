@@ -19,6 +19,7 @@ aptos-types = { workspace = true }
 aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
+hex = { workspace = true }
 alloy = { workspace = true }
 reqwest = { workspace = true }
 alloy-network = { workspace = true }
@@ -27,11 +28,10 @@ alloy-contract = { workspace = true }
 rand = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
-bridge-shared = { workspace = true }
-ethereum-bridge = { workspace = true }
-movement-bridge = { workspace = true }
+bridge-service = { workspace = true }
+bridge-setup = { workspace = true }
+bridge-config = { workspace = true }
 futures = { workspace = true }
-tiny-keccak = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

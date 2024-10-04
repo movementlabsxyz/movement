@@ -1,9 +1,15 @@
+
 pragma solidity ^0.8.22;
 
 interface IAtomicBridgeCounterparty {
     // Event emitted when a new atomic bridge transfer is locked
     event BridgeTransferLocked(
-        bytes32 indexed bridgeTransferId, address indexed recipient, uint256 amount, bytes32 hashLock, uint256 timeLock
+        bytes32 indexed bridgeTransferId, 
+        bytes32 indexed initiator, 
+        address indexed recipient,  
+        uint256 amount, 
+        bytes32 hashLock, 
+        uint256 timeLock
     );
 
     // Event emitted when a BridgeTransfer is completed
@@ -21,6 +27,7 @@ interface IAtomicBridgeCounterparty {
     error BridgeTransferStateNotPending();
     error InsufficientWethBalance();
     error TimeLockNotExpired();
+    error TimeLockExpired();
     error ZeroAddress();
     error Unauthorized();
 
@@ -29,7 +36,6 @@ interface IAtomicBridgeCounterparty {
      * @param initiator The address of the initiator of the BridgeTransfer
      * @param bridgeTransferId A unique id representing this BridgeTransfer
      * @param hashLock The hash of the secret (HASH) that will unlock the funds
-     * @param timeLock The timestamp until which this BridgeTransfer is valid and can be executed
      * @param recipient The address to which to transfer the funds
      * @param amount The amount of WETH to lock
      * @return bool indicating successful lock
@@ -39,7 +45,6 @@ interface IAtomicBridgeCounterparty {
         bytes32 initiator,
         bytes32 bridgeTransferId,
         bytes32 hashLock,
-        uint256 timeLock,
         address recipient,
         uint256 amount
     ) external returns (bool);

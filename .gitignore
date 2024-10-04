@@ -11,6 +11,7 @@ ledger_db/
 state_merkle_db/
 .etc
 .movement
+.movement-*
 .idea
 .vscode
 .data
@@ -23,3 +24,4 @@ profile.json
 *.log
 venv
 *.pem
+*.jot

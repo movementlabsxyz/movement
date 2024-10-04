@@ -16,8 +16,8 @@ fn main() -> Result<(), anyhow::Error> {
 		.init();
 
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let maptos_config = dot_movement
-		.try_get_or_create_config_from_json::<maptos_execution_util::config::Config>()?;
+	let maptos_config =
+		dot_movement.try_get_config_from_json::<maptos_execution_util::config::Config>()?;
 
 	let default_indexer_config = build_processor_conf("default_processor", &maptos_config)?;
 	let usertx_indexer_config = build_processor_conf("user_transaction_processor", &maptos_config)?;
@@ -53,7 +53,7 @@ fn main() -> Result<(), anyhow::Error> {
 				let mut set = JoinSet::new();
 				set.spawn(async move { default_indexer_config.run().await });
 				//wait all the migration is done.
-				tokio::time::sleep(Duration::from_secs(8)).await;
+				tokio::time::sleep(Duration::from_secs(12)).await;
 				set.spawn(async move { usertx_indexer_config.run().await });
 				set.spawn(async move { accounttx_indexer_config.run().await });
 				set.spawn(async move { coin_indexer_config.run().await });
@@ -85,6 +85,10 @@ fn build_processor_conf(
 	maptos_config: &maptos_execution_util::config::Config,
 ) -> Result<IndexerGrpcProcessorConfig, anyhow::Error> {
 	let indexer_grpc_data_service_address = build_grpc_url(maptos_config);
+
+	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWEEN_REQUEST_MS")
+		.map(|t| t.parse().unwrap_or(10))
+		.unwrap_or(10);
 	//create config file
 	let indexer_config_content = format!(
 		"processor_config:
@@ -93,13 +97,15 @@ postgres_connection_string: {}/postgres
 indexer_grpc_data_service_address: {}
 indexer_grpc_http2_ping_interval_in_secs: {}
 indexer_grpc_http2_ping_timeout_in_secs: {}
-auth_token: \"{}\"",
+auth_token: \"{}\"
+default_sleep_time_between_request: {}",
 		processor_name,
 		maptos_config.indexer_processor.postgres_connection_string,
 		indexer_grpc_data_service_address,
 		maptos_config.indexer.maptos_indexer_grpc_inactivity_timeout,
 		maptos_config.indexer.maptos_indexer_grpc_inactivity_ping_interval,
 		maptos_config.indexer_processor.indexer_processor_auth_token,
+		default_sleep_time_between_request,
 	);
 
 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");
