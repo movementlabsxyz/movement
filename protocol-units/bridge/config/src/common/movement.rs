@@ -10,8 +10,8 @@ const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
-	#[serde(default = "default_movement_signer_address")]
-	pub movement_signer_address: Ed25519PrivateKey,
+	#[serde(default = "default_movement_signer_key")]
+	pub movement_signer_key: Ed25519PrivateKey,
 	#[serde(default = "default_movement_native_address")]
 	pub movement_native_address: String,
 
@@ -31,8 +31,8 @@ pub struct MovementConfig {
 }
 
 // The default private key
-pub fn default_movement_signer_address() -> Ed25519PrivateKey {
-	match std::env::var("MOVEMENT_SIGNER_ADDRESS") {
+pub fn default_movement_signer_key() -> Ed25519PrivateKey {
+	match std::env::var("MOVEMENT_SIGNER_KEY") {
 		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
 		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
 	}
@@ -110,7 +110,7 @@ impl MovementConfig {
 impl Default for MovementConfig {
 	fn default() -> Self {
 		MovementConfig {
-			movement_signer_address: default_movement_signer_address(),
+			movement_signer_key: default_movement_signer_key(),
 			movement_native_address: default_movement_native_address(),
 			mvt_rpc_connection_protocol: default_mvt_rpc_connection_protocol(),
 			mvt_rpc_connection_hostname: default_mvt_rpc_connection_hostname(),

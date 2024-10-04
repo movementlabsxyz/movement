@@ -1,7 +1,10 @@
 use super::utils::{self, MovementAddress};
-use crate::chains::bridge_contracts::BridgeContract;
-use crate::chains::bridge_contracts::BridgeContractError;
-use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::chains::bridge_contracts::{
+	BridgeContract,
+	BridgeContractError,
+	BridgeContractFramework,
+	BridgeContractResult
+};
 use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
@@ -24,6 +27,11 @@ use url::Url;
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
+const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1
+]);
+
 
 #[allow(dead_code)]
 enum Call {
@@ -54,7 +62,7 @@ impl MovementClient {
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let signer =
-			utils::create_local_account(config.movement_signer_address.clone(), &rest_client)
+			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
 				.await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClient {
@@ -466,10 +474,360 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 }
 
+#[async_trait::async_trait]
+impl BridgeContractFramework<MovementAddress> for MovementClient {
+	async fn initiate_bridge_transfer(
+		&mut self,
+		_initiator: BridgeAddress<MovementAddress>,
+		recipient: BridgeAddress<Vec<u8>>,
+		hash_lock: HashLock,
+		amount: Amount,
+	) -> BridgeContractResult<()> {
+		let amount_value = match amount.0 {
+			AssetType::Moveth(value) => value,
+			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
+		};
+		debug!("Amount value: {:?}", amount_value);
+
+		let args = vec![
+			utils::serialize_vec_initiator(&recipient.0)?,
+			utils::serialize_vec_initiator(&hash_lock.0[..])?,
+			utils::serialize_u64_initiator(&amount_value)?,
+		];
+
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			"atomic_bridge_initiator",
+			"initiate_bridge_transfer",
+			Vec::new(),
+			args,
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::InitiateTransferError)?;
+
+		Ok(())
+	}
+
+	async fn initiator_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		preimage: HashLockPreImage,
+	) -> BridgeContractResult<()> {
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+				end -= 1;
+			}
+			&preimage.0[..end]
+		};
+		let args2 = vec![
+			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec_initiator(unpadded_preimage)?,
+		];
+
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			INITIATOR_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args2,
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError);
+
+		Ok(())
+	}
+
+	async fn counterparty_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		preimage: HashLockPreImage,
+	) -> BridgeContractResult<()> {
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+				end -= 1;
+			}
+			&preimage.0[..end]
+		};
+		let args2 = vec![
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec(&unpadded_preimage)?,
+		];
+
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			COUNTERPARTY_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args2,
+		);
+
+		let result = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError);
+
+		match &result {
+			Ok(tx_result) => {
+				debug!("Transaction succeeded: {:?}", tx_result);
+			}
+			Err(err) => {
+				debug!("Transaction failed: {:?}", err);
+			}
+		}
+
+		Ok(())
+	}
+
+	async fn lock_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		hash_lock: HashLock,
+		initiator: BridgeAddress<Vec<u8>>,
+		recipient: BridgeAddress<MovementAddress>,
+		amount: Amount,
+	) -> BridgeContractResult<()> {
+		let amount_value = match amount.0 {
+			AssetType::Moveth(value) => value,
+			_ => return Err(BridgeContractError::SerializationError),
+		};
+
+		let args = vec![
+			utils::serialize_vec(&initiator.0)?,
+			utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			utils::serialize_vec(&hash_lock.0[..])?,
+			utils::serialize_vec(&recipient.0)?,
+			utils::serialize_u64(&amount_value)?,
+		];
+
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			COUNTERPARTY_MODULE_NAME,
+			"lock_bridge_transfer_assets",
+			Vec::new(),
+			args,
+		);
+
+		let _ = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::LockTransferError);
+
+		Ok(())
+	}
+
+	async fn refund_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<()> {
+		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?];
+
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			"atomic_bridge_initiator",
+			"refund_bridge_transfer",
+			Vec::new(),
+			args,
+		);
+
+		utils::send_and_confirm_aptos_transaction(&self.rest_client, self.signer.as_ref(), payload)
+			.await
+			.map_err(|err| BridgeContractError::OnChainError(err.to_string()))?;
+
+		Ok(())
+	}
+
+	async fn abort_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<()> {
+		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
+		let payload = utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			COUNTERPARTY_MODULE_NAME,
+			"abort_bridge_transfer",
+			Vec::new(),
+			args3,
+		);
+		let result = utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			self.signer.as_ref(),
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::AbortTransferError);
+
+		info!("Abort bridge transfer result: {:?}", &result);
+
+		Ok(())
+	}
+
+	async fn get_bridge_transfer_details_initiator(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
+		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
+
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: self.native_address.clone().into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_initiator")
+							.map_err(|_| BridgeContractError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_transfers")
+						.map_err(|_| BridgeContractError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
+		};
+
+		debug!("View request: {:?}", view_request);
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractError::CallError)?;
+
+		let values = response.inner();
+
+		if values.len() != 6 {
+			return Err(BridgeContractError::InvalidResponseLength);
+		}
+
+		let originator = utils::val_as_str_initiator(values.first())?;
+		let recipient = utils::val_as_str_initiator(values.get(1))?;
+		let amount = utils::val_as_str_initiator(values.get(2))?
+			.parse::<u64>()
+			.map_err(|_| BridgeContractError::SerializationError)?;
+		let hash_lock = utils::val_as_str_initiator(values.get(3))?;
+		let time_lock = utils::val_as_str_initiator(values.get(4))?
+			.parse::<u64>()
+			.map_err(|_| BridgeContractError::SerializationError)?;
+		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
+
+		let originator_address = AccountAddress::from_hex_literal(originator)
+			.map_err(|_| BridgeContractError::SerializationError)?;
+		let recipient_address_bytes =
+			hex::decode(&recipient[2..]).map_err(|_| BridgeContractError::SerializationError)?;
+		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+			.map_err(|_| BridgeContractError::SerializationError)?
+			.try_into()
+			.map_err(|_| BridgeContractError::SerializationError)?;
+
+		let details = BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: BridgeAddress(MovementAddress(originator_address)),
+			recipient_address: BridgeAddress(recipient_address_bytes),
+			amount: Amount(AssetType::Moveth(amount)),
+			hash_lock: HashLock(hash_lock_array),
+			time_lock: TimeLock(time_lock),
+			state,
+		};
+
+		Ok(Some(details))
+	}
+
+	async fn get_bridge_transfer_details_counterparty(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
+		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
+
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: FRAMEWORK_ADDRESS.into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_counterparty")
+							.map_err(|_| BridgeContractError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_transfers")
+						.map_err(|_| BridgeContractError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![serde_json::json!(bridge_transfer_id_hex)],
+		};
+
+		debug!("View request: {:?}", view_request);
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractError::CallError)?;
+
+		let values = response.inner();
+
+		if values.len() != 6 {
+			return Err(BridgeContractError::InvalidResponseLength);
+		}
+
+		let originator = utils::val_as_str_initiator(values.first())?;
+		let recipient = utils::val_as_str_initiator(values.get(1))?;
+		let amount = utils::val_as_str_initiator(values.get(2))?
+			.parse::<u64>()
+			.map_err(|_| BridgeContractError::SerializationError)?;
+		let hash_lock = utils::val_as_str_initiator(values.get(3))?;
+		let time_lock = utils::val_as_str_initiator(values.get(4))?
+			.parse::<u64>()
+			.map_err(|_| BridgeContractError::SerializationError)?;
+		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
+
+		let originator_address = AccountAddress::from_hex_literal(originator)
+			.map_err(|_| BridgeContractError::SerializationError)?;
+		let recipient_address_bytes =
+			hex::decode(&recipient[2..]).map_err(|_| BridgeContractError::SerializationError)?;
+		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+			.map_err(|_| BridgeContractError::SerializationError)?
+			.try_into()
+			.map_err(|_| BridgeContractError::SerializationError)?;
+
+		let details = BridgeTransferDetails {
+			bridge_transfer_id,
+			initiator_address: BridgeAddress(MovementAddress(originator_address)),
+			recipient_address: BridgeAddress(recipient_address_bytes),
+			amount: Amount(AssetType::Moveth(amount)),
+			hash_lock: HashLock(hash_lock_array),
+			time_lock: TimeLock(time_lock),
+			state,
+		};
+
+		Ok(Some(details))
+	}
+}
+
 use std::{
 	env, fs,
 	io::Write,
-	path::PathBuf,
+	path::{Path, PathBuf},
 	process::{Command, Stdio},
 };
 use tokio::{
@@ -701,6 +1059,278 @@ impl MovementClient {
 
 		Ok(())
 	}
+
+	pub async fn update_bridge_operator(&mut self) -> Result<()> {
+		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
+
+		let mut process = Command::new("movement")
+			.args(&["init"])
+			.stdin(Stdio::piped())
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.spawn()
+			.expect("Failed to execute command");
+
+		let private_key_hex = hex::encode(self.signer.private_key().to_bytes());
+
+		let stdin: &mut std::process::ChildStdin =
+			process.stdin.as_mut().expect("Failed to open stdin");
+
+		let movement_dir = PathBuf::from(".movement");
+
+		if movement_dir.exists() {
+			stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+		}
+
+		stdin.write_all(b"local\n").expect("Failed to write to stdin");
+
+		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
+
+		let addr_output = process.wait_with_output().expect("Failed to read command output");
+
+		if !addr_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		}
+
+		if !addr_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		}
+		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
+		let address = addr_output_str
+			.split_whitespace()
+			.find(|word| word.starts_with("0x"))
+			.expect("Failed to extract the Movement account address");
+
+		println!("Extracted address: {}", address);
+
+		let resource_output = Command::new("movement")
+			.args(&[
+				"account",
+				"derive-resource-account-address",
+				"--address",
+				address,
+				"--seed",
+				&random_seed,
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		// Print the output of the resource address command for debugging
+		if !resource_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&resource_output.stdout));
+		}
+		if !resource_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&resource_output.stderr));
+		}
+
+		// Extract the resource address from the JSON output
+		let resource_output_str = String::from_utf8_lossy(&resource_output.stdout);
+		let resource_address = resource_output_str
+			.lines()
+			.find(|line| line.contains("\"Result\""))
+			.and_then(|line| line.split('"').nth(3))
+			.expect("Failed to extract the resource account address");
+
+		// Ensure the address has a "0x" prefix
+		let formatted_resource_address = if resource_address.starts_with("0x") {
+			resource_address.to_string()
+		} else {
+			format!("0x{}", resource_address)
+		};
+
+		// Set counterparty module address to resource address, for function calls:
+		self.native_address = AccountAddress::from_hex_literal(&formatted_resource_address)?;
+
+		println!("Derived resource address: {}", formatted_resource_address);
+
+		let current_dir = env::current_dir().expect("Failed to get current directory");
+		println!("Current directory: {:?}", current_dir);
+
+		let move_dir = Path::new("../move-modules");
+		env::set_current_dir(&move_dir).expect("Failed to change directory");	    
+
+		let move_toml_path = PathBuf::from("../move-modules/Move.toml");
+
+		// Read the existing content of Move.toml
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
+		// Update the content of Move.toml with the new addresses
+		let updated_content = move_toml_content
+			.lines()
+			.map(|line| match line {
+				_ if line.starts_with("resource_addr = ") => {
+					format!(r#"resource_addr = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("atomic_bridge = ") => {
+					format!(r#"atomic_bridge = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("moveth = ") => {
+					format!(r#"moveth = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("master_minter = ") => {
+					format!(r#"master_minter = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("minter = ") => {
+					format!(r#"minter = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("admin = ") => {
+					format!(r#"admin = "{}""#, formatted_resource_address)
+				}
+				_ if line.starts_with("origin_addr = ") => {
+					format!(r#"origin_addr = "{}""#, address)
+				}
+				_ if line.starts_with("source_account = ") => {
+					format!(r#"source_account = "{}""#, address)
+				}
+				_ => line.to_string(),
+			})
+			.collect::<Vec<_>>()
+			.join("\n");
+
+		// Write the updated content back to Move.toml
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
+		file.write_all(updated_content.as_bytes())
+			.expect("Failed to write updated Move.toml file");
+
+		println!("Move.toml updated successfully.");
+
+		let output2 = Command::new("movement")
+			.args(&[
+				"move",
+				"compile",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		if !output2.stdout.is_empty() {
+			eprintln!("Compile stdout: {}", String::from_utf8_lossy(&output2.stdout));
+		}
+
+		if !output2.stderr.is_empty() {
+			eprintln!("Compile stderr: {}", String::from_utf8_lossy(&output2.stderr));
+		}
+
+		let new_dir = Path::new("../service");
+		env::set_current_dir(&new_dir).expect("Failed to change directory");
+
+		let output3 = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"../move-modules/build/bridge-modules/bytecode_scripts/main.mv",
+				"--args",
+				&format!("address:{}", address),
+				"--url",
+				"http://127.0.0.1:8080/"
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()
+			.expect("Failed to execute command");
+
+		if !output3.stdout.is_empty() {
+			eprintln!("Script stdout: {}", String::from_utf8_lossy(&output3.stdout));
+		}
+
+		if !output3.stderr.is_empty() {
+			eprintln!("Script stderr: {}", String::from_utf8_lossy(&output3.stderr));
+		}
+
+		let view_request = ViewRequest {
+			function: EntryFunctionId {
+				module: MoveModuleId {
+					address: FRAMEWORK_ADDRESS.into(),
+					name: aptos_api_types::IdentifierWrapper(
+						Identifier::new("atomic_bridge_configuration")
+							.map_err(|_| BridgeContractError::FunctionViewError)?,
+					),
+				},
+				name: aptos_api_types::IdentifierWrapper(
+					Identifier::new("bridge_operator")
+						.map_err(|_| BridgeContractError::FunctionViewError)?,
+				),
+			},
+			type_arguments: vec![],
+			arguments: vec![],
+		};
+
+		let response: Response<Vec<serde_json::Value>> = self
+			.rest_client
+			.view(&view_request, None)
+			.await
+			.map_err(|_| BridgeContractError::CallError)?;
+
+		debug!("Bridge operator: {:?}", response.inner());
+
+		if movement_dir.exists() {
+			fs::remove_dir_all(movement_dir).expect("Failed to delete .movement directory");
+			println!(".movement directory deleted successfully.");
+		}
+
+		// Read the existing content of Move.toml
+		let move_toml_content =
+			fs::read_to_string(&move_toml_path).expect("Failed to read Move.toml file");
+
+		// Directly assign the address
+		let final_address = "0xcafe";
+
+		// Directly assign the formatted resource address
+		let final_formatted_resource_address =
+			"0xc3bb8488ab1a5815a9d543d7e41b0e0df46a7396f89b22821f07a4362f75ddc5";
+
+		let updated_content = move_toml_content
+			.lines()
+			.map(|line| match line {
+				_ if line.starts_with("resource_addr = ") => {
+					format!(r#"resource_addr = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("atomic_bridge = ") => {
+					format!(r#"atomic_bridge = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("moveth = ") => {
+					format!(r#"moveth = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("master_minter = ") => {
+					format!(r#"master_minter = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("minter = ") => {
+					format!(r#"minter = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("admin = ") => {
+					format!(r#"admin = "{}""#, final_formatted_resource_address)
+				}
+				_ if line.starts_with("origin_addr = ") => {
+					format!(r#"origin_addr = "{}""#, final_address)
+				}
+				_ if line.starts_with("pauser = ") => {
+					format!(r#"pauser = "{}""#, "0xdafe")
+				}
+				_ if line.starts_with("denylister = ") => {
+					format!(r#"denylister = "{}""#, "0xcade")
+				}
+				_ => line.to_string(),
+			})
+			.collect::<Vec<_>>()
+			.join("\n");
+
+		// Write the updated content back to Move.toml
+		let mut file =
+			fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
+		file.write_all(updated_content.as_bytes())
+			.expect("Failed to write updated Move.toml file");
+
+		println!("Move.toml addresses updated successfully at the end of the test.");
+
+		Ok(())
+	}
+
 
 	pub async fn new_for_test() -> Result<(Self, tokio::process::Child), anyhow::Error> {
 		let kill_cmd = TokioCommand::new("sh")

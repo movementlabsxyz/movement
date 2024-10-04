@@ -133,7 +133,7 @@ pub async fn setup_movement_node(
 
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 	let signer = LocalAccount::generate(&mut rng);
-	config.movement_signer_address = signer.private_key().clone();
+	config.movement_signer_key = signer.private_key().clone();
 
 	Ok(child)
 }
@@ -159,7 +159,7 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 
 	stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-	let private_key_bytes = config.movement_signer_address.to_bytes();
+	let private_key_bytes = config.movement_signer_key.to_bytes();
 	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
 	let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
 

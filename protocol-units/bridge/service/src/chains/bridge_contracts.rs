@@ -164,6 +164,58 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 }
 
 #[async_trait::async_trait]
+pub trait BridgeContractFramework<A>: Clone + Unpin + Send + Sync {
+	async fn initiate_bridge_transfer(
+		&mut self,
+		initiator_address: BridgeAddress<A>,
+		recipient_address: BridgeAddress<Vec<u8>>,
+		hash_lock: HashLock,
+		amount: Amount,
+	) -> BridgeContractResult<()>;
+
+	async fn initiator_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		secret: HashLockPreImage,
+	) -> BridgeContractResult<()>;
+
+	async fn counterparty_complete_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		secret: HashLockPreImage,
+	) -> BridgeContractResult<()>;
+
+	async fn refund_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<()>;
+
+	async fn get_bridge_transfer_details_initiator(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
+
+	async fn get_bridge_transfer_details_counterparty(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
+
+	async fn lock_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+		hash_lock: HashLock,
+		initiator: BridgeAddress<Vec<u8>>,
+		recipient: BridgeAddress<A>,
+		amount: Amount,
+	) -> BridgeContractResult<()>;
+
+	async fn abort_bridge_transfer(
+		&mut self,
+		bridge_transfer_id: BridgeTransferId,
+	) -> BridgeContractResult<()>;
+}
+
+#[async_trait::async_trait]
 pub trait BridgeContractWETH9: Clone + Unpin + Send + Sync {
 	async fn deposit_weth(&mut self, amount: Amount) -> BridgeContractWETH9Result<()>;
 }
