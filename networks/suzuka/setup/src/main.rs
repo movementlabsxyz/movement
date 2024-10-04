@@ -2,7 +2,6 @@ use anyhow::Context;
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use std::future::Future;
 use std::pin::Pin;
-use std::sync::Arc;
 use suzuka_config::Config;
 use suzuka_full_node_setup::{local::Local, SuzukaFullNodeSetupOperations};
 use syncup::SyncupOperations;
@@ -62,15 +61,17 @@ async fn main() -> Result<(), anyhow::Error> {
 
 			// Wrap the syncing_config in an Arc
 			// This may be overkill because cloning sync_config is cheap
-			let syncing_config = Arc::new(config.syncing.clone());
+			let syncing_config = config.syncing.clone();
 
 			// set up sync
 			let sync_task: Pin<Box<dyn Future<Output = Result<(), anyhow::Error>> + Send>> =
 				if syncing_config.wants_movement_sync() {
-					let syncing_config_cloned = syncing_config.clone();
+					let sync_task = syncing_config.syncup().await?;
 					Box::pin(async move {
-						let sync_task = syncing_config_cloned.syncup().await?;
-						sync_task.await?;
+						match sync_task.await {
+							Ok(_) => info!("Sync task finished successfully."),
+							Err(err) => info!("Sync task failed: {:?}", err),
+						}
 						Ok(())
 					})
 				} else {
@@ -96,8 +97,9 @@ async fn main() -> Result<(), anyhow::Error> {
 			tracing::info!("Cancellation received, killing anvil task.");
 		}
 		// sync task
-		_ = sync_task => {
+		res = sync_task => {
 			tracing::info!("Sync task finished.");
+			res?;
 		}
 	}
 

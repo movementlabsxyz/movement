@@ -7,11 +7,11 @@ use tracing::{info, warn};
 pub trait SyncupOperations {
 	/// Syncs up the files in the glob to the target.
 	async fn syncup(
-		&self,
+		self,
 	) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error>;
 
 	/// Removes the syncing resources.
-	async fn remove_syncup_resources(&self) -> Result<(), anyhow::Error>;
+	async fn remove_syncup_resources(self) -> Result<(), anyhow::Error>;
 }
 
 pub trait Syncupable {
@@ -47,6 +47,7 @@ impl Target {
 		application_id: application::Id,
 		syncer_id: actor::Id,
 	) -> Result<(pipeline::push::Pipeline, pipeline::pull::Pipeline), anyhow::Error> {
+		info!("Creating pipelines for target {:?}", self);
 		match self {
 			Target::S3(bucket) => {
 				let (s3_push, s3_pull) = s3::shared_bucket::create_with_load_from_env(
@@ -92,6 +93,7 @@ pub async fn syncup(
 	let (push_pipeline, pull_pipeline) = target
 		.create_pipelines(root_dir.clone(), glob, application_id, syncer_id)
 		.await?;
+	info!("Created pipelines");
 
 	// run the pull pipeline once
 	if !is_leader {
@@ -149,7 +151,7 @@ where
 	T: Syncupable,
 {
 	async fn syncup(
-		&self,
+		self,
 	) -> Result<impl std::future::Future<Output = Result<(), anyhow::Error>>, anyhow::Error> {
 		let is_leader = self.try_leader()?;
 		let root_dir = self.try_root_dir()?;
@@ -161,7 +163,7 @@ where
 		syncup(is_leader, root_dir, &glob, target, application_id, syncer_id).await
 	}
 
-	async fn remove_syncup_resources(&self) -> Result<(), anyhow::Error> {
+	async fn remove_syncup_resources(self) -> Result<(), anyhow::Error> {
 		let target = self.try_target()?;
 		remove_syncup_resources(target).await
 	}

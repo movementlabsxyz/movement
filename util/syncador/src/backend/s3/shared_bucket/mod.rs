@@ -18,7 +18,7 @@ pub async fn create_with_load_from_env(
 		Err(_) => None,
 	};
 	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Client used region {:?}", config.region());
+	info!("Create client used region {:?}", config.region());
 	let client = aws_sdk_s3::Client::new(&config);
 	create(client, bucket, metadata, pull_destination).await
 }
@@ -29,7 +29,7 @@ pub async fn destroy_with_load_from_env(bucket: String) -> Result<(), anyhow::Er
 		Err(_) => None,
 	};
 	let config = aws_config::load_from_env().await.into_builder().region(region).build();
-	info!("Client used region {:?}", config.region());
+	info!("Destroy client used region {:?}", config.region());
 	let client = aws_sdk_s3::Client::new(&config);
 	let bucket_connection = bucket_connection::BucketConnection::new(client, bucket);
 	bucket_connection.destroy(true).await
