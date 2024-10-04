@@ -8,3 +8,11 @@ pub enum SuzukaUtil {
 	#[clap(subcommand)]
 	Syncing(syncing::Syncing),
 }
+
+impl SuzukaUtil {
+	pub async fn execute(&self) -> Result<(), anyhow::Error> {
+		match self {
+			SuzukaUtil::Syncing(syncing) => syncing.execute().await,
+		}
+	}
+}

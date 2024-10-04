@@ -32,3 +32,7 @@ echo "Built suzuka-full-node-setup!"
 echo "Building wait-for-celestia-light-node..."
 cargo build $CARGO_PROFILE_FLAGS --bin wait-for-celestia-light-node
 echo "Built wait-for-celestia-light-node!"
+
+echo "Bulding suzuka-util..."
+cargo build $CARGO_PROFILE_FLAGS -p suzuka-util
+echo "Built suzuka-util!"
