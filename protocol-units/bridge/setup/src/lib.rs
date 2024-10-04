@@ -30,3 +30,12 @@ pub async fn test_mvt_setup(
 	local::init_local_movement_node(&mut config.movement)?;
 	Ok((config, movement_task))
 }
+
+pub async fn test_suzuka_setup(
+	mut config: Config,
+) -> Result<Config, anyhow::Error> {
+	let movement_task = local::setup_movement_node(&mut config.movement).await?;
+	local::init_local_movement_node(&mut config.movement)?;
+	Ok(config)
+}
+

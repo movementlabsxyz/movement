@@ -9,7 +9,7 @@ use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::TestHarness;
-use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::{ethereum::types::EthAddress, movement::client::MovementClient};
 use bridge_service::chains::{
 	bridge_contracts::{BridgeContract, BridgeContractFramework}, ethereum::types::EthHash, movement::utils::MovementHash,
 };
@@ -66,9 +66,11 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let config = Config::default();
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_suzuka(config).await;
 
 	let args = EthToMovementCallArgs::default();
+
+	let _ = MovementClient::update_bridge_operator(&mut mvt_client_harness.movement_client).await;
 
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
@@ -77,6 +79,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		{
 			let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+
 		}
 
 		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;

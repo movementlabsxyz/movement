@@ -17,6 +17,7 @@ use bridge_service::chains::movement::{client::MovementClient, utils::MovementHa
 use bridge_service::types::Amount;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use rand::SeedableRng;
+use tokio::process::Command;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use url::Url;
@@ -170,6 +171,30 @@ impl TestHarness {
 			faucet_url.clone(),
 			node_connection_url.clone(),
 		)));
+
+		(HarnessMvtClient { movement_client, movement_process, rest_client, faucet_client }, config)
+	}
+
+	pub async fn new_with_suzuka(config: Config) -> (HarnessMvtClient, Config) {
+		let movement_client = MovementClient::new(&config.movement)
+			.await
+			.expect("Failed to create MovementClient");
+
+		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
+			.expect("Bad movement rpc url in config");
+		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = Url::from_str(&config.movement.mvt_faucet_connection_url())
+			.expect("Bad movement faucet url in config");
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_url.clone(),
+			node_connection_url.clone(),
+		)));
+
+		let movement_process = Command::new("sleep")
+		.arg("1000")
+		.spawn()
+		.expect("failed to spawn dummy process");
 
 		(HarnessMvtClient { movement_client, movement_process, rest_client, faucet_client }, config)
 	}
