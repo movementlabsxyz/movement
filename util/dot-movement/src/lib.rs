@@ -1,5 +1,6 @@
 use std::io::Write;
 pub mod path;
+pub mod sync;
 
 #[derive(Debug, Clone)]
 pub struct DotMovement(std::path::PathBuf);
@@ -13,6 +14,10 @@ impl DotMovement {
 
 	pub fn get_path(&self) -> &std::path::Path {
 		&self.0
+	}
+
+	pub fn set_path(&mut self, path: std::path::PathBuf) {
+		self.0 = path;
 	}
 
 	pub fn get_config_json_path(&self) -> std::path::PathBuf {

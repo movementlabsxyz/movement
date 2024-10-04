@@ -32,7 +32,8 @@ impl Config {
 		match self {
 			Config::Local(local) => {
 				let celestia_node_url = format!(
-					"ws://{}:{}",
+					"{}://{}:{}",
+					local.appd.celestia_websocket_connection_protocol,
 					local.appd.celestia_websocket_connection_hostname,
 					local.appd.celestia_websocket_connection_port
 				);
@@ -55,7 +56,8 @@ impl Config {
 			Config::Arabica(local) => {
 				// arabica is also local for now
 				let celestia_node_url = format!(
-					"ws://{}:{}",
+					"{}://{}:{}",
+					local.appd.celestia_websocket_connection_protocol,
 					local.appd.celestia_websocket_connection_hostname,
 					local.appd.celestia_websocket_connection_port
 				);
@@ -78,7 +80,8 @@ impl Config {
 			Config::Mocha(local) => {
 				// mocha is also local for now
 				let celestia_node_url = format!(
-					"ws://{}:{}",
+					"{}://{}:{}",
+					local.appd.celestia_websocket_connection_protocol,
 					local.appd.celestia_websocket_connection_hostname,
 					local.appd.celestia_websocket_connection_port
 				);

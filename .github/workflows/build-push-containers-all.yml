@@ -26,6 +26,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -53,6 +56,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -85,6 +91,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -112,6 +121,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -144,6 +156,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -171,6 +186,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -205,6 +223,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -232,6 +251,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -264,6 +286,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -291,6 +316,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -323,6 +351,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -350,6 +381,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -382,6 +416,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -409,6 +446,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -440,6 +480,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -468,6 +511,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -499,6 +545,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
     
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -526,6 +575,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -543,6 +595,72 @@ jobs:
       - name: Build and Push Docker image movement
         run: |
           ./scripts/movement/manifest suzuka-indexer
+
+  suzuka-client-e2e-followers-consistent-build:
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with: 
+        submodules: true
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image suzuka-client-e2e-followers-consistent
+
+  suzuka-client-e2e-followers-consistent-manifest:
+    if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    needs: suzuka-client-e2e-followers-consistent-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest suzuka-client-e2e-followers-consistent
+
   
   container-checks:
     if: github.event.label.name == 'cicd:suzuka-containers' ||  github.ref == 'refs/heads/main'
@@ -556,17 +674,21 @@ jobs:
       - suzuka-full-node-manifest
       - suzuka-faucet-service-manifest
       - suzuka-client-e2e-simple-interaction-manifest
+      - suzuka-client-e2e-followers-consistent-manifest
     steps:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+        with: 
+          submodules: true
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
   
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
   
       - name: Read the commit SHA
         id: vars
-        run: echo "CONTAINER_REV=${{ github.sha }}" >> .env
+        run: echo "CONTAINER_REV=${{ github.ref }}" >> .env
 
       - name: Display .env file
         run: cat .env
@@ -589,6 +711,69 @@ jobs:
 
       - name: Run docker-compose local.setup.test
         run: |
-          nix develop --command bash  -c "just container-test"  
+          nix develop --command bash  -c "just container-tests"  
           # run again to test restarts
-          # nix develop --command bash  -c "just container-test"  
+          # nix develop --command bash  -c "just container-tests"  
+
+### Unchecked containers
+
+  bridge-service-build:
+    if: github.event.label.name == 'cicd:bridge-containers' ||  github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        architecture: [x86_64, arm64]
+        
+    runs-on: ${{ matrix.architecture == 'x86_64' && 'buildjet-8vcpu-ubuntu-2204' || 'buildjet-8vcpu-ubuntu-2204-arm' }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Login to Docker Hub to Avoid Rate Limiting
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and Push Docker image movement
+      run: |
+        ./scripts/movement/build-push-image bridge-service
+
+  bridge-service-manifest:
+    permissions:
+      contents: read
+      packages: write
+    needs: bridge-service-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Login to Docker Hub to Avoid Rate Limiting
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build and Push Docker image movement
+        run: |
+          ./scripts/movement/manifest bridge-service
+
+  
