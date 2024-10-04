@@ -157,8 +157,14 @@ impl TransactionPipe {
 
 		let min_sequence_number = used_sequence_number.max(committed_sequence_number);
 
-		let max_sequence_number =
-			used_sequence_number.max(committed_sequence_number) + TOO_NEW_TOLERANCE;
+		let max_sequence_number = committed_sequence_number + TOO_NEW_TOLERANCE;
+
+		info!(
+			"min_sequence_number: {:?} max_sequence_number: {:?} transaction_sequence_number {:?}",
+			min_sequence_number,
+			max_sequence_number,
+			transaction.sequence_number()
+		);
 
 		if transaction.sequence_number() < min_sequence_number {
 			println!("Transaction sequence number too old: {:?}", transaction.sequence_number());
