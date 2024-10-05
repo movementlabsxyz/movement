@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 pub mod common;
 
-use serde::{Deserialize, Serialize};
+pub const BRIDGE_CONF_FOLDER: &str = "bridge";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Config {

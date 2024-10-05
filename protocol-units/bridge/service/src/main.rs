@@ -16,22 +16,29 @@ async fn main() -> Result<()> {
 		)
 		.init();
 
-	let dot_movement = dot_movement::DotMovement::try_from_env()?;
+	tracing::info!("Start Bridge");
+	//define bridge config path
+	let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
+	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
+	pathbuff.push(bridge_config::BRIDGE_CONF_FOLDER);
+	dot_movement.set_path(pathbuff);
+
 	let config_file = dot_movement.try_get_or_create_config_file().await?;
 
 	// get a matching godfig object
-	let godfig: Godfig<Config, ConfigFile> =
-		Godfig::new(ConfigFile::new(config_file), vec!["mcr_settlement".to_string()]);
+	let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
 	let bridge_config: Config = godfig.try_wait_for_ready().await?;
+	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
-	let one_stream = EthMonitoring::build(&bridge_config.eth).await?;
+	let one_stream = EthMonitoring::build(&bridge_config.eth).await.unwrap();
 
-	let one_client = EthClient::new(&bridge_config.eth).await?;
+	let one_client = EthClient::new(&bridge_config.eth).await.unwrap();
 
-	let two_client = MovementClient::new(&bridge_config.movement).await?;
+	let two_client = MovementClient::new(&bridge_config.movement).await.unwrap();
 
-	let two_stream = MovementMonitoring::build(&bridge_config.movement).await?;
+	let two_stream = MovementMonitoring::build(&bridge_config.movement).await.unwrap();
 
+	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
 	bridge_service::run_bridge(one_client, one_stream, two_client, two_stream).await?;
 	Ok(())
 }

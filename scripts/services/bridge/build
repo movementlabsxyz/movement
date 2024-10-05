@@ -36,3 +36,7 @@ echo "Built wait-for-celestia-light-node!"
 echo "Building Bridge..."
 cargo build $CARGO_PROFILE_FLAGS -p bridge-service
 echo "Built Bridge!"
+
+echo "Building Bridge..."
+cargo build $CARGO_PROFILE_FLAGS -p bridge-setup
+echo "Built Bridge!"

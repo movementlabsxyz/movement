@@ -4,24 +4,11 @@ use aptos_sdk::types::LocalAccount;
 use bridge_config::common::eth::EthConfig;
 use bridge_config::common::movement::MovementConfig;
 use bridge_config::common::testing::TestingConfig;
-use bridge_config::Config as BridgeConfig;
 use rand::prelude::*;
 use std::process::Stdio;
 use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
 use tokio::process::Command as TokioCommand;
-
-pub async fn setup(
-	mut config: BridgeConfig,
-) -> Result<(BridgeConfig, AnvilInstance), anyhow::Error> {
-	tracing::info!("Bridge local setup");
-	//Eth init: Start anvil.
-	let anvil = setup_eth(&mut config.eth, &mut config.testing);
-	tracing::info!("Bridge after anvil");
-
-	//By default the setup deosn't start the Movement node.
-	Ok((config, anvil))
-}
 
 pub fn setup_eth(config: &mut EthConfig, testing_config: &mut TestingConfig) -> AnvilInstance {
 	let anvil = Anvil::new().port(config.eth_rpc_connection_port).spawn();

@@ -133,6 +133,7 @@ async fn initialize_initiator_contract(
 }
 
 pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+	println!("Start deploy_local_movement_node");
 	let mut process = Command::new("movement") //--network
 		.args(&[
 			"init",
@@ -153,7 +154,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 	let stdin: &mut std::process::ChildStdin =
 		process.stdin.as_mut().expect("Failed to open stdin");
 
-	stdin.write_all(b"local\n").expect("Failed to write to stdin");
+	//	stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
 	let private_key_bytes = config.movement_signer_address.to_bytes();
 	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
@@ -167,6 +168,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 	if !addr_output.stderr.is_empty() {
 		eprintln!("Move init Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 	}
+
 	let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
 	let address = addr_output_str
 		.split_whitespace()
@@ -228,7 +230,15 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 	let current_dir = env::current_dir().expect("Failed to get current directory");
 	println!("Publish Current directory: {:?}", current_dir);
 
-	let move_toml_path = PathBuf::from("../move-modules/Move.toml");
+	//TODO Ack to make it works now but the path management should be uniform from cargo test to process compose test.
+	let mut move_toml_path = PathBuf::from(current_dir);
+	if config.mvt_init_network == "local" {
+		move_toml_path.push("../move-modules/Move.toml")
+	} else {
+		move_toml_path.push("protocol-units/bridge/move-modules/Move.toml")
+	};
+
+	println!("Move move_toml_path: {move_toml_path:?}",);
 
 	// Read the existing content of Move.toml
 	let move_toml_content =
@@ -285,7 +295,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 			"--seed",
 			&random_seed,
 			"--package-dir",
-			"../move-modules",
+			move_toml_path.to_str().unwrap(),
 		])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())

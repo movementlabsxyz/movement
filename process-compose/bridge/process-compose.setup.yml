@@ -3,6 +3,17 @@ version: "3"
 processes:
 
   setup:
+    environment:
+      - "ETH_RPC_CONNECTION_PROTOCOL=http"
+      - "ETH_RPC_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_RPC_CONNECTION_PORT=8090"
+      - "ETH_WS_CONNECTION_PROTOCOL=ws"
+      - "ETH_WS_CONNECTION_HOSTNAME=0.0.0.0"
+      - "ETH_WS_CONNECTION_PORT=8090"
+      - "MAYBE_RUN_LOCAL=true"
+      - "MAYBE_TESTING_MCR=true"
+      - "MAYBE_DEPLOY_MCR=true"
+
     command: |
       suzuka-full-node-setup
     depends_on:
@@ -15,9 +26,13 @@ processes:
 
   bridge_setup:
     command: |
-      ./scripts/services/indexer/build
+      bridge-setup
     availability:
       restart: exit_on_failure
     depends_on:
-      setup:
+      suzuka-faucet:
         condition: process_healthy
+    readiness_probe:
+      initial_delay_seconds: 20
+      exec:
+        command: echo "true"

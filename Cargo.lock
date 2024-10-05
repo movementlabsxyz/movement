@@ -4160,6 +4160,8 @@ dependencies = [
  "godfig",
  "hex",
  "k256",
+ "maptos-execution-util",
+ "mcr-settlement-config",
  "rand 0.7.3",
  "serde_json",
  "tokio",
