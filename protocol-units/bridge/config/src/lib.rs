@@ -28,3 +28,9 @@ impl Default for Config {
 		}
 	}
 }
+
+pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::PathBuf {
+	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
+	pathbuff.push(BRIDGE_CONF_FOLDER);
+	pathbuff
+}

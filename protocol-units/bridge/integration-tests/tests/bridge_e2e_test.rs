@@ -41,6 +41,7 @@ async fn start_bridge_local(config: &Config) -> Result<tokio::task::JoinHandle<(
 }
 
 async fn initiate_eth_bridge_transfer(
+	config: &Config,
 	harness_client: &HarnessEthClient,
 	recipient: MovementAddress,
 	hash_lock: HashLock,
@@ -48,7 +49,7 @@ async fn initiate_eth_bridge_transfer(
 ) -> Result<(), anyhow::Error> {
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
-		.wallet(EthereumWallet::from(harness_client.get_initiator_private_key()))
+		.wallet(EthereumWallet::from(HarnessEthClient::get_initiator_private_key(config)))
 		.on_builtin(&harness_client.eth_rpc_url)
 		.await?;
 
@@ -57,7 +58,8 @@ async fn initiate_eth_bridge_transfer(
 		&rpc_provider,
 	);
 
-	let initiator_address = BridgeAddress(EthAddress(harness_client.get_initiator_address()));
+	let initiator_address =
+		BridgeAddress(EthAddress(HarnessEthClient::get_initiator_address(config)));
 
 	let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
 
@@ -90,11 +92,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
-	let config = Config::default();
-	let (eth_client_harness, mut mvt_client_harness, config) =
-		TestHarness::new_with_eth_and_movement(config).await;
+	let (eth_client_harness, mvt_client_harness, config) =
+		TestHarness::new_with_eth_and_movement().await?;
 
-	let rest_client = mvt_client_harness.rest_client;
 	let movement_client_signer_address = mvt_client_harness.movement_client.signer().address();
 
 	{
@@ -116,13 +116,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let mov_recipient = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
 
 	let amount = Amount(AssetType::EthAndWeth((1, 0)));
-	initiate_eth_bridge_transfer(&eth_client_harness, mov_recipient, hash_lock, amount)
+	initiate_eth_bridge_transfer(&config, &eth_client_harness, mov_recipient, hash_lock, amount)
 		.await
 		.expect("Failed to initiate bridge transfer");
-
-	if let Err(e) = mvt_client_harness.movement_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
 
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;

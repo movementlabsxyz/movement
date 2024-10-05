@@ -19,8 +19,7 @@ async fn main() -> Result<()> {
 	tracing::info!("Start Bridge");
 	//define bridge config path
 	let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
-	let mut pathbuff = std::path::PathBuf::from(dot_movement.get_path());
-	pathbuff.push(bridge_config::BRIDGE_CONF_FOLDER);
+	let pathbuff = bridge_config::get_config_path(&dot_movement);
 	dot_movement.set_path(pathbuff);
 
 	let config_file = dot_movement.try_get_or_create_config_file().await?;

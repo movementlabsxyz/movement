@@ -16,7 +16,8 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let config = Config::default();
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config, mut mvt_process) =
+		TestHarness::new_with_movement(config).await;
 	let test_result = async {
 		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000)
 			.await
@@ -25,7 +26,7 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 	}
 	.await;
 
-	if let Err(e) = mvt_client_harness.movement_process.kill().await {
+	if let Err(e) = mvt_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 	test_result
@@ -36,7 +37,8 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let config = Config::default();
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config, mut mvt_process) =
+		TestHarness::new_with_movement(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
@@ -79,7 +81,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	}
 	.await;
 
-	if let Err(e) = mvt_client_harness.movement_process.kill().await {
+	if let Err(e) = mvt_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 
@@ -92,7 +94,8 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let default_config = Config::default();
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(default_config).await;
+	let (mut mvt_client_harness, _config, mut mvt_process) =
+		TestHarness::new_with_movement(default_config).await;
 
 	let args = MovementToEthCallArgs::default();
 
@@ -157,7 +160,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	}
 	.await;
 
-	if let Err(e) = mvt_client_harness.movement_process.kill().await {
+	if let Err(e) = mvt_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 
@@ -169,7 +172,8 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let config = Config::default();
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
+	let (mut mvt_client_harness, _config, mut mvt_process) =
+		TestHarness::new_with_movement(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
@@ -235,7 +239,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 	}
 	.await;
 
-	if let Err(e) = mvt_client_harness.movement_process.kill().await {
+	if let Err(e) = mvt_process.kill().await {
 		eprintln!("Failed to kill child process: {:?}", e);
 	}
 
