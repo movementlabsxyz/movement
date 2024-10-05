@@ -102,9 +102,6 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		faucet_client.fund(movement_client_signer_address, 100_000_000).await?;
 	}
 
-	// Start bridge.
-	let _bridge_task_handle = start_bridge_local(&config).await.unwrap(); //.expect("Failed to start the bridge");
-
 	// 1) initialize transfer
 	// eth_client
 	// 	.deposit_weth_and_approve(SetupEthClient::get_initiator_private_key(&anvil), 1)
