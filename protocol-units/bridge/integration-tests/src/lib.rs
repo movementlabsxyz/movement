@@ -16,8 +16,10 @@ use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
 use bridge_service::types::Amount;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
+use bridge_setup::local;
 use rand::SeedableRng;
 use tokio::process::Command;
+use tokio::task;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use url::Url;
@@ -153,7 +155,7 @@ impl TestHarness {
 	}
 
 	pub async fn new_with_movement(config: Config) -> (HarnessMvtClient, Config) {
-		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
+		let config = bridge_setup::test_mvt_setup(config)
 			.await
 			.expect("Failed to setup Movement config");
 
@@ -171,6 +173,12 @@ impl TestHarness {
 			faucet_url.clone(),
 			node_connection_url.clone(),
 		)));
+
+		let movement_process = Command::new("m1-da-light-node-celestia-bridge")  // Replace with the actual process name
+		.arg("--some-argument")  // You can pass arguments to the command if needed
+		.spawn()
+		.expect("Failed to start the movement process");
+	
 
 		(HarnessMvtClient { movement_client, movement_process, rest_client, faucet_client }, config)
 	}
