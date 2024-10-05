@@ -18,6 +18,7 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
+use bridge_config::Config;
 use rand::prelude::*;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -71,6 +72,49 @@ impl MovementClient {
 			rest_client,
 			signer: Arc::new(signer),
 		})
+	}
+	pub async fn movement_init(config: &Config) { 
+		let mut process = Command::new("movement")
+		.args(&["init"])
+		.stdin(Stdio::piped())
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()
+		.expect("Failed to execute command");
+
+		let private_key_hex = hex::encode(config.movement.movement_signer_key.to_bytes());
+		println!("Private key hex: {:?}\n", private_key_hex);
+		
+		let stdin: &mut std::process::ChildStdin =
+			process.stdin.as_mut().expect("Failed to open stdin");
+
+		let movement_dir = PathBuf::from(".movement");
+
+		if movement_dir.exists() {
+			stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+		}
+		
+		stdin.write_all(b"custom\n").expect("Failed to write to stdin");
+		stdin.write_all(b"http://localhost:30731/v1\n").expect("Failed to write to stdin");
+		stdin.write_all(b"http://localhost:30732\n").expect("Failed to write to stdin");
+		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
+		let addr_output = process.wait_with_output().expect("Failed to read command output");
+
+		if !addr_output.stdout.is_empty() {
+			println!("Address stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		}
+
+		if !addr_output.stderr.is_empty() {
+			eprintln!("Address stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		}
+		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
+
+		let address = addr_output_str
+			.split_whitespace()
+			.find(|word| word.starts_with("0x"))
+			.expect("Failed to extract the Movement account address");
+
+		println!("Extracted address: {}", address);
 	}
 
 	pub fn rest_client(&self) -> &Client {
@@ -1062,53 +1106,13 @@ impl MovementClient {
 
 	pub async fn update_bridge_operator(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
-
-		let mut process = Command::new("movement")
-			.args(&["init"])
-			.stdin(Stdio::piped())
-			.stdout(Stdio::piped())
-			.stderr(Stdio::piped())
-			.spawn()
-			.expect("Failed to execute command");
-
-		let private_key_hex = hex::encode(self.signer.private_key().to_bytes());
-
-		let stdin: &mut std::process::ChildStdin =
-			process.stdin.as_mut().expect("Failed to open stdin");
-
 		let movement_dir = PathBuf::from(".movement");
-
-		if movement_dir.exists() {
-			stdin.write_all(b"yes\n").expect("Failed to write to stdin");
-		}
-
-		stdin.write_all(b"local\n").expect("Failed to write to stdin");
-
-		let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
-
-		let addr_output = process.wait_with_output().expect("Failed to read command output");
-
-		if !addr_output.stdout.is_empty() {
-			println!("stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
-		}
-
-		if !addr_output.stderr.is_empty() {
-			eprintln!("stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
-		}
-		let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
-		let address = addr_output_str
-			.split_whitespace()
-			.find(|word| word.starts_with("0x"))
-			.expect("Failed to extract the Movement account address");
-
-		println!("Extracted address: {}", address);
-
 		let resource_output = Command::new("movement")
 			.args(&[
 				"account",
 				"derive-resource-account-address",
 				"--address",
-				address,
+				&self.native_address.to_string(),
 				"--seed",
 				&random_seed,
 			])
@@ -1180,10 +1184,10 @@ impl MovementClient {
 					format!(r#"admin = "{}""#, formatted_resource_address)
 				}
 				_ if line.starts_with("origin_addr = ") => {
-					format!(r#"origin_addr = "{}""#, address)
+					format!(r#"origin_addr = "{}""#, &self.native_address.to_string())
 				}
 				_ if line.starts_with("source_account = ") => {
-					format!(r#"source_account = "{}""#, address)
+					format!(r#"source_account = "{}""#, &self.native_address.to_string())
 				}
 				_ => line.to_string(),
 			})
@@ -1219,14 +1223,14 @@ impl MovementClient {
 		let new_dir = Path::new("../service");
 		env::set_current_dir(&new_dir).expect("Failed to change directory");
 
-		let output3 = Command::new("movement")
+		let script_output = Command::new("movement")
 			.args(&[
 				"move",
 				"run-script",
 				"--compiled-script-path",
-				"../move-modules/build/bridge-modules/bytecode_scripts/main.mv",
+				"../move-modules/build/bridge-modules/bytecode_scripts/update_bridge_operator.mv",
 				"--args",
-				&format!("address:{}", address),
+				&format!("address:{}", self.native_address.to_string()),
 				"--url",
 				"http://127.0.0.1:8080/"
 			])
@@ -1235,12 +1239,12 @@ impl MovementClient {
 			.output()
 			.expect("Failed to execute command");
 
-		if !output3.stdout.is_empty() {
-			eprintln!("Script stdout: {}", String::from_utf8_lossy(&output3.stdout));
+		if !script_output.stdout.is_empty() {
+			eprintln!("Script stdout: {}", String::from_utf8_lossy(&script_output.stdout));
 		}
 
-		if !output3.stderr.is_empty() {
-			eprintln!("Script stderr: {}", String::from_utf8_lossy(&output3.stderr));
+		if !script_output.stderr.is_empty() {
+			eprintln!("Script stderr: {}", String::from_utf8_lossy(&script_output.stderr));
 		}
 
 		let view_request = ViewRequest {
