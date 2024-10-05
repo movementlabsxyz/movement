@@ -142,10 +142,12 @@ pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyho
 	let mut process = Command::new("movement") //--network
 		.args(&[
 			"init",
+			"--network", 
+			"custom",
 			"--rest-url",
-			&config.mvt_rpc_connection_url(),
+			"http://127.0.0.1:30731",
 			"--faucet-url",
-			&config.mvt_faucet_connection_url(),
+			"http://127.0.0.1:30732",
 			"--assume-yes",
 		])
 		.stdin(Stdio::piped())
