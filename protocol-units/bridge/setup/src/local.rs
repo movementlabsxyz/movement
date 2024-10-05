@@ -139,47 +139,47 @@ pub async fn setup_movement_node(
 }
 
 pub fn init_local_movement_node(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
-	let mut process = Command::new("movement") //--network
-		.args(&[
-			"init",
-			"--network", 
-			"custom",
-			"--rest-url",
-			"http://127.0.0.1:30731",
-			"--faucet-url",
-			"http://127.0.0.1:30732",
-			"--assume-yes",
-		])
-		.stdin(Stdio::piped())
-		.stdout(Stdio::piped())
-		.stderr(Stdio::piped())
-		.spawn()
-		.expect("Failed to execute command");
+	let mut process = Command::new("movement")
+	.args(&["init"])
+	.stdin(Stdio::piped())
+	.stdout(Stdio::piped())
+	.stderr(Stdio::piped())
+	.spawn()
+	.expect("Failed to execute command");
 
+	let private_key_hex = hex::encode(config.movement_signer_key.to_bytes());
+	println!("Private key hex: {:?}\n", private_key_hex);
+	
 	let stdin: &mut std::process::ChildStdin =
 		process.stdin.as_mut().expect("Failed to open stdin");
 
-	stdin.write_all(b"local\n").expect("Failed to write to stdin");
+	let movement_dir = PathBuf::from(".movement");
 
-	let private_key_bytes = config.movement_signer_key.to_bytes();
-	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
+	if movement_dir.exists() {
+		stdin.write_all(b"yes\n").expect("Failed to write to stdin");
+	}
+	
+	stdin.write_all(b"custom\n").expect("Failed to write to stdin");
+	stdin.write_all(b"http://localhost:30731/v1\n").expect("Failed to write to stdin");
+	stdin.write_all(b"http://localhost:30732\n").expect("Failed to write to stdin");
 	let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
-
 	let addr_output = process.wait_with_output().expect("Failed to read command output");
+
 	if !addr_output.stdout.is_empty() {
-		println!("Move init Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+		println!("Address stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
 	}
 
 	if !addr_output.stderr.is_empty() {
-		eprintln!("Move init Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+		eprintln!("Address stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
 	}
 	let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
+
 	let address = addr_output_str
 		.split_whitespace()
 		.find(|word| word.starts_with("0x"))
 		.expect("Failed to extract the Movement account address");
 
-	println!("Publish Extracted address: {}", address);
+	println!("Extracted address: {}", address);
 
 	let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 	let resource_output = Command::new("movement")

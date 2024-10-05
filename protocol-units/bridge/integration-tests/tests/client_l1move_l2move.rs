@@ -66,7 +66,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
 	let config = Config::default();
-	let (mut mvt_client_harness, _config) = TestHarness::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarness::new_with_movement(config).await;
 
 	let args = EthToMovementCallArgs::default();
 
