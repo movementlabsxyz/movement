@@ -178,6 +178,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 	println!("Publish Extracted address: {}", address);
 
 	let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
+	println!("Publish random_seed: {}", random_seed);
 	let resource_output = Command::new("movement")
 		.args(&[
 			"account",
@@ -249,6 +250,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 		.lines()
 		.map(|line| match line {
 			_ if line.starts_with("resource_addr = ") => {
+				println!("Update resource_addr with :{formatted_resource_address}");
 				format!(r#"resource_addr = "{}""#, formatted_resource_address)
 			}
 			_ if line.starts_with("atomic_bridge = ") => {
@@ -278,10 +280,28 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 		.join("\n");
 
 	// Write the updated content back to Move.toml
-	let mut file =
-		fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
-	file.write_all(updated_content.as_bytes())
+	fs::write(&move_toml_path, updated_content.as_bytes())
 		.expect("Failed to write updated Move.toml file");
+
+	// let mut file =
+	// 	fs::File::create(&move_toml_path).expect("Failed to open Move.toml file for writing");
+	// file.write_all(updated_content.as_bytes())
+	// 	.expect("Failed to write updated Move.toml file");
+
+	println!(
+		"Publis args:{:?}",
+		&[
+			"move",
+			"create-resource-account-and-publish-package",
+			"--assume-yes",
+			"--address-name",
+			"moveth",
+			"--seed",
+			&random_seed,
+			"--package-dir",
+			move_toml_path.parent().unwrap().to_str().unwrap(),
+		]
+	);
 
 	println!("Publish Move.toml updated successfully.");
 
@@ -295,7 +315,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 			"--seed",
 			&random_seed,
 			"--package-dir",
-			move_toml_path.to_str().unwrap(),
+			move_toml_path.parent().unwrap().to_str().unwrap(),
 		])
 		.stdout(Stdio::piped())
 		.stderr(Stdio::piped())

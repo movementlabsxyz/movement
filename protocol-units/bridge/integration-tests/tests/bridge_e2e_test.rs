@@ -23,6 +23,7 @@ use bridge_service::types::AssetType;
 use bridge_service::types::BridgeAddress;
 use bridge_service::types::HashLock;
 use bridge_service::types::HashLockPreImage;
+use tokio_stream::StreamExt;
 use tracing_subscriber::EnvFilter;
 
 async fn start_bridge_local(config: &Config) -> Result<tokio::task::JoinHandle<()>, anyhow::Error> {
@@ -119,6 +120,43 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
+
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_movement_event() -> Result<(), anyhow::Error> {
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
+	let config = TestHarness::read_bridge_config().await?;
+
+	let mut one_stream = MovementMonitoring::build(&config.movement).await?;
+
+	//listen to event.
+	let mut error_counter = 0;
+	loop {
+		tokio::select! {
+			// Wait on chain one events.
+			Some(one_event_res) = one_stream.next() =>{
+				match one_event_res {
+					Ok(one_event) => {
+						println!("Receive event {:?}", one_event);
+					}
+					Err(err) => {
+						println!("Receive error {:?}", err);
+						error_counter +=1;
+						if error_counter > 5 {
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
 
 	Ok(())
 }

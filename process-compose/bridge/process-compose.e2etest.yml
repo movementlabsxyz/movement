@@ -5,7 +5,7 @@ environment:
 processes:
   bridge_e2e-tests:
     command: |
-      cargo test -p bridge-integration-tests test_bridge_transfer_eth_movement_happy_path -- --nocapture --test-threads=1
+      cargo test -p bridge-integration-tests test_movement_event -- --nocapture --test-threads=1 &> e2elocaltest.log
     depends_on:
       bridge:
         condition: process_healthy
