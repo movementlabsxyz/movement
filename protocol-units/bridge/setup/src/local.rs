@@ -112,6 +112,9 @@ pub async fn setup_movement_node(
 	setup_complete_rx.await.expect("Failed to receive setup completion signal");
 	println!("Movement node startup complete message received.");
 
+	// On some PC the Movement make more time to start. Wait a little.
+	std::thread::sleep(std::time::Duration::from_secs(7));
+
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 	let signer = LocalAccount::generate(&mut rng);
 	config.movement_signer_address = signer.private_key().clone();
