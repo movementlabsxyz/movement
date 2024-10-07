@@ -136,6 +136,12 @@
               grpcurl grpcui
 
               celestia-app celestia-node
+
+              # oh-my-zsh
+              zsh
+              oh-my-zsh
+              coreutils
+
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               Security CoreServices SystemConfiguration AppKit
             ]) ++ lib.optionals stdenv.isLinux (with pkgs; [
@@ -145,22 +151,44 @@
             LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
 
             shellHook = ''
-              #!/usr/bin/env ${pkgs.bash}
-
               DOT_MOVEMENT_PATH=$(pwd).movement
               mkdir -p $DOT_MOVEMENT_PATH
 
-              # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
-
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
-                 _  _   __   _  _  ____  _  _  ____  __ _  ____
-                ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
-                / \/ \(  O )\ \/ / ) _) / \/ \ ) _) /    /  )(
-                \_)(_/ \__/  \__/ (____)\_)(_/(____)\_)__) (__)
+                         _  _   __   _  _  ____  _  _  ____  __ _  ____
+                        ( \/ ) /  \ / )( \(  __)( \/ )(  __)(  ( \(_  _)
+                        / \/ \(  O )\ \/ / ) _) / \/ \ ) _) /    /  )(
+                        \_)(_/ \__/  \__/ (____)\_)(_/(____)\_)__) (__)
+
               EOF
 
               echo "Develop with Move Anywhere"
+
+              # Configure oh-my-zsh
+              export ZDOTDIR=$(pwd)
+              echo "export ZSH=${pkgs.oh-my-zsh}/share/oh-my-zsh" > $ZDOTDIR/.zshrc
+              echo "ZSH_THEME=\"robbyrussell\"" >> $ZDOTDIR/.zshrc
+              echo "plugins=(git)" >> $ZDOTDIR/.zshrc
+
+              cat <<'EOF' >> $ZDOTDIR/.zshrc
+                prompt_prefix() {
+                  if [[ $PROMPT != *"(mvmt-dev)"* ]]; then
+                    PROMPT="(mvmt-dev) $PROMPT"
+                  fi
+                }
+
+              autoload -Uz add-zsh-hook
+              add-zsh-hook precmd prompt_prefix
+              EOF
+
+              echo "source \$ZSH/oh-my-zsh.sh" >> $ZDOTDIR/.zshrc
+              echo "eval \$(dircolors -b)" >> $ZDOTDIR/.zshrc
+              echo "alias ls='${pkgs.coreutils}/bin/ls --color=auto'" >> $ZDOTDIR/.zshrc
+
+              # Start Zsh with this custom .zshrc
+              exec ${pkgs.zsh}/bin/zsh
+
             '';
           };
         };
