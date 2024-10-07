@@ -393,3 +393,59 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 	Ok(())
 }
+
+pub fn init_with_root_key(config: &mut MovementConfig) -> Result<(), anyhow::Error> {
+	println!("Start deploy_local_movement_node");
+	let mut process = Command::new("movement") //--network
+		.args(&[
+			"init",
+			"--network",
+			"custom",
+			"--rest-url",
+			"http://localhost:30731/v1",
+			"--faucet-url",
+			"http://localhost:30732",
+			"--private-key",
+			"0x5754431205b8abc443a7a877a70d6e5e67eba8e5e40b0436bff5a9b6ab4a7887",
+			"--assume-yes"
+		])
+		.stdin(Stdio::piped())
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.spawn()
+		.expect("Failed to execute command");
+
+	let stdin: &mut std::process::ChildStdin =
+		process.stdin.as_mut().expect("Failed to open stdin");
+
+	//	stdin.write_all(b"local\n").expect("Failed to write to stdin");
+
+	let private_key_bytes = config.movement_signer_key.to_bytes();
+	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
+	let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
+
+	let addr_output = process.wait_with_output().expect("Failed to read command output");
+	if !addr_output.stdout.is_empty() {
+		println!("Move init Publish stdout: {}", String::from_utf8_lossy(&addr_output.stdout));
+	}
+
+	if !addr_output.stderr.is_empty() {
+		eprintln!("Move init Publish stderr: {}", String::from_utf8_lossy(&addr_output.stderr));
+	}
+
+	let addr_output_str = String::from_utf8_lossy(&addr_output.stderr);
+	let address = addr_output_str
+		.split_whitespace()
+		.find(|word| word.starts_with("0x"))
+		.expect("Failed to extract the Movement account address")
+		.to_string();
+
+	println!("Publish Extracted address: {}", address);
+
+	config.movement_native_address = address.clone();
+
+	let current_dir = env::current_dir().expect("Failed to get current directory");
+	println!("Publish Current directory: {:?}", current_dir);
+
+	Ok(())
+}

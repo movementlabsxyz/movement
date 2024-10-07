@@ -54,13 +54,16 @@ impl MovementClient {
 	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
 		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
-
+		println!("Publish node_connection_url: {}", &node_connection_url);
+		println!("Publish config: {:?}", &config);
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let signer =
-			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
-				.await?;
+		let signer = LocalAccount::new(AccountAddress::from_hex_literal(&config.movement_native_address).unwrap(), config.movement_signer_key.clone(), 0);
+
+		println!("Publish signer: {:?}", &signer);
+
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
+		
 		Ok(MovementClient {
 			native_address,
 			non_native_address: Vec::new(), //dummy for now

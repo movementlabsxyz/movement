@@ -223,9 +223,9 @@ impl TestHarness {
 			.await
 			.expect("Failed to setup Movement config");
 
-		let test_hadness = HarnessMvtClient::build(&config).await;
+		let test_harness = HarnessMvtClient::build(&config).await;
 
-		(test_hadness, config, movement_process)
+		(test_harness, config, movement_process)
 	}
 
 	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {

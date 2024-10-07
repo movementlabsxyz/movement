@@ -35,6 +35,6 @@ pub async fn test_suzuka_setup(
 	let movement_task = Command::new("sleep")
 		.arg("10")  // Sleep for 10 seconds
 		.spawn()?;  // Spawn the process asynchronously
-	deploy::deploy_local_movement_node(&mut config.movement)?;
+	deploy::init_with_root_key(&mut config.movement)?;
 	Ok((config, movement_task))
 }
