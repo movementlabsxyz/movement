@@ -209,6 +209,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		amount: Amount, // the ETH amount
+		framework: bool 
 	) -> BridgeContractResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
@@ -242,6 +243,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
+		framework: bool 
 	) -> BridgeContractResult<()> {
 		// The Alloy generated type for smart contract`pre_image` arg is `FixedBytes<32>`
 		// so it must be converted to `[u8; 32]`.
@@ -274,6 +276,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
+		framework: bool 
 	) -> BridgeContractResult<()> {
 		// The Alloy generated type for smart contract`pre_image` arg is `FixedBytes<32>`
 		// so it must be converted to `[u8; 32]`.
@@ -305,6 +308,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn refund_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool 
 	) -> BridgeContractResult<()> {
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
@@ -329,6 +333,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
+		framework: bool 
 	) -> BridgeContractResult<()> {
 		let contract =
 			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
@@ -357,6 +362,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn abort_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool 
 	) -> BridgeContractResult<()> {
 		let contract =
 			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
@@ -377,6 +383,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn get_bridge_transfer_details_initiator(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool 
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 
@@ -410,6 +417,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool 
 	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 

@@ -111,7 +111,7 @@ pub async fn initiate_bridge_transfer_helper(
 
 	if timelock_modify {
 		// Set the timelock to 1 second for testing
-		movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
+		movement_client.initiator_set_timelock(1, false).await.expect("Failed to set timelock");
 	}
 
 	// Mint MovETH to the initiator's address
@@ -148,6 +148,7 @@ pub async fn initiate_bridge_transfer_helper(
 			BridgeAddress(recipient_address),
 			HashLock(MovementHash(hash_lock).0),
 			Amount(AssetType::Moveth(amount)),
+			false
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

@@ -63,7 +63,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -121,7 +121,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -145,7 +145,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
 			HashLockPreImage(padded_secret),
-			false
+			true
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
@@ -153,7 +153,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -206,7 +206,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -227,7 +227,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		BridgeContract::refund_bridge_transfer(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
@@ -235,7 +235,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")

@@ -96,7 +96,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 				BridgeAddress(args.initiator.clone()),
 				BridgeAddress(args.recipient.clone().into()),
 				Amount(AssetType::Moveth(args.amount)),
-				false
+				true
 			)
 			.await
 			.expect("Failed to lock bridge transfer");
@@ -107,7 +107,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -132,7 +132,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(args.bridge_transfer_id.0),
 			HashLockPreImage(padded_secret),
-			false
+			true
 		)
 		.await
 		.expect("Failed to complete bridge transfer");
@@ -140,7 +140,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(args.bridge_transfer_id.0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -198,7 +198,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		// Set the timelock to 1 second for testing
 		mvt_client_harness
 			.movement_client
-			.counterparty_set_timelock(1, false)
+			.counterparty_set_timelock(1, true)
 			.await
 			.expect("Failed to set timelock");
 
@@ -210,7 +210,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 				BridgeAddress(args.initiator.clone()),
 				BridgeAddress(args.recipient.clone()),
 				Amount(AssetType::Moveth(args.amount)),
-				false
+				true
 			)
 			.await
 			.expect("Failed to lock bridge transfer");
@@ -221,7 +221,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -244,14 +244,15 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.movement_client
 			.abort_bridge_transfer(
 				BridgeTransferId(args.bridge_transfer_id.0), 
-				false)
+				true
+			)
 			.await
 			.expect("Failed to complete bridge transfer");
 
 		let abort_details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(args.bridge_transfer_id.0),
-			false
+			true
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
@@ -349,7 +350,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((1, 0))), // Eth
-			false
+			true
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -379,7 +380,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((0, 1))),
-			false
+			true
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -409,7 +410,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((1, 1))),
-			false
+			true
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -433,7 +434,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
-			false
+			true
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -463,7 +464,7 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 			BridgeAddress(recipient_bytes),
 			HashLock(EthHash(hash_lock).0),
 			Amount(AssetType::EthAndWeth((42, 0))),
-			false
+			true
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

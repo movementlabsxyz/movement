@@ -119,33 +119,39 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		recipient_address: BridgeAddress<Vec<u8>>,
 		hash_lock: HashLock,
 		amount: Amount,
+		framework: bool
 	) -> BridgeContractResult<()>;
 
 	async fn initiator_complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		secret: HashLockPreImage,
+		framework: bool
 	) -> BridgeContractResult<()>;
 
 	async fn counterparty_complete_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 		secret: HashLockPreImage,
+		framework: bool
 	) -> BridgeContractResult<()>;
 
 	async fn refund_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool
 	) -> BridgeContractResult<()>;
 
 	async fn get_bridge_transfer_details_initiator(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool
 	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
 
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool
 	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
 
 	async fn lock_bridge_transfer(
@@ -155,11 +161,13 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 		initiator: BridgeAddress<Vec<u8>>,
 		recipient: BridgeAddress<A>,
 		amount: Amount,
+		framework: bool
 	) -> BridgeContractResult<()>;
 
 	async fn abort_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
+		framework: bool
 	) -> BridgeContractResult<()>;
 }
 
