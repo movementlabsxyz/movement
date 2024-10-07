@@ -90,7 +90,7 @@ pub async fn create_fake_signed_transaction(
 		ChainId::new(chain_id),
 	);
 
-	let raw_txn = transaction_builder
+	let raw_transaction = transaction_builder
 		.sender(from_account.address())
 		.sequence_number(sequence_number)
 		.max_gas_amount(max_gas_amount)
@@ -99,12 +99,12 @@ pub async fn create_fake_signed_transaction(
 		.chain_id(ChainId::new(chain_id))
 		.build();
 
-	let signed_txn = from_account.sign_transaction(raw_txn);
+	let signed_transaction = from_account.sign_transaction(raw_transaction);
 
-	Ok(signed_txn)
+	Ok(signed_transaction)
 }
 
-pub async fn test_sending_failed_tx() -> Result<(), anyhow::Error> {
+pub async fn test_sending_failed_transaction() -> Result<(), anyhow::Error> {
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone());
 	let coin_client = CoinClient::new(&rest_client);
@@ -248,7 +248,10 @@ pub async fn test_sending_failed_tx() -> Result<(), anyhow::Error> {
 	.await?;
 
 	match rest_client.submit(&transaction).await {
-		Ok(_) => panic!("Transaction should have failed with high sequence number"),
+		Ok(res) => panic!(
+			"Transaction should have failed with high sequence number. Instead got: {:?}",
+			res
+		),
 		Err(e) => match e {
 			suzuka_client::rest_client::error::RestError::Api(aptos_error) => {
 				println!("Transaction failed as expected: {:?}", aptos_error);
@@ -263,6 +266,6 @@ pub async fn test_sending_failed_tx() -> Result<(), anyhow::Error> {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	test_sending_failed_tx().await?;
+	test_sending_failed_transaction().await?;
 	Ok(())
 }

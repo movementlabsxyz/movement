@@ -143,7 +143,7 @@ impl TransactionPipe {
 		let used_sequence_number = self
 			.used_sequence_number_pool
 			.get_sequence_number(&transaction.sender())
-			.unwrap_or(transaction.sequence_number());
+			.unwrap_or(0);
 
 		// validate against the state view
 		let state_view = self.db_reader.latest_state_checkpoint_view().map_err(|e| {
@@ -154,7 +154,7 @@ impl TransactionPipe {
 		let committed_sequence_number =
 			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
 
-		let min_sequence_number = used_sequence_number.max(committed_sequence_number);
+		let min_sequence_number = (used_sequence_number + 1).max(committed_sequence_number);
 
 		let max_sequence_number = committed_sequence_number + TOO_NEW_TOLERANCE;
 
@@ -166,7 +166,7 @@ impl TransactionPipe {
 		);
 
 		if transaction.sequence_number() < min_sequence_number {
-			println!("Transaction sequence number too old: {:?}", transaction.sequence_number());
+			info!("Transaction sequence number too old: {:?}", transaction.sequence_number());
 			return Ok(SequenceNumberValidity::Invalid((
 				MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber),
 				Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD),
@@ -174,7 +174,7 @@ impl TransactionPipe {
 		}
 
 		if transaction.sequence_number() > max_sequence_number {
-			println!("Transaction sequence number too new: {:?}", transaction.sequence_number());
+			info!("Transaction sequence number too new: {:?}", transaction.sequence_number());
 			return Ok(SequenceNumberValidity::Invalid((
 				MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber),
 				Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW),
@@ -237,6 +237,7 @@ impl TransactionPipe {
 			MempoolStatusCode::Accepted => {
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
+				let transaction_sequence_number = transaction.sequence_number();
 				self.transaction_sender
 					.send(transaction)
 					.await
@@ -246,9 +247,13 @@ impl TransactionPipe {
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 
 				// update the used sequence number pool
+				info!(
+					"Setting used sequence number for {:?} to {:?}",
+					sender, transaction_sequence_number
+				);
 				self.used_sequence_number_pool.set_sequence_number(
 					&sender,
-					sequence_number,
+					transaction_sequence_number,
 					chrono::Utc::now().timestamp_millis() as u64,
 				);
 			}
@@ -428,7 +433,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 
@@ -481,12 +486,23 @@ mod tests {
 		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
+		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
+		let user_transaction = create_signed_transaction(5, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		// submit a transaction with the same sequence number as the previous one
+		let user_transaction = create_signed_transaction(5, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+
 		Ok(())
 	}
 
+	#[tokio::test]
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 
 		#[allow(unreachable_code)]

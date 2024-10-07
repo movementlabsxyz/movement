@@ -1,5 +1,6 @@
 use aptos_types::account_address::AccountAddress;
 use std::collections::{BTreeMap, HashMap};
+use tracing::info;
 
 pub struct UsedSequenceNumberPool {
 	/// The number of milliseconds a sequence number is valid for.
@@ -80,6 +81,12 @@ impl UsedSequenceNumberPool {
 			.map(|(slot, _)| *slot)
 			.collect();
 		for slot in slots_to_remove {
+			println!(
+				"Garbage collecting sequence number slot {} with duration {} timestamp {}",
+				slot,
+				self.gc_slot_duration_ms,
+				slot * self.gc_slot_duration_ms
+			);
 			self.sequence_number_lifetimes.remove(&slot);
 		}
 	}
