@@ -56,22 +56,13 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
-
-		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
-		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			true
-		)
-		.await
-		.expect("Failed to get bridge transfer details")
-		.expect("Expected to find bridge transfer details, but got None");
+			
+		let details= test_utils::extract_bridge_transfer_details(&mut mvt_client_harness.movement_client)
+		.await?.unwrap();
 
 		test_utils::assert_bridge_transfer_details(
 			&details,
-			MovementHash(bridge_transfer_id).0,
+			details.bridge_transfer_id.0,
 			MovementHash(args.hash_lock.0).0,
 			sender_address,
 			args.recipient.clone(),

@@ -8,6 +8,8 @@ use crate::types::{
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BridgeContractError {
+	#[error("Failed to find event")]
+	EventNotFound,
 	#[error("Failed to extract transfer Id")]
 	TransferIdExtractionError,
 	#[error("Failed to mint")]

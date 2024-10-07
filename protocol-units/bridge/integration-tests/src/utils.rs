@@ -10,7 +10,8 @@ use bridge_service::chains::movement::client::MovementClient;
 use bridge_service::chains::movement::utils::{
 	self as movement_utils, MovementAddress, MovementHash,
 };
-use bridge_service::types::{Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock};
+use bridge_service::chains::bridge_contracts::BridgeContractResult;
+use bridge_service::types::{Amount, AssetType, BridgeAddress, BridgeTransferId, BridgeTransferDetails, HashLock, TimeLock};
 use tracing::debug;
 
 pub fn assert_bridge_transfer_details(
@@ -28,6 +29,99 @@ pub fn assert_bridge_transfer_details(
 	assert_eq!(details.recipient_address.0, expected_recipient_address);
 	assert_eq!(details.amount.0, AssetType::Moveth(expected_amount));
 	assert_eq!(details.state, expected_state, "Bridge transfer state mismatch.");
+}
+
+pub async fn extract_bridge_transfer_details(
+	movement_client: &mut MovementClient,
+) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
+	let sender_address = movement_client.signer().address();
+	let sequence_number = 0; // Modify as needed
+	let rest_client = movement_client.rest_client();
+
+	let transactions = rest_client
+		.get_account_transactions(sender_address, Some(sequence_number), Some(20))
+		.await
+		.map_err(|e| BridgeContractError::CallError)?;
+
+	// Loop through the transactions to find the one with the event we need
+	if let Some(transaction) = transactions.into_inner().last() {
+		if let Transaction::UserTransaction(user_txn) = transaction {
+			for event in &user_txn.events {
+				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
+					&event.typ
+				{
+					match struct_tag.name.as_str() {
+						"BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
+							// Extract the bridge_transfer_id from the event data
+							let bridge_transfer_id = event
+								.data
+								.get("bridge_transfer_id")
+								.and_then(|v| v.as_str())
+								.ok_or(BridgeContractError::EventNotFound)?;
+
+							let recipient = event
+								.data
+								.get("recipient")
+								.and_then(|v| v.as_str())
+								.ok_or(BridgeContractError::EventNotFound)?;
+
+							let amount = event
+								.data
+								.get("amount")
+								.and_then(|v| v.as_u64())
+								.ok_or(BridgeContractError::EventNotFound)?;
+
+							let hash_lock = event
+								.data
+								.get("hash_lock")
+								.and_then(|v| v.as_str())
+								.ok_or(BridgeContractError::EventNotFound)?;
+
+							let time_lock = event
+								.data
+								.get("time_lock")
+								.and_then(|v| v.as_u64())
+								.ok_or(BridgeContractError::EventNotFound)?;
+
+							// Decode and convert the event values into their expected types
+							let decoded_bridge_transfer_id: [u8; 32] = hex::decode(bridge_transfer_id.trim_start_matches("0x"))
+								.map_err(|_| BridgeContractError::SerializationError)?
+								.try_into()
+								.map_err(|_| BridgeContractError::SerializationError)?;
+
+							let decoded_recipient = hex::decode(recipient.trim_start_matches("0x"))
+								.map_err(|_| BridgeContractError::SerializationError)?;
+
+							let decoded_hash_lock: [u8; 32] = hex::decode(hash_lock.trim_start_matches("0x"))
+								.map_err(|_| BridgeContractError::SerializationError)?
+								.try_into()
+								.map_err(|_| BridgeContractError::SerializationError)?;
+
+							// Convert the sender (initiator) address to `AccountAddress`
+							let originator_address = AccountAddress::from_hex_literal(&sender_address.to_string())
+								.map_err(|_| BridgeContractError::SerializationError)?;
+
+							// Construct the `BridgeTransferDetails` struct
+							let details = BridgeTransferDetails {
+								bridge_transfer_id: BridgeTransferId(decoded_bridge_transfer_id),
+								initiator_address: BridgeAddress(MovementAddress(originator_address)),
+								recipient_address: BridgeAddress(decoded_recipient),
+								amount: Amount(AssetType::Moveth(amount)),
+								hash_lock: HashLock(decoded_hash_lock),
+								time_lock: TimeLock(time_lock),
+								state: 1, // Default state, can be adjusted
+							};
+
+							return Ok(Some(details));
+						}
+						_ => {}
+					}
+				}
+			}
+		}
+	}
+
+	Err(BridgeContractError::EventNotFound)
 }
 
 pub async fn extract_bridge_transfer_id(
