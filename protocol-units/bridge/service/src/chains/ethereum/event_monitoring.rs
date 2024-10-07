@@ -14,7 +14,7 @@ use std::task::Poll;
 use tokio::select;
 
 use super::client::Config;
-use super::types::{EthAddress, INITIATOR_INITIATED_SELECT};
+use super::types::{EthAddress, INITIATOR_COMPLETED_SELECT, INITIATOR_INITIATED_SELECT};
 
 type Topics = [FilterSet<FixedBytes<32>>; 4];
 
@@ -59,21 +59,22 @@ async fn poll_initiator_contract(
 	client: &ReqwestClient,
 	contract_address: Address,
 ) -> BridgeContractResult<Vec<BridgeContractEvent<EthAddress>>> {
-	let topics = [
+	let initiated_topics = [
 		FilterSet::from(INITIATOR_INITIATED_SELECT), // Topic 0: Event signature (BridgeTransferInitiated)
 		FilterSet::default(),                        // Topic 1: No filtering for _bridgeTransferId
 		FilterSet::default(),                        // Topic 2: No filtering for _originator
 		FilterSet::default(),                        // Topic 3: No filtering for _recipient
 	];
 
-	let filter = Filter {
+	let initiated_filter = Filter {
 		//TODO: to replace with correct blockheight range
 		block_option: FilterBlockOption::Range { from_block: None, to_block: None },
 		address: FilterSet::from(contract_address),
-		topics: topics.clone(),
+		topics: initiated_topics.clone(),
 	};
+
 	let logs: Vec<Log> = client
-		.request("eth_getLogs", vec![filter])
+		.request("eth_getLogs", vec![initiated_filter])
 		.await
 		.map_err(|e| BridgeContractError::OnChainError(format!("Failed to fetch logs: {}", e)))?;
 
@@ -81,8 +82,27 @@ async fn poll_initiator_contract(
 
 	// Iterate over the logs and decode each one into a BridgeContractEvent
 	for log in logs {
-		if let Ok(event_data) = decode_initiator_initiated(&log.data, &topics) {
+		if let Ok(event_data) = decode_initiator_initiated(&log.data, &initiated_topics) {
 			let event = BridgeContractEvent::Initiated(event_data);
+			events.push(event);
+		}
+	}
+
+	// let completed_topics = [
+	// 	FilterSet::from(INITIATOR_COMPLETED_SELECT), // Topic 0: Event signature (BridgeTransferInitiated)
+	// 	FilterSet::default(),                        // Topic 1: No filtering for _bridgeTransferId
+	// 	FilterSet::default(),                        // Topic 2: No filtering for _originator
+	// 	FilterSet::default(),                        // Topic 3: No filtering for _recipient
+	// ];
+	//
+	let logs: Vec<Log> = client
+		.request("eth_getLogs", vec![initiated_filter])
+		.await
+		.map_err(|e| BridgeContractError::OnChainError(format!("Failed to fetch logs: {}", e)))?;
+
+	for log in logs {
+		if let Ok(event_data) = decode_initiator_completed(&log.data) {
+			let event = BridgeContractEvent::InitiatorCompleted(event_data);
 			events.push(event);
 		}
 	}
@@ -124,50 +144,51 @@ fn decode_initiator_initiated(
 	log_data: &LogData,
 	topics: &Topics,
 ) -> BridgeContractResult<BridgeTransferDetails<EthAddress>> {
-	let coerce_bytes = |bytes: &[u8]| -> [u8; 32] {
+	let coerce_bytes = |bytes: &[u8; 32]| -> [u8; 32] {
 		let mut array = [0u8; 32];
 		array.copy_from_slice(bytes);
 		array
 	};
 
-	let bridge_transfer_id = topics
-		.get(1)
-		.map(|t| coerce_bytes(t.as_bytes()))
+	let bridge_transfer_id = topics[1]
+		.iter()
+		.next() // Get the first element (if any)
+		.map(|fixed_bytes| BridgeTransferId((*fixed_bytes).into()))
 		.ok_or_else(|| BridgeContractError::ConversionFailed("BridgeTransferId".to_string()))?;
 
-	let initiator_address = topics
-		.get(2)
-		.map(|t| EthAddress(Address::from_slice(t.as_bytes())))
+	let initiator_address = topics[2]
+		.iter()
+		.next() // Get the first element (if any)
+		.map(|fixed_bytes| EthAddress(Address::from_slice(fixed_bytes.as_ref()))) // Convert to EthAddress
 		.ok_or_else(|| BridgeContractError::ConversionFailed("InitiatorAddress".to_string()))?;
 
-	let recipient_address = topics
-		.get(3)
-		.map(|t| coerce_bytes(t.as_bytes()))
+	// Decode `recipient_address` from topics (Topic 3)
+	let recipient_address = topics[3]
+		.iter()
+		.next() // Get the first element (if any)
+		.map(|fixed_bytes| EthAddress(Address::from_slice(fixed_bytes.as_ref()))) // Convert to EthAddress
 		.ok_or_else(|| BridgeContractError::ConversionFailed("RecipientAddress".to_string()))?;
+	// Decode non-indexed parameters (data) from `log_data`
+	let (amount, hash_lock, time_lock): (Amount, HashLock, TimeLock) = decode(&log_data.data)
+		.map_err(|err| {
+			BridgeContractError::OnChainError(format!("Failed to decode log data: {}", err))
+		})?;
 
-	let timelock = topics
-		.get(4)
-		.as_u64()
-		.ok_or_else(|| BridgeContractError::ConversionFailed("TimeLock".to_string()))?;
-
-	let decoded_data: [u8; 32] = coerce_bytes(&log_data);
-
+	// Construct the `BridgeTransferDetails` struct
 	let details = BridgeTransferDetails {
-		bridge_transfer_id: BridgeTransferId(bridge_transfer_id),
+		bridge_transfer_id,
 		initiator_address: BridgeAddress(initiator_address),
-		recipient_address: BridgeAddress(recipient_address.to_vec()),
-		hash_lock: HashLock(decoded_data),
-		time_lock: 0, // You'll want to decode this as per your contract structure
-		amount: 0,    // You'll want to decode this as per your contract structure
-		state: 0,     // Add state decoding logic here if necessary
+		recipient_address,
+		hash_lock,
+		time_lock,
+		amount,
+		state: 0, // Set default state or apply custom logic if needed
 	};
 
-	Ok(BridgeContractEvent::Initiated(details))
+	Ok(details)
 }
 
-fn decode_initiator_completed(
-	log_data: Vec<u8>,
-) -> BridgeContractResult<BridgeContractEvent<EthAddress>> {
+fn decode_initiator_completed(log_data: &LogData) -> BridgeContractResult<BridgeTransferId> {
 	let coerce_bytes = |bytes: &[u8]| -> [u8; 32] {
 		let mut array = [0u8; 32];
 		array.copy_from_slice(bytes);

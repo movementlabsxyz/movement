@@ -78,7 +78,7 @@ pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
 pub enum BridgeContractEvent<A> {
 	Initiated(BridgeTransferDetails<A>),
 	Locked(LockDetails<A>),
-	InitialtorCompleted(BridgeTransferId),
+	InitiatorCompleted(BridgeTransferId),
 	CounterPartCompleted(BridgeTransferId, HashLockPreImage),
 	Cancelled(BridgeTransferId),
 	Refunded(BridgeTransferId),
@@ -89,7 +89,7 @@ impl<A> BridgeContractEvent<A> {
 		match self {
 			Self::Initiated(details) => details.bridge_transfer_id,
 			Self::Locked(details) => details.bridge_transfer_id,
-			Self::InitialtorCompleted(id)
+			Self::InitiatorCompleted(id)
 			| Self::CounterPartCompleted(id, _)
 			| Self::Cancelled(id)
 			| Self::Refunded(id) => *id,
