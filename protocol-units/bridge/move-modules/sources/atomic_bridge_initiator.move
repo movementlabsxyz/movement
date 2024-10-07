@@ -379,7 +379,7 @@ module atomic_bridge::atomic_bridge_initiator {
         let hash_lock = b"hash_lock_value";
         let amount = 1000;
 
-        // Do not mint tokens to sender; sender has no MovETH
+        // Do not mint tokens to sender; sender has no moveth
 
         initiate_bridge_transfer(
             sender,

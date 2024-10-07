@@ -473,7 +473,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         origin_account: &signer,
         resource_addr: signer,
         aptos_framework: signer,
-        moveth: &signer,
+        moveth: &signer
     ) acquires BridgeConfig {
         set_up_test(origin_account, &resource_addr);
         timestamp::set_time_has_started_for_testing(&aptos_framework);
