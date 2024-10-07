@@ -486,7 +486,6 @@ mod tests {
 		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
-<<<<<<< HEAD
 		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
 		let user_transaction = create_signed_transaction(5, &maptos_config);
 		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
@@ -501,11 +500,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-=======
-		Ok(())
-	}
-
->>>>>>> l-monninger/high-sequence-number-dos
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
