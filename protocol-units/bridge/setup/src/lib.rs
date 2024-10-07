@@ -1,5 +1,6 @@
 use alloy::node_bindings::AnvilInstance;
 use bridge_config::Config;
+use tokio::process::Command;
 
 pub mod deploy;
 pub mod local;
@@ -24,6 +25,16 @@ pub async fn test_mvt_setup(
 	mut config: Config,
 ) -> Result<(Config, tokio::process::Child), anyhow::Error> {
 	let movement_task = local::setup_movement_node(&mut config.movement).await?;
+	deploy::deploy_local_movement_node(&mut config.movement)?;
+	Ok((config, movement_task))
+}
+
+pub async fn test_suzuka_setup(
+	mut config: Config,
+) -> Result<(Config, tokio::process::Child), anyhow::Error> {
+	let movement_task = Command::new("sleep")
+		.arg("10")  // Sleep for 10 seconds
+		.spawn()?;  // Spawn the process asynchronously
 	deploy::deploy_local_movement_node(&mut config.movement)?;
 	Ok((config, movement_task))
 }

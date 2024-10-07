@@ -216,6 +216,18 @@ impl TestHarness {
 		(test_hadness, config, movement_process)
 	}
 
+	pub async fn new_with_suzuka(
+		config: Config,
+	) -> (HarnessMvtClient, Config, tokio::process::Child) {
+		let (config, movement_process) = bridge_setup::test_suzuka_setup(config)
+			.await
+			.expect("Failed to setup Movement config");
+
+		let test_hadness = HarnessMvtClient::build(&config).await;
+
+		(test_hadness, config, movement_process)
+	}
+
 	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {
 		let (config, anvil) = bridge_setup::test_eth_setup(config)
 			.await

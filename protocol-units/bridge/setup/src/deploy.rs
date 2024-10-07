@@ -138,7 +138,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 		.args(&[
 			"init",
 			"--network",
-			&config.mvt_init_network,
+			"custom",
 			"--rest-url",
 			&config.mvt_rpc_connection_url(),
 			"--faucet-url",
@@ -156,7 +156,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 	//	stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-	let private_key_bytes = config.movement_signer_address.to_bytes();
+	let private_key_bytes = config.movement_signer_key.to_bytes();
 	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
 	let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
 

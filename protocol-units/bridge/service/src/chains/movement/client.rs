@@ -58,7 +58,7 @@ impl MovementClient {
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let signer =
-			utils::create_local_account(config.movement_signer_address.clone(), &rest_client)
+			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
 				.await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClient {
