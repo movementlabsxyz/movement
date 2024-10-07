@@ -53,6 +53,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			args.hash_lock.0,
 			args.amount,
 			true,
+			false
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -111,6 +112,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 			args.hash_lock.0,
 			args.amount,
 			true,
+			false
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -196,6 +198,7 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 			args.hash_lock.0,
 			args.amount,
 			true,
+			false
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");

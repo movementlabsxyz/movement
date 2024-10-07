@@ -199,6 +199,7 @@ pub async fn initiate_bridge_transfer_helper(
 	hash_lock: [u8; 32],
 	amount: u64,
 	timelock_modify: bool,
+	framework: bool
 ) -> Result<(), BridgeContractError> {
 	// Publish for test
 	let _ = movement_client.publish_for_test();
@@ -242,7 +243,7 @@ pub async fn initiate_bridge_transfer_helper(
 			BridgeAddress(recipient_address),
 			HashLock(MovementHash(hash_lock).0),
 			Amount(AssetType::Moveth(amount)),
-			false
+			framework
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
