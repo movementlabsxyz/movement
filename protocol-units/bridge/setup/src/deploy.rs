@@ -140,10 +140,12 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 			"--network",
 			"custom",
 			"--rest-url",
-			&config.mvt_rpc_connection_url(),
+			"http://localhost:30731/v1",
 			"--faucet-url",
-			&config.mvt_faucet_connection_url(),
-			"--assume-yes",
+			"http://localhost:30732",
+			"--private-key",
+			"0x5754431205b8abc443a7a877a70d6e5e67eba8e5e40b0436bff5a9b6ab4a7887",
+			"--assume-yes"
 		])
 		.stdin(Stdio::piped())
 		.stdout(Stdio::piped())

@@ -4,9 +4,9 @@ use serde::{Deserialize, Serialize};
 
 const DEFAULT_MOVEMENT_NATIVE_ADDRESS: &str = "0xface";
 const DEFAULT_MVT_RPC_CONNECTION_HOSTNAME: &str = "127.0.0.1";
-const DEFAULT_MVT_RPC_CONNECTION_PORT: u16 = 8080;
+const DEFAULT_MVT_RPC_CONNECTION_PORT: u16 = 30731;
 const DEFAULT_MVT_FAUCET_CONNECTION_HOSTNAME: &str = "127.0.0.1";
-const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
+const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 30732;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
@@ -95,7 +95,7 @@ env_default!(default_mvt_init_network, "MVT_FAUCET_INIT_NETWORK", String, "local
 impl MovementConfig {
 	pub fn mvt_rpc_connection_url(&self) -> String {
 		format!(
-			"{}://{}:{}",
+			"{}://{}:{}/v1",
 			self.mvt_rpc_connection_protocol,
 			self.mvt_rpc_connection_hostname,
 			self.mvt_rpc_connection_port
