@@ -12,6 +12,7 @@ use crate::types::HashLock;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
 use anyhow::Result;
+use aptos_sdk::rest_client::aptos_api_types::VersionedEvent;
 use aptos_sdk::rest_client::Response;
 use aptos_types::contract_event::EventWithVersion;
 use bridge_config::common::movement::MovementConfig;
@@ -41,7 +42,12 @@ impl MovementMonitoring {
 			async move {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
-					let mut init_event_list = match pool_initiator_contract(&mvt_client).await {
+					let mut init_event_list = match pool_initiator_contract(
+						&mvt_client,
+						&config.mvt_rpc_connection_url(),
+					)
+					.await
+					{
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
@@ -98,26 +104,44 @@ struct CounterpartyCompletedDetails {
 
 async fn pool_initiator_contract(
 	client: &MovementClient,
+	rest_url: &str,
 ) -> BridgeContractResult<Vec<BridgeContractEvent<MovementAddress>>> {
 	let rest_client = client.rest_client();
 	let struct_tag = format!(
-		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
+		"{}::atomic_bridge_initiator::BridgeTransferStore",
 		client.native_address.to_standard_string(),
 	);
 
 	// Get initiated events
-	let initiated_response = rest_client
-		.get_account_events_bcs(
-			client.native_address,
-			struct_tag.as_str(),
-			"bridge_transfer_initiated_events",
-			Some(1),
-			None,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::OnChainError(format!("MVT bridge_transfer_initiated_events:{}", e))
-		})?;
+	let initiated_events = get_account_events(
+		rest_url,
+		client.native_address.to_standard_string(),
+		&struct_tag,
+		"bridge_transfer_initiated_events",
+	)
+	.await
+	.map_err(|e| {
+		BridgeContractError::OnChainError(format!("MVT bridge_transfer_initiated_events:{}", e))
+	})?
+	.into_iter()
+	.map(|e| {
+		let transfer_details = bcs::from_bytes::<BridgeTransferDetails<MovementAddress>>(e.data)?;
+		Ok(BridgeContractEvent::Initiated(transfer_details))
+	})
+	.collect();
+
+	// let initiated_response = rest_client
+	// 	.get_account_events_bcs(
+	// 		client.native_address,
+	// 		struct_tag.as_str(),
+	// 		"bridge_transfer_initiated_events",
+	// 		Some(1),
+	// 		None,
+	// 	)
+	// 	.await
+	// 	.map_err(|e| {
+	// 		BridgeContractError::OnChainError(format!("MVT bridge_transfer_initiated_events:{}", e))
+	// 	})?;
 	// Get completed events
 	let completed_response = rest_client
 		.get_account_events_bcs(
@@ -145,15 +169,15 @@ async fn pool_initiator_contract(
 			BridgeContractError::OnChainError(format!("MVT bridge_transfer_refunded_events:{}", e))
 		})?;
 	// Process responses and yield events
-	let initiated_events =
-		process_initiator_response(initiated_response, InitiatorEventKind::Initiated).map_err(
-			|e| {
-				BridgeContractError::OnChainError(format!(
-					"MVT process_initiator_response(initiated_response):{}",
-					e
-				))
-			},
-		)?;
+	// let initiated_events =
+	// 	process_initiator_response(initiated_response, InitiatorEventKind::Initiated).map_err(
+	// 		|e| {
+	// 			BridgeContractError::OnChainError(format!(
+	// 				"MVT process_initiator_response(initiated_response):{}",
+	// 				e
+	// 			))
+	// 		},
+	// 	)?;
 
 	let completed_events =
 		process_initiator_response(completed_response, InitiatorEventKind::Completed).map_err(
@@ -189,7 +213,7 @@ async fn pool_counterpart_contract(
 	let rest_client = client.rest_client();
 
 	let struct_tag = format!(
-		"{}::atomic_bridge_counterpary::BridgeCounterpartyEvents",
+		"{}::atomic_bridge_counterparty::BridgeTransferStore",
 		client.native_address.to_standard_string()
 	);
 
@@ -198,46 +222,47 @@ async fn pool_counterpart_contract(
 		.get_account_events_bcs(
 			client.native_address,
 			struct_tag.as_str(),
-			"bridge_transfer_assets_locked",
+			"bridge_transfer_locked_events",
 			Some(1),
 			None,
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!("MVT bridge_transfer_assets_locked:{}", e))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_locked_events:{}", e))
 		})?;
+	println!("ICI {locked_response:?}",);
 	// Get completed events
 	let completed_response = rest_client
 		.get_account_events_bcs(
 			client.native_address,
 			struct_tag.as_str(),
-			"bridge_transfer_completed",
+			"bridge_transfer_completed_events",
 			Some(1),
 			None,
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!("MVT bridge_transfer_completed:{}", e))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_completed_events:{}", e))
 		})?;
 	// Get cancelled events
 	let cancelled_response = rest_client
 		.get_account_events_bcs(
 			client.native_address,
 			struct_tag.as_str(),
-			"bridge_transfer_cancelled",
+			"bridge_transfer_cancelled_events",
 			Some(1),
 			None,
 		)
 		.await
 		.map_err(|e| {
-			BridgeContractError::OnChainError(format!("MVT bridge_transfer_cancelled:{}", e))
+			BridgeContractError::OnChainError(format!("MVT bridge_transfer_cancelled_events:{}", e))
 		})?;
 	// Process responses and return results
 	let locked_events =
 		process_counterparty_response(locked_response, CounterpartyEventKind::Locked).map_err(
 			|e| {
 				BridgeContractError::OnChainError(format!(
-					"MVT process_initiator_response(locked_response):{}",
+					"MVT process_counterpart_response(locked_response):{}",
 					e
 				))
 			},
@@ -247,7 +272,7 @@ async fn pool_counterpart_contract(
 		process_counterparty_response(completed_response, CounterpartyEventKind::Completed)
 			.map_err(|e| {
 				BridgeContractError::OnChainError(format!(
-					"MVT process_initiator_response(completed_response):{}",
+					"MVT process_counterpart_response(completed_response):{}",
 					e
 				))
 			})?;
@@ -256,7 +281,7 @@ async fn pool_counterpart_contract(
 		process_counterparty_response(cancelled_response, CounterpartyEventKind::Cancelled)
 			.map_err(|e| {
 				BridgeContractError::OnChainError(format!(
-					"MVT process_initiator_response(cancelled_response):{}",
+					"MVT process_counterpart_response(cancelled_response):{}",
 					e
 				))
 			})?;
@@ -278,6 +303,7 @@ fn process_initiator_response(
 		.into_iter()
 		.map(|e| {
 			let data = e.event.event_data();
+			println!("ICI locked_response: {:?}", data);
 			match kind {
 				InitiatorEventKind::Initiated => {
 					let transfer_details =
@@ -326,4 +352,44 @@ fn process_counterparty_response(
 			}
 		})
 		.collect()
+}
+
+// Example of return string.
+// [
+//     {
+//         "version": "25",
+//         "guid":
+//         {
+//             "creation_number": "5",
+//             "account_address": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6"
+//         },
+//         "sequence_number": "0",
+//         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::atomic_bridge_initiator::BridgeTransferInitiatedEvent",
+//         "data":
+//         {
+//             "amount": "100",
+//             "bridge_transfer_id": "0xeaefd189df98d57b8f4619584cff1fd67f2787c664ac8e9761ecfd7a6ae1fa2b",
+//             "hash_lock": "0xfb54fb738082d0214980feb4055e779d7d4722cb0809d5fbe79df8117801c3bb",
+//             "originator": "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+//             "recipient": "0x3078313233",
+//             "time_lock": "1"
+//         }
+//     }
+// ]
+async fn get_account_events(
+	rest_url: &str,
+	account_address: &str,
+	event_type: &str,
+	field_name: &str,
+) -> Result<Vec<VersionedEvent>, anyhow::Error> {
+	let url = format!(
+		"{}/v1/accounts/{}/events/{}/{}",
+		rest_url, account_address, event_type, field_name
+	);
+
+	tracing::info!("ICI url: {:?}", url);
+
+	// Send the GET request
+	let response: Vec<VersionedEvent> = reqwest::get(&url).await?.json().await?;
+	Ok(response)
 }

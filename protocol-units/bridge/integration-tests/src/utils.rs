@@ -107,7 +107,7 @@ pub async fn initiate_bridge_transfer_helper(
 	timelock_modify: bool,
 ) -> Result<(), BridgeContractError> {
 	// Publish for test
-	let _ = movement_client.publish_for_test();
+	//	let _ = movement_client.publish_for_test();
 
 	if timelock_modify {
 		// Set the timelock to 1 second for testing
