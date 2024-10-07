@@ -1,0 +1,16 @@
+version: "3"
+
+processes:
+    
+  bridge:
+    command: |
+      RUST_BACKTRACE=1 bridge-service
+    env:
+      RUST_LOG: info
+    readiness_probe:
+      initial_delay_seconds: 5
+      exec:
+        command: echo "true"
+    depends_on:
+      bridge_setup:
+        condition: process_healthy

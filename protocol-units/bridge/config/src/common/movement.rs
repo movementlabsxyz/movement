@@ -28,6 +28,9 @@ pub struct MovementConfig {
 	pub mvt_faucet_connection_hostname: String,
 	#[serde(default = "default_mvt_faucet_connection_port")]
 	pub mvt_faucet_connection_port: u16,
+
+	#[serde(default = "default_mvt_init_network")]
+	pub mvt_init_network: String,
 }
 
 // The default private key
@@ -87,6 +90,8 @@ env_default!(
 	DEFAULT_MVT_FAUCET_CONNECTION_PORT
 );
 
+env_default!(default_mvt_init_network, "MVT_FAUCET_INIT_NETWORK", String, "local".to_string());
+
 impl MovementConfig {
 	pub fn mvt_rpc_connection_url(&self) -> String {
 		format!(
@@ -118,6 +123,7 @@ impl Default for MovementConfig {
 			mvt_faucet_connection_protocol: default_mvt_rpc_connection_protocol(),
 			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
 			mvt_faucet_connection_port: default_mvt_faucet_connection_port(),
+			mvt_init_network: default_mvt_init_network(),
 		}
 	}
 }

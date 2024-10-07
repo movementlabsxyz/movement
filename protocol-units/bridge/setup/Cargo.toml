@@ -27,6 +27,9 @@ tracing-subscriber = { workspace = true }
 godfig = { workspace = true }
 hex = { workspace = true }
 
+maptos-execution-util = { workspace = true }
+mcr-settlement-config = { workspace = true }
+
 aptos-sdk = { workspace = true }
 
 
