@@ -40,7 +40,7 @@ classical semantic versioning.
 ```bash 
 brew install just
 ```
-Check install
+Check install:
 ```bash
 just --version
 ```
@@ -49,7 +49,7 @@ just --version
 ```bash 
 sudo apt update && sudo apt install --yes just
 ```
-Check install
+Check install:
 ```bash
 just --version
 ```
@@ -121,7 +121,7 @@ service via Docker Compose.
 # example setup with local
 just suzuka-full-node docker-compose setup.local
 ```
-Under the hood, `just` runs
+Under the hood, `just` runs:
 ```bash
 # working directory = GIT_ROOT
 GIT_ROOT=$(git rev-parse --show-toplevel)
