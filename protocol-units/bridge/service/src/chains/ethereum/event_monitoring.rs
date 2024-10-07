@@ -2,11 +2,14 @@ use crate::chains::bridge_contracts::{
 	BridgeContractError, BridgeContractEvent, BridgeContractResult,
 };
 use crate::types::{
-	BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails,
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
+	HashLockPreImage, LockDetails,
 };
-use alloy::primitives::{Address, FixedBytes, Log, LogData};
+use alloy::primitives::{Address, FixedBytes, Log, LogData, Uint};
 use alloy::rpc::client::{ClientBuilder, ReqwestClient};
 use alloy::rpc::types::{Filter, FilterBlockOption, FilterSet, RawLog};
+use alloy::signers::k256::elliptic_curve::bigint::Uint;
+use alloy::sol_types::{SolEvent, SolType};
 use bridge_config::common::eth::EthConfig;
 use futures::{Stream, StreamExt};
 use std::pin::Pin;
@@ -14,6 +17,7 @@ use std::task::Poll;
 use tokio::select;
 
 use super::client::Config;
+use super::types::AtomicBridgeInitiator::BridgeTransferInitiated;
 use super::types::{EthAddress, INITIATOR_COMPLETED_SELECT, INITIATOR_INITIATED_SELECT};
 
 type Topics = [FilterSet<FixedBytes<32>>; 4];
@@ -74,7 +78,7 @@ async fn poll_initiator_contract(
 	};
 
 	let logs: Vec<Log> = client
-		.request("eth_getLogs", vec![initiated_filter])
+		.request("eth_getLogs", vec![initiated_filter.clone()])
 		.await
 		.map_err(|e| BridgeContractError::OnChainError(format!("Failed to fetch logs: {}", e)))?;
 
@@ -168,6 +172,7 @@ fn decode_initiator_initiated(
 		.next() // Get the first element (if any)
 		.map(|fixed_bytes| EthAddress(Address::from_slice(fixed_bytes.as_ref()))) // Convert to EthAddress
 		.ok_or_else(|| BridgeContractError::ConversionFailed("RecipientAddress".to_string()))?;
+
 	// Decode non-indexed parameters (data) from `log_data`
 	let (amount, hash_lock, time_lock): (Amount, HashLock, TimeLock) = decode(&log_data.data)
 		.map_err(|err| {
@@ -186,6 +191,23 @@ fn decode_initiator_initiated(
 	};
 
 	Ok(details)
+}
+
+fn decode_non_indexed(
+	log_data: &[u8],
+) -> Result<(Amount, HashLock, TimeLock), BridgeContractError> {
+	// Using the generated BridgeTransferInitiated struct from Alloy
+	let decoded = BridgeTransferInitiated::abi_decode_data(log_data, true).map_err(|err| {
+		BridgeContractError::OnChainError(format!("Failed to decode log data: {}", err))
+	})?;
+
+	let (amount, hash_lock, time_lock): (Uint<256, 4>, FixedBytes<32>, Uint<256, 4>) = decoded;
+
+	// Extract the values from the decoded struct
+	let amount = Amount(AssetType::Moveth(decoded.amount));
+	let hash_lock = decoded.hash_lock;
+	let time_lock = decoded.time_lock;
+	Ok((amount, hash_lock, time_lock))
 }
 
 fn decode_initiator_completed(log_data: &LogData) -> BridgeContractResult<BridgeTransferId> {
