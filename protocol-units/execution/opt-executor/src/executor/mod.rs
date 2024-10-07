@@ -60,6 +60,10 @@ impl Executor {
 		&self.config
 	}
 
+	pub fn node_config(&self) -> &NodeConfig {
+		&self.node_config
+	}
+
 	pub fn has_executed_transaction(
 		&self,
 		transaction_hash: HashValue,
