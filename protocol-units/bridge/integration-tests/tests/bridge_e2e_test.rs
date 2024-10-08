@@ -56,7 +56,8 @@ async fn initiate_eth_bridge_transfer(
 		.on_builtin(&config.eth.eth_rpc_connection_url())
 		.await?;
 
-	let contract = AtomicBridgeInitiator::new(initiator_address, &rpc_provider);
+	let contract =
+		AtomicBridgeInitiator::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
 
 	let initiator_address = BridgeAddress(EthAddress(initiator_address));
 
