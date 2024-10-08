@@ -187,8 +187,9 @@
               echo "alias ls='${pkgs.coreutils}/bin/ls --color=auto'" >> $ZDOTDIR/.zshrc
 
               # Start Zsh with this custom .zshrc
-              exec ${pkgs.zsh}/bin/zsh
-
+              if [[ -n "$PS1" && -z "$1" ]]; then
+                exec ${pkgs.zsh}/bin/zsh
+              fi
             '';
           };
         };
