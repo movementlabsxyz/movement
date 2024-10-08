@@ -40,7 +40,7 @@ async function main() {
   console.log("Accepted a transaction with Safe:", jsonData.safeAddress);
   console.log("- safeTxHash:", program.opts().hash);
   console.log("- Sender signature:", signature);
-  return signature;
+  
 }
 
 async function signData(data: string, keyId: string): Promise<string> {

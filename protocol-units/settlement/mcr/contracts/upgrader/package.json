@@ -12,8 +12,15 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.658.1",
     "@safe-global/api-kit": "^2.4.4",
+    "asn1.js": "^5.4.1",
+    "aws-sdk": "^2.1691.0",
+    "bn.js": "^5.2.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
-    "tsx": "^4.19.1"
+    "ethereumjs-tx": "^2.1.2",
+    "js-sha3": "^0.9.3",
+    "tsx": "^4.19.1",
+    "web3": "^4.13.0",
+    "web3-core": "^4.6.0"
   }
 }

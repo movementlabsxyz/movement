@@ -65,11 +65,9 @@ contract MultisigMOVETokenDeployer is Helper {
         deployment.move = create3.getDeployed(deployment.movementDeployerSafe, salt);
         console.log("MOVE: deployment address", deployment.move);
         require(_startsWith3073(deployment.move), "MOVE: deployment address does not start with 0x3073");
-        
+
         // create bytecode the MOVE token proxy using CREATE3
         bytes memory bytecode = abi.encodeWithSignature("deploy(bytes32,bytes)", salt, create3Bytecode);
-
-        
 
         // NOTE: digest can be used if immediately signing and executing the transaction
         // bytes32 digest = Safe(payable(deployment.movementFoundationSafe)).getTransactionHash(
