@@ -46,7 +46,7 @@ impl Executor {
 		self.transactions_in_flight
 			.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
 				info!(
-					target: "movement_timing",
+					target: "movement_telemetry",
 					count,
 					current,
 					"decrementing_transactions_in_flight",

@@ -140,7 +140,7 @@ where
 
 		// get the transactions
 		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
+		let span = info_span!(target: "movement_telemetry", "execute_block", id = %block_id);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
