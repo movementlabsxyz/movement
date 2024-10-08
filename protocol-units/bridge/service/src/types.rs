@@ -52,6 +52,14 @@ impl BridgeTransferId {
 	}
 }
 
+impl TryFrom<Vec<u8>> for BridgeTransferId {
+	type Error = Vec<u8>;
+
+	fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
+		Ok(BridgeTransferId(data.try_into()?))
+	}
+}
+
 impl fmt::Display for BridgeTransferId {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "Bid: {}", hex::encode(self.0))

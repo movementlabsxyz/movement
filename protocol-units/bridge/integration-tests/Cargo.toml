@@ -42,3 +42,4 @@ godfig = { workspace = true }
 [dev-dependencies]
 tokio = { workspace = true }
 tokio-stream = "0.1.16"
+url = { workspace = true, features = ["serde"] }

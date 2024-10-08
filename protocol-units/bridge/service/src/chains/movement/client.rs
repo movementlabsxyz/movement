@@ -89,7 +89,7 @@ impl MovementClient {
 		time_lock: u64,
 		framework: bool 
 	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let package_address = match framework {
 			true => FRAMEWORK_ADDRESS,
@@ -116,7 +116,7 @@ impl MovementClient {
 		time_lock: u64,
 		framework: bool 
 	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let package_address = match framework {
 			true => FRAMEWORK_ADDRESS,

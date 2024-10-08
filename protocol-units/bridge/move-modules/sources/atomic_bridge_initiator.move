@@ -64,6 +64,7 @@ module atomic_bridge::atomic_bridge_initiator {
         amount: u64,
         hash_lock: vector<u8>,
         time_lock: u64,
+        state: u8,
     }
 
     #[event]
@@ -173,6 +174,7 @@ module atomic_bridge::atomic_bridge_initiator {
             amount: amount,
             hash_lock: hash_lock,
             time_lock: time_lock,
+            state: INITIALIZED,
         });
     }
 

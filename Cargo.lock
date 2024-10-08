@@ -4137,6 +4137,7 @@ dependencies = [
  "mcr-settlement-client",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
+ "reqwest 0.12.8",
  "serde",
  "serde_json",
  "serde_with",

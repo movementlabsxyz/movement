@@ -131,6 +131,23 @@ where
 					}
 				}
 			}
+			Some(res) = client_exec_result_futures_two.next() => {
+				match res {
+					//Client execution ok.
+					Ok(Ok(_)) => (),
+					Ok(Err(err)) => {
+						// Manage Tx execution error
+						let action = state_runtime.process_action_exec_error(err);
+						// TODO execute action the same way as normal event.
+						// TODO refactor to avopid code duplication.
+					}
+					Err(err)=>{
+						// Tokio execution fail. Process should exit.
+						tracing::error!("Error during client tokio tasj execution exiting: {err}");
+						return Err(err.into());
+					}
+				}
+			}
 		}
 	}
 }

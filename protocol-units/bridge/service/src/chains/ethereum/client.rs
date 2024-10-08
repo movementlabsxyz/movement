@@ -127,8 +127,7 @@ impl EthClient {
 			self.config.transaction_send_retries,
 			self.config.gas_limit,
 		)
-		.await
-		.expect("Failed to send transaction");
+		.await?;
 		Ok(())
 	}
 
