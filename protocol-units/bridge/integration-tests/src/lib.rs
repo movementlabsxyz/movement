@@ -17,6 +17,7 @@ use bridge_service::chains::movement::{client::MovementClient, utils::MovementHa
 use bridge_service::types::Amount;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use hex::ToHex;
 use rand::SeedableRng;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -149,7 +150,7 @@ pub struct HarnessMvtClient {
 	pub movement_client: MovementClient,
 	///The Apotos Rest Client
 	pub rest_client: Client,
-	///The Apotos Rest Client
+	///The Apotos faucet Client
 	pub faucet_client: Arc<RwLock<FaucetClient>>,
 }
 
@@ -164,6 +165,8 @@ impl HarnessMvtClient {
 		let movement_client = MovementClient::new(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
+
+		println!("Publish movement native address: {:?}", movement_client.native_address);
 
 		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
 			.expect("Bad movement rpc url in config");
@@ -198,10 +201,10 @@ impl TestHarness {
 	) -> Result<(HarnessEthClient, HarnessMvtClient, Config), anyhow::Error> {
 		let config = TestHarness::read_bridge_config().await?;
 
-		let test_mvt_hadness = HarnessMvtClient::build(&config).await;
-		let test_eth_hadness = HarnessEthClient::build(&config).await;
+		let test_mvt_harness = HarnessMvtClient::build(&config).await;
+		let test_eth_harness = HarnessEthClient::build(&config).await;
 
-		Ok((test_eth_hadness, test_mvt_hadness, config))
+		Ok((test_eth_harness, test_mvt_harness, config))
 	}
 
 	pub async fn new_with_movement(
@@ -211,17 +214,21 @@ impl TestHarness {
 			.await
 			.expect("Failed to setup Movement config");
 
-		let test_hadness = HarnessMvtClient::build(&config).await;
+		let test_harness = HarnessMvtClient::build(&config).await;
 
-		(test_hadness, config, movement_process)
+		(test_harness, config, movement_process)
 	}
 
 	pub async fn new_with_suzuka(
 		config: Config,
 	) -> (HarnessMvtClient, Config, tokio::process::Child) {
+		println!("Movement signer key before test_suzuka_setup: {:?}", &config.movement.movement_signer_key.to_bytes().encode_hex::<String>());
+
 		let (config, movement_process) = bridge_setup::test_suzuka_setup(config)
 			.await
 			.expect("Failed to setup Movement config");
+
+		println!("Movement signer key after test_suzuka_setup: {:?}", &config.movement.movement_signer_key.to_bytes().encode_hex::<String>());
 
 		let test_harness = HarnessMvtClient::build(&config).await;
 

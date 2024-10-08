@@ -1,5 +1,6 @@
 use alloy::node_bindings::AnvilInstance;
 use bridge_config::Config;
+use hex::ToHex;
 use tokio::process::Command;
 
 pub mod deploy;
@@ -35,6 +36,7 @@ pub async fn test_suzuka_setup(
 	let movement_task = Command::new("sleep")
 		.arg("10")  // Sleep for 10 seconds
 		.spawn()?;  // Spawn the process asynchronously
+	println!("Movement signer key before init_with_root_key: {:?}", &config.movement.movement_signer_key.to_bytes().encode_hex::<String>());
 	deploy::init_with_root_key(&mut config.movement)?;
 	Ok((config, movement_task))
 }

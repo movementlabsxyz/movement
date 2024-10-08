@@ -1,6 +1,6 @@
 use anyhow::Result;
 use bridge_config::Config;
-use bridge_integration_tests::utils;
+use bridge_integration_tests::{utils, HarnessMvtClient};
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
 use bridge_service::{
@@ -38,7 +38,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 
 
 	let config = Config::default();
-	let (mut mvt_client_harness, _config, mut mvt_process) =
+	let (mut mvt_client_harness, _config, mut mvt_process): (HarnessMvtClient, Config, tokio::process::Child) =
 		TestHarness::new_with_suzuka(config).await;
 
 	let args = MovementToEthCallArgs::default();

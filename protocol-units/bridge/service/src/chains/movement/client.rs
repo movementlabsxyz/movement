@@ -20,6 +20,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
+use hex::ToHex;
 
 const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -51,20 +52,21 @@ pub struct MovementClient {
 }
 
 impl MovementClient {
-	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
-		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
+	pub async fn new(movement_config: &MovementConfig) -> Result<Self, anyhow::Error> {
+		let node_connection_url = Url::from_str(movement_config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
 		println!("Publish node_connection_url: {}", &node_connection_url);
-		println!("Publish config: {:?}", &config);
+		println!("Publish config: {:?}", &movement_config);
+		println!("Publish movement signer key: {:?}", &movement_config.movement_signer_key.to_bytes().encode_hex::<String>());
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let signer =
-			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
+			utils::create_local_account(movement_config.movement_signer_key.clone(), &rest_client)
 				.await?;
 
-		println!("Signer: {:?}", &config);
+		println!("Signer: {:?}", &movement_config);
 
-		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
+		let native_address = AccountAddress::from_hex_literal(&movement_config.movement_native_address)?;
 		
 		Ok(MovementClient {
 			native_address,
