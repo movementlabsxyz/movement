@@ -97,7 +97,7 @@ impl MovementClient {
 		};
 
 		let payload = utils::make_aptos_payload(
-			package_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"set_time_lock_duration",
 			Vec::new(),

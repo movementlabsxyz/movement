@@ -35,7 +35,7 @@ pub struct MovementConfig {
 
 // The default private key
 pub fn default_movement_signer_key() -> Ed25519PrivateKey {
-	match std::env::var("MOVEMENT_SIGNER_ADDRESS") {
+	match std::env::var("MOVEMENT_SIGNER_KEY") {
 		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
 		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
 	}
