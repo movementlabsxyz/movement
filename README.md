@@ -13,7 +13,8 @@
 
 The Movement SDK is a collection of tools and libraries for building, deploying, and working with Movement Labs infrastructure. The SDK is designed to be modular and extensible, allowing developers to build custom tools and libraries on top of the core components as well as to interact with Movement Labs' own networks.
 
-**Note:** unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.
+## Important
+Unless otherwise specified assume all commands below are run after entering a nix shell with `nix develop`.  Development is made possible Within the Nix environment with all needed tooling being available.  If you are wishing to run the network then this can also be achieved without the need to install `nix` with having docker and [just](https://github.com/casey/just) installed only. 
 
 ## Organization
 - [`scripts`](./scripts): Scripts for running Movement Labs software. See the [scripts README](./scripts/README.md) for more information about the organization of scripts.
@@ -24,40 +25,15 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
-## Naming Conventions
-Because we are in early stages of the "movement" network we decided to version the
-network using formula one track names ("Monaco", "Monza", "Suzuka") instead of a more 
-classical semantic versioning. 
 
-### Naming Conventions Latest: SUZUKA
-
-## Prerequisites
-### Prerequisites - Just command
-`just` is a handy way to save and run project-specific commands. Please install it
-[following just install instructions](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
-
-### Just command - macOS
-```bash 
-brew install just
-```
-Check install
-```bash
-just --version
-```
-
-### Just command - debian
-```bash 
-sudo apt update && sudo apt install --yes just
-```
-Check install
-```bash
-just --version
-```
-
-### Prerequisites - Nix : the package manager
-
+## Prerequisites(Development)
+### Nix : the package manager
+Use nix to run and build Movement developer environments.
 https://nix.dev/install-nix
 
+## Prerequisites(Running Node)
+- Docker and Docker Compose
+- Just https://github.com/casey/just
 
 ## Running Natively
 ### `m1-da-light-node`
@@ -114,12 +90,12 @@ echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
     - `local`: Run a local Celesta Data Availability service.
 
 **Note:** Currently, both `setup` and `local` must be used. 
-We only support running the `suzuka-full-node` with a local Celesta Data Availability 
+We only support running the `suzuka-full-node` with a local Celestia Data Availability 
 service via Docker Compose.
 
 ```bash
 # example setup with local
-just suzuka-full-node docker-compose setup.local
+just suzuka-full-node docker-compose local
 ```
 Under the hood, `just` runs
 ```bash
