@@ -118,7 +118,9 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	.expect("Failed to initiate bridge transfer");
 
 	//Wait for the tx to be executed
-	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
+	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+
+	//send counter complete event.
 
 	Ok(())
 }
@@ -132,7 +134,10 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 		)
 		.init();
 
+	println!("Start test_movement_event",);
+
 	let config = TestHarness::read_bridge_config().await?;
+	println!("after test_movement_event",);
 
 	//	1) initialize transfer
 	// let hash_lock_pre_image = HashLockPreImage::random();
@@ -152,23 +157,23 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 
 	use bridge_integration_tests::MovementToEthCallArgs;
 
-	// let mut movement_client = MovementClient::new(&config.movement).await.unwrap();
+	let mut movement_client = MovementClient::new(&config.movement).await.unwrap();
 
-	// let args = MovementToEthCallArgs::default();
-	// // let signer_privkey = config.movement.movement_signer_address.clone();
-	// // let sender_address = format!("0x{}", Ed25519PublicKey::from(&signer_privkey).to_string());
-	// // let sender_address = movement_client.signer().address();
-	// //		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
-	// bridge_integration_tests::utils::initiate_bridge_transfer_helper(
-	// 	&mut movement_client,
-	// 	args.initiator.0,
-	// 	args.recipient.clone(),
-	// 	args.hash_lock.0,
-	// 	args.amount,
-	// 	true,
-	// )
-	// .await
-	// .expect("Failed to initiate bridge transfer");
+	let args = MovementToEthCallArgs::default();
+	// let signer_privkey = config.movement.movement_signer_address.clone();
+	// let sender_address = format!("0x{}", Ed25519PublicKey::from(&signer_privkey).to_string());
+	// let sender_address = movement_client.signer().address();
+	//		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
+	bridge_integration_tests::utils::initiate_bridge_transfer_helper(
+		&mut movement_client,
+		args.initiator.0,
+		args.recipient.clone(),
+		args.hash_lock.0,
+		args.amount,
+		true,
+	)
+	.await
+	.expect("Failed to initiate bridge transfer");
 
 	//Wait for the tx to be executed
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
@@ -254,17 +259,17 @@ async fn test_get_events_by_account_event_handle(
 	);
 
 	println!("url: {:?}", url);
+	let client = reqwest::Client::new();
 
 	// Send the GET request
-	let response = reqwest::get(&url).await.unwrap().text().await;
-	// let response = reqwest::get(format!(
-	// 	"{}/v1/accounts/0x1/events/0x1::reconfiguration::Configuration/events",
-	// 	rest_url
-	// ))
-	// .await
-	// .unwrap()
-	// .text()
-	// .await;
+	let response = client
+		.get(&url)
+		.query(&[("start", "0"), ("limit", "10")])
+		.send()
+		.await
+		.unwrap()
+		.text()
+		.await;
 	println!("Account direct response: {response:?}",);
 }
 

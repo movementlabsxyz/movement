@@ -69,6 +69,7 @@ module atomic_bridge::atomic_bridge_counterparty {
         amount: u64,
         hash_lock: vector<u8>,
         time_lock: u64,
+        state: u8,
     }
 
     #[event]
@@ -182,6 +183,7 @@ module atomic_bridge::atomic_bridge_counterparty {
                 recipient,
                 hash_lock,
                 time_lock,
+                state: LOCKED,
             },
         );
     }
