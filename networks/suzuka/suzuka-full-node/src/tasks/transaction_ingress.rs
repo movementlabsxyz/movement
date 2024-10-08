@@ -65,7 +65,7 @@ impl Task {
 				Ok(transaction) => match transaction {
 					Some(transaction) => {
 						info!(
-							target : "movement_timing",
+							target : "movement_telemetry",
 							batch_id = %batch_id,
 							tx_hash = %transaction.committed_hash(),
 							sender = %transaction.sender(),
@@ -93,7 +93,7 @@ impl Task {
 
 		if transactions.len() > 0 {
 			info!(
-				target: "movement_timing",
+				target: "movement_telemetry",
 				batch_id = %batch_id,
 				transaction_count = transactions.len(),
 				"built_batch_write"

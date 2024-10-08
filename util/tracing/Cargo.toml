@@ -11,8 +11,12 @@ publish.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-tracing-appender = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["json"] }
+anyhow = { workspace = true }
+tracing-subscriber = { workspace = true }
+opentelemetry = { workspace = true }
+opentelemetry_sdk = { workspace = true, features = ["rt-tokio"] }
+opentelemetry-otlp = { workspace = true }
+tracing-opentelemetry = { workspace = true }
 #console-subscriber = { workspace = true }
 
 [lints]

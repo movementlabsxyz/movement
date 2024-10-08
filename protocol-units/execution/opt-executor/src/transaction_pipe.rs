@@ -89,7 +89,7 @@ impl TransactionPipe {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
 					let span = info_span!(
-						target: "movement_timing",
+						target: "movement_telemetry",
 						"submit_transaction",
 						tx_hash = %transaction.committed_hash(),
 						sender = %transaction.sender(),
@@ -124,13 +124,13 @@ impl TransactionPipe {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 		let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
 		info!(
-			target: "movement_timing",
+			target: "movement_telemetry",
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
 		if in_flight > self.in_flight_limit {
 			info!(
-				target: "movement_timing",
+				target: "movement_telemetry",
 				"shedding_load"
 			);
 			let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
