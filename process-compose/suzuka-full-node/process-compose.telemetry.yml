@@ -1,0 +1,24 @@
+version: "3"
+
+environment:
+
+processes:
+  otlp-collector:
+    is_daemon: true
+    command: |
+      docker run -d --rm --name suzuka-otlp-collector -p16686:16686 -p4317:4317 -e COLLECTOR_OTLP_ENABLED=true jaegertracing/all-in-one:latest
+    shutdown:
+      command: |
+        docker stop suzuka-otlp-collector
+  suzuka-full-node:
+    depends_on:
+      otlp-collector:
+        condition: process_started
+    env:
+      MOVEMENT_OTLP: http://localhost:4317
+  m1-da-light-node:
+    depends_on:
+      otlp-collector:
+        condition: process_started
+    env:
+      MOVEMENT_OTLP: http://localhost:4317
