@@ -65,7 +65,7 @@ impl Default for MovementToEthCallArgs {
 
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-			recipient: b"0x123".to_vec(),
+			recipient: [1; 20].to_vec(),
 			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
 			hash_lock: EthHash(hash_lock),
 			time_lock: 3600,

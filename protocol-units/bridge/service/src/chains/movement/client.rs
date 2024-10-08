@@ -77,7 +77,7 @@ impl MovementClient {
 		&mut self,
 		time_lock: u64,
 	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -98,7 +98,7 @@ impl MovementClient {
 		&mut self,
 		time_lock: u64,
 	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
