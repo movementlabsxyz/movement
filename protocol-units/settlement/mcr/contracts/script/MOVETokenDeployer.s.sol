@@ -51,6 +51,7 @@ contract MOVETokenDeployer is Helper {
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
+// Modifications to the following functions have to be throughly tested
 
     function _deployMove() internal {
         console.log("MOVE: deploying");
@@ -72,7 +73,7 @@ contract MOVETokenDeployer is Helper {
     function _upgradeMove() internal {
         console.log("MOVE: upgrading");
         MOVEToken newMoveImplementation = new MOVEToken();
-        _diffStorage(address(newMoveImplementation), deployment.move);
+        _checkBytecodeDifference(address(newMoveImplementation), deployment.move);
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

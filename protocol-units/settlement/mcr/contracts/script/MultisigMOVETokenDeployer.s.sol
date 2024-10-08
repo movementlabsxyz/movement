@@ -48,6 +48,7 @@ contract MultisigMOVETokenDeployer is Helper {
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
+    // Modifications to the following functions have to be throughly tested
 
     function _proposeMultisigMove() internal {
         console.log("MOVE: deploying");
@@ -64,6 +65,11 @@ contract MultisigMOVETokenDeployer is Helper {
 
         deployment.move = create3.getDeployed(deployment.movementDeployerSafe, salt);
         console.log("MOVE: deployment address", deployment.move);
+
+        // check if the deployment address starts with 0x3073 so we can be sure CREATE3 deployed successfully
+        // this is a safety check to prevent deploying to an incorrect address
+        // starting and ending with 3073 is a deterministic address that can be reproduced on other networks and brands the token address
+        // users have an extra layer of security by easily identifying the address 
         require(_startsWith3073(deployment.move), "MOVE: deployment address does not start with 0x3073");
 
         // create bytecode the MOVE token proxy using CREATE3

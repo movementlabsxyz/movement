@@ -218,6 +218,8 @@ contract Helper is Script {
         string memory base = "new";
         string memory newChainData = _serializer(json, deployment);
         // take values from storageJson that were not updated (e.g. 3771) and serialize them
+        // since transaction reverts if writeDeployments does not contain all chain data,
+        // we need to serialize chain data for all valid chains besides the current one
         uint256[] memory validChains = new uint256[](4);
         validChains[0] = 1; // ethereum
         validChains[1] = 11155111; // sepolia
@@ -348,7 +350,7 @@ contract Helper is Script {
         implementation = address(uint160(uint256(vm.load(proxy, IMPLEMENTATION_SLOT))));
     }
 
-    function _diffStorage(address newImplementation, address proxy) internal {
+    function _checkBytecodeDifference(address newImplementation, address proxy) internal {
         address currentImplementation = _getImplementation(proxy);
         bytes memory newCode = _getBytecode(newImplementation);
         bytes memory currentCode = _getBytecode(currentImplementation);

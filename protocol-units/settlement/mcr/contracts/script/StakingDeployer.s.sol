@@ -32,6 +32,7 @@ contract StakingDeployer is Helper {
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
+// Modifications to the following functions have to be throughly tested
 
     function _deployStaking() internal {
         console.log("STAKING: deploying");
@@ -51,7 +52,7 @@ contract StakingDeployer is Helper {
     function _upgradeStaking() internal {
     console.log("STAKING: upgrading");
     MovementStaking newStakingImplementation = new MovementStaking();
-    _diffStorage(address(newStakingImplementation), deployment.staking);
+    _checkBytecodeDifference(address(newStakingImplementation), deployment.staking);
     // Prepare the data for the upgrade
     bytes memory data = abi.encodeWithSignature(
         "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

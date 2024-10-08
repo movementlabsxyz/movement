@@ -28,7 +28,8 @@ contract CREATE3Factory is ICREATE3Factory {
         view
         override
         returns (address deployed)
-    {
+    {   
+        // https://github.com/ethereum/EIPs/pull/3171
         // hash salt with the deployer address to give each deployer its own namespace
         salt = keccak256(abi.encodePacked(deployer, salt));
         return CREATE3.getDeployed(salt);

@@ -32,6 +32,7 @@ contract StlMoveDeployer is Helper {
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
+// Modifications to the following functions have to be throughly tested
 
     function _deployStlMove() internal {
         console.log("STL: deploying");
@@ -51,7 +52,7 @@ contract StlMoveDeployer is Helper {
     function _upgradeStlMove() internal {
         console.log("STL: upgrading");
         stlMoveToken newStlMoveImplementation = new stlMoveToken();
-        _diffStorage(address(newStlMoveImplementation), deployment.stlMove);
+        _checkBytecodeDifference(address(newStlMoveImplementation), deployment.stlMove);
         // Prepare the data for the upgrade
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",

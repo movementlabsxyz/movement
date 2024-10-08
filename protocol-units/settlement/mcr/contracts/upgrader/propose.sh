@@ -1,3 +1,5 @@
+# propose.sh
+
 #!/bin/bash
 
 # Initialize contract variable
@@ -20,7 +22,6 @@ done
 echo "Contract: $contract"
 echo "URL: $url"
 
-
 # Ensure the contract flag is provided
 if [ -z "$contract" ]; then
   echo "Error: -c flag for contract is required."
@@ -42,4 +43,4 @@ lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
 
 # Run the upgrader script
 echo "Running upgrader/propose.ts"
-npx tsx  ./propose.ts -c "$lowercase_contract" -u "$url"
+npx tsx ./propose.ts -c "$lowercase_contract" -u "$url"

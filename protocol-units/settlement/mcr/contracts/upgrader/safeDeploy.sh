@@ -1,3 +1,5 @@
+# safeDeploy.sh
+
 #!/bin/bash
 
 # Initialize contract variable
@@ -17,13 +19,11 @@ while getopts "c:u:k:" opt; do
     \?) echo "Invalid option: -$OPTARG" >&2
         exit 1
     ;;
-
   esac
 done
 
 echo "Contract: $contract"
 echo "URL: $url"
-
 
 # Ensure the contract flag is provided
 if [ -z "$contract" ]; then
@@ -48,5 +48,5 @@ echo "Generating transaction data to deploy contract $contract"
 forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key}
 
 # Run the deployer script
-echo "Running upgrader/deploy.ts"
-npx tsx  ./deploy.ts -u "$url"
+echo "Running upgrader/safeDeploy.ts"
+npx tsx ./safeDeploy.ts -u "$url"

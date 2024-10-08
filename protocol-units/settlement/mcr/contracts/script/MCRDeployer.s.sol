@@ -32,6 +32,7 @@ contract MCRDeployer is Helper {
     }
 
     // •☽────✧˖°˖DANGER ZONE˖°˖✧────☾•
+// Modifications to the following functions have to be throughly tested
 
     function _deployMCR() internal {
         console.log("MCR: deploying");
@@ -58,7 +59,7 @@ contract MCRDeployer is Helper {
     function _upgradeMCR() internal {
         console.log("MCR: upgrading");
         MCR newMCRImplementation = new MCR();
-        _diffStorage(address(newMCRImplementation), deployment.mcr);
+        _checkBytecodeDifference(address(newMCRImplementation), deployment.mcr);
         bytes memory data = abi.encodeWithSignature(
             "schedule(address,uint256,bytes,bytes32,bytes32,uint256)",
             address(deployment.mcrAdmin),
