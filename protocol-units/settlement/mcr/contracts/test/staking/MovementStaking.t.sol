@@ -6,9 +6,11 @@ import "../../src/staking/MovementStaking.sol";
 import "../../src/token/MOVETokenV2.sol";
 
 contract MovementStakingTest is Test {
+    bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
+    address public multisig = address(this);
     function testInitialize() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -16,7 +18,7 @@ contract MovementStakingTest is Test {
 
     function testCannotInitializeTwice() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -28,7 +30,7 @@ contract MovementStakingTest is Test {
 
     function testRegister() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -45,7 +47,7 @@ contract MovementStakingTest is Test {
 
     function testWhitelist() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -54,10 +56,10 @@ contract MovementStakingTest is Test {
         address whitelister = vm.addr(1);
         // Whitelist them
         staking.whitelistAddress(whitelister);
-        assertEq(staking.hasRole(staking.WHITELIST_ROLE(), whitelister), true);
+        assertEq(staking.hasRole(WHITELIST_ROLE, whitelister), true);
         // Remove them from the whitelist
         staking.removeAddressFromWhitelist(whitelister);
-        assertEq(staking.hasRole(staking.WHITELIST_ROLE(), whitelister), false);
+        assertEq(staking.hasRole(WHITELIST_ROLE, whitelister), false);
         // As a whitelister let's see if I can whitelist myself
         vm.prank(whitelister);
         vm.expectRevert();
@@ -66,7 +68,7 @@ contract MovementStakingTest is Test {
 
     function testSimpleStaker() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -95,7 +97,7 @@ contract MovementStakingTest is Test {
 
     function testSimpleGenesisCeremony() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -130,7 +132,7 @@ contract MovementStakingTest is Test {
 
     function testSimpleRolloverEpoch() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -175,7 +177,7 @@ contract MovementStakingTest is Test {
 
     function testUnstakeRolloverEpoch() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -225,7 +227,7 @@ contract MovementStakingTest is Test {
 
     function testUnstakeAndStakeRolloverEpoch() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -286,7 +288,7 @@ contract MovementStakingTest is Test {
 
     function testUnstakeStakeAndSlashRolloverEpoch() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
@@ -369,7 +371,7 @@ contract MovementStakingTest is Test {
 
     function testHalbornReward() public {
         MOVETokenV2 moveToken = new MOVETokenV2();
-        moveToken.initialize();
+        moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
         staking.initialize(moveToken);
