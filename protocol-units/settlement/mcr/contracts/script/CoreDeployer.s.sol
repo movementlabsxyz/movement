@@ -49,6 +49,7 @@ contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVEToke
 
         // Only write to file if chainid is not running a foundry local chain and if broadcasting
         if (block.chainid == foundryChainId) {
+            _allowSameContract();
             _upgradeMove();
             _upgradeStaking();
             _upgradeStlMove();

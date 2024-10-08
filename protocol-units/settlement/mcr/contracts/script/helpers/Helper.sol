@@ -39,6 +39,7 @@ contract Helper is Script {
     string public chainId = _uint2str(block.chainid);
     uint256 public foundryChainId = 31337;
     string public storageJson;
+    bool public allowsSameContract;
 
     ConfigData public config;
 
@@ -144,6 +145,13 @@ contract Helper is Script {
                 SafeProxyFactory safeFactory = new SafeProxyFactory();
                 Safe safeSingleton = new Safe();
                 CompatibilityFallbackHandler fallbackHandler = new CompatibilityFallbackHandler();
+                deployment.movementDeployerSafe = _deploySafe(
+                    safeFactory,
+                    address(safeSingleton),
+                    address(fallbackHandler),
+                    config.signersDeployer,
+                    config.thresholdDeployer
+                );
                 deployment.movementLabsSafe = _deploySafe(
                     safeFactory,
                     address(safeSingleton),
@@ -158,6 +166,14 @@ contract Helper is Script {
                     config.signersFoundation,
                     config.thresholdFoundation
                 );
+                // repeats foundation signers
+                deployment.movementAnchorage = _deploySafe(
+                    safeFactory,
+                    address(safeSingleton),
+                    address(fallbackHandler),
+                    config.signersFoundation,
+                    config.thresholdLabs
+                );       
             }
         }
         console.log("Safe addresses:");
@@ -351,9 +367,16 @@ contract Helper is Script {
     }
 
     function _checkBytecodeDifference(address newImplementation, address proxy) internal {
+        if (allowsSameContract) {
+            return;
+        }
         address currentImplementation = _getImplementation(proxy);
         bytes memory newCode = _getBytecode(newImplementation);
         bytes memory currentCode = _getBytecode(currentImplementation);
         require(keccak256(newCode) != keccak256(currentCode), "Helper: New implementation is the same as the current one");
+    }
+
+    function _allowSameContract() internal {
+        allowsSameContract = true;
     }
 }

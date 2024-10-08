@@ -43,9 +43,22 @@ if [ -z "$api_key" ]; then
   exit 1
 fi
 
+# Make the curl request and store the result in a variable
+response=$(curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' \
+  $url)
+
+# Extract the 'result' field using jq and store it in a variable
+chain_id_hex=$(echo $response | jq -r '.result')
+
+# Convert the hex chain ID to decimal
+chain_id_dec=$(printf "%d\n" $chain_id_hex)
+
+
 # Run the script to generate transaction data for the deployment
 echo "Generating transaction data to deploy contract $contract"
-forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key}
+forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v1-${chain_id_dec}.json
 
 # Run the deployer script
 echo "Running upgrader/safeDeploy.ts"

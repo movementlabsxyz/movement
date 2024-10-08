@@ -34,6 +34,18 @@ if [ -z "$url" ]; then
   exit 1
 fi
 
+# Make the curl request and store the result in a variable
+response=$(curl -s -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}' \
+  $url)
+
+# Extract the 'result' field using jq and store it in a variable
+chain_id_hex=$(echo $response | jq -r '.result')
+
+# Convert the hex chain ID to decimal
+chain_id_dec=$(printf "%d\n" $chain_id_hex)
+
 # Run the script to generate transaction data for the upgrade
 echo "Generating transaction data to upgrade contract $contract"
 nix develop --command bash -c "cd .. && forge script "./script/${contract}Deployer.s.sol" -vvvv --fork-url ${url}"

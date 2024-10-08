@@ -3,13 +3,14 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
-import "../../src/token/MOVETokenV2.sol";
+import "../../src/token/MOVETokenDev.sol";
 
 contract MovementStakingTest is Test {
     bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
     address public multisig = address(this);
+
     function testInitialize() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -17,7 +18,7 @@ contract MovementStakingTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -29,7 +30,7 @@ contract MovementStakingTest is Test {
     }
 
     function testRegister() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -46,7 +47,7 @@ contract MovementStakingTest is Test {
     }
 
     function testWhitelist() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -67,7 +68,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleStaker() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -89,14 +90,11 @@ contract MovementStakingTest is Test {
         vm.prank(staker);
         staking.stake(domain, moveToken, 100);
         assertEq(moveToken.balanceOf(staker), 0);
-        assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), staker),
-            100
-        );
+        assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), staker), 100);
     }
 
     function testSimpleGenesisCeremony() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -120,10 +118,7 @@ contract MovementStakingTest is Test {
         vm.prank(domain);
         staking.acceptGenesisCeremony();
         assertNotEq(staking.currentEpochByDomain(domain), 0);
-        assertEq(
-            staking.getCurrentEpochStake(domain, address(moveToken), staker),
-            100
-        );
+        assertEq(staking.getCurrentEpochStake(domain, address(moveToken), staker), 100);
 
         vm.expectRevert(IMovementStaking.GenesisAlreadyAccepted.selector);
         vm.prank(domain);
@@ -131,7 +126,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleRolloverEpoch() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -164,19 +159,12 @@ contract MovementStakingTest is Test {
             staking.rollOverEpoch();
             uint256 epochAfter = staking.getCurrentEpoch(domain);
             assertEq(epochAfter, epochBefore + 1);
-            assertEq(
-                staking.getCurrentEpochStake(
-                    domain,
-                    address(moveToken),
-                    staker
-                ),
-                100
-            );
+            assertEq(staking.getCurrentEpochStake(domain, address(moveToken), staker), 100);
         }
     }
 
     function testUnstakeRolloverEpoch() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -207,14 +195,7 @@ contract MovementStakingTest is Test {
             // unstake
             vm.prank(staker);
             staking.unstake(domain, address(moveToken), 10);
-            assertEq(
-                staking.getCurrentEpochStake(
-                    domain,
-                    address(moveToken),
-                    staker
-                ),
-                100 - (i * 10)
-            );
+            assertEq(staking.getCurrentEpochStake(domain, address(moveToken), staker), 100 - (i * 10));
             assertEq(moveToken.balanceOf(staker), i * 10);
 
             // roll over
@@ -226,7 +207,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeAndStakeRolloverEpoch() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -265,18 +246,8 @@ contract MovementStakingTest is Test {
             staking.stake(domain, moveToken, 5);
 
             // check stake
-            assertEq(
-                staking.getCurrentEpochStake(
-                    domain,
-                    address(moveToken),
-                    staker
-                ),
-                (100 - (i * 10)) + (i * 5)
-            );
-            assertEq(
-                moveToken.balanceOf(staker),
-                (50 - (i + 1) * 5) + (i * 10)
-            );
+            assertEq(staking.getCurrentEpochStake(domain, address(moveToken), staker), (100 - (i * 10)) + (i * 5));
+            assertEq(moveToken.balanceOf(staker), (50 - (i + 1) * 5) + (i * 10));
 
             // roll over
             vm.prank(domain);
@@ -287,7 +258,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeStakeAndSlashRolloverEpoch() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -327,17 +298,9 @@ contract MovementStakingTest is Test {
 
             // check stake
             assertEq(
-                staking.getCurrentEpochStake(
-                    domain,
-                    address(moveToken),
-                    staker
-                ),
-                (100 - (i * 10)) + (i * 5) - (i * 1)
+                staking.getCurrentEpochStake(domain, address(moveToken), staker), (100 - (i * 10)) + (i * 5) - (i * 1)
             );
-            assertEq(
-                moveToken.balanceOf(staker),
-                (50 - (i + 1) * 5) + (i * 10)
-            );
+            assertEq(moveToken.balanceOf(staker), (50 - (i + 1) * 5) + (i * 10));
 
             // slash
             vm.prank(domain);
@@ -353,11 +316,7 @@ contract MovementStakingTest is Test {
 
             // slash immediately takes effect
             assertEq(
-                staking.getCurrentEpochStake(
-                    domain,
-                    address(moveToken),
-                    staker
-                ),
+                staking.getCurrentEpochStake(domain, address(moveToken), staker),
                 (100 - (i * 10)) + (i * 5) - ((i + 1) * 1)
             );
 
@@ -370,7 +329,7 @@ contract MovementStakingTest is Test {
     }
 
     function testHalbornReward() public {
-        MOVETokenV2 moveToken = new MOVETokenV2();
+        MOVETokenDev moveToken = new MOVETokenDev();
         moveToken.initialize(multisig);
 
         MovementStaking staking = new MovementStaking();
@@ -405,18 +364,9 @@ contract MovementStakingTest is Test {
         assertEq(moveToken.balanceOf(alice), 0);
         assertEq(moveToken.balanceOf(bob), 0);
         assertEq(moveToken.balanceOf(address(staking)), 1100);
-        assertEq(
-            staking.getTotalStakeForEpoch(domain, 0, address(moveToken)),
-            1100
-        );
-        assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), alice),
-            1000
-        );
-        assertEq(
-            staking.getStakeAtEpoch(domain, 0, address(moveToken), bob),
-            100
-        );
+        assertEq(staking.getTotalStakeForEpoch(domain, 0, address(moveToken)), 1100);
+        assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), alice), 1000);
+        assertEq(staking.getStakeAtEpoch(domain, 0, address(moveToken), bob), 100);
 
         // Charlie calls reward with himself only to steal tokens
         address charlie = vm.addr(4);

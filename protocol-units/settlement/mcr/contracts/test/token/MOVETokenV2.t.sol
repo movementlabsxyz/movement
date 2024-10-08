@@ -2,35 +2,33 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
-import "../../src/token/MOVETokenV2.sol";
+import "../../src/token/MOVETokenDev.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
-contract MOVETokenV2Test is Test {
-    MOVETokenV2 public token;
+contract MOVETokenDevTest is Test {
+    MOVETokenDev public token;
     ProxyAdmin public admin;
     string public moveSignature = "initialize(address)";
     address public multisig = 0x00db70A9e12537495C359581b7b3Bc3a69379A00;
     bytes32 public MINTER_ROLE;
 
     function setUp() public {
-        MOVETokenV2 moveTokenImplementation = new MOVETokenV2();
+        MOVETokenDev moveTokenImplementation = new MOVETokenDev();
 
         // Deploy proxies
         TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
-            address(moveTokenImplementation),
-            address(multisig),
-            abi.encodeWithSignature(moveSignature,multisig)
+            address(moveTokenImplementation), address(multisig), abi.encodeWithSignature(moveSignature, multisig)
         );
-        token = MOVETokenV2(address(moveProxy));
+        token = MOVETokenDev(address(moveProxy));
         MINTER_ROLE = token.MINTER_ROLE();
     }
 
     function testCannotInitializeTwice() public {
         vm.startPrank(multisig);
         // Initialize the contract
-        vm.expectRevert(MOVETokenV2.AlreadyInitialized.selector);
+        vm.expectRevert(MOVETokenDev.AlreadyInitialized.selector);
         token.initialize(multisig);
         vm.stopPrank();
     }
@@ -63,9 +61,7 @@ contract MOVETokenV2Test is Test {
         assertEq(token.hasRole(MINTER_ROLE, multisig), false);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE)
         );
         token.mint(address(0x1337), 100);
         vm.stopPrank();
@@ -83,9 +79,7 @@ contract MOVETokenV2Test is Test {
         assertEq(token.hasRole(MINTER_ROLE, multisig), false);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE)
         );
         token.mint(address(0x1337), 100);
 
@@ -126,9 +120,7 @@ contract MOVETokenV2Test is Test {
         token.grantMinterRole(multisig);
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE
-            )
+            abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, multisig, MINTER_ROLE)
         );
         token.mint(address(0x1337), 100);
         vm.stopPrank();
@@ -136,16 +128,12 @@ contract MOVETokenV2Test is Test {
 
     function testCannotGrantRoleFuzz(address messenger, address receiver) public {
         vm.startPrank(messenger);
-        if (messenger != multisig){
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, 0x00
-            )
-        );
-        token.grantRole(MINTER_ROLE, receiver);
+        if (messenger != multisig) {
+            vm.expectRevert(
+                abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, messenger, 0x00)
+            );
+            token.grantRole(MINTER_ROLE, receiver);
         }
         vm.stopPrank();
     }
-
-
 }

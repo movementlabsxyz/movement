@@ -3,14 +3,13 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/token/stlMoveToken.sol";
-import "../../src/token/MOVETokenV2.sol";
+import "../../src/token/MOVETokenDev.sol";
 
 contract stlMoveTokenTest is Test {
-
     address public multisig = address(this);
 
     function testInitialize() public {
-        MOVETokenV2 underlyingToken = new MOVETokenV2();
+        MOVETokenDev underlyingToken = new MOVETokenDev();
         underlyingToken.initialize(multisig);
 
         stlMoveToken token = new stlMoveToken();
@@ -22,7 +21,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVETokenV2 underlyingToken = new MOVETokenV2();
+        MOVETokenDev underlyingToken = new MOVETokenDev();
         underlyingToken.initialize(multisig);
 
         stlMoveToken token = new stlMoveToken();
@@ -34,19 +33,14 @@ contract stlMoveTokenTest is Test {
     }
 
     function testSimulateStaking() public {
-        MOVETokenV2 underlyingToken = new MOVETokenV2();
+        MOVETokenDev underlyingToken = new MOVETokenDev();
         underlyingToken.initialize(multisig);
 
         stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
         vm.prank(multisig);
         underlyingToken.grantMinterRole(address(token));
-        assert(
-            underlyingToken.hasRole(
-                underlyingToken.MINTER_ROLE(),
-                address(token)
-            )
-        );
+        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
 
         // signers
         address payable alice = payable(vm.addr(1));
