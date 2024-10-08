@@ -26,16 +26,14 @@ Unless otherwise specified assume all commands below are run after entering a ni
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
 
-## Prerequisites(Development)
-### Nix : the package manager
-Use nix to run and build Movement developer environments.
-https://nix.dev/install-nix
+## Prerequisites (Development)
+- Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix
 
-## Prerequisites(Running Node)
+## Prerequisites (Running Node)
 - Docker and Docker Compose
-- Just https://github.com/casey/just
+- just https://github.com/casey/just
 
-## Running Natively
+## Running Natively (Nix required)
 ### `m1-da-light-node`
 
 - **Features**:
@@ -86,15 +84,13 @@ echo "INFO: movement version is $(cat ${MOVEMENT_ENV_FILE})"
 ### `suzuka-full-node`
 
 - **Features**:
-    - `setup`: Run setup for new `suzuka-full-node` network with single node.
     - `local`: Run a local Celesta Data Availability service.
 
-**Note:** Currently, both `setup` and `local` must be used. 
 We only support running the `suzuka-full-node` with a local Celestia Data Availability 
 service via Docker Compose.
 
 ```bash
-# example setup with local
+# A local Movement network
 just suzuka-full-node docker-compose local
 ```
 Under the hood, `just` runs
@@ -103,17 +99,17 @@ Under the hood, `just` runs
 GIT_ROOT=$(git rev-parse --show-toplevel)
 docker compose --env-file .env \
                --file docker/compose/suzuka-full-node/docker-compose.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
-               --file docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
+               --file docker/compose/suzuka-full-node/docker-compose.local.yml \
                up
 ```
 
 **Note:** if you want to recreate the network, but not rely on the just target above, please read through the scripts to identify the correct `docker-compose` files to run.
 
+**Note:** If you are experiencing any issues starting the local network please remove the local `./.movement` folder
+
 **Note** For attesters in order to receive rewards you need to launch the node in 
 `Attester` mode. To do this you will need to provide a private key at runtime.
 This feature is not implemented yet, at this moment.
-
 
 ## Services
 
