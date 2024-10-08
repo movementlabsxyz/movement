@@ -1,0 +1,11 @@
+version: "3"
+
+environment:
+
+processes:
+  suzuka-full-node:
+    env:
+      MOVEMENT_OTLP: http://localhost:4317
+  m1-da-light-node:
+    env:
+      MOVEMENT_OTLP: http://localhost:4317
