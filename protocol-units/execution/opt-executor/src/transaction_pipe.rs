@@ -10,14 +10,14 @@ use aptos_types::transaction::SignedTransaction;
 use aptos_types::vm_status::DiscardedVMStatus;
 use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator};
 
+use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
+use std::sync::{atomic::AtomicU64, Arc};
+use std::time::{Duration, Instant};
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
-
-use std::sync::{atomic::AtomicU64, Arc};
-use std::time::{Duration, Instant};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
 const TOO_NEW_TOLERANCE: u64 = 32;
@@ -40,20 +40,27 @@ impl From<anyhow::Error> for Error {
 }
 
 pub struct TransactionPipe {
-	// The receiver for the mempool client.
+	/// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-	// Sender for the channel with accepted transactions.
+	/// Sender for the channel with accepted transactions.
 	transaction_sender: mpsc::Sender<SignedTransaction>,
-	// Access to the ledger DB. TODO: reuse an instance of VMValidator
+	/// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
-	// State of the Aptos mempool
+	/// State of the Aptos mempool
 	core_mempool: CoreMempool,
-	// Shared reference on the counter of transactions in flight.
+	/// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<AtomicU64>,
-	// The configured limit on transactions in flight
+	/// The configured limit on transactions in flight
 	in_flight_limit: u64,
-	// Timestamp of the last garbage collection
+	/// Timestamp of the last garbage collection
 	last_gc: Instant,
+	/// The pool of used sequence numbers
+	used_sequence_number_pool: UsedSequenceNumberPool,
+}
+
+enum SequenceNumberValidity {
+	Valid(u64),
+	Invalid(SubmissionStatus),
 }
 
 impl TransactionPipe {
@@ -64,6 +71,8 @@ impl TransactionPipe {
 		node_config: &NodeConfig,
 		transactions_in_flight: Arc<AtomicU64>,
 		transactions_in_flight_limit: u64,
+		sequence_number_ttl_ms: u64,
+		gc_slot_duration_ms: u64,
 	) -> Self {
 		TransactionPipe {
 			mempool_client_receiver,
@@ -73,6 +82,10 @@ impl TransactionPipe {
 			transactions_in_flight,
 			in_flight_limit: transactions_in_flight_limit,
 			last_gc: Instant::now(),
+			used_sequence_number_pool: UsedSequenceNumberPool::new(
+				sequence_number_ttl_ms,
+				gc_slot_duration_ms,
+			),
 		}
 	}
 
@@ -111,11 +124,64 @@ impl TransactionPipe {
 		}
 
 		if self.last_gc.elapsed() >= GC_INTERVAL {
+			// todo: these will be slightly off, but gc does not need to be exact
+			let now = Instant::now();
+			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
+			self.used_sequence_number_pool.gc(epoch_ms_now);
 			self.core_mempool.gc();
-			self.last_gc = Instant::now();
+			self.last_gc = now;
 		}
 
 		Ok(())
+	}
+
+	fn has_invalid_sequence_number(
+		&self,
+		transaction: &SignedTransaction,
+	) -> Result<SequenceNumberValidity, Error> {
+		// check against the used sequence number pool
+		let used_sequence_number = self
+			.used_sequence_number_pool
+			.get_sequence_number(&transaction.sender())
+			.unwrap_or(0);
+
+		// validate against the state view
+		let state_view = self.db_reader.latest_state_checkpoint_view().map_err(|e| {
+			Error::InternalError(format!("Failed to get latest state view: {:?}", e))
+		})?;
+
+		// this checks that the sequence number is too old or too new
+		let committed_sequence_number =
+			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
+
+		let min_sequence_number = (used_sequence_number + 1).max(committed_sequence_number);
+
+		let max_sequence_number = committed_sequence_number + TOO_NEW_TOLERANCE;
+
+		info!(
+			"min_sequence_number: {:?} max_sequence_number: {:?} transaction_sequence_number {:?}",
+			min_sequence_number,
+			max_sequence_number,
+			transaction.sequence_number()
+		);
+
+		if transaction.sequence_number() < min_sequence_number {
+			info!("Transaction sequence number too old: {:?}", transaction.sequence_number());
+			return Ok(SequenceNumberValidity::Invalid((
+				MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber),
+				Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD),
+			)));
+		}
+
+		if transaction.sequence_number() > max_sequence_number {
+			info!("Transaction sequence number too new: {:?}", transaction.sequence_number());
+			return Ok(SequenceNumberValidity::Invalid((
+				MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber),
+				Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW),
+			)));
+		}
+
+		Ok(SequenceNumberValidity::Valid(committed_sequence_number))
 	}
 
 	async fn submit_transaction(
@@ -150,26 +216,12 @@ impl TransactionPipe {
 			None => {}
 		}
 
-		// Validate sequence number
-		let state_view = self
-			.db_reader
-			.latest_state_checkpoint_view()
-			.expect("Failed to get latest state view");
-
-		// this checks that the sequence number is too old or too new
-		let sequence_number =
-			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
-		if transaction.sequence_number() < sequence_number {
-			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
-			println!("Transaction sequence number too old: {:?}", transaction.sequence_number());
-			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
-		}
-
-		if transaction.sequence_number() > (sequence_number + TOO_NEW_TOLERANCE) {
-			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
-			println!("Transaction sequence number too new: {:?}", transaction.sequence_number());
-			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW)));
-		}
+		let sequence_number = match self.has_invalid_sequence_number(&transaction)? {
+			SequenceNumberValidity::Valid(sequence_number) => sequence_number,
+			SequenceNumberValidity::Invalid(status) => {
+				return Ok(status);
+			}
+		};
 
 		// Add the txn for future validation
 		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
@@ -185,6 +237,7 @@ impl TransactionPipe {
 			MempoolStatusCode::Accepted => {
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
+				let transaction_sequence_number = transaction.sequence_number();
 				self.transaction_sender
 					.send(transaction)
 					.await
@@ -192,6 +245,17 @@ impl TransactionPipe {
 				// increment transactions in flight
 				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 				self.core_mempool.commit_transaction(&sender, sequence_number);
+
+				// update the used sequence number pool
+				info!(
+					"Setting used sequence number for {:?} to {:?}",
+					sender, transaction_sequence_number
+				);
+				self.used_sequence_number_pool.set_sequence_number(
+					&sender,
+					transaction_sequence_number,
+					chrono::Utc::now().timestamp_millis() as u64,
+				);
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);
@@ -317,7 +381,8 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let received_transaction =
+			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
 		assert_eq!(received_transaction, user_transaction);
 
 		// send the same transaction again
@@ -331,8 +396,8 @@ mod tests {
 
 		callback.await??;
 
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, user_transaction);
+		// assert that there is no new transaction
+		assert!(tx_receiver.try_recv().is_err());
 
 		Ok(())
 	}
@@ -369,7 +434,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 
@@ -422,12 +487,23 @@ mod tests {
 		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
 
+		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
+		let user_transaction = create_signed_transaction(5, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		// submit a transaction with the same sequence number as the previous one
+		let user_transaction = create_signed_transaction(5, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+
 		Ok(())
 	}
 
+	#[tokio::test]
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
 		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 
 		#[allow(unreachable_code)]

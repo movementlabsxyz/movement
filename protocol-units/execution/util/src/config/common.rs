@@ -151,3 +151,7 @@ env_default!(
 );
 
 env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);
+
+env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
+
+env_default!(default_gc_slot_duration_ms, "MAPTOS_GC_SLOT_DURATION_MS", u64, 1000 * 2);
