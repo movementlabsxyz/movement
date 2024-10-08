@@ -120,7 +120,8 @@ mod tests {
 		let service = Service::new(&context);
 		let handle = tokio::spawn(async move { service.run().await });
 
-		let user_transaction = create_signed_transaction(0, &context.config().chain);
+		// this needs to be 1 because the root account should already have a committed genesis transaction
+		let user_transaction = create_signed_transaction(1, &context.config().chain);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();

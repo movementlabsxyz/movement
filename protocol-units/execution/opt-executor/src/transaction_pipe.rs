@@ -381,7 +381,8 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let received_transaction =
+			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
 		assert_eq!(received_transaction, user_transaction);
 
 		// send the same transaction again
@@ -395,8 +396,8 @@ mod tests {
 
 		callback.await??;
 
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, user_transaction);
+		// assert that there is no new transaction
+		assert!(tx_receiver.try_recv().is_err());
 
 		Ok(())
 	}
