@@ -6,6 +6,7 @@
 contract=""
 url=""
 api_key=""
+path=""
 
 # Parse options using getopts
 while getopts "c:u:k:" opt; do
@@ -55,6 +56,17 @@ chain_id_hex=$(echo $response | jq -r '.result')
 # Convert the hex chain ID to decimal
 chain_id_dec=$(printf "%d\n" $chain_id_hex)
 
+if $contract == "MCR" then
+  path="settlement"
+else if $contract == "MovementStaking" then
+  path="staking"
+else if $contract == ["MOVEToken" | "stlMoveToken"] then
+  path="token"
+else
+  echo "Error: Invalid contract name."
+  exit 1
+fi
+
 $env="../src/$path"
 
 old_version=$(find $env -type f -name "./${contract}V*.sol" | grep -oP 'V\d+' | sed 's/V//' | sort -n | tail -1)
@@ -66,7 +78,7 @@ cp "$env/$current_file" "env/$new_file"
 
 # Run the script to generate transaction data for the deployment
 echo "Generating transaction data to deploy contract $contract"
-forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v${new_version}-${chain_id_dec}.json
+forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v${new_version}-eth-${chain_id_dec}
 
 # Run the deployer script
 echo "Running upgrader/safeDeploy.ts"

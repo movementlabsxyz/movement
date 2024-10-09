@@ -78,7 +78,7 @@ cp "$env/$current_file" "env/$new_file"
 
 # Run the script to generate transaction data for the upgrade
 echo "Generating transaction data to upgrade contract $contract"
-forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v${new_version}-${chain_id_dec}
+forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v${new_version}-eth-${chain_id_dec}
 
 # Convert contract name to lowercase
 lowercase_contract=$(echo "$contract" | tr '[:upper:]' '[:lower:]')
