@@ -236,9 +236,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 
 		mvt_client_harness
 			.movement_client
-			.abort_bridge_transfer(
-				BridgeTransferId(args.bridge_transfer_id.0), 
-			)
+			.abort_bridge_transfer(BridgeTransferId(args.bridge_transfer_id.0))
 			.await
 			.expect("Failed to complete bridge transfer");
 
