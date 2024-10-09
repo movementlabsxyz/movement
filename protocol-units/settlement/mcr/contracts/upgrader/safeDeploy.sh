@@ -55,10 +55,18 @@ chain_id_hex=$(echo $response | jq -r '.result')
 # Convert the hex chain ID to decimal
 chain_id_dec=$(printf "%d\n" $chain_id_hex)
 
+$env="../src/$path"
+
+old_version=$(find $env -type f -name "./${contract}V*.sol" | grep -oP 'V\d+' | sed 's/V//' | sort -n | tail -1)
+new_version=$((old_version + 1))
+
+current_file="${contract}.sol"
+new_file="${contract}V${new_version}.sol"
+cp "$env/$current_file" "env/$new_file"
 
 # Run the script to generate transaction data for the deployment
 echo "Generating transaction data to deploy contract $contract"
-forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v1-${chain_id_dec}.json
+forge script "../script/${contract}Deployer.s.sol" -vvvv --fork-url ${url} --broadcast --verify --etherscan-api-key ${api_key} -o ./artifacts/${contract}-v${new_version}-${chain_id_dec}.json
 
 # Run the deployer script
 echo "Running upgrader/safeDeploy.ts"

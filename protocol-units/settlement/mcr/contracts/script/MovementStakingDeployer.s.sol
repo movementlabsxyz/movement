@@ -6,7 +6,7 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { Helper } from "./helpers/Helper.sol";
 
-contract StakingDeployer is Helper {
+contract MovementStakingDeployer is Helper {
 
     function run() external virtual {
         
