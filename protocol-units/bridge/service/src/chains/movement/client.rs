@@ -73,7 +73,7 @@ impl MovementClient {
 
 		println!("Signer: {:?}", &movement_config);
 
-		let native_address = AccountAddress::from_hex_literal(&movement_config.movement_native_address)?;
+		let native_address = AccountAddress::from_hex_literal("0xa550c18")?;
 		
 		Ok(MovementClient {
 			native_address,
