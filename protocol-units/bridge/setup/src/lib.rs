@@ -11,6 +11,10 @@ pub async fn process_compose_setup(config: Config) -> Result<Config, anyhow::Err
 	// Currently local only
 	tracing::info!("Bridge process_compose_setup");
 
+	let private_key_bytes: [u8; 32] = [0; 31].iter().cloned().chain([1].iter().cloned()).collect::<Vec<u8>>().try_into().unwrap();
+
+	//config.movement.movement_signer_key = Ed25519PrivateKey::try_from(private_key_bytes.as_slice()).expect("Failed to create private key");
+
 	//Deploy locally
 	let config = crate::deploy::setup(config).await?;
 	Ok(config)

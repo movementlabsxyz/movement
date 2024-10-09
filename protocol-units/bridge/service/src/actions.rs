@@ -90,7 +90,6 @@ where
 						initiator,
 						BridgeAddress(recipient.0.into()),
 						amount,
-						false
 					)
 					.await
 					.map_err(|err| ActionExecError(action, err))
@@ -106,7 +105,6 @@ where
 					.initiator_complete_bridge_transfer(
 						action.transfer_id, 
 						secret,
-						false
 					)
 					.await
 					.map_err(|err| ActionExecError(action, err))

@@ -118,6 +118,7 @@ There are two scripts in `protocol-units/bridge/move-modules`, one for enabling 
 1. Compile the scripts:
 
 ```
+movement move compile --package-dir protocol-units/bridge/move-modules
 ```
 
 2. Run the `enable_bridge_feature` script:

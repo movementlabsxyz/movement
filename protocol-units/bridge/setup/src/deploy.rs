@@ -144,7 +144,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 			"--faucet-url",
 			"http://localhost:30732",
 			"--private-key",
-			"0x5754431205b8abc443a7a877a70d6e5e67eba8e5e40b0436bff5a9b6ab4a7887",
+			&config.movement_signer_key.to_string(),
 			"--assume-yes"
 		])
 		.stdin(Stdio::piped())

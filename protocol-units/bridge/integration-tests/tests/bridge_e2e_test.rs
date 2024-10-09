@@ -171,7 +171,6 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 		args.hash_lock.0,
 		args.amount,
 		true,
-		false
 	)
 	.await
 	.expect("Failed to initiate bridge transfer");

@@ -1,8 +1,4 @@
-// Script hash: a9f09ee9
-// Modifying on-chain feature flags:
-// Enabled Features: [Bls12381Structures]
-// Disabled Features: [Bn254Structures]
-//
+// Enable Atomic Bridge feature flag
 script {
     use aptos_framework::aptos_governance;
     use std::features;
