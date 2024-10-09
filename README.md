@@ -24,36 +24,6 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
-## Naming Conventions
-Because we are in early stages of the "movement" network we decided to version the
-network using formula one track names ("Monaco", "Monza", "Suzuka") instead of a more 
-classical semantic versioning. 
-
-### Naming Conventions Latest: SUZUKA
-
-## Prerequisites
-### Prerequisites - Just command
-`just` is a handy way to save and run project-specific commands. Please install it
-[following just install instructions](https://github.com/casey/just?tab=readme-ov-file#installation). `macOS` and `debian` based systems instructions below.
-
-### Just command - macOS
-```bash 
-brew install just
-```
-Check install
-```bash
-just --version
-```
-
-### Just command - debian
-```bash 
-sudo apt update && sudo apt install --yes just
-```
-Check install
-```bash
-just --version
-```
-
 ### Prerequisites - Nix : the package manager
 
 https://nix.dev/install-nix
@@ -149,6 +119,9 @@ Both `native` and `docker-compose` runners will serve the following services lis
 
 - **[Aptos REST API](https://api.devnet.aptoslabs.com/v1/spec#/)**: `0.0.0.0:30731`
 - **[Aptos Faucet API](https://aptos.dev/apis/#faucet-api-only-testnetdevnet)**: `0.0.0.0:30732`
+
+## Node Operation
+For node operation guides, please begin with the manual [node operation docs](./docs/movement-node/run/manual/README.md).
 
 ## License
 
