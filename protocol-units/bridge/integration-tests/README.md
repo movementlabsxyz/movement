@@ -101,10 +101,27 @@ You should see a large number of `AptosCoin` held by the account:
 
 This large number of gas coins signifies that this is the core resource account.
 
-5. Verify that you control the core resources account by transferring gas tokens to your default account:
+5. Verify that you control the core resources signer by transferring gas tokens to your default account:
 
 ```
 movement account transfer --profile local_root --amount 100 --account e813b12fc00bed33b54b5652c3bb1cbf12a33080aba9cd12d919b6d65cec6115
 ```
 
 You'll be prompted to submit a transaction. After doing so, if the transaction is successful, you'll get a success message and transaction result.
+
+## Steps to run client integration tests
+
+Now that the core resource signer is configured, you can run the client integration tests.
+
+There are two scripts in `protocol-units/bridge/move-modules`, one for enabling the Atomic Bridge feature flag and one for updating bridge operator.
+
+1. Compile the scripts:
+
+```
+```
+
+2. Run the `enable_bridge_feature` script:
+
+```
+ movement move run-script --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv --profile local_root
+ ```

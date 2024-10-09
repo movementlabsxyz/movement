@@ -161,12 +161,15 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
 		};
 		debug!("Amount value: {:?}", amount_value);
+		debug!("L1 recipient: {:?}", recipient);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
 			utils::serialize_u64_initiator(&amount_value)?,
 		];
+
+		debug!("Args: {:?}", args);
 
 		let package_address = match framework {
 			true => FRAMEWORK_ADDRESS,

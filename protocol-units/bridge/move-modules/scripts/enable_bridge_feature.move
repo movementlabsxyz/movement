@@ -13,7 +13,7 @@ script {
         let framework_signer = &core_signer;
 
         let enabled_blob: vector<u64> = vector[
-            71,
+            features::get_atomic_bridge_feature()
         ];
 
         let disabled_blob: vector<u64> = vector[];

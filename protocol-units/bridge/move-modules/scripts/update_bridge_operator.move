@@ -6,4 +6,5 @@ script {
         let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @aptos_framework);
         atomic_bridge_configuration::update_bridge_operator(&framework_signer, new_operator);
     }
-}
+} 
+ 
