@@ -4,7 +4,7 @@ use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_network::EthereumWallet;
 use anyhow::Result;
-use aptos_sdk::coin_client::CoinClient;
+use aptos_sdk::types::LocalAccount;
 use aptos_types::account_address::AccountAddress;
 use bridge_config::Config;
 use bridge_integration_tests::HarnessEthClient;
@@ -24,23 +24,7 @@ use bridge_service::types::AssetType;
 use bridge_service::types::BridgeAddress;
 use bridge_service::types::HashLock;
 use bridge_service::types::HashLockPreImage;
-use tokio_stream::StreamExt;
 use tracing_subscriber::EnvFilter;
-
-async fn start_bridge_local(config: &Config) -> Result<tokio::task::JoinHandle<()>, anyhow::Error> {
-	let one_stream = EthMonitoring::build(&config.eth).await?;
-	let one_client = EthClient::new(&config.eth).await?;
-	let two_client = MovementClient::new(&config.movement).await?;
-
-	let two_stream = MovementMonitoring::build(&config.movement).await?;
-
-	let jh = tokio::spawn(async move {
-		bridge_service::run_bridge(one_client, one_stream, two_client, two_stream)
-			.await
-			.unwrap()
-	});
-	Ok(jh)
-}
 
 async fn initiate_eth_bridge_transfer(
 	config: &Config,
@@ -95,6 +79,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let (eth_client_harness, mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 
+	// Init mvt addresses
 	let movement_client_signer_address = mvt_client_harness.movement_client.signer().address();
 
 	{
@@ -102,16 +87,17 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		faucet_client.fund(movement_client_signer_address, 100_000_000).await?;
 	}
 
-	// 1) initialize transfer
+	let recipient_privkey = mvt_client_harness.fund_account();
+	let recipient_address = MovementAddress(recipient_privkey.address());
+
+	// 1) initialize Eth transfer
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let mov_recipient = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-
 	let amount = Amount(AssetType::EthAndWeth((1, 0)));
 	initiate_eth_bridge_transfer(
 		&config,
 		HarnessEthClient::get_initiator_private_key(&config),
-		mov_recipient,
+		recipient_address,
 		hash_lock,
 		amount,
 	)
@@ -122,6 +108,14 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let _ = tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 
 	//send counter complete event.
+
+	let tx = mvt_client_harness
+		.counterparty_complete_bridge_transfer(
+			&recipient_privkey,
+			bridge_tranfer_id,
+			hash_lock_pre_image,
+		)
+		.await?;
 
 	Ok(())
 }
