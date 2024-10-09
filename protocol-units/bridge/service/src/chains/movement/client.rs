@@ -9,6 +9,7 @@ use crate::types::{
 use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
+	crypto::ed25519::Ed25519PublicKey,
 	move_types::identifier::Identifier,
 	rest_client::{Client, Response},
 	types::LocalAccount,
@@ -60,9 +61,15 @@ impl MovementClient {
 		println!("Publish movement signer key: {:?}", &movement_config.movement_signer_key.to_bytes().encode_hex::<String>());
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let signer =
-			utils::create_local_account(movement_config.movement_signer_key.clone(), &rest_client)
-				.await?;
+		let signer = LocalAccount::new(
+			AccountAddress::from_hex_literal("0xA550C18")?, 
+			movement_config.movement_signer_key.clone(), 
+			rest_client.get_account(AccountAddress::from_hex_literal("0xA550C18")?).await?.inner().sequence_number
+		);
+
+		//let signer =
+		//	utils::create_local_account(movement_config.movement_signer_key.clone(), &rest_client)
+		//		.await?;
 
 		println!("Signer: {:?}", &movement_config);
 

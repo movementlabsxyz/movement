@@ -406,7 +406,7 @@ pub fn init_with_root_key(config: &mut MovementConfig) -> Result<(), anyhow::Err
 			"--faucet-url",
 			"http://localhost:30732",
 			"--private-key",
-			"0x5754431205b8abc443a7a877a70d6e5e67eba8e5e40b0436bff5a9b6ab4a7887",
+			"0x0000000000000000000000000000000000000000000000000000000000000001",
 			"--assume-yes"
 		])
 		.stdin(Stdio::piped())
@@ -442,7 +442,7 @@ pub fn init_with_root_key(config: &mut MovementConfig) -> Result<(), anyhow::Err
 
 	println!("Publish Extracted address: {}", address);
 
-	config.movement_native_address = address.clone();
+	config.movement_native_address = "0xA550C18".to_string();
 
 	let current_dir = env::current_dir().expect("Failed to get current directory");
 	println!("Publish Current directory: {:?}", current_dir);
