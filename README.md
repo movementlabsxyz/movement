@@ -52,8 +52,13 @@ just m1-da-light-node native build.setup.test.local
 
 - **Features**:
     - `build`: Build the `suzuka-full-node` binaries.
+    - `celestia-arabica`: DA on Celestia's Arabica network
+    - `celestia-local`: Run a local Celesta Data Availability service.
+    - `celestia-mocha`: DA on Celestia's Mocha network
+    - `eth-local`: Settlement on a local Ethereum network
+    - `eth-holesky`: Settlement on a Holesky Ethereum network
     - `setup`: Run setup for new `suzuka-full-node` network with single node.
-    - `local`: Run a local Celesta Data Availability service. 
+    - `indexer`: Run a local indexer
     - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
