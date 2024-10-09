@@ -53,7 +53,7 @@ To run with containers you can use the following command:
 just suzuka-full-node docker-compose follower
 ```
 
-To check on either service, just run:
+To check on the status of the service under either runner, run:
 
 ```bash
 curl http://localhost:30731/v1
