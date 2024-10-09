@@ -57,8 +57,8 @@ just m1-da-light-node native build.setup.test.local
     - `test`: run the test suite for `suzuka-full-node`. (Can be combined with `local`. Exits on completion by default.)
 
 ```bash
-# example test with local
-just monza-full-node native build.setup.test.local
+# example test with local celestia and local ethereum
+just suzuka-full-node native build.setup.celestia-local.eth-local
 ```
 
 ## Run a Movement Node with Docker Compose
