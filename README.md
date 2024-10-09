@@ -150,24 +150,6 @@ Both `native` and `docker-compose` runners will serve the following services lis
 - **[Aptos REST API](https://api.devnet.aptoslabs.com/v1/spec#/)**: `0.0.0.0:30731`
 - **[Aptos Faucet API](https://aptos.dev/apis/#faucet-api-only-testnetdevnet)**: `0.0.0.0:30732`
 
-## Troubleshooting
-
-### `cp: cannot stat '': No such file or directory` when running `just suzuka-full-node native build.setup.test.local`
-
-Try the following `nix.conf`:
-
-```bash
-build-users-group = nixbld
-experimental-features = nix-command flakes repl-flake
-bash-prompt-prefix = (nix:$name)\040
-max-jobs = auto
-extra-nix-path = nixpkgs=flake:nixpkgs
-upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/stable/universal
-```
-
-### `ledger_info.is_some()`
-The current revision does not support graceful restarts of the network from an existing config. For testing purposes, please delete you `.movement` directory and run the setup again.
-
 ## License
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
