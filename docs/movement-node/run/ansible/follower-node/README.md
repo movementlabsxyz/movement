@@ -1,8 +1,17 @@
-# `l-monninger/open-network`
-The `l-monninger/open-network` environment is the first public and permissionless environment for the Movement Network. It is a testing environment intended for use amongst partners and early adopters.
+# Follower Node
+Follower Nodes are nodes that are configured to sync with a Leader Node and are used to test the Movement Testnet. This document provides instructions on how to set up a Follower Node to sync with a Leader Node.
 
-## Running a Movement Node on `l-monninger/open-network`
-You can join the `l-monninger/open-network` environment by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay:
+## Hardware Recommendations
+By running the a Follower Node locally, you will be able to gauge the performance on a given network. If you are joining a network with high load, like the Movement Testnet, we recommend the following:
+- 32 cores
+- 64 GB RAM
+- 2 TB SSD w/ 60K IOPS and 200 MiB/s throughput
+
+## Running a Movement Node on Follower Node
+You can join any sufficiently upgraded network as a Folloewr Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay. 
+
+**Note**: the scripts provided herein have hardcoded constants for the Movement Testnet. You will need to change these to match the environment you are running on.
+
 For example, here's how a template for a systemd service file running the above via Docker Compose might look, where the template parameters are replaced with the appropriate values above:
 
 ```ini
@@ -18,7 +27,7 @@ Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
 Environment="CONTAINER_REV={{ rev }}"
 Environment="MOVEMENT_SYNC={{ movement_sync }}"
 Environment="M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ m1_da_light_node_connection_hostname }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml -up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
@@ -32,11 +41,11 @@ ansible-playbook --inventory <your-inventory> \
     --user ubuntu  \
     --extra-vars "movement_container_version=${CONTAINER_REV}" \
     --extra-vars "user=ubuntu" \
-    docs/movement-node-experimental/l-monninger/open-network/suzuka-full-follower.yml \
+    docs/movement-node-experimental/Follower Node/suzuka-full-follower.yml \
     --private-key open-network-demo.pem
 ```
 
-This will set up the Movement Node to connect to sync with the `l-monninger/open-network` environment.
+This will set up the Movement Node to connect to sync with the Follower Node environment.
 
 For a basic check on syncing, assert that there is a `0.tgz` file in the `~/.movement` directory. This file is unarchived into the same directory when syncing. If you see it, that indicates that the syncing resource was fetched. It is not rearchived itself.
 
