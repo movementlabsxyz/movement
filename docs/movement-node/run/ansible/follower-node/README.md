@@ -2,7 +2,10 @@
 The `l-monninger/open-network` environment is the first public and permissionless environment for the Movement Network. It is a testing environment intended for use amongst partners and early adopters.
 
 ## Running a Movement Node on `l-monninger/open-network`
-You can join the `l-monninger/open-network` environment by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay:
+You can join the `l-monninger/open-network` environment by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay. 
+
+**Note**: the scripts provided herein have hardcoded constants for the Movement Testnet. You will need to change these to match the environment you are running on.
+
 For example, here's how a template for a systemd service file running the above via Docker Compose might look, where the template parameters are replaced with the appropriate values above:
 
 ```ini
@@ -18,7 +21,7 @@ Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
 Environment="CONTAINER_REV={{ rev }}"
 Environment="MOVEMENT_SYNC={{ movement_sync }}"
 Environment="M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ m1_da_light_node_connection_hostname }}"
-ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml -up --force-recreate --remove-orphans
+ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.follower.yml up --force-recreate --remove-orphans
 Restart=on-failure
 
 [Install]
