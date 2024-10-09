@@ -223,7 +223,7 @@ impl TestHarness {
 	) -> (HarnessMvtClient, Config, tokio::process::Child) {
 		println!("Movement signer key before test_suzuka_setup: {:?}", &config.movement.movement_signer_key.to_bytes().encode_hex::<String>());
 
-		let (config, movement_process) = bridge_setup::test_suzuka_setup(config)
+		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
 			.await
 			.expect("Failed to setup Movement config");
 
