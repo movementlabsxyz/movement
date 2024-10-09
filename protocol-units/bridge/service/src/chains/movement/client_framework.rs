@@ -9,6 +9,7 @@ use crate::types::{
 use anyhow::Result;
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
+	crypto::ed25519::Ed25519PublicKey,
 	move_types::identifier::Identifier,
 	rest_client::{Client, Response},
 	types::LocalAccount,
@@ -20,7 +21,12 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
+use hex::ToHex;
 
+const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+	0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1
+]);
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
@@ -35,7 +41,7 @@ enum Call {
 
 #[allow(dead_code)]
 #[derive(Clone)]
-pub struct MovementClient {
+pub struct MovementClientFramework {
 	///Native Address of the
 	pub native_address: AccountAddress,
 	/// Bytes of the non-native (external) chain.
@@ -46,18 +52,30 @@ pub struct MovementClient {
 	signer: Arc<LocalAccount>,
 }
 
-impl MovementClient {
-	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
-		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
+impl MovementClientFramework {
+	pub async fn new(movement_config: &MovementConfig) -> Result<Self, anyhow::Error> {
+		let node_connection_url = Url::from_str(movement_config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
-
+		println!("Publish node_connection_url: {}", &node_connection_url);
+		println!("Publish config: {:?}", &movement_config);
+		println!("Publish movement signer key: {:?}", &movement_config.movement_signer_key.to_bytes().encode_hex::<String>());
 		let rest_client = Client::new(node_connection_url.clone());
 
-		let signer =
-			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
-				.await?;
-		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
-		Ok(MovementClient {
+		let signer = LocalAccount::new(
+			AccountAddress::from_hex_literal("0xA550C18")?, 
+			movement_config.movement_signer_key.clone(), 
+			rest_client.get_account(AccountAddress::from_hex_literal("0xA550C18")?).await?.inner().sequence_number
+		);
+
+		//let signer =
+		//	utils::create_local_account(movement_config.movement_signer_key.clone(), &rest_client)
+		//		.await?;
+
+		println!("Signer: {:?}", &movement_config);
+
+		let native_address = AccountAddress::from_hex_literal("0xa550c18")?;
+		
+		Ok(MovementClientFramework {
 			native_address,
 			non_native_address: Vec::new(), //dummy for now
 			rest_client,
@@ -80,9 +98,9 @@ impl MovementClient {
 		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
-			"atomic_bridge_initiator",
-			"set_time_lock_duration",
+			FRAMEWORK_ADDRESS,
+			"atomic_bridge_configuration",
+			"set_initiator_time_lock_duration",
 			Vec::new(),
 			args,
 		);
@@ -117,7 +135,7 @@ impl MovementClient {
 }
 
 #[async_trait::async_trait]
-impl BridgeContract<MovementAddress> for MovementClient {
+impl BridgeContract<MovementAddress> for MovementClientFramework {
 	async fn initiate_bridge_transfer(
 		&mut self,
 		_initiator: BridgeAddress<MovementAddress>,
@@ -130,12 +148,15 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
 		};
 		debug!("Amount value: {:?}", amount_value);
+		debug!("L1 recipient: {:?}", recipient);
 
 		let args = vec![
 			utils::serialize_vec_initiator(&recipient.0)?,
 			utils::serialize_vec_initiator(&hash_lock.0[..])?,
 			utils::serialize_u64_initiator(&amount_value)?,
 		];
+
+		debug!("Args: {:?}", args);
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -303,6 +324,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
 		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
+
 		let payload = utils::make_aptos_payload(
 			self.native_address,
 			COUNTERPARTY_MODULE_NAME,
@@ -479,7 +501,7 @@ use tokio::{
 	task,
 };
 
-impl MovementClient {
+impl MovementClientFramework {
 	pub fn publish_for_test(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
@@ -793,7 +815,7 @@ impl MovementClient {
 
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok((
-			MovementClient {
+			MovementClientFramework {
 				native_address: DUMMY_ADDRESS,
 				non_native_address: Vec::new(),
 				rest_client,
