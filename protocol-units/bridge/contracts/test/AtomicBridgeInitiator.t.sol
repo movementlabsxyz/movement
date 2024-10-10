@@ -212,4 +212,3 @@ contract AtomicBridgeInitiatorWethTest is Test {
         assertEq(weth.balanceOf(originator), 1 ether, "WETH balance mismatch");
     }
 }
-
