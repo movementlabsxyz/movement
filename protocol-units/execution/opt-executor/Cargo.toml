@@ -59,15 +59,14 @@ aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
-maptos-execution-util = { workspace = true }
-movement-types = { workspace = true }
 aptos-indexer-grpc-fullnode = { workspace = true }
 aptos-indexer-grpc-table-info = { workspace = true }
 aptos-indexer = { workspace = true }
 aptos-protos = { workspace = true }
 aptos-logger = { workspace = true }
-tonic = { workspace = true }
+maptos-execution-util = { workspace = true }
 movement-rest = { workspace = true }
+movement-types = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }

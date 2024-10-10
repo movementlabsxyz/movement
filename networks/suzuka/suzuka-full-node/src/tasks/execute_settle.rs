@@ -138,7 +138,7 @@ where
 		})
 		.await??;
 
-		// get the transactions
+		// get the transactions count before the block is consumed
 		let transactions_count = block.transactions().len();
 		let span = info_span!(target: "movement_telemetry", "execute_block", id = %block_id);
 		let commitment =
@@ -152,7 +152,7 @@ where
 		self.da_db.set_synced_height(da_height - 1).await?;
 
 		// set the block as executed
-		self.da_db.add_executed_block(block_id.to_string()).await?;
+		self.da_db.add_executed_block(block_id.clone()).await?;
 
 		// todo: this needs defaults
 		if self.settlement_enabled() {

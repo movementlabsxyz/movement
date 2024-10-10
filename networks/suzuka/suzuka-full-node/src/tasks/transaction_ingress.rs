@@ -5,10 +5,10 @@ use m1_da_light_node_util::config::Config as LightNodeConfig;
 use maptos_dof_execution::SignedTransaction;
 
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::{info, info_span, warn, Instrument};
 
 use std::ops::ControlFlow;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{self, AtomicU64};
 use std::time::{Duration, Instant};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
@@ -29,7 +29,16 @@ impl Task {
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		while let ControlFlow::Continue(()) = self.spawn_write_next_transaction_batch().await? {}
+		loop {
+			let batch_id = LOGGING_UID.fetch_add(1, atomic::Ordering::Relaxed);
+			let span =
+				info_span!(target: "movement_telemetry", "write_batch", batch_id = %batch_id);
+			if let ControlFlow::Break(()) =
+				self.spawn_write_next_transaction_batch().instrument(span).await?
+			{
+				break;
+			}
+		}
 		Ok(())
 	}
 
@@ -45,7 +54,6 @@ impl Task {
 
 		let mut transactions = Vec::new();
 
-		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 		loop {
 			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
 			{
@@ -65,12 +73,11 @@ impl Task {
 				Ok(transaction) => match transaction {
 					Some(transaction) => {
 						info!(
-							target : "movement_telemetry",
-							batch_id = %batch_id,
+							target: "movement_telemetry",
 							tx_hash = %transaction.committed_hash(),
 							sender = %transaction.sender(),
 							sequence_number = transaction.sequence_number(),
-							"received transaction",
+							"received_transaction",
 						);
 						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
@@ -94,7 +101,6 @@ impl Task {
 		if transactions.len() > 0 {
 			info!(
 				target: "movement_telemetry",
-				batch_id = %batch_id,
 				transaction_count = transactions.len(),
 				"built_batch_write"
 			);
