@@ -125,6 +125,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		hash_lock: HashLock,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		tracing::info!("MVT CALL initiate_bridge_transfer",);
 		let amount_value = match amount.0 {
 			AssetType::Moveth(value) => value,
 			_ => return Err(BridgeContractError::ConversionFailed("Amount".to_string())),
@@ -161,6 +162,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
+		tracing::info!("MVT CALL initiator_complete_bridge_transfer",);
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
 			while end > 0 && preimage.0[end - 1] == 0 {
@@ -197,6 +199,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		bridge_transfer_id: BridgeTransferId,
 		preimage: HashLockPreImage,
 	) -> BridgeContractResult<()> {
+		tracing::info!("MVT CALL counterparty_complete_bridge_transfer",);
 		let unpadded_preimage = {
 			let mut end = preimage.0.len();
 			while end > 0 && preimage.0[end - 1] == 0 {
@@ -245,6 +248,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		tracing::info!("MVT CALL lock_bridge_transfer",);
 		let amount_value = match amount.0 {
 			AssetType::Moveth(value) => value,
 			_ => return Err(BridgeContractError::SerializationError),
@@ -281,6 +285,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
+		tracing::info!("MVT CALL refund_bridge_transfer",);
 		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?];
 
 		let payload = utils::make_aptos_payload(
@@ -302,6 +307,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
+		tracing::info!("MVT CALL abort_bridge_transfer",);
 		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
 		let payload = utils::make_aptos_payload(
 			self.native_address,

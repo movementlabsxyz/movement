@@ -120,7 +120,12 @@ impl EthClient {
 		owner: EthAddress,
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
-		let call = self.initiator_contract.initialize(weth.0, owner.0, U256::from(timelock.0));
+		let call = self.initiator_contract.initialize(
+			weth.0,
+			owner.0,
+			U256::from(timelock.0),
+			U256::from(100),
+		);
 		send_transaction(
 			call.to_owned(),
 			&send_transaction_rules(),
@@ -209,6 +214,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		hash_lock: HashLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractResult<()> {
+		tracing::info!("ETH CALL abort_bridge_transfer",);
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().map_err(|e| {
@@ -242,6 +248,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
+		tracing::info!("ETH CALL initiator_complete_bridge_transfer",);
 		// The Alloy generated type for smart contract`pre_image` arg is `FixedBytes<32>`
 		// so it must be converted to `[u8; 32]`.
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
@@ -274,6 +281,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		bridge_transfer_id: BridgeTransferId,
 		pre_image: HashLockPreImage,
 	) -> BridgeContractResult<()> {
+		tracing::info!("ETH CALL counterparty_complete_bridge_transfer",);
 		// The Alloy generated type for smart contract`pre_image` arg is `FixedBytes<32>`
 		// so it must be converted to `[u8; 32]`.
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
@@ -305,6 +313,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
+		tracing::info!("ETH CALL refund_bridge_transfer",);
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
 		let call = contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
@@ -329,6 +338,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		tracing::info!("ETH CALL lock_bridge_transfer",);
 		let contract =
 			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
 		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
@@ -357,6 +367,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
 	) -> BridgeContractResult<()> {
+		tracing::info!("ETH CALL abort_bridge_transfer",);
 		let contract =
 			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
 		let call = contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
