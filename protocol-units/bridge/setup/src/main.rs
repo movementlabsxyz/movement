@@ -96,6 +96,9 @@ async fn main() -> Result<(), anyhow::Error> {
 					.clone();
 			}
 
+			//set timelock for e2e test
+			config.eth.time_lock_secs = 60; // 1mn for the e2e test.
+
 			// Use custom as movement node in init.
 			config.movement.mvt_init_network = "custom".to_string();
 

@@ -120,7 +120,12 @@ impl EthClient {
 		owner: EthAddress,
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
-		let call = self.initiator_contract.initialize(weth.0, owner.0, U256::from(timelock.0));
+		let call = self.initiator_contract.initialize(
+			weth.0,
+			owner.0,
+			U256::from(timelock.0),
+			U256::from(100),
+		);
 		send_transaction(
 			call.to_owned(),
 			&send_transaction_rules(),
@@ -285,7 +290,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
 
 		let contract =
-			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
+			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
 		let call = contract
 			.completeBridgeTransfer(FixedBytes(bridge_transfer_id.0), FixedBytes(pre_image));
 		send_transaction(

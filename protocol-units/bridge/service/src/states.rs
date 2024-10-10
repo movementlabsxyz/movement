@@ -8,6 +8,7 @@ use crate::types::LockDetails;
 use crate::types::{BridgeTransferId, ChainId, HashLock, TimeLock};
 use crate::TransferAction;
 use crate::TransferActionType;
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TransferAddress(Vec<u8>);
@@ -35,6 +36,20 @@ pub enum TransferStateType {
 	Refund,
 }
 
+impl fmt::Display for TransferStateType {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let kind = match self {
+			Self::Initialized => "Initialized",
+			Self::Locked => "Locked",
+			Self::SecretReceived => "SecretReceived",
+			Self::CompletedIntiator => "CompletedIntiator",
+			Self::Done => "Done",
+			Self::Refund => "Refund",
+		};
+		write!(f, "{}", kind,)
+	}
+}
+
 #[allow(dead_code)]
 pub struct TransferState {
 	pub state: TransferStateType,
@@ -50,6 +65,16 @@ pub struct TransferState {
 	pub retry_on_error: usize,
 }
 
+impl fmt::Display for TransferState {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(
+			f,
+			"Transfer State: {} / transfer id: {} / init_chain: {} ",
+			self.state, self.transfer_id, self.init_chain
+		)
+	}
+}
+
 impl TransferState {
 	pub fn validate_event<A>(&self, event: &TransferEvent<A>) -> Result<(), InvalidEventError> {
 		match (&event.contract_event, &self.state) {
@@ -62,13 +87,27 @@ impl TransferState {
 				!= self.init_chain)
 				.then_some(())
 				.ok_or(InvalidEventError::BadChain),
-			// Mint event is only applied on Initialized swap state
+			// Lock event is only applied on Initialized swap state
 			(BridgeContractEvent::Locked(_), _) => Err(InvalidEventError::BadEvent),
-			//TODO
-			(BridgeContractEvent::InitialtorCompleted(_), _) => todo!(),
-			(BridgeContractEvent::CounterPartCompleted(_, _), _) => todo!(),
-			(BridgeContractEvent::Refunded(_), _) => todo!(),
-			(&BridgeContractEvent::Cancelled(_), _) => todo!(),
+			// CounterPartCompleted event must on on the counter part chain.
+			(BridgeContractEvent::CounterPartCompleted(_, _), TransferStateType::Locked) => {
+				(event.chain != self.init_chain)
+					.then_some(())
+					.ok_or(InvalidEventError::BadChain)
+			}
+			// CounterPartCompleted event is only applied on Locked swap state
+			(BridgeContractEvent::CounterPartCompleted(_, _), _) => {
+				Err(InvalidEventError::BadEvent)
+			}
+			// InitialtorCompleted event must on on the init chain.
+			(BridgeContractEvent::InitialtorCompleted(_), TransferStateType::SecretReceived) => {
+				(event.chain == self.init_chain)
+					.then_some(())
+					.ok_or(InvalidEventError::BadChain)
+			}
+			(BridgeContractEvent::InitialtorCompleted(_), _) => Err(InvalidEventError::BadEvent),
+			(BridgeContractEvent::Refunded(_), _) => Ok(()),
+			(&BridgeContractEvent::Cancelled(_), _) => Ok(()),
 		}
 	}
 
