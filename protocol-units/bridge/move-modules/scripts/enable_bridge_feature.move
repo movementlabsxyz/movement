@@ -13,7 +13,11 @@ script {
 
         let disabled_blob: vector<u64> = vector[];
 
-        features::change_feature_flags_for_next_epoch(framework_signer, enabled_blob, disabled_blob);
-        aptos_governance::reconfigure(framework_signer);
+        features::change_feature_flags_for_next_epoch(
+                framework_signer, 
+                enabled_blob, 
+                disabled_blob
+        );
+        features::on_new_epoch(framework_signer);
     }
 }
