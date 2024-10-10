@@ -10,10 +10,11 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
     TransparentUpgradeableProxy public atomicBridgeProxy;
     string public atomicBridgeSignature = "initialize(address,address,uint256,uint256)";
     
-    address public moveTokenAddress = address(0xYourMockMoveTokenAddress); // Replace this with actual token address
-    address public ownerAddress = address(0xYourOwnerAddress); // Replace this with actual owner address
-    uint256 public timeLockDuration = 3600; // Example: 1 hour
-    uint256 public initialPoolBalance = 1000 ether; // Replace with actual balance, assuming 18 decimals for the MOVE token
+
+    address public moveTokenAddress = address(0x1b37f0a65c1EeEFA9d4652317Af53F88F1e1a01C); 
+    address public ownerAddress = address(0xYourOwnerAddress); 
+    uint256 public timeLockDuration = 3600; 
+    uint256 public initialPoolBalance = 1000 ether; 
 
     bytes32 public salt = 0xc000000000000000000000002774b8b4881d594b03ff8a93f4cad69407c90350;
 
