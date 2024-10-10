@@ -69,13 +69,7 @@ impl TryFrom<String> for MovementSync {
 
 	fn try_from(value: String) -> Result<Self, Self::Error> {
 		// Split the string on "::", expect exactly two parts (leader/follower and sync-pattern)
-		let mut leader_follower_split = value.split("::");
-		let leader_follower_part = leader_follower_split.next().context(
-            "MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>",
-        )?;
-		let sync_pattern_part = leader_follower_split.next().context(
-            "MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>",
-        )?;
+		let (leader_follower_part, sync_pattern_part) = value.split_once("::").ok_or_else(|| anyhow!("MOVEMENT_SYNC environment variable must be in the format <leader|follower>::<sync-pattern>"))?;
 
 		// Ensure there are no extra parts after splitting on "::"
 		if leader_follower_split.next().is_some() {
