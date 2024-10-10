@@ -4,15 +4,15 @@ import "forge-std/Script.sol";
 import {MOVEToken} from "../src/token/MOVEToken.sol";
 import { Helper } from "./helpers/Helper.sol";
 import { MCRDeployer } from "./MCRDeployer.s.sol";
-import { StakingDeployer } from "./StakingDeployer.s.sol";
+import { MovementStakingDeployer } from "./MovementStakingDeployer.s.sol";
 import { StlMoveDeployer } from "./StlMoveDeployer.s.sol";
 import { MOVETokenDeployer } from "./MOVETokenDeployer.s.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
-contract CoreDeployer is MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer {
+contract CoreDeployer is MCRDeployer, MovementStakingDeployer, StlMoveDeployer, MOVETokenDeployer {
 
-    function run() external override(MCRDeployer, StakingDeployer, StlMoveDeployer, MOVETokenDeployer) {
+    function run() external override(MCRDeployer, MovementStakingDeployer, StlMoveDeployer, MOVETokenDeployer) {
 
         // load config and deployments data
         _loadExternalData();
