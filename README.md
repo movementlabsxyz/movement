@@ -28,6 +28,13 @@ The Movement SDK is a collection of tools and libraries for building, deploying,
 
 https://nix.dev/install-nix
 
+### Prerequisites - Rust
+
+https://www.rust-lang.org/tools/install
+
+### Prerequisites - orchestrator to manage non-containerized applications
+
+https://f1bonacc1.github.io/process-compose/installation
 
 ## Running Natively
 ### `m1-da-light-node`
@@ -54,7 +61,7 @@ just m1-da-light-node native build.setup.test.local
 
 ```bash
 # example test with local
-just monza-full-node native build.setup.test.local
+just suzuka-full-node native build.setup.test.local
 ```
 
 ## Run a Movement Node with Docker Compose
