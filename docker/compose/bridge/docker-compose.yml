@@ -1,0 +1,21 @@
+services:
+
+  setup:
+    image: busybox
+    container_name: setup
+    command: sh -c 'echo "Starting bridge setup services." && sleep infinity'
+    healthcheck:
+      test: [ "CMD-SHELL", "echo true" ]
+
+  bridge-service:
+    image: ghcr.io/movementlabsxyz/bridge-service:${CONTAINER_REV}
+    container_name: bridge-service
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      setup:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "echo 'health check'" ]

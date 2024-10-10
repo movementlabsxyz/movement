@@ -1,0 +1,23 @@
+services:
+
+  setup:
+    environment:
+      ETH_RPC_CONNECTION_PROTOCOL: "http"
+      ETH_RPC_CONNECTION_HOSTNAME: "helios"
+      ETH_RPC_CONNECTION_PORT: 26657
+
+  helios:
+    image: ghcr.io/movementlabsxyz/helios:${CONTAINER_REV}
+    container_name: helios
+    environment:
+      # the url for execution
+      ETH_RPC_URL: ${ETH_RPC_URL:?ETH_RPC_URL is not set}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "26657:26657"
+    depends_on:
+      setup:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 26657" ]
