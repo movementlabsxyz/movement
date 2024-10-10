@@ -82,8 +82,8 @@ impl MovementClientFramework {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_initiator",
-			"set_time_lock_duration",
+			"atomic_bridge_configuration",
+			"set_initiator_time_lock_duration",
 			Vec::new(),
 			args,
 		);
@@ -103,8 +103,8 @@ impl MovementClientFramework {
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
-			"atomic_bridge_counterparty",
-			"set_time_lock_duration",
+			"atomic_bridge_configuration",
+			"set_counterparty_time_lock_duration",
 			Vec::new(),
 			args,
 		);

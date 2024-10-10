@@ -13,7 +13,7 @@ use bridge_service::chains::ethereum::types::AlloyProvider;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
 use bridge_service::chains::movement::utils::MovementAddress;
-use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
+use bridge_service::chains::movement::{client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash};
 use bridge_service::types::Amount;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use godfig::{backend::config_file::ConfigFile, Godfig};
@@ -216,10 +216,90 @@ impl TestHarness {
 		(test_harness, config, movement_process)
 	}
 
+	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {
+		let (config, anvil) = bridge_setup::test_eth_setup(config)
+			.await
+			.expect("Test eth config setup failed.");
+		let test_hadness = HarnessEthClient::build(&config).await;
+		(test_hadness, config, anvil)
+	}
+}
+
+pub struct HarnessMvtClientFramework {
+	pub movement_client: MovementClientFramework,
+	///The Apotos Rest Client
+	pub rest_client: Client,
+	///The Apotos Rest Client
+	pub faucet_client: Arc<RwLock<FaucetClient>>,
+}
+
+impl HarnessMvtClientFramework {
+	pub fn gen_aptos_account() -> Vec<u8> {
+		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+		let movement_recipient = LocalAccount::generate(&mut rng);
+		movement_recipient.public_key().to_bytes().to_vec()
+	}
+
+	pub async fn build(config: &Config) -> Self {
+		let movement_client = MovementClientFramework::new(&config.movement)
+			.await
+			.expect("Failed to create MovementClient");
+
+		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
+			.expect("Bad movement rpc url in config");
+		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = Url::from_str(&config.movement.mvt_faucet_connection_url())
+			.expect("Bad movement faucet url in config");
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_url.clone(),
+			node_connection_url.clone(),
+		)));
+
+		HarnessMvtClientFramework { movement_client, rest_client, faucet_client }
+	}
+}
+
+pub struct TestHarnessFramework;
+impl TestHarnessFramework {
+	pub async fn read_bridge_config() -> Result<Config, anyhow::Error> {
+		let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let pathbuff = bridge_config::get_config_path(&dot_movement);
+		dot_movement.set_path(pathbuff);
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+		// get a matching godfig object
+		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
+		let bridge_config: Config = godfig.try_wait_for_ready().await?;
+		Ok(bridge_config)
+	}
+
+	pub async fn new_with_eth_and_movement(
+	) -> Result<(HarnessEthClient, HarnessMvtClientFramework, Config), anyhow::Error> {
+		let config = TestHarnessFramework::read_bridge_config().await?;
+
+		let test_mvt_harness = HarnessMvtClientFramework::build(&config).await;
+		let test_eth_harness = HarnessEthClient::build(&config).await;
+
+		Ok((test_eth_harness, test_mvt_harness, config))
+	}
+
+	pub async fn new_with_movement(
+		config: Config,
+	) -> (HarnessMvtClientFramework, Config, tokio::process::Child) {
+		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
+			.await
+			.expect("Failed to setup Movement config");
+
+		let test_harness = HarnessMvtClientFramework::build(&config).await;
+
+		(test_harness, config, movement_process)
+	}
+
 	pub async fn new_with_suzuka(
 		config: Config,
-	) -> (HarnessMvtClient, Config) {
-		let test_harness = HarnessMvtClient::build(&config).await;
+	) -> (HarnessMvtClientFramework, Config) {
+		let test_harness = HarnessMvtClientFramework::build(&config).await;
 		(test_harness, config)
 	}
 
@@ -227,7 +307,7 @@ impl TestHarness {
 		let (config, anvil) = bridge_setup::test_eth_setup(config)
 			.await
 			.expect("Test eth config setup failed.");
-		let test_hadness = HarnessEthClient::build(&config).await;
-		(test_hadness, config, anvil)
+		let test_harness = HarnessEthClient::build(&config).await;
+		(test_harness, config, anvil)
 	}
 }

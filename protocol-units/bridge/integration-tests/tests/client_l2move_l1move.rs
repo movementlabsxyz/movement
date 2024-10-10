@@ -2,7 +2,7 @@ use anyhow::Result;
 use bridge_config::Config;
 use bridge_integration_tests::utils;
 use bridge_integration_tests::utils as test_utils;
-use bridge_integration_tests::{MovementToEthCallArgs, TestHarness};
+use bridge_integration_tests::{MovementToEthCallArgs, TestHarness, TestHarnessFramework};
 use bridge_service::{
 	chains::{bridge_contracts::BridgeContract, movement::utils::MovementHash},
 	types::{BridgeTransferId, HashLockPreImage},
@@ -39,14 +39,14 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let config:Config = Config::suzuka();
 	
 	let (mut mvt_client_harness, _config) =
-		TestHarness::new_with_suzuka(config).await;
+		TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
 		let sender_address = mvt_client_harness.movement_client.signer().address();
-		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
-		test_utils::initiate_bridge_transfer_helper(
+		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
+		test_utils::initiate_bridge_transfer_helper_framework(
 			&mut mvt_client_harness.movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
@@ -58,7 +58,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to initiate bridge transfer");
 
 		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
+			test_utils::extract_bridge_transfer_id_framework(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
