@@ -2,8 +2,8 @@
 
 The client integration tests for the framework bridge modules are in `tests`:
 
-- `client_l1move_l2move.rs` (run with command `rust_backtrace=1 cargo test --test client_l1move_l2move test_movement_client_initiate_transfer -- --nocapture --test-threads=1`)
-- `client_l2move_l1move.rs` (run with command `rust_backtrace=1 cargo test --test client_l2move_l1move test_movement_client_initiate_transfer -- --nocapture --test-threads=1`)
+- `client_l1move_l2move.rs` (run with command `rust_backtrace=1 cargo test --test client_l1move_l2move -- --nocapture --test-threads=1`)
+- `client_l2move_l1move.rs` (run with command `rust_backtrace=1 cargo test --test client_l2move_l1move -- --nocapture --test-threads=1`)
 
 In order to successfully run the tests against a local Suzuka node, the core resource account `0xA550C18` needs to be set to the same private key generated in `config.json`.
 
