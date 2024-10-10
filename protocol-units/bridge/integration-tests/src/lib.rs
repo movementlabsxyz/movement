@@ -198,10 +198,10 @@ impl TestHarness {
 	) -> Result<(HarnessEthClient, HarnessMvtClient, Config), anyhow::Error> {
 		let config = TestHarness::read_bridge_config().await?;
 
-		let test_mvt_hadness = HarnessMvtClient::build(&config).await;
-		let test_eth_hadness = HarnessEthClient::build(&config).await;
+		let test_mvt_harness = HarnessMvtClient::build(&config).await;
+		let test_eth_harness = HarnessEthClient::build(&config).await;
 
-		Ok((test_eth_hadness, test_mvt_hadness, config))
+		Ok((test_eth_harness, test_mvt_harness, config))
 	}
 
 	pub async fn new_with_movement(
@@ -211,9 +211,16 @@ impl TestHarness {
 			.await
 			.expect("Failed to setup Movement config");
 
-		let test_hadness = HarnessMvtClient::build(&config).await;
+		let test_harness = HarnessMvtClient::build(&config).await;
 
-		(test_hadness, config, movement_process)
+		(test_harness, config, movement_process)
+	}
+
+	pub async fn new_with_suzuka(
+		config: Config,
+	) -> (HarnessMvtClient, Config) {
+		let test_harness = HarnessMvtClient::build(&config).await;
+		(test_harness, config)
 	}
 
 	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {

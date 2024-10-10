@@ -35,7 +35,7 @@ enum Call {
 
 #[allow(dead_code)]
 #[derive(Clone)]
-pub struct MovementClient {
+pub struct MovementClientFramework {
 	///Native Address of the
 	pub native_address: AccountAddress,
 	/// Bytes of the non-native (external) chain.
@@ -46,7 +46,7 @@ pub struct MovementClient {
 	signer: Arc<LocalAccount>,
 }
 
-impl MovementClient {
+impl MovementClientFramework {
 	pub async fn new(config: &MovementConfig) -> Result<Self, anyhow::Error> {
 		let node_connection_url = Url::from_str(config.mvt_rpc_connection_url().as_str())
 			.map_err(|_| BridgeContractError::SerializationError)?;
@@ -57,7 +57,7 @@ impl MovementClient {
 			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
 				.await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
-		Ok(MovementClient {
+		Ok(MovementClientFramework {
 			native_address,
 			non_native_address: Vec::new(), //dummy for now
 			rest_client,
@@ -117,7 +117,7 @@ impl MovementClient {
 }
 
 #[async_trait::async_trait]
-impl BridgeContract<MovementAddress> for MovementClient {
+impl BridgeContract<MovementAddress> for MovementClientFramework {
 	async fn initiate_bridge_transfer(
 		&mut self,
 		_initiator: BridgeAddress<MovementAddress>,
@@ -479,7 +479,7 @@ use tokio::{
 	task,
 };
 
-impl MovementClient {
+impl MovementClientFramework {
 	pub fn publish_for_test(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
@@ -793,7 +793,7 @@ impl MovementClient {
 
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		Ok((
-			MovementClient {
+			MovementClientFramework {
 				native_address: DUMMY_ADDRESS,
 				non_native_address: Vec::new(),
 				rest_client,
