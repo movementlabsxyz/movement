@@ -245,8 +245,7 @@ pub async fn basic_coin_transfers(
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-	let tracing_config = movement_tracing::Config::from_env()?;
-	movement_tracing::init_tracing_subscriber(tracing_config)?;
+	movement_tracing::init_tracing_subscriber();
 
 	// get the lead dot movement from the environment
 	let dot_movement = DotMovement::try_from_env()?;

@@ -246,9 +246,10 @@ move-vm-ext = { path = "types/move-vm-ext" }
 num-derive = "0.4.2"
 num-traits = "0.2.14"
 once_cell = "1.8.0"
-opentelemetry = { version = "0.25" }
-opentelemetry_sdk = { version = "0.25", features = ["rt-tokio"] }
-opentelemetry-otlp = { version = "0.25" }
+opentelemetry = { version = "0.26" }
+opentelemetry-otlp = { version = "0.26" }
+opentelemetry_sdk = { version = "0.26", features = ["rt-tokio"] }
+opentelemetry-semantic-conventions = { version = "0.26" }
 parking_lot = { version = "0.12.1" }
 poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
 poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
@@ -286,7 +287,7 @@ tonic-reflection = "0.11"
 tonic-web = "0.11"
 ### To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 tracing = "0.1.40"
-tracing-opentelemetry = { version = "0.26" }
+tracing-opentelemetry = { version = "0.27" }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-test = "0.2.5"
 trie-db = "0.28.0"
