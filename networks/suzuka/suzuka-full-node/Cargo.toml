@@ -27,6 +27,7 @@ tonic = { workspace = true }
 movement-types = { workspace = true }
 movement-rest = { workspace = true }
 movement-tracing = { workspace = true }
+opentelemetry = { workspace = true }
 suzuka-config = { workspace = true }
 dot-movement = { workspace = true }
 godfig = { workspace = true }

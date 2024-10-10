@@ -11,14 +11,17 @@ use maptos_dof_execution::{
 	SignatureVerifiedTransaction, SignedTransaction, Transaction,
 };
 use mcr_settlement_manager::{CommitmentEventStream, McrSettlementManagerOperations};
+use movement_tracing::telemetry;
 use movement_types::block::{Block, BlockCommitment, BlockCommitmentEvent};
 
-use anyhow::Context;
+use anyhow::Context as _;
 use futures::{future::Either, stream};
+use opentelemetry::trace::{FutureExt as _, TraceContextExt as _, Tracer as _};
+use opentelemetry::{Context as OtelContext, KeyValue};
 use suzuka_config::execution_extension;
 use tokio::select;
 use tokio_stream::{Stream, StreamExt};
-use tracing::{debug, error, info, info_span, Instrument};
+use tracing::{debug, error, info};
 
 pub struct Task<E, S> {
 	executor: E,
@@ -138,11 +141,19 @@ where
 		})
 		.await??;
 
-		// get the transactions
+		// get the transactions count before the block is consumed
 		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_telemetry", "execute_block", id = %block_id);
-		let commitment =
-			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
+
+		// execute the block
+		let tracer = telemetry::tracer();
+		let span = tracer
+			.span_builder("execute_block")
+			.with_attributes([KeyValue::new("id", block_id.to_string())])
+			.start(&tracer);
+		let commitment = self
+			.execute_block_with_retries(block, block_timestamp)
+			.with_context(OtelContext::current_with_span(span))
+			.await?;
 
 		// decrement the number of transactions in flight on the executor
 		self.executor.decrement_transactions_in_flight(transactions_count as u64);

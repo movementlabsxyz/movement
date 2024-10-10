@@ -1,4 +1,5 @@
 //! Task processing incoming transactions for the opt API.
+use movement_tracing::telemetry;
 
 use aptos_config::config::NodeConfig;
 use aptos_mempool::core_mempool::CoreMempool;
@@ -12,9 +13,11 @@ use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator}
 
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
+use opentelemetry::trace::{FutureExt as _, TraceContextExt as _, Tracer as _};
+use opentelemetry::{Context as OtelContext, KeyValue};
 use thiserror::Error;
 use tokio::sync::mpsc;
-use tracing::{debug, info, info_span, warn, Instrument};
+use tracing::{debug, info, warn};
 
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
@@ -88,14 +91,22 @@ impl TransactionPipe {
 		if let Some(request) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
-					let span = info_span!(
-						target: "movement_telemetry",
-						"submit_transaction",
-						tx_hash = %transaction.committed_hash(),
-						sender = %transaction.sender(),
-						sequence_number = transaction.sequence_number(),
-					);
-					let status = self.submit_transaction(transaction).instrument(span).await?;
+					let tracer = telemetry::tracer();
+					let span = tracer
+						.span_builder("submit_transaction")
+						.with_attributes([
+							KeyValue::new("tx_hash", transaction.committed_hash().to_string()),
+							KeyValue::new("sender", transaction.sender().to_string()),
+							KeyValue::new(
+								"sequence_number",
+								transaction.sequence_number().to_string(),
+							),
+						])
+						.start(&tracer);
+					let status = self
+						.submit_transaction(transaction)
+						.with_context(OtelContext::current_with_span(span))
+						.await?;
 					callback.send(Ok(status)).unwrap_or_else(|_| {
 						debug!("SubmitTransaction request canceled");
 					});
@@ -123,16 +134,14 @@ impl TransactionPipe {
 	) -> Result<SubmissionStatus, Error> {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 		let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
-		info!(
-			target: "movement_telemetry",
-			in_flight = %in_flight,
-			"transactions_in_flight"
+		let otel_cx = OtelContext::current();
+		let otel_span = otel_cx.span();
+		otel_span.add_event(
+			"transactions_in_flight",
+			vec![KeyValue::new("in_flight", in_flight.to_string())],
 		);
 		if in_flight > self.in_flight_limit {
-			info!(
-				target: "movement_telemetry",
-				"shedding_load"
-			);
+			otel_span.add_event("shedding_load", vec![]);
 			let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
 			return Ok((status, None));
 		}
