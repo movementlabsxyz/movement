@@ -47,7 +47,7 @@ pub struct MovementToEthCallArgs {
 impl Default for EthToMovementCallArgs {
 	fn default() -> Self {
 		Self {
-			initiator: b"0x123".to_vec(),
+			initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
 			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
 			bridge_transfer_id: MovementHash(*b"00000000000000000000000transfer1"),
 			hash_lock: MovementHash(*keccak256(b"secret")),
@@ -64,7 +64,7 @@ impl Default for MovementToEthCallArgs {
 		let hash_lock = *keccak256(&serialized_preimage);
 
 		Self {
-			initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
+			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
 			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
 			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
 			hash_lock: EthHash(hash_lock),

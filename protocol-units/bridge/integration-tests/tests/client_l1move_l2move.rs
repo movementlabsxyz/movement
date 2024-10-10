@@ -8,7 +8,7 @@ use bridge_config::Config;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessMvtClient;
-use bridge_integration_tests::TestHarness;
+use bridge_integration_tests::{TestHarness, TestHarnessFramework};
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::{
 	bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
@@ -22,9 +22,9 @@ use tracing::info;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
-	let config = Config::default();
-	let (mvt_client_harness, _config, mut mvt_process) =
-		TestHarness::new_with_movement(config).await;
+	let config = Config::suzuka();
+	let (mvt_client_harness, _config) =
+		TestHarnessFramework::new_with_suzuka(config).await;
 
 	//
 	let rest_client = mvt_client_harness.rest_client;
@@ -41,10 +41,6 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 		balance
 	);
 
-	if let Err(e) = mvt_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
-
 	Ok(())
 }
 
@@ -52,12 +48,9 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 async fn test_movement_client_should_publish_package() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().try_init();
 
-	let config = Config::default();
-	let (_mvt_client_harness, _config, mut mvt_process) =
-		TestHarness::new_with_movement(config).await;
-	if let Err(e) = mvt_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
+	let config = Config::suzuka();
+	let (_mvt_client_harness, _config) =
+		TestHarnessFramework::new_with_suzuka(config).await;
 	Ok(())
 }
 
@@ -66,9 +59,9 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let config = Config::default();
-	let (mut mvt_client_harness, _config, mut mvt_process) =
-		TestHarness::new_with_movement(config).await;
+	let config = Config::suzuka();
+	let (mut mvt_client_harness, _config) =
+		TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = EthToMovementCallArgs::default();
 
@@ -101,7 +94,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			.expect("Failed to lock bridge transfer");
 
 		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
+			test_utils::extract_bridge_transfer_id_framework(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
@@ -157,10 +150,6 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 	}
 	.await;
 
-	if let Err(e) = mvt_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
-
 	test_result
 }
 
@@ -169,9 +158,9 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let config = Config::default();
-	let (mut mvt_client_harness, _config, mut mvt_process) =
-		TestHarness::new_with_movement(config).await;
+	let config = Config::suzuka();
+	let (mut mvt_client_harness, _config) =
+		TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = EthToMovementCallArgs::default();
 
@@ -192,11 +181,11 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		);
 
 		// Set the timelock to 1 second for testing
-		mvt_client_harness
-			.movement_client
-			.counterparty_set_timelock(1)
-			.await
-			.expect("Failed to set timelock");
+		//mvt_client_harness
+		//	.movement_client
+		//	.counterparty_set_timelock(1)
+		//	.await
+		//	.expect("Failed to set timelock");
 
 		mvt_client_harness
 			.movement_client
@@ -211,7 +200,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			.expect("Failed to lock bridge transfer");
 
 		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
+			test_utils::extract_bridge_transfer_id_framework(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
@@ -261,10 +250,6 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		Ok(())
 	}
 	.await;
-
-	if let Err(e) = mvt_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
 
 	test_result
 }

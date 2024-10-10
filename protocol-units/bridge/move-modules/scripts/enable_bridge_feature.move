@@ -12,7 +12,7 @@ script {
         let disabled_blob: vector<u64> = vector[];
 
         features::change_feature_flags_for_next_epoch(
-                framework_signer, 
+                &framework_signer, 
                 enabled_blob, 
                 disabled_blob
         );

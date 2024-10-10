@@ -262,7 +262,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
-			"lock_bridge_transfer",
+			"lock_bridge_transfer_assets",
 			Vec::new(),
 			args,
 		);
