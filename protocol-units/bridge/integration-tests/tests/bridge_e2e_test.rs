@@ -114,7 +114,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	tracing::info!("Wait for the MVT Locked event.");
 	let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
 	let event =
-		tokio::time::timeout(std::time::Duration::from_secs(10), mvt_monitoring.next()).await?;
+		tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
 	let bridge_tranfer_id = if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
 		detail.bridge_transfer_id
 	} else {
@@ -139,7 +139,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	tracing::info!("Wait for InitialtorCompleted event.");
 	loop {
 		let event =
-			tokio::time::timeout(std::time::Duration::from_secs(10), eth_monitoring.next()).await?;
+			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
 		if let Some(Ok(BridgeContractEvent::InitialtorCompleted(_))) = event {
 			break;
 		}

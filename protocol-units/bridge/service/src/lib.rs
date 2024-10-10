@@ -213,6 +213,10 @@ impl Runtime {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
+				//transfer done remove the state.
+				if state.state == TransferStateType::Done {
+					self.swap_state_map.remove(&event_transfer_id);
+				}
 				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Cancelled(_) => {
@@ -226,9 +230,7 @@ impl Runtime {
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
-		if state.state != TransferStateType::Done {
-			self.swap_state_map.insert(state.transfer_id, state);
-		}
+		self.swap_state_map.insert(state.transfer_id, state);
 
 		Ok(action)
 	}
