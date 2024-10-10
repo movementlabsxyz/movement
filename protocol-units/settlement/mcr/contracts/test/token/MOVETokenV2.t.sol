@@ -28,7 +28,7 @@ contract MOVETokenDevTest is Test {
     function testCannotInitializeTwice() public {
         vm.startPrank(multisig);
         // Initialize the contract
-        vm.expectRevert(MOVETokenDev.AlreadyInitialized.selector);
+        vm.expectRevert();
         token.initialize(multisig);
         vm.stopPrank();
     }

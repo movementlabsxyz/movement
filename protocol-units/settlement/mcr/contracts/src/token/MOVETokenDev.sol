@@ -4,16 +4,17 @@ pragma solidity ^0.8.19;
 import "./base/MintableToken.sol";
 
 contract MOVETokenDev is MintableToken {
-    mapping(uint256 version => bool state) public versionInitialized;
-    error AlreadyInitialized();
+
+    constructor() {_disableInitializers();}
+
     /**
      * @dev Initialize the contract
      */
-    function initialize(address multisig) public {
-        if (versionInitialized[2]) revert AlreadyInitialized();
-        versionInitialized[2] = true;
-        _grantRole(MINTER_ADMIN_ROLE, multisig);
-        _grantRole(MINTER_ROLE, multisig);
+    function initialize(address manager) public initializer {
+        __MintableToken_init("Movement", "MOVE");
+        _mint(manager, 10000000000 * 10 ** decimals());
+        _grantRole(MINTER_ADMIN_ROLE, manager);
+        _grantRole(MINTER_ROLE, manager);
     }
 
     function decimals() public pure override returns (uint8) {
