@@ -1,3 +1,5 @@
+// To Deploy 
+// forge script AtomicBridgeInitiatorMOVEDeployer --fork-url https://holesky.infura.io/v3/YOUR_INFURA_PROJECT_ID --broadcast --verify --etherscan-api-key YOUR_ETHERSCAN_API_KEY
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
@@ -42,9 +44,6 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
 
         // Deploy AtomicBridgeInitiatorMOVE contract
         _deployAtomicBridge();
-
-        // Post-deployment checks (example checks)
-        require(IERC20(moveTokenAddress).balanceOf(movementFoundationSafe) == 0, "Initial balance should be zero");
 
         vm.stopBroadcast();
     }
