@@ -121,13 +121,20 @@ pub async fn syncup(
 			interval.tick().await;
 
 			// push allow push to fail
-			match push_pipeline.push(syncador::Package::null()).await {
-				Ok(package) => {
-					info!("Pushed package: {:?}", package);
+			// ! This is a temporary solution to avoid competing forks in trusted environments.
+			// ! This will be augmented with a more robust format in the future.
+			if is_leader {
+				info!("Running push pipeline");
+				match push_pipeline.push(syncador::Package::null()).await {
+					Ok(package) => {
+						info!("Pushed package: {:?}", package);
+					}
+					Err(err) => {
+						warn!("Error pushing package: {:?}", err);
+					}
 				}
-				Err(err) => {
-					warn!("Error pushing package: {:?}", err);
-				}
+			} else {
+				info!("Non-leader upsyncing is disabled");
 			}
 		}
 		Ok::<(), anyhow::Error>(())
