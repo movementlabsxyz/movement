@@ -4,8 +4,13 @@ use std::process::ExitCode;
 
 #[tokio::main]
 async fn main() -> Result<ExitCode, anyhow::Error> {
-	let tracing_config = movement_tracing::Config::from_env()?;
-	movement_tracing::init_tracing_subscriber(tracing_config)?;
+	movement_tracing::init_tracing_subscriber();
+	let tracing_config = movement_tracing::telemetry::Config::from_env()?;
+	movement_tracing::telemetry::init_tracer_provider(
+		env!("CARGO_PKG_NAME"),
+		env!("CARGO_PKG_VERSION"),
+		tracing_config,
+	)?;
 
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
