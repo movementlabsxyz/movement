@@ -21,6 +21,7 @@ use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
+const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
@@ -80,7 +81,7 @@ impl MovementClientFramework {
 		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"set_time_lock_duration",
 			Vec::new(),
@@ -101,7 +102,7 @@ impl MovementClientFramework {
 		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_counterparty",
 			"set_time_lock_duration",
 			Vec::new(),
@@ -138,7 +139,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"initiate_bridge_transfer",
 			Vec::new(),
@@ -174,7 +175,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			INITIATOR_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
@@ -210,7 +211,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
@@ -259,7 +260,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
 			"lock_bridge_transfer",
 			Vec::new(),
@@ -284,7 +285,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		let args = vec![utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?];
 
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			"atomic_bridge_initiator",
 			"refund_bridge_transfer",
 			Vec::new(),
@@ -304,7 +305,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 	) -> BridgeContractResult<()> {
 		let args3 = vec![utils::serialize_vec(&bridge_transfer_id.0[..])?];
 		let payload = utils::make_aptos_payload(
-			self.native_address,
+			FRAMEWORK_ADDRESS,
 			COUNTERPARTY_MODULE_NAME,
 			"abort_bridge_transfer",
 			Vec::new(),
@@ -332,7 +333,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
-					address: self.native_address.clone().into(),
+					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
 						Identifier::new("atomic_bridge_initiator")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
@@ -403,7 +404,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		let view_request = ViewRequest {
 			function: EntryFunctionId {
 				module: MoveModuleId {
-					address: self.native_address.clone().into(),
+					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
 						Identifier::new("atomic_bridge_counterparty")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
