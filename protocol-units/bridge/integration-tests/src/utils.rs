@@ -229,37 +229,12 @@ pub async fn initiate_bridge_transfer_helper_framework(
 ) -> Result<(), BridgeContractError> {
 	// Publish for test
 
-	if timelock_modify {
-		// Set the timelock to 1 second for testing
-		movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
-	}
+	//if timelock_modify {
+	//	// Set the timelock to 1 second for testing
+	//	movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
+	//}
 
 	// Mint MovETH to the initiator's address
-	let mint_amount = 200 * 100_000_000; // Assuming 8 decimals for MovETH
-
-	let mint_args = vec![
-		movement_utils::serialize_address_initiator(&movement_client.signer().address())?, // Mint to initiator's address
-		movement_utils::serialize_u64_initiator(&mint_amount)?, // Amount to mint (200 MovETH)
-	];
-
-	let mint_payload = movement_utils::make_aptos_payload(
-		movement_client.native_address, // Address where moveth module is published
-		"moveth",
-		"mint",
-		Vec::new(),
-		mint_args,
-	);
-
-	// Send transaction to mint MovETH
-	movement_utils::send_and_confirm_aptos_transaction(
-		&movement_client.rest_client(),
-		movement_client.signer(),
-		mint_payload,
-	)
-	.await
-	.map_err(|_| BridgeContractError::MintError)?;
-
-	debug!("Successfully minted 200 MovETH to the initiator");
 
 	// Initiate the bridge transfer
 	movement_client

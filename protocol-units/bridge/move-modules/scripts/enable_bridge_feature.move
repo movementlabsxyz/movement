@@ -3,9 +3,7 @@ script {
     use std::features;
 
     fun enable_bridge_feature(core_resources: &signer) {
-        let core_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
-
-        let framework_signer = &core_signer;
+        let framework_signer = aptos_governance::get_signer_testnet_only(core_resources, @0x1);
 
         let enabled_blob: vector<u64> = vector[
             features::get_atomic_bridge_feature()
@@ -18,6 +16,6 @@ script {
                 enabled_blob, 
                 disabled_blob
         );
-        features::on_new_epoch(framework_signer);
+        features::on_new_epoch(&framework_signer);
     }
 }
