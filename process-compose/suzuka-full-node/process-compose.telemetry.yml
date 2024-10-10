@@ -14,11 +14,11 @@ processes:
     depends_on:
       otlp-collector:
         condition: process_started
-    env:
-      MOVEMENT_OTLP: http://localhost:4317
+    environment:
+      - MOVEMENT_OTLP=http://localhost:4317
   m1-da-light-node:
     depends_on:
       otlp-collector:
         condition: process_started
-    env:
-      MOVEMENT_OTLP: http://localhost:4317
+    environment:
+      - MOVEMENT_OTLP=http://localhost:4317
