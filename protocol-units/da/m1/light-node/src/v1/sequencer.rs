@@ -79,17 +79,17 @@ impl LightNodeV1 {
 		// this has an internal timeout based on its building time
 		// so in the worst case scenario we will roughly double the internal timeout
 		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		debug!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
+		debug!(target: "movement_telemetry", uid = %uid, "waiting_for_next_block",);
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
+				info!(target: "movement_telemetry", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
 				sender.send(block).await?;
 				Ok(())
 			}
 			None => {
 				// no transactions to include
-				debug!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
+				debug!(target: "movement_telemetry", uid = %uid, "no_transactions_to_include");
 				Ok(())
 			}
 		}
@@ -97,7 +97,7 @@ impl LightNodeV1 {
 
 	async fn submit_blocks(&self, blocks: &Vec<block::WrappedBlock>) -> Result<(), anyhow::Error> {
 		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitting_block");
+			info!(target: "movement_telemetry", block_id = %block.block.id(), "inner_submitting_block");
 		}
 		// get references to celestia blobs in the wrapped blocks
 		let block_blobs = blocks
@@ -108,14 +108,14 @@ impl LightNodeV1 {
 		// use deref on the wrapped block to get the blob
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
 		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitted_block");
+			info!(target: "movement_telemetry", block_id = %block.block.id(), "inner_submitted_block");
 		}
 		Ok(())
 	}
 
 	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
 		for block in &blocks {
-			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
+			info!(target: "movement_telemetry", block_id = %block.id(), "submitting_block");
 		}
 
 		// wrap the blocks in a struct that can be split and compressed
@@ -168,7 +168,7 @@ impl LightNodeV1 {
 
 		info!("block group results: {:?}", block_group_results);
 		for block_group_result in &block_group_results {
-			info!(target: "movement_timing", block_group_result = ?block_group_result, "block_group_result");
+			info!(target: "movement_telemetry", block_group_result = ?block_group_result, "block_group_result");
 		}
 
 		Ok(())
@@ -204,7 +204,7 @@ impl LightNodeV1 {
 				Err(_) => {
 					// The operation timed out
 					debug!(
-						target: "movement_timing",
+						target: "movement_telemetry",
 						batch_size = blocks.len(),
 						"timed_out_building_block"
 					);
@@ -213,7 +213,7 @@ impl LightNodeV1 {
 			}
 		}
 
-		info!(target: "movement_timing", block_count = blocks.len(), "read_blocks");
+		info!(target: "movement_telemetry", block_count = blocks.len(), "read_blocks");
 
 		Ok(blocks)
 	}
@@ -232,11 +232,11 @@ impl LightNodeV1 {
 
 		// submit the blobs, resizing as needed
 		for block_id in &ids {
-			info!(target: "movement_timing", %block_id, "submitting_block_batch");
+			info!(target: "movement_telemetry", %block_id, "submitting_block_batch");
 		}
 		self.submit_with_heuristic(blocks).await?;
 		for block_id in &ids {
-			info!(target: "movement_timing", %block_id, "submitted_block_batch");
+			info!(target: "movement_telemetry", %block_id, "submitted_block_batch");
 		}
 
 		Ok(())

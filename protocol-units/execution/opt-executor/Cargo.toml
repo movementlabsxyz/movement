@@ -28,6 +28,7 @@ poem = { workspace = true }
 poem-openapi = { workspace = true }
 derive_more = { workspace = true, default-features = true }
 lazy_static = "1.4.0"
+opentelemetry = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 rand = { workspace = true }
@@ -59,15 +60,15 @@ aptos-mempool = { workspace = true }
 aptos-temppath = { workspace = true }
 aptos-faucet-core = { workspace = true }
 aptos-cached-packages = { workspace = true }
-maptos-execution-util = { workspace = true }
-movement-types = { workspace = true }
 aptos-indexer-grpc-fullnode = { workspace = true }
 aptos-indexer-grpc-table-info = { workspace = true }
 aptos-indexer = { workspace = true }
 aptos-protos = { workspace = true }
 aptos-logger = { workspace = true }
-tonic = { workspace = true }
+maptos-execution-util = { workspace = true }
 movement-rest = { workspace = true }
+movement-tracing = { workspace = true }
+movement-types = { workspace = true }
 
 [dev-dependencies]
 dirs = { workspace = true }
