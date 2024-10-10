@@ -19,7 +19,7 @@ use std::env;
 const OTLP_TRACING_ENV: &str = "MOVEMENT_OTLP";
 
 /// Options for telemetry configuration.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Config {
 	/// URL of the collector endpoint using the OTLP gRPC protocol.
 	pub otlp_grpc_url: Option<String>,
@@ -53,6 +53,7 @@ pub fn init_tracer_provider(
 	config: Config,
 ) -> Result<(), anyhow::Error> {
 	if let Some(endpoint) = config.otlp_grpc_url {
+		dbg!(&endpoint);
 		let exporter = opentelemetry_otlp::new_exporter().tonic().with_endpoint(endpoint);
 		let provider = opentelemetry_otlp::new_pipeline()
 			.tracing()
@@ -62,6 +63,7 @@ pub fn init_tracer_provider(
 				KeyValue::new(SERVICE_VERSION, service_version),
 			])))
 			.install_batch(runtime::Tokio)?;
+		dbg!(&provider);
 		global::set_tracer_provider(provider);
 	} else {
 		global::set_tracer_provider(NoopTracerProvider::new());
