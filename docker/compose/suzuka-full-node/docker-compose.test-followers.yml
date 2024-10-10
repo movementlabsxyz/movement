@@ -143,4 +143,16 @@ services:
       - suzuka-full-follower-1
       - suzuka-full-follower-2
 
+  delete-syncing-bucket:
+    image: ghcr.io/movementlabsxyz/suzuka-util:${CONTAINER_REV}
+    container_name: suzuka-util
+    entrypoint: /app/suzuka-util syncing delete-reource
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      suzuka-client-e2e-followers-consistent:
+        condition: service_completed_successfully
+
     
