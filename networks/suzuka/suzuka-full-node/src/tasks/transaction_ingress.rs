@@ -3,12 +3,15 @@
 use m1_da_light_node_client::{BatchWriteRequest, BlobWrite, LightNodeServiceClient};
 use m1_da_light_node_util::config::Config as LightNodeConfig;
 use maptos_dof_execution::SignedTransaction;
+use movement_tracing::telemetry;
 
+use opentelemetry::trace::{FutureExt as _, TraceContextExt as _, Tracer as _};
+use opentelemetry::{Context as OtelContext, KeyValue};
 use tokio::sync::mpsc;
-use tracing::{info, warn};
+use tracing::warn;
 
 use std::ops::ControlFlow;
-use std::sync::atomic::AtomicU64;
+use std::sync::atomic::{self, AtomicU64};
 use std::time::{Duration, Instant};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
@@ -29,8 +32,21 @@ impl Task {
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		while let ControlFlow::Continue(()) = self.spawn_write_next_transaction_batch().await? {}
-		Ok(())
+		let tracer = telemetry::tracer();
+		loop {
+			let batch_id = LOGGING_UID.fetch_add(1, atomic::Ordering::Relaxed);
+			let span = tracer
+				.span_builder("build_batch")
+				.with_attributes([KeyValue::new("batch_id", batch_id.to_string())])
+				.start(&tracer);
+			if let ControlFlow::Break(()) = self
+				.spawn_write_next_transaction_batch()
+				.with_context(OtelContext::current_with_span(span))
+				.await?
+			{
+				break Ok(());
+			}
+		}
 	}
 
 	/// Constructs a batch of transactions then spawns the write request to the DA in the background.
@@ -45,7 +61,6 @@ impl Task {
 
 		let mut transactions = Vec::new();
 
-		let batch_id = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
 		loop {
 			let remaining = match half_building_time.checked_sub(start.elapsed().as_millis() as u64)
 			{
@@ -64,13 +79,17 @@ impl Task {
 			{
 				Ok(transaction) => match transaction {
 					Some(transaction) => {
-						info!(
-							target : "movement_telemetry",
-							batch_id = %batch_id,
-							tx_hash = %transaction.committed_hash(),
-							sender = %transaction.sender(),
-							sequence_number = transaction.sequence_number(),
-							"received transaction",
+						let otel_cx = OtelContext::current();
+						otel_cx.span().add_event(
+							"received_transaction",
+							vec![
+								KeyValue::new("tx_hash", transaction.committed_hash().to_string()),
+								KeyValue::new("sender", transaction.sender().to_string()),
+								KeyValue::new(
+									"sequence_number",
+									transaction.sequence_number().to_string(),
+								),
+							],
 						);
 						let serialized_aptos_transaction = serde_json::to_vec(&transaction)?;
 						let movement_transaction = movement_types::transaction::Transaction::new(
@@ -92,20 +111,23 @@ impl Task {
 		}
 
 		if transactions.len() > 0 {
-			info!(
-				target: "movement_telemetry",
-				batch_id = %batch_id,
-				transaction_count = transactions.len(),
-				"built_batch_write"
+			let otel_cx = OtelContext::current();
+			otel_cx.span().add_event(
+				"built_batch_write",
+				vec![KeyValue::new("transaction_count", transactions.len().to_string())],
 			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
 			// spawn the actual batch write request in the background
+			let write_span = telemetry::tracer().start_with_context("batch_write", &otel_cx);
 			let mut da_light_node_client = self.da_light_node_client.clone();
-			tokio::spawn(async move {
-				if let Err(e) = da_light_node_client.batch_write(batch_write).await {
-					warn!("failed to write batch to DA: {:?}", e);
+			tokio::spawn(
+				async move {
+					if let Err(e) = da_light_node_client.batch_write(batch_write).await {
+						warn!("failed to write batch to DA: {:?}", e);
+					}
 				}
-			});
+				.with_context(otel_cx.with_span(write_span)),
+			);
 		}
 
 		Ok(Continue(()))
