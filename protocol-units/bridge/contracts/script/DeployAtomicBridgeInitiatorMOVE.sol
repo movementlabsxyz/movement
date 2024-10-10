@@ -59,4 +59,3 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
         console.log("Implementation address:", address(atomicBridgeImplementation));
     }
 }
-
