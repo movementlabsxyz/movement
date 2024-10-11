@@ -1,3 +1,11 @@
+// This file defines the core structure and functionality for the `Memseq` module,
+// which is responsible for managing a mempool and sequencing transactions into blocks.
+// 
+// Key Components:
+// - Imports necessary modules and dependencies.
+// - Defines the `Memseq` struct with fields for mempool, block size, parent block, and building time.
+// - Implements methods for initializing and configuring the `Memseq` struct.
+
 use mempool_util::MempoolTransactionOperations;
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{
