@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use alloy::node_bindings::AnvilInstance;
 use alloy::primitives::Address;
+use alloy::primitives::FixedBytes;
 use alloy::primitives::{keccak256, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
@@ -12,12 +13,17 @@ use aptos_sdk::types::LocalAccount;
 use bridge_config::Config;
 use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::ethereum::types::AlloyProvider;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
+use bridge_service::chains::ethereum::types::CounterpartyContract;
 use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::ethereum::utils::send_transaction;
+use bridge_service::chains::ethereum::utils::send_transaction_rules;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
-use bridge_service::chains::movement::utils::MovementAddress;
+use bridge_service::chains::movement::utils::{self as movement_utils, MovementAddress};
 use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
 use bridge_service::types::Amount;
 use bridge_service::types::BridgeTransferId;
+use bridge_service::types::HashLock;
 use bridge_service::types::HashLockPreImage;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use godfig::{backend::config_file::ConfigFile, Godfig};
@@ -147,6 +153,50 @@ impl HarnessEthClient {
 			.expect("Failed to deposit WETH");
 		Ok(())
 	}
+
+	pub async fn initiate_eth_bridge_transfer(
+		config: &Config,
+		initiator_privatekey: PrivateKeySigner,
+		recipient: MovementAddress,
+		hash_lock: HashLock,
+		amount: Amount,
+	) -> Result<(), anyhow::Error> {
+		let initiator_address = initiator_privatekey.address();
+		let rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.wallet(EthereumWallet::from(initiator_privatekey))
+			.on_builtin(&config.eth.eth_rpc_connection_url())
+			.await?;
+
+		let contract =
+			AtomicBridgeInitiator::new(config.eth.eth_initiator_contract.parse()?, &rpc_provider);
+
+		let initiator_address = BridgeAddress(EthAddress(initiator_address));
+
+		let recipient_address = BridgeAddress(Into::<Vec<u8>>::into(recipient));
+
+		let recipient_bytes: [u8; 32] =
+			recipient_address.0.try_into().expect("Recipient address must be 32 bytes");
+		let call = contract
+			.initiateBridgeTransfer(
+				U256::from(amount.weth_value()),
+				FixedBytes(recipient_bytes),
+				FixedBytes(hash_lock.0),
+			)
+			.value(U256::from(amount.eth_value()))
+			.from(*initiator_address.0);
+		let _ = send_transaction(
+			call,
+			&send_transaction_rules(),
+			config.eth.transaction_send_retries,
+			config.eth.gas_limit as u128,
+		)
+		.await
+		.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+		})?;
+		Ok(())
+	}
 }
 
 pub struct HarnessMvtClient {
@@ -192,6 +242,77 @@ impl HarnessMvtClient {
 			.await
 			.expect("Failed to fund account");
 		account
+	}
+
+	pub async fn init_set_timelock(&mut self, timelock: u64) -> Result<(), BridgeContractError> {
+		self.movement_client.initiator_set_timelock(timelock).await?;
+		Ok(())
+	}
+
+	//Mint the specified amount in MovEth.
+	pub async fn mint_moveeth(
+		&self,
+		address: &MovementAddress,
+		amount: u64,
+	) -> Result<(), BridgeContractError> {
+		// Mint MovETH to the initiator's address
+		let mint_amount = amount; // Assuming 8 decimals for MovETH
+
+		let mint_args = vec![
+			movement_utils::serialize_address_initiator(&address.0)?, // Mint to initiator's address
+			movement_utils::serialize_u64_initiator(&mint_amount)?,   // Amount to mint
+		];
+
+		let mint_payload = movement_utils::make_aptos_payload(
+			self.movement_client.native_address, // Address where moveth module is published
+			"moveth",
+			"mint",
+			Vec::new(),
+			mint_args,
+		);
+
+		// Send transaction to mint MovETH
+		movement_utils::send_and_confirm_aptos_transaction(
+			&self.movement_client.rest_client(),
+			self.movement_client.signer(),
+			mint_payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::MintError)?;
+		Ok(())
+	}
+
+	pub async fn initiate_bridge_transfer(
+		&mut self,
+		initiator: &LocalAccount,
+		recipient: EthAddress,
+		hash_lock: HashLock,
+		amount: u64,
+	) -> BridgeContractResult<()> {
+		let recipient_bytes: Vec<u8> = recipient.into();
+		let args = vec![
+			movement_utils::serialize_vec_initiator(&recipient_bytes)?,
+			movement_utils::serialize_vec_initiator(&hash_lock.0[..])?,
+			movement_utils::serialize_u64_initiator(&amount)?,
+		];
+
+		let payload = movement_utils::make_aptos_payload(
+			self.movement_client.native_address,
+			"atomic_bridge_initiator",
+			"initiate_bridge_transfer",
+			Vec::new(),
+			args,
+		);
+
+		let _ = movement_utils::send_and_confirm_aptos_transaction(
+			&self.movement_client.rest_client,
+			initiator,
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::InitiateTransferError)?;
+
+		Ok(())
 	}
 
 	pub async fn counterparty_complete_bridge_transfer(
