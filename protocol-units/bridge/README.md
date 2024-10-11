@@ -8,7 +8,7 @@
 
 
 ## testnet.movementlabs Deployments
-the movement atomic-bridge and all of its modules are deployed under the same package:
+the movement atomic-bridge and all of its modules are deployed under the same package address:
 `0xf7c46960ef7aa1b25cd5d48efef064525aa4ccec286fc3b3a7176bbfec09b84c`
 
 Verify this by running:
