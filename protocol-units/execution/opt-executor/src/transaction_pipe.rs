@@ -20,6 +20,7 @@ use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
 
 const GC_INTERVAL: Duration = Duration::from_secs(30);
+const TOO_NEW_TOLERANCE: u64 = 32;
 
 /// Domain error for the transaction pipe task
 #[derive(Debug, Clone, Error)]
@@ -149,19 +150,29 @@ impl TransactionPipe {
 			None => {}
 		}
 
-		// Retrieve the current sequence number for the account from the db
+		// Validate sequence number
 		let state_view = self
 			.db_reader
 			.latest_state_checkpoint_view()
-			.expect("Failed to get latest state checkpoint view.");
+			.expect("Failed to get latest state view");
+
+		// this checks that the sequence number is too old or too new
 		let sequence_number =
 			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
 		if transaction.sequence_number() < sequence_number {
-			let status = MempoolStatus::new(MempoolStatusCode::VmError);
+			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
+			println!("Transaction sequence number too old: {:?}", transaction.sequence_number());
 			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
 		}
 
-		debug!(%sequence_number, "adding transaction to mempool: {:?}", transaction);
+		if transaction.sequence_number() > (sequence_number + TOO_NEW_TOLERANCE) {
+			let status = MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber);
+			println!("Transaction sequence number too new: {:?}", transaction.sequence_number());
+			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW)));
+		}
+
+		// Add the txn for future validation
+		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
 		let status = self.core_mempool.add_txn(
 			transaction.clone(),
 			0,
@@ -396,6 +407,24 @@ mod tests {
 	}
 
 	#[tokio::test]
+	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
+		// set up
+		let maptos_config = Config::default();
+		let (mut transaction_pipe, mut _mempool_client_sender, _tx_receiver) = setup();
+
+		// submit a transaction with a valid sequence number
+		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		// submit a transaction with a sequence number that is too new
+		let user_transaction = create_signed_transaction(34, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+
+		Ok(())
+	}
+
 	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
