@@ -91,7 +91,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-#[ignore] // Test fail when run with the other test: https://github.com/movementlabsxyz/movement/issues/656
+//#[ignore] // Test fail when run with the other test: https://github.com/movementlabsxyz/movement/issues/656
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 

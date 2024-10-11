@@ -5,16 +5,20 @@ use alloy::primitives::{keccak256, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_network::EthereumWallet;
+use aptos_sdk::rest_client::aptos_api_types::Transaction as AptosTransaction;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
 use bridge_config::Config;
+use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::ethereum::types::AlloyProvider;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
 use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash};
 use bridge_service::types::Amount;
+use bridge_service::types::BridgeTransferId;
+use bridge_service::types::HashLockPreImage;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::SeedableRng;
@@ -177,6 +181,52 @@ impl HarnessMvtClient {
 		)));
 
 		HarnessMvtClient { movement_client, rest_client, faucet_client }
+	}
+
+	pub async fn fund_account(&self) -> LocalAccount {
+		let account = LocalAccount::generate(&mut rand::rngs::OsRng);
+		self.faucet_client
+			.write()
+			.unwrap()
+			.fund(account.address(), 100_000_000)
+			.await
+			.expect("Failed to fund account");
+		account
+	}
+
+	pub async fn counterparty_complete_bridge_transfer(
+		&mut self,
+		recipient_privatekey: LocalAccount,
+		bridge_transfer_id: BridgeTransferId,
+		preimage: HashLockPreImage,
+	) -> BridgeContractResult<AptosTransaction> {
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+				end -= 1;
+			}
+			&preimage.0[..end]
+		};
+		let args2 = vec![
+			bridge_service::chains::movement::utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			bridge_service::chains::movement::utils::serialize_vec(&unpadded_preimage)?,
+		];
+
+		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
+			self.movement_client.native_address,
+			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args2,
+		);
+
+		bridge_service::chains::movement::utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			&recipient_privatekey,
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError)
 	}
 }
 

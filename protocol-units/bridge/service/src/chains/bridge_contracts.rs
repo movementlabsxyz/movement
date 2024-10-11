@@ -1,4 +1,5 @@
 use crate::types::LockDetails;
+use std::fmt;
 use thiserror::Error;
 use tokio_stream::Stream;
 
@@ -48,6 +49,8 @@ pub enum BridgeContractError {
 	OnChainUnknownEvent,
 	#[error("Error during onchain call:{0}")]
 	OnChainError(String),
+	#[error("Error during deserializing an event :{1:?} : {0}")]
+	EventDeserializingFail(String, BridgeContractEventType),
 }
 
 impl BridgeContractError {
@@ -73,6 +76,16 @@ impl BridgeContractWETH9Error {
 
 pub type BridgeContractResult<T> = Result<T, BridgeContractError>;
 pub type BridgeContractWETH9Result<T> = Result<T, BridgeContractWETH9Error>;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BridgeContractEventType {
+	Initiated,
+	Locked,
+	InitialtorCompleted,
+	CounterPartCompleted,
+	Cancelled,
+	Refunded,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BridgeContractEvent<A> {
@@ -102,6 +115,20 @@ impl<A> BridgeContractEvent<A> {
 		} else {
 			false
 		}
+	}
+}
+
+impl<A> fmt::Display for BridgeContractEvent<A> {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		let kind = match self {
+			Self::Initiated(_) => "Initiated",
+			Self::Locked(_) => "Locked",
+			Self::InitialtorCompleted(_) => "InitialtorCompleted",
+			Self::CounterPartCompleted(_, _) => "CounterPartCompleted",
+			Self::Cancelled(_) => "Cancelled",
+			Self::Refunded(_) => "Refunded",
+		};
+		write!(f, "Contract event: {}/ transfer id: {}", kind, self.bridge_transfer_id(),)
 	}
 }
 
