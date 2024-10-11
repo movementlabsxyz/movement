@@ -102,8 +102,24 @@ impl Task {
 			// spawn the actual batch write request in the background
 			let mut da_light_node_client = self.da_light_node_client.clone();
 			tokio::spawn(async move {
-				if let Err(e) = da_light_node_client.batch_write(batch_write).await {
-					warn!("failed to write batch to DA: {:?}", e);
+				let retries = 5;
+				for i in 0..retries {
+					match da_light_node_client.batch_write(batch_write.clone()).await {
+						Ok(_) => {
+							info!(
+								target: "movement_timing",
+								batch_id = %batch_id,
+								"batch_write_success"
+							);
+							return;
+						}
+						Err(e) => {
+							warn!(
+								"failed to write batch to DA on attempt {}: {:?} {:?}",
+								i, e, batch_write
+							);
+						}
+					}
 				}
 			});
 		}
