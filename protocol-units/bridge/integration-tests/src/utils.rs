@@ -115,10 +115,6 @@ pub async fn fund_and_check_balance_framework(
 	Ok(())
 }
 
-pub async fn publish_for_test(movement_client: &mut MovementClientFramework) {
-	let _ = movement_client.publish_for_test();
-}
-
 pub async fn initiate_bridge_transfer_helper(
 	movement_client: &mut MovementClient,
 	initiator_address: AccountAddress,

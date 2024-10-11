@@ -4,6 +4,7 @@ use bridge_integration_tests::utils;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness, TestHarnessFramework};
 use bridge_service::chains::bridge_contracts::BridgeContractEvent;
+use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::{
 	chains::{bridge_contracts::BridgeContract, movement::{utils::MovementHash, event_monitoring::MovementMonitoring}},
 	types::{BridgeTransferId, HashLockPreImage},
@@ -37,6 +38,8 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
+
+	MovementClientFramework::bridge_setup_scripts().await?; 
 
 	let config:Config = Config::suzuka();
 	

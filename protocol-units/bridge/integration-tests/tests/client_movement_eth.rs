@@ -1,3 +1,5 @@
+mod client_l2move_l1move;
+
 use anyhow::Result;
 use bridge_config::Config;
 use bridge_integration_tests::utils;

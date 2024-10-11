@@ -481,6 +481,73 @@ use tokio::{
 };
 
 impl MovementClientFramework {
+
+	pub async fn bridge_setup_scripts() -> Result<()> {
+		let enable_bridge_feature_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
+				"--profile",
+				"default",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+	
+		if !enable_bridge_feature_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stdout));
+		}
+		if !enable_bridge_feature_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stderr));
+		}
+	
+		let store_mint_burn_caps_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+				"--profile",
+				"default",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+	
+		if !store_mint_burn_caps_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stdout));
+		}
+		if !store_mint_burn_caps_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stderr));
+		}
+	
+		let update_bridge_operator_output = Command::new("movement")
+			.args(&[
+				"move",
+				"run-script",
+				"--compiled-script-path",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+				"--args",
+				"address:0xface",
+				"--profile",
+				"default",
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+	
+		if !update_bridge_operator_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+		}
+		if !update_bridge_operator_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+		}
+	
+		Ok(())
+	}
+
 	pub fn publish_for_test(&mut self) -> Result<()> {
 		let random_seed = rand::thread_rng().gen_range(0, 1000000).to_string();
 
