@@ -157,6 +157,7 @@ impl MovementMonitoring {
 			let config = config.clone();
 			async move {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
+				println!("Movement client address: {:?}", mvt_client.native_address);
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
 						mvt_client.native_address,

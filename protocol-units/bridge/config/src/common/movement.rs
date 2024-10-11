@@ -114,7 +114,7 @@ impl MovementConfig {
 	pub fn suzuka() -> Self {
 		MovementConfig {
 			movement_signer_key: Ed25519PrivateKey::from_encoded_string("0x0000000000000000000000000000000000000000000000000000000000000001").unwrap(),
-			movement_native_address: "0xA550c18".to_string(),
+			movement_native_address: "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16".to_string(),
 			mvt_rpc_connection_protocol: default_mvt_rpc_connection_protocol(),
 			mvt_rpc_connection_hostname: default_mvt_rpc_connection_hostname(),
 			mvt_rpc_connection_port: 30731,

@@ -8,6 +8,7 @@ use bridge_service::{
 	chains::{bridge_contracts::BridgeContract, movement::{utils::MovementHash, event_monitoring::MovementMonitoring}},
 	types::{BridgeTransferId, HashLockPreImage},
 };
+use futures::StreamExt;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
@@ -39,7 +40,7 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 
 	let config:Config = Config::suzuka();
 	
-	let (mut mvt_client_harness, _config) =
+	let (mut mvt_client_harness, config) =
 		TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = MovementToEthCallArgs::default();
@@ -58,26 +59,19 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-			//Wait for the tx to be executed
-		//tracing::info!("Wait for the MVT initiated event.");
-		//let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
-		//let event =
-		//	tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
-		//let bridge_tranfer_id = if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
-		//	detail.bridge_transfer_id
-		//} else {
-		//	panic!("Not a Locked event: {event:?}");
-		//};
+		//Wait for the tx to be executed
+		tracing::info!("Wait for the MVT initiated event.");
+		let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
+		let event =
+			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
+		let bridge_transfer_id = if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
+			detail.bridge_transfer_id
+		} else {
+			panic!("Not an initiated event: {event:?}");
+		};
 
-		let (bridge_transfer_id, initiator, recipient, amount, hash_lock, time_lock) =
-			test_utils::extract_bridge_transfer_details_framework(&mut mvt_client_harness.movement_client).await?;
 		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-		info!("Bridge transfer initiator: {:?}", initiator);
-		info!("Bridge transfer recipient: {:?}", recipient);
-		info!("Bridge transfer amount: {:?}", amount);
-		info!("Bridge transfer initiator: {:?}", hash_lock);
-		info!("Bridge transfer recipient: {:?}", time_lock);
-
+	
 		//test_utils::assert_bridge_transfer_details(
 		//	&details,
 		//	MovementHash(bridge_transfer_id).0,
