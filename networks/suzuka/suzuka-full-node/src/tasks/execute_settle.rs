@@ -163,7 +163,7 @@ where
 		self.da_db.set_synced_height(da_height - 1).await?;
 
 		// set the block as executed
-		self.da_db.add_executed_block(block_id.to_string()).await?;
+		self.da_db.add_executed_block(block_id.clone()).await?;
 
 		// todo: this needs defaults
 		if self.settlement_enabled() {

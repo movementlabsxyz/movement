@@ -37,7 +37,7 @@ impl Task {
 			let batch_id = LOGGING_UID.fetch_add(1, atomic::Ordering::Relaxed);
 			let span = tracer
 				.span_builder("build_batch")
-				.with_attributes([KeyValue::new("batch_id", batch_id.to_string())])
+				.with_attributes([KeyValue::new("batch_id", batch_id as i64)])
 				.start(&tracer);
 			if let ControlFlow::Break(()) = self
 				.spawn_write_next_transaction_batch()
@@ -87,7 +87,7 @@ impl Task {
 								KeyValue::new("sender", transaction.sender().to_string()),
 								KeyValue::new(
 									"sequence_number",
-									transaction.sequence_number().to_string(),
+									transaction.sequence_number() as i64,
 								),
 							],
 						);
@@ -114,7 +114,7 @@ impl Task {
 			let otel_cx = OtelContext::current();
 			otel_cx.span().add_event(
 				"built_batch_write",
-				vec![KeyValue::new("transaction_count", transactions.len().to_string())],
+				vec![KeyValue::new("transaction_count", transactions.len() as i64)],
 			);
 			let batch_write = BatchWriteRequest { blobs: transactions };
 			// spawn the actual batch write request in the background

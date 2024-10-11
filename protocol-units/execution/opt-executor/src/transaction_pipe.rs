@@ -17,7 +17,7 @@ use opentelemetry::trace::{FutureExt as _, TraceContextExt as _, Tracer as _};
 use opentelemetry::{Context as OtelContext, KeyValue};
 use thiserror::Error;
 use tokio::sync::mpsc;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 use std::sync::{atomic::AtomicU64, Arc};
 use std::time::{Duration, Instant};
@@ -97,10 +97,7 @@ impl TransactionPipe {
 						.with_attributes([
 							KeyValue::new("tx_hash", transaction.committed_hash().to_string()),
 							KeyValue::new("sender", transaction.sender().to_string()),
-							KeyValue::new(
-								"sequence_number",
-								transaction.sequence_number().to_string(),
-							),
+							KeyValue::new("sequence_number", transaction.sequence_number() as i64),
 						])
 						.start(&tracer);
 					let status = self
@@ -138,7 +135,7 @@ impl TransactionPipe {
 		let otel_span = otel_cx.span();
 		otel_span.add_event(
 			"transactions_in_flight",
-			vec![KeyValue::new("in_flight", in_flight.to_string())],
+			vec![KeyValue::new("in_flight", in_flight as i64)],
 		);
 		if in_flight > self.in_flight_limit {
 			otel_span.add_event("shedding_load", vec![]);
