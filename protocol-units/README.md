@@ -7,5 +7,5 @@ We identify the following protocol unit categories:
 - [Cryptography](./cryptography): Protocol units concerned with cryptographic operations. Cryptography and data structure-related utilities are members of this category.
 - [Execution](./execution): Protocol units concerned with execution. Block executors and related unities are members of this category.
 - [Movement REST service](./movement-rest): Protocol units to support Movement's REST API. `movement-rest` provides additional Movement REST API endpoints. 
-- [Settlement](./settlement): Protocol units concerned with settlement. Movement's multi-commitment rollup and related settlement utilities are members of this category. 
+- [Settlement](./settlement/README.md): Protocol units concerned with settlement, such as Movement's Multi-Commitment Rollup (MCR).
 - [Storage](./storage): Protocol units concerned with storage. `jelly-move`, `move-access-log`, and `mpt-move` are members of this category.
