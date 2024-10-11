@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/ae0b2bf3fab958fc7d83a7893ee57175fd2609d3";
+    nixpkgs.url = "github:NixOS/nixpkgs/2ac40064487f7dfae54f188705e8ed9173993e79";
     rust-overlay.url = "github:oxalica/rust-overlay/db12d0c6ef002f16998723b5dd619fa7b8997086";
     flake-utils.url = "github:numtide/flake-utils";
     foundry.url = "github:shazow/foundry.nix/monthly"; 
@@ -9,30 +9,18 @@
     
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    rust-overlay,
-    flake-utils,
-    foundry,
-    crane,
-    ...
-    }:
-    flake-utils.lib.eachSystem ["aarch64-darwin" "x86_64-darwin" "x86_64-linux" "aarch64-linux"] (
-
-      system: let
-        overrides = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml));
-
-        overlays = [
-          (import rust-overlay)
-          foundry.overlay
-        ];
-
+  outputs = { nixpkgs, rust-overlay, flake-utils, foundry, crane, ... }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
         pkgs = import nixpkgs {
-          inherit system overlays;
+          inherit system;
+          overlays = [ (import rust-overlay) foundry.overlay ];
         };
 
-        craneLib = crane.mkLib pkgs;
+        toolchain = p: (p.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
+          extensions = [ "rustfmt" "clippy" ];
+        };
+        craneLib = (crane.mkLib pkgs).overrideToolchain(toolchain);
 
         frameworks = pkgs.darwin.apple_sdk.frameworks;
 
@@ -53,7 +41,8 @@
           coreutils
           gcc
           rust
-          mold
+          postgresql
+          ansible
         ];
         
         sysDependencies = with pkgs; [] 
@@ -62,24 +51,28 @@
           frameworks.CoreServices
           frameworks.SystemConfiguration
           frameworks.AppKit
+          libelf
         ] ++ lib.optionals stdenv.isLinux [
           udev
           systemd
           snappy
           bzip2
+          elfutils
         ];
 
         testDependencies = with pkgs; [
+          python311
+          poetry
           just
           foundry-bin
           process-compose
           celestia-node
           celestia-app
-          monza-aptos
           jq
           docker
           solc
           grpcurl
+          grpcui
         ];
 
         # Specific version of toolchain
@@ -90,97 +83,74 @@
           rustc = rust;
         };
 
-        # Needs to be removed soon and replaced with aptos-faucet-service
-        monza-aptos = pkgs.stdenv.mkDerivation {
-            pname = "monza-aptos";
-            version = "branch-monza";
+        celestia-app = pkgs.buildGoModule {
+          pname = "celestia-app";
+          version = "1.8.0";
 
-            src = pkgs.fetchFromGitHub {
-                owner = "movementlabsxyz";
-                repo = "aptos-core";
-                rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-                sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
-            };
-
-            installPhase = ''
-                cp -r . $out
-            '';
-
-            meta = with pkgs.lib; {
-                description = "Aptos core repository on the monza branch";
-                homepage = "https://github.com/movementlabsxyz/aptos-core";
-                license = licenses.asl20;
-            };
-        };
-        # Remember, remove this thing above
-        
-        # celestia-node
-        celestia-node = import ./nix/celestia-node.nix { inherit pkgs; };
-
-        # celestia-app
-        celestia-app = import ./nix/celestia-app.nix { inherit pkgs; };
-
-        # aptos-faucet-service
-        aptos-faucet-service = import ./nix/aptos-faucet-service.nix { 
-          inherit pkgs; 
-          commonArgs = {
-            src = pkgs.fetchFromGitHub {
-              owner = "movementlabsxyz";
-              repo = "aptos-core";
-              rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-              sha256 = "sha256-iIYGbIh9yPtC6c22+KDi/LgDbxLEMhk4JJMGvweMJ1Q=";
-            };
-            strictDeps = true;
-            
-            buildInputs = with pkgs; [] ++buildDependencies ++ sysDependencies;
-            nativeBuildInputs = with pkgs; [] ++buildDependencies ++sysDependencies;
+          src = pkgs.fetchgit {
+            url = "https://github.com/celestiaorg/celestia-app";
+            rev = "e75a1fdc8f2386d9f389cb596c88ca7cc19563af";
+            hash = "sha256-EE9r1sybbm4Hyh57/nC8utMx/uFdMsIdPecxBtDqAbk=";
           };
-          inherit craneLib;
+
+          vendorHash = "sha256-2vU1liAm0us7Nk1eawgMvarhq77+IUS0VE61FuvQbuQ=";
+          subPackages = [ "cmd/celestia-appd" ];
+        };
+
+        celestia-node = pkgs.buildGoModule {
+          pname = "celestia-node";
+          version = "0.13.3";
+
+          src = pkgs.fetchgit {
+            url = "https://github.com/celestiaorg/celestia-node";
+            rev = "05238b3e087eb9ecd3b9684cd0125f2400f6f0c7";
+            hash = "sha256-bmFcJrC4ocbCw1pew2HKEdLj6+1D/0VuWtdoTs1S2sU=";
+          };
+
+          vendorHash = "sha256-8RC/9KiFOsEJDpt7d8WtzRLn0HzYrZ1LIHo6lOKSQxU=";
+          subPackages = [ "cmd/celestia" "cmd/cel-key" ];
         };
     
-      in
-        with pkgs; {
-
-          packages.aptos-faucet-service = aptos-faucet-service;
-
-          packages.celestia-node = celestia-node;
-
-          packages.celestia-app = celestia-app;
-          
-          # Used for workaround for failing vendor dep builds in nix
-          devShells.docker-build = mkShell {
-            buildInputs = [] ++buildDependencies ++sysDependencies;
-            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
-            OPENSSL_DEV=pkgs.openssl.dev;
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
-            shellHook = ''
-              #!/usr/bin/env bash
-              echo "rust-build shell"
-            '';
-          };
-
-          # Development Shell
-          devShells.default = mkShell {
-
-            ROCKSDB=pkgs.rocksdb;
-            
-            # for linux set SNAPPY variable
-            SNAPPY = if stdenv.isLinux then pkgs.snappy else null;
-
+      in {
+        packages = {
+          inherit celestia-app celestia-node;
+        };
+        devShells = rec {
+          default = docker-build;
+          docker-build = pkgs.mkShell {
+            ROCKSDB = pkgs.rocksdb;
+            SNAPPY = if pkgs.stdenv.isLinux then pkgs.snappy else null;
             OPENSSL_DEV = pkgs.openssl.dev;
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            MONZA_APTOS_PATH = monza-aptos;
+         
+            buildInputs = with pkgs; [
+              # rust toolchain
+              (toolchain pkgs)
 
-            buildInputs = [] ++buildDependencies ++sysDependencies ++testDependencies;
-            nativeBuildInputs = [] ++buildDependencies ++sysDependencies;
+              # build dependencies
+              llvmPackages.bintools openssl openssl.dev libiconv pkg-config
+              libclang.lib libz clang pkg-config protobuf rustPlatform.bindgenHook
+              lld mold coreutils postgresql
+
+              # test dependencies
+              python311 poetry just foundry-bin process-compose jq docker solc
+              grpcurl grpcui
+
+              celestia-app celestia-node
+            ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
+              Security CoreServices SystemConfiguration AppKit
+            ]) ++ lib.optionals stdenv.isLinux (with pkgs; [
+              udev systemd snappy bzip2 elfutils.dev
+            ]);
+
+            LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/";
 
             shellHook = ''
-              #!/bin/bash -e
+              #!/usr/bin/env ${pkgs.bash}
 
-              // # Movement Swap Core
-              DOT_MOVEMENT_PATH=$(pwd)/.movement
+              DOT_MOVEMENT_PATH=$(pwd).movement
               mkdir -p $DOT_MOVEMENT_PATH
+
+              # export PKG_CONFIG_PATH=$PKG_CONFIG_PATH_FOR_TARGET
 
               echo "Monza Aptos path: $MONZA_APTOS_PATH"
               cat <<'EOF'
@@ -193,8 +163,7 @@
               echo "Develop with Move Anywhere"
             '';
           };
-        }
+        };
+      }
     );
 }
-
-

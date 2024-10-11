@@ -7,7 +7,7 @@ processes:
   mcr-client-tests:
     command: |
       set -e
-      cargo test -p mcr-settlement-client test_genesis_ceremony -- --nocapture
+      cargo run --bin test-mcr-settlement-client
     depends_on:
       eth:
         condition: process_healthy

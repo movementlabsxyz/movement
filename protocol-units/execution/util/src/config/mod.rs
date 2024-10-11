@@ -3,6 +3,10 @@ pub mod client;
 pub mod common;
 pub mod faucet;
 pub mod fin;
+pub mod indexer;
+pub mod indexer_processor;
+pub mod load_shedding;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -10,6 +14,14 @@ pub struct Config {
 	/// The chain configuration
 	#[serde(default)]
 	pub chain: chain::Config,
+
+	/// The indexer configuration
+	#[serde(default)]
+	pub indexer: indexer::Config,
+
+	/// The indexer processor configuration
+	#[serde(default)]
+	pub indexer_processor: indexer_processor::Config,
 
 	/// The client configuration
 	#[serde(default)]
@@ -22,15 +34,22 @@ pub struct Config {
 	/// The fin configuration
 	#[serde(default)]
 	pub fin: fin::Config,
+
+	/// The load shedding parameters
+	#[serde(default)]
+	pub load_shedding: load_shedding::Config,
 }
 
 impl Default for Config {
 	fn default() -> Self {
 		Self {
 			chain: chain::Config::default(),
+			indexer: indexer::Config::default(),
+			indexer_processor: indexer_processor::Config::default(),
 			client: client::Config::default(),
 			faucet: faucet::Config::default(),
 			fin: fin::Config::default(),
+			load_shedding: load_shedding::Config::default(),
 		}
 	}
 }

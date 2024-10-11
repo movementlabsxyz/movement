@@ -1,4 +1,7 @@
 # Run a Movement Node
+- [General Full Node Guide](./README.md) (this document)
+- [Follower Node](./follower-node/README.md)
+
 We recommend that you run a movement node using containers to leverage the portability and reproducibility properties that come with containers.
 
 
@@ -54,12 +57,15 @@ cat ${MOVEMENT_ENV_FILE}
 4. Pull the container images. For this you need to make sure the movement config dir
 exists.
 ```bash
-DOT_MOVEMENT_PATH="/home/${USER}/.movement"
+DOT_MOVEMENT_PATH="~/.movement"
+export DOT_MOVEMENT_PATH
+echo "DOT_MOVEMENT_PATH=${DOT_MOVEMENT_PATH}" >> "${MOVEMENT_ENV_FILE}"
+
 mkdir -p "${DOT_MOVEMENT_PATH}"
 docker compose \
         -f docker/compose/suzuka-full-node/docker-compose.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.setup.yml \
-        -f docker/compose/suzuka-full-node/docker-compose.local.yml \
+        -f docker/compose/suzuka-full-node/docker-compose.setup-local.yml \
+        -f docker/compose/suzuka-full-node/docker-compose.celestia-local.yml \
         pull
 ```
 

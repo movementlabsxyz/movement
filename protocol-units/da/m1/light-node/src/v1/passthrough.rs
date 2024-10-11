@@ -82,6 +82,20 @@ impl LightNodeV1 {
 		Ok(height)
 	}
 
+	/// Submits Celestia blobs to the Celestia node.
+	pub async fn submit_celestia_blobs(
+		&self,
+		blobs: &[CelestiaBlob],
+	) -> Result<u64, anyhow::Error> {
+		let height = self
+			.default_client
+			.blob_submit(blobs, GasPrice::default())
+			.await
+			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+
+		Ok(height)
+	}
+
 	/// Submits a blob to the Celestia node.
 	pub async fn submit_blob(&self, data: Vec<u8>) -> Result<Blob, anyhow::Error> {
 		let celestia_blob = self.create_new_celestia_blob(data)?;
@@ -132,11 +146,14 @@ impl LightNodeV1 {
 		Ok(verified_blobs)
 	}
 
-	pub async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
+	#[tracing::instrument(target = "movement_timing", level = "debug")]
+	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
 		let celestia_blobs = self.get_celestia_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
-		for blob in celestia_blobs {
-			blobs.push(Self::celestia_blob_to_blob(blob, height)?);
+		for celestia_blob in celestia_blobs {
+			let blob = Self::celestia_blob_to_blob(celestia_blob, height)?;
+			debug!(blob_id = %blob.blob_id, "got blob");
+			blobs.push(blob);
 		}
 		Ok(blobs)
 	}

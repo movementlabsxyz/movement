@@ -1,2 +1,71 @@
 # global
 *   @l-monninger @andyjsbell @0xmovses @mzabaluev
+
+# maptos-executor
+protocol-units/execution/* @l-monninger @0xmovses @musitdev @mzabaluev
+
+# m1-da
+protocol-units/da/m1/* @l-monninger
+
+# mempool
+protocol-units/mempool/* @l-monninger @cde8
+
+# sequencing
+protocol-units/sequencing/* @l-monninger @cde8
+
+# movement-rest
+protocol-units/movement-rest/* @0xmovses
+
+# bridge-cli
+protocol-units/bridge-cli/* @0xmovses @andygolay @cde8
+
+# bridge contracts
+protocol-units/bridge/contracts/* @0xmovses @andygolay @cde8 @0xPrimata
+
+# bridge service 
+protocol-units/bridge/bridge-service/* @0xmovses @andygolay @cde8
+
+# bridge
+protocol-units/bridge/* @0xmovses @andygolay @cde8
+
+# bridge move modules
+protocol-units/bridge/move-modules/* @0xmovses @andygolay
+
+# mcr client
+protocol-units/settlement/mcr/client/* @musitdev @mzabaluev @l-monninger
+
+# mcr manager
+protocol-units/settlement/mcr/manager/* @musitdev @mzabaluev @l-monninger
+
+# mcr contracts
+protocol-units/settlement/mcr/contracts/* @l-monninger @0xPrimata @andyjsbell
+
+# networks
+networks/* @l-monninger @mzabaluev @musitdev
+
+# docker
+docker/* @l-monninger @radupopa369
+
+# process-compose
+process-compose/* @l-monninger @radupopa369 @musitdev
+
+# docs
+docs/* @l-monninger
+
+# nix
+nix/* @l-monninger @musitdev @andyjsbell
+
+# github actions
+.github/workflows/* @l-monninger @andyjsbell @0xmovses @mzabaluev
+
+# buildtime 
+util/buildtime/* @l-monninger
+
+# flocks 
+util/flocks/* @l-monninger @mzabaluev
+
+# commander 
+util/commander/* @l-monninger @musitdev
+
+# godfig
+util/godfig/* @l-monninger @mzabaluev

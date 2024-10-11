@@ -2,8 +2,7 @@ pub mod appd;
 pub mod bridge;
 pub mod m1_da_light_node;
 use crate::config::common::{
-	default_celestia_force_new_chain,
-	default_m1_da_light_node_is_initial
+	default_celestia_force_new_chain, default_m1_da_light_node_is_initial,
 };
 use memseq_util::Config as MemseqConfig;
 use serde::{Deserialize, Serialize};
@@ -32,7 +31,6 @@ pub struct Config {
 
 	#[serde(default = "default_m1_da_light_node_is_initial")]
 	pub m1_da_light_node_is_initial: bool,
-
 }
 
 impl Default for Config {

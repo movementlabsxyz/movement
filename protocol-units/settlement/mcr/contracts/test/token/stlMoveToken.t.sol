@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/token/stlMoveToken.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenV2.sol";
 
 contract stlMoveTokenTest is Test {
     function testInitialize() public {
-        MOVEToken underlyingToken = new MOVEToken();
+        MOVETokenV2 underlyingToken = new MOVETokenV2();
         underlyingToken.initialize();
 
         stlMoveToken token = new stlMoveToken();
@@ -19,7 +19,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken underlyingToken = new MOVEToken();
+        MOVETokenV2 underlyingToken = new MOVETokenV2();
         underlyingToken.initialize();
 
         stlMoveToken token = new stlMoveToken();
@@ -31,14 +31,19 @@ contract stlMoveTokenTest is Test {
     }
 
     function testSimulateStaking() public {
-        MOVEToken underlyingToken = new MOVEToken();
+        MOVETokenV2 underlyingToken = new MOVETokenV2();
         underlyingToken.initialize();
 
         stlMoveToken token = new stlMoveToken();
         token.initialize(underlyingToken);
 
         underlyingToken.grantMinterRole(address(token));
-        assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));
+        assert(
+            underlyingToken.hasRole(
+                underlyingToken.MINTER_ROLE(),
+                address(token)
+            )
+        );
 
         // signers
         address payable alice = payable(vm.addr(1));
@@ -139,7 +144,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 110);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(alice, 110);
+        token.buyCustodialToken(alice, 110);
         assertEq(token.balanceOf(alice), 110);
         assertEq(underlyingToken.balanceOf(stakingPool), 290);
         assertEq(underlyingToken.balanceOf(address(token)), 210);
@@ -153,7 +158,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 100);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(bob, 100);
+        token.buyCustodialToken(bob, 100);
         assertEq(token.balanceOf(bob), 100);
         assertEq(underlyingToken.balanceOf(stakingPool), 190);
         assertEq(underlyingToken.balanceOf(address(token)), 310);
@@ -191,7 +196,7 @@ contract stlMoveTokenTest is Test {
         vm.prank(stakingPool);
         underlyingToken.approve(address(token), 110);
         vm.prank(stakingPool);
-        token.buyCustodialTokenFor(carol, 110);
+        token.buyCustodialToken(carol, 110);
         assertEq(token.balanceOf(carol), 110);
         assertEq(underlyingToken.balanceOf(stakingPool), 80); // spent 20 in total on rewards
         assertEq(underlyingToken.balanceOf(address(token)), 220);

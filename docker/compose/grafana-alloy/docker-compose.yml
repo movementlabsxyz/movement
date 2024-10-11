@@ -1,0 +1,21 @@
+# https://grafana.com/docs/alloy/latest/set-up/install/docker
+services:
+  grafana-alloy:
+    image: grafana/alloy:latest
+    command: 
+      - run 
+      - --server.http.listen-addr=0.0.0.0:12345 
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "12345:12345"
+    volumes:
+      - ${GRAFANA_ALLOY_PATH}/config.alloy:/etc/alloy/config.alloy
+      - ${DOCKER_SOCKET_PATH}:/var/run/docker.sock
+    env_file: "./.env"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 12345" ]
+      retries: 10
+      interval: 15s
+      timeout: 5s
+    privileged: true

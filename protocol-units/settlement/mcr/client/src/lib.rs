@@ -1,9 +1,5 @@
-use movement_types::BlockCommitment;
+use movement_types::block::BlockCommitment;
 use tokio_stream::Stream;
-
-#[cfg(test)]
-pub mod tests;
-
 pub mod mock;
 
 #[cfg(feature = "mock")]
@@ -14,7 +10,7 @@ pub mod eth_client;
 #[cfg(feature = "eth")]
 pub use eth_client::Client as McrEthSettlementClient;
 
-mod send_eth_transaction;
+pub mod send_eth_transaction;
 
 type CommitmentStream =
 	std::pin::Pin<Box<dyn Stream<Item = Result<BlockCommitment, anyhow::Error>> + Send>>;

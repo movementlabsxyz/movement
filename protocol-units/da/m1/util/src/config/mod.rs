@@ -9,11 +9,20 @@ pub mod local;
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Config {
 	Local(local::Config),
+	Arabica(local::Config),
+	Mocha(local::Config),
 }
 
 impl Default for Config {
 	fn default() -> Self {
-		Self::Local(local::Config::default())
+		std::env::var("CELESTIA_NETWORK").map_or_else(
+			|_| Config::Local(local::Config::default()),
+			|network| match network.as_str() {
+				"arabica" => Config::Arabica(local::Config::default()),
+				"mocha" => Config::Mocha(local::Config::default()),
+				_ => Config::Local(local::Config::default()),
+			},
+		)
 	}
 }
 
@@ -23,13 +32,62 @@ impl Config {
 		match self {
 			Config::Local(local) => {
 				let celestia_node_url = format!(
-					"ws://{}:{}",
+					"{}://{}:{}",
+					local.appd.celestia_websocket_connection_protocol,
 					local.appd.celestia_websocket_connection_hostname,
 					local.appd.celestia_websocket_connection_port
 				);
 				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
                     "Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
                 )?;
+
+				let client = Client::new(&celestia_node_url, Some(&celestia_auth_token))
+					.await
+					.map_err(|e| {
+						anyhow::anyhow!(
+							"Failed to connect to Celestia client at {:?}: {}",
+							celestia_node_url,
+							e
+						)
+					})?;
+
+				Ok(client)
+			}
+			Config::Arabica(local) => {
+				// arabica is also local for now
+				let celestia_node_url = format!(
+					"{}://{}:{}",
+					local.appd.celestia_websocket_connection_protocol,
+					local.appd.celestia_websocket_connection_hostname,
+					local.appd.celestia_websocket_connection_port
+				);
+				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
+					"Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
+				)?;
+
+				let client = Client::new(&celestia_node_url, Some(&celestia_auth_token))
+					.await
+					.map_err(|e| {
+						anyhow::anyhow!(
+							"Failed to connect to Celestia client at {:?}: {}",
+							celestia_node_url,
+							e
+						)
+					})?;
+
+				Ok(client)
+			}
+			Config::Mocha(local) => {
+				// mocha is also local for now
+				let celestia_node_url = format!(
+					"{}://{}:{}",
+					local.appd.celestia_websocket_connection_protocol,
+					local.appd.celestia_websocket_connection_hostname,
+					local.appd.celestia_websocket_connection_port
+				);
+				let celestia_auth_token = local.appd.celestia_auth_token.clone().context(
+					"Failed to get Celestia auth token from config. This is required for connecting to Celestia.",
+				)?;
 
 				let client = Client::new(&celestia_node_url, Some(&celestia_auth_token))
 					.await
@@ -50,6 +108,8 @@ impl Config {
 	pub fn celestia_namespace(&self) -> Namespace {
 		match self {
 			Config::Local(local) => local.appd.celestia_namespace.clone(),
+			Config::Arabica(local) => local.appd.celestia_namespace.clone(),
+			Config::Mocha(local) => local.appd.celestia_namespace.clone(),
 		}
 	}
 
@@ -57,6 +117,10 @@ impl Config {
 	pub fn m1_da_light_node_listen_hostname(&self) -> String {
 		match self {
 			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
+			Config::Arabica(local) => {
+				local.m1_da_light_node.m1_da_light_node_listen_hostname.clone()
+			}
+			Config::Mocha(local) => local.m1_da_light_node.m1_da_light_node_listen_hostname.clone(),
 		}
 	}
 
@@ -64,6 +128,8 @@ impl Config {
 	pub fn m1_da_light_node_listen_port(&self) -> u16 {
 		match self {
 			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
+			Config::Arabica(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
+			Config::Mocha(local) => local.m1_da_light_node.m1_da_light_node_listen_port,
 		}
 	}
 
@@ -80,6 +146,12 @@ impl Config {
 			Config::Local(local) => {
 				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
 			}
+			Config::Arabica(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
+			}
+			Config::Mocha(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_hostname.clone()
+			}
 		}
 	}
 
@@ -87,6 +159,8 @@ impl Config {
 	pub fn m1_da_light_node_connection_port(&self) -> u16 {
 		match self {
 			Config::Local(local) => local.m1_da_light_node.m1_da_light_node_connection_port,
+			Config::Arabica(local) => local.m1_da_light_node.m1_da_light_node_connection_port,
+			Config::Mocha(local) => local.m1_da_light_node.m1_da_light_node_connection_port,
 		}
 	}
 
@@ -96,6 +170,26 @@ impl Config {
 			Config::Local(local) => local.memseq.sequencer_database_path.clone().context(
                 "Failed to get memseq path from config. This is required for initializing the memseq database.",
             ),
+			Config::Arabica(local) => local.memseq.sequencer_database_path.clone().context(
+				"Failed to get memseq path from config. This is required for initializing the memseq database.",
+			),
+			Config::Mocha(local) => local.memseq.sequencer_database_path.clone().context(
+				"Failed to get memseq path from config. This is required for initializing the memseq database.",
+			),
+		}
+	}
+
+	pub fn try_block_building_parameters(&self) -> Result<(u32, u64), anyhow::Error> {
+		match self {
+			Config::Local(local) => {
+				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
+			}
+			Config::Arabica(local) => {
+				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
+			}
+			Config::Mocha(local) => {
+				Ok((local.memseq.memseq_max_block_size, local.memseq.memseq_build_time))
+			}
 		}
 	}
 }

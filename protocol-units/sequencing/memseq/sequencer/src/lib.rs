@@ -1,25 +1,33 @@
-use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
+use mempool_util::MempoolTransactionOperations;
 pub use move_rocks::RocksdbMempool;
-pub use movement_types::{Block, Id, Transaction};
+pub use movement_types::{
+	block::{self, Block},
+	transaction::{self, Transaction},
+};
 pub use sequencing_util::Sequencer;
-use std::{path::PathBuf, sync::Arc};
+
 use tokio::sync::RwLock;
 
+use std::collections::BTreeSet;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
 #[derive(Clone)]
-pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
-	pub mempool: Arc<RwLock<T>>,
+pub struct Memseq<T: MempoolTransactionOperations> {
+	mempool: T,
 	// this value should not be changed after initialization
 	block_size: u32,
-	pub parent_block: Arc<RwLock<Id>>,
+	pub parent_block: Arc<RwLock<block::Id>>,
 	// this value should not be changed after initialization
 	building_time_ms: u64,
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
-	pub fn new(
-		mempool: Arc<RwLock<T>>,
+impl<T: MempoolTransactionOperations> Memseq<T> {
+	pub(crate) fn new(
+		mempool: T,
 		block_size: u32,
-		parent_block: Arc<RwLock<Id>>,
+		parent_block: Arc<RwLock<block::Id>>,
 		building_time_ms: u64,
 	) -> Self {
 		Self { mempool, block_size, parent_block, building_time_ms }
@@ -34,16 +42,23 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
 		self.building_time_ms = building_time_ms;
 		self
 	}
+
+	pub fn building_time_ms(&self) -> u64 {
+		self.building_time_ms
+	}
 }
 
 impl Memseq<RocksdbMempool> {
-	pub fn try_move_rocks(path: PathBuf) -> Result<Self, anyhow::Error> {
+	pub fn try_move_rocks(
+		path: PathBuf,
+		block_size: u32,
+		building_time_ms: u64,
+	) -> Result<Self, anyhow::Error> {
 		let mempool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
 		)?;
-		let mempool = Arc::new(RwLock::new(mempool));
-		let parent_block = Arc::new(RwLock::new(Id::default()));
-		Ok(Self::new(mempool, 10, parent_block, 1000))
+		let parent_block = Arc::new(RwLock::new(block::Id::default()));
+		Ok(Self::new(mempool, block_size, parent_block, building_time_ms))
 	}
 
 	pub fn try_from_env_toml_file() -> Result<Self, anyhow::Error> {
@@ -51,19 +66,21 @@ impl Memseq<RocksdbMempool> {
 	}
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
+impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
+	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
+		self.mempool.add_transactions(transactions).await?;
+		Ok(())
+	}
+
 	async fn publish(&self, transaction: Transaction) -> Result<(), anyhow::Error> {
-		let mempool = self.mempool.read().await;
-		mempool.add_transaction(transaction).await?;
+		self.mempool.add_transaction(transaction).await?;
 		Ok(())
 	}
 
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
-		let mempool = self.mempool.read().await;
-		let mut transactions = Vec::new();
+		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
-		let mut now = std::time::Instant::now();
-		let finish_by = now + std::time::Duration::from_millis(self.building_time_ms);
+		let now = Instant::now();
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -71,19 +88,14 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 				break;
 			}
 
-			for _ in 0..self.block_size - current_block_size {
-				if let Some(transaction) = mempool.pop_transaction().await? {
-					transactions.push(transaction);
-				} else {
-					break;
-				}
-			}
+			let remaining = self.block_size - current_block_size;
+			let mut transactions_to_add = self.mempool.pop_transactions(remaining as usize).await?;
+			transactions.append(&mut transactions_to_add);
 
 			// sleep to yield to other tasks and wait for more transactions
-			tokio::time::sleep(std::time::Duration::from_millis(1)).await;
+			tokio::task::yield_now().await;
 
-			now = std::time::Instant::now();
-			if now > finish_by {
+			if now.elapsed().as_millis() as u64 > self.building_time_ms {
 				break;
 			}
 		}
@@ -91,12 +103,31 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 		if transactions.is_empty() {
 			Ok(None)
 		} else {
-			Ok(Some(Block::new(
-				Default::default(),
-				self.parent_block.read().await.clone().to_vec(),
-				transactions,
-			)))
+			let new_block = {
+				let parent_block = self.parent_block.read().await.clone();
+				Block::new(Default::default(), parent_block, BTreeSet::from_iter(transactions))
+			};
+
+			// update the parent block
+			{
+				let mut parent_block = self.parent_block.write().await;
+				*parent_block = new_block.id();
+			}
+
+			Ok(Some(new_block))
 		}
+	}
+
+	async fn gc(&self) -> Result<(), anyhow::Error> {
+		let gc_interval = self.building_time_ms * 2 / 1000 + 1;
+		let timestamp_threshold = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.unwrap()
+			.as_secs()
+			.saturating_sub(gc_interval);
+		self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		tokio::time::sleep(Duration::from_secs(gc_interval)).await;
+		Ok(())
 	}
 }
 
@@ -113,7 +144,9 @@ pub mod test {
 	async fn test_wait_for_next_block_building_time_expires() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path)?.with_block_size(10).with_building_time_ms(500);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?
+			.with_block_size(10)
+			.with_building_time_ms(500);
 
 		// Add some transactions
 		for i in 0..5 {
@@ -127,15 +160,15 @@ pub mod test {
 		assert!(block.is_some());
 
 		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
-		assert_eq!(block.transactions.len(), 5);
+		assert_eq!(block.transactions().len(), 5);
 
 		Ok(())
 	}
 
 	#[tokio::test]
 	async fn test_publish_error_propagation() -> Result<(), anyhow::Error> {
-		let mempool = Arc::new(RwLock::new(MockMempool));
-		let parent_block = Arc::new(RwLock::new(Id::default()));
+		let mempool = MockMempool;
+		let parent_block = Arc::new(RwLock::new(block::Id::default()));
 		let memseq = Memseq::new(mempool, 10, parent_block, 1000);
 
 		let transaction = Transaction::new(vec![1, 2, 3], 0);
@@ -145,7 +178,7 @@ pub mod test {
 
 		let result = memseq.wait_for_next_block().await;
 		assert!(result.is_err());
-		assert_eq!(result.unwrap_err().to_string(), "Mock pop_transaction");
+		assert_eq!(result.unwrap_err().to_string(), "Mock pop_mempool_transaction");
 
 		Ok(())
 	}
@@ -154,7 +187,7 @@ pub mod test {
 	async fn test_concurrent_access_spawn() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Arc::new(Memseq::try_move_rocks(path)?);
+		let memseq = Arc::new(Memseq::try_move_rocks(path, 128, 250)?);
 
 		let mut handles = vec![];
 
@@ -178,7 +211,7 @@ pub mod test {
 	async fn test_concurrent_access_futures() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Arc::new(Memseq::try_move_rocks(path)?);
+		let memseq = Arc::new(Memseq::try_move_rocks(path, 128, 250)?);
 
 		let futures = FuturesUnordered::new();
 
@@ -204,14 +237,14 @@ pub mod test {
 	async fn test_try_move_rocks() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path.clone())?;
+		let memseq = Memseq::try_move_rocks(path.clone(), 1024, 500)?;
 
-		assert_eq!(memseq.block_size, 10);
-		assert_eq!(memseq.building_time_ms, 1000);
+		assert_eq!(memseq.block_size, 1024);
+		assert_eq!(memseq.building_time_ms, 500);
 
 		// Test invalid path
 		let invalid_path = PathBuf::from("");
-		let result = Memseq::try_move_rocks(invalid_path);
+		let result = Memseq::try_move_rocks(invalid_path, 1024, 500);
 		assert!(result.is_err());
 
 		Ok(())
@@ -222,12 +255,12 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 
-		let mem_pool = Arc::new(RwLock::new(RocksdbMempool::try_new(
+		let mem_pool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
-		)?));
+		)?;
 		let block_size = 50;
 		let building_time_ms = 2000;
-		let parent_block = Arc::new(RwLock::new(Id::default()));
+		let parent_block = Arc::new(RwLock::new(block::Id::default()));
 
 		let memseq = Memseq::new(mem_pool, block_size, Arc::clone(&parent_block), building_time_ms);
 
@@ -243,12 +276,12 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 
-		let mem_pool = Arc::new(RwLock::new(RocksdbMempool::try_new(
+		let mem_pool = RocksdbMempool::try_new(
 			path.to_str().ok_or(anyhow::anyhow!("PathBuf to str failed"))?,
-		)?));
+		)?;
 		let block_size = 50;
 		let building_time_ms = 2000;
-		let parent_block = Arc::new(RwLock::new(Id::default()));
+		let parent_block = Arc::new(RwLock::new(block::Id::default()));
 
 		let memseq = Memseq::new(mem_pool, block_size, Arc::clone(&parent_block), building_time_ms);
 
@@ -269,7 +302,9 @@ pub mod test {
 	async fn test_wait_for_next_block_no_transactions() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path)?.with_block_size(10).with_building_time_ms(500);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?
+			.with_block_size(10)
+			.with_building_time_ms(500);
 
 		let block = memseq.wait_for_next_block().await?;
 		assert!(block.is_none());
@@ -281,14 +316,19 @@ pub mod test {
 	async fn test_memseq() -> Result<(), anyhow::Error> {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
-		let memseq = Memseq::try_move_rocks(path)?;
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?;
 
-		let transaction : Transaction = Transaction::new(vec![1, 2, 3], 0);
+		let transaction: Transaction = Transaction::new(vec![1, 2, 3], 0);
 		memseq.publish(transaction.clone()).await?;
 
 		let block = memseq.wait_for_next_block().await?;
-
-		assert_eq!(block.ok_or(anyhow::anyhow!("Block not found"))?.transactions[0], transaction);
+		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
+		let transaction_0th = block
+			.transactions()
+			.into_iter()
+			.next()
+			.ok_or(anyhow::anyhow!("No transactions in block"))?;
+		assert_eq!(transaction_0th, &transaction);
 
 		Ok(())
 	}
@@ -298,11 +338,11 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 		let block_size = 100;
-		let memseq = Memseq::try_move_rocks(path)?.with_block_size(block_size);
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?.with_block_size(block_size);
 
 		let mut transactions = Vec::new();
 		for i in 0..block_size * 2 {
-			let transaction : Transaction = Transaction::new( vec![i as u8], 0);
+			let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 			memseq.publish(transaction.clone()).await?;
 			transactions.push(transaction);
 		}
@@ -313,7 +353,7 @@ pub mod test {
 
 		let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
 
-		assert_eq!(block.transactions.len(), block_size as usize);
+		assert_eq!(block.transactions().len(), block_size as usize);
 
 		let second_block = memseq.wait_for_next_block().await?;
 
@@ -321,7 +361,7 @@ pub mod test {
 
 		let second_block = second_block.ok_or(anyhow::anyhow!("Second block not found"))?;
 
-		assert_eq!(second_block.transactions.len(), block_size as usize);
+		assert_eq!(second_block.transactions().len(), block_size as usize);
 
 		Ok(())
 	}
@@ -331,7 +371,7 @@ pub mod test {
 		let dir = tempdir()?;
 		let path = dir.path().to_path_buf();
 		let block_size = 100;
-		let memseq = Memseq::try_move_rocks(path)?
+		let memseq = Memseq::try_move_rocks(path, 128, 250)?
 			.with_block_size(block_size)
 			.with_building_time_ms(500);
 
@@ -343,7 +383,7 @@ pub mod test {
 
 			// add half of the transactions
 			for i in 0..block_size / 2 {
-				let transaction : Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -351,7 +391,7 @@ pub mod test {
 
 			// add the rest of the transactions
 			for i in block_size / 2..block_size - 2 {
-				let transaction : Transaction = Transaction::new(vec![i as u8], 0);
+				let transaction: Transaction = Transaction::new(vec![i as u8], 0);
 				memseq.publish(transaction.clone()).await?;
 			}
 
@@ -365,7 +405,7 @@ pub mod test {
 			let block = memseq.wait_for_next_block().await?;
 			assert!(block.is_some());
 			let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
-			assert_eq!(block.transactions.len(), (block_size / 2) as usize);
+			assert_eq!(block.transactions().len(), (block_size / 2) as usize);
 
 			tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
@@ -373,7 +413,7 @@ pub mod test {
 			let block = memseq.wait_for_next_block().await?;
 			assert!(block.is_some());
 			let block = block.ok_or(anyhow::anyhow!("Block not found"))?;
-			assert_eq!(block.transactions.len(), ((block_size / 2) - 2) as usize);
+			assert_eq!(block.transactions().len(), ((block_size / 2) - 2) as usize);
 
 			Ok::<_, anyhow::Error>(())
 		};
@@ -388,9 +428,16 @@ pub mod test {
 	impl MempoolTransactionOperations for MockMempool {
 		async fn has_mempool_transaction(
 			&self,
-			_transaction_id: Id,
+			_transaction_id: transaction::Id,
 		) -> Result<bool, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock has_mempool_transaction"))
+		}
+
+		async fn add_mempool_transactions(
+			&self,
+			_transactions: Vec<MempoolTransaction>,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock add_mempool_transactions"))
 		}
 
 		async fn add_mempool_transaction(
@@ -402,7 +449,7 @@ pub mod test {
 
 		async fn remove_mempool_transaction(
 			&self,
-			_transaction_id: Id,
+			_transaction_id: transaction::Id,
 		) -> Result<(), anyhow::Error> {
 			Err(anyhow::anyhow!("Mock remove_mempool_transaction"))
 		}
@@ -413,9 +460,16 @@ pub mod test {
 			Err(anyhow::anyhow!("Mock pop_mempool_transaction"))
 		}
 
+		async fn gc_mempool_transactions(
+			&self,
+			_timestamp_threshold: u64,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock gc_mempool_transaction"))
+		}
+
 		async fn get_mempool_transaction(
 			&self,
-			_transaction_id: Id,
+			_transaction_id: transaction::Id,
 		) -> Result<Option<MempoolTransaction>, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock get_mempool_transaction"))
 		}
@@ -426,24 +480,6 @@ pub mod test {
 
 		async fn pop_transaction(&self) -> Result<Option<Transaction>, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock pop_transaction"))
-		}
-	}
-
-	impl MempoolBlockOperations for MockMempool {
-		async fn has_block(&self, _block_id: Id) -> Result<bool, anyhow::Error> {
-			todo!()
-		}
-
-		async fn add_block(&self, _block: Block) -> Result<(), anyhow::Error> {
-			todo!()
-		}
-
-		async fn remove_block(&self, _block_id: Id) -> Result<(), anyhow::Error> {
-			todo!()
-		}
-
-		async fn get_block(&self, _block_id: Id) -> Result<Option<Block>, anyhow::Error> {
-			todo!()
 		}
 	}
 }

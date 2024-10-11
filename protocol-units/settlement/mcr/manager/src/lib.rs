@@ -1,4 +1,4 @@
-use movement_types::{BlockCommitment, BlockCommitmentEvent};
+use movement_types::block::{BlockCommitment, BlockCommitmentEvent};
 use tokio_stream::Stream;
 
 mod manager;

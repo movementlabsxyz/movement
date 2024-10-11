@@ -3,14 +3,14 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
-import "../../src/token/MOVEToken.sol";
+import "../../src/token/MOVETokenV2.sol";
 import "../../src/settlement/MCR.sol";
 import "../../src/settlement/MCRStorage.sol";
 import "../../src/settlement/interfaces/IMCR.sol";
 
 contract MCRTest is Test, IMCR {
     function testInitialize() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -23,7 +23,7 @@ contract MCRTest is Test, IMCR {
     }
 
     function testCannotInitializeTwice() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -40,7 +40,7 @@ contract MCRTest is Test, IMCR {
     }
 
     function testSimpleStaking() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -108,7 +108,7 @@ contract MCRTest is Test, IMCR {
     }
 
     function testDishonestValidator() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -198,7 +198,7 @@ contract MCRTest is Test, IMCR {
     }
 
     function testRollsOverHandlingDishonesty() public {
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();
@@ -316,7 +316,7 @@ contract MCRTest is Test, IMCR {
         vm.pauseGasMetering();
 
         uint256 blockTime = 300;
-        MOVEToken moveToken = new MOVEToken();
+        MOVETokenV2 moveToken = new MOVETokenV2();
         moveToken.initialize();
 
         MovementStaking staking = new MovementStaking();

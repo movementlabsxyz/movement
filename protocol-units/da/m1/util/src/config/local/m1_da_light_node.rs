@@ -1,14 +1,19 @@
 use crate::config::common::{
 	default_celestia_rpc_connection_hostname, default_celestia_rpc_connection_port,
-	default_celestia_websocket_connection_hostname, default_celestia_websocket_connection_port,
-	default_m1_da_light_node_connection_hostname, default_m1_da_light_node_connection_port,
-	default_m1_da_light_node_listen_hostname, default_m1_da_light_node_listen_port,
+	default_celestia_rpc_connection_protocol, default_celestia_websocket_connection_hostname,
+	default_celestia_websocket_connection_port, default_m1_da_light_node_connection_hostname,
+	default_m1_da_light_node_connection_port, default_m1_da_light_node_listen_hostname,
+	default_m1_da_light_node_listen_port,
 };
 use serde::{Deserialize, Serialize};
 
 /// The inner configuration for the local Celestia Appd Runner
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Config {
+	/// The protocol for the Celestia RPC
+	#[serde(default = "default_celestia_rpc_connection_protocol")]
+	pub celestia_rpc_connection_protocol: String,
+
 	/// The URL of the Celestia RPC
 	#[serde(default = "default_celestia_rpc_connection_hostname")]
 	pub celestia_rpc_connection_hostname: String,
@@ -45,6 +50,7 @@ pub struct Config {
 impl Default for Config {
 	fn default() -> Self {
 		Self {
+			celestia_rpc_connection_protocol: default_celestia_rpc_connection_protocol(),
 			celestia_rpc_connection_hostname: default_celestia_rpc_connection_hostname(),
 			celestia_rpc_connection_port: default_celestia_rpc_connection_port(),
 			celestia_websocket_connection_hostname: default_celestia_websocket_connection_hostname(

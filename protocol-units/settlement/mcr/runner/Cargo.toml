@@ -1,0 +1,32 @@
+[package]
+name = "mcr-settlement-runner"
+description = "An Anvil runner for the MCR Settlement"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+mcr-settlement-config = { workspace = true }
+mcr-settlement-client = { workspace = true }
+mcr-settlement-setup = { workspace = true }
+dot-movement = { workspace = true }
+commander = { workspace = true }
+
+alloy-primitives = { workspace = true }
+
+anyhow = { workspace = true }
+k256 = { workspace = true }
+rand = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+godfig = { workspace = true }
+
+[lints]
+workspace = true
