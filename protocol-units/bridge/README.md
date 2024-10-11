@@ -40,7 +40,7 @@ Set these values to your needs to configure the relayer.
   },
   "movement": {
     "movement_signer_address": "<MOVEMENT_PRIVATE_KEY>",
-    "movement_native_address": "<MOVEMENT_PUBLIC_KEY>",
+    "movement_native_address": "0xf7c46960ef7aa1b25cd5d48efef064525aa4ccec286fc3b3a7176bbfec09b84c",
     "mvt_rpc_connection_protocol": "http",
     "mvt_rpc_connection_hostname": "0.0.0.0",
     "mvt_rpc_connection_port": 30731,
