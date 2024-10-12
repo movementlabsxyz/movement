@@ -6,7 +6,7 @@ use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
 	move_types::identifier::Identifier,
@@ -16,12 +16,15 @@ use aptos_sdk::{
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
 use rand::prelude::*;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
-const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]);
+const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+]);
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
 const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
@@ -55,8 +58,7 @@ impl MovementClientFramework {
 		let rest_client = Client::new(node_connection_url.clone());
 
 		let signer =
-			utils::create_local_account(config.movement_signer_key.clone(), &rest_client)
-				.await?;
+			utils::create_local_account(config.movement_signer_key.clone(), &rest_client).await?;
 		let native_address = AccountAddress::from_hex_literal(&config.movement_native_address)?;
 		Ok(MovementClientFramework {
 			native_address,
@@ -481,8 +483,30 @@ use tokio::{
 };
 
 impl MovementClientFramework {
-
 	pub async fn bridge_setup_scripts() -> Result<()> {
+
+	let project_root = Path::new("../../../");
+	env::set_current_dir(&project_root)
+		.context("Failed to change directory to project root")?;
+
+		let compile_output = Command::new("movement")
+			.args(&[
+				"move", 
+				"compile", 
+				"--package-dir", 
+				"protocol-units/bridge/move-modules/"
+			])
+			.stdout(Stdio::piped())
+			.stderr(Stdio::piped())
+			.output()?;
+
+		if !compile_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&compile_output.stdout));
+		}
+		if !compile_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&compile_output.stderr));
+		}
+
 		let enable_bridge_feature_output = Command::new("movement")
 			.args(&[
 				"move",
@@ -491,18 +515,19 @@ impl MovementClientFramework {
 				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv",
 				"--profile",
 				"default",
+				"--assume-yes",
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()?;
-	
+
 		if !enable_bridge_feature_output.stdout.is_empty() {
 			println!("stdout: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stdout));
 		}
 		if !enable_bridge_feature_output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&enable_bridge_feature_output.stderr));
 		}
-	
+
 		let store_mint_burn_caps_output = Command::new("movement")
 			.args(&[
 				"move",
@@ -511,40 +536,42 @@ impl MovementClientFramework {
 				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
 				"--profile",
 				"default",
+				"--assume-yes",
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()?;
-	
+
 		if !store_mint_burn_caps_output.stdout.is_empty() {
 			println!("stdout: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stdout));
 		}
 		if !store_mint_burn_caps_output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&store_mint_burn_caps_output.stderr));
 		}
-	
+
 		let update_bridge_operator_output = Command::new("movement")
 			.args(&[
 				"move",
 				"run-script",
 				"--compiled-script-path",
-				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv",
+				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_operator.mv",
 				"--args",
 				"address:0xface",
 				"--profile",
 				"default",
+				"--assume-yes",
 			])
 			.stdout(Stdio::piped())
 			.stderr(Stdio::piped())
 			.output()?;
-	
+
 		if !update_bridge_operator_output.stdout.is_empty() {
 			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
 		}
 		if !update_bridge_operator_output.stderr.is_empty() {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
 		}
-	
+
 		Ok(())
 	}
 
