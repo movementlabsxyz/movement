@@ -5,6 +5,7 @@ use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness, TestHarnessFramework};
 use bridge_service::chains::bridge_contracts::BridgeContractEvent;
 use bridge_service::chains::movement::client_framework::MovementClientFramework;
+use bridge_service::chains::movement::event_monitoring_framework::MovementMonitoringFramework;
 use bridge_service::{
 	chains::{bridge_contracts::BridgeContract, movement::{utils::MovementHash, event_monitoring::MovementMonitoring}},
 	types::{BridgeTransferId, HashLockPreImage},
@@ -62,28 +63,18 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-		//Wait for the tx to be executed
-		tracing::info!("Wait for the MVT initiated event.");
-		let mut mvt_monitoring = MovementMonitoring::build(&config.movement).await.unwrap();
-		let event =
-			tokio::time::timeout(std::time::Duration::from_secs(30), mvt_monitoring.next()).await?;
-		let bridge_transfer_id = if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
-			detail.bridge_transfer_id
-		} else {
-			panic!("Not an initiated event: {event:?}");
-		};
-
-		info!("Bridge transfer id: {:?}", bridge_transfer_id);
+		let details:([u8; 32], String, Vec<u8>, u64, [u8; 32], u64) =
+			test_utils::extract_bridge_transfer_details_framework(&mut mvt_client_harness.movement_client).await?;
+		info!("Bridge transfer details: {:?}", details);
 	
-		//test_utils::assert_bridge_transfer_details(
-		//	&details,
-		//	MovementHash(bridge_transfer_id).0,
-		//	MovementHash(args.hash_lock.0).0,
-		//	sender_address,
-		//	args.recipient.clone(),
-		//	args.amount,
-		//	1,
-		//);
+		test_utils::assert_bridge_transfer_details_framework(
+			&details,
+			details.0,
+			sender_address.to_string(),
+			args.recipient.clone(),
+			args.amount,
+			args.hash_lock.0,
+		);
 
 		Ok(())
 	}

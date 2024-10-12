@@ -30,6 +30,21 @@ pub fn assert_bridge_transfer_details(
 	assert_eq!(details.state, expected_state, "Bridge transfer state mismatch.");
 }
 
+pub fn assert_bridge_transfer_details_framework(
+	details: &([u8; 32], String, Vec<u8>, u64, [u8;32], u64), 
+	expected_bridge_transfer_id: [u8; 32],
+	expected_sender_address: String,
+	expected_recipient_address: Vec<u8>,
+	expected_amount: u64,
+	expected_hash_lock: [u8; 32],
+) {
+	assert_eq!(details.0, expected_bridge_transfer_id);
+	assert_eq!(details.1, expected_sender_address);
+	assert_eq!(details.2, expected_recipient_address);
+	assert_eq!(details.3, expected_amount);
+	assert_eq!(details.4, expected_hash_lock);
+}
+
 pub async fn extract_bridge_transfer_id(
 	movement_client: &mut MovementClient,
 ) -> Result<[u8; 32], anyhow::Error> {
@@ -71,6 +86,122 @@ pub async fn extract_bridge_transfer_id(
 		}
 	}
 	Err(anyhow::Error::msg("No matching transaction found"))
+}
+
+pub async fn extract_bridge_transfer_id_framework(
+	movement_client: &mut MovementClientFramework,
+) -> Result<[u8; 32], anyhow::Error> {
+	let sender_address = movement_client.signer().address();
+	let sequence_number = 0; // Modify as needed
+	let rest_client = movement_client.rest_client();
+
+	let transactions = rest_client
+		.get_account_transactions(sender_address, Some(sequence_number), Some(20))
+		.await
+		.map_err(|e| anyhow::Error::msg(format!("Failed to get transactions: {:?}", e)))?;
+
+	if let Some(transaction) = transactions.into_inner().last() {
+		if let Transaction::UserTransaction(user_txn) = transaction {
+			for event in &user_txn.events {
+				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
+					&event.typ
+				{
+					match struct_tag.name.as_str() {
+						"BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
+							if let Some(bridge_transfer_id) =
+								event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
+							{
+								let hex_str = bridge_transfer_id.trim_start_matches("0x");
+								let decoded_vec = hex::decode(hex_str).map_err(|_| {
+									anyhow::Error::msg("Failed to decode hex string into Vec<u8>")
+								})?;
+								return decoded_vec.try_into().map_err(|_| {
+									anyhow::Error::msg(
+										"Failed to convert decoded Vec<u8> to [u8; 32]",
+									)
+								});
+							}
+						}
+						_ => {}
+					}
+				}
+			}
+		}
+	}
+	Err(anyhow::Error::msg("No matching transaction found"))
+}
+
+pub async fn extract_bridge_transfer_details_framework(
+        movement_client: &mut MovementClientFramework,
+) -> Result<([u8; 32], String, Vec<u8>, u64, [u8; 32], u64), anyhow::Error> {
+        let sender_address = movement_client.signer().address();
+        let sequence_number = 0; // Modify as needed
+        let rest_client = movement_client.rest_client();
+
+        let transactions = rest_client
+                .get_account_transactions(sender_address, Some(sequence_number), Some(20))
+                .await
+                .map_err(|e| anyhow::Error::msg(format!("Failed to get transactions: {:?}", e)))?;
+
+        if let Some(transaction) = transactions.into_inner().last() {
+                if let Transaction::UserTransaction(user_txn) = transaction {
+                        for event in &user_txn.events {
+                                if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
+                                        &event.typ
+                                {
+                                        match struct_tag.name.as_str() {
+                                                "BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
+                                                        if let Some(bridge_transfer_id_str) =
+                                                                event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
+                                                        {
+                                                                let bridge_transfer_id_vec = hex::decode(bridge_transfer_id_str.trim_start_matches("0x"))
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to decode hex string into Vec<u8>"))?;
+                                                                let bridge_transfer_id: [u8; 32] = bridge_transfer_id_vec.try_into()
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to convert Vec<u8> to [u8; 32]"))?;
+
+                                                                let initiator = event.data.get("initiator")
+                                                                        .and_then(|v| v.as_str())
+                                                                        .ok_or_else(|| anyhow::Error::msg("Missing initiator"))?
+                                                                        .to_string();
+
+                                                                let recipient = hex::decode(
+                                                                        event.data.get("recipient")
+                                                                        .and_then(|v| v.as_str())
+                                                                        .ok_or_else(|| anyhow::Error::msg("Missing recipient"))?
+                                                                        .trim_start_matches("0x"))
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to decode recipient"))?;
+
+                                                                let amount = event.data.get("amount")
+                                                                        .and_then(|v| v.as_str())
+                                                                        .ok_or_else(|| anyhow::Error::msg("Missing amount"))?
+                                                                        .parse::<u64>()
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to parse amount"))?;
+
+                                                                let hash_lock_vec = hex::decode(
+                                                                        event.data.get("hash_lock")
+                                                                        .and_then(|v| v.as_str())
+                                                                        .ok_or_else(|| anyhow::Error::msg("Missing hash_lock"))?
+                                                                        .trim_start_matches("0x"))
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to decode hash_lock"))?;
+                                                                let hash_lock: [u8; 32] = hash_lock_vec.try_into()
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to convert Vec<u8> to [u8; 32]"))?;
+
+                                                                let time_lock = event.data.get("time_lock")
+                                                                        .and_then(|v| v.as_str())
+                                                                        .ok_or_else(|| anyhow::Error::msg("Missing time_lock"))?
+                                                                        .parse::<u64>()
+                                                                        .map_err(|_| anyhow::Error::msg("Failed to parse time_lock"))?;
+
+                                                                return Ok((bridge_transfer_id, initiator, recipient, amount, hash_lock, time_lock));
+                                                        }
+                                                }
+                                                _ => {}
+                                        }
+                                }
+                        }
+                }
+        }
+        Err(anyhow::Error::msg("No matching transaction found"))
 }
 
 pub async fn fund_and_check_balance(
