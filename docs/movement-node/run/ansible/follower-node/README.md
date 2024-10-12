@@ -8,7 +8,7 @@ By running the a Follower Node locally, you will be able to gauge the performanc
 - 2 TB SSD w/ 60K IOPS and 200 MiB/s throughput
 
 ## Running a Movement Node on Follower Node
-You can join any sufficiently upgraded network as a Folloewr Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay. 
+You can join any sufficiently upgraded network as a Follower Node by running a Movement Node with container tags specified to latest commit hash on this branch, the [`follower`](../../../../docker/compose/suzuka-full-node/docker-compose.follower.yml) overlay. 
 
 **Note**: the scripts provided herein have hardcoded constants for the Movement Testnet. You will need to change these to match the environment you are running on.
 
@@ -63,4 +63,4 @@ If you encounter an error reported by the `setup` service for an invalid Aptos s
 3. Is the host volume mounted correctly? Check the `volumes` section of your Docker Compose file.
 
 ### Forceful Writes
-Most other bugs that emerged in early development should be handled by the forceful writes made by `syncador-v2`. However, this also means that if your application is not configured to allow for writes from the user running the Suzuka Full Follower servicer, then you will likely encounter errors. 
+Most other bugs that emerged in early development should be handled by the forceful writes made by `syncador-v2`. However, this also means that if your application is not configured to allow for writes from the user running the Suzuka Full Follower service, then you will likely encounter errors. 

@@ -69,7 +69,7 @@ docker compose \
         pull
 ```
 
-5. Make sure that the containers image tag match the desired container version.
+5. Make sure that the container's image tag matches the desired container version.
 ```bash
 cat "${MOVEMENT_ENV_FILE}"
 CONTAINER_REV=e6cb8e287cb837af6e61451f2ff405047dd285c9
