@@ -1,0 +1,9 @@
+services:
+
+  setup:
+    image: ghcr.io/movementlabsxyz/bridge-setup:${CONTAINER_REV}
+    container_name: setup
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    healthcheck:
+      test: [ "CMD-SHELL", "echo true" ]

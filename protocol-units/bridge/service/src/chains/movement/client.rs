@@ -21,8 +21,8 @@ use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
-const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
-const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
+pub const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
+pub const COUNTERPARTY_MODULE_NAME: &str = "atomic_bridge_counterparty";
 const DUMMY_ADDRESS: AccountAddress = AccountAddress::new([0; 32]);
 
 #[allow(dead_code)]
@@ -77,7 +77,7 @@ impl MovementClient {
 		&mut self,
 		time_lock: u64,
 	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,
@@ -98,7 +98,7 @@ impl MovementClient {
 		&mut self,
 		time_lock: u64,
 	) -> Result<(), BridgeContractError> {
-		let args = vec![utils::serialize_u64(&time_lock).expect("Failed to serialize time lock")];
+		let args = vec![utils::serialize_u64(&time_lock)?];
 
 		let payload = utils::make_aptos_payload(
 			self.native_address,

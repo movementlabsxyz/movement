@@ -5,17 +5,22 @@ use alloy::primitives::{keccak256, U256};
 use alloy::providers::ProviderBuilder;
 use alloy::signers::local::PrivateKeySigner;
 use alloy_network::EthereumWallet;
+use aptos_sdk::rest_client::aptos_api_types::Transaction as AptosTransaction;
 use aptos_sdk::rest_client::{Client, FaucetClient};
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::types::LocalAccount;
 use bridge_config::Config;
+use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::ethereum::types::AlloyProvider;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
 use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
 use bridge_service::types::Amount;
+use bridge_service::types::BridgeTransferId;
+use bridge_service::types::HashLockPreImage;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
+use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::SeedableRng;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -64,7 +69,7 @@ impl Default for MovementToEthCallArgs {
 
 		Self {
 			initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-			recipient: b"0x123".to_vec(),
+			recipient: [1; 20].to_vec(),
 			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
 			hash_lock: EthHash(hash_lock),
 			time_lock: 3600,
@@ -77,10 +82,22 @@ pub struct HarnessEthClient {
 	pub eth_rpc_url: String,
 	pub signer_private_key: PrivateKeySigner,
 	pub eth_client: EthClient,
-	pub anvil: AnvilInstance,
 }
 
 impl HarnessEthClient {
+	pub async fn build(config: &Config) -> Self {
+		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
+
+		let signer_private_key = config
+			.eth
+			.signer_private_key
+			.parse::<PrivateKeySigner>()
+			.expect("Error during parsing signer private key?");
+
+		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
+		HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }
+	}
+
 	pub async fn rpc_provider(&self) -> AlloyProvider {
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
@@ -95,20 +112,28 @@ impl HarnessEthClient {
 		self.signer_private_key.address()
 	}
 
-	pub fn get_initiator_private_key(&self) -> PrivateKeySigner {
-		self.anvil.keys()[2].clone().into()
+	pub fn get_initiator_private_key(config: &Config) -> PrivateKeySigner {
+		let signer_private_key = config.testing.eth_well_known_account_private_keys[2]
+			.clone()
+			.parse::<PrivateKeySigner>()
+			.unwrap();
+		signer_private_key
 	}
 
-	pub fn get_initiator_address(&self) -> Address {
-		self.get_initiator_private_key().address()
+	pub fn get_initiator_address(config: &Config) -> Address {
+		HarnessEthClient::get_initiator_private_key(config).address()
 	}
 
-	pub fn get_recipient_private_key(&self) -> PrivateKeySigner {
-		self.anvil.keys()[3].clone().into()
+	pub fn get_recipient_private_key(config: &Config) -> PrivateKeySigner {
+		let signer_private_key = config.testing.eth_well_known_account_private_keys[3]
+			.clone()
+			.parse::<PrivateKeySigner>()
+			.unwrap();
+		signer_private_key
 	}
 
-	pub fn get_recipeint_address(&self) -> Address {
-		self.get_recipient_private_key().address()
+	pub fn get_recipeint_address(config: &Config) -> Address {
+		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
 	pub async fn deposit_weth_and_approve(
@@ -126,7 +151,6 @@ impl HarnessEthClient {
 
 pub struct HarnessMvtClient {
 	pub movement_client: MovementClient,
-	pub movement_process: tokio::process::Child,
 	///The Apotos Rest Client
 	pub rest_client: Client,
 	///The Apotos Rest Client
@@ -139,23 +163,8 @@ impl HarnessMvtClient {
 		let movement_recipient = LocalAccount::generate(&mut rng);
 		movement_recipient.public_key().to_bytes().to_vec()
 	}
-}
 
-pub struct TestHarness;
-impl TestHarness {
-	pub async fn new_with_eth_and_movement(
-		config: Config,
-	) -> (HarnessEthClient, HarnessMvtClient, Config) {
-		let (eth_client_harness, config) = TestHarness::new_only_eth(config).await;
-		let (mvt_client_harness, config) = TestHarness::new_with_movement(config).await;
-		(eth_client_harness, mvt_client_harness, config)
-	}
-
-	pub async fn new_with_movement(config: Config) -> (HarnessMvtClient, Config) {
-		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
-			.await
-			.expect("Failed to setup Movement config");
-
+	pub async fn build(config: &Config) -> Self {
 		let movement_client = MovementClient::new(&config.movement)
 			.await
 			.expect("Failed to create MovementClient");
@@ -171,23 +180,97 @@ impl TestHarness {
 			node_connection_url.clone(),
 		)));
 
-		(HarnessMvtClient { movement_client, movement_process, rest_client, faucet_client }, config)
+		HarnessMvtClient { movement_client, rest_client, faucet_client }
 	}
 
-	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config) {
+	pub async fn fund_account(&self) -> LocalAccount {
+		let account = LocalAccount::generate(&mut rand::rngs::OsRng);
+		self.faucet_client
+			.write()
+			.unwrap()
+			.fund(account.address(), 100_000_000)
+			.await
+			.expect("Failed to fund account");
+		account
+	}
+
+	pub async fn counterparty_complete_bridge_transfer(
+		&mut self,
+		recipient_privatekey: LocalAccount,
+		bridge_transfer_id: BridgeTransferId,
+		preimage: HashLockPreImage,
+	) -> BridgeContractResult<AptosTransaction> {
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+				end -= 1;
+			}
+			&preimage.0[..end]
+		};
+		let args2 = vec![
+			bridge_service::chains::movement::utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			bridge_service::chains::movement::utils::serialize_vec(&unpadded_preimage)?,
+		];
+
+		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
+			self.movement_client.native_address,
+			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args2,
+		);
+
+		bridge_service::chains::movement::utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			&recipient_privatekey,
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError)
+	}
+}
+
+pub struct TestHarness;
+impl TestHarness {
+	pub async fn read_bridge_config() -> Result<Config, anyhow::Error> {
+		let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let pathbuff = bridge_config::get_config_path(&dot_movement);
+		dot_movement.set_path(pathbuff);
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+		// get a matching godfig object
+		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
+		let bridge_config: Config = godfig.try_wait_for_ready().await?;
+		Ok(bridge_config)
+	}
+
+	pub async fn new_with_eth_and_movement(
+	) -> Result<(HarnessEthClient, HarnessMvtClient, Config), anyhow::Error> {
+		let config = TestHarness::read_bridge_config().await?;
+
+		let test_mvt_hadness = HarnessMvtClient::build(&config).await;
+		let test_eth_hadness = HarnessEthClient::build(&config).await;
+
+		Ok((test_eth_hadness, test_mvt_hadness, config))
+	}
+
+	pub async fn new_with_movement(
+		config: Config,
+	) -> (HarnessMvtClient, Config, tokio::process::Child) {
+		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
+			.await
+			.expect("Failed to setup Movement config");
+
+		let test_hadness = HarnessMvtClient::build(&config).await;
+
+		(test_hadness, config, movement_process)
+	}
+
+	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {
 		let (config, anvil) = bridge_setup::test_eth_setup(config)
 			.await
 			.expect("Test eth config setup failed.");
-
-		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
-
-		let signer_private_key = config
-			.eth
-			.signer_private_key
-			.parse::<PrivateKeySigner>()
-			.expect("Error during parsing signer private key?");
-
-		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
-		(HarnessEthClient { eth_client, eth_rpc_url, signer_private_key, anvil }, config)
+		let test_hadness = HarnessEthClient::build(&config).await;
+		(test_hadness, config, anvil)
 	}
 }

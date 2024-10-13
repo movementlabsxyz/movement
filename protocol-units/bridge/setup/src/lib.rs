@@ -4,16 +4,13 @@ use bridge_config::Config;
 pub mod deploy;
 pub mod local;
 
-pub async fn process_compose_setup(
-	config: Config,
-) -> Result<(Config, AnvilInstance), anyhow::Error> {
+pub async fn process_compose_setup(config: Config) -> Result<Config, anyhow::Error> {
 	// Currently local only
 	tracing::info!("Bridge process_compose_setup");
-	let (config, anvil) = crate::local::setup(config).await?;
 
 	//Deploy locally
 	let config = crate::deploy::setup(config).await?;
-	Ok((config, anvil))
+	Ok(config)
 }
 
 pub async fn test_eth_setup(mut config: Config) -> Result<(Config, AnvilInstance), anyhow::Error> {
@@ -27,6 +24,6 @@ pub async fn test_mvt_setup(
 	mut config: Config,
 ) -> Result<(Config, tokio::process::Child), anyhow::Error> {
 	let movement_task = local::setup_movement_node(&mut config.movement).await?;
-	local::init_local_movement_node(&mut config.movement)?;
+	deploy::deploy_local_movement_node(&mut config.movement)?;
 	Ok((config, movement_task))
 }

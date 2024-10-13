@@ -41,6 +41,9 @@ pub struct EthConfig {
 	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
 
+	#[serde(default = "default_time_lock_secs")]
+	pub time_lock_secs: u64,
+
 	#[serde(default = "default_gas_limit")]
 	pub gas_limit: u64,
 	#[serde(default = "default_transaction_send_retries")]
@@ -67,6 +70,8 @@ env_default!(
 	String,
 	DEFAULT_ETH_WETH_CONTRACT.to_string()
 );
+
+env_short_default!(default_time_lock_secs, u64, 48 * 60 * 60 as u64); //48h by default
 
 env_short_default!(default_gas_limit, u64, 10_000_000_000_000_000 as u64);
 
@@ -171,6 +176,8 @@ impl Default for EthConfig {
 			eth_initiator_contract: default_eth_initiator_contract(),
 			eth_counterparty_contract: default_eth_counterparty_contract(),
 			eth_weth_contract: default_eth_weth_contract(),
+
+			time_lock_secs: default_time_lock_secs(),
 
 			signer_private_key: default_signer_private_key(),
 			gas_limit: default_gas_limit(),
