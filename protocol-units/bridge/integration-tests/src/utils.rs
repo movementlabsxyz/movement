@@ -11,7 +11,12 @@ use bridge_service::chains::movement::utils::{
 	self as movement_utils, MovementAddress, MovementHash,
 };
 use bridge_service::types::{Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock};
-use tracing::debug;
+use serde_json::Value;
+use tracing::{debug, info};
+
+const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+]);
 
 pub fn assert_bridge_transfer_details(
 	details: &BridgeTransferDetails<MovementAddress>, // MovementAddress for initiator
@@ -47,49 +52,6 @@ pub fn assert_bridge_transfer_details_framework(
 
 pub async fn extract_bridge_transfer_id(
 	movement_client: &mut MovementClient,
-) -> Result<[u8; 32], anyhow::Error> {
-	let sender_address = movement_client.signer().address();
-	let sequence_number = 0; // Modify as needed
-	let rest_client = movement_client.rest_client();
-
-	let transactions = rest_client
-		.get_account_transactions(sender_address, Some(sequence_number), Some(20))
-		.await
-		.map_err(|e| anyhow::Error::msg(format!("Failed to get transactions: {:?}", e)))?;
-
-	if let Some(transaction) = transactions.into_inner().last() {
-		if let Transaction::UserTransaction(user_txn) = transaction {
-			for event in &user_txn.events {
-				if let aptos_sdk::rest_client::aptos_api_types::MoveType::Struct(struct_tag) =
-					&event.typ
-				{
-					match struct_tag.name.as_str() {
-						"BridgeTransferInitiatedEvent" | "BridgeTransferLockedEvent" => {
-							if let Some(bridge_transfer_id) =
-								event.data.get("bridge_transfer_id").and_then(|v| v.as_str())
-							{
-								let hex_str = bridge_transfer_id.trim_start_matches("0x");
-								let decoded_vec = hex::decode(hex_str).map_err(|_| {
-									anyhow::Error::msg("Failed to decode hex string into Vec<u8>")
-								})?;
-								return decoded_vec.try_into().map_err(|_| {
-									anyhow::Error::msg(
-										"Failed to convert decoded Vec<u8> to [u8; 32]",
-									)
-								});
-							}
-						}
-						_ => {}
-					}
-				}
-			}
-		}
-	}
-	Err(anyhow::Error::msg("No matching transaction found"))
-}
-
-pub async fn extract_bridge_transfer_id_framework(
-	movement_client: &mut MovementClientFramework,
 ) -> Result<[u8; 32], anyhow::Error> {
 	let sender_address = movement_client.signer().address();
 	let sequence_number = 0; // Modify as needed
@@ -202,6 +164,35 @@ pub async fn extract_bridge_transfer_details_framework(
                 }
         }
         Err(anyhow::Error::msg("No matching transaction found"))
+}
+
+pub async fn fetch_bridge_transfer_details(
+        movement_client: &mut MovementClientFramework,
+        bridge_transfer_id: [u8; 32],
+) -> Result<BridgeTransferDetails<AccountAddress>, anyhow::Error> {
+        let rest_client = movement_client.rest_client();
+        let account_address = FRAMEWORK_ADDRESS;
+	let resource_tag = "0x1::atomic_bridge_store::SmartTableWrapper<vector<u8>, 0x1::atomic_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
+        let resource_response = rest_client
+            .get_account_resource(account_address, resource_tag)
+            .await
+            .map_err(|e| anyhow::Error::msg(format!("Failed to fetch resource: {:?}", e)))?;
+
+        let bridge_transfer_id_hex = hex::encode(bridge_transfer_id);
+	info!("Bridge transfer ID hex: {:?}", bridge_transfer_id_hex);
+        let json_value: Value = resource_response.into_inner().unwrap().data;
+
+        if let Some(transfers) = json_value.get("inner") {
+                if let Some(transfer_data) = transfers.get(&bridge_transfer_id_hex) {
+                        let bridge_transfer_details: BridgeTransferDetails<AccountAddress> =
+                                serde_json::from_value(transfer_data.clone())
+                                .map_err(|e| anyhow::Error::msg(format!("Failed to deserialize BridgeTransferDetails: {:?}", e)))?;
+                        return Ok(bridge_transfer_details);
+                }
+	info!("Bridge transfers: {:?}", transfers);
+        }
+	
+        Err(anyhow::Error::msg("No matching bridge transfer details found"))
 }
 
 pub async fn fund_and_check_balance(

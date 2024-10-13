@@ -7,7 +7,10 @@ use bridge_service::chains::bridge_contracts::BridgeContractEvent;
 use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::chains::movement::event_monitoring_framework::MovementMonitoringFramework;
 use bridge_service::{
-	chains::{bridge_contracts::BridgeContract, movement::{utils::MovementHash, event_monitoring::MovementMonitoring}},
+	chains::{
+		bridge_contracts::BridgeContract,
+		movement::{event_monitoring::MovementMonitoring, utils::MovementHash},
+	},
 	types::{BridgeTransferId, HashLockPreImage},
 };
 use futures::StreamExt;
@@ -40,18 +43,18 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	MovementClientFramework::bridge_setup_scripts().await?; 
+	MovementClientFramework::bridge_setup_scripts().await?;
 
-	let config:Config = Config::suzuka();
-	
-	let (mut mvt_client_harness, config) =
-		TestHarnessFramework::new_with_suzuka(config).await;
+	let config: Config = Config::suzuka();
+
+	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
 		let sender_address = mvt_client_harness.movement_client.signer().address();
-		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000).await?;
+		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
+			.await?;
 		test_utils::initiate_bridge_transfer_helper_framework(
 			&mut mvt_client_harness.movement_client,
 			args.initiator.0,
@@ -63,10 +66,13 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-		let details:([u8; 32], String, Vec<u8>, u64, [u8; 32], u64) =
-			test_utils::extract_bridge_transfer_details_framework(&mut mvt_client_harness.movement_client).await?;
+		let details: ([u8; 32], String, Vec<u8>, u64, [u8; 32], u64) =
+			test_utils::extract_bridge_transfer_details_framework(
+				&mut mvt_client_harness.movement_client,
+			)
+			.await?;
 		info!("Bridge transfer details: {:?}", details);
-	
+
 		test_utils::assert_bridge_transfer_details_framework(
 			&details,
 			details.0,
@@ -84,20 +90,23 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 }
 
 #[tokio::test]
-#[ignore] // Test fail when run with the other test: https://github.com/movementlabsxyz/movement/issues/656
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
+	// TODO: Get PR 80 merged into aptos-core so 
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let default_config = Config::default();
-	let (mut mvt_client_harness, _config, mut mvt_process) =
-		TestHarness::new_with_movement(default_config).await;
+	MovementClientFramework::bridge_setup_scripts().await?;
+
+	let config: Config = Config::suzuka();
+
+	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
 		let sender_address = mvt_client_harness.movement_client.signer().address();
-		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
-		test_utils::initiate_bridge_transfer_helper(
+		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
+			.await?;
+		test_utils::initiate_bridge_transfer_helper_framework(
 			&mut mvt_client_harness.movement_client,
 			args.initiator.0,
 			args.recipient.clone(),
@@ -108,56 +117,46 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.await
 		.expect("Failed to initiate bridge transfer");
 
-		let bridge_transfer_id: [u8; 32] =
-			test_utils::extract_bridge_transfer_id(&mut mvt_client_harness.movement_client).await?;
-		info!("Bridge transfer id: {:?}", bridge_transfer_id);
-		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-		)
-		.await
-		.expect("Failed to get bridge transfer details")
-		.expect("Expected to find bridge transfer details, but got None");
+		let details: ([u8; 32], String, Vec<u8>, u64, [u8; 32], u64) =
+			test_utils::extract_bridge_transfer_details_framework(
+				&mut mvt_client_harness.movement_client,
+			)
+			.await?;
+		info!("Bridge transfer details: {:?}", details);
 
-		test_utils::assert_bridge_transfer_details(
+		test_utils::assert_bridge_transfer_details_framework(
 			&details,
-			MovementHash(bridge_transfer_id).0,
-			MovementHash(args.hash_lock.0).0,
-			sender_address,
+			details.0,
+			sender_address.to_string(),
 			args.recipient.clone(),
 			args.amount,
-			1,
+			args.hash_lock.0,
 		);
 
-		let secret = b"secret";
-		let mut padded_secret = [0u8; 32];
-		padded_secret[..secret.len()].copy_from_slice(secret);
+		//let secret = b"secret";
+		//let mut padded_secret = [0u8; 32];
+		//padded_secret[..secret.len()].copy_from_slice(secret);
+//
+		//BridgeContract::initiator_complete_bridge_transfer(
+		//	&mut mvt_client_harness.movement_client,
+		//	BridgeTransferId(details.0),
+		//	HashLockPreImage(padded_secret),
+		//)
+		//.await
+		//.expect("Failed to complete bridge transfer");
 
-		BridgeContract::initiator_complete_bridge_transfer(
+		let complete_details = test_utils::fetch_bridge_transfer_details(
 			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-			HashLockPreImage(padded_secret),
+			details.0,
 		)
-		.await
-		.expect("Failed to complete bridge transfer");
+		.await?;
 
-		let details = BridgeContract::get_bridge_transfer_details_initiator(
-			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(MovementHash(bridge_transfer_id).0),
-		)
-		.await
-		.expect("Failed to get bridge transfer details")
-		.expect("Expected to find bridge transfer details, but got None");
-
-		assert_eq!(details.state, 2, "Bridge transfer should be completed.");
+		println!("Extracted transfer ID: {:?}", complete_details.bridge_transfer_id);
+		assert_eq!(complete_details.state, 2, "Bridge transfer should be completed.");
 
 		Ok(())
 	}
 	.await;
-
-	if let Err(e) = mvt_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
 
 	test_result
 }

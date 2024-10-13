@@ -171,6 +171,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			}
 			&preimage.0[..end]
 		};
+		println!("Unpadded preimage: {:?}", unpadded_preimage);
 		let args2 = vec![
 			utils::serialize_vec_initiator(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec_initiator(unpadded_preimage)?,
@@ -484,10 +485,9 @@ use tokio::{
 
 impl MovementClientFramework {
 	pub async fn bridge_setup_scripts() -> Result<()> {
-
-	let project_root = Path::new("../../../");
-	env::set_current_dir(&project_root)
-		.context("Failed to change directory to project root")?;
+		let project_root = Path::new("../../../");
+		env::set_current_dir(&project_root)
+			.context("Failed to change directory to project root")?;
 
 		let compile_output = Command::new("movement")
 			.args(&[
@@ -556,7 +556,7 @@ impl MovementClientFramework {
 				"--compiled-script-path",
 				"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_operator.mv",
 				"--args",
-				"address:0xface",
+				"address:0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
 				"--profile",
 				"default",
 				"--assume-yes",
