@@ -168,30 +168,32 @@ pub async fn extract_bridge_transfer_details_framework(
 
 pub async fn fetch_bridge_transfer_details(
         movement_client: &mut MovementClientFramework,
-        bridge_transfer_id: [u8; 32],
+        bridge_transfer_id: Vec<u8>,
 ) -> Result<BridgeTransferDetails<AccountAddress>, anyhow::Error> {
         let rest_client = movement_client.rest_client();
         let account_address = FRAMEWORK_ADDRESS;
-	let resource_tag = "0x1::atomic_bridge_store::SmartTableWrapper<vector<u8>, 0x1::atomic_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
+        let resource_tag = "0x1::atomic_bridge_store::SmartTableWrapper<vector<u8>, 0x1::atomic_bridge_store::BridgeTransferDetails<address, 0x1::ethereum::EthereumAddress>>";
+        
         let resource_response = rest_client
             .get_account_resource(account_address, resource_tag)
             .await
             .map_err(|e| anyhow::Error::msg(format!("Failed to fetch resource: {:?}", e)))?;
-
-        let bridge_transfer_id_hex = hex::encode(bridge_transfer_id);
-	info!("Bridge transfer ID hex: {:?}", bridge_transfer_id_hex);
+        
         let json_value: Value = resource_response.into_inner().unwrap().data;
-
-        if let Some(transfers) = json_value.get("inner") {
-                if let Some(transfer_data) = transfers.get(&bridge_transfer_id_hex) {
-                        let bridge_transfer_details: BridgeTransferDetails<AccountAddress> =
-                                serde_json::from_value(transfer_data.clone())
-                                .map_err(|e| anyhow::Error::msg(format!("Failed to deserialize BridgeTransferDetails: {:?}", e)))?;
-                        return Ok(bridge_transfer_details);
+        
+        if let Some(transfers) = json_value.get("inner").and_then(|t| t.get("buckets")) {
+                for (key, value) in transfers.as_object().unwrap().iter() {
+                        let key_vec = hex::decode(key).expect("Failed to decode key"); // Convert the key into Vec<u8>
+                        
+                        if key_vec == bridge_transfer_id {
+                                let bridge_transfer_details: BridgeTransferDetails<AccountAddress> =
+                                    serde_json::from_value(value.clone())
+                                    .map_err(|e| anyhow::Error::msg(format!("Failed to deserialize BridgeTransferDetails: {:?}", e)))?;
+                                return Ok(bridge_transfer_details);
+                        }
                 }
-	info!("Bridge transfers: {:?}", transfers);
         }
-	
+        
         Err(anyhow::Error::msg("No matching bridge transfer details found"))
 }
 

@@ -147,7 +147,7 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 
 		let complete_details = test_utils::fetch_bridge_transfer_details(
 			&mut mvt_client_harness.movement_client,
-			details.0,
+			details.0.into(),
 		)
 		.await?;
 
