@@ -73,6 +73,17 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			.await?;
 		info!("Bridge transfer details: {:?}", details);
 
+
+		let details = BridgeContract::get_bridge_transfer_details_initiator(
+			&mut mvt_client_harness.movement_client,
+			BridgeTransferId(MovementHash(details.0)),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
+
+		assert_eq!(details.state, 2, "Bridge transfer should be completed.");
+
 		test_utils::assert_bridge_transfer_details_framework(
 			&details,
 			details.0,

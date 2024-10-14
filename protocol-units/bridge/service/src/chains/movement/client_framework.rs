@@ -338,12 +338,12 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 				module: MoveModuleId {
 					address: FRAMEWORK_ADDRESS.clone().into(),
 					name: aptos_api_types::IdentifierWrapper(
-						Identifier::new("atomic_bridge_initiator")
+						Identifier::new("atomic_bridge_store")
 							.map_err(|_| BridgeContractError::FunctionViewError)?,
 					),
 				},
 				name: aptos_api_types::IdentifierWrapper(
-					Identifier::new("bridge_transfers")
+					Identifier::new("get_bridge_transfer_details")
 						.map_err(|_| BridgeContractError::FunctionViewError)?,
 				),
 			},
