@@ -68,7 +68,8 @@ jobs:
             -p maptos-opt-executor \
             -p memseq \
             -p move-rocks \
-            -p movement-types
+            -p movement-types \ 
+            -p suzuka-config
         EOF
 
   suzuka-full-node-local:

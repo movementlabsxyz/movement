@@ -24,3 +24,6 @@ toml = { workspace = true }
 tracing = { workspace = true }
 m1-da-light-node-util = { workspace = true }
 godfig = { workspace = true }
+syncup = { workspace = true }
+movement-types = { workspace = true }
+dot-movement = { workspace = true }

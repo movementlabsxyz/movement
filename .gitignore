@@ -25,3 +25,4 @@ profile.json
 venv
 *.pem
 *.jot
+*.env

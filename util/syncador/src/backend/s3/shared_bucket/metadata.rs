@@ -3,8 +3,6 @@ use movement_types::{actor, application};
 use std::collections::HashSet;
 use std::time;
 
-pub const DEFAULT_SYNC_EPOCH_DURATION: u64 = 1000 * 60;
-
 #[derive(Debug, Clone)]
 pub struct Metadata {
 	pub application_id: application::Id,
@@ -14,6 +12,9 @@ pub struct Metadata {
 }
 
 impl Metadata {
+	pub const DEFAULT_RETAIN_EPOCHS_COUNT: u64 = 16;
+	pub const DEFAULT_SYNC_EPOCH_DURATION: u64 = 1000 * 60;
+
 	pub fn new(
 		application_id: application::Id,
 		syncer_id: actor::Id,
@@ -23,16 +24,32 @@ impl Metadata {
 		Self { application_id, syncer_id, sync_epoch_duration, retain_epochs_count }
 	}
 
+	/// Set the application id for the metadata
 	pub fn with_application_id(self, application_id: application::Id) -> Self {
 		Self { application_id, ..self }
 	}
 
+	/// Set the syncer id for the metadata
+	pub fn with_syncer_id(self, syncer_id: actor::Id) -> Self {
+		Self { syncer_id, ..self }
+	}
+
+	/// Set the sync epoch duration for the metadata
 	pub fn random() -> Self {
 		Self {
 			application_id: application::Id::random(),
 			syncer_id: actor::Id::random(),
-			sync_epoch_duration: DEFAULT_SYNC_EPOCH_DURATION,
-			retain_epochs_count: 16,
+			sync_epoch_duration: Self::DEFAULT_SYNC_EPOCH_DURATION,
+			retain_epochs_count: Self::DEFAULT_RETAIN_EPOCHS_COUNT,
+		}
+	}
+
+	pub fn default() -> Self {
+		Self {
+			application_id: application::Id::default(),
+			syncer_id: actor::Id::default(),
+			sync_epoch_duration: Self::DEFAULT_SYNC_EPOCH_DURATION,
+			retain_epochs_count: Self::DEFAULT_RETAIN_EPOCHS_COUNT,
 		}
 	}
 
