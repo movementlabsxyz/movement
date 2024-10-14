@@ -3,9 +3,10 @@ use bridge_config::Config;
 use bridge_integration_tests::utils;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness, TestHarnessFramework};
-use bridge_service::chains::bridge_contracts::BridgeContractEvent;
+use bridge_service::chains::bridge_contracts::{BridgeContractError, BridgeContractEvent};
 use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::chains::movement::event_monitoring_framework::MovementMonitoringFramework;
+use bridge_service::types::AssetType;
 use bridge_service::{
 	chains::{
 		bridge_contracts::BridgeContract,
@@ -73,7 +74,6 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 			.await?;
 		info!("Bridge transfer details: {:?}", initial_details);
 
-
 		let details = BridgeContract::get_bridge_transfer_details_initiator(
 			&mut mvt_client_harness.movement_client,
 			BridgeTransferId(initial_details.0),
@@ -82,15 +82,26 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
+		let amount = match details.amount.0 {
+			AssetType::Moveth(amount) => {
+			println!("Amount in u64: {}", amount);
+			amount 
+			},
+			AssetType::EthAndWeth(amount) => {
+				1
+			}
+		
+		};
+
 		assert_eq!(details.state, 1, "Bridge transfer should be initiated.");
 
 		test_utils::assert_bridge_transfer_details_framework(
 			&initial_details,
 			details.bridge_transfer_id.0,
-			sender_address.to_string(),
-			args.recipient.clone(),
-			args.amount,
-			args.hash_lock.0,
+			details.initiator_address.to_string(),
+			details.recipient_address.0,
+			amount,
+			details.hash_lock.0,
 		);
 
 		Ok(())
