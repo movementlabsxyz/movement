@@ -12,27 +12,32 @@ contract MOVEFaucet {
     IERC20 public move;
     uint256 public rateLimit = 1 days;
     uint256 public amount = 10;
-    address receiver;
+    address owner;
     mapping(address => uint256) public lastFaucetClaim;
 
     constructor(IERC20 _move) {
         move = _move;
-        receiver = msg.sender;
+        owner = msg.sender;
     }
 
     function faucet() external payable {
-        require(msg.value == 10 ** 17, "MOVEFaucet: invalid amount");
-        require(move.balanceOf(msg.sender) == 0, "MOVEFaucet: balance must be 0");
+        require(msg.value == 10 ** 17, "MOVEFaucet: eth invalid amount");
+        require(move.balanceOf(msg.sender) < 10 ** move.decimals(), "MOVEFaucet: balance must be less than 1 MOVE");
         require(block.timestamp - lastFaucetClaim[msg.sender] >= rateLimit, "MOVEFaucet: rate limit exceeded");
-        payable(receiver).transfer(msg.value);
         lastFaucetClaim[msg.sender] = block.timestamp;
         require(move.transfer(msg.sender, amount * 10 ** move.decimals()), "MOVEFaucet: transfer failed");
     }
 
-    function setConfig(uint256 _rateLimit, uint256 _amount, address _receiver) external {
-        require(msg.sender == receiver, "MOVEFaucet: only receiver can set config");
+    function setConfig(uint256 _rateLimit, uint256 _amount, address _owner) external {
+        require(msg.sender == owner, "MOVEFaucet: only owner can set config");
         rateLimit = _rateLimit;
         amount = _amount;
-        receiver = _receiver;
+        owner = _owner;
+    }
+
+    function withdraw() external {
+        require(msg.sender == owner, "MOVEFaucet: only owner can retrieve funds");
+        (bool status,) = owner.call{value: address(this).balance}("");
+        require(status == true, "error during transaction");
     }
 }
