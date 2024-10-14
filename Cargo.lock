@@ -13536,7 +13536,7 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "clap 4.5.19",
+ "clap 4.5.20",
  "console-subscriber",
  "dot-movement",
  "futures",
@@ -13556,7 +13556,7 @@ dependencies = [
  "syncup",
  "tokio",
  "tokio-stream",
- "tonic 0.11.0",
+ "tonic 0.12.3",
  "tracing",
  "tracing-subscriber 0.3.18",
  "zstd 0.13.2",
