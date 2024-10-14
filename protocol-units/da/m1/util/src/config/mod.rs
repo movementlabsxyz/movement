@@ -113,6 +113,21 @@ impl Config {
 		}
 	}
 
+	/// Gets M1 DA Light Node connection protocol
+	pub fn m1_da_light_node_connection_protocol(&self) -> String {
+		match self {
+			Config::Local(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_protocol.clone()
+			}
+			Config::Arabica(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_protocol.clone()
+			}
+			Config::Mocha(local) => {
+				local.m1_da_light_node.m1_da_light_node_connection_protocol.clone()
+			}
+		}
+	}
+
 	/// Gets M1 DA Light Node listen hostname
 	pub fn m1_da_light_node_listen_hostname(&self) -> String {
 		match self {

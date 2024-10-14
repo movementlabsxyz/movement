@@ -150,8 +150,8 @@ aptos-indexer-grpc-table-info = { git = "https://github.com/movementlabsxyz/apto
 aptos-protos = { git = "https://github.com/movementlabsxyz/aptos-core", rev = "70be3926ff79ff4cdb0cee928f717fafcd41ecdd" }
 
 # Indexer
-processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58", subdir = "rust" }
-server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "1d1d7c72a01a0b5a55477f8fdca59e17c9ce2e58", subdir = "rust" }
+processor = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "8e83cde3cb75fabdade9485e0af680cc4b73ca8e", subdir = "rust" }
+server-framework = { git = "https://github.com/movementlabsxyz/aptos-indexer-processors", rev = "8e83cde3cb75fabdade9485e0af680cc4b73ca8e", subdir = "rust" }
 
 bcs = { git = "https://github.com/aptos-labs/bcs.git", rev = "d31fab9d81748e2594be5cd5cdf845786a30562d" }
 ethereum-types = "0.14.1"
@@ -249,7 +249,7 @@ once_cell = "1.8.0"
 parking_lot = { version = "0.12.1" }
 poem = { version = "=1.3.59", features = ["anyhow", "rustls"] }
 poem-openapi = { version = "=2.0.11", features = ["swagger-ui", "url"] }
-prost = "0.12"
+prost = "0.13.3"
 proptest = { version = "1.3.1", default-features = false, features = ["alloc"] }
 proptest-derive = "0.4"
 quote = "1.0"
@@ -277,10 +277,10 @@ tokio-console = "0.1.0"
 console-subscriber = "0.3.0"
 tokio-stream = "0.1.15"
 toml = "0.8"
-tonic = "0.11"
-tonic-build = { version = "0.11", features = ["prost"] }
-tonic-reflection = "0.11"
-tonic-web = "0.11"
+tonic = "0.12.3"
+tonic-build = { version = "0.12.3", features = ["prost"] }
+tonic-reflection = "0.12.3"
+tonic-web = "0.12.3"
 ### To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 tracing = "0.1.40"
 tracing-appender = "0.2"
@@ -301,6 +301,7 @@ blake-3 = "1.4.0"
 regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
+hyper = "1.4"
 
 # trying to pin diesel
 # diesel = "=2.1.1"

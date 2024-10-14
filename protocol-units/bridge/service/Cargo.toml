@@ -37,6 +37,7 @@ alloy = { workspace = true, features = [
 alloy-network = { workspace = true }
 alloy-rlp.workspace = true
 keccak-hash = { workspace = true }
+reqwest = { workspace = true }
 serde = { workspace = true }
 serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }

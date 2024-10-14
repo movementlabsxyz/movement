@@ -17,7 +17,7 @@ processes:
 
   setup-follower-1:
     command: |
-      sleep 180
+      sleep 120
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false
@@ -55,7 +55,7 @@ processes:
 
   setup-follower-2:
     command: |
-      sleep 180
+      sleep 120
       export AWS_REGION=us-west-2
       export MAYBE_RUN_LOCAL=false
       export MAYBE_DEPLOY_MCR=false

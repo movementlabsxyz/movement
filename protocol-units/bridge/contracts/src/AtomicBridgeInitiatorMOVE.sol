@@ -11,7 +11,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         INITIALIZED,
         COMPLETED,
         REFUNDED
-    }   
+    }
 
     struct BridgeTransfer {
         uint256 amount;
@@ -28,7 +28,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Total MOVE token pool balance
     uint256 public poolBalance;
 
-    address public counterpartyAddress; 
+    address public counterpartyAddress;
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
 
@@ -37,9 +37,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
     function initialize(
-        address _moveToken, 
-        address owner, 
-        uint256 _timeLockDuration, 
+        address _moveToken,
+        address owner,
+        uint256 _timeLockDuration,
         uint256 _initialPoolBalance
     ) public initializer {
         if (_moveToken == address(0)) {
@@ -71,7 +71,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
             revert ZeroAmount();
         }
 
-        // Transfer MOVE tokens from the user to the contract
+        // Transfer the MOVE tokens from the user to the contract
         if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
             revert MOVETransferFailed();
         }
