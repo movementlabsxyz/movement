@@ -474,6 +474,7 @@ pub struct BridgeInitEventData {
 	pub time_lock: u64,
 	#[serde(deserialize_with = "deserialize_u64_from_string")]
 	pub amount: u64,
+	#[serde(deserialize_with = "deserialize_u8_from_string")]
 	pub state: u8,
 }
 
@@ -485,6 +486,14 @@ where
 	let hex_str: &str = Deserialize::deserialize(deserializer)?;
 	let hex_str = if hex_str.starts_with("0x") { &hex_str[2..] } else { &hex_str };
 	Vec::from_hex(hex_str).map_err(serde::de::Error::custom)
+}
+
+fn deserialize_u8_from_string<'de, D>(deserializer: D) -> Result<u8, D::Error>
+where
+	D: Deserializer<'de>,
+{
+	let s: String = Deserialize::deserialize(deserializer)?;
+	s.parse::<u8>().map_err(serde::de::Error::custom)
 }
 
 fn deserialize_u64_from_string<'de, D>(deserializer: D) -> Result<u64, D::Error>
@@ -546,6 +555,7 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 			})?),
 			time_lock: TimeLock(data.time_lock),
 			amount: Amount(AssetType::Moveth(data.amount)),
+			state: data.state,
 		})
 	}
 }

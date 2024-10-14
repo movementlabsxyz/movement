@@ -173,7 +173,7 @@ pub trait BridgeContract<A>: Clone + Unpin + Send + Sync {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<A>>>;
+	) -> BridgeContractResult<Option<LockDetails<A>>>;
 
 	async fn lock_bridge_transfer(
 		&mut self,

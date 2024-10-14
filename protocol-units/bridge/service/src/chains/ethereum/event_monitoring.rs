@@ -167,6 +167,7 @@ impl EthMonitoring {
 								amount: trlocked.amount.into(),
 								hash_lock: HashLock(*trlocked.hashLock),
 								time_lock: trlocked.timeLock.into(),
+								state: 8
 							};
 							BridgeContractEvent::Locked(details)
 						}).map_err(|err| BridgeContractError::OnChainError(err.to_string()));

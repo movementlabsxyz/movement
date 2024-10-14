@@ -2,6 +2,7 @@ use super::utils::{self, MovementAddress};
 use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
+use crate::types::LockDetails;
 use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
@@ -397,7 +398,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<MovementAddress>>> {
+	) -> BridgeContractResult<Option<LockDetails<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
 
 		let view_request = ViewRequest {
@@ -442,20 +443,19 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			.parse::<u64>()
 			.map_err(|_| BridgeContractError::SerializationError)?;
 		let state = utils::val_as_u64_initiator(values.get(5))? as u8;
-
-		let originator_address = AccountAddress::from_hex_literal(originator)
+		let originator_address_bytes =
+			hex::decode(&originator[2..]).map_err(|_| BridgeContractError::SerializationError)?;
+		let recipient_address = AccountAddress::from_hex_literal(recipient)
 			.map_err(|_| BridgeContractError::SerializationError)?;
-		let recipient_address_bytes =
-			hex::decode(&recipient[2..]).map_err(|_| BridgeContractError::SerializationError)?;
-		let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
+			let hash_lock_array: [u8; 32] = hex::decode(&hash_lock[2..])
 			.map_err(|_| BridgeContractError::SerializationError)?
 			.try_into()
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
-		let details = BridgeTransferDetails {
+		let details = LockDetails {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(MovementAddress(originator_address)),
-			recipient_address: BridgeAddress(recipient_address_bytes),
+			initiator_address: BridgeAddress(originator_address_bytes),
+			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
 			amount: Amount(AssetType::Moveth(amount)),
 			hash_lock: HashLock(hash_lock_array),
 			time_lock: TimeLock(time_lock),

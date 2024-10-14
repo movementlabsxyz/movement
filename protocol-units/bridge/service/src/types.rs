@@ -232,4 +232,5 @@ pub struct LockDetails<A> {
 	pub hash_lock: HashLock,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
+	pub state: u8,
 }

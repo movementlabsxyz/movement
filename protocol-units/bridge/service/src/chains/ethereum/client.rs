@@ -6,8 +6,7 @@ use super::utils::{calculate_storage_slot, send_transaction, send_transaction_ru
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
-	HashLockPreImage, TimeLock,
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails, TimeLock
 };
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder};
@@ -63,6 +62,16 @@ struct EthBridgeTransferDetails {
 	pub amount: U256,
 	pub originator: EthAddress,
 	pub recipient: [u8; 32],
+	pub hash_lock: [u8; 32],
+	pub time_lock: U256,
+	pub state: u8,
+}
+
+#[derive(RlpDecodable, RlpEncodable)]
+struct EthBridgeTransferDetailsCounterparty {
+	pub amount: U256,
+	pub originator:[u8; 32], 
+	pub recipient: EthAddress,
 	pub hash_lock: [u8; 32],
 	pub time_lock: U256,
 	pub state: u8,
@@ -414,7 +423,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<BridgeTransferDetails<EthAddress>>> {
+	) -> BridgeContractResult<Option<LockDetails<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 
 		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
@@ -429,13 +438,13 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 
 		println!("storage_bytes: {:?}", storage_bytes);
 		let mut storage_slice = &storage_bytes[..];
-		let eth_details = EthBridgeTransferDetails::decode(&mut storage_slice)
+		let eth_details = EthBridgeTransferDetailsCounterparty::decode(&mut storage_slice)
 			.map_err(|_| generic_error("could not decode storage"))?;
 
-		Ok(Some(BridgeTransferDetails {
+		Ok(Some(LockDetails {
 			bridge_transfer_id,
-			initiator_address: BridgeAddress(eth_details.originator),
-			recipient_address: BridgeAddress(eth_details.recipient.to_vec()),
+			initiator_address: BridgeAddress(eth_details.originator.to_vec()),
+			recipient_address: BridgeAddress(eth_details.recipient),
 			hash_lock: HashLock(eth_details.hash_lock),
 			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
