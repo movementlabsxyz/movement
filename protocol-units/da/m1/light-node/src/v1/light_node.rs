@@ -17,11 +17,12 @@ pub trait LightNodeV1Operations: LightNodeService + Send + Sync + Sized + Clone 
 	async fn run_server(&self) -> Result<(), anyhow::Error> {
 		let reflection = tonic_reflection::server::Builder::configure()
 			.register_encoded_file_descriptor_set(m1_da_light_node_grpc::FILE_DESCRIPTOR_SET)
-			.build()?;
+			.build_v1()?;
 
 		let address = self.try_service_address()?;
 		info!("Server listening on: {}", address);
 		Server::builder()
+			.max_frame_size(1024 * 1024 * 16 - 1)
 			.accept_http1(true)
 			.add_service(LightNodeServiceServer::new(self.clone()))
 			.add_service(reflection)
