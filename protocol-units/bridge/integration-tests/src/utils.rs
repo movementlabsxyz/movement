@@ -270,18 +270,7 @@ pub async fn initiate_bridge_transfer_helper_framework(
 	recipient_address: Vec<u8>,
 	hash_lock: [u8; 32],
 	amount: u64,
-	timelock_modify: bool,
 ) -> Result<(), BridgeContractError> {
-	// Publish for test
-
-	//if timelock_modify {
-	//	// Set the timelock to 1 second for testing
-	//	movement_client.initiator_set_timelock(1).await.expect("Failed to set timelock");
-	//}
-
-	// Mint MovETH to the initiator's address
-
-	// Initiate the bridge transfer
 	movement_client
 		.initiate_bridge_transfer(
 			BridgeAddress(MovementAddress(initiator_address)),

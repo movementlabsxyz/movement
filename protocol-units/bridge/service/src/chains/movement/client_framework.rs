@@ -600,6 +600,52 @@ impl MovementClientFramework {
 			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
 		}
 
+		let set_initiator_time_lock_script_output = Command::new("movement")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_initiator_time_lock_duration.mv",
+			"--args",
+			"u64: 11",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
+
+		if !set_initiator_time_lock_script_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+		}
+		if !set_initiator_time_lock_script_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+		}
+
+		let set_counterparty_time_lock_script_output = Command::new("movement")
+		.args(&[
+			"move",
+			"run-script",
+			"--compiled-script-path",
+			"protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/set_counterparty_time_lock_duration.mv",
+			"--args",
+			"u64: 5",
+			"--profile",
+			"default",
+			"--assume-yes",
+		])
+		.stdout(Stdio::piped())
+		.stderr(Stdio::piped())
+		.output()?;
+
+		if !set_counterparty_time_lock_script_output.stdout.is_empty() {
+			println!("stdout: {}", String::from_utf8_lossy(&update_bridge_operator_output.stdout));
+		}
+		if !set_counterparty_time_lock_script_output.stderr.is_empty() {
+			eprintln!("stderr: {}", String::from_utf8_lossy(&update_bridge_operator_output.stderr));
+		}
+
 		Ok(())
 	}
 
