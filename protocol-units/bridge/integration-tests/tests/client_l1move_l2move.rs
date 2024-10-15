@@ -3,7 +3,9 @@ use alloy::{
 	providers::Provider,
 };
 use anyhow::Result;
+use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::coin_client::CoinClient;
+use aptos_types::PeerId;
 use bridge_config::Config;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
@@ -133,6 +135,9 @@ async fn test_movement_client_complete_transfer(
 		{
 			let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
+			faucet_client.fund(AccountAddress::from_hex_literal("0xface")?, 100_000_000).await?;
+			faucet_client.fund(AccountAddress::from_hex_literal("0x1")?, 100_000_000).await?;
+
 		}
 
 		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;

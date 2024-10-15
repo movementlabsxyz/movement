@@ -17,6 +17,7 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
+use tracing::info;
 use std::fmt::{self, Debug};
 use url::Url;
 
@@ -265,7 +266,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			.ok_or(generic_error("Could not get required slice from pre-image"))?
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
-
+		info!{"Pre-image: {:?}", pre_image};
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
 		let call = contract

@@ -175,6 +175,7 @@ pub async fn fund_and_check_balance(
 	let coin_client = CoinClient::new(&rest_client);
 	let faucet_client = movement_harness.faucet_client.write().unwrap();
 	faucet_client.fund(movement_client_signer.address(), expected_balance).await?;
+	faucet_client.fund(AccountAddress::from_hex_literal("0xface")?, expected_balance).await?;
 
 	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 	assert!(

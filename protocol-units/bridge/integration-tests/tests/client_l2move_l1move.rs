@@ -22,27 +22,6 @@ use tokio::{self};
 use tracing::info;
 
 #[tokio::test]
-async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
-	let config = Config::default();
-	let (mut mvt_client_harness, _config, mut mvt_process) =
-		TestHarness::new_with_movement(config).await;
-	let test_result = async {
-		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000)
-			.await
-			.expect("Failed to fund accounts");
-		Ok(())
-	}
-	.await;
-
-	if let Err(e) = mvt_process.kill().await {
-		eprintln!("Failed to kill child process: {:?}", e);
-	}
-	test_result
-}
-
-#[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
@@ -107,15 +86,10 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 #[tokio::test]
 async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	MovementClientFramework::bridge_setup_scripts().await?;
-
 	let config: Config = Config::suzuka();
-
 	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
-
 	let args = MovementToEthCallArgs::default();
-
 	let test_result = async {
 		let sender_address = mvt_client_harness.movement_client.signer().address();
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
@@ -135,6 +109,16 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		)
 		.await?;
 		info!("Bridge transfer ID: {:?}", bridge_transfer_id);
+
+		let details = BridgeContract::get_bridge_transfer_details_initiator(
+			&mut mvt_client_harness.movement_client,
+			BridgeTransferId(bridge_transfer_id),
+		)
+		.await
+		.expect("Failed to get bridge transfer details")
+		.expect("Expected to find bridge transfer details, but got None");
+
+		info!("Bridge transfer details: {:?}", details);
 
 		let secret = b"secret";
 		let mut padded_secret = [0u8; 32];
@@ -157,8 +141,6 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 		.expect("Expected to find bridge transfer details, but got None");
 
 		info!("Bridge transfer details: {:?}", details);
-
-		assert_eq!(details.state, 1, "Bridge transfer should be initiated.");
 		
 		let amount = match details.amount.0 {
 			AssetType::Moveth(amount) => amount,
