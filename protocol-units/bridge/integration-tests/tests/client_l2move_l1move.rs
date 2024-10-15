@@ -88,10 +88,9 @@ async fn test_movement_client_complete_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = MovementToEthCallArgs::default();
 	let test_result = async {
-		let sender_address = mvt_client_harness.movement_client.signer().address();
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
 			.await?;
 		test_utils::initiate_bridge_transfer_helper_framework(

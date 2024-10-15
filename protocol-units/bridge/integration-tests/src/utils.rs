@@ -99,8 +99,9 @@ pub async fn extract_bridge_transfer_id_framework(
         movement_client: &mut MovementClientFramework,
 ) -> Result<[u8; 32], anyhow::Error> {
         let sender_address = movement_client.signer().address();
-        let sequence_number = 0; // Modify as needed
+        let sequence_number = 0;
         let rest_client = movement_client.rest_client();
+	debug!("Sender address: {:?}", sender_address);
 
         let transactions = rest_client
                 .get_account_transactions(sender_address, Some(sequence_number), Some(20))

@@ -90,21 +90,15 @@ async fn test_movement_client_lock_transfer(
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		
-		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id_framework(
-			&mut mvt_client_harness.movement_client,
-		)
-		.await?;
-		info!("Bridge transfer ID: {:?}", bridge_transfer_id);
-
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
+		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
 		info!("Bridge transfer details: {:?}", details);
 		Ok(())
 	}
@@ -159,25 +153,17 @@ async fn test_movement_client_complete_transfer(
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		
-		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id_framework(
-			&mut mvt_client_harness.movement_client,
-		)
-		.await?;
-		info!("Bridge transfer ID: {:?}", bridge_transfer_id);
-
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
+		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
 		info!("Bridge transfer details: {:?}", details);
 
-		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
-		//Wait for the tx to be executed
 		tracing::info!("Wait for the MVT initiated event.");
 		
 		let secret = b"secret";
@@ -261,16 +247,9 @@ async fn test_movement_client_abort_transfer(
 			.await
 			.expect("Failed to lock bridge transfer");
 
-		
-		let bridge_transfer_id: [u8; 32] = test_utils::extract_bridge_transfer_id_framework(
-			&mut mvt_client_harness.movement_client,
-		)
-		.await?;
-		info!("Bridge transfer ID: {:?}", bridge_transfer_id);
-
 		let details = BridgeContract::get_bridge_transfer_details_counterparty(
 			&mut mvt_client_harness.movement_client,
-			BridgeTransferId(bridge_transfer_id),
+			BridgeTransferId(args.bridge_transfer_id.0),
 		)
 		.await
 		.expect("Failed to get bridge transfer details")
