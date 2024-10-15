@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform, ValidCryptoMaterialStringExt};
+use aptos_crypto::{ed25519::Ed25519PrivateKey, Genesis, ValidCryptoMaterialStringExt};
 use aptos_types::chain_id::ChainId;
 use godfig::env_default;
 
@@ -74,7 +74,7 @@ env_default!(default_maptos_chain_id, "MAPTOS_CHAIN_ID", ChainId, ChainId::from_
 pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 	match std::env::var("MAPTOS_PRIVATE_KEY") {
 		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
-		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
+		Err(_) => Ed25519PrivateKey::genesis(),
 	}
 }
 

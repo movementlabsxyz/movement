@@ -21,7 +21,6 @@ flowchart TB
     L1{"L1"} --Event BridgeTransferInitiated--> B("Initialized")
     B --Action lock_bridge_transfer--> L2("L2")
     L2 --Event BridgeTransferLockedEvent--> C("Locked")
-    C --Action complete_bridge_transfer--> L2
     L2 --Event BridgeTransferCompletedEvent--> D("KnowSecret")
     D --Action completeBridgeTransfer--> L1
     L1 --Event BridgeTransferCompleted--> G1("Done(Completed)")

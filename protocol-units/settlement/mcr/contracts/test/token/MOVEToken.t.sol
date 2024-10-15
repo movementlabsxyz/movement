@@ -101,7 +101,7 @@ contract MOVETokenTest is Test {
                 "upgradeAndCall(address,address,bytes)",
                 address(tokenProxy),
                 address(moveTokenImplementation2),
-                abi.encodeWithSignature("initialize(address)", multisig)
+                ""
             ),
             bytes32(0),
             bytes32(0),
@@ -118,7 +118,7 @@ contract MOVETokenTest is Test {
                 "upgradeAndCall(address,address,bytes)",
                 address(tokenProxy),
                 address(moveTokenImplementation2),
-                abi.encodeWithSignature("initialize(address)", multisig)
+                ""
             ),
             bytes32(0),
             bytes32(0)
@@ -174,12 +174,18 @@ contract MOVETokenTest is Test {
     function testGrants() public {
         testUpgradeFromTimelock();
 
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
+
         // Check the token details
         assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), true);
     }
 
     function testMint() public {
         testUpgradeFromTimelock();
+
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
         uint256 intialBalance = MOVETokenDev(address(token)).balanceOf(address(0x1337));
         // Mint tokens
         vm.prank(multisig);
@@ -191,6 +197,10 @@ contract MOVETokenTest is Test {
 
     function testRevokeMinterRole() public {
         testUpgradeFromTimelock();
+
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
+        
         assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), true);
 
         vm.startPrank(multisig);
@@ -214,6 +224,8 @@ contract MOVETokenTest is Test {
 
     function testGrantRevokeMinterAdminRole() public {
         testUpgradeFromTimelock();
+        vm.prank(multisig);
+        MOVETokenDev(address(token)).grantRoles(multisig);
         assertEq(MOVETokenDev(address(token)).hasRole(MOVETokenDev(address(token)).MINTER_ROLE(), multisig), true);
         vm.startPrank(multisig);
 

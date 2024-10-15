@@ -12,6 +12,14 @@ env_default!(
 // The default port for the Celestia RPC
 env_default!(default_celestia_rpc_listen_port, "CELESTIA_RPC_LISTEN_PORT", u16, 26657);
 
+// The default Celestia RPC connection protocol
+env_default!(
+	default_celestia_rpc_connection_protocol,
+	"CELESTIA_RPC_CONNECTION_PROTOCOL",
+	String,
+	"http".to_string()
+);
+
 // The default Celestia RPC connection hostname
 env_default!(
 	default_celestia_rpc_connection_hostname,
@@ -33,6 +41,14 @@ env_default!(
 
 // The default port for the Celestia Node websocket
 env_default!(default_celestia_websocket_listen_port, "CELESTIA_WEBSOCKET_LISTEN_PORT", u16, 26658);
+
+// the default Celestia Node websocket connection protocol
+env_default!(
+	default_celestia_websocket_connection_protocol,
+	"CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL",
+	String,
+	"ws".to_string()
+);
 
 // The default Celestia Node websocket connection hostname
 env_default!(
@@ -82,10 +98,10 @@ pub fn default_celestia_namespace() -> Namespace {
 	match std::env::var("CELESTIA_NAMESPACE") {
 		Ok(val) => match serde_json::from_str(&val) {
 			Ok(namespace) => namespace,
-			// todo: get rid of this unwrap somehow, event though it should never fail
+			// todo: get rid of this unwrap somehow, even though it should never fail
 			Err(_) => Namespace::new_v0(b"movement").unwrap(),
 		},
-		// todo: get rid of this unwrap somehow, event though it should never fail
+		// todo: get rid of this unwrap somehow, even though it should never fail
 		Err(_) => Namespace::new_v0(b"movement").unwrap(),
 	}
 }
@@ -99,7 +115,7 @@ env_default!(default_celestia_force_new_chain, "CELESTIA_FORCE_NEW_CHAIN", bool,
 // Whether to use replace args for Celestia appd
 env_default!(default_celestia_appd_use_replace_args, "CELESTIA_USE_REPLACE_ARGS", bool, false);
 
-// The replacement args for Celestia appd
+/// The replacement args for Celestia appd
 pub fn default_celestia_appd_replace_args() -> Vec<String> {
 	match std::env::var("CELESTIA_REPLACE_ARGS") {
 		Ok(val) => val.split(',').map(|s| s.to_string()).collect(),
@@ -115,7 +131,7 @@ env_default!(
 	false
 );
 
-// The replacement args for Celestia bridge
+/// The replacement args for Celestia bridge
 pub fn default_celestia_bridge_replace_args() -> Vec<String> {
 	match std::env::var("CELESTIA_BRIDGE_REPLACE_ARGS") {
 		Ok(val) => val.split(',').map(|s| s.to_string()).collect(),

@@ -21,22 +21,29 @@ contract AtomicBridgeInitiatorWethTest is Test {
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
     uint256 public constant timeLockDuration = 48 * 60 * 60; // 48 hours in seconds
+    uint256 public initialPoolBalance = 0 ether;
 
     function setUp() public {
         // Sepolia WETH9 address
         address wethAddress = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
         weth = IWETH9(wethAddress);
 
-        // generate random address for each test
+        // Generate random address for each test
         originator = vm.addr(uint256(keccak256(abi.encodePacked(block.number, block.prevrandao))));
 
-        // Deploy the AtomicBridgeInitiator contract with the WETH address and a 48-hour time lock
+        // Deploy the AtomicBridgeInitiator contract with the WETH address, a 48-hour time lock, and initial pool balance
         atomicBridgeInitiatorImplementation = new AtomicBridgeInitiator();
         proxyAdmin = new ProxyAdmin(msg.sender);
         proxy = new TransparentUpgradeableProxy(
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
-            abi.encodeWithSignature("initialize(address,address,uint256)", wethAddress, address(this), timeLockDuration)
+            abi.encodeWithSignature(
+                "initialize(address,address,uint256,uint256)", 
+                wethAddress, 
+                address(this), 
+                timeLockDuration, 
+                initialPoolBalance
+            )
         );
 
         atomicBridgeInitiator = AtomicBridgeInitiator(address(proxy));
@@ -105,15 +112,14 @@ contract AtomicBridgeInitiatorWethTest is Test {
     }
 
     function testInitiateBridgeTransferWithWeth() public {
-        uint256 wethAmount = 1 ether; // use ethers unit
+        uint256 wethAmount = 1 ether;
         weth.totalSupply();
         vm.deal(originator, 1 ether);
         vm.startPrank(originator);
         weth.deposit{value: wethAmount}();
         assertEq(weth.balanceOf(originator), wethAmount);
         weth.approve(address(atomicBridgeInitiator), wethAmount);
-        bytes32 bridgeTransferId =
-            atomicBridgeInitiator.initiateBridgeTransfer(wethAmount, recipient, hashLock);
+        bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(wethAmount, recipient, hashLock);
 
         (
             uint256 transferAmount,

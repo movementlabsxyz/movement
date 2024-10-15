@@ -26,15 +26,15 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Total WETH pool balance
     uint256 public poolBalance;
 
-    address public counterpartyAddress; 
+    address public counterpartyAddress;
     IWETH9 public weth;
     uint256 private nonce;
 
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
-    // Initialize the contract with WETH address, owner, and a custom time lock duration
-    function initialize(address _weth, address owner, uint256 _timeLockDuration) public initializer {
+    // Initialize the contract with WETH address, owner, custom time lock duration, and initial pool balance
+    function initialize(address _weth, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
@@ -43,6 +43,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
+
+        // Set the initial pool balance
+        poolBalance = _initialPoolBalance;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -122,3 +125,4 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
     }
 }
+

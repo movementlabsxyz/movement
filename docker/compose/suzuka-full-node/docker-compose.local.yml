@@ -1,0 +1,88 @@
+services:
+  setup:
+    image: ghcr.io/movementlabsxyz/suzuka-full-node-setup:${CONTAINER_REV}
+    container_name: setup
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      # By default, all the listener hostnames and ports are reasonable.
+      # However, for container networking, we need to specify the hostnames on the connection.
+      # You can also use host.docker.internal for the host machine as all of these ports should be exposed.
+      CELESTIA_RPC_CONNECTION_HOSTNAME: m1-da-light-node-celestia-appd
+      CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME: m1-da-light-node-celestia-bridge
+      M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME: m1-da-light-node
+      MAPTOS_API_CONNECTION_HOSTNAME: suzuka-full-node
+      FAUCET_API_CONNECTION_HOSTNAME: suzuka-faucet-service
+      ETH_RPC_CONNECTION_HOSTNAME: setup
+      ETH_RPC_CONNECTION_PROTOCOL: http
+      ETH_RPC_CONNECTION_PORT: 8090
+      MAYBE_RUN_LOCAL: "true"
+      MAYBE_DEPLOY_MCR: "true"
+      INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING: postgres://postgres:password@postgres:5432/postgres
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_DEFAULT_REGION}
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "8090:8090" # port for anvil, this should be moved out into runner
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 8090" ]
+      retries: 30
+      interval: 10s
+      timeout: 5s
+
+  m1-da-light-node-celestia-appd:
+    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-appd:${CONTAINER_REV}
+    container_name: m1-da-light-node-celestia-appd
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+      CELESTIA_RPC_ADDRESS: m1-da-light-node-celestia-appd:26657
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      setup:
+        condition: service_healthy
+    ports:
+      - "26657:26657"
+      - "9090:9090"
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 26657" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:3
+
+  m1-da-light-node-celestia-bridge:
+    image: ghcr.io/movementlabsxyz/m1-da-light-node-celestia-bridge:${CONTAINER_REV}
+    container_name: m1-da-light-node-celestia-bridge
+    environment:
+      DOT_MOVEMENT_PATH: /.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    ports:
+      - "26658:26658"
+    depends_on:
+      setup:
+        condition: service_healthy
+      m1-da-light-node-celestia-appd:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -zv 0.0.0.0 26658" ]
+      retries: 10
+      interval: 10s
+      timeout: 5s
+    restart: on-failure:3
+
+  celestia-light-node:
+    image: busybox
+    container_name: celestia-light-node
+    command: sh -c 'echo "Starting Celestia light-node services." && sleep infinity'
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      m1-da-light-node-celestia-appd:
+        condition: service_healthy
+      m1-da-light-node-celestia-bridge:
+        condition: service_healthy

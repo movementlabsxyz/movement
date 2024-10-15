@@ -4,16 +4,30 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "../../src/token/stlMoveToken.sol";
 import "../../src/token/MOVETokenDev.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract stlMoveTokenTest is Test {
     address public multisig = address(this);
+    MOVETokenDev public underlyingToken;
+    stlMoveToken public token;
 
-    function testInitialize() public {
-        MOVETokenDev underlyingToken = new MOVETokenDev();
-        underlyingToken.initialize(multisig);
+    function setUp() public {
+        MOVETokenDev underlyingTokenImpl = new MOVETokenDev();
+        TransparentUpgradeableProxy underlyingTokenProxy = new TransparentUpgradeableProxy(
+            address(underlyingTokenImpl),
+            address(this),
+            abi.encodeWithSignature("initialize(address)", multisig)
+        );
 
-        stlMoveToken token = new stlMoveToken();
-        token.initialize(underlyingToken);
+
+        stlMoveToken tokenImpl = new stlMoveToken();
+        TransparentUpgradeableProxy tokenProxy = new TransparentUpgradeableProxy(
+            address(tokenImpl),
+            address(this),
+            abi.encodeWithSignature("initialize(address)", address(underlyingTokenProxy))
+        );
+        underlyingToken = MOVETokenDev(address(underlyingTokenProxy));
+        token = stlMoveToken(address(tokenProxy));
 
         // Check the token details
         assertEq(token.name(), "Stakable Locked Move Token");
@@ -21,11 +35,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testCannotInitializeTwice() public {
-        MOVETokenDev underlyingToken = new MOVETokenDev();
-        underlyingToken.initialize(multisig);
-
-        stlMoveToken token = new stlMoveToken();
-        token.initialize(underlyingToken);
+       
 
         // Expect reversion
         vm.expectRevert(0xf92ee8a9);
@@ -33,11 +43,7 @@ contract stlMoveTokenTest is Test {
     }
 
     function testSimulateStaking() public {
-        MOVETokenDev underlyingToken = new MOVETokenDev();
-        underlyingToken.initialize(multisig);
-
-        stlMoveToken token = new stlMoveToken();
-        token.initialize(underlyingToken);
+       
         vm.prank(multisig);
         underlyingToken.grantMinterRole(address(token));
         assert(underlyingToken.hasRole(underlyingToken.MINTER_ROLE(), address(token)));

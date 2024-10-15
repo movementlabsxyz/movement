@@ -29,13 +29,13 @@ contract MOVEFaucetTest is Test {
         vm.deal(address(0x1337), 2* 10**17);
 
         vm.startPrank(address(0x1337));
-        vm.expectRevert("MOVEFaucet: invalid amount");
+        vm.expectRevert("MOVEFaucet: eth invalid amount");
         faucet.faucet{value: 10**16}();
 
         faucet.faucet{value: 10**17}();
         assertEq(token.balanceOf(address(0x1337)), 10 * 10 ** token.decimals());
 
-        vm.expectRevert("MOVEFaucet: balance must be 0");
+        vm.expectRevert("MOVEFaucet: balance must be less than 1 MOVE");
         faucet.faucet{value: 10**17}();
 
         token.transfer(address(0xdead), token.balanceOf(address(0x1337)));

@@ -4,37 +4,39 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import "../../src/staking/MovementStaking.sol";
 import "../../src/token/MOVETokenDev.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract MovementStakingTest is Test {
     bytes32 public constant WHITELIST_ROLE = keccak256("WHITELIST_ROLE");
     address public multisig = address(this);
+    MOVETokenDev public moveToken;
+    MovementStaking public staking;
 
-    function testInitialize() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
+    function setUp() public {
+        MOVETokenDev moveTokenImpl = new MOVETokenDev();
+        TransparentUpgradeableProxy moveProxy = new TransparentUpgradeableProxy(
+            address(moveTokenImpl),
+            address(this),
+            abi.encodeWithSignature("initialize(address)", multisig)
+        );
 
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+        MovementStaking stakingImpl = new MovementStaking();
+        TransparentUpgradeableProxy stakingProxy = new TransparentUpgradeableProxy(
+            address(stakingImpl),
+            address(this),
+            abi.encodeWithSignature("initialize(address)", address(moveProxy))
+        );
+        moveToken = MOVETokenDev(address(moveProxy));
+        staking = MovementStaking(address(stakingProxy));
     }
 
     function testCannotInitializeTwice() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
-
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
         staking.initialize(moveToken);
     }
 
     function testRegister() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
 
         // Register a new domain
         address payable domain = payable(vm.addr(1));
@@ -47,11 +49,6 @@ contract MovementStakingTest is Test {
     }
 
     function testWhitelist() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
 
         // Our whitelister
         address whitelister = vm.addr(1);
@@ -68,11 +65,6 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleStaker() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
 
         // Register a new staker
         address payable domain = payable(vm.addr(1));
@@ -94,11 +86,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleGenesisCeremony() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+       
 
         // Register a new staker
         address payable domain = payable(vm.addr(1));
@@ -126,11 +114,7 @@ contract MovementStakingTest is Test {
     }
 
     function testSimpleRolloverEpoch() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+       
 
         // Register a new staker
         address payable domain = payable(vm.addr(1));
@@ -164,11 +148,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeRolloverEpoch() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+       
 
         // Register a new staker
         address payable domain = payable(vm.addr(1));
@@ -207,11 +187,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeAndStakeRolloverEpoch() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+       
 
         // Register a new staker
         address payable domain = payable(vm.addr(1));
@@ -258,11 +234,7 @@ contract MovementStakingTest is Test {
     }
 
     function testUnstakeStakeAndSlashRolloverEpoch() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+       
 
         // Register a new staker
         address payable domain = payable(vm.addr(1));
@@ -329,11 +301,7 @@ contract MovementStakingTest is Test {
     }
 
     function testHalbornReward() public {
-        MOVETokenDev moveToken = new MOVETokenDev();
-        moveToken.initialize(multisig);
-
-        MovementStaking staking = new MovementStaking();
-        staking.initialize(moveToken);
+       
 
         // Register a domain
         address payable domain = payable(vm.addr(1));

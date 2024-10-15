@@ -5,8 +5,6 @@ import "./base/MintableToken.sol";
 
 contract MOVETokenDev is MintableToken {
 
-    constructor() {_disableInitializers();}
-
     /**
      * @dev Initialize the contract
      */
@@ -15,6 +13,12 @@ contract MOVETokenDev is MintableToken {
         _mint(manager, 10000000000 * 10 ** decimals());
         _grantRole(MINTER_ADMIN_ROLE, manager);
         _grantRole(MINTER_ROLE, manager);
+    }
+
+    function grantRoles(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(MINTER_ADMIN_ROLE, account);
+        _grantRole(MINTER_ROLE, account);
+
     }
 
     function decimals() public pure override returns (uint8) {

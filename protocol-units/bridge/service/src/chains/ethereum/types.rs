@@ -64,12 +64,6 @@ impl EthHash {
 		rng.fill(&mut hash);
 		Self(hash)
 	}
-
-	fn gen_unique_hash<R: Rng>(rng: &mut R) -> Self {
-		let mut random_bytes = [0u8; 32];
-		rng.fill(&mut random_bytes);
-		Self(random_bytes)
-	}
 }
 
 impl From<HashLock> for EthHash {
@@ -148,16 +142,21 @@ impl std::ops::Deref for EthAddress {
 	}
 }
 
-impl From<String> for EthAddress {
-	fn from(s: String) -> Self {
-		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
-	}
-}
+// impl From<String> for EthAddress {
+// 	fn from(s: String) -> Self {
+// 		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
+// 	}
+// }
 
 impl From<Vec<u8>> for EthAddress {
 	fn from(vec: Vec<u8>) -> Self {
 		// Ensure the vector has the correct length
-		assert_eq!(vec.len(), 20);
+		//TODO change to a try_from but need a rewrite of
+		// the address generic management to make try_from compatible.
+		if vec.len() != 20 {
+			tracing::warn!("Bad vec<u8> size forEthAddress conversion:{}", vec.len());
+			return EthAddress(Address([0; 20].into()));
+		}
 
 		let mut bytes = [0u8; 20];
 		bytes.copy_from_slice(&vec);
