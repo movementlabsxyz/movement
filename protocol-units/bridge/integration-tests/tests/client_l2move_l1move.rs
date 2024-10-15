@@ -45,13 +45,9 @@ async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Er
 #[tokio::test]
 async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	MovementClientFramework::bridge_setup_scripts().await?;
-
 	let config: Config = Config::suzuka();
-
 	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
-
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {

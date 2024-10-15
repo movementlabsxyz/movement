@@ -53,7 +53,7 @@ impl Default for EthToMovementCallArgs {
 		Self {
 			initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
 			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-			bridge_transfer_id: MovementHash(*b"00000000000000000000000transfer1"),
+			bridge_transfer_id: MovementHash(*b"00000000000000000000000transfer4"),
 			hash_lock: MovementHash(*keccak256(b"secret")),
 			time_lock: 3600,
 			amount: 100,
