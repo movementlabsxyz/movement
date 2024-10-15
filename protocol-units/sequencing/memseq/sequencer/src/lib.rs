@@ -1,16 +1,20 @@
-use mempool_util::{MempoolBlockOperations, MempoolTransactionOperations};
+use mempool_util::MempoolTransactionOperations;
 pub use move_rocks::RocksdbMempool;
 pub use movement_types::{
 	block::{self, Block},
 	transaction::{self, Transaction},
 };
 pub use sequencing_util::Sequencer;
-use std::collections::BTreeSet;
-use std::{path::PathBuf, sync::Arc};
+
 use tokio::sync::RwLock;
 
+use std::collections::BTreeSet;
+use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
 #[derive(Clone)]
-pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
+pub struct Memseq<T: MempoolTransactionOperations> {
 	mempool: T,
 	// this value should not be changed after initialization
 	block_size: u32,
@@ -19,8 +23,8 @@ pub struct Memseq<T: MempoolBlockOperations + MempoolTransactionOperations> {
 	building_time_ms: u64,
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Memseq<T> {
-	pub fn new(
+impl<T: MempoolTransactionOperations> Memseq<T> {
+	pub(crate) fn new(
 		mempool: T,
 		block_size: u32,
 		parent_block: Arc<RwLock<block::Id>>,
@@ -62,7 +66,7 @@ impl Memseq<RocksdbMempool> {
 	}
 }
 
-impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Memseq<T> {
+impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 	async fn publish_many(&self, transactions: Vec<Transaction>) -> Result<(), anyhow::Error> {
 		self.mempool.add_transactions(transactions).await?;
 		Ok(())
@@ -76,7 +80,7 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 	async fn wait_for_next_block(&self) -> Result<Option<Block>, anyhow::Error> {
 		let mut transactions = Vec::with_capacity(self.block_size as usize);
 
-		let now = std::time::Instant::now();
+		let now = Instant::now();
 
 		loop {
 			let current_block_size = transactions.len() as u32;
@@ -112,6 +116,18 @@ impl<T: MempoolBlockOperations + MempoolTransactionOperations> Sequencer for Mem
 
 			Ok(Some(new_block))
 		}
+	}
+
+	async fn gc(&self) -> Result<(), anyhow::Error> {
+		let gc_interval = self.building_time_ms * 2 / 1000 + 1;
+		let timestamp_threshold = SystemTime::now()
+			.duration_since(UNIX_EPOCH)
+			.unwrap()
+			.as_secs()
+			.saturating_sub(gc_interval);
+		self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		tokio::time::sleep(Duration::from_secs(gc_interval)).await;
+		Ok(())
 	}
 }
 
@@ -444,6 +460,13 @@ pub mod test {
 			Err(anyhow::anyhow!("Mock pop_mempool_transaction"))
 		}
 
+		async fn gc_mempool_transactions(
+			&self,
+			_timestamp_threshold: u64,
+		) -> Result<(), anyhow::Error> {
+			Err(anyhow::anyhow!("Mock gc_mempool_transaction"))
+		}
+
 		async fn get_mempool_transaction(
 			&self,
 			_transaction_id: transaction::Id,
@@ -457,24 +480,6 @@ pub mod test {
 
 		async fn pop_transaction(&self) -> Result<Option<Transaction>, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock pop_transaction"))
-		}
-	}
-
-	impl MempoolBlockOperations for MockMempool {
-		async fn has_block(&self, _block_id: block::Id) -> Result<bool, anyhow::Error> {
-			todo!()
-		}
-
-		async fn add_block(&self, _block: Block) -> Result<(), anyhow::Error> {
-			todo!()
-		}
-
-		async fn remove_block(&self, _block_id: block::Id) -> Result<(), anyhow::Error> {
-			todo!()
-		}
-
-		async fn get_block(&self, _block_id: block::Id) -> Result<Option<Block>, anyhow::Error> {
-			todo!()
 		}
 	}
 }

@@ -17,6 +17,8 @@ bcs = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
 anyhow = { workspace = true }
+sha2 = { workspace = true }
+rand = { workspace = true }
 blake3 = { workspace = true }
 
 [dev-dependencies]

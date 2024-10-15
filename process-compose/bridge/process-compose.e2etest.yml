@@ -1,0 +1,13 @@
+version: "3"
+
+environment:
+
+processes:
+  bridge_e2e-tests:
+    command: |
+      cargo test -p bridge-integration-tests test_movement_event -- --nocapture --test-threads=1
+    depends_on:
+      bridge:
+        condition: process_healthy
+    availability:
+      exit_on_end: true

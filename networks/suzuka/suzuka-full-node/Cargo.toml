@@ -36,6 +36,7 @@ rocksdb = { workspace = true }
 tracing = { workspace = true }
 bcs = { workspace = true }
 zstd = { workspace = true }
+hex = { workspace = true }
 
 [features]
 default = []

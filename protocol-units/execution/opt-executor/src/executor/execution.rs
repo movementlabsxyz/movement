@@ -16,7 +16,7 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 impl Executor {
 	pub async fn execute_block(
@@ -37,6 +37,10 @@ impl Executor {
 					anyhow::bail!("First transaction in block must be a block metadata transaction")
 				}
 			};
+
+			for transaction in metadata_access_transactions.iter() {
+				warn!("Transaction sender: {:?}", transaction.sender());
+			}
 
 			// reconstruct the block
 			let block = ExecutableBlock::new(
@@ -60,7 +64,7 @@ impl Executor {
 		})
 		.await??;
 
-		debug!("Block execution compute the following state: {:?}", state_compute);
+		warn!("Block execution compute the following state: {:?}", state_compute);
 
 		let version = state_compute.version();
 		debug!("Block execution computed the following version: {:?}", version);
@@ -240,16 +244,16 @@ mod tests {
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
 
-	fn create_signed_transaction(gas_unit_price: u64, chain_id: ChainId) -> SignedTransaction {
+	fn create_signed_transaction(sequence_number: u64, chain_id: ChainId) -> SignedTransaction {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let public_key = private_key.public_key();
 		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
 		let raw_transaction = RawTransaction::new(
 			AccountAddress::random(),
-			0,
+			sequence_number,
 			transaction_payload,
 			0,
-			gas_unit_price,
+			0,
 			0,
 			chain_id, // This is the value used in aptos testing code.
 		);
@@ -260,9 +264,8 @@ mod tests {
 	async fn test_execute_block() -> Result<(), anyhow::Error> {
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let block_id = HashValue::random();
 		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
 			block_id,
@@ -295,9 +298,8 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(1);
-		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		executor.rollover_genesis_now().await?;
 
 		// Initialize a root account using a predefined keypair and the test root address.
@@ -398,9 +400,8 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let private_key = Ed25519PrivateKey::generate_for_testing();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let (executor, config, _tempdir) = Executor::try_test_default(private_key)?;
-		let (context, _transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 		executor.rollover_genesis_now().await?;
 

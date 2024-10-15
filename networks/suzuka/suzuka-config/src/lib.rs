@@ -1,5 +1,6 @@
 pub mod da_db;
 pub mod execution_extension;
+pub mod syncing;
 
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +26,9 @@ pub struct Config {
 
 	#[serde(default)]
 	pub execution_extension: execution_extension::Config,
+
+	#[serde(default)]
+	pub syncing: syncing::Config,
 }
 
 impl Default for Config {
@@ -35,6 +39,7 @@ impl Default for Config {
 			mcr: McrConfig::default(),
 			da_db: da_db::Config::default(),
 			execution_extension: execution_extension::Config::default(),
+			syncing: syncing::Config::default(),
 		}
 	}
 }
