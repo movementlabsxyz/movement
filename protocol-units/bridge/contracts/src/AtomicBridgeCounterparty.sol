@@ -53,16 +53,16 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         bytes32 hashLock,
         address recipient,
         uint256 amount
-    ) external onlyOwner returns (bool) {
+    ) external returns (bool) {
         if (amount == 0) revert ZeroAmount();
 
         if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
-        
-        // potentially mint some gas here for the recipient here. The recipient could be an account with gas already.
-
-        // The time lock is now based on the configurable duration
+        //
+        //// potentially mint some gas here for the recipient here. The recipient could be an account with gas already.
+//
+        //// The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
-
+//
         bridgeTransfers[bridgeTransferId] = BridgeTransferDetails({
             recipient: recipient,
             originator: originator,
@@ -71,7 +71,6 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
             timeLock: timeLock,
             state: MessageState.PENDING
         });
-
         emit BridgeTransferLocked(bridgeTransferId, originator, recipient, amount, hashLock, counterpartyTimeLockDuration);
         return true;
     }

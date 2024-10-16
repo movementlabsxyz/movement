@@ -488,26 +488,28 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 
 	println!("Before initiate_bridge_transfer");
 
-	eth_client_harness
+	let res = eth_client_harness
 		.eth_client
 		.initiate_bridge_transfer(
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient_bytes.clone()),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((42, 0))),
+			Amount(AssetType::EthAndWeth((55, 0))),
 		)
-		.await
-		.expect("Failed to initiate bridge transfer");
+		.await;
+
+	println!("Initiate response: {res:?}",);
 
 	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
 	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for Bridge Lock event.");
+	tracing::info!("Wait for Bridge Initiate event.");
 	let bridge_transfer_id;
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
 		if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
 			bridge_transfer_id = detail.bridge_transfer_id;
+			info!("Initiate details: {detail:?}");
 			break;
 		}
 	}
@@ -545,7 +547,16 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	// 	}
 	// }
 
-	println!("{res:?}",);
+	loop {
+		let event =
+			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
+		if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
+			//bridge_transfer_id = detail.bridge_transfer_id;
+			info!("Lock details: {detail:?}");
+			break;
+		}
+	}
+	println!("Lock response: {res:?}",);
 
 	let stdout = anvil.child_mut().stdout.take().unwrap();
 	let mut reader = std::io::BufReader::new(stdout).lines();

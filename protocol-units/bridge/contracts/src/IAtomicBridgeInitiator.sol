@@ -16,9 +16,9 @@ interface IAtomicBridgeInitiator {
     // Event emitted when a BridgeTransfer is refunded
     event BridgeTransferRefunded(bytes32 indexed _bridgeTransferId);
 
-    error ZeroAmount();
-    error WETHTransferFailed();
     error BridgeTransferInvalid();
+    error ZeroAmount();
+    error WETHTransferFailed();  
     error InvalidSecret();
     error BridgeTransferHasBeenCompleted();
     error BridgeTransferStateNotInitialized();
