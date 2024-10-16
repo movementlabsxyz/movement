@@ -256,31 +256,57 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		hash_lock: HashLock,
 		amount: Amount, // the ETH amount
 	) -> BridgeContractResult<()> {
-		let contract =
-			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
 		let recipient_bytes: [u8; 32] = recipient_address.0.try_into().map_err(|e| {
 			BridgeContractError::ConversionFailed(format!(
 				"Failed to convert in [u8; 32] recipient_address: {e:?}"
 			))
 		})?;
-		let call = contract
-			.initiateBridgeTransfer(
-				U256::from(amount.weth_value()),
-				FixedBytes(recipient_bytes),
-				FixedBytes(hash_lock.0),
-			)
-			.value(U256::from(amount.eth_value()))
-			.from(*initiator_address.0);
-		let _ = send_transaction(
-			call,
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await
-		.map_err(|e| {
-			BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
-		})?;
+
+		// While these match arms may look the same, the underlying contract type
+		// is different as it's initalized with a different ABI. So therefor we must explicitly
+		// call the correct one
+		match &self.initiator_contract {
+			InitiatorContract::Weth(contract) => {
+				let call = contract
+					.initiateBridgeTransfer(
+						U256::from(amount.weth_value()),
+						FixedBytes(recipient_bytes),
+						FixedBytes(hash_lock.0),
+					)
+					.value(U256::from(amount.eth_value()))
+					.from(*initiator_address.0);
+				let _ = send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+			InitiatorContract::Move(contract) => {
+				let call = contract
+					.initiateBridgeTransfer(
+						U256::from(amount.weth_value()),
+						FixedBytes(recipient_bytes),
+						FixedBytes(hash_lock.0),
+					)
+					.value(U256::from(amount.eth_value()))
+					.from(*initiator_address.0);
+				let _ = send_transaction(
+					call,
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await
+				.map_err(|e| {
+					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
+				})?;
+			}
+		}
 		Ok(())
 	}
 
