@@ -8,6 +8,7 @@ use bridge_config::common::movement::MovementConfig;
 use bridge_config::Config as BridgeConfig;
 use bridge_service::chains::ethereum::types::AtomicBridgeCounterparty;
 use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
+use bridge_service::chains::ethereum::types::AtomicBridgeInitiator::poolBalanceReturn;
 use bridge_service::chains::ethereum::types::CounterpartyContract;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::types::WETH9;
@@ -39,6 +40,7 @@ pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::
 			.await
 			.to_string();
 	tracing::info!("Bridge deploy after intiator");
+	tracing::info!("Signer private key: {:?}", signer_private_key.address());
 	config.eth_counterparty_contract =
 		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
 			.await
@@ -139,6 +141,9 @@ async fn initialize_eth_contracts(
 	send_transaction(call, &send_transaction_rules(), transaction_send_retries, gas_limit.into())
 		.await
 		.expect("Failed to send transaction");
+
+	let pool_balance: poolBalanceReturn = initiator_contract.poolBalance().call().await?;
+	tracing::info!("Pool balance: {:?}", pool_balance._0);
 
 	let counterpart_contract =
 		CounterpartyContract::new(counterpart_contract_address.parse()?, rpc_provider);

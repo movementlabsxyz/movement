@@ -513,7 +513,7 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	}
 	println!("Before lock_bridge_transfer");
 
-	let bridge_transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
+	//let bridge_transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
 
 	// let secret = b"secret";
 	// let mut padded_secret = [0u8; 32];
@@ -534,7 +534,7 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 			HashLock([1; 32]),
 			BridgeAddress(vec![2; 32]),
 			BridgeAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((1, 0))),
+			Amount(AssetType::EthAndWeth((0, 42))),
 		)
 		.await;
 	// loop {
