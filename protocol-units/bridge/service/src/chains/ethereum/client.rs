@@ -75,7 +75,7 @@ struct EthBridgeTransferDetails {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: AlloyProvider,
+	pub rpc_provider: AlloyProvider,
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
@@ -97,13 +97,6 @@ impl EthClient {
 		let counterparty_contract =
 			CounterpartyContract::new(config.counterparty_contract, rpc_provider.clone());
 		let weth_contract = WETH9Contract::new(config.weth_contract, rpc_provider.clone());
-
-		//TODO: initialise / monitoring here which should setup the ws connection
-
-		// let ws = WsConnect::new(ws_url);
-		// println!("ws {:?}", ws);
-		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
-		// println!("ws_provider {:?}", ws_provider);
 
 		Ok(EthClient {
 			rpc_provider,
@@ -326,6 +319,13 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		Ok(())
 	}
 
+	// function lockBridgeTransfer(
+	//     bytes32 originator,
+	//     bytes32 bridgeTransferId,
+	//     bytes32 hashLock,
+	//     address recipient,
+	//     uint256 amount
+	// ) external onlyOwner returns (bool) {
 	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
@@ -336,15 +336,28 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	) -> BridgeContractResult<()> {
 		let contract =
 			AtomicBridgeCounterparty::new(self.counterparty_contract_address(), &self.rpc_provider);
-		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
+		let initiator: [u8; 32] = initiator.0.try_into().map_err(|_| {
+			BridgeContractError::ConversionFailed("Lock initiator vec<u8>".to_string())
+		})?;
+		tracing::info!("LOCK: signer_address: {:?}", self.config.signer_private_key);
+		println!("bridge_transfer_id: {:?}", bridge_transfer_id);
+		println!("hash_lock: {:?}", hash_lock);
+		println!("initiator: {:?}", initiator);
+		println!("recipient: {:?}", recipient);
+		println!("amount: {:?}", amount.weth_value());
 		let call = contract.lockBridgeTransfer(
 			FixedBytes(initiator),
 			FixedBytes(bridge_transfer_id.0),
 			FixedBytes(hash_lock.0),
 			*recipient.0,
-			U256::try_from(amount.0)
+			U256::try_from(amount.weth_value())
 				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 		);
+		let owner = contract.owner().call().await.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to get owner: {}", e))
+		})?;
+		tracing::info!("Signer Address: {:?}", self.config.signer_private_key);
+		tracing::info!("Counterparty Owner: {:?}", owner._0);
 		send_transaction(
 			call,
 			&send_transaction_rules(),
