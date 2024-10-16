@@ -2,7 +2,7 @@ use super::utils::{self, MovementAddress};
 use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::types::LockDetails;
+use crate::types::BridgeTransferDetailsCounterparty;
 use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
@@ -398,7 +398,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<LockDetails<MovementAddress>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
 
 		let view_request = ViewRequest {
@@ -452,7 +452,7 @@ impl BridgeContract<MovementAddress> for MovementClient {
 			.try_into()
 			.map_err(|_| BridgeContractError::SerializationError)?;
 
-		let details = LockDetails {
+		let details = BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(originator_address_bytes),
 			recipient_address: BridgeAddress(MovementAddress(recipient_address)),

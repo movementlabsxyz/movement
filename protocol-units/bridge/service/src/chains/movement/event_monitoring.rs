@@ -555,7 +555,6 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 			})?),
 			time_lock: TimeLock(data.time_lock),
 			amount: Amount(AssetType::Moveth(data.amount)),
-			state: data.state,
 		})
 	}
 }

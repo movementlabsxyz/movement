@@ -24,30 +24,6 @@ use tokio::{self};
 use tracing::info;
 
 #[tokio::test]
-async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
-	let config = Config::suzuka();
-	let (mvt_client_harness, _config) =
-		TestHarnessFramework::new_with_suzuka(config).await;
-
-	//
-	let rest_client = mvt_client_harness.rest_client;
-	let coin_client = CoinClient::new(&rest_client);
-	let movement_client_signer = mvt_client_harness.movement_client.signer();
-
-	let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
-
-	faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
-	let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
-	assert!(
-		balance >= 100_000_000,
-		"Expected Movement Client to have at least 100_000_000, but found {}",
-		balance
-	);
-
-	Ok(())
-}
-
-#[tokio::test]
 async fn test_movement_client_lock_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
@@ -111,29 +87,22 @@ async fn test_movement_client_lock_transfer(
 async fn test_movement_client_complete_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	MovementClientFramework::bridge_setup_scripts().await?;
-
 	let config: Config = Config::suzuka();
-
 	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
-
 	let args = EthToMovementCallArgs::default();
-
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 		let movement_client_signer = mvt_client_harness.movement_client.signer();
-
 		{
 			let faucet_client = mvt_client_harness.faucet_client.write().unwrap();
 			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
 			faucet_client.fund(AccountAddress::from_hex_literal("0xface")?, 100_000_000).await?;
 			faucet_client.fund(AccountAddress::from_hex_literal("0x1")?, 100_000_000).await?;
-
+			faucet_client.fund(AccountAddress::from_hex_literal("0x3078303030303030303030303030303030303030303030303030303066616365")?, 100_000_000).await?;
+			
 		}
-
 		let balance = coin_client.get_account_balance(&movement_client_signer.address()).await?;
 		assert!(
 			balance >= 100_000_000,
@@ -161,10 +130,10 @@ async fn test_movement_client_complete_transfer(
 		.expect("Failed to get bridge transfer details")
 		.expect("Expected to find bridge transfer details, but got None");
 
+		info!("Recipient: {:?}", details.recipient_address);
+
 		assert_eq!(details.state, 1, "Bridge transfer should be pending.");
 		info!("Bridge transfer details: {:?}", details);
-
-		tracing::info!("Wait for the MVT initiated event.");
 		
 		let secret = b"secret";
 		let mut padded_secret = [0u8; 32];

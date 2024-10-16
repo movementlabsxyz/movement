@@ -3,6 +3,7 @@ use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::chains::ethereum::types::EthAddress;
+use crate::types::BridgeTransferDetailsCounterparty;
 use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, LockDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
@@ -412,7 +413,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<LockDetails<MovementAddress>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<MovementAddress>>> {
 		let bridge_transfer_id_hex = format!("0x{}", hex::encode(bridge_transfer_id.0));
 	
 		let view_request = ViewRequest {
@@ -484,7 +485,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			.as_u64()
 			.ok_or(BridgeContractError::SerializationError)? as u8;
 	
-		let details = LockDetails {
+		let details = BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(originator_address_bytes),
 			recipient_address: BridgeAddress(MovementAddress(recipient_address)),
@@ -513,6 +514,8 @@ use tokio::{
 
 impl MovementClientFramework {
 	pub async fn bridge_setup_scripts() -> Result<()> {
+		let current_dir = env::current_dir().expect("Failed to get current directory");
+		println!("Current directory: {:?}", current_dir);
 		let project_root = Path::new("../../../");
 		env::set_current_dir(&project_root)
 			.context("Failed to change directory to project root")?;

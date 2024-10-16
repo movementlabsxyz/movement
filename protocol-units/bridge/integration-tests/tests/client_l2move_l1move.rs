@@ -6,7 +6,6 @@ use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::{MovementToEthCallArgs, TestHarness, TestHarnessFramework};
 use bridge_service::chains::bridge_contracts::{BridgeContractError, BridgeContractEvent};
 use bridge_service::chains::movement::client_framework::MovementClientFramework;
-use bridge_service::chains::movement::event_monitoring_framework::MovementMonitoringFramework;
 use bridge_service::types::AssetType;
 use bridge_service::{
 	chains::{

@@ -6,7 +6,7 @@ use super::utils::{calculate_storage_slot, send_transaction, send_transaction_ru
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock, HashLockPreImage, LockDetails, TimeLock
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty, BridgeTransferId, HashLock, HashLockPreImage, LockDetails, TimeLock
 };
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder};
@@ -424,7 +424,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	async fn get_bridge_transfer_details_counterparty(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
-	) -> BridgeContractResult<Option<LockDetails<EthAddress>>> {
+	) -> BridgeContractResult<Option<BridgeTransferDetailsCounterparty<EthAddress>>> {
 		let generic_error = |desc| BridgeContractError::GenericError(String::from(desc));
 
 		let mapping_slot = U256::from(0); // the mapping is the zeroth slot in the contract
@@ -442,7 +442,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		let eth_details = EthBridgeTransferDetailsCounterparty::decode(&mut storage_slice)
 			.map_err(|_| generic_error("could not decode storage"))?;
 
-		Ok(Some(LockDetails {
+		Ok(Some(BridgeTransferDetailsCounterparty {
 			bridge_transfer_id,
 			initiator_address: BridgeAddress(eth_details.originator.to_vec()),
 			recipient_address: BridgeAddress(eth_details.recipient),

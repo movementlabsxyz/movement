@@ -22,6 +22,9 @@ use bridge_service::types::HashLockPreImage;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::SeedableRng;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
+use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 use url::Url;
@@ -49,16 +52,33 @@ pub struct MovementToEthCallArgs {
 }
 
 impl Default for EthToMovementCallArgs {
-	fn default() -> Self {
-		Self {
-			initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
-			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-			bridge_transfer_id: MovementHash(*b"00000000000000000000000transf103"),
-			hash_lock: MovementHash(*keccak256(b"secret")),
-			time_lock: 3600,
-			amount: 100,
-		}
-	}
+        fn default() -> Self {
+                // Generate 6 random alphanumeric characters
+                let random_suffix: String = thread_rng()
+                    .sample_iter(&Alphanumeric)
+                    .take(6)
+                    .map(char::from)
+                    .collect();
+
+                // Construct the bridge_transfer_id with the random suffix
+                let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
+                bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
+
+                Self {
+                        initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+                        recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
+                        // Convert to [u8; 32] with explicit type annotation
+                        bridge_transfer_id: MovementHash(
+                            bridge_transfer_id
+                                .as_slice()
+                                .try_into()
+                                .expect("Expected bridge_transfer_id to be 32 bytes"),
+                        ),
+                        hash_lock: MovementHash(*keccak256(b"secret")),
+                        time_lock: 3600,
+                        amount: 100,
+                }
+        }
 }
 
 impl Default for MovementToEthCallArgs {
