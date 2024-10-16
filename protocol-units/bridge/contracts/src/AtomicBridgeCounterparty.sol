@@ -54,10 +54,7 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         address recipient,
         uint256 amount
     ) external onlyOwner returns (bool) {
-        console.log("ICI %d", amount);
         if (amount == 0) revert ZeroAmount();
-        console.log("ICI2");
-        console.log("bal:%d", atomicBridgeInitiator.poolBalance());
 
         if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
         

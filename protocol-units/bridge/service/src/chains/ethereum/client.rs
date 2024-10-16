@@ -353,6 +353,11 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			U256::try_from(amount.weth_value())
 				.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 		);
+		let owner = contract.owner().call().await.map_err(|e| {
+			BridgeContractError::GenericError(format!("Failed to get owner: {}", e))
+		})?;
+		tracing::info!("Signer Address: {:?}", self.config.signer_private_key);
+		tracing::info!("Counterparty Owner: {:?}", owner._0);
 		send_transaction(
 			call,
 			&send_transaction_rules(),
