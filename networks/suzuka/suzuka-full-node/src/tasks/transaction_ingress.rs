@@ -8,10 +8,7 @@ use tokio::sync::mpsc;
 use tracing::{info, info_span, warn, Instrument};
 
 use std::ops::ControlFlow;
-use std::sync::atomic::{self, AtomicU64};
 use std::time::{Duration, Instant};
-
-const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 pub struct Task {
 	transaction_receiver: mpsc::Receiver<SignedTransaction>,
@@ -29,23 +26,13 @@ impl Task {
 	}
 
 	pub async fn run(mut self) -> anyhow::Result<()> {
-		loop {
-			let batch_id = LOGGING_UID.fetch_add(1, atomic::Ordering::Relaxed);
-			let span =
-				info_span!(target: "movement_telemetry", "write_batch", batch_id = %batch_id);
-			if let ControlFlow::Break(()) =
-				self.spawn_write_next_transaction_batch().instrument(span).await?
-			{
-				break;
-			}
-		}
+		while let ControlFlow::Continue(()) = self.build_and_write_batch().await? {}
 		Ok(())
 	}
 
 	/// Constructs a batch of transactions then spawns the write request to the DA in the background.
-	async fn spawn_write_next_transaction_batch(
-		&mut self,
-	) -> Result<ControlFlow<(), ()>, anyhow::Error> {
+	#[tracing::instrument(target = "movement_telemetry", skip(self))]
+	async fn build_and_write_batch(&mut self) -> Result<ControlFlow<(), ()>, anyhow::Error> {
 		use ControlFlow::{Break, Continue};
 
 		// limit the total time batching transactions
@@ -107,11 +94,15 @@ impl Task {
 			let batch_write = BatchWriteRequest { blobs: transactions };
 			// spawn the actual batch write request in the background
 			let mut da_light_node_client = self.da_light_node_client.clone();
-			tokio::spawn(async move {
-				if let Err(e) = da_light_node_client.batch_write(batch_write).await {
-					warn!("failed to write batch to DA: {:?}", e);
+			let write_span = info_span!(target: "movement_telemetry", "batch_write");
+			tokio::spawn(
+				async move {
+					if let Err(e) = da_light_node_client.batch_write(batch_write).await {
+						warn!("failed to write batch to DA: {:?}", e);
+					}
 				}
-			});
+				.instrument(write_span),
+			);
 		}
 
 		Ok(Continue(()))

@@ -45,12 +45,6 @@ impl Executor {
 		// a semaphore might be better here as this will rerun until the value does not change during the operation
 		self.transactions_in_flight
 			.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-				info!(
-					target: "movement_telemetry",
-					count,
-					current,
-					"decrementing_transactions_in_flight",
-				);
 				Some(current.saturating_sub(count))
 			})
 			.unwrap_or_else(|_| 0);
