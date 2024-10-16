@@ -1,6 +1,7 @@
 use super::types::{
-	AlloyProvider, AssetKind, AtomicBridgeCounterparty, AtomicBridgeInitiator,
-	CounterpartyContract, EthAddress, InitiatorContract, WETH9Contract, WETH9,
+	AlloyProvider, AssetKind, AtomicBridgeCounterparty, AtomicBridgeCounterpartyMOVE,
+	AtomicBridgeInitiator, AtomicBridgeInitiatorMOVE, CounterpartyContract, EthAddress,
+	InitiatorContract, WETH9Contract, WETH9,
 };
 use super::utils::{calculate_storage_slot, send_transaction, send_transaction_rules};
 use crate::chains::bridge_contracts::BridgeContractError;
@@ -104,19 +105,35 @@ impl EthClient {
 			.on_builtin(config.rpc_url.as_str())
 			.await?;
 
-		//load smart contract
-		let initiator_contract =
-			AtomicBridgeInitiator::new(config.initiator_contract, rpc_provider.clone());
-		let counterparty_contract =
-			CounterpartyContract::new(config.counterparty_contract, rpc_provider.clone());
+		//Load the smart contracts based on the asset type
+		let (initiator_contract, counterparty_contract) = match config.asset {
+			AssetKind::Weth => {
+				let initiator_contract =
+					AtomicBridgeInitiator::new(config.initiator_contract, rpc_provider.clone());
+				let counterparty_contract = AtomicBridgeCounterparty::new(
+					config.counterparty_contract,
+					rpc_provider.clone(),
+				);
+				(
+					InitiatorContract::Weth(initiator_contract),
+					CounterpartyContract::Weth(counterparty_contract),
+				)
+			}
+			AssetKind::Move => {
+				let initiator_contract =
+					AtomicBridgeInitiatorMOVE::new(config.initiator_contract, rpc_provider.clone());
+				let counterparty_contract = AtomicBridgeCounterpartyMOVE::new(
+					config.counterparty_contract,
+					rpc_provider.clone(),
+				);
+				(
+					InitiatorContract::Move(initiator_contract),
+					CounterpartyContract::Move(counterparty_contract),
+				)
+			}
+		};
+
 		let weth_contract = WETH9Contract::new(config.weth_contract, rpc_provider.clone());
-
-		//TODO: initialise / monitoring here which should setup the ws connection
-
-		// let ws = WsConnect::new(ws_url);
-		// println!("ws {:?}", ws);
-		// let ws_provider = ProviderBuilder::new().on_ws(ws).await?;
-		// println!("ws_provider {:?}", ws_provider);
 
 		Ok(EthClient {
 			rpc_provider,
@@ -133,19 +150,31 @@ impl EthClient {
 		owner: EthAddress,
 		timelock: TimeLock,
 	) -> Result<(), anyhow::Error> {
-		let call = self.initiator_contract.initialize(
-			weth.0,
-			owner.0,
-			U256::from(timelock.0),
-			U256::from(100),
-		);
-		send_transaction(
-			call.to_owned(),
-			&send_transaction_rules(),
-			self.config.transaction_send_retries,
-			self.config.gas_limit,
-		)
-		.await?;
+		match &self.initiator_contract {
+			InitiatorContract::Weth(contract) => {
+				let call =
+					contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
+				send_transaction(
+					call.to_owned(),
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await?;
+			}
+			InitiatorContract::Move(contract) => {
+				let call =
+					contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
+				send_transaction(
+					call.to_owned(),
+					&send_transaction_rules(),
+					self.config.transaction_send_retries,
+					self.config.gas_limit,
+				)
+				.await?;
+			}
+		}
+
 		Ok(())
 	}
 

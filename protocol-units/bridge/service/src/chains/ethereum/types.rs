@@ -32,19 +32,32 @@ pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
 pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
 	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
 
-// Codegen from the abis
+// Codegen for the WETH bridge contracts
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeInitiator,
 	"abis/AtomicBridgeInitiator.json"
 );
-
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeCounterparty,
 	"abis/AtomicBridgeCounterparty.json"
+);
+
+// Codegen for the MOVE bridge contracts
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiatorMOVE,
+	"abis/AtomicBridgeInitiatorMOVE.json"
+);
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeCounterpartyMOVE,
+	"abis/AtomicBridgeCounterpartyMOVE.json"
 );
 
 alloy::sol!(
@@ -120,10 +133,23 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
 	hash_vec_u32(&fixed_bytes)
 }
 
-pub type InitiatorContract =
-	AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract =
-	AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
+#[derive(Debug, Clone)]
+pub enum InitiatorContract {
+	Weth(AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>),
+	Move(AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>),
+}
+
+#[derive(Debug, Clone)]
+pub enum CounterpartyContract {
+	Weth(AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>),
+	Move(
+		AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<
+			BoxTransport,
+			AlloyProvider,
+		>,
+	),
+}
+
 pub type WETH9Contract = WETH9::WETH9Instance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
