@@ -67,3 +67,6 @@
 [submodule "dispute-murky"]
 	path = protocol-units/dispute/lib/murky
 	url = https://github.com/dmfxyz/murky
+[submodule "protocol-units/tokens/mock/testnet/holesky/lib/openzeppelin-contracts"]
+	path = protocol-units/tokens/mock/testnet/holesky/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
