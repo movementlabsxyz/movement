@@ -3149,8 +3149,6 @@ name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
-<<<<<<< HEAD
-=======
 
 [[package]]
 name = "aws-config"
@@ -3526,7 +3524,6 @@ dependencies = [
  "rustc_version 0.4.1",
  "tracing",
 ]
->>>>>>> main
 
 [[package]]
 name = "axum"
@@ -14098,11 +14095,7 @@ dependencies = [
  "percent-encoding",
  "pin-project 1.1.5",
  "prost 0.12.6",
-<<<<<<< HEAD
- "rustls-native-certs",
-=======
  "rustls-native-certs 0.7.3",
->>>>>>> main
  "rustls-pemfile 2.2.0",
  "rustls-pki-types",
  "tokio",
