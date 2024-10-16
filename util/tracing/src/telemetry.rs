@@ -11,8 +11,9 @@ use crate::Config;
 use opentelemetry::{trace::TracerProvider as _, KeyValue};
 use opentelemetry_otlp::WithExportConfig as _;
 use opentelemetry_sdk::trace::{Config as TraceConfig, TracerProvider};
-use opentelemetry_sdk::{runtime, Resource};
+use opentelemetry_sdk::{runtime::Tokio as TokioRuntimeSelector, Resource};
 use opentelemetry_semantic_conventions::resource::{SERVICE_NAME, SERVICE_VERSION};
+use tokio::runtime;
 use tracing::{error, Level, Subscriber};
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::filter;
@@ -28,10 +29,22 @@ pub struct ScopeGuard(Option<TracerProvider>);
 
 impl Drop for ScopeGuard {
 	fn drop(&mut self) {
-		if let Some(tracer_provider) = &self.0 {
-			// Make sure all batched traces are exported.
+		fn shutdown_provider(tracer_provider: &TracerProvider) {
 			if let Err(e) = tracer_provider.shutdown() {
 				error!("OpenTelemetry tracer provider shutdown failed: {e}");
+			}
+		}
+
+		if let Some(tracer_provider) = self.0.take() {
+			// Make sure all batched traces are exported.
+			if let Ok(handle) = runtime::Handle::try_current() {
+				// Can't call shutdown in async context due to
+				// https://github.com/open-telemetry/opentelemetry-rust/issues/2047#issuecomment-2416480148
+				handle.spawn_blocking(move || {
+					shutdown_provider(&tracer_provider);
+				});
+			} else {
+				shutdown_provider(&tracer_provider);
 			}
 		}
 	}
@@ -61,7 +74,7 @@ where
 				KeyValue::new(SERVICE_NAME, service_name),
 				KeyValue::new(SERVICE_VERSION, service_version),
 			])))
-			.install_batch(runtime::Tokio)?;
+			.install_batch(TokioRuntimeSelector)?;
 		let layer = OpenTelemetryLayer::new(provider.tracer("movement"))
 			.with_filter(filter::Targets::new().with_target("movement_telemetry", Level::INFO));
 		(Some(provider), Some(layer))
