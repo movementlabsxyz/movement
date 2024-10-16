@@ -28,8 +28,6 @@ async fn test_movement_client_lock_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	MovementClientFramework::bridge_setup_scripts().await?;
 
 	let config: Config = Config::suzuka();
