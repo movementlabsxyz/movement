@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::{HarnessMvtClient, HarnessMvtClientFramework, MovementToEthCallArgs};
+use crate::{HarnessMvtClient, HarnessMvtClientFramework};
 use alloy::hex;
 use anyhow::Result;
 use aptos_sdk::{
@@ -12,7 +12,7 @@ use bridge_service::chains::movement::utils::{
 };
 use bridge_service::types::{Amount, AssetType, BridgeAddress, BridgeTransferDetails, HashLock};
 use serde_json::Value;
-use tracing::{debug, info};
+use tracing::debug;
 
 const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,

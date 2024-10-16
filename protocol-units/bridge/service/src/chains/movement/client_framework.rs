@@ -2,13 +2,11 @@ use super::utils::{self, MovementAddress};
 use crate::chains::bridge_contracts::BridgeContract;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
-use crate::chains::ethereum::types::EthAddress;
 use crate::types::BridgeTransferDetailsCounterparty;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, LockDetails, BridgeTransferId, HashLock,
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
 };
-use alloy::primitives::Address;
 use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{

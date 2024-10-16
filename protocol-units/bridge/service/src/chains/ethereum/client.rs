@@ -6,7 +6,7 @@ use super::utils::{calculate_storage_slot, send_transaction, send_transaction_ru
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty, BridgeTransferId, HashLock, HashLockPreImage, LockDetails, TimeLock
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty, BridgeTransferId, HashLock, HashLockPreImage, TimeLock
 };
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder};

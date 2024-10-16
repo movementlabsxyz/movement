@@ -466,12 +466,8 @@ impl BridgeContract<MovementAddress> for MovementClient {
 	}
 }
 
-use std::{
-	env, fs,
-	io::Write,
-	path::PathBuf,
-	process::{Command, Stdio},
-};
+use std::process::Stdio;
+
 use tokio::{
 	io::{AsyncBufReadExt, BufReader},
 	process::Command as TokioCommand,

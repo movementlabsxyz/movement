@@ -1,21 +1,17 @@
-use alloy::primitives::keccak256;
 use anyhow::Result;
 use bridge_config::Config;
-use bridge_integration_tests::utils;
 use bridge_integration_tests::utils as test_utils;
-use bridge_integration_tests::{MovementToEthCallArgs, TestHarness, TestHarnessFramework};
-use bridge_service::chains::bridge_contracts::{BridgeContractError, BridgeContractEvent};
+use bridge_integration_tests::{MovementToEthCallArgs, TestHarnessFramework};
 use bridge_service::chains::movement::client_framework::MovementClientFramework;
 use bridge_service::types::AssetType;
 use bridge_service::{
 	chains::{
 		bridge_contracts::BridgeContract,
-		movement::{event_monitoring::MovementMonitoring, utils::MovementHash},
+		movement::utils::MovementHash,
 	},
 	types::{BridgeTransferId, HashLockPreImage},
 };
 use chrono::Utc;
-use futures::StreamExt;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
@@ -25,11 +21,10 @@ async fn test_movement_client_initiate_transfer() -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let sender_address = mvt_client_harness.movement_client.signer().address();
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
 			.await?;
 		test_utils::initiate_bridge_transfer_helper_framework(
@@ -170,12 +165,11 @@ async fn test_movement_client_refund_transfer() -> Result<(), anyhow::Error> {
 
 	let config: Config = Config::suzuka();
 
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 
 	let args = MovementToEthCallArgs::default();
 
 	let test_result = async {
-		let sender_address = mvt_client_harness.movement_client.signer().address();
 		test_utils::fund_and_check_balance_framework(&mut mvt_client_harness, 100_000_000_000)
 			.await?;
 		test_utils::initiate_bridge_transfer_helper_framework(

@@ -1,24 +1,18 @@
-use alloy::{
-	primitives::{address, keccak256},
-	providers::Provider,
-};
+use alloy::primitives::{address, keccak256};
 use anyhow::Result;
 use aptos_sdk::types::account_address::AccountAddress;
 use aptos_sdk::coin_client::CoinClient;
-use aptos_types::PeerId;
 use bridge_config::Config;
-use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::{TestHarness, TestHarnessFramework};
 use bridge_service::chains::{ethereum::types::EthAddress, movement::client_framework::MovementClientFramework};
 use bridge_service::chains::{
-	bridge_contracts::{BridgeContract, BridgeContractEvent}, ethereum::types::EthHash, movement::{event_monitoring::MovementMonitoring, utils::MovementHash}
+	bridge_contracts::BridgeContract, ethereum::types::EthHash
 };
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
 };
-use futures::StreamExt;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
@@ -29,7 +23,7 @@ async fn test_movement_client_lock_transfer(
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
@@ -82,7 +76,7 @@ async fn test_movement_client_complete_transfer(
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
@@ -172,7 +166,7 @@ async fn test_movement_client_abort_transfer(
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
-	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
+	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);

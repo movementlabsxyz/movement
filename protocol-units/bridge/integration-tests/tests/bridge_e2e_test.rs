@@ -78,7 +78,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
-	let (eth_client_harness, mut mvt_client_harness, config) =
+	let (_eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
 
 	tracing::info!("Init initiator and counter part test account.");
@@ -126,7 +126,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 
 	//send counter complete event.
 	tracing::info!("Call counterparty_complete_bridge_transfer on MVT.");
-	let tx = mvt_client_harness
+	mvt_client_harness
 		.counterparty_complete_bridge_transfer(
 			recipient_privkey,
 			bridge_tranfer_id,
@@ -148,7 +148,6 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	Ok(())
 }
 
-use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
 #[tokio::test]
 async fn test_movement_event() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
