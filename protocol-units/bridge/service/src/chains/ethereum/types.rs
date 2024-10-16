@@ -54,6 +54,26 @@ alloy::sol!(
 	"abis/WETH9.json"
 );
 
+/// Specifies the kind of asset being transferred,
+/// This will associate the client with its respective ABIs
+#[derive(Debug, Clone)]
+pub enum AssetKind {
+	/// This will initialize the client with the WETH Bridge ABIs
+	Weth,
+	/// This will initialize the client with the MOVE Bridge ABIs
+	Move,
+}
+
+impl From<String> for AssetKind {
+	fn from(asset: String) -> Self {
+		match asset.as_str() {
+			"WETH" => AssetKind::Weth,
+			"MOVE" => AssetKind::Move,
+			_ => panic!("Invalid asset kind"),
+		}
+	}
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct EthHash(pub [u8; 32]);
 
