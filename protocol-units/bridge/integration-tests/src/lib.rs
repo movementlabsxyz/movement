@@ -65,7 +65,9 @@ impl Default for EthToMovementCallArgs {
                 bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
 
                 Self {
+			// Dummy valid EIP-55 address used in framework modules
                         initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			// Dummy recipient address
                         recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
                         // Convert to [u8; 32] with explicit type annotation
                         bridge_transfer_id: MovementHash(

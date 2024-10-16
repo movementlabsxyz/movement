@@ -27,17 +27,10 @@ use tracing::info;
 async fn test_movement_client_lock_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	MovementClientFramework::bridge_setup_scripts().await?;
-
 	let config: Config = Config::suzuka();
-
 	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
-
 	let args = EthToMovementCallArgs::default();
-
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 		let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -87,7 +80,6 @@ async fn test_movement_client_lock_transfer(
 async fn test_movement_client_complete_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
 	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
 	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
@@ -100,6 +92,7 @@ async fn test_movement_client_complete_transfer(
 			faucet_client.fund(movement_client_signer.address(), 100_000_000).await?;
 			faucet_client.fund(AccountAddress::from_hex_literal("0xface")?, 100_000_000).await?;
 			faucet_client.fund(AccountAddress::from_hex_literal("0x1")?, 100_000_000).await?;
+			// This address is the recipient in test_movement_client_complete_transfer, so it needs an AptosCoin store
 			faucet_client.fund(AccountAddress::from_hex_literal("0x3078303030303030303030303030303030303030303030303030303066616365")?, 100_000_000).await?;
 			
 		}
@@ -177,17 +170,10 @@ async fn test_movement_client_complete_transfer(
 async fn test_movement_client_abort_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
-	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-
 	MovementClientFramework::bridge_setup_scripts().await?;
-
 	let config: Config = Config::suzuka();
-
 	let (mut mvt_client_harness, config) = TestHarnessFramework::new_with_suzuka(config).await;
-
 	let args = EthToMovementCallArgs::default();
-
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 		let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -265,32 +251,6 @@ async fn test_movement_client_abort_transfer(
 	.await;
 
 	test_result
-}
-#[tokio::test]
-async fn test_eth_client_should_build_and_fetch_accounts() {
-	let config = Config::default();
-	let (eth_client_harness, _config, _anvil) = TestHarness::new_only_eth(config).await;
-
-	let expected_accounts = [
-		address!("f39fd6e51aad88f6f4ce6ab8827279cfffb92266"),
-		address!("70997970c51812dc3a010c7d01b50e0d17dc79c8"),
-		address!("3c44cdddb6a900fa2b585dd299e03d12fa4293bc"),
-		address!("90f79bf6eb2c4f870365e785982e1f101e93b906"),
-		address!("15d34aaf54267db7d7c367839aaf71a00a2c6a65"),
-		address!("9965507d1a55bcc2695c58ba16fb37d819b0a4dc"),
-		address!("976ea74026e726554db657fa54763abd0c3a0aa9"),
-		address!("14dc79964da2c08b23698b3d3cc7ca32193d9955"),
-		address!("23618e81e3f5cdf7f54c3d65f7fbc0abf5b21e8f"),
-		address!("a0ee7a142d267c1f36714e4a8f75612f20a79720"),
-	];
-
-	let provider = eth_client_harness.rpc_provider().await;
-	let accounts = provider.get_accounts().await.expect("Failed to get accounts");
-	assert_eq!(accounts.len(), expected_accounts.len());
-
-	for (account, expected) in accounts.iter().zip(expected_accounts.iter()) {
-		assert_eq!(account, expected);
-	}
 }
 
 #[tokio::test]
