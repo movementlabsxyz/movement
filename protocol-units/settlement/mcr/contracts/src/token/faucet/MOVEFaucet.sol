@@ -12,7 +12,7 @@ contract MOVEFaucet {
     IERC20 public move;
     uint256 public rateLimit = 1 days;
     uint256 public amount = 10;
-    address owner;
+    address public owner;
     mapping(address => uint256) public lastFaucetClaim;
 
     constructor(IERC20 _move) {

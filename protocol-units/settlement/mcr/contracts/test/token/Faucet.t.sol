@@ -45,5 +45,13 @@ contract MOVEFaucetTest is Test {
 
         vm.warp(block.timestamp + 1 days);
         faucet.faucet{value: 10**17}();
+        vm.stopPrank();
+        vm.prank(address(this));
+        uint256 balance = address(this).balance;
+        faucet.withdraw();
+        assertEq(address(faucet).balance, 0);
+        assertEq(address(this).balance, balance + 2*10**17);
     }
+
+    
 }
