@@ -280,7 +280,6 @@ toml = "0.8"
 tonic = "0.11"
 tonic-build = { version = "0.11", features = ["prost"] }
 tonic-reflection = "0.11"
-tonic-web = "0.11"
 ### To try (experimental) std support, add `features = [ "std" ]` to risc0-zkvm
 tracing = "0.1.40"
 tracing-appender = "0.2"
