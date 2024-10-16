@@ -12,6 +12,7 @@ contract MOVEFaucet {
     IERC20 public move;
     uint256 public rateLimit = 1 days;
     uint256 public amount = 10;
+    uint256 public maxBalance = 1;
     address public owner;
     mapping(address => uint256) public lastFaucetClaim;
 
@@ -22,17 +23,19 @@ contract MOVEFaucet {
 
     function faucet() external payable {
         require(msg.value == 10 ** 17, "MOVEFaucet: eth invalid amount");
-        require(move.balanceOf(msg.sender) < 10 ** move.decimals(), "MOVEFaucet: balance must be less than 1 MOVE");
+        require(move.balanceOf(msg.sender) < maxBalance * 10 ** move.decimals(), "MOVEFaucet: balance must be less than determine amount of MOVE");
         require(block.timestamp - lastFaucetClaim[msg.sender] >= rateLimit, "MOVEFaucet: rate limit exceeded");
         lastFaucetClaim[msg.sender] = block.timestamp;
         require(move.transfer(msg.sender, amount * 10 ** move.decimals()), "MOVEFaucet: transfer failed");
     }
 
-    function setConfig(uint256 _rateLimit, uint256 _amount, address _owner) external {
+    function setConfig(uint256 _rateLimit, uint256 _amount, uint256 _maxBalance, address _owner) external {
         require(msg.sender == owner, "MOVEFaucet: only owner can set config");
         rateLimit = _rateLimit;
         amount = _amount;
+        maxBalance = _maxBalance;
         owner = _owner;
+
     }
 
     function withdraw() external {
