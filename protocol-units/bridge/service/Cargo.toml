@@ -54,7 +54,7 @@ derive-new = { workspace = true }
 async-stream = { workspace = true }
 
 #To be removed after send_transaction refactor
-bridge-grpc = { workspace = true }
+bridge-grpc = { workspace = true, features = ["server"] }
 mcr-settlement-client = { workspace = true }
 bridge-config = { workspace = true }
 godfig = { workspace = true }

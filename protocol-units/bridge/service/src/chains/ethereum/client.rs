@@ -18,8 +18,10 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
-use bridge_grpc::bridge_server::Bridge;
-use bridge_grpc::HealthCheckRequest;
+use bridge_grpc::{
+	bridge_server::Bridge, BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest,
+	HealthCheckRequest, HealthCheckResponse,
+};
 use std::fmt::{self, Debug};
 use tonic::{Request, Response, Status};
 use tracing::info;
@@ -213,6 +215,35 @@ impl EthClient {
 
 	pub fn counterparty_contract_address(&self) -> Address {
 		self.config.counterparty_contract
+	}
+}
+
+/// Implement the gRPC service for the Ethereum Bridge Client
+#[tonic::async_trait]
+impl Bridge for EthClient {
+	async fn health(
+		&self,
+		request: Request<HealthCheckRequest>,
+	) -> Result<Response<HealthCheckResponse>, Status> {
+		let req = request.into_inner();
+		let response = HealthCheckResponse {
+			message: format!("EthClient is healthy. Received: {}", req.message),
+		};
+		Ok(Response::new(response))
+	}
+
+	async fn get_bridge_transfer_details_initiator(
+		&self,
+		_request: Request<GetBridgeTransferDetailsRequest>,
+	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
+		todo!()
+	}
+
+	async fn get_bridge_transfer_details_counterparty(
+		&self,
+		_request: Request<GetBridgeTransferDetailsRequest>,
+	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
+		todo!()
 	}
 }
 
@@ -456,21 +487,6 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))
-	}
-}
-
-/// Implement the gRPC service for the Ethereum Bridge Client
-#[tonic::async_trait]
-impl Bridge for EthClient {
-	async fn health(
-		&self,
-		request: Request<HealthCheckRequest>,
-	) -> Result<Response<HealthCheckResponse>, Status> {
-		let req = request.into_inner();
-		let response = HealthCheckResponse {
-			message: format!("EthClient is healthy. Received: {}", req.message),
-		};
-		Ok(Response::new(response))
 	}
 }
 
