@@ -19,10 +19,13 @@ use alloy::{
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
 use bridge_grpc::{
-	bridge_server::Bridge, BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest,
-	HealthCheckRequest, HealthCheckResponse,
+	bridge_server::{Bridge, BridgeServer},
+	BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest, HealthCheckRequest,
+	HealthCheckResponse,
 };
 use std::fmt::{self, Debug};
+use std::net::SocketAddr;
+use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 use tracing::info;
 use url::Url;
@@ -128,6 +131,21 @@ impl EthClient {
 			weth_contract,
 			config: config.clone(),
 		})
+	}
+
+	/// Start the gRPC server
+	/// internally this passes a cloned self `EthClient` as the service.
+	pub async fn serve_grpc(
+		&self,
+		grpc_addr: SocketAddr,
+	) -> Result<(), Box<dyn std::error::Error>> {
+		tracing::info!("Starting gRPC server at: {:?}", grpc_addr);
+		Server::builder()
+			.add_service(BridgeServer::new(self.clone()))
+			.serve(grpc_addr)
+			.await?;
+
+		Ok(())
 	}
 
 	pub async fn initialize_initiator_contract(
