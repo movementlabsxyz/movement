@@ -9618,8 +9618,12 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-api",
+ "aptos-types",
  "futures",
+ "hex",
  "poem",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
 ]
