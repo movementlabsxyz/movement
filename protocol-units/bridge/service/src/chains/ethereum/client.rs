@@ -18,8 +18,10 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
-use bridge_grpc::{bridge_server::Bridge, HealthCheckRequest, HealthCheckResponse};
+use bridge_grpc::bridge_server::Bridge;
+use bridge_grpc::HealthCheckRequest;
 use std::fmt::{self, Debug};
+use tonic::{Request, Response, Status};
 use tracing::info;
 use url::Url;
 
@@ -457,9 +459,9 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	}
 }
 
+/// Implement the gRPC service for the Ethereum Bridge Client
 #[tonic::async_trait]
 impl Bridge for EthClient {
-	// Implementing the Health endpoint within EthClient
 	async fn health(
 		&self,
 		request: Request<HealthCheckRequest>,

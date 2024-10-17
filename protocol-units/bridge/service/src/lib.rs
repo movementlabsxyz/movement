@@ -19,7 +19,6 @@ use tokio_stream::StreamExt;
 mod actions;
 pub mod chains;
 mod events;
-mod grpc_handler;
 mod states;
 pub mod types;
 
