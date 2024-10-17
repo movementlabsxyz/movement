@@ -13,7 +13,9 @@ use bridge_service::chains::ethereum::types::CounterpartyContract;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::types::WETH9;
 use bridge_service::chains::ethereum::utils::{send_transaction, send_transaction_rules};
+use bridge_service::types::ProxyAdmin;
 use bridge_service::types::TimeLock;
+use bridge_service::types::TransparentUpgradeableProxy;
 use hex::ToHex;
 use rand::Rng;
 use std::{
@@ -85,12 +87,19 @@ async fn deploy_counterpart_contract(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
 ) -> Address {
+	let signer_address = signer_private_key.address();
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key))
 		.on_builtin(rpc_url)
 		.await
 		.expect("Error during provider creation");
+
+	let proxy_admin = ProxyAdmin::deploy_builder(rpc_provider.clone(), signer_address);
+	proxy_admin.deploy().await.expect("Failed to deploy ProxyAdmin");
+
+	let upgradeable_proxy = TransparentUpgradeableProxy::deploy_builder();
+
 	let contract = AtomicBridgeCounterparty::deploy(rpc_provider.clone())
 		.await
 		.expect("Failed to deploy AtomicBridgeInitiator");

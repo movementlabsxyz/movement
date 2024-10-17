@@ -233,3 +233,18 @@ pub struct LockDetails<A> {
 	pub time_lock: TimeLock,
 	pub amount: Amount,
 }
+
+// Only used in testing
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	ProxyAdmin,
+	"abis/ProxyAdmin.json"
+);
+
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	TransparentUpgradeableProxy,
+	"abis/TransparentUpgradeableProxy.json"
+);
