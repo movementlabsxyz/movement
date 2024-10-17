@@ -230,6 +230,22 @@ where
 				continue;
 			}
 
+			// Instrumentation for aggregated metrics:
+			// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+			// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
+			// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+			//
+			// TODO: as the block can be attempted to be executed repeatedly,
+			// collect this data once and export in telemetry
+			// on the final success or failure.
+			info!(
+				target: "movement_telemetry",
+				tx_hash = %signed_transaction.committed_hash(),
+				sender = %signed_transaction.sender(),
+				sequence_number = signed_transaction.sequence_number(),
+				"executing_transaction"
+			);
+
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),
 			);
