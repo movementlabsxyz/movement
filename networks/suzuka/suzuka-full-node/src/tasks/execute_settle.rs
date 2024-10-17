@@ -183,18 +183,22 @@ where
 		block: Block,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		for _ in 0..self.execution_extension.block_retry_count {
+		let retry_count = self.execution_extension.block_retry_count;
+		for _ in 0..retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_timestamp).await {
-				Ok(commitment) => return Ok(commitment),
+				Ok(commitment) => {
+					info!(target: "movement_telemetry", "execute_block_succeeded");
+					return Ok(commitment);
+				}
 				Err(e) => {
-					info!("Failed to execute block: {:?}. Retrying", e);
+					info!(target: "movement_telemetry", error = %e, "execute_block_failed");
 					block_timestamp += self.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}
 
-		anyhow::bail!("Failed to execute block after 5 retries")
+		anyhow::bail!("Failed to execute block after {retry_count} retries")
 	}
 
 	async fn execute_block(
