@@ -57,6 +57,7 @@ bridge-config = { path = "protocol-units/bridge/config" }
 bridge-service = { path = "protocol-units/bridge/service" }
 bridge-setup = { path = "protocol-units/bridge/setup" }
 bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
+bridge-grpc = { path = "protocol-units/bridge/grpc" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }

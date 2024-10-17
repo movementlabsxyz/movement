@@ -6,7 +6,8 @@ use super::utils::{calculate_storage_slot, send_transaction, send_transaction_ru
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty, BridgeTransferId, HashLock, HashLockPreImage, TimeLock
+	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
 };
 use alloy::primitives::{Address, FixedBytes, U256};
 use alloy::providers::{Provider, ProviderBuilder};
@@ -17,8 +18,9 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
-use tracing::info;
+use bridge_grpc::{bridge_server::Bridge, HealthCheckRequest, HealthCheckResponse};
 use std::fmt::{self, Debug};
+use tracing::info;
 use url::Url;
 
 impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
@@ -71,7 +73,7 @@ struct EthBridgeTransferDetails {
 #[derive(RlpDecodable, RlpEncodable)]
 struct EthBridgeTransferDetailsCounterparty {
 	pub amount: U256,
-	pub originator:[u8; 32], 
+	pub originator: [u8; 32],
 	pub recipient: EthAddress,
 	pub hash_lock: [u8; 32],
 	pub time_lock: U256,
@@ -266,7 +268,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			.ok_or(generic_error("Could not get required slice from pre-image"))?
 			.try_into()
 			.map_err(|_| generic_error("Could not convert pre-image to [u8; 32]"))?;
-		info!{"Pre-image: {:?}", pre_image};
+		info! {"Pre-image: {:?}", pre_image};
 		let contract =
 			AtomicBridgeInitiator::new(self.initiator_contract_address(), &self.rpc_provider);
 		let call = contract
@@ -452,6 +454,21 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
 			state: eth_details.state,
 		}))
+	}
+}
+
+#[tonic::async_trait]
+impl Bridge for EthClient {
+	// Implementing the Health endpoint within EthClient
+	async fn health(
+		&self,
+		request: Request<HealthCheckRequest>,
+	) -> Result<Response<HealthCheckResponse>, Status> {
+		let req = request.into_inner();
+		let response = HealthCheckResponse {
+			message: format!("EthClient is healthy. Received: {}", req.message),
+		};
+		Ok(Response::new(response))
 	}
 }
 
