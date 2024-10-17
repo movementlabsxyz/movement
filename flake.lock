@@ -69,6 +69,7 @@
       "original": {
         "owner": "shazow",
         "repo": "foundry.nix",
+        "rev": "f533e2c70e520adb695c9917be21d514c15b1c4d",
         "type": "github"
       }
     },
