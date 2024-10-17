@@ -88,8 +88,11 @@ impl TransactionPipe {
 		if let Some(request) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+					// Instrumentation for aggregated metrics:
+					// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+					// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
 					let span = info_span!(
-						target: "movement_timing",
+						target: "movement_telemetry",
 						"submit_transaction",
 						tx_hash = %transaction.committed_hash(),
 						sender = %transaction.sender(),
@@ -124,13 +127,17 @@ impl TransactionPipe {
 		// For now, we are going to consider a transaction in flight until it exits the mempool and is sent to the DA as is indicated by WriteBatch.
 		let in_flight = self.transactions_in_flight.load(std::sync::atomic::Ordering::Relaxed);
 		info!(
-			target: "movement_timing",
+			target: "movement_telemetry",
 			in_flight = %in_flight,
 			"transactions_in_flight"
 		);
 		if in_flight > self.in_flight_limit {
+			// Instrumentation for aggregated metrics:
+			// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+			// The arguments for identifying the transaction are present on the current
+			// "submit_transaction" span.
 			info!(
-				target: "movement_timing",
+				target: "movement_telemetry",
 				"shedding_load"
 			);
 			let status = MempoolStatus::new(MempoolStatusCode::MempoolIsFull);
@@ -157,6 +164,14 @@ impl TransactionPipe {
 		let sequence_number =
 			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
 		if transaction.sequence_number() < sequence_number {
+			// Instrumentation for aggregated metrics:
+			// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+			// The arguments for identifying the transaction are present on the current
+			// "submit_transaction" span.
+			info!(
+				target: "movement_telemetry",
+				"sequence_number_too_old"
+			);
 			let status = MempoolStatus::new(MempoolStatusCode::VmError);
 			return Ok((status, Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD)));
 		}
@@ -183,7 +198,11 @@ impl TransactionPipe {
 				self.core_mempool.commit_transaction(&sender, sequence_number);
 			}
 			_ => {
-				warn!("Transaction not accepted: {:?}", status);
+				// Instrumentation for aggregated metrics:
+				// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+				// The arguments for identifying the transaction are present on the current
+				// "submit_transaction" span.
+				info!(target: "movement_telemetry", %status, "rejected_by_mempool");
 			}
 		}
 
