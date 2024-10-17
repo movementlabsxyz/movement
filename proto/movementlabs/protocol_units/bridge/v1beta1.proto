@@ -11,6 +11,10 @@ message HealthCheckRequest {
   string message = 1;
 }
 
+message HealthCheckResponse {
+  string message = 1;
+}
+
 message GetBridgeTransferDetailsRequest {
   bytes bridge_transfer_id = 1;
   bytes signature = 2;
