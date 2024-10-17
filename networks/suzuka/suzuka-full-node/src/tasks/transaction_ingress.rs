@@ -59,6 +59,9 @@ impl Task {
 			{
 				Ok(transaction) => match transaction {
 					Some(transaction) => {
+						// Instrumentation for aggregated metrics:
+						// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+						// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
 						info!(
 							target: "movement_telemetry",
 							tx_hash = %transaction.committed_hash(),

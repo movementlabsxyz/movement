@@ -88,6 +88,9 @@ impl TransactionPipe {
 		if let Some(request) = next {
 			match request {
 				MempoolClientRequest::SubmitTransaction(transaction, callback) => {
+					// Instrumentation for aggregated metrics:
+					// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+					// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
 					let span = info_span!(
 						target: "movement_telemetry",
 						"submit_transaction",
