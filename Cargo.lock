@@ -4077,6 +4077,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-grpc"
+version = "0.0.2"
+dependencies = [
+ "buildtime",
+ "prost 0.12.6",
+ "tonic 0.11.0",
+ "tonic-build",
+ "tonic-reflection",
+ "tonic-web",
+]
+
+[[package]]
 name = "bridge-integration-tests"
 version = "0.0.2"
 dependencies = [
