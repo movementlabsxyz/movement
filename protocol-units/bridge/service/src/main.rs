@@ -50,7 +50,11 @@ async fn main() -> Result<()> {
 	health_service.set_service_status("", ServingStatus::Serving);
 	health_service.set_service_status("Bridge", ServingStatus::Serving);
 
-	let grpc_addr: SocketAddr = "[::1]:50051".parse().unwrap();
+	let grpc_addr: SocketAddr =
+		format!("{}:{}", bridge_config.movement.grpc_hostname, bridge_config.movement.grpc_port)
+			.parse()
+			.unwrap();
+
 	tokio::spawn(async move {
 		Server::builder()
 			.add_service(HealthServer::new(health_service))
