@@ -86,8 +86,12 @@ async fn deploy_eth_initiator_contract(
 async fn deploy_counterpart_contract(
 	signer_private_key: PrivateKeySigner,
 	rpc_url: &str,
+	weth_address: Address,
+	deployer_address: Address,
 ) -> Address {
 	let signer_address = signer_private_key.address();
+
+	// Create an RPC provider with the signer
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key))
@@ -95,16 +99,55 @@ async fn deploy_counterpart_contract(
 		.await
 		.expect("Error during provider creation");
 
+	// Deploy the ProxyAdmin contract
 	let proxy_admin = ProxyAdmin::deploy_builder(rpc_provider.clone(), signer_address);
-	proxy_admin.deploy().await.expect("Failed to deploy ProxyAdmin");
+	let proxy_admin_address = proxy_admin.deploy().await.expect("Failed to deploy ProxyAdmin");
+	tracing::info!("ProxyAdmin deployed at: {}", proxy_admin_address);
 
-	let upgradeable_proxy = TransparentUpgradeableProxy::deploy_builder();
+	// Time lock duration for the counterparty
+	let counterparty_time_lock_duration = 24 * 60 * 60; // 24 hours
 
-	let contract = AtomicBridgeCounterparty::deploy(rpc_provider.clone())
+	// Deploy AtomicBridgeCounterparty contract
+	let atomic_bridge_counterparty_impl =
+		AtomicBridgeCounterparty::deploy_builder(rpc_provider.clone());
+	let counterparty_address = atomic_bridge_counterparty_impl
+		.deploy()
 		.await
-		.expect("Failed to deploy AtomicBridgeInitiator");
-	tracing::info!("counterparty_contract address: {}", contract.address().to_string());
-	contract.address().to_owned()
+		.expect("Failed to deploy AtomicBridgeCounterparty");
+	tracing::info!("AtomicBridgeCounterparty deployed at: {}", counterparty_address);
+
+	// Deploy TransparentUpgradeableProxy for AtomicBridgeCounterparty
+	let upgradeable_proxy_counterparty = TransparentUpgradeableProxy::new(
+		atomic_bridge_counterparty_contract.address(), // Address of the contract
+		rpc_provider.clone(),                          // The provider (same one used for deployment)
+	);
+
+	// Deploy the TransparentUpgradeableProxy contract
+	let proxy_counterparty_address = upgradeable_proxy_counterparty
+		.deploy()
+		.await
+		.expect("Failed to deploy TransparentUpgradeableProxy for AtomicBridgeCounterparty");
+
+	// Use the upgradeToAndCall function to initialize the contract
+	let initializer_data = abi::encode_with_signature(
+		"initialize(address,address,uint256)",
+		Address::zero(), // Placeholder for AtomicBridgeInitiator
+		deployer_address,
+		counterparty_time_lock_duration, // 24-hour time lock for the counterparty
+	);
+
+	proxy_counterparty_address
+		.upgrade_to_and_call(atomic_bridge_counterparty_contract.address(), initializer_data)
+		.await
+		.expect("Failed to initialize TransparentUpgradeableProxy for AtomicBridgeCounterparty");
+
+	tracing::info!(
+		"AtomicBridgeCounterparty proxy deployed at: {}",
+		proxy_counterparty_contract.address()
+	);
+
+	// Return the AtomicBridgeCounterparty proxy address
+	proxy_counterparty_contract.address().to_owned()
 }
 
 async fn deploy_weth_contract(signer_private_key: PrivateKeySigner, rpc_url: &str) -> Address {
@@ -155,7 +198,8 @@ async fn initialize_eth_contracts(
 	tracing::info!("Pool balance: {:?}", pool_balance._0);
 
 	let counterpart_contract =
-		CounterpartyContract::new(counterpart_contract_address.parse()?, rpc_provider);
+		AtomicBridgeCounterparty::new(counterpart_contract_address.parse()?, rpc_provider);
+
 	let call = counterpart_contract.initialize(
 		initiator_contract_address.parse()?,
 		signer_private_key.address(),
