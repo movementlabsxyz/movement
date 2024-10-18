@@ -95,7 +95,7 @@ struct EthBridgeTransferDetailsCounterparty {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
-	rpc_provider: AlloyProvider,
+	pub rpc_provider: AlloyProvider,
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
@@ -473,6 +473,13 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		Ok(())
 	}
 
+	// function lockBridgeTransfer(
+	//     bytes32 originator,
+	//     bytes32 bridgeTransferId,
+	//     bytes32 hashLock,
+	//     address recipient,
+	//     uint256 amount
+	// ) external onlyOwner returns (bool) {
 	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
