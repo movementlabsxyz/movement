@@ -4111,6 +4111,7 @@ dependencies = [
  "futures",
  "godfig",
  "hex",
+ "poem",
  "rand 0.7.3",
  "reqwest 0.12.8",
  "serde_json",

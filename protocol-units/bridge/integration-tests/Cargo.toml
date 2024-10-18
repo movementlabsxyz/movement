@@ -26,6 +26,7 @@ reqwest = { workspace = true }
 alloy-network = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-contract = { workspace = true }
+poem = { workspace = true, features = ["test"] }
 rand = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
