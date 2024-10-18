@@ -10,8 +10,8 @@ const DEFAULT_MVT_FAUCET_CONNECTION_PORT: u16 = 8081;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MovementConfig {
-	#[serde(default = "default_movement_signer_address")]
-	pub movement_signer_address: Ed25519PrivateKey,
+	#[serde(default = "default_movement_signer_key")]
+	pub movement_signer_key: Ed25519PrivateKey,
 	#[serde(default = "default_movement_native_address")]
 	pub movement_native_address: String,
 
@@ -34,8 +34,8 @@ pub struct MovementConfig {
 }
 
 // The default private key
-pub fn default_movement_signer_address() -> Ed25519PrivateKey {
-	match std::env::var("MOVEMENT_SIGNER_ADDRESS") {
+pub fn default_movement_signer_key() -> Ed25519PrivateKey {
+	match std::env::var("MOVEMENT_SIGNER_KEY") {
 		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
 		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
 	}
@@ -110,12 +110,26 @@ impl MovementConfig {
 			self.mvt_faucet_connection_port
 		)
 	}
+
+	pub fn suzuka() -> Self {
+		MovementConfig {
+			movement_signer_key: Ed25519PrivateKey::from_encoded_string("0x0000000000000000000000000000000000000000000000000000000000000001").unwrap(),
+			movement_native_address: "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16".to_string(),
+			mvt_rpc_connection_protocol: default_mvt_rpc_connection_protocol(),
+			mvt_rpc_connection_hostname: default_mvt_rpc_connection_hostname(),
+			mvt_rpc_connection_port: 30731,
+			mvt_faucet_connection_protocol: default_mvt_rpc_connection_protocol(),
+			mvt_faucet_connection_hostname: default_mvt_rpc_connection_hostname(),
+			mvt_faucet_connection_port: 30732,
+			mvt_init_network: default_mvt_init_network(),
+		}
+	}
 }
 
 impl Default for MovementConfig {
 	fn default() -> Self {
 		MovementConfig {
-			movement_signer_address: default_movement_signer_address(),
+			movement_signer_key: default_movement_signer_key(),
 			movement_native_address: default_movement_native_address(),
 			mvt_rpc_connection_protocol: default_mvt_rpc_connection_protocol(),
 			mvt_rpc_connection_hostname: default_mvt_rpc_connection_hostname(),
@@ -125,5 +139,6 @@ impl Default for MovementConfig {
 			mvt_faucet_connection_port: default_mvt_faucet_connection_port(),
 			mvt_init_network: default_mvt_init_network(),
 		}
+
 	}
 }

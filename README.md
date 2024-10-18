@@ -25,7 +25,6 @@ Unless otherwise specified assume all commands below are run after entering a ni
 - [`util`](./util): Utility crates for the Movement SDK. These crates provide useful functions, macros, and types for use in Movement SDK projects. See the [util README](./util/README.md) for more information about the organization of utility crates.
 - [`proto`](./proto): Protocol buffer definitions for the Movement Network. These definitions are used to generate code for interacting with the Movement Network. See the [proto README](./proto/README.md) for more information about the organization of protocol buffer definitions.
 
-
 ## Prerequisites (Development)
 - Nix package manager. Use nix to run and build Movement developer environments.  https://nix.dev/install-nix
 
@@ -34,6 +33,7 @@ Unless otherwise specified assume all commands below are run after entering a ni
 - just https://github.com/casey/just
 
 ## Running Natively (Nix required)
+
 ### `m1-da-light-node`
 
 - **Features**:
@@ -127,23 +127,8 @@ Both `native` and `docker-compose` runners will serve the following services lis
 - **[Aptos REST API](https://api.devnet.aptoslabs.com/v1/spec#/)**: `0.0.0.0:30731`
 - **[Aptos Faucet API](https://aptos.dev/apis/#faucet-api-only-testnetdevnet)**: `0.0.0.0:30732`
 
-## Troubleshooting
-
-### `cp: cannot stat '': No such file or directory` when running `just suzuka-full-node native build.setup.test.local`
-
-Try the following `nix.conf`:
-
-```bash
-build-users-group = nixbld
-experimental-features = nix-command flakes repl-flake
-bash-prompt-prefix = (nix:$name)\040
-max-jobs = auto
-extra-nix-path = nixpkgs=flake:nixpkgs
-upgrade-nix-store-path-url = https://install.determinate.systems/nix-upgrade/stable/universal
-```
-
-### `ledger_info.is_some()`
-The current revision does not support graceful restarts of the network from an existing config. For testing purposes, please delete you `.movement` directory and run the setup again.
+## Node Operation
+For node operation guides, please begin with the manual [node operation docs](./docs/movement-node/run/manual/README.md).
 
 ## License
 

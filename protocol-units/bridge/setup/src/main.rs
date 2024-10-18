@@ -60,7 +60,7 @@ async fn main() -> Result<(), anyhow::Error> {
 					maptos_config.client.maptos_faucet_rest_connection_port;
 
 				//update signer with maptos private key
-				config.movement.movement_signer_address = maptos_config.chain.maptos_private_key;
+				config.movement.movement_signer_key = maptos_config.chain.maptos_private_key;
 			}
 			if let Ok(settlement_config) = settlement_config {
 				println!("Update bridge config with settlement config");
@@ -95,6 +95,9 @@ async fn main() -> Result<(), anyhow::Error> {
 					.well_known_account_private_keys
 					.clone();
 			}
+
+			//set timelock for e2e test
+			config.eth.time_lock_secs = 60; // 1mn for the e2e test.
 
 			// Use custom as movement node in init.
 			config.movement.mvt_init_network = "custom".to_string();
