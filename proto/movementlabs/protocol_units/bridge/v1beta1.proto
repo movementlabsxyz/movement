@@ -2,8 +2,10 @@ syntax = "proto3";
 package movementlabs.protocol_units.bridge.v1beta1;
 
 service Bridge {
-  rpc GetBridgeTransferDetailsInitiator (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
-  rpc GetBridgeTransferDetailsCounterparty (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsInitiatorEth (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsCounterpartyEth (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsInitiatorMovement (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
+  rpc GetBridgeTransferDetailsCounterpartyMovement (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
 }
 
 service Health {

@@ -1,4 +1,4 @@
-use super::client::EthClient;
+use crate::chains::ethereum::client::EthClient;
 use bridge_grpc::{
 	bridge_server::Bridge, health_check_response::ServingStatus, health_server::Health,
 	BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest, HealthCheckRequest,
@@ -11,7 +11,7 @@ use tonic::{Request, Response, Status};
 
 /// A gRPC Health Check Service
 #[derive(Default)]
-pub struct HealthCheckSerivce {
+pub struct HealthCheckService {
 	status: std::sync::Mutex<std::collections::HashMap<String, ServingStatus>>,
 }
 
@@ -32,7 +32,7 @@ impl Stream for HealthWatchStream {
 }
 
 #[tonic::async_trait]
-impl Health for HealthCheckSerivce {
+impl Health for HealthCheckService {
 	type WatchStream = HealthWatchStream;
 
 	async fn check(
@@ -59,7 +59,7 @@ impl Health for HealthCheckSerivce {
 	}
 }
 
-impl HealthCheckSerivce {
+impl HealthCheckService {
 	// Set the health status of a service
 	pub fn set_service_status(&self, service: &str, status: ServingStatus) {
 		let mut status_map = self.status.lock().unwrap();
@@ -70,14 +70,28 @@ impl HealthCheckSerivce {
 /// Implement the gRPC service `Bridge` for the Ethereum Bridge Client
 #[tonic::async_trait]
 impl Bridge for EthClient {
-	async fn get_bridge_transfer_details_initiator(
+	async fn get_bridge_transfer_details_initiator_eth(
 		&self,
 		_request: Request<GetBridgeTransferDetailsRequest>,
 	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
 		unimplemented!()
 	}
 
-	async fn get_bridge_transfer_details_counterparty(
+	async fn get_bridge_transfer_details_counterparty_eth(
+		&self,
+		_request: Request<GetBridgeTransferDetailsRequest>,
+	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
+		unimplemented!()
+	}
+
+	async fn get_bridge_transfer_details_initiator_movement(
+		&self,
+		_request: Request<GetBridgeTransferDetailsRequest>,
+	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
+		unimplemented!()
+	}
+
+	async fn get_bridge_transfer_details_counterparty_movement(
 		&self,
 		_request: Request<GetBridgeTransferDetailsRequest>,
 	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {

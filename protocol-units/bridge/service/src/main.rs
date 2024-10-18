@@ -1,14 +1,19 @@
 use anyhow::Result;
 use bridge_config::Config;
+use bridge_grpc::bridge_server::BridgeServer;
+use bridge_grpc::health_check_response::ServingStatus;
+use bridge_grpc::health_server::HealthServer;
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
 		movement::{client::MovementClient, event_monitoring::MovementMonitoring},
 	},
+	grpc::HealthCheckService,
 	rest::BridgeRest,
 };
 use godfig::{backend::config_file::ConfigFile, Godfig};
 use std::net::SocketAddr;
+use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -41,12 +46,26 @@ async fn main() -> Result<()> {
 
 	let one_client_for_grpc = one_client.clone();
 
-	// Start the gRPC server on a specific address (e.g., localhost:50051)
+	let health_service = HealthCheckService::default();
+	health_service.set_service_status("", ServingStatus::Serving);
+	health_service.set_service_status("Bridge", ServingStatus::Serving);
+
 	let grpc_addr: SocketAddr = "[::1]:50051".parse().unwrap();
 	tokio::spawn(async move {
-		one_client_for_grpc.serve_grpc(grpc_addr).await.unwrap();
+		Server::builder()
+			.add_service(HealthServer::new(health_service))
+			.add_service(BridgeServer::new(one_client_for_grpc))
+			.serve(grpc_addr)
+			.await
+			.unwrap();
 	});
 
+	// Initialize the gRPC health check service
+	let health_service = HealthCheckService::default();
+	health_service.set_service_status("", ServingStatus::Serving);
+	health_service.set_service_status("Bridge", ServingStatus::Serving);
+
+	// Start the gRPC server on a specific address (e.g., localhost:50051)
 	// Create and run the REST service
 	let rest_service = BridgeRest::new(&bridge_config.movement)?;
 	let rest_service_future = rest_service.run_service();

@@ -26,7 +26,6 @@ use bridge_grpc::{
 use std::fmt::{self, Debug};
 use std::net::SocketAddr;
 use tonic::transport::Server;
-use tonic::{Request, Response, Status};
 use tracing::info;
 use url::Url;
 
