@@ -1,4 +1,4 @@
-# MRC - L1 contract
+# MCR - L1 contract
 
 This directory contains the implementation of the MRC settlement smart contract. To test the contract, run:
 
