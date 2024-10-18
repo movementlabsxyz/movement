@@ -15,6 +15,9 @@ For a given block height, MCR selects the earliest block commitment that matches
 2. Tracking commitments for each block height until one exceeds the supermajority of stake.
 
 ## Proof of Correctness
+
+> To proof: For a given block height, MCR selects the earliest block commitment that matches the supermajority of stake-
+
 The stake is fixed for an epoch, so only commitments for a specific block height are considered, allowing for a straightforward proof.
 
 **Commitment**. Let $v: C \to V$ map a commitment to its validator, where $C$ represent all possible commitments and $V$ is the set of validators. Since commitments are ordered by L1 in the L1-blocks, let $C'$ be an ordered subset of $C$ with $k$ elements (i.e. up to the $k$-th commitment). 
