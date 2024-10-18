@@ -185,11 +185,11 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
-	debug!("Signed TX: {:?}", signed_tx);
+	info!("Signed TX: {:?}", signed_tx);
 
 	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
 		let err_msg = format!("Transaction submission error: {}", e.to_string());
-		error!("{}", err_msg); // Log the error in detail
+		error!("Full error: {}", err_msg); // Log the error in detail
 		err_msg
 	})?;
 
