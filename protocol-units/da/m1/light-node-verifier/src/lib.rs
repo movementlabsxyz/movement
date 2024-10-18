@@ -17,7 +17,7 @@ pub enum Error {
 /// thiserror for validation and internal errors
 #[derive(thiserror::Error, Debug)]
 
-/// A verified outcome. Indicates that input of A is verified as valid instance of B, or else invalid instance.
+/// A verified outcome. Indicates that input of A (from the trait [VerifierOperations]) is verified as valid instance of B, or else invalid instance.
 pub struct Verified<B>(B);
 
 impl<B> Verified<B> {
