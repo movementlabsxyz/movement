@@ -41,7 +41,9 @@ reqwest = { workspace = true }
 serde = { workspace = true }
 serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }
+tonic = { workspace = true }
 tracing-subscriber = { workspace = true }
+poem = { workspace = true }
 
 aptos-sdk = { workspace = true }
 aptos-api-types = { workspace = true }
@@ -53,6 +55,7 @@ derive-new = { workspace = true }
 async-stream = { workspace = true }
 
 #To be removed after send_transaction refactor
+bridge-grpc = { workspace = true, features = ["server"] }
 mcr-settlement-client = { workspace = true }
 bridge-config = { workspace = true }
 godfig = { workspace = true }
