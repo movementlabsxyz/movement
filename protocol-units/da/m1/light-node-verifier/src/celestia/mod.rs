@@ -1,82 +1,35 @@
-use crate::Verifier;
-use celestia_rpc::{BlobClient, Client, HeaderClient};
+use crate::{Error, Verified, VerifierOperations};
+use celestia_rpc::Client;
 use celestia_types::{nmt::Namespace, Blob};
-use m1_da_light_node_grpc::VerificationMode;
+use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct V1Verifier {
+pub struct Verifier {
+	/// The Celestia RPC client
 	pub client: Arc<Client>,
+	/// The namespace of the Celestia Blob
 	pub namespace: Namespace,
 }
 
-#[tonic::async_trait]
-impl Verifier for V1Verifier {
-	/// All verification is the same for now
-	async fn verify(
-		&self,
-		_verification_mode: VerificationMode,
-		blob: &[u8],
-		height: u64,
-	) -> Result<bool, anyhow::Error> {
-		let celestia_blob = Blob::new(self.namespace.clone(), blob.to_vec())?;
-
-		celestia_blob.validate()?;
-
-		// wait for the header to be at the correct height
-		self.client.header_wait_for_height(height).await?;
-
-		// get the root
-		let dah = self.client.header_get_by_height(height).await?.dah;
-		let root_hash = dah.row_root(0).ok_or(anyhow::anyhow!("No root hash found"))?;
-
-		// get the proof
-		let proofs = self
-			.client
-			.blob_get_proof(height, self.namespace.clone(), celestia_blob.commitment)
-			.await?;
-
-		// get the leaves
-		let leaves = celestia_blob.to_shares()?;
-
-		// check if included
-		for proof in proofs.iter() {
-			proof
-				.verify_complete_namespace(&root_hash, &leaves, self.namespace.into())
-				.map_err(|e| anyhow::anyhow!("Failed to verify proof: {:?}", e))?;
-		}
-
-		Ok(true)
-	}
-
-	async fn verify_cowboy(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: &[u8],
-		_height: u64,
-	) -> Result<bool, anyhow::Error> {
-		unimplemented!()
-	}
-
-	async fn verify_m_of_n(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: &[u8],
-		_height: u64,
-	) -> Result<bool, anyhow::Error> {
-		unimplemented!()
-	}
-
-	async fn verifiy_validator_in(
-		&self,
-		_verification_mode: VerificationMode,
-		_blob: &[u8],
-		_height: u64,
-	) -> Result<bool, anyhow::Error> {
-		unimplemented!()
+impl Verifier {
+	pub fn new(client: Arc<Client>, namespace: Namespace) -> Self {
+		Self { client, namespace }
 	}
 }
 
+#[tonic::async_trait]
+impl VerifierOperations<Blob, IntermediateBlobRepresentation> for Verifier {
+	/// Verifies a Celestia Blob as a Valid IntermediateBlobRepresentation
+	async fn verify(&self, blob: Blob, _height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+		// Only assert that we can indeed get an IntermediateBlobRepresentation from the Blob
+		let ir_blob = IntermediateBlobRepresentation::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
+
+		Ok(Verified::new(ir_blob))
+	}
+}
+
+pub mod pessimistic;
 #[cfg(all(test, feature = "integration-tests"))]
 mod tests {
 	use super::*;
@@ -109,7 +62,7 @@ mod tests {
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_namespace = config.celestia_namespace();
 
-		let verifier = V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
+		let verifier = Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;
@@ -142,7 +95,7 @@ mod tests {
 		let client = Arc::new(config.connect_celestia().await?);
 		let celestia_namespace = config.celestia_namespace();
 
-		let verifier = V1Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
+		let verifier = Verifier { client: client.clone(), namespace: celestia_namespace.clone() };
 
 		let data = vec![0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let blob = Blob::new(celestia_namespace.clone(), data.clone())?;

@@ -1,4 +1,16 @@
 use celestia_types::nmt::Namespace;
+/*use ecdsa::{
+	elliptic_curve::{
+		generic_array::ArrayLength,
+		ops::Invert,
+		point::PointCompression,
+		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
+		subtle::CtOption,
+		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
+	},
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
+	SignatureSize,
+};*/
 use godfig::env_default;
 
 // The default hostname for the Celestia RPC
