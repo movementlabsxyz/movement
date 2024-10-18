@@ -17,12 +17,14 @@ For a given block height, MCR selects the earliest block commitment that matches
 ## Proof of Correctness
 The stake is fixed for an epoch, so only commitments for a specific block height are considered, allowing for a straightforward proof.
 
-Let $C$ represent all possible commitments, and $C'$ be an ordered subset of $C$. MCR returns $c_i \in C'$, the earliest commitment matching the supermajority of stake, defined as:
+**Commitment**. Let $v: C \to V$ map a commitment to its validator, where $C$ represent all possible commitments and $V$ is the set of validators. Since commitments are ordered by L1 in the L1-blocks, let $C'$ be an ordered subset of $C$ with $k$ elements (i.e. up to the $k$-th commitment). 
+
+**Stake**. Let $s: V \to \mathbb{N}$ map a validator to their stake and $S(C',i) = \sum_{j = 1}^{i} s(v(c_j))$ the cumulative stake up to the $i$-th commitment. $S$ is non-decreasing as $S(C',i) = S(C',i - 1) + s(v(c_i))$.
+
+We require that 
 
 $$
-\delta(C') = \frac{2}{3} \times \sum_{c \in C'} s(v(c)),
+S(C',i) > \frac{2}{3} TotalStake = \frac{2}{3} \times \sum_{u \in V} s(u),
 $$
 
-where $v: C \to V$ maps a commitment to its validator and $s: V \to \mathbb{N}$ maps a validator to their stake. Define $\sigma'(C', i) = \sum_{j = 0}^{i} s(v(c_j))$, the cumulative stake up to the $i$-th commitment. $\sigma'$ is non-decreasing as $\sigma(C', i) = \sigma(C', i - 1) + s(v(c_i))$.
-
-If $\sigma(C', i) \geq \delta(C')$, then $c_i$ is the earliest commitment where the supermajority is met, since any earlier commitment $c_j$ for $j < i$ would violate the non-decreasing nature of $\sigma'$.
+If $S(C', i)$ satisfies the condition, and $S(C',i-1)$ does not, then $c_i$ is returned by MCR. Due to the non-decreasing nature of $S$ with $i$, $c_i$ is the earliest commitment that can be returned.
