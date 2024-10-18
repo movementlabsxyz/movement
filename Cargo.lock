@@ -4129,6 +4129,7 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "alloy-network",
+ "alloy-primitives",
  "alloy-rlp",
  "anyhow",
  "aptos-api",
@@ -4159,6 +4160,7 @@ dependencies = [
  "serde_json",
  "serde_with",
  "thiserror",
+ "tiny-keccak",
  "tokio",
  "tokio-stream",
  "tonic 0.11.0",
