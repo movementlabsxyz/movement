@@ -4077,6 +4077,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-grpc"
+version = "0.0.2"
+dependencies = [
+ "buildtime",
+ "prost 0.12.6",
+ "tonic 0.11.0",
+ "tonic-build",
+ "tonic-reflection",
+]
+
+[[package]]
 name = "bridge-integration-tests"
 version = "0.0.2"
 dependencies = [
@@ -4092,6 +4103,7 @@ dependencies = [
  "aptos-types",
  "bcs 0.1.4",
  "bridge-config",
+ "bridge-grpc",
  "bridge-service",
  "bridge-setup",
  "chrono",
@@ -4099,11 +4111,13 @@ dependencies = [
  "futures",
  "godfig",
  "hex",
+ "poem",
  "rand 0.7.3",
  "reqwest 0.12.8",
  "serde_json",
  "tokio",
  "tokio-stream",
+ "tonic 0.11.0",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
@@ -4126,6 +4140,7 @@ dependencies = [
  "async-trait",
  "bcs 0.1.4",
  "bridge-config",
+ "bridge-grpc",
  "delegate",
  "derive-new",
  "derive_more",
@@ -4137,6 +4152,7 @@ dependencies = [
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
+ "poem",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
  "reqwest 0.12.8",
@@ -4147,6 +4163,7 @@ dependencies = [
  "tiny-keccak",
  "tokio",
  "tokio-stream",
+ "tonic 0.11.0",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
@@ -7206,12 +7223,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "http-range-header"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "add0ab9360ddbd88cfeb3bd9574a1d85cfdfa14db10b3e21d3700dbc4328758f"
-
-[[package]]
 name = "httparse"
 version = "1.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8373,7 +8384,6 @@ dependencies = [
  "tokio-stream",
  "tonic 0.11.0",
  "tonic-reflection",
- "tonic-web",
  "tracing",
  "zstd 0.13.2",
 ]
@@ -8398,8 +8408,6 @@ dependencies = [
  "prost 0.12.6",
  "tonic 0.11.0",
  "tonic-build",
- "tonic-reflection",
- "tonic-web",
 ]
 
 [[package]]
@@ -8470,8 +8478,6 @@ dependencies = [
  "tokio-stream",
  "toml 0.8.19",
  "tonic 0.11.0",
- "tonic-reflection",
- "tonic-web",
  "tracing",
  "tracing-subscriber 0.3.18",
 ]
@@ -8494,8 +8500,6 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tonic 0.11.0",
- "tonic-reflection",
- "tonic-web",
 ]
 
 [[package]]
@@ -14138,26 +14142,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tonic-web"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc3b0e1cedbf19fdfb78ef3d672cb9928e0a91a9cb4629cc0c916e8cff8aaaa1"
-dependencies = [
- "base64 0.21.7",
- "bytes 1.7.2",
- "http 0.2.12",
- "http-body 0.4.6",
- "hyper 0.14.30",
- "pin-project 1.1.5",
- "tokio-stream",
- "tonic 0.11.0",
- "tower-http",
- "tower-layer",
- "tower-service",
- "tracing",
-]
-
-[[package]]
 name = "tower"
 version = "0.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14175,24 +14159,6 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
-]
-
-[[package]]
-name = "tower-http"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61c5bb1d698276a2443e5ecfabc1008bf15a36c12e6a7176e7bf089ea9131140"
-dependencies = [
- "bitflags 2.6.0",
- "bytes 1.7.2",
- "futures-core",
- "futures-util",
- "http 0.2.12",
- "http-body 0.4.6",
- "http-range-header",
- "pin-project-lite",
- "tower-layer",
- "tower-service",
 ]
 
 [[package]]
