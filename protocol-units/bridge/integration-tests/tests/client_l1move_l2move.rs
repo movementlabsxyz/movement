@@ -21,10 +21,11 @@ use tracing::info;
 async fn test_movement_client_lock_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	MovementClientFramework::bridge_setup_scripts().await?;
+	//MovementClientFramework::bridge_setup_scripts().await?; TODO: uncomment this
 	let config: Config = Config::suzuka();
 	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
+	info!{"Args Initiator: {:?}", args.initiator};
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 		let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -66,7 +67,6 @@ async fn test_movement_client_lock_transfer(
 		Ok(())
 	}
 	.await;
-
 	test_result
 }
 

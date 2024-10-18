@@ -33,8 +33,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
+use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{debug, error, info};
-
 pub type TestRng = StdRng;
 
 pub trait RngSeededClone: Rng + SeedableRng {
@@ -383,4 +383,37 @@ pub async fn create_local_account(
 	let local_account = LocalAccount::new(account_address, private_key, sequence_number);
 
 	Ok(local_account)
+}
+fn keccak256(input: &str) -> Vec<u8> {
+        let mut hasher = Keccak::v256();
+        let mut output = [0u8; 32];
+        hasher.update(input.as_bytes());
+        hasher.finalize(&mut output);
+        output.to_vec()
+}
+
+pub fn to_eip55(address: &str) -> String {
+        let lowercased_address = address.trim_start_matches("0x").to_lowercase();
+        let hash = keccak256(&lowercased_address);
+
+        lowercased_address
+                .chars()
+                .enumerate()
+                .map(|(i, c)| {
+                        if c.is_digit(10) {
+                                c
+                        } else {
+                                let byte_index = i / 2;
+                                let nibble_index = i % 2;
+                                let hash_byte = hash[byte_index];
+                                let should_uppercase = (hash_byte >> (4 * (1 - nibble_index))) & 0xF >= 8;
+
+                                if should_uppercase {
+                                        c.to_ascii_uppercase()
+                                } else {
+                                        c.to_ascii_lowercase()
+                                }
+                        }
+                })
+                .collect()
 }

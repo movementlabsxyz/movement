@@ -7,6 +7,8 @@ use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
 };
+use alloy_primitives::Address;
+use alloy_primitives::FixedBytes;
 use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
@@ -16,6 +18,7 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
+use hex;
 use rand::prelude::*;
 use std::path::Path;
 use std::str::FromStr;
@@ -241,7 +244,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		Ok(())
 	}
-
+	
 	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
@@ -254,9 +257,14 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			AssetType::Moveth(value) => value,
 			_ => return Err(BridgeContractError::SerializationError),
 		};
-
+		info!("Starting lock function");
+		let initiator_str = String::from_utf8(initiator.0).unwrap();
+		let checksummed_address = utils::to_eip55(&initiator_str);
+		let checksummed_bytes = checksummed_address.as_bytes().to_vec();
+	
+		// Pass the checksummed address to the args
 		let args = vec![
-			utils::serialize_vec(&initiator.0)?,
+			utils::serialize_vec(&checksummed_bytes)?,  // Use checksummed address bytes
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
@@ -270,15 +278,15 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			Vec::new(),
 			args,
 		);
-
+	
 		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
-		.map_err(|_| BridgeContractError::LockTransferError);
-
+		.map_err(|_| BridgeContractError::LockTransferError)?;
+	
 		Ok(())
 	}
 
