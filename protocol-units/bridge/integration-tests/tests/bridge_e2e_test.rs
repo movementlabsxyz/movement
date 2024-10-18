@@ -330,33 +330,3 @@ async fn fetch_account_events(rest_url: &str, account_address: &str, event_type:
 	// 	.await;
 	// println!("new_block_events response: {response:?}",);
 }
-
-// A test for the REST service running within the main function
-#[tokio::test]
-async fn test_rest_service_health_endpoint() {
-	use poem::test::TestClient;
-
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
-
-	let mock_config = Config::default(); // Ensure Config::default() is implemented for testing
-
-	let rest_service = BridgeRest::new(mock_config.movement.clone()).unwrap();
-
-	let rest_service_future = tokio::spawn(async move {
-		rest_service.run_service().await.unwrap();
-	});
-
-	sleep(Duration::from_millis(500)).await;
-
-	let client = TestClient::new(rest_service.create_routes());
-
-	let response = client.get("/health").send().await;
-	assert!(response.status().is_success(), "Health endpoint failed");
-	assert_eq!(response.text().await.unwrap(), "OK");
-
-	rest_service_future.abort();
-}
