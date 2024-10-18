@@ -1,5 +1,4 @@
-# MRC
-- **RFC**: [RFC MCR](https://github.com/movementlabsxyz/rfcs/pulls)
+# MRC - L1 contract
 
 This directory contains the implementation of the MRC settlement smart contract. To test the contract, run:
 
