@@ -2,17 +2,8 @@ syntax = "proto3";
 package movementlabs.protocol_units.bridge.v1beta1;
 
 service Bridge {
-  rpc Health (HealthCheckRequest) returns (HealthCheckResponse) {}
   rpc GetBridgeTransferDetailsInitiator (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
   rpc GetBridgeTransferDetailsCounterparty (GetBridgeTransferDetailsRequest) returns (BridgeTransferDetailsResponse) {}
-}
-
-message HealthCheckRequest {
-  string message = 1;
-}
-
-message HealthCheckResponse {
-  string message = 1;
 }
 
 message GetBridgeTransferDetailsRequest {

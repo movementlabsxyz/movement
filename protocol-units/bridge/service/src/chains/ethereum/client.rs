@@ -37,7 +37,7 @@ impl fmt::Debug for AtomicBridgeInitiator::wethReturn {
 	}
 }
 
-//Configuration for the Ethereum Bridge Client
+/// Configuration for the Ethereum Bridge Client
 #[derive(Clone, Debug)]
 pub struct Config {
 	pub rpc_url: Url,
@@ -239,17 +239,6 @@ impl EthClient {
 /// Implement the gRPC service for the Ethereum Bridge Client
 #[tonic::async_trait]
 impl Bridge for EthClient {
-	async fn health(
-		&self,
-		request: Request<HealthCheckRequest>,
-	) -> Result<Response<HealthCheckResponse>, Status> {
-		let req = request.into_inner();
-		let response = HealthCheckResponse {
-			message: format!("EthClient is healthy. Received: {}", req.message),
-		};
-		Ok(Response::new(response))
-	}
-
 	async fn get_bridge_transfer_details_initiator(
 		&self,
 		_request: Request<GetBridgeTransferDetailsRequest>,

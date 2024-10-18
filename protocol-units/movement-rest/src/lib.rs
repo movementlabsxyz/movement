@@ -1,6 +1,5 @@
-use aptos_api::Context;
-
 use anyhow::Error;
+use aptos_api::Context;
 use futures::prelude::*;
 use poem::listener::TcpListener;
 use poem::{

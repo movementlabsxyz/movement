@@ -1,5 +1,6 @@
 use anyhow::Error;
 use aptos_api::Context;
+use bridge_config::common::movement::MovementConfig;
 use futures::prelude::*;
 use poem::{
 	get, handler, listener::TcpListener, middleware::Tracing, EndpointExt, IntoResponse, Response,
@@ -19,9 +20,9 @@ pub struct BridgeRest {
 impl BridgeRest {
 	pub const BRIDGE_REST_ENV_VAR: &'static str = "BRIDGE_REST_URL";
 
-	pub fn try_from_env() -> Result<Self, Error> {
-		let url = env::var(Self::BRIDGE_REST_ENV_VAR)
-			.unwrap_or_else(|_| "http://0.0.0.0:30832".to_string());
+	pub fn new(conf: MovementConfig) -> Result<Self, anyhow::Error> {
+		let url = format!("http://{}:{}", conf.rest_hostname, conf.rest_port);
+
 		Ok(Self { url, context: None })
 	}
 
