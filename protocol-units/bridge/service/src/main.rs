@@ -1,8 +1,8 @@
 use anyhow::Result;
 use bridge_config::Config;
-use bridge_grpc::bridge_server::BridgeServer;
-use bridge_grpc::health_check_response::ServingStatus;
-use bridge_grpc::health_server::HealthServer;
+use bridge_grpc::{
+	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
+};
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},

@@ -1,11 +1,11 @@
 use bridge_config::Config;
-use bridge_grpc::health_client::HealthClient;
-use bridge_grpc::health_server::HealthServer;
-use bridge_grpc::{health_check_response::ServingStatus, HealthCheckRequest};
+use bridge_grpc::{
+	health_check_response::ServingStatus, health_client::HealthClient, health_server::HealthServer,
+	HealthCheckRequest,
+};
 use bridge_service::grpc::HealthCheckService;
 use std::net::SocketAddr;
-use tonic::transport::Server;
-use tonic::Request;
+use tonic::{transport::Server, Request};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
@@ -37,27 +37,17 @@ async fn test_grpc_health_check() -> Result<(), anyhow::Error> {
 		Ok::<(), tonic::transport::Error>(())
 	});
 
-	// Allow some time for the server to start
 	tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
 
-	// Create the gRPC client to test the health check service
 	let grpc_address =
 		format!("http://{}:{}", mock_config.movement.grpc_hostname, mock_config.movement.grpc_port);
 
-	// Connect to the gRPC server using the HealthClient
 	let mut client = HealthClient::connect(grpc_address).await?;
-
-	// Create a health check request for the overall service (empty string)
 	let request = Request::new(HealthCheckRequest { service: "".to_string() });
-
-	// Call the gRPC health check endpoint and get the response
 	let response = client.check(request).await?.into_inner();
 
-	// Assert that the health status is SERVING
 	assert_eq!(response.status, ServingStatus::Serving as i32);
 
-	// Shutdown the gRPC server
 	grpc_server_handle.abort();
-
 	Ok(())
 }
