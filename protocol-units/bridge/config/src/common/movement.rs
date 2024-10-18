@@ -158,7 +158,7 @@ impl MovementConfig {
 		)
 	}
 
-	pub fn suzuka() -> Self {
+	pub fn suzuka_for_test() -> Self {
 		MovementConfig {
 			movement_signer_key: Ed25519PrivateKey::from_encoded_string(
 				"0x0000000000000000000000000000000000000000000000000000000000000001",

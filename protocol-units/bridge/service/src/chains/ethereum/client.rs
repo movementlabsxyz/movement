@@ -266,24 +266,6 @@ impl EthClient {
 	}
 }
 
-/// Implement the gRPC service for the Ethereum Bridge Client
-#[tonic::async_trait]
-impl Bridge for EthClient {
-	async fn get_bridge_transfer_details_initiator(
-		&self,
-		_request: Request<GetBridgeTransferDetailsRequest>,
-	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
-		todo!()
-	}
-
-	async fn get_bridge_transfer_details_counterparty(
-		&self,
-		_request: Request<GetBridgeTransferDetailsRequest>,
-	) -> Result<Response<BridgeTransferDetailsResponse>, Status> {
-		todo!()
-	}
-}
-
 #[async_trait::async_trait]
 impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 	// `_initiator_address`, or in the contract, `originator` is set
