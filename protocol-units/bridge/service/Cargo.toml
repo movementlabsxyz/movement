@@ -43,6 +43,7 @@ serde_with.workspace = true
 url = { workspace = true, features = ["serde"] }
 tonic = { workspace = true }
 tracing-subscriber = { workspace = true }
+poem = { workspace = true }
 
 aptos-sdk = { workspace = true }
 aptos-api-types = { workspace = true }
