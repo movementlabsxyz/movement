@@ -21,7 +21,7 @@ use tracing::info;
 async fn test_movement_client_lock_transfer(
 ) -> Result<(), anyhow::Error> {
 	let _ = tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).try_init();
-	//MovementClientFramework::bridge_setup_scripts().await?; TODO: uncomment this
+	MovementClientFramework::bridge_setup_scripts().await?;
 	let config: Config = Config::suzuka();
 	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
