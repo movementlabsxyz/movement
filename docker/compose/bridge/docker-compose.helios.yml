@@ -6,6 +6,16 @@ services:
       ETH_RPC_CONNECTION_HOSTNAME: "helios"
       ETH_RPC_CONNECTION_PORT: 26657
 
+  bridge-service:
+    environment:
+      # in case the setup service is not taking
+      ETH_RPC_CONNECTION_PROTOCOL: "http"
+      ETH_RPC_CONNECTION_HOSTNAME: "helios"
+      ETH_RPC_CONNECTION_PORT: 26657
+      MVT_RPC_CONNECTION_PROTOCOL: ${MVT_RPC_CONNECTION_PROTOCOL:?MVT_RPC_CONNECTION_PROTOCOL is not set}
+      MVT_RPC_CONNECTION_HOSTNAME: ${MVT_RPC_CONNECTION_HOSTNAME:?MVT_RPC_CONNECTION_HOSTNAME is not set}
+      MVT_RPC_CONNECTION_PORT: ${MVT_RPC_CONNECTION_PORT:?MVT_RPC_CONNECTION_PORT is not set}
+
   helios:
     image: ghcr.io/movementlabsxyz/helios:${CONTAINER_REV}
     container_name: helios

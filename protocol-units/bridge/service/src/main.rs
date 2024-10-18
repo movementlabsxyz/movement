@@ -29,15 +29,15 @@ async fn main() -> Result<()> {
 	let bridge_config: Config = godfig.try_wait_for_ready().await?;
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
-	let one_stream = EthMonitoring::build(&bridge_config.eth).await.unwrap();
+	let eth_stream = EthMonitoring::build(&bridge_config.eth).await?;
 
-	let one_client = EthClient::new(&bridge_config.eth).await.unwrap();
+	let eth_client = EthClient::new(&bridge_config.eth).await?;
 
-	let two_client = MovementClient::new(&bridge_config.movement).await.unwrap();
+	let movement_client = MovementClient::new(&bridge_config.movement).await?;
 
-	let two_stream = MovementMonitoring::build(&bridge_config.movement).await.unwrap();
+	let movement_stream = MovementMonitoring::build(&bridge_config.movement).await?;
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
-	bridge_service::run_bridge(one_client, one_stream, two_client, two_stream).await?;
+	bridge_service::run_bridge(eth_client, eth_stream, movement_client, movement_stream).await?;
 	Ok(())
 }
