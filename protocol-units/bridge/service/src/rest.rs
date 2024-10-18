@@ -6,7 +6,6 @@ use poem::{
 	get, handler, listener::TcpListener, middleware::Tracing, EndpointExt, IntoResponse, Response,
 	Route, Server,
 };
-use std::env;
 use std::future::Future;
 use std::sync::Arc;
 use tracing::info;
@@ -20,7 +19,7 @@ pub struct BridgeRest {
 impl BridgeRest {
 	pub const BRIDGE_REST_ENV_VAR: &'static str = "BRIDGE_REST_URL";
 
-	pub fn new(conf: MovementConfig) -> Result<Self, anyhow::Error> {
+	pub fn new(conf: &MovementConfig) -> Result<Self, anyhow::Error> {
 		let url = format!("http://{}:{}", conf.rest_hostname, conf.rest_port);
 
 		Ok(Self { url, context: None })

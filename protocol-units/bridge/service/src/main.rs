@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
 	});
 
 	// Create and run the REST service
-	let rest_service = BridgeRest::try_from()?;
+	let rest_service = BridgeRest::new(&bridge_config.movement)?;
 	let rest_service_future = rest_service.run_service();
 	tokio::spawn(rest_service_future);
 
