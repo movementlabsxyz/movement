@@ -10,6 +10,10 @@ processes:
     shutdown:
       command: |
         docker stop suzuka-otlp-collector
+    readiness_probe:
+      initial_delay_seconds: 3
+      exec:
+        command: curl http://localhost:16686/api/traces
   suzuka-full-node:
     depends_on:
       otlp-collector:
