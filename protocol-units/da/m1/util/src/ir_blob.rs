@@ -95,38 +95,38 @@ impl InnerSignedBlobV1 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum InnerBlob {
+pub enum IntermediateBlobRepresentation {
 	SignedV1(InnerSignedBlobV1),
 }
 
-impl From<InnerSignedBlobV1> for InnerBlob {
+impl From<InnerSignedBlobV1> for IntermediateBlobRepresentation {
 	fn from(inner: InnerSignedBlobV1) -> Self {
-		InnerBlob::SignedV1(inner)
+		IntermediateBlobRepresentation::SignedV1(inner)
 	}
 }
 
-impl InnerBlob {
+impl IntermediateBlobRepresentation {
 	pub fn blob(&self) -> &[u8] {
 		match self {
-			InnerBlob::SignedV1(inner) => inner.data.blob.as_slice(),
+			IntermediateBlobRepresentation::SignedV1(inner) => inner.data.blob.as_slice(),
 		}
 	}
 
 	pub fn signature(&self) -> &[u8] {
 		match self {
-			InnerBlob::SignedV1(inner) => inner.signature.as_slice(),
+			IntermediateBlobRepresentation::SignedV1(inner) => inner.signature.as_slice(),
 		}
 	}
 
 	pub fn timestamp(&self) -> u64 {
 		match self {
-			InnerBlob::SignedV1(inner) => inner.data.timestamp,
+			IntermediateBlobRepresentation::SignedV1(inner) => inner.data.timestamp,
 		}
 	}
 
 	pub fn signer(&self) -> &[u8] {
 		match self {
-			InnerBlob::SignedV1(inner) => inner.signer.as_slice(),
+			IntermediateBlobRepresentation::SignedV1(inner) => inner.signer.as_slice(),
 		}
 	}
 
@@ -136,7 +136,7 @@ impl InnerBlob {
 
 	pub fn id(&self) -> &[u8] {
 		match self {
-			InnerBlob::SignedV1(inner) => inner.id.as_slice(),
+			IntermediateBlobRepresentation::SignedV1(inner) => inner.id.as_slice(),
 		}
 	}
 
@@ -149,19 +149,19 @@ impl InnerBlob {
 		FieldBytesSize<C>: ModulusSize,
 	{
 		match self {
-			InnerBlob::SignedV1(inner) => inner.try_verify::<C>(),
+			IntermediateBlobRepresentation::SignedV1(inner) => inner.try_verify::<C>(),
 		}
 	}
 }
 
 pub mod celestia {
 
-	use super::InnerBlob;
+	use super::IntermediateBlobRepresentation;
 	use anyhow::Context;
 	use celestia_types::{nmt::Namespace, Blob as CelestiaBlob};
 	use tracing::info;
 
-	impl TryFrom<CelestiaBlob> for InnerBlob {
+	impl TryFrom<CelestiaBlob> for IntermediateBlobRepresentation {
 		type Error = anyhow::Error;
 
 		// todo: it would be nice to have this be self describing over the compression and serialization format
@@ -178,20 +178,23 @@ pub mod celestia {
 		}
 	}
 
-	pub struct CelestiaInnerBlob(pub InnerBlob, pub Namespace);
+	pub struct CelestiaIntermediateBlobRepresentation(
+		pub IntermediateBlobRepresentation,
+		pub Namespace,
+	);
 
-	/// Tries to form a CelestiaBlob from a CelestiaInnerBlob
-	impl TryFrom<CelestiaInnerBlob> for CelestiaBlob {
+	/// Tries to form a CelestiaBlob from a CelestiaIntermediateBlobRepresentation
+	impl TryFrom<CelestiaIntermediateBlobRepresentation> for CelestiaBlob {
 		type Error = anyhow::Error;
 
-		fn try_from(inner_blob: CelestiaInnerBlob) -> Result<Self, Self::Error> {
-			info!("converting CelestiaInnerBlob to CelestiaBlob");
+		fn try_from(ir_blob: CelestiaIntermediateBlobRepresentation) -> Result<Self, Self::Error> {
+			info!("converting CelestiaIntermediateBlobRepresentation to CelestiaBlob");
 
 			// Extract the inner blob and namespace
-			let CelestiaInnerBlob(inner_blob, namespace) = inner_blob;
+			let CelestiaIntermediateBlobRepresentation(ir_blob, namespace) = ir_blob;
 
 			// Serialize the inner blob with bcs
-			let serialized_blob = bcs::to_bytes(&inner_blob).context("failed to serialize blob")?;
+			let serialized_blob = bcs::to_bytes(&ir_blob).context("failed to serialize blob")?;
 
 			// Compress the serialized data with zstd
 			let compressed_blob = zstd::encode_all(serialized_blob.as_slice(), 0)

@@ -11,7 +11,7 @@ use ecdsa::{
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
-use m1_da_light_node_util::inner_blob::InnerBlob;
+use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::collections::HashSet;
 use tracing::info;
 
@@ -42,7 +42,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<InnerBlob, InnerBlob> for Verifier<C>
+impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation> for Verifier<C>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -50,7 +50,7 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	async fn verify(&self, blob: InnerBlob, _height: u64) -> Result<Verified<InnerBlob>, Error> {
+	async fn verify(&self, blob: IntermediateBlobRepresentation, _height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
 		blob.verify_signature::<C>().map_err(|e| Error::Validation(e.to_string()))?;
 
 		Ok(Verified::new(blob))
@@ -97,7 +97,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<InnerBlob, InnerBlob> for InKnownSignersVerifier<C>
+impl<C> VerifierOperations<IntermediateBlobRepresentation, IntermediateBlobRepresentation> for InKnownSignersVerifier<C>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -105,15 +105,15 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	async fn verify(&self, blob: InnerBlob, height: u64) -> Result<Verified<InnerBlob>, Error> {
-		let inner_blob = self.inner_verifier.verify(blob, height).await?;
+	async fn verify(&self, blob: IntermediateBlobRepresentation, height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+		let ir_blob = self.inner_verifier.verify(blob, height).await?;
 		info!("Verified inner blob");
-		let signer = inner_blob.inner().signer_hex();
+		let signer = ir_blob.inner().signer_hex();
 		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
 			return Err(Error::Validation("signer not in known signers".to_string()));
 		}
 
-		Ok(inner_blob)
+		Ok(ir_blob)
 	}
 }
 
@@ -121,7 +121,7 @@ where
 pub mod tests {
 	/*use ecdsa::SigningKey;
 	use k256::Secp256k1;
-	use m1_da_light_node_util::inner_blob::{InnerSignedBlobV1, InnerSignedBlobV1Data, InnerBlob};
+	use m1_da_light_node_util::ir_blob::{InnerSignedBlobV1, InnerSignedBlobV1Data, IntermediateBlobRepresentation};
 	use std::iter::FromIterator;
 
 	#[tokio::test]
@@ -130,14 +130,14 @@ pub mod tests {
 			// rand_core
 			&mut rand::rngs::OsRng,
 		);
-		let blob : InnerBlob = InnerSignedBlobV1::tr
+		let blob : IntermediateBlobRepresentation = InnerSignedBlobV1::tr
 
-		let inner_blob = create_inner_blob("known_signer");
-		let verified = verifier.verify(inner_blob, 0).await.unwrap();
+		let ir_blob = create_ir_blob("known_signer");
+		let verified = verifier.verify(ir_blob, 0).await.unwrap();
 		assert_eq!(verified.inner().signer_hex(), "known_signer");
 
-		let inner_blob = create_inner_blob("unknown_signer");
-		let verified = verifier.verify(inner_blob, 0).await;
+		let ir_blob = create_ir_blob("unknown_signer");
+		let verified = verifier.verify(ir_blob, 0).await;
 		assert!(verified.is_err());
 	}*/
 }

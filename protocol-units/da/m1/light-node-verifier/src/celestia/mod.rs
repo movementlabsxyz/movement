@@ -1,7 +1,7 @@
 use crate::{Error, Verified, VerifierOperations};
 use celestia_rpc::Client;
 use celestia_types::{nmt::Namespace, Blob};
-use m1_da_light_node_util::inner_blob::InnerBlob;
+use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -19,13 +19,13 @@ impl Verifier {
 }
 
 #[tonic::async_trait]
-impl VerifierOperations<Blob, InnerBlob> for Verifier {
-	/// Verifies a Celestia Blob as a Valid InnerBlob
-	async fn verify(&self, blob: Blob, _height: u64) -> Result<Verified<InnerBlob>, Error> {
-		// Only assert that we can indeed get an InnerBlob from the Blob
-		let inner_blob = InnerBlob::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
+impl VerifierOperations<Blob, IntermediateBlobRepresentation> for Verifier {
+	/// Verifies a Celestia Blob as a Valid IntermediateBlobRepresentation
+	async fn verify(&self, blob: Blob, _height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
+		// Only assert that we can indeed get an IntermediateBlobRepresentation from the Blob
+		let ir_blob = IntermediateBlobRepresentation::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
 
-		Ok(Verified::new(inner_blob))
+		Ok(Verified::new(ir_blob))
 	}
 }
 

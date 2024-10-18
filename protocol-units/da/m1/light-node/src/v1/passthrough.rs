@@ -1,4 +1,4 @@
-use m1_da_light_node_util::inner_blob::InnerBlob;
+use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
@@ -12,7 +12,7 @@ use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_grpc::*;
 use m1_da_light_node_util::{
 	config::Config,
-	inner_blob::{celestia::CelestiaInnerBlob, InnerSignedBlobV1Data},
+	ir_blob::{celestia::CelestiaIntermediateBlobRepresentation, InnerSignedBlobV1Data},
 };
 use m1_da_light_node_verifier::{permissioned_signers::Verifier, VerifierOperations};
 
@@ -42,7 +42,9 @@ where
 	pub config: Config,
 	pub celestia_namespace: Namespace,
 	pub default_client: Arc<Client>,
-	pub verifier: Arc<Box<dyn VerifierOperations<CelestiaBlob, InnerBlob> + Send + Sync>>,
+	pub verifier: Arc<
+		Box<dyn VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> + Send + Sync>,
+	>,
 	pub signing_key: SigningKey<C>,
 }
 
@@ -119,7 +121,8 @@ where
 		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
 
 		// create the celestia blob
-		CelestiaInnerBlob(data.into(), self.celestia_namespace.clone()).try_into()
+		CelestiaIntermediateBlobRepresentation(data.into(), self.celestia_namespace.clone())
+			.try_into()
 	}
 
 	/// Submits a CelestiaBlob to the Celestia node.
@@ -155,10 +158,10 @@ where
 	}
 
 	/// Gets the blobs at a given height.
-	pub async fn get_inner_blobs_at_height(
+	pub async fn get_ir_blobs_at_height(
 		&self,
 		height: u64,
-	) -> Result<Vec<InnerBlob>, anyhow::Error> {
+	) -> Result<Vec<IntermediateBlobRepresentation>, anyhow::Error> {
 		let blobs = self.default_client.blob_get_all(height, &[self.celestia_namespace]).await;
 
 		if let Err(e) = &blobs {
@@ -186,10 +189,10 @@ where
 
 	#[tracing::instrument(target = "movement_timing", level = "debug")]
 	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
-		let inner_blobs = self.get_inner_blobs_at_height(height).await?;
+		let ir_blobs = self.get_ir_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
-		for inner_blob in inner_blobs {
-			let blob = Self::inner_blob_to_blob(inner_blob, height)?;
+		for ir_blob in ir_blobs {
+			let blob = Self::ir_blob_to_blob(ir_blob, height)?;
 			// todo: update logging here
 			blobs.push(blob);
 		}
@@ -277,26 +280,29 @@ where
 			as std::pin::Pin<Box<dyn Stream<Item = Result<Blob, anyhow::Error>> + Send>>)
 	}
 
-	pub fn inner_blob_to_blob(inner_blob: InnerBlob, height: u64) -> Result<Blob, anyhow::Error> {
+	pub fn ir_blob_to_blob(
+		ir_blob: IntermediateBlobRepresentation,
+		height: u64,
+	) -> Result<Blob, anyhow::Error> {
 		Ok(Blob {
-			data: inner_blob.blob().to_vec(),
-			signature: inner_blob.signature().to_vec(),
-			timestamp: inner_blob.timestamp(),
-			signer: inner_blob.signer().to_vec(),
-			blob_id: inner_blob.id().to_vec(),
+			data: ir_blob.blob().to_vec(),
+			signature: ir_blob.signature().to_vec(),
+			timestamp: ir_blob.timestamp(),
+			signer: ir_blob.signer().to_vec(),
+			blob_id: ir_blob.id().to_vec(),
 			height,
 		})
 	}
 
 	pub fn celestia_blob_to_blob(blob: CelestiaBlob, height: u64) -> Result<Blob, anyhow::Error> {
-		let inner_blob: InnerBlob = blob.try_into()?;
+		let ir_blob: IntermediateBlobRepresentation = blob.try_into()?;
 
 		Ok(Blob {
-			data: inner_blob.blob().to_vec(),
-			signature: inner_blob.signature().to_vec(),
-			timestamp: inner_blob.timestamp(),
-			signer: inner_blob.signer().to_vec(),
-			blob_id: inner_blob.id().to_vec(),
+			data: ir_blob.blob().to_vec(),
+			signature: ir_blob.signature().to_vec(),
+			timestamp: ir_blob.timestamp(),
+			signer: ir_blob.signer().to_vec(),
+			blob_id: ir_blob.id().to_vec(),
 			height,
 		})
 	}

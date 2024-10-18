@@ -17,7 +17,7 @@ use ecdsa::{
 	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
 	SignatureSize,
 };
-use m1_da_light_node_util::inner_blob::InnerBlob;
+use m1_da_light_node_util::ir_blob::IntermediateBlobRepresentation;
 use std::sync::Arc;
 
 /// A verifier of Celestia blobs for permissioned signers
@@ -61,7 +61,7 @@ where
 }
 
 #[tonic::async_trait]
-impl<C> VerifierOperations<CelestiaBlob, InnerBlob> for Verifier<C>
+impl<C> VerifierOperations<CelestiaBlob, IntermediateBlobRepresentation> for Verifier<C>
 where
 	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
 	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
@@ -69,7 +69,7 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	async fn verify(&self, blob: CelestiaBlob, height: u64) -> Result<Verified<InnerBlob>, Error> {
+	async fn verify(&self, blob: CelestiaBlob, height: u64) -> Result<Verified<IntermediateBlobRepresentation>, Error> {
 		let verified_blob = self.celestia.verify(blob, height).await?;
 		self.known_signers.verify(verified_blob.into_inner(), height).await
 	}
