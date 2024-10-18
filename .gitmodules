@@ -46,6 +46,9 @@
 [submodule "protocol-units/settlement/mcr/contracts/lib/safe-smart-account"]
 	path = protocol-units/settlement/mcr/contracts/lib/safe-smart-account
 	url = https://github.com/safe-global/safe-smart-account
+[submodule "protocol-units/settlement/mcr/contracts/lib/solmate"]
+	path = protocol-units/settlement/mcr/contracts/lib/solmate
+	url = https://github.com/transmissions11/solmate
 [submodule "bridge-forge-std"]
 	path = protocol-units/bridge/contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
@@ -64,3 +67,6 @@
 [submodule "dispute-murky"]
 	path = protocol-units/dispute/lib/murky
 	url = https://github.com/dmfxyz/murky
+[submodule "protocol-units/tokens/mock/testnet/holesky/lib/openzeppelin-contracts"]
+	path = protocol-units/tokens/mock/testnet/holesky/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

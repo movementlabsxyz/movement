@@ -12,7 +12,6 @@ rust-version = { workspace = true }
 [dependencies]
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
-tonic-web = { workspace = true }
 prost = { workspace = true }
 
 [build-dependencies]
