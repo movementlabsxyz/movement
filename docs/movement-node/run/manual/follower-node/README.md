@@ -22,7 +22,7 @@ This should install all dependencies needed to work on the Movement Follower Nod
 
 You can now either run the follower node natively or with our containers via the provided `just` commands.
 
-First create, an environment file for the follower node. The example below is for the Movement Testnet. Comments are made on how to change the environment file for other networks.
+First, create an environment file for the follower node. The example below is for the Movement Testnet. Comments are made on how to change the environment file for other networks.
 
 ```bash
 CONTAINER_REV=<latest-commit-hash>
