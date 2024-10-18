@@ -15,6 +15,7 @@ use aptos_types::{
 	transaction::{Transaction, Version},
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
+use futures::channel::mpsc as futures_mpsc;
 use movement_types::block::{BlockCommitment, Commitment, Id};
 use tracing::{debug, info, warn};
 
@@ -219,11 +220,12 @@ impl Executor {
 mod tests {
 	use super::*;
 	use crate::Service;
-	use aptos_api::accept_type::AcceptType;
+	use aptos_api::{accept_type::AcceptType, Context};
 	use aptos_crypto::{
 		ed25519::{Ed25519PrivateKey, Ed25519Signature},
 		HashValue, PrivateKey, Uniform,
 	};
+	use aptos_mempool::MempoolClientRequest;
 	use aptos_sdk::{
 		transaction_builder::TransactionFactory,
 		types::{AccountKey, LocalAccount},
@@ -239,7 +241,10 @@ mod tests {
 		transaction::signature_verified_transaction::{
 			into_signature_verified_block, SignatureVerifiedTransaction,
 		},
-		transaction::{RawTransaction, Script, SignedTransaction, Transaction, TransactionPayload},
+		transaction::{
+			RawTransaction, Script, SignedTransaction, Transaction, TransactionInfo,
+			TransactionPayload,
+		},
 	};
 	use rand::SeedableRng;
 	use tokio::sync::mpsc;
@@ -258,6 +263,24 @@ mod tests {
 			chain_id, // This is the value used in aptos testing code.
 		);
 		SignedTransaction::new(raw_transaction, public_key, Ed25519Signature::dummy_signature())
+	}
+
+	fn create_signed_transaction_for_account(
+		account: &LocalAccount,
+		sequence_number: u64,
+		chain_id: ChainId,
+	) -> SignedTransaction {
+		let transaction_payload = TransactionPayload::Script(Script::new(vec![0], vec![], vec![]));
+		let raw_transaction = RawTransaction::new(
+			account.address(),
+			sequence_number,
+			transaction_payload,
+			0,
+			0,
+			0,
+			chain_id, // This is the value used in aptos testing code.
+		);
+		account.sign_transaction(raw_transaction)
 	}
 
 	#[tokio::test]
@@ -471,6 +494,84 @@ mod tests {
 					.transactions
 					.get_transaction_by_hash_inner(&AcceptType::Bcs, hash.into())
 					.await?;
+			}
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_execute_block_gas_fees_for_too_new_transaction() -> Result<(), anyhow::Error> {
+		// Create an executor instance from the environment configuration.
+		let private_key = Ed25519PrivateKey::generate_for_testing();
+		let (tx_sender, _tx_receiver) = mpsc::channel(16);
+		let (executor, _config, _tempdir) = Executor::try_test_default(private_key)?;
+		let (context, _transaction_pipe) = executor.background(tx_sender)?;
+		let service = Service::new(&context);
+		executor.rollover_genesis_now().await?;
+
+		// Initialize a root account using a predefined keypair and the test root address.
+		let root_account = LocalAccount::new(
+			aptos_test_root_address(),
+			AccountKey::from_private_key(context.config().chain.maptos_private_key.clone()),
+			0,
+		);
+
+		// create a valid signed transaction for the account
+		let signed_transaction = create_signed_transaction_for_account(
+			&root_account,
+			0,
+			context.config().chain.maptos_chain_id.clone(),
+		);
+
+		// Add the transaction to the block
+		let block_id = HashValue::random();
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			0,
+			0,
+			executor.signer.author(),
+			vec![],
+			vec![],
+			chrono::Utc::now().timestamp_micros() as u64,
+		));
+
+		let transaction_hash = signed_transaction.committed_hash();
+		let txs = ExecutableTransactions::Unsharded(vec![
+			SignatureVerifiedTransaction::Valid(block_metadata),
+			SignatureVerifiedTransaction::Valid(Transaction::UserTransaction(signed_transaction)),
+		]);
+
+		let block = ExecutableBlock::new(block_id.clone(), txs);
+		executor.execute_block(block).await?;
+
+		// Check the gas fees for the transaction
+		let db_reader = context.db_reader();
+		let latest_version = db_reader.get_synced_version()?;
+
+		// create tokio mpsc channel for the mempool
+		let (mempool_client_sender, _mempool_client_receiver) =
+			futures_mpsc::channel::<MempoolClientRequest>(10);
+		let context = Context::new(
+			// chain id
+			context.config().chain.maptos_chain_id.clone(),
+			db_reader,
+			mempool_client_sender,
+			executor.node_config().clone(),
+			None,
+		);
+
+		info!("Latest version is: {}", latest_version);
+		let transaction_result =
+			context.get_transaction_by_hash(transaction_hash, latest_version)?;
+		match transaction_result {
+			Some(transaction) => match transaction.info {
+				TransactionInfo::V0(info) => {
+					assert!(info.gas_used() > 0);
+				}
+			},
+			None => {
+				panic!("Transaction not found in the database");
 			}
 		}
 
