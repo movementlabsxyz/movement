@@ -2,7 +2,7 @@ use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::fmt::{self, Debug, Formatter};
 use std::sync::Arc;
 use tokio_stream::{Stream, StreamExt};
-use tracing::debug;
+use tracing::{error, info};
 
 use celestia_rpc::{BlobClient, Client, HeaderClient};
 use celestia_types::{blob::GasPrice, nmt::Namespace, Blob as CelestiaBlob};
@@ -112,8 +112,8 @@ where
 {
 	/// Creates a new signed blob instance with the provided data.
 	pub fn create_new_celestia_blob(&self, data: Vec<u8>) -> Result<CelestiaBlob, anyhow::Error> {
-		// mark the timestamp as now
-		let timestamp = chrono::Utc::now().timestamp() as u64;
+		// mark the timestamp as now in milliseconds
+		let timestamp = chrono::Utc::now().timestamp_micros() as u64;
 
 		// sign the blob data and the timestamp
 		let data = InnerSignedBlobV1Data::new(data, timestamp).try_to_sign(&self.signing_key)?;
@@ -162,7 +162,7 @@ where
 		let blobs = self.default_client.blob_get_all(height, &[self.celestia_namespace]).await;
 
 		if let Err(e) = &blobs {
-			debug!("Error getting blobs: {:?}", e);
+			error!("Error getting blobs: {:?}", e);
 		}
 
 		let blobs = blobs.unwrap_or_default();
@@ -171,10 +171,12 @@ where
 		for blob in blobs {
 			match self.verifier.verify(blob, height).await {
 				Ok(verified_blob) => {
-					verified_blobs.push(verified_blob.into_inner());
+					let blob = verified_blob.into_inner();
+					info!("Verified blob at height: {} {:?}", height, blob.id());
+					verified_blobs.push(blob);
 				}
 				Err(e) => {
-					debug!("Failed to verify blob: {:?}", e);
+					error!("Failed to verify blob: {:?}", e,);
 				}
 			}
 		}
@@ -244,7 +246,7 @@ where
 				let header = header_res?;
 				let height = header.height().into();
 
-				debug!("Stream got header: {:?}", header.height());
+				info!("Stream got header: {:?}", header.height());
 
 				// back fetch the blobs
 				if first_flag && (height > start_height) {
@@ -253,7 +255,7 @@ where
 
 					while let Some(blob) = blob_stream.next().await {
 
-						debug!("Stream got blob: {:?}", blob);
+						info!("Stream got blob: {:?}", blob);
 
 						yield blob?;
 					}
@@ -264,7 +266,7 @@ where
 				let blobs = me.get_blobs_at_height(height).await?;
 				for blob in blobs {
 
-					debug!("Stream got blob: {:?}", blob);
+					info!("Stream got blob: {:?}", blob);
 
 					yield blob;
 				}

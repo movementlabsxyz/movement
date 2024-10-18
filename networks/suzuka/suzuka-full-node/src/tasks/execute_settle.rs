@@ -116,6 +116,7 @@ where
 		info!(
 			block_id = %hex::encode(block_id.clone()),
 			da_height = da_height,
+			time = block_timestamp,
 			"Processing block from DA"
 		);
 
@@ -130,13 +131,7 @@ where
 			anyhow::bail!("Invalid DA height: {:?}", da_height);
 		}
 
-		// decompress the block bytes
-		let block = tokio::task::spawn_blocking(move || {
-			let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
-			let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
-			Ok::<Block, anyhow::Error>(block)
-		})
-		.await??;
+		let block: Block = bcs::from_bytes(&block_bytes[..])?;
 
 		// get the transactions
 		let transactions_count = block.transactions().len();

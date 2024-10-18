@@ -156,9 +156,10 @@ impl InnerBlob {
 
 pub mod celestia {
 
-	use celestia_types::{nmt::Namespace, Blob as CelestiaBlob};
-
 	use super::InnerBlob;
+	use anyhow::Context;
+	use celestia_types::{nmt::Namespace, Blob as CelestiaBlob};
+	use tracing::info;
 
 	impl TryFrom<CelestiaBlob> for InnerBlob {
 		type Error = anyhow::Error;
@@ -166,11 +167,12 @@ pub mod celestia {
 		// todo: it would be nice to have this be self describing over the compression and serialization format
 		fn try_from(blob: CelestiaBlob) -> Result<Self, Self::Error> {
 			// decompress blob.data with zstd
-			let decompressed = zstd::decode_all(blob.data.as_slice())?;
+			let decompressed =
+				zstd::decode_all(blob.data.as_slice()).context("failed to decompress blob")?;
 
-			// deserialize the decompressed with bcs
-			// todo: because this is a simple data structure, bcs might not be the best format
-			let blob = bcs::from_bytes(decompressed.as_slice())?;
+			// deserialize the decompressed data with bcs
+			let blob =
+				bcs::from_bytes(decompressed.as_slice()).context("failed to deserialize blob")?;
 
 			Ok(blob)
 		}
@@ -178,18 +180,22 @@ pub mod celestia {
 
 	pub struct CelestiaInnerBlob(pub InnerBlob, pub Namespace);
 
+	/// Tries to form a CelestiaBlob from a CelestiaInnerBlob
 	impl TryFrom<CelestiaInnerBlob> for CelestiaBlob {
 		type Error = anyhow::Error;
 
 		fn try_from(inner_blob: CelestiaInnerBlob) -> Result<Self, Self::Error> {
+			info!("converting CelestiaInnerBlob to CelestiaBlob");
+
 			// Extract the inner blob and namespace
 			let CelestiaInnerBlob(inner_blob, namespace) = inner_blob;
 
 			// Serialize the inner blob with bcs
-			let serialized_blob = bcs::to_bytes(&inner_blob)?;
+			let serialized_blob = bcs::to_bytes(&inner_blob).context("failed to serialize blob")?;
 
 			// Compress the serialized data with zstd
-			let compressed_blob = zstd::encode_all(serialized_blob.as_slice(), 0)?;
+			let compressed_blob = zstd::encode_all(serialized_blob.as_slice(), 0)
+				.context("failed to compress blob")?;
 
 			// Construct the final CelestiaBlob by assigning the compressed data
 			// and associating it with the provided namespace

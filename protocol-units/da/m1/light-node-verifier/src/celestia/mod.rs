@@ -1,14 +1,14 @@
 use crate::{Error, Verified, VerifierOperations};
 use celestia_rpc::Client;
-#[cfg(feature = "pessimistic")]
-use celestia_rpc::{BlobClient, HeaderClient};
 use celestia_types::{nmt::Namespace, Blob};
 use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Verifier {
+	/// The Celestia RPC client
 	pub client: Arc<Client>,
+	/// The namespace of the Celestia Blob
 	pub namespace: Namespace,
 }
 
@@ -22,9 +22,42 @@ impl Verifier {
 impl VerifierOperations<Blob, InnerBlob> for Verifier {
 	/// Verifies a Celestia Blob as a Valid InnerBlob
 	async fn verify(&self, blob: Blob, _height: u64) -> Result<Verified<InnerBlob>, Error> {
-		//@l-monninger: the light node itself does most of the work of verify blobs. The verification under the feature flag below is useful in zero-trust environments.
-		#[cfg(feature = "pessimistic")]
-		{
+		// Only assert that we can indeed get an InnerBlob from the Blob
+		let inner_blob = InnerBlob::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
+
+		Ok(Verified::new(inner_blob))
+	}
+}
+
+pub mod pessimistic {
+
+	use crate::{Error, Verified, VerifierOperations};
+	use celestia_rpc::Client;
+	use celestia_rpc::{BlobClient, HeaderClient};
+	use celestia_types::{nmt::Namespace, Blob};
+	use m1_da_light_node_util::inner_blob::InnerBlob;
+	use std::sync::Arc;
+
+	#[derive(Clone)]
+	pub struct Verifier {
+		/// The Celestia RPC client
+		pub client: Arc<Client>,
+		/// The namespace of the Celestia Blob
+		pub namespace: Namespace,
+	}
+
+	impl Verifier {
+		pub fn new(client: Arc<Client>, namespace: Namespace) -> Self {
+			Self { client, namespace }
+		}
+	}
+
+	#[tonic::async_trait]
+	impl VerifierOperations<Blob, InnerBlob> for Verifier {
+		/// Verifies a Celestia Blob as a Valid InnerBlob
+		async fn verify(&self, blob: Blob, height: u64) -> Result<Verified<InnerBlob>, Error> {
+			//@l-monninger: the light node itself does most of the work of verify blobs. The verification under the feature flag below is useful in zero-trust environments.
+
 			blob.validate().map_err(|e| Error::Validation(e.to_string()))?;
 
 			// wait for the header to be at the correct height
@@ -60,11 +93,12 @@ impl VerifierOperations<Blob, InnerBlob> for Verifier {
 						Error::Validation("failed to verify complete namespace".to_string())
 					})?;
 			}
+
+			let inner_blob =
+				InnerBlob::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
+
+			Ok(Verified::new(inner_blob))
 		}
-
-		let inner_blob = InnerBlob::try_from(blob).map_err(|e| Error::Internal(e.to_string()))?;
-
-		Ok(Verified::new(inner_blob))
 	}
 }
 

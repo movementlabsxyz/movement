@@ -18,9 +18,9 @@ use ecdsa::{
 	SignatureSize,
 };
 use m1_da_light_node_util::inner_blob::InnerBlob;
-use std::collections::HashSet;
 use std::sync::Arc;
 
+/// A verifier of Celestia blobs for permissioned signers
 #[derive(Clone)]
 pub struct Verifier<C>
 where
@@ -30,7 +30,9 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
+	/// The Celestia veifier
 	pub celestia: CelestiaVerifier,
+	/// The verifier for known signers
 	pub known_signers: InKnownSignersVerifier<C>,
 }
 
@@ -42,11 +44,15 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	pub fn new(
+	pub fn new<T>(
 		celestia_client: Arc<Client>,
 		celestia_namespace: Namespace,
-		known_signers_sec1_bytes: HashSet<String>,
-	) -> Self {
+		known_signers_sec1_bytes: T,
+	) -> Self
+	where
+		T: IntoIterator,
+		T::Item: Into<String>,
+	{
 		Self {
 			celestia: CelestiaVerifier::new(celestia_client, celestia_namespace),
 			known_signers: InKnownSignersVerifier::new(known_signers_sec1_bytes),

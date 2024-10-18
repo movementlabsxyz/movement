@@ -43,6 +43,7 @@ zstd = { workspace = true }
 bcs = { workspace = true }
 ecdsa = { workspace = true, features = [ "signing", "verifying", "der"] }
 k256 = { workspace = true }
+# rand usage conflicts with Aptos. Aptos is on 0.7; ecdsa is on 0.8.
 rand = { version = "0.8.5" }
 
 [dev-dependencies]

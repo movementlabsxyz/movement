@@ -8544,10 +8544,12 @@ dependencies = [
  "dot-movement",
  "ecdsa 0.16.9",
  "hex",
+ "k256",
  "m1-da-light-node-grpc",
  "m1-da-light-node-setup",
  "m1-da-light-node-util",
  "prost 0.12.6",
+ "rand 0.7.3",
  "serde_json",
  "thiserror",
  "tokio",
@@ -8555,6 +8557,7 @@ dependencies = [
  "tonic 0.11.0",
  "tonic-reflection",
  "tonic-web",
+ "tracing",
 ]
 
 [[package]]

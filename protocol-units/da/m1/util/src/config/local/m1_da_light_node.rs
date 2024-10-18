@@ -12,8 +12,8 @@ use std::collections::HashSet;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DaSigners {
-	pub da_signing_private_key_hex: String,
-	pub da_signers_public_keys_hex: HashSet<String>,
+	pub private_key_hex: String,
+	pub public_keys_hex: HashSet<String>,
 }
 
 /// The default da signing private key
@@ -28,17 +28,19 @@ pub fn default_da_signing_private_key() -> SigningKey<Secp256k1> {
 				hex_bytes.as_slice().try_into().expect("Slice with incorrect length");
 			SigningKey::from_bytes(signing_key_bytes.into()).unwrap()
 		}
-		Err(_) => SigningKey::random(
+		Err(std::env::VarError::NotPresent) => SigningKey::random(
 			// rand_core
 			&mut rand::rngs::OsRng,
 		),
+		Err(_) => panic!("Invalid DA_SIGNING_PRIVATE_KEY"),
 	}
 }
 
 pub fn default_da_signers_sec1_keys() -> HashSet<String> {
 	match std::env::var("DA_SIGNERS_SEC1_KEYS") {
 		Ok(val) => val.split(',').map(|s| s.to_string()).collect(),
-		Err(_) => HashSet::new(),
+		Err(std::env::VarError::NotPresent) => HashSet::new(),
+		Err(_) => panic!("Invalid DA_SIGNERS_SEC1_KEYS"),
 	}
 }
 
@@ -55,8 +57,8 @@ pub fn default_da_signers() -> DaSigners {
 	trusted_signers.extend(additional_signers);
 
 	DaSigners {
-		da_signing_private_key_hex: hex::encode(da_signer.to_bytes().as_slice()),
-		da_signers_public_keys_hex: trusted_signers,
+		private_key_hex: hex::encode(da_signer.to_bytes().as_slice()),
+		public_keys_hex: trusted_signers,
 	}
 }
 

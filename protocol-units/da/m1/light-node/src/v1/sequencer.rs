@@ -1,3 +1,4 @@
+use block::WrappedBlock;
 use ecdsa::{
 	elliptic_curve::{
 		generic_array::ArrayLength,
@@ -160,12 +161,16 @@ where
 
 		// wrap the blocks in a struct that can be split and compressed
 		// spawn blocking because the compression is blocking and could be slow
-		let namespace = self.pass_through.celestia_namespace.clone();
+		let pass_through = self.pass_through.clone();
 		let blocks = tokio::task::spawn_blocking(move || {
-			blocks
-				.into_iter()
-				.map(|block| block::WrappedBlock::try_new(block, namespace))
-				.collect::<Result<Vec<_>, anyhow::Error>>()
+			let mut wrapped_blocks = Vec::new();
+			for block in blocks {
+				let block_bytes = bcs::to_bytes(&block)?;
+				let celestia_blob = pass_through.create_new_celestia_blob(block_bytes)?;
+				let wrapped_block = block::WrappedBlock::new(block, celestia_blob);
+				wrapped_blocks.push(wrapped_block);
+			}
+			Ok::<Vec<WrappedBlock>, anyhow::Error>(wrapped_blocks)
 		})
 		.await??;
 
@@ -472,12 +477,13 @@ where
 	}
 }
 
-mod block {
+pub mod block {
 
 	use celestia_types::{nmt::Namespace, Blob};
 	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
 	use movement_types::block::Block;
 
+	/// A wrapped block that can be used with the binpacking heuristic
 	#[derive(Debug)]
 	pub struct WrappedBlock {
 		pub block: Block,
@@ -485,6 +491,12 @@ mod block {
 	}
 
 	impl WrappedBlock {
+		/// Create a new wrapped block from a blob and block
+		pub fn new(block: Block, blob: Blob) -> Self {
+			Self { block, blob }
+		}
+
+		/// Create a new wrapped block from a block and a namespace
 		pub fn try_new(block: Block, namespace: Namespace) -> Result<Self, anyhow::Error> {
 			// first serialize the block
 			let block_bytes = bcs::to_bytes(&block)?;

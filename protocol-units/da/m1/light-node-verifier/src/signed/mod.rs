@@ -13,7 +13,9 @@ use ecdsa::{
 };
 use m1_da_light_node_util::inner_blob::InnerBlob;
 use std::collections::HashSet;
+use tracing::info;
 
+/// A verifier that checks the signature of the inner blob.
 #[derive(Clone)]
 pub struct Verifier<C>
 where
@@ -79,8 +81,18 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
-	pub fn new(known_signers_sec1_bytes_hex: HashSet<String>) -> Self {
-		Self { inner_verifier: Verifier::new(), known_signers_sec1_bytes_hex }
+	pub fn new<T>(known_signers_sec1_bytes_hex: T) -> Self
+	where
+		T: IntoIterator,
+		T::Item: Into<String>,
+	{
+		Self {
+			inner_verifier: Verifier::new(),
+			known_signers_sec1_bytes_hex: known_signers_sec1_bytes_hex
+				.into_iter()
+				.map(Into::into)
+				.collect(),
+		}
 	}
 }
 
@@ -95,7 +107,7 @@ where
 {
 	async fn verify(&self, blob: InnerBlob, height: u64) -> Result<Verified<InnerBlob>, Error> {
 		let inner_blob = self.inner_verifier.verify(blob, height).await?;
-
+		info!("Verified inner blob");
 		let signer = inner_blob.inner().signer_hex();
 		if !self.known_signers_sec1_bytes_hex.contains(&signer) {
 			return Err(Error::Validation("signer not in known signers".to_string()));
@@ -103,4 +115,29 @@ where
 
 		Ok(inner_blob)
 	}
+}
+
+#[cfg(test)]
+pub mod tests {
+	/*use ecdsa::SigningKey;
+	use k256::Secp256k1;
+	use m1_da_light_node_util::inner_blob::{InnerSignedBlobV1, InnerSignedBlobV1Data, InnerBlob};
+	use std::iter::FromIterator;
+
+	#[tokio::test]
+	async fn test_in_known_signers_verifier() {
+		let signing_key = SigningKey::<Secp256k1>::random(
+			// rand_core
+			&mut rand::rngs::OsRng,
+		);
+		let blob : InnerBlob = InnerSignedBlobV1::tr
+
+		let inner_blob = create_inner_blob("known_signer");
+		let verified = verifier.verify(inner_blob, 0).await.unwrap();
+		assert_eq!(verified.inner().signer_hex(), "known_signer");
+
+		let inner_blob = create_inner_blob("unknown_signer");
+		let verified = verifier.verify(inner_blob, 0).await;
+		assert!(verified.is_err());
+	}*/
 }
