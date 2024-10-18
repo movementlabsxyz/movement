@@ -1,42 +1,39 @@
-#![allow(dead_code)]
-use alloy::node_bindings::AnvilInstance;
-use alloy::primitives::Address;
-use alloy::primitives::FixedBytes;
-use alloy::primitives::{keccak256, U256};
-use alloy::providers::ProviderBuilder;
-use alloy::signers::local::PrivateKeySigner;
-use alloy_network::EthereumWallet;
-use aptos_sdk::rest_client::aptos_api_types::Transaction as AptosTransaction;
-use aptos_sdk::rest_client::{Client, FaucetClient};
-use aptos_sdk::types::account_address::AccountAddress;
-use aptos_sdk::types::LocalAccount;
-use bridge_config::Config;
-use bridge_service::chains::bridge_contracts::BridgeContractError;
-use bridge_service::chains::ethereum::types::AlloyProvider;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
-use bridge_service::chains::ethereum::types::CounterpartyContract;
-use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::ethereum::utils::send_transaction;
-use bridge_service::chains::ethereum::utils::send_transaction_rules;
-use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
-use bridge_service::chains::movement::utils::MovementAddress;
-use bridge_service::chains::movement::utils::{self as movement_utils, MovementAddress};
-use bridge_service::chains::movement::{
-	client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash,
+use alloy::{
+	node_bindings::AnvilInstance,
+	primitives::{keccak256, Address, FixedBytes, U256},
+	providers::ProviderBuilder,
+	signers::local::PrivateKeySigner,
 };
-use bridge_service::chains::movement::{client::MovementClient, utils::MovementHash};
-use bridge_service::types::Amount;
-use bridge_service::types::BridgeTransferId;
-use bridge_service::types::HashLock;
-use bridge_service::types::HashLockPreImage;
-use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
+use alloy_network::EthereumWallet;
+use aptos_sdk::{
+	rest_client::{aptos_api_types::Transaction as AptosTransaction, Client, FaucetClient},
+	types::{account_address::AccountAddress, LocalAccount},
+};
+use bridge_config::Config;
+use bridge_service::{
+	chains::{
+		bridge_contracts::{BridgeContractError, BridgeContractResult},
+		ethereum::{
+			client::EthClient,
+			types::{
+				AlloyProvider, AtomicBridgeInitiator, CounterpartyContract, EthAddress, EthHash,
+			},
+			utils::{send_transaction, send_transaction_rules},
+		},
+		movement::{
+			client::{MovementClient, MovementClientFramework},
+			utils::{self as movement_utils, MovementAddress, MovementHash},
+		},
+	},
+	types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage},
+};
 use godfig::{backend::config_file::ConfigFile, Godfig};
-use rand::distributions::Alphanumeric;
-use rand::SeedableRng;
-use rand::{thread_rng, Rng};
-use std::convert::TryInto;
-use std::str::FromStr;
-use std::sync::{Arc, RwLock};
+use rand::{distributions::Alphanumeric, thread_rng, Rng, SeedableRng};
+use std::{
+	convert::TryInto,
+	str::FromStr,
+	sync::{Arc, RwLock},
+};
 use url::Url;
 
 pub mod utils;
