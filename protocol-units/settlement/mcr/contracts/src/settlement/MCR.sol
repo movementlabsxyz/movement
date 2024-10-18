@@ -149,13 +149,37 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, allCurrentEpochStake);
 
+    }
+
+    /// @notice The current leader can attest to a block height, given there is a supermajority of stake on the block
+    function attestBlocks(address attester) public {
+        // check if the address is the current leader
+        if (attester != getCurrentLeader()) revert("NotLeader");
+
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
         // we can commit to blocks out to the tolerance point
         // then we can accept them in order
-        // ! however, this does potentially become very costly for whomever submits this last block
-        // ! rewards need to be managed accordingly
+        // ! rewards need to be 
+        // ! - at least proportional to attested blocks to account for consumed gas
+        // ! - reward the leader well to incentivize frequent block attestation (close to comitted block frequency)
+        //     rather than incentivizing the leader to batch attesting blocks
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
+    }
+
+    function getCurrentLeader() public view returns (address) {
+        // TODO replace the following with a configurable value
+        // the leader remains the same for leaderterm L1-blocks
+        uint256 leaderTerm = 100;
+
+        uint256 currentL1BlockHeight = block.number;
+        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % leaderTerm ;
+        bytes32 blockHash = blockhash(relevantL1BlockHeight);
+
+        address[] memory attesters = getAttesters();
+        // map the blockhash to the attesters
+        uint256 leaderIndex = uint256(blockHash) % attesters.length;
+        return attesters[leaderIndex];        
     }
 
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
@@ -166,6 +190,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
         while (getCurrentEpoch() < blockEpoch) {
+            // TODO: we should check the implication of this for the leader. But it also may be an issue for any attester. 
             rollOverEpoch();
         }
 
