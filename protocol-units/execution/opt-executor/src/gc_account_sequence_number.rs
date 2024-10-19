@@ -75,10 +75,12 @@ impl UsedSequenceNumberPool {
 		let gc_slot = current_time_ms / self.gc_slot_duration_ms;
 
 		// remove all slots that are too old
+		let slot_cutoff = gc_slot - self.sequence_number_ttl_ms / self.gc_slot_duration_ms;
 		let slots_to_remove: Vec<u64> = self
 			.sequence_number_lifetimes
-			.range(..gc_slot - self.sequence_number_ttl_ms / self.gc_slot_duration_ms)
-			.map(|(slot, _)| *slot)
+			.keys()
+			.take_while(|slot| *slot < slot_cutoff)
+			.cloned()
 			.collect();
 		for slot in slots_to_remove {
 			println!(
