@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "protocol-units/bridge/config",
     "protocol-units/bridge/setup",
+    "protocol-units/bridge/grpc",
     "protocol-units/execution/dof",
     "protocol-units/execution/opt-executor",
     "protocol-units/execution/fin-view",
@@ -100,6 +101,7 @@ godfig = { path = "util/godfig" }
 movement-tracing = { path = "util/tracing" }
 syncup = { path = "protocol-units/syncing/syncup" }
 syncador = { path = "util/syncador" }
+bridge-grpc = { path = "protocol-units/bridge/grpc" }
 
 # Serialization and Deserialization
 borsh = { version = "0.10" } # todo: internalize jmt and bump

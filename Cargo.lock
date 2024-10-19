@@ -4095,6 +4095,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-grpc"
+version = "0.0.2"
+dependencies = [
+ "buildtime",
+ "prost 0.12.6",
+ "tonic 0.11.0",
+ "tonic-build",
+ "tonic-reflection",
+]
+
+[[package]]
 name = "bridge-integration-tests"
 version = "0.0.2"
 dependencies = [
@@ -4143,6 +4154,7 @@ dependencies = [
  "async-trait",
  "bcs 0.1.4",
  "bridge-config",
+ "bridge-grpc",
  "delegate",
  "derive-new",
  "derive_more 0.99.18",
@@ -4154,6 +4166,7 @@ dependencies = [
  "hex",
  "keccak-hash",
  "mcr-settlement-client",
+ "poem",
  "rand 0.7.3",
  "rand_chacha 0.2.2",
  "reqwest 0.12.8",
@@ -4163,6 +4176,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
+ "tonic 0.11.0",
  "tracing",
  "tracing-subscriber 0.3.18",
  "url",
