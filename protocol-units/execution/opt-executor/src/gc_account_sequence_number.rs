@@ -25,7 +25,7 @@ impl UsedSequenceNumberPool {
 	/// Gets a sequence number for an account
 	pub(crate) fn get_sequence_number(&self, account: &AccountAddress) -> Option<u64> {
 		// check each slot for the account
-		for (_slot, lifetimes) in self.sequence_number_lifetimes.iter().rev() {
+		for lifetimes in self.sequence_number_lifetimes.values().rev() {
 			// reverse order is better average case because highly-used sequence numbers will be moved up more often
 			match lifetimes.get(account) {
 				Some(sequence_number) => {
