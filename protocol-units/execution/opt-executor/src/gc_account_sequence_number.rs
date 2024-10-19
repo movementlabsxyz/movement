@@ -42,7 +42,7 @@ impl UsedSequenceNumberPool {
 	/// Removes the sequence number for an account.
 	pub(crate) fn remove_sequence_number(&mut self, account_address: &AccountAddress) {
 		// check each slot for the account
-		for (_slot, lifetimes) in self.sequence_number_lifetimes.iter_mut().rev() {
+		for lifetimes in self.sequence_number_lifetimes.values_mut().rev() {
 			if lifetimes.remove(account_address).is_some() {
 				break;
 			}
