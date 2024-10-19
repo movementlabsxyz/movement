@@ -79,7 +79,7 @@ impl UsedSequenceNumberPool {
 		let slots_to_remove: Vec<u64> = self
 			.sequence_number_lifetimes
 			.keys()
-			.take_while(|slot| *slot < slot_cutoff)
+			.take_while(|slot| **slot < slot_cutoff)
 			.cloned()
 			.collect();
 		for slot in slots_to_remove {

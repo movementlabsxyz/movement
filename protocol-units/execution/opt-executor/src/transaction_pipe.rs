@@ -40,21 +40,21 @@ impl From<anyhow::Error> for Error {
 }
 
 pub struct TransactionPipe {
-	/// The receiver for the mempool client.
+	// The receiver for the mempool client.
 	mempool_client_receiver: futures_mpsc::Receiver<MempoolClientRequest>,
-	/// Sender for the channel with accepted transactions.
+	// Sender for the channel with accepted transactions.
 	transaction_sender: mpsc::Sender<SignedTransaction>,
-	/// Access to the ledger DB. TODO: reuse an instance of VMValidator
+	// Access to the ledger DB. TODO: reuse an instance of VMValidator
 	db_reader: Arc<dyn DbReader>,
-	/// State of the Aptos mempool
+	// State of the Aptos mempool
 	core_mempool: CoreMempool,
-	/// Shared reference on the counter of transactions in flight.
+	// Shared reference on the counter of transactions in flight.
 	transactions_in_flight: Arc<AtomicU64>,
-	/// The configured limit on transactions in flight
+	// The configured limit on transactions in flight
 	in_flight_limit: u64,
-	/// Timestamp of the last garbage collection
+	// Timestamp of the last garbage collection
 	last_gc: Instant,
-	/// The pool of used sequence numbers
+	// The pool of used sequence numbers
 	used_sequence_number_pool: UsedSequenceNumberPool,
 }
 
