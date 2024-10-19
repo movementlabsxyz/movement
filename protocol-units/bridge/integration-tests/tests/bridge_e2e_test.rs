@@ -20,7 +20,6 @@ use bridge_service::chains::{
 		client::MovementClient, event_monitoring::MovementMonitoring, utils::MovementAddress,
 	},
 };
-use bridge_service::rest::BridgeRest;
 use bridge_service::types::Amount;
 use bridge_service::types::AssetType;
 use bridge_service::types::BridgeAddress;

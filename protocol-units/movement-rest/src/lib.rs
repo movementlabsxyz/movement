@@ -1,5 +1,6 @@
-use anyhow::Error;
 use aptos_api::Context;
+
+use anyhow::Error;
 use futures::prelude::*;
 use poem::listener::TcpListener;
 use poem::{
@@ -47,6 +48,7 @@ impl MovementRest {
 		Route::new()
 			.at("/health", get(health))
 			.at("/movement/v1/state-root-hash/:blockheight", get(state_root_hash))
+			.at("movement/v1/richard", get(richard))
 			.data(self.context.clone())
 			.with(Tracing)
 	}
@@ -55,6 +57,11 @@ impl MovementRest {
 #[handler]
 pub async fn health() -> Response {
 	"OK".into_response()
+}
+
+#[handler]
+pub async fn richard() -> Response {
+	"Well Done".into_response()
 }
 
 #[handler]

@@ -321,10 +321,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 		.await?
 	}
 
-	async fn gc_mempool_transactions(
-		&self,
-		timestamp_threshold: u64,
-	) -> Result<u64, anyhow::Error> {
+	async fn gc_mempool_transactions(&self, timestamp_threshold: u64) -> Result<(), anyhow::Error> {
 		let db = self.db.clone();
 		tokio::task::spawn_blocking(move || {
 			let cf_handle = db
@@ -337,7 +334,6 @@ impl MempoolTransactionOperations for RocksdbMempool {
 			read_options
 				.set_iterate_upper_bound(construct_timestamp_threshold_key(timestamp_threshold));
 			let mut iter = db.iterator_cf_opt(&cf_handle, read_options, IteratorMode::Start);
-			let mut transaction_count = 0;
 			let mut batch = WriteBatch::default();
 
 			if let Some(res) = iter.next() {
@@ -346,13 +342,11 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 				batch.delete_cf(&cf_handle, &key);
 				batch.delete_cf(&lookups_cf_handle, transaction.transaction.id().to_vec());
-
-				transaction_count += 1;
 			}
 
 			db.write(batch)?;
 
-			Ok(transaction_count)
+			Ok(())
 		})
 		.await?
 	}

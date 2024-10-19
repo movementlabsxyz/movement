@@ -34,7 +34,6 @@ members = [
     "protocol-units/settlement/mcr/setup",
     "protocol-units/settlement/mcr/runner",
     "protocol-units/bridge/service",
-    "protocol-units/bridge/grpc",
     "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
@@ -57,7 +56,6 @@ bridge-config = { path = "protocol-units/bridge/config" }
 bridge-service = { path = "protocol-units/bridge/service" }
 bridge-setup = { path = "protocol-units/bridge/setup" }
 bridge-integration-tests = { path = "protocol-units/bridge/integration-tests" }
-bridge-grpc = { path = "protocol-units/bridge/grpc" }
 ## buildtime
 buildtime = { path = "util/buildtime" }
 buildtime-helpers = { path = "util/buildtime/buildtime-helpers" }
@@ -299,6 +297,7 @@ uuid = { version = "1.10.0", features = ["v4"] }
 tar = "0.4.41"
 flate2 = "1.0.31"
 blake-3 = "1.4.0"
+ecdsa = { version = "0.16.9", features = ["signing", "verifying", "der", "pem", "pkcs8"] }
 regex = "1.10.6"
 globset = "0.4.15"
 glob = "0.3.1"
