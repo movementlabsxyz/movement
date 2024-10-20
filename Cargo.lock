@@ -7120,6 +7120,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hot-cold-set"
+version = "0.0.2"
+dependencies = [
+ "anyhow",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "hound"
 version = "3.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

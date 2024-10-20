@@ -37,6 +37,7 @@ members = [
     "protocol-units/bridge/integration-tests",
     "protocol-units/settlement/mcr/runner",
     "benches/*",
+    "protocol-units/storage/hot-cold-set",
 ]
 
 [workspace.package]
