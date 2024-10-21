@@ -41,6 +41,8 @@ async fn main() -> Result<(), anyhow::Error> {
 		}
 	});
 
+	info!("Starting Suzuka Full Node Setup");
+
 	// get the config file
 	let dot_movement = dot_movement::DotMovement::try_from_env()?;
 
