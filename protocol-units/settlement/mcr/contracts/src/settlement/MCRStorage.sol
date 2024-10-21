@@ -20,12 +20,16 @@ contract MCRStorage {
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
     uint256 public lastAcceptedBlockHeight;
 
-    /// Leader term in number of L1 blocks. The leader remains the same for leaderterm L1-blocks
-    uint256 public leaderTerm;
+    /// Confirmer term time in seconds (determined by L1 blocks). The confimer remains the same for confirmerTerm period.
+    // This means we accept that if the confirmer is not active the postconfirmations will be delayed. 
+    // TODO permit that anyone can confirm but only the Confirmer gets rewarded. 
+    // TODO The Confirmer should also get rewarded even if another attestor confirmed the postconfirmation.
+    // The Confirmer term can be minimal, but it should not be O(1) as the confirmer should have some time 
+    // to prepare and post L1-transactions that will start the validation of attestations.
+    uint256 public confirmerTerm;
 
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
-
         uint256 height;
         bytes32 commitment;
         bytes32 blockId;
