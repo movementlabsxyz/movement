@@ -1,12 +1,15 @@
 use anyhow::Context;
 use once_cell::sync::Lazy;
 use std::str::FromStr;
+use std::sync::Arc;
 use suzuka_client::{
 	coin_client::CoinClient,
 	rest_client::{Client, FaucetClient},
 	types::LocalAccount,
 };
+use tokio::sync::RwLock;
 use url::Url;
+use warp::Filter;
 
 static SUZUKA_CONFIG: Lazy<suzuka_config::Config> = Lazy::new(|| {
 	let dot_movement = dot_movement::DotMovement::try_from_env().unwrap();
@@ -55,8 +58,23 @@ static FAUCET_URL: Lazy<Url> = Lazy::new(|| {
 });
 // <:!:section_1c
 
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+pub enum Modes {
+	Test,
+	Health,
+}
+
+impl FromStr for Modes {
+	type Err = ();
+	fn from_str(input: &str) -> Result<Self, Self::Err> {
+		match input {
+			"test" => Ok(Modes::Test),
+			"health" => Ok(Modes::Health),
+			_ => Err(()),
+		}
+	}
+}
+
+async fn test() -> Result<(), anyhow::Error> {
 	// :!:>section_1a
 	let rest_client = Client::new(NODE_URL.clone());
 	let faucet_client = FaucetClient::new(FAUCET_URL.clone(), NODE_URL.clone()); // <:!:section_1a
@@ -158,6 +176,66 @@ async fn main() -> Result<(), anyhow::Error> {
 			.await
 			.context("Failed to get Bob's account balance the second time")?
 	);
+
+	Ok(())
+}
+
+async fn health() -> Result<(), anyhow::Error> {
+	// share a status variable between the two threads
+	let status = Arc::new(RwLock::new(true));
+
+	// run the tests on a loop updating the status variable in one task
+	let status_clone = status.clone();
+	let test_task = tokio::spawn(async move {
+		loop {
+			match test().await {
+				Ok(_) => {
+					println!("Test passed");
+					tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+				}
+				Err(e) => {
+					println!("Test failed: {:?}", e);
+					*status_clone.write().await = false;
+					tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+				}
+			}
+		}
+	});
+
+	// Spawn a small web server that returns the status
+	let status_clone = Arc::clone(&status);
+	let health_route = warp::path("health").and_then(move || {
+		let status_clone = Arc::clone(&status_clone);
+		async move {
+			let status = status_clone.read().await;
+			let status_str = if *status { "ok" } else { "error" };
+			Ok::<_, warp::Rejection>(warp::reply::html(status_str))
+		}
+	});
+
+	let health_task = tokio::spawn(async move {
+		warp::serve(health_route)
+			.run(([0, 0, 0, 0], 3030)) // Run on 0.0.0.0:3030
+			.await;
+	});
+
+	// Join the two tasks
+	tokio::try_join!(test_task, health_task)?;
+
+	Ok(())
+}
+
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
+	// get the mode
+	// todo: this can be replaced with Clap
+	let mode = std::env::args().nth(1).unwrap_or("test".to_string());
+	let mode = Modes::from_str(&mode).map_err(|_| anyhow::anyhow!("Invalid mode"))?;
+
+	match mode {
+		Modes::Test => test().await?,
+		Modes::Health => health().await?,
+	}
 
 	Ok(())
 }
