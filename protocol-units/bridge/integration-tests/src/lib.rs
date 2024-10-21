@@ -67,8 +67,10 @@ impl Default for EthToMovementCallArgs {
                 Self {
 			// Dummy valid EIP-55 address used in framework modules
                         // initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			// Actual Eth address
+			initiator: b"0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc".to_vec(),
 			// All lowercase version:
-			initiator: b"0x32be343b94f860124dc4fee278fdcbd38c102d88".to_vec(),
+			//initiator: b"0x32be343b94f860124dc4fee278fdcbd38c102d88".to_vec(),
 			// Dummy recipient address
                         recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
                         // Convert to [u8; 32] with explicit type annotation

@@ -194,7 +194,7 @@ pub async fn send_and_confirm_aptos_transaction(
 	})?;
 
 	let txn = response.into_inner();
-	debug!("Response: {:?}", txn);
+	info!("Response: {:?}", txn);
 
 	match &txn {
 		Transaction::UserTransaction(user_txn) => {

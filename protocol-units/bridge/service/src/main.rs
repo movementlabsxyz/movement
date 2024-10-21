@@ -6,7 +6,7 @@ use bridge_grpc::{
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
-		movement::{client::MovementClient, MovementClientFramework, event_monitoring::MovementMonitoring},
+		movement::{client::MovementClient, client_framework::MovementClientFramework, event_monitoring::MovementMonitoring},
 	},
 	grpc::HealthCheckService,
 	rest::BridgeRest,

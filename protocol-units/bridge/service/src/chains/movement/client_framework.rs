@@ -259,14 +259,8 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			_ => return Err(BridgeContractError::SerializationError),
 		};
 		debug!("Initiator: {:?}", initiator.0);
-		let initiator_str = String::from_utf8(initiator.0)
-    .map_err(|_| BridgeContractError::SerializationError)?;
-		let checksummed_address = utils::to_eip55(&initiator_str);
-		let checksummed_bytes = checksummed_address.as_bytes().to_vec();
-		
-		debug!("Initiator: {:?}", checksummed_bytes);
 		let args = vec![
-			utils::serialize_vec(&checksummed_bytes)?,
+			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,

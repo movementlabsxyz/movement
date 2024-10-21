@@ -74,7 +74,7 @@ async fn initiate_eth_bridge_transfer(
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
 		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info,debug,error")),
 		)
 		.init();
 
