@@ -6,6 +6,7 @@ pub mod fin;
 pub mod indexer;
 pub mod indexer_processor;
 pub mod load_shedding;
+pub mod mempool;
 
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +39,10 @@ pub struct Config {
 	/// The load shedding parameters
 	#[serde(default)]
 	pub load_shedding: load_shedding::Config,
+
+	/// The mempool configuration
+	#[serde(default)]
+	pub mempool: mempool::Config,
 }
 
 impl Default for Config {
@@ -50,6 +55,7 @@ impl Default for Config {
 			faucet: faucet::Config::default(),
 			fin: fin::Config::default(),
 			load_shedding: load_shedding::Config::default(),
+			mempool: mempool::Config::default(),
 		}
 	}
 }
