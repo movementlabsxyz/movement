@@ -28,6 +28,12 @@ contract MCRStorage {
     // to prepare and post L1-transactions that will start the validation of attestations.
     uint256 public confirmerTerm;
 
+
+    // TODO i added these param descriptions. are these correct?
+    /// Struct to store block commitment details
+    /// @param height The height of the block
+    /// @param commitment The hash of the committment
+    /// @param blockId The unique identifier of the block (hash of the block)
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
         uint256 height;
