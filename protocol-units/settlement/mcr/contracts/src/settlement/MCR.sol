@@ -27,11 +27,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // creates a commitment
-    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId)
-        public
-        pure
-        returns (BlockCommitment memory)
-    {
+    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId) public pure returns (BlockCommitment memory) {
         return BlockCommitment(height, commitment, blockId);
     }
 
@@ -129,9 +125,16 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         submitBlockCommitmentForAttester(msg.sender, blockCommitment);
     }
 
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+        for (uint256 i = 0; i < blockCommitments.length; i++) {
+            submitBlockCommitment(blockCommitments[i]);
+        }
+    }
+
     // commits a attester to a particular block
     function submitBlockCommitmentForAttester(address attester, BlockCommitment memory blockCommitment) internal {
         // Attester has already committed to a block at this height
+        // TODO consider that if the block commitment is not the same we might want to record this equivocation.
         if (commitments[blockCommitment.height][attester].height != 0) revert AttesterAlreadyCommitted();
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
@@ -228,13 +231,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
 
         return false;
-    }
-
-
-    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
-        for (uint256 i = 0; i < blockCommitments.length; i++) {
-            submitBlockCommitment(blockCommitments[i]);
-        }
     }
 
     function _acceptBlockCommitment(BlockCommitment memory blockCommitment) internal {
