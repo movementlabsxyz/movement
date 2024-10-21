@@ -19,6 +19,8 @@ path = "src/bin/wait_for_light_node.rs"
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
+tonic-reflection = { workspace = true }
+tonic-web = { workspace = true }
 prost = { workspace = true }
 m1-da-light-node-grpc = { workspace = true, features = [] }
 celestia-rpc = { workspace = true }

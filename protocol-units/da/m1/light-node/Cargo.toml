@@ -16,6 +16,7 @@ tokio = { workspace = true }
 tokio-stream = { workspace = true }
 tonic = { workspace = true }
 tonic-reflection = { workspace = true }
+tonic-web = { workspace = true }
 prost = { workspace = true }
 m1-da-light-node-grpc = { workspace = true, features = ["server"] }
 m1-da-light-node-util = { workspace = true }

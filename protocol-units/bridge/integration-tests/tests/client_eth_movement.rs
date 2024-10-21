@@ -114,11 +114,11 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0,
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
@@ -145,11 +145,11 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0,
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
@@ -224,11 +224,11 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		assert_eq!(details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&details.initiator_address.0,
+			&details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(details.recipient_address.0, args.recipient);
+		assert_eq!(details.recipient_address.0, args.recipient.0.to_vec());
 		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
@@ -251,11 +251,11 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 		assert_eq!(abort_details.bridge_transfer_id.0, args.bridge_transfer_id.0);
 		assert_eq!(abort_details.hash_lock.0, args.hash_lock.0);
 		assert_eq!(
-			&abort_details.initiator_address.0,
+			&abort_details.initiator_address.0 .0[32 - args.initiator.len()..],
 			&args.initiator,
 			"Initiator address does not match"
 		);
-		assert_eq!(abort_details.recipient_address.0, args.recipient);
+		assert_eq!(abort_details.recipient_address.0, args.recipient.0.to_vec());
 		assert_eq!(abort_details.amount.0, AssetType::Moveth(args.amount));
 
 		Ok(())

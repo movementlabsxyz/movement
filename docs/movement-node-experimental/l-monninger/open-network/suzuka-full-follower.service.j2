@@ -9,15 +9,24 @@ WorkingDirectory=/home/{{ user }}/movement
 Environment="DOT_MOVEMENT_PATH=/home/{{ user }}/.movement"
 Environment="CONTAINER_REV={{ rev }}"
 Environment="MOVEMENT_SYNC={{ movement_sync }}"
+Environment="AWS_REGION={{ aws_region }}"
 
-Environment="M1_DA_LIGHT_NODE_CONNECTION_PROTOCOL={{ m1_da_light_node_connection_protocol }}"
-Environment="M1_DA_LIGHT_NODE_CONNECTION_HOSTNAME={{ m1_da_light_node_connection_hostname }}"
-Environment="M1_DA_LIGHT_NODE_CONNECTION_PORT={{ m1_da_light_node_connection_port }}"
+Environment="CELESTIA_RPC_CONNECTION_PROTOCOL={{ celestia_rpc_connection_protocol }}"
+Environment="CELESTIA_RPC_CONNECTION_HOSTNAME={{ celestia_rpc_connection_hostname }}"
+Environment="CELESTIA_RPC_CONNECTION_PORT={{ celestia_rpc_connection_port }}"
 
-Environment="AWS_ACCESS_KEY_ID={{ aws_access_key_id }}"
-Environment="AWS_SECRET_ACCESS_KEY={{ aws_secret_access_key }}"
-Environment="AWS_DEFAULT_REGION={{ aws_default_region }}"
-Environment="AWS_REGION={{ aws_default_region }}"
+Environment="CELESTIA_WEBSOCKET_CONNECTION_PROTOCOL={{ celestia_websocket_connection_protocol }}"
+Environment="CELESTIA_WEBSOCKET_CONNECTION_HOSTNAME={{ celestia_websocket_connection_hostname }}"
+Environment="CELESTIA_WEBSOCKET_CONNECTION_PORT={{ celestia_websocket_connection_port }}"
+
+Environment="ETH_RPC_CONNECTION_PROTOCOL={{ eth_rpc_connection_protocol }}"
+Environment="ETH_RPC_CONNECTION_HOSTNAME={{ eth_rpc_connection_hostname }}"
+Environment="ETH_RPC_CONNECTION_PORT={{ eth_rpc_connection_port }}"
+
+Environment="ETH_WS_CONNECTION_PROTOCOL={{ eth_ws_connection_protocol }}"
+Environment="ETH_WS_CONNECTION_HOSTNAME={{ eth_ws_connection_hostname }}"
+Environment="ETH_WS_CONNECTION_PORT={{ eth_ws_connection_port }}"
+
 ExecStart=/usr/bin/docker compose --env-file .env -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.yml -f /home/{{ user }}/movement/docker/compose/suzuka-full-node/docker-compose.local.yml up --force-recreate --remove-orphans
 Restart=on-failure
 

@@ -25,37 +25,7 @@ services:
       interval: 10s
       timeout: 5s
 
-  # turn off underlying da light nodes
-  celestia-light-node:
-    image: busybox
-    container_name: celestia-light-node
-    command: sleep infinity
-    environment:
-      - DOT_MOVEMENT_PATH=/.movement
-      - CELESTIA_RPC_ADDRESS=celestia-light-node:26657
-    volumes:
-      - ${DOT_MOVEMENT_PATH}:/.movement
-    depends_on:
-      setup:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD-SHELL", "echo 'health check'" ]
-      retries: 3
-      start_period: 3s
-    restart: on-failure:3
-
-  # turn off celestia-light-node-synced
-  celestia-light-node-synced:
-    image: busybox
-    container_name: celestia-light-node-synced
-    command: echo "No sync check when following."
-    environment:
-      - DOT_MOVEMENT_PATH=/.movement
-    volumes:
-      - ${DOT_MOVEMENT_PATH}:/.movement
-    depends_on:
-      celestia-light-node:
-        condition: service_healthy
+  # underlying da light node runners should already be turned off
 
   # turn off m1-da-light-node
   m1-da-light-node:

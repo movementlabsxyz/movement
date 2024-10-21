@@ -89,13 +89,6 @@ fn build_processor_conf(
 	let default_sleep_time_between_request: u64 = std::env::var("SLEEP_TIME_BETWEEN_REQUEST_MS")
 		.map(|t| t.parse().unwrap_or(10))
 		.unwrap_or(10);
-
-	// If the starting version is not defined, don't put a default value in the conf.
-	let starting_version_entry = std::env::var("INDEXER_STARTING_VERSION")
-		.map(|t| t.parse().unwrap_or(0))
-		.map(|t| format!("starting_version: {}", t))
-		.unwrap_or(String::new());
-
 	//create config file
 	let indexer_config_content = format!(
 		"processor_config:
@@ -105,8 +98,7 @@ indexer_grpc_data_service_address: {}
 indexer_grpc_http2_ping_interval_in_secs: {}
 indexer_grpc_http2_ping_timeout_in_secs: {}
 auth_token: \"{}\"
-default_sleep_time_between_request: {}
-{}",
+default_sleep_time_between_request: {}",
 		processor_name,
 		maptos_config.indexer_processor.postgres_connection_string,
 		indexer_grpc_data_service_address,
@@ -114,7 +106,6 @@ default_sleep_time_between_request: {}
 		maptos_config.indexer.maptos_indexer_grpc_inactivity_ping_interval,
 		maptos_config.indexer_processor.indexer_processor_auth_token,
 		default_sleep_time_between_request,
-		starting_version_entry,
 	);
 
 	//let indexer_config_path = dot_movement.get_path().join("indexer_config.yaml");

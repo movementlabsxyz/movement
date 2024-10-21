@@ -103,11 +103,10 @@ impl std::fmt::Display for MovementAddress {
 impl From<Vec<u8>> for MovementAddress {
 	fn from(vec: Vec<u8>) -> Self {
 		// Ensure the vector has the correct length
-		//TODO change to a try_from but need a rewrite of
-		// the address generic management to make try_from compatible.
-		let account_address = AccountAddress::from_bytes(vec).unwrap_or(
-			AccountAddress::from_bytes([1; AccountAddress::LENGTH]).expect("Never fail"),
-		);
+		assert_eq!(vec.len(), AccountAddress::LENGTH);
+
+		let account_address =
+			AccountAddress::from_bytes(vec).expect("Invalid byte length for AccountAddress");
 		MovementAddress(account_address)
 	}
 }

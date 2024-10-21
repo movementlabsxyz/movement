@@ -1,7 +1,4 @@
 # Run a Movement Node
-- [General Full Node Guide](./README.md) (this document)
-- [Follower Node](./follower-node/README.md)
-
 We recommend that you run a movement node using containers to leverage the portability and reproducibility properties that come with containers.
 
 

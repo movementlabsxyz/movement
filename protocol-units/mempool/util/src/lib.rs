@@ -59,14 +59,10 @@ pub trait MempoolTransactionOperations {
 		Ok(mempool_transactions)
 	}
 
-	/// Garbage-collects transactions that have been submitted before the
-	/// given timestamp.
-	///
-	/// Returns the number of removed transaction.
 	fn gc_mempool_transactions(
 		&self,
 		timestamp_threshold: u64,
-	) -> impl Future<Output = Result<u64, anyhow::Error>> + Send + '_;
+	) -> impl Future<Output = Result<(), anyhow::Error>> + Send + '_;
 
 	/// Checks whether the mempool has the transaction.
 	async fn has_transaction(

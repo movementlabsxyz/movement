@@ -10,8 +10,7 @@ use crate::types::LockDetails;
 use crate::types::{BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock};
 use alloy::eips::BlockNumberOrTag;
 use alloy::primitives::Address;
-use alloy::providers::ProviderBuilder;
-use alloy_network::EthereumWallet;
+use alloy::providers::{ProviderBuilder, WsConnect};
 use bridge_config::common::eth::EthConfig;
 use futures::SinkExt;
 use futures::{channel::mpsc::UnboundedReceiver, Stream, StreamExt};
@@ -28,22 +27,11 @@ impl BridgeContractMonitoring for EthMonitoring {
 
 impl EthMonitoring {
 	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
-		// let rpc_url = config.eth_ws_connection_url();
-		// let ws = WsConnect::new(rpc_url);
-		// let ws = ProviderBuilder::new().on_ws(ws).await?;
-		// let initiator_contract =
-		// 	AtomicBridgeInitiator::new(config.eth_initiator_contract.parse()?, ws.clone());
-
-		let client_config: crate::chains::ethereum::client::Config = config.try_into()?;
-		let rpc_provider = ProviderBuilder::new()
-			.with_recommended_fillers()
-			.wallet(EthereumWallet::from(client_config.signer_private_key.clone()))
-			.on_builtin(client_config.rpc_url.as_str())
-			.await?;
-		let initiator_contract = AtomicBridgeInitiator::new(
-			config.eth_initiator_contract.parse()?,
-			rpc_provider.clone(),
-		);
+		let rpc_url = config.eth_ws_connection_url();
+		let ws = WsConnect::new(rpc_url);
+		let ws = ProviderBuilder::new().on_ws(ws).await?;
+		let initiator_contract =
+			AtomicBridgeInitiator::new(config.eth_initiator_contract.parse()?, ws.clone());
 
 		tracing::info!(
 			"Start Eth monitoring with initiator:{} counterpart:{}",
@@ -83,10 +71,8 @@ impl EthMonitoring {
 			.await?;
 		let mut initiator_trrefund_sub_stream = initiator_trrefund_event_filter.into_stream();
 
-		let counterpart_contract = AtomicBridgeCounterparty::new(
-			config.eth_counterparty_contract.parse()?,
-			rpc_provider.clone(),
-		);
+		let counterpart_contract =
+			AtomicBridgeCounterparty::new(config.eth_counterparty_contract.parse()?, ws.clone());
 		//Register counterpart event
 		// event BridgeTransferLocked(
 		//     bytes32 indexed bridgeTransferId,

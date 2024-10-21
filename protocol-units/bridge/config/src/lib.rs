@@ -34,14 +34,3 @@ pub fn get_config_path(dot_movement: &dot_movement::DotMovement) -> std::path::P
 	pathbuff.push(BRIDGE_CONF_FOLDER);
 	pathbuff
 }
-
-impl Config {
-	pub fn suzuka() -> Self {
-		Config {
-			eth: common::eth::EthConfig::default(),
-			movement: common::movement::MovementConfig::suzuka_for_test(),
-			testing: common::testing::TestingConfig::default(),
-		}
-	}
-}
-

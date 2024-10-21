@@ -51,7 +51,7 @@ pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::
 		&config.eth_initiator_contract,
 		EthAddress(eth_weth_contract),
 		EthAddress(signer_private_key.address()),
-		*TimeLock(config.time_lock_secs),
+		*TimeLock(1),
 		config.gas_limit,
 		config.transaction_send_retries,
 	)
@@ -116,8 +116,6 @@ async fn initialize_initiator_contract(
 	gas_limit: u64,
 	transaction_send_retries: u32,
 ) -> Result<(), anyhow::Error> {
-	tracing::info!("Setup Eth initialize_initiator_contract with timelock:{timelock});");
-
 	let rpc_provider = ProviderBuilder::new()
 		.with_recommended_fillers()
 		.wallet(EthereumWallet::from(signer_private_key))
@@ -127,8 +125,7 @@ async fn initialize_initiator_contract(
 	let initiator_contract =
 		AtomicBridgeInitiator::new(initiator_contract_address.parse()?, rpc_provider);
 
-	let call =
-		initiator_contract.initialize(weth.0, owner.0, U256::from(timelock), U256::from(100));
+	let call = initiator_contract.initialize(weth.0, owner.0, U256::from(timelock));
 	send_transaction(call, &send_transaction_rules(), transaction_send_retries, gas_limit.into())
 		.await
 		.expect("Failed to send transaction");
@@ -159,7 +156,7 @@ pub fn deploy_local_movement_node(config: &mut MovementConfig) -> Result<(), any
 
 	//	stdin.write_all(b"local\n").expect("Failed to write to stdin");
 
-	let private_key_bytes = config.movement_signer_key.to_bytes();
+	let private_key_bytes = config.movement_signer_address.to_bytes();
 	let private_key_hex = format!("0x{}", private_key_bytes.encode_hex::<String>());
 	let _ = stdin.write_all(format!("{}\n", private_key_hex).as_bytes());
 

@@ -117,7 +117,7 @@ pub async fn setup_movement_node(
 
 	let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 	let signer = LocalAccount::generate(&mut rng);
-	config.movement_signer_key = signer.private_key().clone();
+	config.movement_signer_address = signer.private_key().clone();
 
 	Ok(child)
 }
