@@ -20,6 +20,9 @@ contract MCRStorage {
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
     uint256 public lastAcceptedBlockHeight;
 
+    /// Leader term in number of L1 blocks. The leader remains the same for leaderterm L1-blocks
+    uint256 public leaderTerm;
+
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
 
