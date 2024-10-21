@@ -1,5 +1,5 @@
 // ! The [HotColdSet] struct describes a synchronization primitive used to ensure consistent inclusion of members between two sets, known as Hot and Cold sets.
-// ! The synchronization protocol is similar to a 3-way handshake, consisting of multiple exchanges between Hot and Cold sets to commit the inclusion of a member.
+// ! The synchronization protocol is similar to a 3PC or 3-way handshake, consisting of multiple exchanges between Hot and Cold sets to commit the inclusion of a member where the application interacting with these sets via the [HotColdSet] struct is the coordinator.
 // !
 // ! The Hot set is considered hot for two reasons:
 // ! 1. It is written to first and read from first by the application.
@@ -9,7 +9,7 @@
 // ! 2. The Cold set is append-only and is never garbage collected by the application.
 // !
 // ! Originally designed for event sets, this protocol can be extended to other contexts, such as synchronization of transactions.
-// ! Implementers should be cautious of failure points, as frequent commit failures will flag the system as inconsistent and induce recovery attempts.
+// ! Implementers should be cautious of failure points, as frequent commit failures will flag the system as inconsistent and induce recovery attempts when using the `rinsert` method.
 use std::marker::PhantomData;
 use thiserror::Error;
 
@@ -29,14 +29,17 @@ pub trait TryAsMember {
 	fn try_as_member(&self) -> Result<Member, MemberError>;
 }
 
+/// An error thrown when the set cannot be recovered.
 #[derive(Debug, Error)]
 pub enum RecoveryError {
 	#[error("failed to recover the set")]
 	Irrecoverable,
 }
 
-/// Hot and Cold sets should be recoverable
+/// Hot and Cold sets should be recoverable and thus should implement the Recoverable trait.
 pub trait Recoverable {
+	/// Recover the set.
+	/// Recovery differs from [HotGuard::rollback] and [ColdGuard::rollback] in that it is a higher-level operation that attempts to recover the entire set. It should not be coordinated against a particular insertion, that is the responsibility of the guard.
 	async fn recover(&self) -> Result<(), RecoveryError>;
 }
 
@@ -58,6 +61,7 @@ pub trait HotGuard<M> where M: TryAsMember {
 	async fn commit(&self, members: &[M]) -> Result<(), HotGuardError>;
 }
 
+/// Error types for the Hot set operations.
 #[derive(Debug, Error)]
 pub enum HotError {
 	#[error("internal error")]
@@ -91,6 +95,7 @@ where
 	async fn gc(&self) -> Result<(), HotError>;
 }
 
+/// Error types for the Cold guard.
 #[derive(Debug, Error)]
 pub enum ColdGuardError {
 	#[error("cold guard failed to commit the insertion")]
@@ -106,6 +111,7 @@ pub trait ColdGuard<M> where M: TryAsMember {
 	async fn commit(&self, members: &[M]) -> Result<(), ColdGuardError>;
 }
 
+/// Error types for the Cold set operations.
 #[derive(Debug, Error)]
 pub enum ColdError {
 	#[error("internal error")]
@@ -257,22 +263,37 @@ where
 		}
 	}
 
+	/// Whether the set is consistent.
+	pub fn is_consistent(&self) -> bool {
+		self.is_consistent
+	}
+
+	/// Sets the consistency of the set.
+	/// This can be used with [HotColdSet::insert] for manual consistency management.
+	pub fn set_is_consistent(&mut self, is_consistent: bool) {
+		self.is_consistent = is_consistent;
+	}
+
 	/// Insert members into both the Hot and Cold sets, sets consistency, prevents attempting to insert to an inconsistent set.
 	pub async fn insert(&mut self, members: Vec<M>) -> Result<(), HotColdError<M>> {
-		if self.is_consistent {
+		if self.is_consistent() {
 			match self.insert_raw(members).await {
 				Ok(_) => Ok(()),
 				Err(err) => {
-					self.is_consistent = false;
+					self.set_is_consistent(false);
 					Err(err)
 				}
 			}
 		} else {
+			// If you are accessing in an inconsistent state, you should have recovered the set before attempting to insert.
+			// The set will be considered irrecoverable if it is already inconsistent.
 			Err(HotColdError::Irrecoverable)
 		}
 	}
 
 	/// Inserts members into both Hot and Cold sets and attempts to recover the set if the insertion fails.
+	/// 
+	/// When using `rinsert` you are guaranteed to either successfully insert into both sets, fail and recover the sets, or fail into an irrecoverable state.
 	pub async fn rinsert(&mut self, members: Vec<M>) -> Result<(), HotColdError<M>> {
 		match self.insert(members).await {
 			Ok(_) => Ok(()),
@@ -281,13 +302,15 @@ where
 					match which {
 						InsertionPartial::Hot => {
 							self.hot().recover().await.map_err(|_| HotColdError::Irrecoverable)?;
-							Ok(())
+							// If we recover, this is just a failed insert.
+							Err(HotColdError::FailedToInsert)
 						}
 						InsertionPartial::Both => {
 							// try to recover hot then cold
 							self.hot().recover().await.map_err(|_| HotColdError::Irrecoverable)?;
 							self.cold().recover().await.map_err(|_| HotColdError::Irrecoverable)?;
-							Ok(())
+							// If we recover, this is just a failed insert.
+							Err(HotColdError::FailedToInsert)
 						}
 					}
 				}
