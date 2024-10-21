@@ -7124,6 +7124,8 @@ name = "hot-cold-set"
 version = "0.0.2"
 dependencies = [
  "anyhow",
+ "rocksdb",
+ "tempfile",
  "thiserror",
  "tokio",
 ]

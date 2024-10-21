@@ -13,9 +13,32 @@
 use std::marker::PhantomData;
 use thiserror::Error;
 
-/// A member of the set is represented as a byte array.
+/// A member of the set.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Member(pub Vec<u8>);
+
+/// An error thrown when a member cannot be converted into a common representation.
+#[derive(Debug, Error)]
+pub enum MemberError {
+	#[error("failed to convert member into a common representation")]
+	ConversionFailed,
+}
+
+/// A member of the set should implement TryAsMember to convert itself into a common representation.
+pub trait TryAsMember {
+	fn try_as_member(&self) -> Result<Member, MemberError>;
+}
+
+#[derive(Debug, Error)]
+pub enum RecoveryError {
+	#[error("failed to recover the set")]
+	Irrecoverable,
+}
+
+/// Hot and Cold sets should be recoverable
+pub trait Recoverable {
+	async fn recover(&self) -> Result<(), RecoveryError>;
+}
 
 /// Error types for the Hot guard.
 #[derive(Debug, Error)]
@@ -27,7 +50,7 @@ pub enum HotGuardError {
 }
 
 /// A Hot guard responsible for rollback or commit operations.
-pub trait HotGuard<M> where M: TryInto<Member> {
+pub trait HotGuard<M> where M: TryAsMember {
 	/// Rollback the prepared insertion in the Hot set.
 	async fn rollback(&self, members: &[M]) -> Result<(), HotGuardError>;
 
@@ -36,14 +59,17 @@ pub trait HotGuard<M> where M: TryInto<Member> {
 }
 
 #[derive(Debug, Error)]
-pub enum HotError {}
+pub enum HotError {
+	#[error("internal error")]
+	Internal,
+}
 
 /// The Hot portion of the set, optimized for fast access and size.
 /// The Hot set is garbage collected and typically uses structures like Bloom filters to probabilistically check membership.
 /// The Hot set supports asynchronous operations and should implement this trait with a type-specific guard.
-pub trait Hot<M, G>
+pub trait Hot<M, G> : Recoverable
 where
-	M: TryInto<Member>,
+	M: TryAsMember,
 	G: HotGuard<M>,
 {
 	/// Get the intended cardinality of the set.
@@ -72,7 +98,7 @@ pub enum ColdGuardError {
 }
 
 /// A Cold guard responsible for commit and rollback operations in the Cold set.
-pub trait ColdGuard<M> where M: TryInto<Member> {
+pub trait ColdGuard<M> where M: TryAsMember {
 	/// Rollback the prepared insertion in the Cold set.
 	async fn rollback(&self, members: &[M]) -> Result<(), ColdGuardError>;
 
@@ -81,23 +107,26 @@ pub trait ColdGuard<M> where M: TryInto<Member> {
 }
 
 #[derive(Debug, Error)]
-pub enum ColdError {}
+pub enum ColdError {
+	#[error("internal error")]
+	Internal
+}
 
 /// The Cold portion of the set is append-only and intended for long-term storage.
 /// The Cold set serves as a backup and is never garbage collected by the application.
-pub trait Cold<M, G>
+pub trait Cold<M, G> : Recoverable
 where
-	M: TryInto<Member>,
+	M: TryAsMember,
 	G: ColdGuard<M>,
 {
 	/// Prepare to insert a collection of members into the Hot set.
-    async fn prepare_insert(&self, members: &[M]) -> Result<G, HotError>;
+    async fn prepare_insert(&self, members: &[M]) -> Result<G, ColdError>;
 
     /// Check if a collection of members is in the Hot set.
-    async fn contains(&self, members: &[M]) -> Result<bool, HotError>;
+    async fn contains(&self, members: &[M]) -> Result<bool, ColdError>;
 
     /// Check if the Hot set likely contained a collection of members.
-    async fn maybe_contained(&self, members: &[M]) -> Result<bool, HotError>;
+    async fn maybe_contained(&self, members: &[M]) -> Result<bool, ColdError>;
 
 }
 
@@ -112,10 +141,12 @@ pub enum InsertionPartial {
 #[derive(Debug, Error)]
 pub enum HotColdError<M>
 where
-	M: TryInto<Member>,
+	M: TryAsMember,
 {
 	#[error("hot-cold set is inconsistent (partially committed)")]
 	Inconsistent(InsertionPartial, Vec<M>),
+	#[error("hot-cold set is already inconsistent")]
+	Irrecoverable,
 	#[error("failed to insert member")]
 	FailedToInsert,
 }
@@ -123,7 +154,7 @@ where
 /// The `HotColdSet` struct ensures synchronized inclusion of members between the Hot and Cold sets.
 pub struct HotColdSet<M, HG, CG, H, C>
 where
-	M: TryInto<Member>,
+	M: TryAsMember,
 	HG: HotGuard<M>,
 	CG: ColdGuard<M>,
 	H: Hot<M, HG>,
@@ -134,11 +165,12 @@ where
 	_cold_guard_marker: PhantomData<CG>,
 	hot: H,
 	cold: C,
+	is_consistent: bool,
 }
 
 impl<M, HG, CG, H, C> HotColdSet<M, HG, CG, H, C>
 where
-	M: TryInto<Member>,
+	M: TryAsMember,
 	HG: HotGuard<M>,
 	CG: ColdGuard<M>,
 	H: Hot<M, HG>,
@@ -153,6 +185,7 @@ where
             _cold_guard_marker: PhantomData,
             hot,
             cold,
+			is_consistent: true,
         }
     }
 
@@ -167,7 +200,7 @@ where
 	}
 
 	/// Insert a member into both the Hot and Cold sets, ensuring consistency.
-	pub async fn insert<I>(&self, members: Vec<M>) -> Result<(), HotColdError<M>> {
+	pub(crate) async fn insert_raw(&self, members: Vec<M>) -> Result<(), HotColdError<M>> {
 		// SYN: Prepare to insert the member into the Hot set.
 		let hot_guard = self
 			.hot()
@@ -223,6 +256,48 @@ where
 			}
 		}
 	}
+
+	/// Insert members into both the Hot and Cold sets, sets consistency, prevents attempting to insert to an inconsistent set.
+	pub async fn insert(&mut self, members: Vec<M>) -> Result<(), HotColdError<M>> {
+		if self.is_consistent {
+			match self.insert_raw(members).await {
+				Ok(_) => Ok(()),
+				Err(err) => {
+					self.is_consistent = false;
+					Err(err)
+				}
+			}
+		} else {
+			Err(HotColdError::Irrecoverable)
+		}
+	}
+
+	/// Inserts members into both Hot and Cold sets and attempts to recover the set if the insertion fails.
+	pub async fn rinsert(&mut self, members: Vec<M>) -> Result<(), HotColdError<M>> {
+		match self.insert(members).await {
+			Ok(_) => Ok(()),
+			Err(err) => match err {
+				HotColdError::Inconsistent(which, _) => {
+					match which {
+						InsertionPartial::Hot => {
+							self.hot().recover().await.map_err(|_| HotColdError::Irrecoverable)?;
+							Ok(())
+						}
+						InsertionPartial::Both => {
+							// try to recover hot then cold
+							self.hot().recover().await.map_err(|_| HotColdError::Irrecoverable)?;
+							self.cold().recover().await.map_err(|_| HotColdError::Irrecoverable)?;
+							Ok(())
+						}
+					}
+				}
+				_ => Err(err),
+			},
+		}
+	}
+	
+
+
 }
 
 #[cfg(test)]
@@ -231,57 +306,155 @@ pub mod test {
     use std::collections::HashSet;
 
     #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-    pub struct TestMember(u8);
+    pub struct TestMember(pub u8);
 
-    impl TryInto<Member> for TestMember {
+    impl TryAsMember for TestMember {
+		fn try_as_member(&self) -> Result<Member, MemberError> {
+			Ok(Member(vec![self.0]))
+		}
+	}
 
-        type Error = ();
+	// Reliable Hot set
+	pub struct ReliableHot {
+		pub cardinality: u64,
+		pub ttl: u64,
+		pub set: HashSet<Member>,
+	}
 
-        fn try_into(self) -> Result<Member, ()> {
-            Ok(Member(vec![self.0]))
-        }
+	pub struct ReliableHotGuard;
+
+	// Implementing the HotGuard trait for ReliableHotGuard
+	impl<M> HotGuard<M> for ReliableHotGuard
+	where
+		M: TryAsMember + Send,
+	{
+		async fn rollback(&self, _members: &[M]) -> Result<(), HotGuardError> {
+			Ok(())  // Always succeed for ReliableHotGuard
+		}
+
+		async fn commit(&self, _members: &[M]) -> Result<(), HotGuardError> {
+			Ok(())  // Always succeed for ReliableHotGuard
+		}
+	}
+
+	impl Recoverable for ReliableHot {
+		async fn recover(&self) -> Result<(), RecoveryError> {
+			Ok(())  // Assume recovery succeeds
+		}
+	}
+
+	// Implementing the Hot trait for ReliableHot
+	impl<M> Hot<M, ReliableHotGuard> for ReliableHot
+	where
+		M: TryAsMember + Send,
+	{
+		async fn cardinality(&self) -> Result<u64, HotError> {
+			Ok(self.cardinality)
+		}
+
+		async fn ttl(&self) -> Result<u64, HotError> {
+			Ok(self.ttl)
+		}
+
+		async fn prepare_insert(&self, _members: &[M]) -> Result<ReliableHotGuard, HotError> {
+			Ok(ReliableHotGuard)  // Always succeed for ReliableHot
+		}
+
+		async fn contains(&self, members: &[M]) -> Result<bool, HotError> {
+			for member in members {
+				let converted_member = member.try_as_member().map_err(|_| HotError::Internal)?;
+				if !self.set.contains(&converted_member) {
+					return Ok(false);
+				}
+			}
+			Ok(true)
+		}
+
+		async fn maybe_contained(&self, members: &[M]) -> Result<bool, HotError> {
+			self.contains(members).await
+		}
+
+		async fn gc(&self) -> Result<(), HotError> {
+			Ok(())  // Assume garbage collection succeeds
+		}
+	}
+
+	// Reliable Cold set
+	pub struct ReliableCold {
+		pub set: HashSet<Member>,
+	}
+
+	pub struct ReliableColdGuard;
+
+	// Implementing the ColdGuard trait for ReliableColdGuard
+	impl<M> ColdGuard<M> for ReliableColdGuard
+	where
+		M: TryAsMember + Send,
+	{
+		async fn rollback(&self, _members: &[M]) -> Result<(), ColdGuardError> {
+			Ok(())  // Always succeed for ReliableColdGuard
+		}
+
+		async fn commit(&self, _members: &[M]) -> Result<(), ColdGuardError> {
+			Ok(())  // Always succeed for ReliableColdGuard
+		}
+	}
+
+	impl Recoverable for ReliableCold {
+		async fn recover(&self) -> Result<(), RecoveryError> {
+			Ok(())  // Assume recovery succeeds
+		}
+	}
+
+	// Implementing the Cold trait for ReliableCold
+	impl<M> Cold<M, ReliableColdGuard> for ReliableCold
+	where
+		M: TryAsMember + Send,
+	{
+		async fn prepare_insert(&self, _members: &[M]) -> Result<ReliableColdGuard, ColdError> {
+			Ok(ReliableColdGuard)  // Always succeed for ReliableCold
+		}
+
+		async fn contains(&self, members: &[M]) -> Result<bool, ColdError> {
+			for member in members {
+				let converted_member = member.try_as_member().map_err(|_| ColdError::Internal)?;
+				if !self.set.contains(&converted_member) {
+					return Ok(false);
+				}
+			}
+			Ok(true)
+		}
+
+		async fn maybe_contained(&self, members: &[M]) -> Result<bool, ColdError> {
+			self.contains(members).await
+		}
+	}
+
+    #[tokio::test]
+    async fn test_successful_insertion() {
+        // Create a reliable Hot set
+        let hot = ReliableHot {
+            cardinality: 0,
+            ttl: 60,
+            set: HashSet::new(),
+        };
+
+        // Create a reliable Cold set
+        let cold = ReliableCold {
+            set: HashSet::new(),
+        };
+
+        // Create a HotColdSet with the reliable sets
+        let mut hot_cold_set = HotColdSet::new(hot, cold);
+
+        // Define some members
+        let members = vec![TestMember(1), TestMember(2)];
+
+        // Try inserting into both sets
+        let result = hot_cold_set.insert(members.clone()).await;
+
+        // Ensure the insertion was successful
+        assert!(result.is_ok(), "Insertion should succeed for reliable Hot and Cold sets.");
     }
-
-    pub struct ReliableHot {
-        cardinality: u64,
-        ttl: u64,
-        set: HashSet<Member>,
-    }
-
-    pub struct ReliableHotGuard;
-
-    pub struct ReliableCold {
-        set: HashSet<Member>,
-    }
-
-    pub struct ReliableColdGuard;
-
-    pub struct UnreliableCommitHot {
-        cardinality: u64,
-        ttl: u64,
-        set: HashSet<Member>,
-    }
-
-    pub struct UnreliableCommitHotGuard;
-
-    pub struct UnreliableCommitCold {
-        set: HashSet<Member>,
-    }
-
-    pub struct UnreliableCommitColdGuard;
-
-    pub struct UnreliableRollbackHot {
-        cardinality: u64,
-        ttl: u64,
-        set: HashSet<Member>,
-    }
-
-    pub struct UnreliableRollbackHotGuard;
-
-    pub struct UnreliableRollbackCold {
-        set: HashSet<Member>,
-    }
-
-    pub struct UnreliableRollbackColdGuard;
 
 }
