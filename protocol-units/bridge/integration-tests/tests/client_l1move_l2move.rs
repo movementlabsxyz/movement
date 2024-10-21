@@ -25,6 +25,7 @@ async fn test_movement_client_lock_transfer(
 	let config: Config = Config::suzuka();
 	let (mut mvt_client_harness, _config) = TestHarnessFramework::new_with_suzuka(config).await;
 	let args = EthToMovementCallArgs::default();
+	info!{"Args Initiator: {:?}", args.initiator};
 	let test_result = async {
 		let coin_client = CoinClient::new(&mvt_client_harness.rest_client);
 		let movement_client_signer = mvt_client_harness.movement_client.signer();
@@ -66,7 +67,6 @@ async fn test_movement_client_lock_transfer(
 		Ok(())
 	}
 	.await;
-
 	test_result
 }
 
