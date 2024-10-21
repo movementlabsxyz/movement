@@ -535,8 +535,8 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(data.recipient),
-			recipient_address: BridgeAddress(MovementAddress::from(data.originator)),
+			initiator: BridgeAddress(data.recipient),
+			recipient: BridgeAddress(MovementAddress::from(data.originator)),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",

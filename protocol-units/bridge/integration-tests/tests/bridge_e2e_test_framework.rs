@@ -73,10 +73,8 @@ async fn initiate_eth_bridge_transfer(
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
 	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info,debug,error")),
-		)
-		.init();
+	.with_env_filter(EnvFilter::new("info"))
+	.init();
 
 	let (_eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
@@ -97,7 +95,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	let recipient_privkey = mvt_client_harness.fund_account().await;
 	let recipient_address = MovementAddress(recipient_privkey.address());
 
-	// 1) initialize Eth transfer
+	// initialize Eth transfer
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
