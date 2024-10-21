@@ -16,7 +16,7 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{info, warn};
+use tracing::{debug, info};
 
 impl Executor {
 	/// Executes a block and commits it to the storage layer.
@@ -40,7 +40,7 @@ impl Executor {
 			};
 
 			for transaction in metadata_access_transactions.iter() {
-				warn!("Transaction sender: {:?}", transaction.sender());
+				debug!("Transaction sender: {:?}", transaction.sender());
 			}
 
 			// reconstruct the block
@@ -65,9 +65,11 @@ impl Executor {
 		})
 		.await??;
 
-		info!("Block execution compute the following state: {:?}", state_compute);
+		debug!("block execution computed state: {:?}", state_compute);
+
 		let version = state_compute.version();
-		info!("Block execution computed the following version: {:?}", version);
+		info!(%version, "block execution completed");
+
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
 
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
