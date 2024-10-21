@@ -1,0 +1,39 @@
+services:
+
+  # runs the simple interaction client to healthcheck the full node over and over
+  suzuka-client-e2e-simple-interaction-healthcheck:
+    image: ghcr.io/movementlabsxyz/suzuka-client-e2e-simple-interaction:${CONTAINER_REV}
+    container_name: suzuka-client-e2e-simple-interaction
+    command: >
+      sh -c '
+        while true; do
+          /app/suzuka-client-e2e-simple-interaction
+        done
+      '
+    environment:
+      - DOT_MOVEMENT_PATH=/.movement
+    volumes:
+      - ${DOT_MOVEMENT_PATH}:/.movement
+    depends_on:
+      suzuka-faucet-service: # wait for all of the replicas to be ready
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "echo", "true"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  # Here we use a dependent service to trigger application crash, i.e., throughout docker-compose 
+  suzuka-client-e2e-simple-interaction-healthcheck-watcher:
+    image: busybox
+    container_name: ledger-should-progress-watcher
+    command: >
+      sh -c '
+        while true; do
+          sleep 1000
+        done
+      '
+    depends_on:
+      suzuka-client-e2e-simple-interaction-healthcheck:
+        condition: service_healthy
