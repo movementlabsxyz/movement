@@ -8,7 +8,9 @@ use tracing_subscriber::{fmt, Registry};
 /// called at the beginning of a process' `main` function.
 ///
 /// If successful, returns a guard object that should be dropped at the end
-/// of the process' `main` function scope.
+/// of the process' `main` function scope. The guard keeps the background task
+/// running to export telemetry (if configured) and makes sure the exporter is
+/// properly shut down, flushing buffered export data, before the process exits.
 pub fn init_tracing_subscriber(
 	service_name: &'static str,
 	service_version: &'static str,
