@@ -253,23 +253,26 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		debug!("Starting lock bridge transfer");
 		let amount_value = match amount.0 {
 			AssetType::Moveth(value) => value,
 			_ => return Err(BridgeContractError::SerializationError),
 		};
-		info!("Starting lock function");
-		let initiator_str = String::from_utf8(initiator.0).unwrap();
+		debug!("Initiator: {:?}", initiator.0);
+		let initiator_str = String::from_utf8(initiator.0)
+    .map_err(|_| BridgeContractError::SerializationError)?;
 		let checksummed_address = utils::to_eip55(&initiator_str);
 		let checksummed_bytes = checksummed_address.as_bytes().to_vec();
-	
-		// Pass the checksummed address to the args
+		
+		debug!("Initiator: {:?}", checksummed_bytes);
 		let args = vec![
-			utils::serialize_vec(&checksummed_bytes)?,  // Use checksummed address bytes
+			utils::serialize_vec(&checksummed_bytes)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
 			utils::serialize_vec(&hash_lock.0[..])?,
 			utils::serialize_vec(&recipient.0)?,
 			utils::serialize_u64(&amount_value)?,
 		];
+		
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
