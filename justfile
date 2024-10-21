@@ -10,6 +10,8 @@ mcr-client RUNTIME FEATURES *ARGS:
     ./scripts/movement/run mcr-client {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 bridge RUNTIME FEATURES *ARGS:
     ./scripts/movement/run bridge {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
+bridge-solo RUNTIME FEATURES *ARGS:
+    ./scripts/movement/run bridge-solo {{ RUNTIME }} {{ FEATURES }} {{ ARGS }}
 build-push-container IMAGE:
     ./scripts/movement/build-push-image {{ IMAGE }}
 container-tests:

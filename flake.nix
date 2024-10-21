@@ -43,6 +43,7 @@
           rust
           postgresql
           ansible
+          zlib
         ];
         
         sysDependencies = with pkgs; [] 
