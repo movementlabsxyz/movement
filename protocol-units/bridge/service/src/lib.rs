@@ -19,6 +19,8 @@ use tokio_stream::StreamExt;
 mod actions;
 pub mod chains;
 mod events;
+pub mod grpc;
+pub mod rest;
 mod states;
 pub mod types;
 
@@ -213,25 +215,29 @@ impl Runtime {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
-				//transfer done remove the state.
-				if state.state == TransferStateType::Done {
-					self.swap_state_map.remove(&event_transfer_id);
-				}
+
 				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Cancelled(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_cancelled(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Refunded(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_refunded(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 		};
 
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
-		self.swap_state_map.insert(state.transfer_id, state);
-
+		if state.state != TransferStateType::Done {
+			self.swap_state_map.insert(state.transfer_id, state);
+		}
 		Ok(action)
 	}
 
