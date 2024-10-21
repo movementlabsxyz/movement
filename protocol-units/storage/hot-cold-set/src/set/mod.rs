@@ -1,15 +1,15 @@
-// ! The [HotColdSet] struct describes a synchronization primitive used to ensure consistent inclusion of members between two sets, known as Hot and Cold sets.
-// ! The synchronization protocol is similar to a 3PC or 3-way handshake, consisting of multiple exchanges between Hot and Cold sets to commit the inclusion of a member where the application interacting with these sets via the [HotColdSet] struct is the coordinator.
-// !
-// ! The Hot set is considered hot for two reasons:
-// ! 1. It is written to first and read from first by the application.
-// ! 2. The Hot set can be garbage collected.
-// ! The Cold set is considered cold for two reasons:
-// ! 1. It is written to second and serves as a backup to the Hot set.
-// ! 2. The Cold set is append-only and is never garbage collected by the application.
-// !
-// ! Originally designed for event sets, this protocol can be extended to other contexts, such as synchronization of transactions.
-// ! Implementers should be cautious of failure points, as frequent commit failures will flag the system as inconsistent and induce recovery attempts when using the `rinsert` method.
+//! The [HotColdSet] struct describes a synchronization primitive used to ensure consistent inclusion of members between two sets, known as Hot and Cold sets.
+//! The synchronization protocol is similar to a 3PC or 3-way handshake, consisting of multiple exchanges between Hot and Cold sets to commit the inclusion of a member where the application interacting with these sets via the [HotColdSet] struct is the coordinator.
+//!
+//! The Hot set is considered hot for two reasons:
+//! 1. It is written to first and read from first by the application.
+//! 2. The Hot set can be garbage collected.
+//! The Cold set is considered cold for two reasons:
+//! 1. It is written to second and serves as a backup to the Hot set.
+//! 2. The Cold set is append-only and is never garbage collected by the application.
+//!
+//! Originally designed for event sets, this protocol can be extended to other contexts, such as synchronization of transactions.
+//! Implementers should be cautious of failure points, as frequent commit failures will flag the system as inconsistent and induce recovery attempts when using the `rinsert` method.
 use std::marker::PhantomData;
 use thiserror::Error;
 
