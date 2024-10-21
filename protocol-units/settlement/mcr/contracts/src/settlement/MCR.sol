@@ -152,7 +152,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     /// @notice The current leader can attest to a block height, given there is a supermajority of stake on the block
-    function attestBlocks(address attester) public {
+    function attestBlocksForAttester(address attester) internal {
         // check if the address is the current leader
         if (attester != getCurrentLeader()) revert("NotLeader");
 
@@ -224,6 +224,11 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
         submitBlockCommitmentForAttester(msg.sender, blockCommitment);
     }
+
+    function attestBlocks() public {
+        attestBlocks(msg.sender);
+    }
+
 
     function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
         for (uint256 i = 0; i < blockCommitments.length; i++) {
