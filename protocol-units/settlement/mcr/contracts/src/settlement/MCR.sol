@@ -15,13 +15,15 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _lastAcceptedBlockHeight,
         uint256 _leadingBlockTolerance,
         uint256 _epochDuration,
-        address[] memory _custodians
+        address[] memory _custodians,
+        uint256 _leaderTerm
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
+        leaderTerm = _leaderTerm;
     }
 
     // creates a commitment
@@ -168,12 +170,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     function getCurrentLeader() public view returns (address) {
-        // TODO replace the following with a configurable value
-        // the leader remains the same for leaderterm L1-blocks
-        uint256 leaderTerm = 100;
-
         uint256 currentL1BlockHeight = block.number;
-        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % leaderTerm ;
+        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % leaderTerm - 1 ; // -1 because we do not want to consider the current block.
         bytes32 blockHash = blockhash(relevantL1BlockHeight);
 
         address[] memory attesters = getAttesters();
