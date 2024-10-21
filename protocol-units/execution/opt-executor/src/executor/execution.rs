@@ -16,9 +16,10 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 impl Executor {
+	/// Executes a block and commits it to the storage layer.
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
@@ -64,10 +65,9 @@ impl Executor {
 		})
 		.await??;
 
-		warn!("Block execution compute the following state: {:?}", state_compute);
-
+		info!("Block execution compute the following state: {:?}", state_compute);
 		let version = state_compute.version();
-		debug!("Block execution computed the following version: {:?}", version);
+		info!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
 
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
@@ -366,7 +366,7 @@ mod tests {
 					Transaction::UserTransaction(user_account_creation_tx),
 					Transaction::UserTransaction(mint_tx),
 				]));
-			debug!("Number of transactions: {}", transactions.num_transactions());
+			info!("Number of transactions: {}", transactions.num_transactions());
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
 			let block_commitment = executor.execute_block(block).await?;
 

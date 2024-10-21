@@ -113,9 +113,11 @@ where
 			}
 		};
 
+		let block_id_hex = hex::encode(&block_id);
 		info!(
-			block_id = %block_id,
-			da_height = da_height,
+			block_id = block_id_hex,
+			da_height,
+			time = block_timestamp,
 			"Processing block from DA"
 		);
 
@@ -130,17 +132,12 @@ where
 			anyhow::bail!("Invalid DA height: {:?}", da_height);
 		}
 
-		// decompress the block bytes
-		let block = tokio::task::spawn_blocking(move || {
-			let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
-			let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
-			Ok::<Block, anyhow::Error>(block)
-		})
-		.await??;
+		let block: Block = bcs::from_bytes(&block_bytes[..])?;
 
 		// get the transactions count before the block is consumed
 		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_telemetry", "execute_block", id = %block_id);
+		let span =
+			info_span!(target: "movement_telemetry", "execute_block", block_id = %block_id_hex);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
@@ -164,7 +161,7 @@ where
 				}
 			}
 		} else {
-			info!(block_id = %block_id, "Skipping settlement");
+			info!(block_id = block_id_hex, "Skipping settlement");
 		}
 
 		Ok(())
