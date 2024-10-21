@@ -55,7 +55,67 @@ contract MCRTest is Test, IMCR {
         custodians[0] = address(moveToken);
         // Attempt to initialize again should fail
         vm.expectRevert(0xf92ee8a9);
-        mcr.initialize(staking, 0, 5, 10 seconds, custodians);
+        mcr.initialize(staking, 0, 5, 10 seconds, custodians,120 seconds);
+    }
+
+    // A confirmer that is in place for confirmerTerm time should be replaced by a new confirmer after their term ended.
+    function testConfirmerRotation() public {
+        // funded signers
+        address payable alice = payable(vm.addr(1));
+        staking.whitelistAddress(alice);
+        moveToken.mint(alice, 100);
+        address payable bob = payable(vm.addr(2));
+        staking.whitelistAddress(bob);
+        moveToken.mint(bob, 100);
+
+        // have them participate in the genesis ceremony
+        vm.prank(alice);
+        moveToken.approve(address(staking), 100);
+        vm.prank(alice);
+        staking.stake(address(mcr), moveToken, 34);
+        vm.prank(bob);
+        moveToken.approve(address(staking), 100);
+        vm.prank(bob);
+        staking.stake(address(mcr), moveToken, 33);
+        // end the genesis ceremony
+        mcr.acceptGenesisCeremony();
+
+        // get the current confirmer
+        assertEq(mcr.getCurrentConfirmer(), alice);
+        // assert that bob is NOT the confirmer
+        assertNotEq(mcr.getCurrentConfirmer(), bob);
+        
+        // make a block commitment
+        MCRStorage.BlockCommitment memory bc1 = MCRStorage.BlockCommitment({
+            height: 1,
+            commitment: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3))),
+            blockId: keccak256(abi.encodePacked(uint256(1), uint256(2), uint256(3)))
+        });
+        vm.prank(alice);
+        mcr.submitBlockCommitment(bc1);
+        vm.prank(bob);
+        mcr.submitBlockCommitment(bc1);
+
+        // TODO these tests need to be split up into different test functions (happy / unhappy path)
+        // bob should not be the current confirmer
+        vm.prank(bob);
+        vm.expectRevert("NotConfirmer");  // Expect the "NotConfirmer" revert message
+        mcr.attestBlocks();
+        // alice can confirm the block comittment
+        vm.prank(alice);
+        mcr.attestBlocks();
+
+        // now check the block is L1-confirmed
+        // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByBlockTime());
+
+
+        // get to next Confirmer
+
+        // make a block commitment with Bob
+
+        // check that Bob is the current confirmer
+
+
     }
 
     function testSimpleStaking() public {

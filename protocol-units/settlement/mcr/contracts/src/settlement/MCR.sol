@@ -15,21 +15,19 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _lastAcceptedBlockHeight,
         uint256 _leadingBlockTolerance,
         uint256 _epochDuration,
-        address[] memory _custodians
+        address[] memory _custodians,
+        uint256 _confirmerTerm 
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
+        confirmerTerm = _confirmerTerm;
     }
 
     // creates a commitment
-    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId)
-        public
-        pure
-        returns (BlockCommitment memory)
-    {
+    function createBlockCommitment(uint256 height, bytes32 commitment, bytes32 blockId) public pure returns (BlockCommitment memory) {
         return BlockCommitment(height, commitment, blockId);
     }
 
@@ -123,9 +121,20 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return stakingContract.getAttestersByDomain(address(this));
     }
 
+    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
+        submitBlockCommitmentForAttester(msg.sender, blockCommitment);
+    }
+
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
+        for (uint256 i = 0; i < blockCommitments.length; i++) {
+            submitBlockCommitment(blockCommitments[i]);
+        }
+    }
+
     // commits a attester to a particular block
     function submitBlockCommitmentForAttester(address attester, BlockCommitment memory blockCommitment) internal {
         // Attester has already committed to a block at this height
+        // TODO consider that if the block commitment is not the same we might want to record this equivocation.
         if (commitments[blockCommitment.height][attester].height != 0) revert AttesterAlreadyCommitted();
 
         // note: do no uncomment the below, we want to allow this in case we have lagging attesters
@@ -149,13 +158,38 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         emit BlockCommitmentSubmitted(blockCommitment.blockId, blockCommitment.commitment, allCurrentEpochStake);
 
+    }
+
+    function attestBlocks() public {
+        attestBlocksForAttester(msg.sender);
+    }
+
+    /// @notice The current leader can attest to a block height, given there is a supermajority of stake on the block
+    function attestBlocksForAttester(address attester) internal {
+        // check if the address is the current leader
+        if (attester != getCurrentConfirmer()) revert("NotConfirmer");
+
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
         // we can commit to blocks out to the tolerance point
         // then we can accept them in order
-        // ! however, this does potentially become very costly for whomever submits this last block
-        // ! rewards need to be managed accordingly
+        // ! rewards need to be 
+        // ! - at least proportional to attested blocks to account for consumed gas
+        // ! - reward the leader well to incentivize frequent block attestation (close to comitted block frequency)
+        //     rather than incentivizing the leader to batch attesting blocks
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
+    }
+
+    /// The leader is determined by L1.
+    function getCurrentConfirmer() public view returns (address) {
+        uint256 currentL1BlockHeight = block.number;
+        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % confirmerTerm - 1 ; // -1 because we do not want to consider the current block.
+        bytes32 blockHash = blockhash(relevantL1BlockHeight);
+
+        address[] memory attesters = getAttesters();
+        // map the blockhash to the attesters
+        uint256 leaderIndex = uint256(blockHash) % attesters.length;
+        return attesters[leaderIndex];        
     }
 
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
@@ -166,11 +200,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
         while (getCurrentEpoch() < blockEpoch) {
+            // TODO: we should check the implication of this for the leader. But it also may be an issue for any attester. 
             rollOverEpoch();
         }
 
         // note: we could keep track of seen commitments in a set
         // but since the operations we're doing are very cheap, the set actually adds overhead
+
+        // TODO the supermajority is 2f+1 from 3f+1 nodes. Not 2f from 3f. 
         uint256 supermajority = (2 * computeAllTotalStakeForEpoch(blockEpoch)) / 3;
         address[] memory attesters = getAttesters();
 
@@ -194,16 +231,6 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         }
 
         return false;
-    }
-
-    function submitBlockCommitment(BlockCommitment memory blockCommitment) public {
-        submitBlockCommitmentForAttester(msg.sender, blockCommitment);
-    }
-
-    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) public {
-        for (uint256 i = 0; i < blockCommitments.length; i++) {
-            submitBlockCommitment(blockCommitments[i]);
-        }
     }
 
     function _acceptBlockCommitment(BlockCommitment memory blockCommitment) internal {

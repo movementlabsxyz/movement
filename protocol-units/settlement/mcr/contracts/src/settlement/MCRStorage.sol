@@ -20,9 +20,22 @@ contract MCRStorage {
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
     uint256 public lastAcceptedBlockHeight;
 
+    /// Confirmer term time in seconds (determined by L1 blocks). The confimer remains the same for confirmerTerm period.
+    // This means we accept that if the confirmer is not active the postconfirmations will be delayed. 
+    // TODO permit that anyone can confirm but only the Confirmer gets rewarded. 
+    // TODO The Confirmer should also get rewarded even if another attestor confirmed the postconfirmation.
+    // The Confirmer term can be minimal, but it should not be O(1) as the confirmer should have some time 
+    // to prepare and post L1-transactions that will start the validation of attestations.
+    uint256 public confirmerTerm;
+
+
+    // TODO i added these param descriptions. are these correct?
+    /// Struct to store block commitment details
+    /// @param height The height of the block
+    /// @param commitment The hash of the committment
+    /// @param blockId The unique identifier of the block (hash of the block)
     struct BlockCommitment {
         // currently, to simplify the api, we'll say 0 is uncommitted all other numbers are legitimate heights
-
         uint256 height;
         bytes32 commitment;
         bytes32 blockId;
