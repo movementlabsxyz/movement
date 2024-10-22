@@ -6,25 +6,23 @@ use alloy_network::EthereumWallet;
 use anyhow::Result;
 use aptos_types::account_address::AccountAddress;
 use bridge_config::Config;
-use bridge_integration_tests::HarnessEthClient;
-use bridge_integration_tests::TestHarness;
-use bridge_service::chains::bridge_contracts::BridgeContractError;
-use bridge_service::chains::bridge_contracts::BridgeContractEvent;
-use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
-use bridge_service::chains::ethereum::types::AtomicBridgeInitiator;
-use bridge_service::chains::ethereum::utils::send_transaction;
-use bridge_service::chains::ethereum::utils::send_transaction_rules;
-use bridge_service::chains::{
-	ethereum::types::EthAddress,
-	movement::{
-		client_framework::MovementClientFramework, event_monitoring::MovementMonitoring, utils::MovementAddress,
+use bridge_integration_tests::{HarnessEthClient, TestHarness};
+use bridge_service::{
+	chains::{
+		bridge_contracts::{BridgeContractError, BridgeContractEvent},
+		ethereum::{
+			event_monitoring::EthMonitoring,
+			types::{EthAddress, AtomicBridgeInitiator},
+			utils::{send_transaction, send_transaction_rules},
+		},
+		movement::{
+			client_framework::MovementClientFramework, 
+			event_monitoring::MovementMonitoring, 
+			utils::MovementAddress,
+		},
 	},
+	types::{Amount, AssetType, BridgeAddress, HashLock, HashLockPreImage}
 };
-use bridge_service::types::Amount;
-use bridge_service::types::AssetType;
-use bridge_service::types::BridgeAddress;
-use bridge_service::types::HashLock;
-use bridge_service::types::HashLockPreImage;
 use futures::StreamExt;
 use tracing_subscriber::EnvFilter;
 
