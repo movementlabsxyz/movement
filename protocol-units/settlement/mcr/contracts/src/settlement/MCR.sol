@@ -142,11 +142,13 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // Attester has committed to an already accepted block
         // if ( lastAcceptedBlockHeight > blockCommitment.height) revert AlreadyAcceptedBlock();
         // Attester has committed to a block too far ahead of the last accepted block
+        // TODO we need to ensure the attester checks the lastAcceptedBlockHeight before submitting a commitment.
         if (lastAcceptedBlockHeight + leadingBlockTolerance < blockCommitment.height) revert AttesterAlreadyCommitted();
 
         // assign the block height to the current epoch if it hasn't been assigned yet
+        // TODO since any attester can submit a comittment for a block height, the assignment could be off by leadingBlockTolerance
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
-            // note: this is an intended race condition, but it is benign because of the tolerance
+            // TODO not clear where does this tolerance comes in ???
             blockHeightEpochAssignments[blockCommitment.height] = getEpochByL1BlockTime();
         }
 
@@ -185,6 +187,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     function getCurrentAcceptor() public view returns (address) {
         uint256 currentL1BlockHeight = block.number;
         uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1 ; // -1 because we do not want to consider the current block.
+        if (relevantL1BlockHeight < 0) {
+            relevantL1BlockHeight = 0;
+        }
         bytes32 blockHash = blockhash(relevantL1BlockHeight);
 
         address[] memory attesters = getAttesters();
@@ -194,7 +199,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     // TODO : liveness. if the accepting epoch is behind and does not have enough for a given block height 
-    // TODO : but the current epoch has enough votes, what should we do?? Should we move to the next epoch?
+    // TODO : but the current epoch has enough votes, what should we do?? 
+    // TODO : Should we move to the next epoch and ignore all following votes of that epoch? 
+    // TODO : What if none of the epochs have enough votes for a given block height.
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
         // get the epoch assigned to the block height
         uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];

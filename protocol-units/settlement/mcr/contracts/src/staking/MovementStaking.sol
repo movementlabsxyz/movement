@@ -180,7 +180,7 @@ contract MovementStaking is
     }
 
     // gets the would be epoch for the current L1-block time. 
-    // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be currentAcceptingEpoch
+    // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be acceptingEpoch
     // TODO: for liveness of the protocol it should be possible that newer epochs can accept L2-block-batches that are before the current epoch (IF the previous epoch has stopped being live)
     function getEpochByL1BlockTime(address domain) public view returns (uint256) {
         return block.timestamp / epochDurationByDomain[domain];
@@ -205,7 +205,7 @@ contract MovementStaking is
             getCurrentEpoch(domain) == 0 ? 0 : getEpochByL1BlockTime(domain) + 1;
     }
 
-    // gets the stake for a given attester at a given epoch
+    // gets the stake for a given attester at a given epoch and domain
     function getStakeAtEpoch(
         address domain,
         uint256 epoch,
@@ -406,6 +406,7 @@ contract MovementStaking is
     }
 
     function rollOverEpoch() external {
+        // TODO : clarify why this is msg.sender
         _rollOverEpoch(msg.sender, getCurrentEpoch(msg.sender));
     }
 

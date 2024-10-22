@@ -8,13 +8,15 @@ contract MCRStorage {
 
     IMovementStaking public stakingContract;
 
-    // the number of blocks that can be submitted ahead of the lastAcceptedBlockHeight
+    /// the number of blocks that can be submitted ahead of the lastAcceptedBlockHeight
     // this allows for things like batching to take place without some attesters locking down the attester set by pushing too far ahead
     // ? this could be replaced by a 2/3 stake vote on the block height to epoch assignment
     // ? however, this protocol becomes more complex as you to take steps to ensure that...
     // ? 1. Block heights have a non-decreasing mapping to epochs
     // ? 2. Votes get accumulated reasonable near the end of the epoch (i.e., your vote is cast for the epoch you vote fore and the next)
     // ? if howevever, you simply allow a race with the tolerance below, both of these are satisfied without the added complexity
+    // TODO the above explanation is not clear and needs to be rephrased or further explained
+    // TODO unless this is clarified or becomes relevant in the future, this comment should be removed
     uint256 public leadingBlockTolerance;
 
     // track the last accepted block height, so that we can require blocks are submitted in order and handle staking effectively
