@@ -41,7 +41,7 @@ contract MCRStorage {
         bytes32 blockId;
     }
 
-    // map each block height to an epoch
+    /// map each block height to an epoch
     mapping(uint256 blockHeight => uint256 epoch) public blockHeightEpochAssignments;
 
     // track each commitment from each attester for each block height
