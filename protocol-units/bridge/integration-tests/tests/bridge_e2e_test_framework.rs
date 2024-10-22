@@ -161,31 +161,12 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	let config = TestHarness::read_bridge_config().await?;
 	println!("after test_movement_event",);
 
-	//	1) initialize transfer
-	// let hash_lock_pre_image = HashLockPreImage::random();
-	// let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	// let mov_recipient = MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face"));
-
-	// let amount = Amount(AssetType::EthAndWeth((1, 0)));
-	// initiate_eth_bridge_transfer(
-	// 	&config,
-	// 	HarnessEthClient::get_initiator_private_key(&config),
-	// 	mov_recipient,
-	// 	hash_lock,
-	// 	amount,
-	// )
-	// .await
-	// .expect("Failed to initiate bridge transfer");
-
 	use bridge_integration_tests::MovementToEthCallArgs;
 
 	let mut movement_client = MovementClientFramework::new(&config.movement).await.unwrap();
 
 	let args = MovementToEthCallArgs::default();
-	// let signer_privkey = config.movement.movement_signer_key.clone();
-	// let sender_address = format!("0x{}", Ed25519PublicKey::from(&signer_privkey).to_string());
-	// let sender_address = movement_client.signer().address();
-	//		test_utils::fund_and_check_balance(&mut mvt_client_harness, 100_000_000_000).await?;
+
 	bridge_integration_tests::utils::initiate_bridge_transfer_helper_framework(
 		&mut movement_client,
 		args.initiator.0,
@@ -203,27 +184,6 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 		config.movement.movement_native_address
 	);
 
-	// let signer_privkey = config.movement.movement_signer_key.clone();
-	// let signer_public_key = format!("0x{}", Ed25519PublicKey::from(&signer_privkey).to_string());
-
-	// println!("signer_public_key {signer_public_key}",);
-
-	// let res = fetch_account_events(
-	// 	&config.movement.mvt_rpc_connection_url(),
-	// 	&signer_public_key,
-	// 	&event_type,
-	// )
-	// .await;
-	// println!("res: {res:?}",);
-
-	// let res = test_get_events_by_account_event_handle(
-	// 	&config.movement.mvt_rpc_connection_url(),
-	// 	"0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
-	// 	&event_type,
-	// )
-	// .await;
-	// println!("res: {res:?}",);
-
 	let res = test_get_events_by_account_event_handle(
 		&config.movement.mvt_rpc_connection_url(),
 		&config.movement.movement_native_address,
@@ -240,30 +200,6 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 	.await;
 	println!("res: {res:?}",);
 
-	// let mut one_stream = MovementMonitoring::build(&config.movement).await?;
-
-	// //listen to event.
-	// let mut error_counter = 0;
-	// loop {
-	// 	tokio::select! {
-	// 		// Wait on chain one events.
-	// 		Some(one_event_res) = one_stream.next() =>{
-	// 			match one_event_res {
-	// 				Ok(one_event) => {
-	// 					println!("Receive event {:?}", one_event);
-	// 				}
-	// 				Err(err) => {
-	// 					println!("Receive error {:?}", err);
-	// 					error_counter +=1;
-	// 					if error_counter > 5 {
-	// 						break;
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	Ok(())
 }
 
@@ -272,8 +208,6 @@ async fn test_get_events_by_account_event_handle(
 	account_address: &str,
 	event_type: &str,
 ) {
-	// let url =
-	// 	format!("{}/v1/accounts/{}/events?event_type={}", rest_url, account_address, event_type);
 	let url = format!(
 		"{}/v1/accounts/{}/events/{}/bridge_transfer_initiated_events",
 		rest_url, account_address, event_type
@@ -315,16 +249,4 @@ async fn fetch_account_events(rest_url: &str, account_address: &str, event_type:
 		.await;
 
 	println!("response{response:?}",);
-
-	// let core_code_address: AccountAddress = AccountAddress::from_hex_literal("0x1").unwrap();
-	// let response = client
-	// 	.get_account_events_bcs(
-	// 		core_code_address,
-	// 		"0x1::block::BlockResource",
-	// 		"new_block_events",
-	// 		Some(1),
-	// 		None,
-	// 	)
-	// 	.await;
-	// println!("new_block_events response: {response:?}",);
 }
