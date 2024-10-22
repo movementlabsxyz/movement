@@ -14,6 +14,7 @@ use bridge_service::chains::bridge_contracts::BridgeContractError;
 use bridge_service::chains::ethereum::types::AlloyProvider;
 use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
+use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
 use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::movement::{client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash};
 use bridge_service::types::Amount;
@@ -235,7 +236,7 @@ impl HarnessMvtClient {
 		];
 
 		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
-			self.movement_client.native_address,
+			FRAMEWORK_ADDRESS,
 			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
 			"complete_bridge_transfer",
 			Vec::new(),
