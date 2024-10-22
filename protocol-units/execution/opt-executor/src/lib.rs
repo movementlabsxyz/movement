@@ -2,6 +2,7 @@ pub mod bootstrap;
 pub mod context;
 #[warn(unused_imports)]
 pub mod executor;
+pub mod gc_account_sequence_number;
 pub mod indexer;
 pub mod service;
 pub mod transaction_pipe;

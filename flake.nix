@@ -42,6 +42,7 @@
           gcc
           rust
           postgresql
+          tesseract4
           ansible
         ];
         
