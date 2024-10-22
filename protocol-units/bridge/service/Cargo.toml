@@ -19,7 +19,7 @@ futures.workspace = true
 futures-timer = "3.0.3"
 hex = { workspace = true }
 thiserror.workspace = true
-tokio = { workspace = true, version = "1.0.1", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 tokio-stream = "0.1.16"
 tracing.workspace = true
 rand.workspace = true
