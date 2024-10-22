@@ -1,12 +1,12 @@
 use anyhow::Result;
-use bridge_config::Config;
+use bridge_config::{common::movement::MovementConfig, Config};
 use bridge_grpc::{
 	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
 };
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
-		movement::{client::MovementClient, event_monitoring::MovementMonitoring},
+		movement::{client::MovementClient, client_framework::MovementClientFramework, event_monitoring::MovementMonitoring},
 	},
 	grpc::HealthCheckService,
 	rest::BridgeRest,
@@ -36,12 +36,13 @@ async fn main() -> Result<()> {
 
 	// Get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
-	let bridge_config: Config = godfig.try_wait_for_ready().await?;
+	let mut bridge_config: Config = godfig.try_wait_for_ready().await?;
+
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
 	let one_stream = EthMonitoring::build(&bridge_config.eth).await.unwrap();
 	let one_client = EthClient::new(&bridge_config.eth).await.unwrap();
-	let two_client = MovementClient::new(&bridge_config.movement).await.unwrap();
+	let two_client = MovementClientFramework::new(&bridge_config.movement).await.unwrap();
 	let two_stream = MovementMonitoring::build(&bridge_config.movement).await.unwrap();
 
 	let one_client_for_grpc = one_client.clone();
