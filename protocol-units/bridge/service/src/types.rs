@@ -225,6 +225,17 @@ pub struct BridgeTransferDetails<A> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub struct BridgeTransferDetailsCounterparty<A> {
+	pub bridge_transfer_id: BridgeTransferId,
+	pub initiator_address: BridgeAddress<Vec<u8>>,
+	pub recipient_address: BridgeAddress<A>,
+	pub hash_lock: HashLock,
+	pub time_lock: TimeLock,
+	pub amount: Amount,
+	pub state: u8,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub struct LockDetails<A> {
 	pub bridge_transfer_id: BridgeTransferId,
 	pub initiator_address: BridgeAddress<Vec<u8>>,

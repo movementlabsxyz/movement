@@ -7,6 +7,7 @@ pub use movement_types::{
 pub use sequencing_util::Sequencer;
 
 use tokio::sync::RwLock;
+use tracing::{debug, info};
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
@@ -128,7 +129,12 @@ impl<T: MempoolTransactionOperations> Sequencer for Memseq<T> {
 			.unwrap()
 			.as_secs()
 			.saturating_sub(gc_interval);
-		self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		let gc_count = self.mempool.gc_mempool_transactions(timestamp_threshold).await?;
+		if gc_count != 0 {
+			info!("pruned {gc_count} transactions");
+		} else {
+			debug!("no transactions to prune")
+		}
 		tokio::time::sleep(Duration::from_secs(gc_interval)).await;
 		Ok(())
 	}
@@ -477,7 +483,7 @@ pub mod test {
 		async fn gc_mempool_transactions(
 			&self,
 			_timestamp_threshold: u64,
-		) -> Result<(), anyhow::Error> {
+		) -> Result<u64, anyhow::Error> {
 			Err(anyhow::anyhow!("Mock gc_mempool_transaction"))
 		}
 
