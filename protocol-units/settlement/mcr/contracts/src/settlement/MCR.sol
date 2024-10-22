@@ -36,11 +36,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return lastAcceptedBlockHeight + leadingBlockTolerance;
     }
 
-    // gets the would be epoch for the current block time
-    function getEpochByBlockTime() public view returns (uint256) {
-        return stakingContract.getEpochByBlockTime(address(this));
+    // gets the would be epoch for the current L1-block time
+    function getEpochByL1BlockTime() public view returns (uint256) {
+        return stakingContract.getEpochByL1BlockTime(address(this));
     }
 
+    // TODO is this not mixing up the L1-block time with the L2-blocks?
     // gets the current epoch up to which blocks have been accepted
     function getCurrentEpoch() public view returns (uint256) {
         return stakingContract.getCurrentEpoch(address(this));
@@ -146,7 +147,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // assign the block height to the current epoch if it hasn't been assigned yet
         if (blockHeightEpochAssignments[blockCommitment.height] == 0) {
             // note: this is an intended race condition, but it is benign because of the tolerance
-            blockHeightEpochAssignments[blockCommitment.height] = getEpochByBlockTime();
+            blockHeightEpochAssignments[blockCommitment.height] = getEpochByL1BlockTime();
         }
 
         // register the attester's commitment
@@ -252,7 +253,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         emit BlockAccepted(blockCommitment.blockId, blockCommitment.commitment, blockCommitment.height);
 
         // if the timestamp epoch is greater than the current epoch, roll over the epoch
-        if (getEpochByBlockTime() > currentEpoch) {
+        if (getEpochByL1BlockTime() > currentEpoch) {
             rollOverEpoch();
         }
     }

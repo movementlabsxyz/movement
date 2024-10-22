@@ -9,6 +9,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {MovementStakingStorage, EnumerableSet} from "./MovementStakingStorage.sol";
 import {IMovementStaking} from "./interfaces/IMovementStaking.sol";
 
+// TODO Error: "Contract "MovementStaking" should be marked as abstract.(3656)"
 contract MovementStaking is
     MovementStakingStorage,
     IMovementStaking,
@@ -63,7 +64,7 @@ contract MovementStaking is
         if (domainGenesisAccepted[domain]) revert GenesisAlreadyAccepted();
         domainGenesisAccepted[domain] = true;
         // roll over from 0 (genesis) to current epoch by block time
-        currentEpochByDomain[domain] = getEpochByBlockTime(domain);
+        currentEpochByDomain[domain] = getEpochByL1BlockTime(domain);
 
         for (uint256 i = 0; i < attestersByDomain[domain].length(); i++) {
             address attester = attestersByDomain[domain].at(i);
@@ -97,7 +98,7 @@ contract MovementStaking is
         uint256[] calldata stakes
     ) public {
         address domain = msg.sender;
-        currentEpochByDomain[domain] = getEpochByBlockTime(domain);
+        currentEpochByDomain[domain] = getEpochByL1BlockTime(domain);
 
         for (uint256 i = 0; i < attesters.length; i++) {
             address custodian = custodians[i];
@@ -178,17 +179,21 @@ contract MovementStaking is
         epochUnstakesByDomain[domain][epoch][custodian][attester] = amount;
     }
 
-    // gets the would be epoch for the current block time
-    function getEpochByBlockTime(address domain) public view returns (uint256) {
+    // gets the would be epoch for the current L1-block time. 
+    // TODO: this should be called the currentEpoch (as it is the one that is relevant for stake), whereas the CurrentEpoch should be currentAcceptingEpoch
+    // TODO: for liveness of the protocol it should be possible that newer epochs can accept L2-block-batches that are before the current epoch (IF the previous epoch has stopped being live)
+    function getEpochByL1BlockTime(address domain) public view returns (uint256) {
         return block.timestamp / epochDurationByDomain[domain];
     }
 
     // gets the current epoch up to which blocks have been accepted
+    // TODO: this should be called the currentAcceptingEpoch
     function getCurrentEpoch(address domain) public view returns (uint256) {
         return currentEpochByDomain[domain];
     }
 
     // gets the next epoch
+    // TODO: this should be called the nextAcceptingEpoch
     function getNextEpoch(address domain) public view returns (uint256) {
         return getCurrentEpoch(domain) == 0 ? 0 : getCurrentEpoch(domain) + 1;
     }
@@ -197,7 +202,7 @@ contract MovementStaking is
         address domain
     ) public view returns (uint256) {
         return
-            getCurrentEpoch(domain) == 0 ? 0 : getEpochByBlockTime(domain) + 1;
+            getCurrentEpoch(domain) == 0 ? 0 : getEpochByL1BlockTime(domain) + 1;
     }
 
     // gets the stake for a given attester at a given epoch
@@ -211,6 +216,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
+    // TODO: this should be called getCurrentAcceptingEpochStake
     function getCurrentEpochStake(
         address domain,
         address custodian,

@@ -14,7 +14,7 @@ interface IMovementStaking {
         address[] calldata,
         uint256[] calldata
     ) external;
-    function getEpochByBlockTime(address) external view returns (uint256);
+    function getEpochByL1BlockTime(address) external view returns (uint256);
     function getCurrentEpoch(address) external view returns (uint256);
     function getNextEpoch(address) external view returns (uint256);
     function getNextEpochByBlockTime(address) external view returns (uint256);
