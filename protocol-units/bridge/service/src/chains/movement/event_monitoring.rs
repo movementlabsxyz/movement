@@ -169,7 +169,7 @@ impl MovementMonitoring {
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
-					let mut counterpart_event_list = match pool_counterpart_contract(
+					let mut counterpart_event_list = match pool_counterparty_contract(
 						mvt_client.native_address,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
@@ -245,12 +245,12 @@ async fn pool_initiator_contract(
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let native_address_str = native_address.to_standard_string();
 	let struct_tag =
-		format!("{}::atomic_bridge_initiator::BridgeTransferStore", native_address_str,);
+		format!("{}::atomic_bridge_initiator::BridgeTransferStore", FRAMEWORK_ADDRESS.to_string());
 
 	// Get initiated events
 	let initiated_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&FRAMEWORK_ADDRESS.to_string(),
 		&struct_tag,
 		"bridge_transfer_initiated_events",
 		pull_state.initiator_init,
@@ -274,7 +274,7 @@ async fn pool_initiator_contract(
 	// Get completed events
 	let completed_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&FRAMEWORK_ADDRESS.to_string(),
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.initiator_complete,
@@ -305,7 +305,7 @@ async fn pool_initiator_contract(
 	// Get refunded events
 	let refunded_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&FRAMEWORK_ADDRESS.to_string(),
 		&struct_tag,
 		"bridge_transfer_refunded_events",
 		pull_state.initiator_refund,
@@ -339,7 +339,7 @@ async fn pool_initiator_contract(
 	Ok(total_events)
 }
 
-async fn pool_counterpart_contract(
+async fn pool_counterparty_contract(
 	native_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
@@ -375,7 +375,7 @@ async fn pool_counterpart_contract(
 	// Get completed events
 	let completed_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&FRAMEWORK_ADDRESS.to_string(),
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.counterpart_complete,
@@ -418,7 +418,7 @@ async fn pool_counterpart_contract(
 	// Get cancelled events
 	let cancelled_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&FRAMEWORK_ADDRESS.to_string(),
 		&struct_tag,
 		"bridge_transfer_cancelled_events",
 		pull_state.counterpart_cancel,
