@@ -100,7 +100,8 @@ jobs:
       env:
         CELESTIA_LOG_LEVEL: FATAL # adjust the log level while debugging
       run: |
-        nix develop --command bash  -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test -t=false"
+        nix develop --command bash \
+          -c "just suzuka-full-node native build.setup.eth-local.celestia-local.test.telemetry.test-telemetry -t=false"
 
   suzuka-multi-node-local:
     if: github.event.label.name == 'cicd:suzuka-multi-node-local' ||  github.ref == 'refs/heads/main'

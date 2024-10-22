@@ -15,7 +15,7 @@ use std::boxed::Box;
 use std::fmt::Debug;
 use std::path::PathBuf;
 use std::pin::Pin;
-use std::sync::{atomic::AtomicU64, Arc};
+use std::sync::Arc;
 use std::time::Duration;
 
 use tokio::{
@@ -38,8 +38,6 @@ use movement_algs::grouping_heuristic::{
 use movement_types::block::Block;
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
-
-const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
 pub struct LightNodeV1<C>
@@ -114,23 +112,24 @@ where
 	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
 	FieldBytesSize<C>: ModulusSize,
 {
+	#[tracing::instrument(target = "movement_telemetry", name = "build_block")]
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
 
-		// this has an internal timeout based on its building time
-		// so in the worst case scenario we will roughly double the internal timeout
-		let uid = LOGGING_UID.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-		debug!(target: "movement_timing", uid = %uid, "waiting_for_next_block",);
 		let block = memseq.wait_for_next_block().await?;
 		match block {
 			Some(block) => {
-				info!(target: "movement_timing", block_id = %block.id(), uid = %uid, transaction_count = block.transactions().len(), "received_block");
+				info!(
+					target: "movement_telemetry",
+					block_id = %block.id(),
+					transaction_count = block.transactions().len(),
+					"received_block",
+				);
 				sender.send(block).await?;
 				Ok(())
 			}
 			None => {
-				// no transactions to include
-				debug!(target: "movement_timing", uid = %uid, "no_transactions_to_include");
+				debug!("no transactions to include");
 				Ok(())
 			}
 		}
@@ -138,7 +137,7 @@ where
 
 	async fn submit_blocks(&self, blocks: &Vec<block::WrappedBlock>) -> Result<(), anyhow::Error> {
 		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitting_block");
+			info!(target: "movement_telemetry", block_id = %block.block.id(), "inner_submitting_block");
 		}
 		// get references to celestia blobs in the wrapped blocks
 		let block_blobs = blocks
@@ -149,16 +148,12 @@ where
 		// use deref on the wrapped block to get the blob
 		self.pass_through.submit_celestia_blobs(&block_blobs).await?;
 		for block in blocks {
-			info!(target: "movement_timing", block_id = %block.block.id(), "inner_submitted_block");
+			info!(target: "movement_telemetry", block_id = %block.block.id(), "inner_submitted_block");
 		}
 		Ok(())
 	}
 
-	pub async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
-		for block in &blocks {
-			info!(target: "movement_timing", block_id = %block.id(), "submitting_block");
-		}
-
+	async fn submit_with_heuristic(&self, blocks: Vec<Block>) -> Result<(), anyhow::Error> {
 		// wrap the blocks in a struct that can be split and compressed
 		// spawn blocking because the compression is blocking and could be slow
 		let pass_through = self.pass_through.clone();
@@ -211,9 +206,8 @@ where
 			)
 			.await?;
 
-		info!("block group results: {:?}", block_group_results);
 		for block_group_result in &block_group_results {
-			info!(target: "movement_timing", block_group_result = ?block_group_result, "block_group_result");
+			info!(target: "movement_telemetry", block_group_result = ?block_group_result, "block_group_result");
 		}
 
 		Ok(())
@@ -243,27 +237,24 @@ where
 				}
 				Ok(None) => {
 					// The channel was closed
-					info!("sender dropped");
+					debug!("sender dropped");
 					break;
 				}
 				Err(_) => {
 					// The operation timed out
-					debug!(
-						target: "movement_timing",
-						batch_size = blocks.len(),
-						"timed_out_building_block"
-					);
+					debug!(batch_size = blocks.len(), "timed_out_building_block");
 					break;
 				}
 			}
 		}
 
-		info!(target: "movement_timing", block_count = blocks.len(), "read_blocks");
+		info!(target: "movement_telemetry", block_count = blocks.len(), "read_blocks");
 
 		Ok(blocks)
 	}
 
 	/// Ticks the block proposer to build blocks and submit them
+	#[tracing::instrument(target = "movement_telemetry", name = "publish_blobs")]
 	async fn tick_publish_blobs(
 		&self,
 		receiver: &mut Receiver<Block>,
@@ -277,11 +268,11 @@ where
 
 		// submit the blobs, resizing as needed
 		for block_id in &ids {
-			info!(target: "movement_timing", %block_id, "submitting_block_batch");
+			info!(target: "movement_telemetry", %block_id, "submitting_block_batch");
 		}
 		self.submit_with_heuristic(blocks).await?;
 		for block_id in &ids {
-			info!(target: "movement_timing", %block_id, "submitted_block_batch");
+			info!(target: "movement_telemetry", %block_id, "submitted_block_batch");
 		}
 
 		Ok(())

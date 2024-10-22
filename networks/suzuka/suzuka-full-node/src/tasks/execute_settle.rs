@@ -113,9 +113,10 @@ where
 			}
 		};
 
+		let block_id_hex = hex::encode(&block_id);
 		info!(
-			block_id = %hex::encode(block_id.clone()),
-			da_height = da_height,
+			block_id = block_id_hex,
+			da_height,
 			time = block_timestamp,
 			"Processing block from DA"
 		);
@@ -133,9 +134,10 @@ where
 
 		let block: Block = bcs::from_bytes(&block_bytes[..])?;
 
-		// get the transactions
+		// get the transactions count before the block is consumed
 		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_timing", "execute_block", id = ?block_id);
+		let span =
+			info_span!(target: "movement_telemetry", "execute_block", block_id = %block_id_hex);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
@@ -159,7 +161,7 @@ where
 				}
 			}
 		} else {
-			info!(block_id = ?block_id, "Skipping settlement");
+			info!(block_id = block_id_hex, "Skipping settlement");
 		}
 
 		Ok(())
@@ -178,18 +180,22 @@ where
 		block: Block,
 		mut block_timestamp: u64,
 	) -> anyhow::Result<BlockCommitment> {
-		for _ in 0..self.execution_extension.block_retry_count {
+		let retry_count = self.execution_extension.block_retry_count;
+		for _ in 0..retry_count {
 			// we have to clone here because the block is supposed to be consumed by the executor
 			match self.execute_block(block.clone(), block_timestamp).await {
-				Ok(commitment) => return Ok(commitment),
+				Ok(commitment) => {
+					info!(target: "movement_telemetry", "execute_block_succeeded");
+					return Ok(commitment);
+				}
 				Err(e) => {
-					info!("Failed to execute block: {:?}. Retrying", e);
+					info!(target: "movement_telemetry", error = %e, "execute_block_failed");
 					block_timestamp += self.execution_extension.block_retry_increment_microseconds; // increase the timestamp by 5 ms (5000 microseconds)
 				}
 			}
 		}
 
-		anyhow::bail!("Failed to execute block after 5 retries")
+		anyhow::bail!("Failed to execute block after {retry_count} retries")
 	}
 
 	async fn execute_block(
@@ -220,6 +226,22 @@ where
 			{
 				continue;
 			}
+
+			// Instrumentation for aggregated metrics:
+			// Transactions per second: https://github.com/movementlabsxyz/movement/discussions/422
+			// Transaction latency: https://github.com/movementlabsxyz/movement/discussions/423
+			// Transaction failure rate: https://github.com/movementlabsxyz/movement/discussions/428
+			//
+			// TODO: as the block can be attempted to be executed repeatedly,
+			// collect this data once and export in telemetry
+			// on the final success or failure.
+			info!(
+				target: "movement_telemetry",
+				tx_hash = %signed_transaction.committed_hash(),
+				sender = %signed_transaction.sender(),
+				sequence_number = signed_transaction.sequence_number(),
+				"executing_transaction"
+			);
 
 			let signature_verified_transaction = SignatureVerifiedTransaction::Valid(
 				Transaction::UserTransaction(signed_transaction),

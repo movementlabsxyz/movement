@@ -187,7 +187,6 @@ where
 		Ok(verified_blobs)
 	}
 
-	#[tracing::instrument(target = "movement_timing", level = "debug")]
 	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
 		let ir_blobs = self.get_ir_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
