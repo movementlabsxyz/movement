@@ -38,8 +38,6 @@ async fn main() -> Result<()> {
 	let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
 	let mut bridge_config: Config = godfig.try_wait_for_ready().await?;
 
-	//bridge_config.movement = MovementConfig::suzuka();
-
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
 	let one_stream = EthMonitoring::build(&bridge_config.eth).await.unwrap();
