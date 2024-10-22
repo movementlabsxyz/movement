@@ -16,14 +16,14 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         uint256 _leadingBlockTolerance,
         uint256 _epochDuration,
         address[] memory _custodians,
-        uint256 _confirmerTerm 
+        uint256 _acceptorTerm 
     ) public initializer {
         __BaseSettlement_init_unchained();
         stakingContract = _stakingContract;
         leadingBlockTolerance = _leadingBlockTolerance;
         lastAcceptedBlockHeight = _lastAcceptedBlockHeight;
         stakingContract.registerDomain(_epochDuration, _custodians);
-        confirmerTerm = _confirmerTerm;
+        acceptorTerm = _acceptorTerm;
     }
 
     // creates a commitment
@@ -168,7 +168,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     /// @notice The current leader can attest to a block height, given there is a supermajority of stake on the block
     function attestBlocksForAttester(address attester) internal {
         // check if the address is the current leader
-        if (attester != getCurrentConfirmer()) revert("NotConfirmer");
+        if (attester != getCurrentAcceptor()) revert("NotAcceptor");
 
         // keep ticking through to find accepted blocks
         // note: this is what allows for batching to be successful
@@ -182,9 +182,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
     }
 
     /// The leader is determined by L1.
-    function getCurrentConfirmer() public view returns (address) {
+    function getCurrentAcceptor() public view returns (address) {
         uint256 currentL1BlockHeight = block.number;
-        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % confirmerTerm - 1 ; // -1 because we do not want to consider the current block.
+        uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1 ; // -1 because we do not want to consider the current block.
         bytes32 blockHash = blockhash(relevantL1BlockHeight);
 
         address[] memory attesters = getAttesters();
@@ -193,6 +193,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         return attesters[leaderIndex];        
     }
 
+    // TODO : liveness. if the accepting epoch is behind and does not have enough for a given block height 
+    // TODO : but the current epoch has enough votes, what should we do?? Should we move to the next epoch?
     function tickOnBlockHeight(uint256 blockHeight) internal returns (bool) {
         // get the epoch assigned to the block height
         uint256 blockEpoch = blockHeightEpochAssignments[blockHeight];
@@ -201,7 +203,7 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // so long as we ensure that we go through the blocks in order and that the block to epoch assignment is non-decreasing, we're good
         // so, we'll just keep rolling over the epoch until we catch up
         while (getCurrentEpoch() < blockEpoch) {
-            // TODO: we should check the implication of this for the leader. But it also may be an issue for any attester. 
+            // TODO: we should check the implication of this for the acceptor. But it also may be an issue for any attester. 
             rollOverEpoch();
         }
 

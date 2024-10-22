@@ -58,8 +58,8 @@ contract MCRTest is Test, IMCR {
         mcr.initialize(staking, 0, 5, 10 seconds, custodians,120 seconds);
     }
 
-    // A confirmer that is in place for confirmerTerm time should be replaced by a new confirmer after their term ended.
-    function testConfirmerRotation() public {
+    // A acceptor that is in place for acceptorTerm time should be replaced by a new acceptor after their term ended.
+    function testAcceptorRotation() public {
         // funded signers
         address payable alice = payable(vm.addr(1));
         staking.whitelistAddress(alice);
@@ -80,10 +80,10 @@ contract MCRTest is Test, IMCR {
         // end the genesis ceremony
         mcr.acceptGenesisCeremony();
 
-        // get the current confirmer
-        assertEq(mcr.getCurrentConfirmer(), alice);
-        // assert that bob is NOT the confirmer
-        assertNotEq(mcr.getCurrentConfirmer(), bob);
+        // get the current acceptor
+        assertEq(mcr.getCurrentAcceptor(), alice);
+        // assert that bob is NOT the acceptor
+        assertNotEq(mcr.getCurrentAcceptor(), bob);
         
         // make a block commitment
         MCRStorage.BlockCommitment memory bc1 = MCRStorage.BlockCommitment({
@@ -97,9 +97,9 @@ contract MCRTest is Test, IMCR {
         mcr.submitBlockCommitment(bc1);
 
         // TODO these tests need to be split up into different test functions (happy / unhappy path)
-        // bob should not be the current confirmer
+        // bob should not be the current acceptor
         vm.prank(bob);
-        vm.expectRevert("NotConfirmer");  // Expect the "NotConfirmer" revert message
+        vm.expectRevert("NotAcceptor");  // Expect the "NotAcceptor" revert message
         mcr.attestBlocks();
         // alice can confirm the block comittment
         vm.prank(alice);
@@ -109,11 +109,11 @@ contract MCRTest is Test, IMCR {
         // assertEq(mcr.getCurrentEpoch(), mcr.getEpochByL1BlockTime());
 
 
-        // get to next Confirmer
+        // get to next Acceptor
 
         // make a block commitment with Bob
 
-        // check that Bob is the current confirmer
+        // check that Bob is the current acceptor
 
 
     }

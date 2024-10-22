@@ -216,7 +216,7 @@ contract MovementStaking is
     }
 
     // gets the stake for a given attester at the current epoch
-    // TODO: this should be called getCurrentAcceptingEpochStake
+    // TODO: this should be called getAcceptingEpochStake
     function getCurrentEpochStake(
         address domain,
         address custodian,
