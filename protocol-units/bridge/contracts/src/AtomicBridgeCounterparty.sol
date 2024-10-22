@@ -4,7 +4,6 @@ pragma solidity ^0.8.22;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {IAtomicBridgeCounterparty} from "./IAtomicBridgeCounterparty.sol";
 import {AtomicBridgeInitiator} from "./AtomicBridgeInitiator.sol";
-import {console} from "forge-std/console.sol";
 
 contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeable {
     enum MessageState {

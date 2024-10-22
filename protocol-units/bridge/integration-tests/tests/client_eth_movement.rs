@@ -4,28 +4,21 @@ use alloy::{
 };
 use anyhow::Result;
 use aptos_sdk::coin_client::CoinClient;
-use aptos_sdk::types::LocalAccount;
 use bridge_config::Config;
 use bridge_integration_tests::utils as test_utils;
 use bridge_integration_tests::EthToMovementCallArgs;
 use bridge_integration_tests::HarnessMvtClient;
 use bridge_integration_tests::TestHarness;
-use bridge_service::chains::bridge_contracts::BridgeContractEvent;
-use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
 use bridge_service::chains::ethereum::types::EthAddress;
-use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::{
 	bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
 };
 use bridge_service::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
 };
-use futures::StreamExt;
-use std::io::BufRead;
 use tokio::time::{sleep, Duration};
 use tokio::{self};
 use tracing::info;
-use tracing_subscriber::EnvFilter;
 
 #[tokio::test]
 async fn test_movement_client_build_and_fund_accounts() -> Result<(), anyhow::Error> {
@@ -462,100 +455,4 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 		.expect("Failed to initiate bridge transfer");
 
 	//TODO: Here call complete with the id captured from the event
-}
-
-#[tokio::test]
-async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt()
-		.with_env_filter(
-			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
-		)
-		.init();
-
-	let config = Config::default();
-	let (mut eth_client_harness, config, mut anvil) =
-		TestHarness::new_only_eth(config.clone()).await;
-
-	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
-
-	let recipient_privkey = LocalAccount::generate(&mut rand::rngs::OsRng);
-	let recipient_address = MovementAddress(recipient_privkey.address());
-	let recipient_bytes: Vec<u8> = recipient_address.into();
-
-	let secret = "secret".to_string();
-	let hash_lock = keccak256(secret.as_bytes());
-	let hash_lock: [u8; 32] = hash_lock.into();
-
-	println!("Before initiate_bridge_transfer");
-
-	eth_client_harness
-		.eth_client
-		.initiate_bridge_transfer(
-			BridgeAddress(EthAddress(signer_address)),
-			BridgeAddress(recipient_bytes.clone()),
-			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((42, 0))),
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
-
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
-	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for Bridge Lock event.");
-	let bridge_transfer_id;
-	loop {
-		let event =
-			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
-			bridge_transfer_id = detail.bridge_transfer_id;
-			break;
-		}
-	}
-	println!("Before lock_bridge_transfer");
-
-	//let bridge_transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
-
-	// let secret = b"secret";
-	// let mut padded_secret = [0u8; 32];
-	// padded_secret[..secret.len()].copy_from_slice(secret);
-
-	// BridgeContract::counterparty_complete_bridge_transfer(
-	// 	&mut eth_client_harness.eth_client,
-	// 	bridge_transfer_id,
-	// 	HashLockPreImage(padded_secret),
-	// )
-	// .await
-	// .expect("Failed to complete bridge transfer");
-
-	let res = eth_client_harness
-		.eth_client
-		.lock_bridge_transfer(
-			bridge_transfer_id,
-			HashLock([1; 32]),
-			BridgeAddress(vec![2; 32]),
-			BridgeAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 42))),
-		)
-		.await;
-	// loop {
-	// 	let event =
-	// 		tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-	// 	if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
-	// 		break;
-	// 	}
-	// }
-
-	println!("{res:?}",);
-
-	let stdout = anvil.child_mut().stdout.take().unwrap();
-	let mut reader = std::io::BufReader::new(stdout).lines();
-	while let Some(Ok(line)) = reader.next() {
-		println!(">:{:?}", line);
-		// writer.write_all(line.as_bytes()).await?;
-		// writer.write_all(b"\n").await?;
-		// output.push_str(&line);
-		// output.push('\n');
-	}
-
-	Ok(())
 }

@@ -95,7 +95,7 @@ struct EthBridgeTransferDetailsCounterparty {
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
-	pub rpc_provider: AlloyProvider,
+	rpc_provider: AlloyProvider,
 	initiator_contract: InitiatorContract,
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
