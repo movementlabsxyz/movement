@@ -159,7 +159,7 @@ impl TransactionPipe {
 			used_sequence_number, committed_sequence_number
 		);
 		let min_used_sequence_number =
-			if used_sequence_number > 0 { used_sequence_number - 1 } else { 0 };
+			if used_sequence_number > 0 { used_sequence_number + 1 } else { 0 };
 
 		let min_sequence_number = (min_used_sequence_number).max(committed_sequence_number);
 
@@ -488,7 +488,7 @@ mod tests {
 		let (mut transaction_pipe, mut _mempool_client_sender, _tx_receiver) = setup();
 
 		// submit a transaction with a valid sequence number
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 
