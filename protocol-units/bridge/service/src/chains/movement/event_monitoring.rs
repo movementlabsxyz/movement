@@ -1,4 +1,5 @@
 use super::client::MovementClient;
+use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::MovementAddress;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
@@ -345,12 +346,12 @@ async fn pool_counterpart_contract(
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
 	let native_address_str = native_address.to_standard_string();
 	let struct_tag =
-		format!("{}::atomic_bridge_counterparty::BridgeTransferStore", native_address_str);
+		format!("{}::atomic_bridge_counterparty::BridgeCounterpartyEvents", FRAMEWORK_ADDRESS.to_string());
 
 	// Get locked events
 	let locked_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&FRAMEWORK_ADDRESS.to_string(),
 		&struct_tag,
 		"bridge_transfer_locked_events",
 		pull_state.counterpart_lock,

@@ -87,6 +87,12 @@ impl From<String> for AssetKind {
 	}
 }
 
+impl Default for AssetKind {
+	fn default() -> Self {
+	    AssetKind::Move
+	}
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct EthHash(pub [u8; 32]);
 

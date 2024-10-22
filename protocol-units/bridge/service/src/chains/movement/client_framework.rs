@@ -26,7 +26,7 @@ use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
-const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
