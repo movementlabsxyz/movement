@@ -165,9 +165,9 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         attestBlocksForAttester(msg.sender);
     }
 
-    /// @notice The current leader can attest to a block height, given there is a supermajority of stake on the block
+    /// @notice The current acceptor can attest to a block height, given there is a supermajority of stake on the block
     function attestBlocksForAttester(address attester) internal {
-        // check if the address is the current leader
+        // check if the address is the current acceptor
         if (attester != getCurrentAcceptor()) revert("NotAcceptor");
 
         // keep ticking through to find accepted blocks
@@ -176,12 +176,12 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
         // then we can accept them in order
         // ! rewards need to be 
         // ! - at least proportional to attested blocks to account for consumed gas
-        // ! - reward the leader well to incentivize frequent block attestation (close to comitted block frequency)
-        //     rather than incentivizing the leader to batch attesting blocks
+        // ! - reward the acceptor well to incentivize frequent block attestation (close to comitted block frequency)
+        //     rather than incentivizing the acceptor to batch attesting blocks
         while (tickOnBlockHeight(lastAcceptedBlockHeight + 1)) {}
     }
 
-    /// The leader is determined by L1.
+    /// The Acceptor is determined by L1.
     function getCurrentAcceptor() public view returns (address) {
         uint256 currentL1BlockHeight = block.number;
         uint256 relevantL1BlockHeight = currentL1BlockHeight - currentL1BlockHeight % acceptorTerm - 1 ; // -1 because we do not want to consider the current block.
@@ -189,8 +189,8 @@ contract MCR is Initializable, BaseSettlement, MCRStorage, IMCR {
 
         address[] memory attesters = getAttesters();
         // map the blockhash to the attesters
-        uint256 leaderIndex = uint256(blockHash) % attesters.length;
-        return attesters[leaderIndex];        
+        uint256 acceptorIndex = uint256(blockHash) % attesters.length;
+        return attesters[acceptorIndex];        
     }
 
     // TODO : liveness. if the accepting epoch is behind and does not have enough for a given block height 
