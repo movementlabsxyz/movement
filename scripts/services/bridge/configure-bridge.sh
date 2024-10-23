@@ -26,3 +26,9 @@ else
 fi
 
 echo "Account field updated with value: ${NEW_ACCOUNT}"
+
+## Execute feature enable move script
+movement move run-script \
+  --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv \
+  --profile default \
+  --assume-yes > enable_bridge_feature_output.log 2> enable_bridge_feature_error.log
