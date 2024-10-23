@@ -16,7 +16,7 @@ contract AtomicBridgeCounterpartyMOVEDeployer is Script {
     address public moveAdmin;
 
     address public atomicBridgeInitiatorAddress = address(0x5FbDB2315678afecb367f032d93F642f64180aa3);     
-    address public ownerAddress = address(0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266); 
+    address public ownerAddress = address(0x5b97cdf756f6363A88706c376464180E008Bd88b); 
     uint256 public timeLockDuration = 86400; // 24 hours in seconds (half that of the initiators)
     uint256 public minDelay = 2 days; // 2-day delay for governance timelock
 
