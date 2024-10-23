@@ -41,7 +41,7 @@ echo "Account field updated with value: ${NEW_ACCOUNT}"
 if [ "$EXECUTE_MOVE" == "true" ]; then
   echo "Executing Move scripts..."
   movement move compile \ 
-    --package-dir protocol-units/bridge/move-modules/
+    --package-dir protocol-units/bridge/move-modules/ \
     --profile default \
     --assume-yes 
     
