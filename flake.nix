@@ -44,6 +44,7 @@
           postgresql
           tesseract4
           ansible
+          zlib
         ];
         
         sysDependencies = with pkgs; [] 

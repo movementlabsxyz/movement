@@ -4,6 +4,7 @@ use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
+use aptos_sdk::types::AccountKey;
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
 	move_types::{
@@ -370,17 +371,16 @@ pub async fn create_local_account(
 	client: &RestClient,
 ) -> Result<LocalAccount, anyhow::Error> {
 	// Derive the public key from the private key
-	let public_key = Ed25519PublicKey::from(&private_key);
+	let account_key = AccountKey::from_private_key(private_key);
 
 	// Get the account address from the public key
-	let account_address: AccountAddress =
-		aptos_sdk::types::account_address::from_public_key(&public_key);
+	let account_address = account_key.authentication_key().account_address();
 
 	// Fetch the current sequence number from the blockchain
 	let sequence_number = client.get_account(account_address).await?.inner().sequence_number;
 
 	// Create the LocalAccount
-	let local_account = LocalAccount::new(account_address, private_key, sequence_number);
+	let local_account = LocalAccount::new(account_address, account_key, sequence_number);
 
 	Ok(local_account)
 }

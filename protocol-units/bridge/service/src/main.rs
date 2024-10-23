@@ -1,12 +1,14 @@
 use anyhow::Result;
-use bridge_config::{common::movement::MovementConfig, Config};
+use bridge_config::Config;
 use bridge_grpc::{
 	bridge_server::BridgeServer, health_check_response::ServingStatus, health_server::HealthServer,
 };
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
-		movement::{client::MovementClient, client_framework::MovementClientFramework, event_monitoring::MovementMonitoring},
+		movement::{
+			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
+		},
 	},
 	grpc::HealthCheckService,
 	rest::BridgeRest,
