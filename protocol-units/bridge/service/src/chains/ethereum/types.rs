@@ -87,6 +87,12 @@ impl From<String> for AssetKind {
 	}
 }
 
+impl Default for AssetKind {
+	fn default() -> Self {
+	    AssetKind::Move
+	}
+}
+
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct EthHash(pub [u8; 32]);
 
@@ -368,7 +374,7 @@ where
 	pub fn from_lock_details(lock_details: LockDetails<A>, secret: HashLockPreImage) -> Self {
 		CompletedDetails {
 			bridge_transfer_id: lock_details.bridge_transfer_id,
-			recipient_address: lock_details.recipient_address,
+			recipient_address: lock_details.recipient,
 			hash_lock: lock_details.hash_lock,
 			secret,
 			amount: lock_details.amount,

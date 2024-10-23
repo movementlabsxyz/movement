@@ -6,7 +6,9 @@ use bridge_grpc::{
 use bridge_service::{
 	chains::{
 		ethereum::{client::EthClient, event_monitoring::EthMonitoring},
-		movement::{client::MovementClient, event_monitoring::MovementMonitoring},
+		movement::{
+			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
+		},
 	},
 	grpc::HealthCheckService,
 	rest::BridgeRest,
@@ -36,18 +38,16 @@ async fn main() -> Result<()> {
 
 	// Get a matching godfig object
 	let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
-	let bridge_config: Config = godfig.try_wait_for_ready().await?;
+	let mut bridge_config: Config = godfig.try_wait_for_ready().await?;
+
 	tracing::info!("Bridge config loaded: {bridge_config:?}");
 
-	let eth_stream = EthMonitoring::build(&bridge_config.eth).await?;
+	let one_stream = EthMonitoring::build(&bridge_config.eth).await.unwrap();
+	let one_client = EthClient::new(&bridge_config.eth).await.unwrap();
+	let two_client = MovementClientFramework::new(&bridge_config.movement).await.unwrap();
+	let two_stream = MovementMonitoring::build(&bridge_config.movement).await.unwrap();
 
-	let eth_client = EthClient::new(&bridge_config.eth).await?;
-
-	let movement_client = MovementClient::new(&bridge_config.movement).await?;
-
-	let movement_stream = MovementMonitoring::build(&bridge_config.movement).await?;
-
-	let eth_client_for_grpc = eth_client.clone();
+	let one_client_for_grpc = one_client.clone();
 
 	let health_service = HealthCheckService::default();
 	health_service.set_service_status("", ServingStatus::Serving);
@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
 	tokio::spawn(async move {
 		Server::builder()
 			.add_service(HealthServer::new(health_service))
-			.add_service(BridgeServer::new(eth_client_for_grpc))
+			.add_service(BridgeServer::new(one_client_for_grpc))
 			.serve(grpc_addr)
 			.await
 			.unwrap();
@@ -79,6 +79,7 @@ async fn main() -> Result<()> {
 	tokio::spawn(rest_service_future);
 
 	tracing::info!("Bridge Eth and Movement Inited. Starting bridge loop.");
-	bridge_service::run_bridge(eth_client, eth_stream, movement_client, movement_stream).await?;
+	bridge_service::run_bridge(one_client, one_stream, two_client, two_stream).await?;
+
 	Ok(())
 }
