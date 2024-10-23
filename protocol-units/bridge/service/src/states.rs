@@ -169,24 +169,6 @@ impl TransferState {
 		(self, action_type)
 	}
 
-	pub fn transition_from_cancelled(
-		mut self,
-		_transfer_id: BridgeTransferId,
-	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::Done;
-		let action_type = TransferActionType::NoAction;
-		(self, action_type)
-	}
-
-	pub fn transition_from_refunded(
-		mut self,
-		_transfer_id: BridgeTransferId,
-	) -> (Self, TransferActionType) {
-		self.state = TransferStateType::Done;
-		let action_type = TransferActionType::NoAction;
-		(self, action_type)
-	}
-
 	pub fn transition_to_refund(&self) -> (TransferStateType, TransferActionType) {
 		(TransferStateType::Refund, TransferActionType::RefundInitiator)
 	}
