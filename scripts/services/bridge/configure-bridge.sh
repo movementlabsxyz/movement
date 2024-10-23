@@ -55,6 +55,12 @@ if [ "$EXECUTE_MOVE" == "true" ]; then
     --profile default \
     --assume-yes 2>&1 | tee store_mint_burn_caps_output.log
 
+  # Third script: update_bridge_operator 
+  movement move run-script \
+    --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/update_bridge_operator.mv \
+    --profile default \
+    --assume-yes 2>&1 | tee store_mint_burn_caps_output.log
+
   echo "Move scripts executed."
 else
   echo "Skipping Move script execution."
