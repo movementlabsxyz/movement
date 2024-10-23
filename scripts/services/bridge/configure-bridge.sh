@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
 
+# Check if execute_move argument is set to true
+EXECUTE_MOVE=$1
+
 # Define the directory and file paths
 MOVEMENT_DIR="./.movement"
 CONFIG_FILE="$MOVEMENT_DIR/config.yaml"
 
 NEW_ACCOUNT="0xA550C18"
+
+# Ensure the correct number of arguments
+if [ -z "$EXECUTE_MOVE" ]; then
+  echo "Usage: $0 <execute_move>"
+  echo "Where <execute_move> is either 'true' or 'false'"
+  exit 1
+fi
 
 if [ ! -d "$MOVEMENT_DIR" ]; then
   echo "Error: Directory $MOVEMENT_DIR not found."
@@ -27,8 +37,15 @@ fi
 
 echo "Account field updated with value: ${NEW_ACCOUNT}"
 
-## Execute feature enable move script
-movement move run-script \
-  --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv \
-  --profile default \
-  --assume-yes > enable_bridge_feature_output.log 2> enable_bridge_feature_error.log
+# Execute the Move feature script if execute_move is true
+if [ "$EXECUTE_MOVE" == "true" ]; then
+  echo "Executing Move script..."
+  movement move run-script \
+    --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv \
+    --profile default \
+    --assume-yes > enable_bridge_feature_output.log 2> enable_bridge_feature_error.log
+  echo "Move script executed."
+else
+  echo "Skipping Move script execution."
+fi
+
