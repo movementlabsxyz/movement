@@ -1,7 +1,9 @@
 use super::client::MovementClient;
+use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::MovementAddress;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
+use crate::chains::bridge_contracts::BridgeContractEventType;
 use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::Amount;
@@ -15,6 +17,7 @@ use crate::types::LockDetails;
 use crate::types::TimeLock;
 use anyhow::Result;
 use aptos_sdk::rest_client::aptos_api_types::VersionedEvent;
+use aptos_sdk::types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
 use futures::channel::mpsc::{self};
 use futures::SinkExt;
@@ -24,6 +27,7 @@ use hex::FromHex;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
+use tracing::info;
 use std::{pin::Pin, task::Poll};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
@@ -115,6 +119,22 @@ impl MvtPullingState {
 			}
 		}
 	}
+
+	// If an error occurs during deserialization, the event seq_number must be increase
+	// to avoid always the fetch the same event.
+	fn update_state_with_error(&mut self, err: &BridgeContractError) {
+		match err {
+			BridgeContractError::EventDeserializingFail(_, event_type) => match event_type {
+				BridgeContractEventType::Initiated => self.initiator_init += 1,
+				BridgeContractEventType::Locked => self.counterpart_lock += 1,
+				BridgeContractEventType::InitialtorCompleted => self.initiator_complete += 1,
+				BridgeContractEventType::CounterPartCompleted => self.counterpart_complete += 1,
+				BridgeContractEventType::Cancelled => self.counterpart_cancel += 1,
+				BridgeContractEventType::Refunded => self.initiator_refund += 1,
+			},
+			_ => (),
+		}
+	}
 }
 
 pub struct MovementMonitoring {
@@ -141,7 +161,7 @@ impl MovementMonitoring {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
-						&mvt_client,
+						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
 					)
@@ -150,8 +170,8 @@ impl MovementMonitoring {
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
-					let mut counterpart_event_list = match pool_counterpart_contract(
-						&mvt_client,
+					let mut counterpart_event_list = match pool_counterparty_contract(
+						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
 					)
@@ -171,7 +191,10 @@ impl MovementMonitoring {
 										state.update_state_with_event(&ev, seq);
 										events.push(Ok(ev));
 									}
-									Err(err) => events.push(Err(err)),
+									Err(err) => {
+										state.update_state_with_error(&err);
+										events.push(Err(err));
+									}
 								}
 								(events, state)
 							},
@@ -217,19 +240,16 @@ struct CounterpartyCompletedDetails {
 }
 
 async fn pool_initiator_contract(
-	client: &MovementClient,
+	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let struct_tag = format!(
-		"{}::atomic_bridge_initiator::BridgeTransferStore",
-		client.native_address.to_standard_string(),
-	);
-
+	let struct_tag =
+	format!("{}::atomic_bridge_initiator::BridgeInitiatorEvents", framework_address.to_string());
 	// Get initiated events
 	let initiated_events = get_account_events(
 		rest_url,
-		&client.native_address.to_standard_string(),
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_initiated_events",
 		pull_state.initiator_init,
@@ -244,16 +264,16 @@ async fn pool_initiator_contract(
 	})
 	.collect::<Result<Vec<_>>>()
 	.map_err(|e| {
-		BridgeContractError::OnChainError(format!(
-			"MVT bridge_transfer_initiated_events de-serialization error:{}",
-			e
-		))
+		BridgeContractError::EventDeserializingFail(
+			format!("MVT bridge_transfer_initiated_events de-serialization error:{}", e),
+			BridgeContractEventType::Initiated,
+		)
 	})?;
 
 	// Get completed events
 	let completed_events = get_account_events(
 		rest_url,
-		&client.native_address.to_standard_string(),
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.initiator_complete,
@@ -265,7 +285,7 @@ async fn pool_initiator_contract(
 		let data: BridgeCompletEventData = serde_json::from_str(&e.data.to_string())?;
 		let event = BridgeContractEvent::InitialtorCompleted(
 			data.bridge_transfer_id.try_into().map_err(|err| {
-				BridgeContractError::OnChainError(format!(
+				BridgeContractError::ConversionFailed(format!(
 				"MVT initiatorbridge_transfer_completed_events bridge_transfer_id can't be reconstructed:{:?}",
 				err
 			))
@@ -275,16 +295,16 @@ async fn pool_initiator_contract(
 	})
 	.collect::<Result<Vec<_>>>()
 	.map_err(|e| {
-		BridgeContractError::OnChainError(format!(
-			"MVT bridge_transfer_completed_events de-serialization error:{}",
-			e
-		))
+		BridgeContractError::EventDeserializingFail(
+			format!("MVT bridge_transfer_completed_events de-serialization error:{}", e),
+			BridgeContractEventType::InitialtorCompleted,
+		)
 	})?;
 
 	// Get refunded events
 	let refunded_events = get_account_events(
 		rest_url,
-		&client.native_address.to_standard_string(),
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_refunded_events",
 		pull_state.initiator_refund,
@@ -295,7 +315,7 @@ async fn pool_initiator_contract(
 		println!("refund event data: {:?} sequence_number:{}", e.data, e.sequence_number);
 		let data = deserialize_hex_vec(e.data)?;
 		let event = BridgeContractEvent::Refunded(data.try_into().map_err(|err| {
-			BridgeContractError::OnChainError(format!(
+			BridgeContractError::ConversionFailed(format!(
 				"MVT bridge_transfer_refunded_events bridge_transfer_id can't be reconstructed:{:?}",
 				err
 			))
@@ -304,10 +324,10 @@ async fn pool_initiator_contract(
 	})
 	.collect::<Result<Vec<_>>>()
 	.map_err(|e| {
-		BridgeContractError::OnChainError(format!(
-			"MVT bridge_transfer_refunded_events de-serialization error:{}",
-			e
-		))
+		BridgeContractError::EventDeserializingFail(
+			format!("MVT bridge_transfer_refunded_events de-serialization error:{}", e),
+			BridgeContractEventType::Refunded,
+		)
 	})?;
 
 	let total_events = initiated_events
@@ -318,20 +338,18 @@ async fn pool_initiator_contract(
 	Ok(total_events)
 }
 
-async fn pool_counterpart_contract(
-	client: &MovementClient,
+async fn pool_counterparty_contract(
+	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let struct_tag = format!(
-		"{}::atomic_bridge_counterparty::BridgeTransferStore",
-		client.native_address.to_standard_string()
-	);
+	let struct_tag =
+		format!("{}::atomic_bridge_counterparty::BridgeCounterpartyEvents", FRAMEWORK_ADDRESS.to_string());
 
 	// Get locked events
 	let locked_events = get_account_events(
 		rest_url,
-		&client.native_address.to_standard_string(),
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_locked_events",
 		pull_state.counterpart_lock,
@@ -346,16 +364,16 @@ async fn pool_counterpart_contract(
 	})
 	.collect::<Result<Vec<_>>>()
 	.map_err(|e| {
-		BridgeContractError::OnChainError(format!(
-			"MVT bridge_transfer_locked_events de-serialization error:{}",
-			e
-		))
+		BridgeContractError::EventDeserializingFail(
+			format!("MVT bridge_transfer_locked_events de-serialization error:{}", e),
+			BridgeContractEventType::Locked,
+		)
 	})?;
 
 	// Get completed events
 	let completed_events = get_account_events(
 		rest_url,
-		&client.native_address.to_standard_string(),
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.counterpart_complete,
@@ -370,13 +388,13 @@ async fn pool_counterpart_contract(
 		let data: BridgeCompletEventData = serde_json::from_str(&e.data.to_string())?;
 		let event = BridgeContractEvent::CounterPartCompleted(
 			data.bridge_transfer_id.try_into().map_err(|err| {
-				BridgeContractError::OnChainError(format!(
+				BridgeContractError::ConversionFailed(format!(
 				"MVT counterparty bridge_transfer_completed_events bridge_transfer_id can't be reconstructed:{:?}",
 				err
 			))
 			})?,
 			HashLockPreImage(data.pre_image.try_into().map_err(|err| {
-				BridgeContractError::OnChainError(format!(
+				BridgeContractError::ConversionFailed(format!(
 				"MVT counterparty bridge_transfer_completed_events pre_image can't be reconstructed:{:?}",
 				err
 			))
@@ -386,16 +404,19 @@ async fn pool_counterpart_contract(
 	})
 	.collect::<Result<Vec<_>>>()
 	.map_err(|e| {
-		BridgeContractError::OnChainError(format!(
-			"MVT counterpart bridge_transfer_completed_events de-serialization error:{}",
-			e
-		))
+		BridgeContractError::EventDeserializingFail(
+			format!(
+				"MVT counterpart bridge_transfer_completed_events de-serialization error:{}",
+				e
+			),
+			BridgeContractEventType::CounterPartCompleted,
+		)
 	})?;
 
 	// Get cancelled events
 	let cancelled_events = get_account_events(
 		rest_url,
-		&client.native_address.to_standard_string(),
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_cancelled_events",
 		pull_state.counterpart_cancel,
@@ -406,7 +427,7 @@ async fn pool_counterpart_contract(
 		println!("refund event data: {:?} sequence_number:{}", e.data, e.sequence_number);
 		let data = deserialize_hex_vec(e.data)?;
 		let event = BridgeContractEvent::Cancelled(data.try_into().map_err(|err| {
-			BridgeContractError::OnChainError(format!(
+			BridgeContractError::ConversionFailed(format!(
 				"MVT bridge_transfer_cancelled_events bridge_transfer_id can't be reconstructed:{:?}",
 				err
 			))
@@ -415,10 +436,10 @@ async fn pool_counterpart_contract(
 	})
 	.collect::<Result<Vec<_>>>()
 	.map_err(|e| {
-		BridgeContractError::OnChainError(format!(
-			"MVT bridge_transfer_cancelled_events de-serialization error:{}",
-			e
-		))
+		BridgeContractError::EventDeserializingFail(
+			format!("MVT bridge_transfer_cancelled_events de-serialization error:{}", e),
+			BridgeContractEventType::Cancelled,
+		)
 	})?;
 
 	let total_events = locked_events
@@ -442,7 +463,7 @@ pub struct BridgeInitEventData {
 	#[serde(deserialize_with = "deserialize_hex_vec")]
 	pub bridge_transfer_id: Vec<u8>,
 	#[serde(deserialize_with = "deserialize_hex_vec")]
-	pub originator: Vec<u8>,
+	pub initiator: Vec<u8>,
 	#[serde(deserialize_with = "deserialize_hex_vec")]
 	pub recipient: Vec<u8>,
 	#[serde(deserialize_with = "deserialize_hex_vec")]
@@ -451,7 +472,6 @@ pub struct BridgeInitEventData {
 	pub time_lock: u64,
 	#[serde(deserialize_with = "deserialize_u64_from_string")]
 	pub amount: u64,
-	pub state: u8,
 }
 
 // Custom deserialization function to convert a hex string to Vec<u8>
@@ -479,23 +499,23 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 		Ok(BridgeTransferDetails {
 			bridge_transfer_id: BridgeTransferId(data.bridge_transfer_id.try_into().map_err(
 				|e| {
-					BridgeContractError::OnChainError(format!(
+					BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain bridge_transfer_id conversion error error:{:?}",
 					e
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(MovementAddress::from(data.originator)),
+			initiator_address: BridgeAddress(MovementAddress::from(data.initiator)),
 			recipient_address: BridgeAddress(data.recipient),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
-				BridgeContractError::OnChainError(format!(
+				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",
 					e
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
 			amount: Amount(AssetType::Moveth(data.amount)),
-			state: data.state,
+			state: 0
 		})
 	}
 }
@@ -507,16 +527,16 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 		Ok(LockDetails {
 			bridge_transfer_id: BridgeTransferId(data.bridge_transfer_id.try_into().map_err(
 				|e| {
-					BridgeContractError::OnChainError(format!(
+					BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain bridge_transfer_id conversion error error:{:?}",
 					e
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(data.recipient),
-			recipient_address: BridgeAddress(MovementAddress::from(data.originator)),
+			initiator: BridgeAddress(data.recipient),
+			recipient: BridgeAddress(MovementAddress::from(data.initiator)),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
-				BridgeContractError::OnChainError(format!(
+				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",
 					e
 				))

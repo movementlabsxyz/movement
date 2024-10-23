@@ -14,13 +14,13 @@ use crate::types::ChainId;
 use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
 use tokio::select;
-use tokio::task::JoinError;
-use tokio::task::JoinHandle;
 use tokio_stream::StreamExt;
 
 mod actions;
 pub mod chains;
 mod events;
+pub mod grpc;
+pub mod rest;
 mod states;
 pub mod types;
 
@@ -45,14 +45,24 @@ where
 	// let mut action_to_exec_futures_one = FuturesUnordered::new();
 	// let mut action_to_exec_futures_two = FuturesUnordered::new();
 
+	let mut tranfer_log_interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+
 	loop {
 		select! {
+			// Log all current transfer
+			_ = tranfer_log_interval.tick() => {
+				//format logs
+				let logs: Vec<_> = state_runtime.iter_state().map(|state| state.to_string()).collect();
+				tokio::spawn(async move {
+					tracing::info!("Bridge current transfer processing:{:#?}", logs);
+				});
+			}
 			// Wait on chain one events.
 			Some(one_event_res) = one_stream.next() =>{
 				match one_event_res {
 					Ok(one_event) => {
 						let event : TransferEvent<A1> = (one_event, ChainId::ONE).into();
-						tracing::info!("Receive event from chain ONE:{}", event.contract_event.bridge_transfer_id());
+						tracing::info!("Receive event from chain ONE:{} ", event.contract_event);
 						match state_runtime.process_event(event) {
 							Ok(action) => {
 								//Execute action
@@ -161,6 +171,10 @@ impl Runtime {
 		Runtime { swap_state_map: HashMap::new() }
 	}
 
+	pub fn iter_state(&self) -> impl Iterator<Item = &TransferState> {
+		self.swap_state_map.values()
+	}
+
 	pub fn process_event<A>(
 		&mut self,
 		event: TransferEvent<A>,
@@ -201,25 +215,29 @@ impl Runtime {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
-				//transfer done remove the state.
-				if state.state == TransferStateType::Done {
-					self.swap_state_map.remove(&event_transfer_id);
-				}
+
 				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Cancelled(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_cancelled(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Refunded(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_refunded(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 		};
 
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
-		self.swap_state_map.insert(state.transfer_id, state);
-
+		if state.state != TransferStateType::Done {
+			self.swap_state_map.insert(state.transfer_id, state);
+		}
 		Ok(action)
 	}
 

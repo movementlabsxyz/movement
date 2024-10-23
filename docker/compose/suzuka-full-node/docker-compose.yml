@@ -5,7 +5,8 @@ services:
     container_name: setup
     command: sh -c 'echo "No setup type specified."'
     environment:
-      - DOT_MOVEMENT_PATH=/.movement
+      DOT_MOVEMENT_PATH: /.movement
+      MAPTOS_CHAIN_ID: ${MAPTOS_CHAIN_ID:-27}
     volumes:
       - ${DOT_MOVEMENT_PATH}:/.movement
 
