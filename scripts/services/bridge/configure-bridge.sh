@@ -40,10 +40,8 @@ echo "Account field updated with value: ${NEW_ACCOUNT}"
 # Execute the Move scripts if execute_move is true
 if [ "$EXECUTE_MOVE" == "true" ]; then
   echo "Executing Move scripts..."
-  movement move compile \ 
+  movement move compile \
     --package-dir protocol-units/bridge/move-modules/ \
-    --profile default \
-    --assume-yes 
     
   # First script: enable_bridge_feature
   movement move run-script \
@@ -61,4 +59,3 @@ if [ "$EXECUTE_MOVE" == "true" ]; then
 else
   echo "Skipping Move script execution."
 fi
-
