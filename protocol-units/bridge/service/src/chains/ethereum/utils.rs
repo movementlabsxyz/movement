@@ -80,7 +80,9 @@ pub async fn send_transaction<
 	println!("base_call_builder: {:?}", base_call_builder);
 	println!("Sending transaction with gas limit: {}", gas_limit);
 	//validate gas price.
+	println!(" ICI before estimate_gas",);
 	let mut estimate_gas = base_call_builder.estimate_gas().await?;
+	println!(" ICI after estimate_gas",);
 	// Add 20% because initial gas estimate are too low.
 	estimate_gas += (estimate_gas * 20) / 100;
 	estimate_gas *= 2;

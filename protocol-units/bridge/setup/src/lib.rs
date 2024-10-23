@@ -16,7 +16,7 @@ pub async fn process_compose_setup(config: Config) -> Result<Config, anyhow::Err
 pub async fn test_eth_setup(mut config: Config) -> Result<(Config, AnvilInstance), anyhow::Error> {
 	let anvil = local::setup_eth(&mut config.eth, &mut config.testing);
 	//Deploy locally
-	crate::deploy::setup_local_ethereum(&mut config.eth).await?;
+	crate::deploy::setup_local_ethereum(&mut config).await?;
 	Ok((config, anvil))
 }
 

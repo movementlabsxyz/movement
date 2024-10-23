@@ -3,6 +3,8 @@ pragma solidity ^0.8.22;
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
 import {IWETH9} from "./IWETH9.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {console} from "forge-std/console.sol";
+
 
 contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     enum MessageState {
@@ -33,8 +35,14 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     // Initialize the contract with WETH address, owner, custom time lock duration, and initial pool balance
     function initialize(address _weth, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance) public initializer {
+        console.log("Atomic initi initialize _msgSender(): %s", _msgSender());
+        console.log("Atomic initi initialize owner: %s", owner);
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
@@ -49,7 +57,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
+        console.log("Atomic setCounterpartyAddress _msgSender(): %s", _msgSender());
         if (_counterpartyAddress == address(0)) revert ZeroAddress();
+        console.log("setCounterpartyAddress not addres 0");
         counterpartyAddress = _counterpartyAddress;
     }
 
@@ -58,6 +68,8 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         payable
         returns (bytes32 bridgeTransferId)
     {
+        console.log("Atomic initiateBridgeTransfer _msgSender(): %s", _msgSender());
+        console.log("Atomic initiateBridgeTransfer msg.sender: %s", msg.sender);
         address originator = msg.sender;
         uint256 ethAmount = msg.value;
         uint256 totalAmount = wethAmount + ethAmount;
@@ -119,10 +131,14 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
 
     // Counterparty contract to withdraw WETH for originator
     function withdrawWETH(address recipient, uint256 amount) external {
+        console.log("withdrawWETH");
         if (msg.sender != counterpartyAddress) revert Unauthorized();
+        console.log("withdrawWETH authorized");
         if (poolBalance < amount) revert InsufficientWethBalance();
+        console.log("withdrawWETH balance ok.");
         poolBalance -= amount;
         if (!weth.transfer(recipient, amount)) revert WETHTransferFailed();
+        console.log("withdrawWETH transfer ok.");
     }
 }
 

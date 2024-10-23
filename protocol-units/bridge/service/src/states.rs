@@ -116,6 +116,8 @@ impl TransferState {
 		transfer_id: BridgeTransferId,
 		detail: BridgeTransferDetails<A>,
 	) -> (Self, TransferAction) {
+		println!("State transition_from_initiated amount {:?}", detail.amount);
+
 		let state = TransferState {
 			state: TransferStateType::Initialized,
 			init_chain: chain_id,

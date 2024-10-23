@@ -260,6 +260,7 @@ async fn pool_initiator_contract(
 		println!("Initiate event data: {:?} sequence_number:{}", e.data, e.sequence_number);
 		let data: BridgeInitEventData = serde_json::from_str(&e.data.to_string())?;
 		let transfer_details = BridgeTransferDetails::try_from(data)?;
+		println!("Initiate event transfer_details: {:?}", transfer_details);
 		Ok((BridgeContractEvent::Initiated(transfer_details), e.sequence_number.into()))
 	})
 	.collect::<Result<Vec<_>>>()
@@ -516,7 +517,9 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			//TODO Eth convetion of amount is done here but we are not sure the destination chan is Eth.
+			//Amount management should be changed to support more chain.
+			amount: Amount(AssetType::EthAndWeth((0, data.amount))),
 			state: data.state,
 		})
 	}
@@ -544,7 +547,9 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			//TODO Eth convetion of amount is done here but we are not sure the destination chan is Eth.
+			//Amount management should be changed to support more chain.
+			amount: Amount(AssetType::EthAndWeth((0, data.amount))),
 		})
 	}
 }

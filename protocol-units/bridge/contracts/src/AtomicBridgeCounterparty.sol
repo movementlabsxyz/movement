@@ -54,10 +54,10 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         address recipient,
         uint256 amount
     ) external onlyOwner returns (bool) {
+        console.log("lockBridgeTransfer start amount:%d", amount);
         if (amount == 0) revert ZeroAmount();
-
         if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
-        
+        console.log("verif done");
         // potentially mint some gas here for the recipient here. The recipient could be an account with gas already.
 
         // The time lock is now based on the configurable duration
@@ -78,10 +78,18 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
         BridgeTransferDetails storage details = bridgeTransfers[bridgeTransferId];
+                console.log("completeBridgeTransfer");
+
         if (details.state != MessageState.PENDING) revert BridgeTransferStateNotPending();
+                        console.log("completeBridgeTransfer state pending");
+
         bytes32 computedHash = keccak256(abi.encodePacked(preImage));
         if (computedHash != details.hashLock) revert InvalidSecret();
+                        console.log("completeBridgeTransfer secret valid");
+
         if (block.timestamp > details.timeLock) revert TimeLockExpired();
+                        console.log("completeBridgeTransfer timelock ok");
+
 
         details.state = MessageState.COMPLETED;
 

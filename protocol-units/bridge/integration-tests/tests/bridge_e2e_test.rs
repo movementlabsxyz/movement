@@ -2,6 +2,7 @@ use alloy::primitives::keccak256;
 use anyhow::Result;
 use bridge_integration_tests::HarnessEthClient;
 use bridge_integration_tests::TestHarness;
+use bridge_service::chains::bridge_contracts::BridgeContract;
 use bridge_service::chains::bridge_contracts::BridgeContractEvent;
 use bridge_service::chains::ethereum::event_monitoring::EthMonitoring;
 use bridge_service::chains::{
@@ -101,8 +102,10 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		)
 		.init();
 
-	let (eth_client_harness, mut mvt_client_harness, config) =
+	let (mut eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
+
+	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
 
 	mvt_client_harness.init_set_timelock(60).await?; //Set to 1mn
 
@@ -133,13 +136,29 @@ async fn test_bridge_transfer_movement_eth_happy_path() -> Result<(), anyhow::Er
 		.initiate_bridge_transfer(&recipient_privkey, counter_party_address, hash_lock, amount)
 		.await?;
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
 	// Wait for InitialtorCompleted event
 	tracing::info!("Wait for Bridge Lock event.");
+	let bridge_tranfer_id;
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::Locked(_))) = event {
+		if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
+			bridge_tranfer_id = detail.bridge_transfer_id;
+			break;
+		}
+	}
+
+	// 2) Complete transfer on Eth
+	eth_client_harness
+		.eth_client
+		.counterparty_complete_bridge_transfer(bridge_tranfer_id, hash_lock_pre_image)
+		.await?;
+
+	loop {
+		let event =
+			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
+		if let Some(Ok(BridgeContractEvent::CounterPartCompleted(id, _))) = event {
+			assert_eq!(bridge_tranfer_id, id);
 			break;
 		}
 	}

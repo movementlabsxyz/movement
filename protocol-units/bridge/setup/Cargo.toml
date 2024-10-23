@@ -32,6 +32,8 @@ mcr-settlement-config = { workspace = true }
 
 aptos-sdk = { workspace = true }
 
+ethabi = "18.0.0"
+
 
 [lints]
 #workspace = true

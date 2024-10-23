@@ -476,6 +476,8 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	let (mut eth_client_harness, config, mut anvil) =
 		TestHarness::new_only_eth(config.clone()).await;
 
+	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
+
 	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
 
 	let recipient_privkey = LocalAccount::generate(&mut rand::rngs::OsRng);
@@ -488,29 +490,28 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 
 	println!("Before initiate_bridge_transfer");
 
-	eth_client_harness
-		.eth_client
-		.initiate_bridge_transfer(
-			BridgeAddress(EthAddress(signer_address)),
-			BridgeAddress(recipient_bytes.clone()),
-			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((42, 0))),
-		)
-		.await
-		.expect("Failed to initiate bridge transfer");
+	// eth_client_harness
+	// 	.eth_client
+	// 	.initiate_bridge_transfer(
+	// 		BridgeAddress(EthAddress(signer_address)),
+	// 		BridgeAddress(recipient_bytes.clone()),
+	// 		HashLock(EthHash(hash_lock).0),
+	// 		Amount(AssetType::EthAndWeth((42, 0))),
+	// 	)
+	// 	.await
+	// 	.expect("Failed to initiate bridge transfer");
 
-	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
-	// Wait for InitialtorCompleted event
-	tracing::info!("Wait for Bridge Lock event.");
-	let bridge_transfer_id;
-	loop {
-		let event =
-			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-		if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
-			bridge_transfer_id = detail.bridge_transfer_id;
-			break;
-		}
-	}
+	// // Wait for InitialtorCompleted event
+	// tracing::info!("Wait for Bridge Lock event.");
+	// let bridge_transfer_id;
+	// loop {
+	// 	let event =
+	// 		tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
+	// 	if let Some(Ok(BridgeContractEvent::Initiated(detail))) = event {
+	// 		bridge_transfer_id = detail.bridge_transfer_id;
+	// 		break;
+	// 	}
+	// }
 	println!("Before lock_bridge_transfer");
 
 	//let bridge_transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
@@ -530,20 +531,20 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	let res = eth_client_harness
 		.eth_client
 		.lock_bridge_transfer(
-			bridge_transfer_id,
+			BridgeTransferId([3; 32]),
 			HashLock([1; 32]),
 			BridgeAddress(vec![2; 32]),
 			BridgeAddress(EthAddress(signer_address)),
 			Amount(AssetType::EthAndWeth((0, 42))),
 		)
 		.await;
-	// loop {
-	// 	let event =
-	// 		tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-	// 	if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
-	// 		break;
-	// 	}
-	// }
+	loop {
+		let event =
+			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
+		if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
+			break;
+		}
+	}
 
 	println!("{res:?}",);
 

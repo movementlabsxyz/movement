@@ -5,6 +5,8 @@ use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::chains::ethereum::types::AtomicBridgeCounterparty;
 use crate::chains::ethereum::types::AtomicBridgeInitiator;
+use crate::types::Amount;
+use crate::types::AssetType;
 use crate::types::HashLockPreImage;
 use crate::types::LockDetails;
 use crate::types::{BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock};
@@ -140,7 +142,10 @@ impl EthMonitoring {
 								recipient_address: BridgeAddress(initiated._recipient.to_vec()),
 								hash_lock: HashLock(*initiated._hashLock),
 								time_lock: initiated._timeLock.into(),
-								amount: initiated.amount.into(),
+								//TODO Mvt convetion of amount is done here but we are not sure the destination chan is Mvt.
+								//Amount management should be changed to support more chain.
+								// Extract the lower 64 bits.
+								amount: Amount(AssetType::Moveth(initiated.amount.as_limbs()[0])),
 								state: 0,
 							};
 							BridgeContractEvent::Initiated(details)
@@ -164,7 +169,10 @@ impl EthMonitoring {
 								bridge_transfer_id: BridgeTransferId(*trlocked.bridgeTransferId),
 								initiator_address: BridgeAddress(trlocked.initiator.to_vec()),
 								recipient_address: BridgeAddress(EthAddress(Address::from(trlocked.recipient))),
-								amount: trlocked.amount.into(),
+								//TODO Mvt convetion of amount is done here but we are not sure the destination chan is Mvt.
+								//Amount management should be changed to support more chain.
+								// Extract the lower 64 bits.
+								amount: Amount(AssetType::Moveth(trlocked.amount.as_limbs()[0])),
 								hash_lock: HashLock(*trlocked.hashLock),
 								time_lock: trlocked.timeLock.into(),
 							};
