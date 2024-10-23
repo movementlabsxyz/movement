@@ -45,13 +45,13 @@ if [ "$EXECUTE_MOVE" == "true" ]; then
   movement move run-script \
     --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv \
     --profile default \
-    --assume-yes > enable_bridge_feature_output.log 2> enable_bridge_feature_error.log
+    --assume-yes 2>&1 | tee enable_bridge_feature_output.log
 
   # Second script: store_mint_burn_caps
   movement move run-script \
     --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/store_mint_burn_caps.mv \
     --profile default \
-    --assume-yes > store_mint_burn_caps_output.log 2> store_mint_burn_caps_error.log
+    --assume-yes 2>&1 | tee store_mint_burn_caps_output.log
 
   echo "Move scripts executed."
 else
