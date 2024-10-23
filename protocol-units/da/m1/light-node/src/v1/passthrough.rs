@@ -127,11 +127,14 @@ where
 
 	/// Submits a CelestiaBlob to the Celestia node.
 	pub async fn submit_celestia_blob(&self, blob: CelestiaBlob) -> Result<u64, anyhow::Error> {
-		let height = self
-			.default_client
-			.blob_submit(&[blob], GasPrice::default())
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+		let height =
+			self.default_client
+				.blob_submit(&[blob], GasPrice::default())
+				.await
+				.map_err(|e| {
+					error!(error = %e, "failed to submit the blob");
+					anyhow::anyhow!("Failed submitting the blob: {}", e)
+				})?;
 
 		Ok(height)
 	}
@@ -141,11 +144,11 @@ where
 		&self,
 		blobs: &[CelestiaBlob],
 	) -> Result<u64, anyhow::Error> {
-		let height = self
-			.default_client
-			.blob_submit(blobs, GasPrice::default())
-			.await
-			.map_err(|e| anyhow::anyhow!("Failed submitting the blob: {}", e))?;
+		let height =
+			self.default_client.blob_submit(blobs, GasPrice::default()).await.map_err(|e| {
+				error!(error = %e, "failed to submit the blobs");
+				anyhow::anyhow!("Failed submitting the blob: {}", e)
+			})?;
 
 		Ok(height)
 	}
@@ -187,7 +190,7 @@ where
 		Ok(verified_blobs)
 	}
 
-	#[tracing::instrument(target = "movement_timing", level = "debug")]
+	#[tracing::instrument(target = "movement_timing", level = "info", skip(self))]
 	async fn get_blobs_at_height(&self, height: u64) -> Result<Vec<Blob>, anyhow::Error> {
 		let ir_blobs = self.get_ir_blobs_at_height(height).await?;
 		let mut blobs = Vec::new();
