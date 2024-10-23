@@ -44,6 +44,7 @@ if [ "$EXECUTE_MOVE" == "true" ]; then
     --package-dir protocol-units/bridge/move-modules/
     --profile default \
     --assume-yes 
+    
   # First script: enable_bridge_feature
   movement move run-script \
     --compiled-script-path protocol-units/bridge/move-modules/build/bridge-modules/bytecode_scripts/enable_bridge_feature.mv \
