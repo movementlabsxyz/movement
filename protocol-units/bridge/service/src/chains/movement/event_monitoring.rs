@@ -1,4 +1,5 @@
 use super::client::MovementClient;
+use super::client_framework::FRAMEWORK_ADDRESS;
 use super::utils::MovementAddress;
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractEvent;
@@ -26,6 +27,7 @@ use hex::FromHex;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
+use tracing::info;
 use std::{pin::Pin, task::Poll};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
@@ -159,7 +161,7 @@ impl MovementMonitoring {
 				let mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
-						mvt_client.native_address,
+						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
 					)
@@ -168,8 +170,8 @@ impl MovementMonitoring {
 						Ok(evs) => evs.into_iter().map(|ev| Ok(ev)).collect(),
 						Err(err) => vec![Err(err)],
 					};
-					let mut counterpart_event_list = match pool_counterpart_contract(
-						mvt_client.native_address,
+					let mut counterpart_event_list = match pool_counterparty_contract(
+						FRAMEWORK_ADDRESS,
 						&config.mvt_rpc_connection_url(),
 						&pull_state,
 					)
@@ -238,18 +240,16 @@ struct CounterpartyCompletedDetails {
 }
 
 async fn pool_initiator_contract(
-	native_address: AccountAddress,
+	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let native_address_str = native_address.to_standard_string();
 	let struct_tag =
-		format!("{}::atomic_bridge_initiator::BridgeTransferStore", native_address_str,);
-
+	format!("{}::atomic_bridge_initiator::BridgeInitiatorEvents", framework_address.to_string());
 	// Get initiated events
 	let initiated_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_initiated_events",
 		pull_state.initiator_init,
@@ -273,7 +273,7 @@ async fn pool_initiator_contract(
 	// Get completed events
 	let completed_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.initiator_complete,
@@ -304,7 +304,7 @@ async fn pool_initiator_contract(
 	// Get refunded events
 	let refunded_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_refunded_events",
 		pull_state.initiator_refund,
@@ -338,19 +338,18 @@ async fn pool_initiator_contract(
 	Ok(total_events)
 }
 
-async fn pool_counterpart_contract(
-	native_address: AccountAddress,
+async fn pool_counterparty_contract(
+	framework_address: AccountAddress,
 	rest_url: &str,
 	pull_state: &MvtPullingState,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let native_address_str = native_address.to_standard_string();
 	let struct_tag =
-		format!("{}::atomic_bridge_counterparty::BridgeTransferStore", native_address_str);
+		format!("{}::atomic_bridge_counterparty::BridgeCounterpartyEvents", FRAMEWORK_ADDRESS.to_string());
 
 	// Get locked events
 	let locked_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_locked_events",
 		pull_state.counterpart_lock,
@@ -374,7 +373,7 @@ async fn pool_counterpart_contract(
 	// Get completed events
 	let completed_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_completed_events",
 		pull_state.counterpart_complete,
@@ -417,7 +416,7 @@ async fn pool_counterpart_contract(
 	// Get cancelled events
 	let cancelled_events = get_account_events(
 		rest_url,
-		&native_address_str,
+		&framework_address.to_string(),
 		&struct_tag,
 		"bridge_transfer_cancelled_events",
 		pull_state.counterpart_cancel,
@@ -464,7 +463,7 @@ pub struct BridgeInitEventData {
 	#[serde(deserialize_with = "deserialize_hex_vec")]
 	pub bridge_transfer_id: Vec<u8>,
 	#[serde(deserialize_with = "deserialize_hex_vec")]
-	pub originator: Vec<u8>,
+	pub initiator: Vec<u8>,
 	#[serde(deserialize_with = "deserialize_hex_vec")]
 	pub recipient: Vec<u8>,
 	#[serde(deserialize_with = "deserialize_hex_vec")]
@@ -473,7 +472,6 @@ pub struct BridgeInitEventData {
 	pub time_lock: u64,
 	#[serde(deserialize_with = "deserialize_u64_from_string")]
 	pub amount: u64,
-	pub state: u8,
 }
 
 // Custom deserialization function to convert a hex string to Vec<u8>
@@ -507,7 +505,7 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(MovementAddress::from(data.originator)),
+			initiator_address: BridgeAddress(MovementAddress::from(data.initiator)),
 			recipient_address: BridgeAddress(data.recipient),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
@@ -517,7 +515,7 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 			})?),
 			time_lock: TimeLock(data.time_lock),
 			amount: Amount(AssetType::Moveth(data.amount)),
-			state: data.state,
+			state: 0
 		})
 	}
 }
@@ -535,8 +533,8 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 				},
 			)?),
-			initiator_address: BridgeAddress(data.recipient),
-			recipient_address: BridgeAddress(MovementAddress::from(data.originator)),
+			initiator: BridgeAddress(data.recipient),
+			recipient: BridgeAddress(MovementAddress::from(data.initiator)),
 			hash_lock: HashLock(data.hash_lock.try_into().map_err(|e| {
 				BridgeContractError::ConversionFailed(format!(
 					"MVT BridgeTransferDetails data onchain hash_lock conversion error error:{:?}",

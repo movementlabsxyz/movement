@@ -154,7 +154,14 @@ impl TransactionPipe {
 		let committed_sequence_number =
 			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
 
-		let min_sequence_number = (used_sequence_number + 1).max(committed_sequence_number);
+		debug!(
+			"Used sequence number: {:?} Committed sequence number: {:?}",
+			used_sequence_number, committed_sequence_number
+		);
+		let min_used_sequence_number =
+			if used_sequence_number > 0 { used_sequence_number + 1 } else { 0 };
+
+		let min_sequence_number = (min_used_sequence_number).max(committed_sequence_number);
 
 		let max_sequence_number = committed_sequence_number + TOO_NEW_TOLERANCE;
 
@@ -211,9 +218,12 @@ impl TransactionPipe {
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
+				debug!("Transaction not accepted: {:?}", tx_result.status());
 				return Ok((ms, tx_result.status()));
 			}
-			None => {}
+			None => {
+				debug!("Transaction accepted by VM: {:?}", transaction);
+			}
 		}
 
 		let sequence_number = match self.has_invalid_sequence_number(&transaction)? {
@@ -478,7 +488,7 @@ mod tests {
 		let (mut transaction_pipe, mut _mempool_client_sender, _tx_receiver) = setup();
 
 		// submit a transaction with a valid sequence number
-		let user_transaction = create_signed_transaction(1, &maptos_config);
+		let user_transaction = create_signed_transaction(0, &maptos_config);
 		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
 		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
 

@@ -7,6 +7,8 @@ use crate::types::{
 	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferId, HashLock,
 	HashLockPreImage, TimeLock,
 };
+use alloy_primitives::Address;
+use alloy_primitives::FixedBytes;
 use anyhow::{Context, Result};
 use aptos_api_types::{EntryFunctionId, MoveModuleId, ViewRequest};
 use aptos_sdk::{
@@ -16,6 +18,7 @@ use aptos_sdk::{
 };
 use aptos_types::account_address::AccountAddress;
 use bridge_config::common::movement::MovementConfig;
+use hex;
 use rand::prelude::*;
 use std::path::Path;
 use std::str::FromStr;
@@ -23,7 +26,7 @@ use std::sync::Arc;
 use tracing::{debug, info};
 use url::Url;
 
-const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
+pub const FRAMEWORK_ADDRESS: AccountAddress = AccountAddress::new([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 ]);
 const INITIATOR_MODULE_NAME: &str = "atomic_bridge_initiator";
@@ -241,7 +244,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 
 		Ok(())
 	}
-
+	
 	async fn lock_bridge_transfer(
 		&mut self,
 		bridge_transfer_id: BridgeTransferId,
@@ -250,11 +253,12 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 		recipient: BridgeAddress<MovementAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		debug!("Starting lock bridge transfer");
 		let amount_value = match amount.0 {
 			AssetType::Moveth(value) => value,
 			_ => return Err(BridgeContractError::SerializationError),
 		};
-
+		debug!("Initiator: {:?}", initiator.0);
 		let args = vec![
 			utils::serialize_vec(&initiator.0)?,
 			utils::serialize_vec(&bridge_transfer_id.0[..])?,
@@ -262,6 +266,7 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			utils::serialize_vec(&recipient.0)?,
 			utils::serialize_u64(&amount_value)?,
 		];
+		
 
 		let payload = utils::make_aptos_payload(
 			FRAMEWORK_ADDRESS,
@@ -270,15 +275,15 @@ impl BridgeContract<MovementAddress> for MovementClientFramework {
 			Vec::new(),
 			args,
 		);
-
+	
 		let _ = utils::send_and_confirm_aptos_transaction(
 			&self.rest_client,
 			self.signer.as_ref(),
 			payload,
 		)
 		.await
-		.map_err(|_| BridgeContractError::LockTransferError);
-
+		.map_err(|_| BridgeContractError::LockTransferError)?;
+	
 		Ok(())
 	}
 

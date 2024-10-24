@@ -162,8 +162,8 @@ impl EthMonitoring {
 							// BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
 							let details: LockDetails<EthAddress> = LockDetails {
 								bridge_transfer_id: BridgeTransferId(*trlocked.bridgeTransferId),
-								initiator_address: BridgeAddress(trlocked.initiator.to_vec()),
-								recipient_address: BridgeAddress(EthAddress(Address::from(trlocked.recipient))),
+								initiator: BridgeAddress(trlocked.initiator.to_vec()),
+								recipient: BridgeAddress(EthAddress(Address::from(trlocked.recipient))),
 								amount: trlocked.amount.into(),
 								hash_lock: HashLock(*trlocked.hashLock),
 								time_lock: trlocked.timeLock.into(),
