@@ -56,7 +56,9 @@ pub enum TransferActionType {
 impl fmt::Display for TransferActionType {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let act = match self {
-			TransferActionType::LockBridgeTransfer { .. } => "LockBridgeTransfer",
+			TransferActionType::LockBridgeTransfer { amount, .. } => {
+				&format!("LockBridgeTransfer amount:{:?}", amount)
+			}
 			TransferActionType::WaitAndCompleteInitiator(..) => "WaitAndCompleteInitiator",
 			TransferActionType::RefundInitiator => "RefundInitiator",
 			TransferActionType::TransferDone => "TransferDone",
