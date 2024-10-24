@@ -52,7 +52,16 @@ pub struct EthConfig {
 
 	#[serde(default = "default_asset")]
 	pub asset: String,
+
+	#[serde(default = "default_infura_api_version")]
+	pub infura_api_version: String,
+	#[serde(default = "default_infura_api_key")]
+	pub infura_api_key: String,
 }
+
+env_default!(default_infura_api_version, "INFURA_API_VERSION", String, "v3".to_string());
+
+env_default!(default_infura_api_key, "INFURA_API_KEY", String, "".to_string());
 
 env_default!(
 	default_eth_initiator_contract,
@@ -149,12 +158,22 @@ pub fn default_signer_private_key() -> String {
 
 impl EthConfig {
 	pub fn eth_rpc_connection_url(&self) -> String {
-		format!(
-			"{}://{}:{}",
-			self.eth_rpc_connection_protocol,
-			self.eth_rpc_connection_hostname,
-			self.eth_rpc_connection_port
-		)
+		if self.infura_api_key.is_empty() {
+			format!(
+				"{}://{}:{}",
+				self.eth_rpc_connection_protocol,
+				self.eth_rpc_connection_hostname,
+				self.eth_rpc_connection_port
+			)
+		} else {
+			format!(
+				"{}://{}/{}/{}",
+				self.eth_rpc_connection_protocol,
+				self.eth_rpc_connection_hostname,
+				self.infura_api_version,
+				self.infura_api_key
+			)
+		}
 	}
 
 	pub fn eth_ws_connection_url(&self) -> String {
@@ -190,6 +209,9 @@ impl Default for EthConfig {
 			transaction_send_retries: default_transaction_send_retries(),
 
 			asset: default_asset(),
+
+			infura_api_version: default_infura_api_version(),
+			infura_api_key: default_infura_api_key(),
 		}
 	}
 }

@@ -3,6 +3,7 @@ proc-compose.temp.log
 methods/guest/Cargo.lock
 protocol-units/bridge/contracts/out/*
 protocol-units/bridge/contracts/cache/*
+protocol-units/bridge/contracts/broadcast/*
 protocol-units/bridge/move-modules/build/*
 protocol-units/bridge/move-modules/.aptos/*
 .idea/
