@@ -19,6 +19,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "abstract-domain-derive"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "addchain"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -815,11 +825,11 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-gas-algebra",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-gas-meter",
- "aptos-gas-schedule",
- "aptos-vm-types",
- "move-binary-format",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
 ]
 
 [[package]]
@@ -828,8 +838,8 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
 ]
 
 [[package]]
@@ -837,13 +847,27 @@ name = "aptos-aggregator"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-logger",
- "aptos-types",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "claims",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+]
+
+[[package]]
+name = "aptos-aggregator"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "bcs 0.1.4",
+ "claims",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
 ]
 
 [[package]]
@@ -856,15 +880,15 @@ dependencies = [
  "aptos-bcs-utils",
  "aptos-build-info",
  "aptos-config",
- "aptos-crypto",
- "aptos-gas-schedule",
- "aptos-global-constants",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mempool",
  "aptos-metrics-core",
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "async-trait",
  "bcs 0.1.4",
@@ -876,7 +900,7 @@ dependencies = [
  "itertools 0.12.1",
  "mime",
  "mini-moka",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "num_cpus",
  "once_cell",
  "paste",
@@ -895,21 +919,21 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "aptos-config",
- "aptos-crypto",
- "aptos-framework",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-openapi",
  "aptos-resource-viewer",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "async-trait",
  "bcs 0.1.4",
  "bytes 1.8.0",
  "hex",
  "indoc",
- "move-binary-format",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
  "poem",
  "poem-openapi",
@@ -937,20 +961,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-bitvec"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "aptos-block-executor"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-drop-helper",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-mvhashmap",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "arc-swap",
  "bcs 0.1.4",
  "bytes 1.8.0",
@@ -960,9 +993,9 @@ dependencies = [
  "dashmap 5.5.3",
  "derivative",
  "fail",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "num_cpus",
  "once_cell",
  "parking_lot",
@@ -976,16 +1009,16 @@ name = "aptos-block-partitioner"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "clap 4.5.20",
  "dashmap 5.5.3",
  "itertools 0.12.1",
  "jemallocator",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
  "rand 0.7.3",
  "rayon",
@@ -1016,11 +1049,11 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-package-builder",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
 ]
 
@@ -1030,7 +1063,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "futures",
 ]
@@ -1040,7 +1073,7 @@ name = "aptos-compression"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "lz4",
  "once_cell",
@@ -1053,13 +1086,13 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-global-constants",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-secure-storage",
  "aptos-short-hex-str",
  "aptos-temppath",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
@@ -1084,14 +1117,14 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-bitvec",
- "aptos-crypto",
- "aptos-crypto-derive",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-executor-types",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-short-hex-str",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "fail",
  "futures",
@@ -1112,7 +1145,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "aes-gcm",
  "anyhow",
- "aptos-crypto-derive",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "ark-bn254",
  "ark-ec",
  "ark-ff 0.4.2",
@@ -1159,9 +1192,70 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-crypto"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-groth16",
+ "ark-std 0.4.0",
+ "base64 0.13.1",
+ "bcs 0.1.4",
+ "blst",
+ "bulletproofs",
+ "bytes 1.8.0",
+ "curve25519-dalek",
+ "curve25519-dalek-ng",
+ "digest 0.9.0",
+ "ed25519-dalek",
+ "ff 0.13.0",
+ "hex",
+ "hkdf 0.10.0",
+ "libsecp256k1",
+ "merlin",
+ "more-asserts",
+ "neptune",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "once_cell",
+ "p256 0.13.2",
+ "poseidon-ark",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "ring 0.16.20",
+ "serde",
+ "serde-name",
+ "serde_bytes",
+ "sha2 0.10.8",
+ "sha2 0.9.9",
+ "sha3",
+ "signature 2.2.0",
+ "static_assertions",
+ "thiserror",
+ "tiny-keccak",
+ "typenum",
+ "x25519-dalek",
+]
+
+[[package]]
 name = "aptos-crypto-derive"
 version = "0.0.3"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "aptos-crypto-derive"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1176,15 +1270,15 @@ dependencies = [
  "anyhow",
  "aptos-accumulator",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-db-indexer",
  "aptos-db-indexer-schemas",
  "aptos-executor",
  "aptos-executor-types",
- "aptos-experimental-runtimes",
- "aptos-infallible",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-jellyfish-merkle",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-proptest-helpers",
  "aptos-resource-viewer",
@@ -1193,7 +1287,7 @@ dependencies = [
  "aptos-scratchpad",
  "aptos-storage-interface",
  "aptos-temppath",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "arc-swap",
  "arr_macro",
  "bcs 0.1.4",
@@ -1204,7 +1298,7 @@ dependencies = [
  "hex",
  "itertools 0.12.1",
  "lru 0.7.8",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "num-derive",
  "once_cell",
  "proptest",
@@ -1224,16 +1318,16 @@ dependencies = [
  "anyhow",
  "aptos-config",
  "aptos-db-indexer-schemas",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-resource-viewer",
  "aptos-rocksdb-options",
  "aptos-schemadb",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bytes 1.8.0",
  "dashmap 5.5.3",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
 ]
 
 [[package]]
@@ -1244,7 +1338,7 @@ dependencies = [
  "anyhow",
  "aptos-schemadb",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "byteorder",
  "serde",
@@ -1256,8 +1350,39 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-crypto-derive",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "bcs 0.1.4",
+ "blst",
+ "blstrs",
+ "criterion",
+ "ff 0.13.0",
+ "group 0.13.0",
+ "hex",
+ "merlin",
+ "more-asserts",
+ "num-bigint 0.3.3",
+ "num-integer",
+ "num-traits",
+ "once_cell",
+ "pairing",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "rayon",
+ "serde",
+ "serde_bytes",
+ "sha3",
+ "static_assertions",
+]
+
+[[package]]
+name = "aptos-dkg"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "bcs 0.1.4",
  "blst",
  "blstrs",
@@ -1286,7 +1411,7 @@ name = "aptos-drop-helper"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "once_cell",
  "threadpool",
@@ -1300,9 +1425,9 @@ dependencies = [
  "anyhow",
  "aptos-channels",
  "aptos-id-generator",
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "futures",
  "serde",
  "thiserror",
@@ -1315,18 +1440,18 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-drop-helper",
  "aptos-executor-service",
  "aptos-executor-types",
- "aptos-experimental-runtimes",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-scratchpad",
  "aptos-sdk",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "arr_macro",
  "bcs 0.1.4",
@@ -1334,7 +1459,7 @@ dependencies = [
  "dashmap 5.5.3",
  "fail",
  "itertools 0.12.1",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
  "rayon",
  "serde",
@@ -1347,15 +1472,15 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "aptos-block-partitioner",
  "aptos-config",
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-language-e2e-tests",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-node-resource-metrics",
  "aptos-push-metrics",
  "aptos-secure-net",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "bcs 0.1.4",
  "clap 4.5.20",
@@ -1379,14 +1504,14 @@ dependencies = [
  "aptos-cached-packages",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-db",
  "aptos-executor",
  "aptos-executor-types",
  "aptos-sdk",
  "aptos-storage-interface",
  "aptos-temppath",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "aptos-vm-genesis",
  "rand 0.7.3",
@@ -1398,12 +1523,12 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-drop-helper",
  "aptos-scratchpad",
  "aptos-secure-net",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "criterion",
  "itertools 0.12.1",
@@ -1417,7 +1542,20 @@ name = "aptos-experimental-runtimes"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "core_affinity",
+ "libc",
+ "num_cpus",
+ "once_cell",
+ "rayon",
+]
+
+[[package]]
+name = "aptos-experimental-runtimes"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "core_affinity",
  "libc",
  "num_cpus",
@@ -1433,7 +1571,7 @@ dependencies = [
  "anyhow",
  "aptos-config",
  "aptos-faucet-metrics-server",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-sdk",
  "async-trait",
@@ -1465,7 +1603,7 @@ version = "2.0.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "once_cell",
  "poem",
@@ -1479,15 +1617,15 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-crypto",
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-move-stdlib",
- "aptos-native-interface",
- "aptos-sdk-builder",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-sdk-builder 0.2.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "ark-bls12-381",
  "ark-bn254",
  "ark-ec",
@@ -1510,20 +1648,88 @@ dependencies = [
  "log",
  "lru 0.7.8",
  "merlin",
- "move-binary-format",
- "move-cli",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-docgen",
- "move-model",
- "move-package",
- "move-prover",
- "move-prover-boogie-backend",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-cli 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "num-traits",
+ "once_cell",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "ripemd",
+ "serde",
+ "serde_bytes",
+ "sha2 0.10.8",
+ "sha2 0.9.9",
+ "sha3",
+ "siphasher",
+ "smallvec",
+ "tempfile",
+ "thiserror",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "aptos-framework"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-sdk-builder 0.2.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "ark-bls12-381",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.4.2",
+ "ark-serialize 0.4.2",
+ "ark-std 0.4.0",
+ "bcs 0.1.4",
+ "better_any",
+ "blake2-rfc",
+ "bulletproofs",
+ "byteorder",
+ "clap 4.5.20",
+ "codespan-reporting",
+ "curve25519-dalek-ng",
+ "either",
+ "flate2",
+ "hex",
+ "itertools 0.12.1",
+ "libsecp256k1",
+ "log",
+ "lru 0.7.8",
+ "merlin",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-cli 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "num-traits",
  "once_cell",
  "rand 0.7.3",
@@ -1547,7 +1753,16 @@ version = "0.0.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "either",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+]
+
+[[package]]
+name = "aptos-gas-algebra"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "either",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
 ]
 
 [[package]]
@@ -1555,14 +1770,14 @@ name = "aptos-gas-meter"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-logger",
- "aptos-types",
- "aptos-vm-types",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
 ]
 
 [[package]]
@@ -1571,15 +1786,15 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-gas-algebra",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-gas-meter",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "handlebars",
  "inferno",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "regex",
  "serde_json",
  "smallvec",
@@ -1590,10 +1805,23 @@ name = "aptos-gas-schedule"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-global-constants",
- "move-core-types",
- "move-vm-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "paste",
+ "rand 0.7.3",
+]
+
+[[package]]
+name = "aptos-gas-schedule"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "paste",
  "rand 0.7.3",
 ]
@@ -1602,6 +1830,11 @@ dependencies = [
 name = "aptos-global-constants"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
+
+[[package]]
+name = "aptos-global-constants"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
 
 [[package]]
 name = "aptos-id-generator"
@@ -1616,14 +1849,14 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
- "aptos-bitvec",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-config",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mempool",
  "aptos-metrics-core",
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "async-trait",
  "bcs 0.1.4",
  "bigdecimal",
@@ -1648,17 +1881,17 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
- "aptos-bitvec",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-config",
  "aptos-indexer-grpc-utils",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mempool",
  "aptos-metrics-core",
  "aptos-moving-average 0.1.0 (git+https://github.com/movementlabsxyz/aptos-indexer-processors)",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bytes 1.8.0",
  "chrono",
@@ -1666,9 +1899,9 @@ dependencies = [
  "hex",
  "hyper 0.14.31",
  "itertools 0.12.1",
- "move-binary-format",
- "move-core-types",
- "move-package",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
  "serde",
  "serde_json",
@@ -1690,12 +1923,12 @@ dependencies = [
  "aptos-db-indexer",
  "aptos-indexer-grpc-fullnode",
  "aptos-indexer-grpc-utils",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mempool",
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-schemadb",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "flate2",
  "futures",
  "google-cloud-storage",
@@ -1747,19 +1980,24 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 
 [[package]]
+name = "aptos-infallible"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+
+[[package]]
 name = "aptos-jellyfish-merkle"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-experimental-runtimes",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "arr_macro",
  "bcs 0.1.4",
  "byteorder",
@@ -1779,8 +2017,8 @@ name = "aptos-keygen"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "rand 0.7.3",
 ]
 
@@ -1791,33 +2029,33 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "aptos-abstract-gas-usage",
- "aptos-bitvec",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-block-executor",
  "aptos-cached-packages",
- "aptos-crypto",
- "aptos-framework",
- "aptos-gas-algebra",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-gas-meter",
  "aptos-gas-profiling",
- "aptos-gas-schedule",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-keygen",
  "aptos-proptest-helpers",
  "aptos-temppath",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "aptos-vm-genesis",
  "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bytes 1.8.0",
  "goldenfile",
- "move-binary-format",
- "move-command-line-common",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "move-ir-compiler",
- "move-model",
- "move-vm-runtime",
- "move-vm-types",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "num_cpus",
  "once_cell",
  "petgraph 0.5.1",
@@ -1833,8 +2071,8 @@ name = "aptos-ledger"
 version = "0.2.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "hex",
  "ledger-apdu",
  "ledger-transport-hid",
@@ -1852,13 +2090,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-log-derive"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "aptos-logger"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-infallible",
- "aptos-log-derive",
- "aptos-node-identity",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-log-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-node-identity 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "backtrace",
+ "chrono",
+ "erased-serde",
+ "futures",
+ "hostname",
+ "once_cell",
+ "prometheus",
+ "serde",
+ "serde_json",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.18",
+]
+
+[[package]]
+name = "aptos-logger"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-log-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-node-identity 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "backtrace",
  "chrono",
  "erased-serde",
@@ -1880,12 +2152,12 @@ name = "aptos-memory-usage-tracker"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-gas-algebra",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-gas-meter",
- "aptos-types",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
 ]
 
 [[package]]
@@ -1898,20 +2170,20 @@ dependencies = [
  "aptos-channels",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-event-notifications",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mempool-notifications",
  "aptos-metrics-core",
  "aptos-netcore",
  "aptos-network",
  "aptos-peer-monitoring-service-types",
- "aptos-runtimes",
+ "aptos-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-short-hex-str",
  "aptos-storage-interface",
  "aptos-time-service",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm-validator",
  "bcs 0.1.4",
  "fail",
@@ -1933,7 +2205,7 @@ name = "aptos-mempool-notifications"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "async-trait",
  "futures",
  "serde",
@@ -1946,7 +2218,7 @@ name = "aptos-memsocket"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bytes 1.8.0",
  "futures",
  "once_cell",
@@ -1966,11 +2238,26 @@ name = "aptos-move-stdlib"
 version = "0.1.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-gas-schedule",
- "aptos-native-interface",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "sha2 0.9.9",
+ "sha3",
+ "smallvec",
+]
+
+[[package]]
+name = "aptos-move-stdlib"
+version = "0.1.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "sha2 0.9.9",
  "sha3",
  "smallvec",
@@ -1998,18 +2285,18 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-crypto",
- "aptos-types",
- "aptos-vm-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bytes 1.8.0",
  "claims",
  "crossbeam",
  "dashmap 5.5.3",
  "derivative",
- "move-binary-format",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "serde",
 ]
 
@@ -2018,15 +2305,32 @@ name = "aptos-native-interface"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-types",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bytes 1.8.0",
- "move-binary-format",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "smallvec",
+]
+
+[[package]]
+name = "aptos-native-interface"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "bcs 0.1.4",
+ "bytes 1.8.0",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "smallvec",
 ]
 
@@ -2037,7 +2341,7 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "aptos-memsocket",
  "aptos-proxy",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bytes 1.8.0",
  "futures",
  "pin-project 1.1.6",
@@ -2053,21 +2357,21 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-bitvec",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-channels",
  "aptos-compression",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-id-generator",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-netcore",
  "aptos-num-variants",
  "aptos-peer-monitoring-service-types",
  "aptos-short-hex-str",
  "aptos-time-service",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "arc-swap",
  "async-trait",
  "bcs 0.1.4",
@@ -2098,7 +2402,18 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "claims",
+ "once_cell",
+]
+
+[[package]]
+name = "aptos-node-identity"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "claims",
  "once_cell",
 ]
@@ -2109,8 +2424,8 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "aptos-build-info",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "cfg-if",
  "once_cell",
@@ -2148,10 +2463,10 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "itertools 0.12.1",
- "move-command-line-common",
- "move-package",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "tempfile",
 ]
 
@@ -2161,7 +2476,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "aptos-config",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "serde",
  "thiserror",
@@ -2227,7 +2542,7 @@ name = "aptos-push-metrics"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "ureq",
  "url",
@@ -2239,12 +2554,12 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-resource-viewer",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
 ]
 
 [[package]]
@@ -2254,14 +2569,14 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "aptos-api-types",
- "aptos-crypto",
- "aptos-infallible",
- "aptos-logger",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bytes 1.8.0",
  "hex",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
@@ -2289,13 +2604,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-runtimes"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "rayon",
+ "tokio",
+]
+
+[[package]]
 name = "aptos-schemadb"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-storage-interface",
  "dunce",
@@ -2310,12 +2634,12 @@ name = "aptos-scratchpad"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-drop-helper",
- "aptos-experimental-runtimes",
- "aptos-infallible",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bitvec 1.0.1",
  "itertools 0.12.1",
  "once_cell",
@@ -2331,16 +2655,16 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
- "aptos-crypto",
- "aptos-global-constants",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-global-constants 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-ledger",
  "aptos-rest-client",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "base64 0.13.1",
  "bcs 0.1.4",
  "ed25519-dalek-bip32",
  "hex",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "rand_core 0.5.1",
  "serde_json",
  "tiny-bip39",
@@ -2352,11 +2676,29 @@ version = "0.2.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "clap 4.5.20",
  "heck 0.4.1",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "serde-generate",
+ "serde-reflection",
+ "serde_yaml 0.8.26",
+ "textwrap 0.15.2",
+]
+
+[[package]]
+name = "aptos-sdk-builder"
+version = "0.2.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "bcs 0.1.4",
+ "clap 4.5.20",
+ "heck 0.4.1",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "serde-generate",
  "serde-reflection",
@@ -2369,7 +2711,7 @@ name = "aptos-secure-net"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
@@ -2387,9 +2729,9 @@ name = "aptos-secure-storage"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-temppath",
  "aptos-time-service",
  "aptos-vault-client",
@@ -2420,7 +2762,7 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "crossbeam",
  "rayon",
 ]
@@ -2431,18 +2773,18 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-crypto",
- "aptos-experimental-runtimes",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-scratchpad",
  "aptos-secure-net",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "bcs 0.1.4",
  "crossbeam-channel",
  "dashmap 5.5.3",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
  "parking_lot",
  "proptest",
@@ -2478,15 +2820,15 @@ name = "aptos-table-natives"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-gas-schedule",
- "aptos-native-interface",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "better_any",
  "bytes 1.8.0",
- "move-binary-format",
- "move-core-types",
- "move-table-extension",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "sha3",
  "smallvec",
 ]
@@ -2505,7 +2847,7 @@ name = "aptos-time-service"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-infallible",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "enum_dispatch",
  "futures",
  "pin-project 1.1.6",
@@ -2519,12 +2861,12 @@ version = "0.0.3"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-bitvec",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-dkg",
- "aptos-experimental-runtimes",
- "aptos-infallible",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-dkg 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "ark-bn254",
  "ark-ff 0.4.2",
  "ark-groth16",
@@ -2539,12 +2881,12 @@ dependencies = [
  "hex",
  "itertools 0.12.1",
  "jsonwebtoken 8.3.0",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-core-types",
- "move-table-extension",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "num-bigint 0.3.3",
  "num-derive",
  "num-traits",
@@ -2571,6 +2913,61 @@ dependencies = [
 ]
 
 [[package]]
+name = "aptos-types"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-dkg 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "ark-bn254",
+ "ark-ff 0.4.2",
+ "ark-groth16",
+ "ark-serialize 0.4.2",
+ "arr_macro",
+ "base64 0.13.1",
+ "bcs 0.1.4",
+ "bytes 1.8.0",
+ "fixed",
+ "fxhash",
+ "hashbrown 0.14.5",
+ "hex",
+ "itertools 0.12.1",
+ "jsonwebtoken 8.3.0",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "num-bigint 0.3.3",
+ "num-derive",
+ "num-traits",
+ "once_cell",
+ "passkey-types",
+ "poem-openapi",
+ "poem-openapi-derive",
+ "quick_cache",
+ "rand 0.7.3",
+ "rayon",
+ "ring 0.16.20",
+ "rsa 0.9.6",
+ "serde",
+ "serde-big-array",
+ "serde_bytes",
+ "serde_json",
+ "serde_with",
+ "serde_yaml 0.8.26",
+ "strum 0.24.1",
+ "strum_macros 0.24.3",
+ "thiserror",
+]
+
+[[package]]
 name = "aptos-utils"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
@@ -2580,7 +2977,7 @@ name = "aptos-vault-client"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "base64 0.13.1",
  "chrono",
  "native-tls",
@@ -2597,28 +2994,28 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-block-executor",
  "aptos-block-partitioner",
- "aptos-crypto",
- "aptos-crypto-derive",
- "aptos-experimental-runtimes",
- "aptos-framework",
- "aptos-gas-algebra",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-crypto-derive 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-experimental-runtimes 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-gas-meter",
- "aptos-gas-schedule",
- "aptos-infallible",
- "aptos-logger",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-infallible 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-memory-usage-tracker",
  "aptos-metrics-core",
- "aptos-move-stdlib",
+ "aptos-move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mvhashmap",
- "aptos-native-interface",
+ "aptos-native-interface 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-table-natives",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-utils",
  "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "ark-bn254",
  "ark-groth16",
  "bcs 0.1.4",
@@ -2629,10 +3026,10 @@ dependencies = [
  "fail",
  "futures",
  "hex",
- "move-binary-format",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "num_cpus",
  "once_cell",
  "ouroboros",
@@ -2647,16 +3044,16 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "aptos-cached-packages",
- "aptos-crypto",
- "aptos-framework",
- "aptos-gas-schedule",
- "aptos-types",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "bcs 0.1.4",
  "bytes 1.8.0",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "once_cell",
  "rand 0.7.3",
  "serde",
@@ -2667,11 +3064,11 @@ name = "aptos-vm-logging"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "aptos-crypto",
- "aptos-logger",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-metrics-core",
  "aptos-speculative-state-helper",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "arc-swap",
  "once_cell",
  "serde",
@@ -2683,18 +3080,40 @@ version = "0.0.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-aggregator",
- "aptos-gas-algebra",
- "aptos-gas-schedule",
- "aptos-types",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bytes 1.8.0",
  "claims",
  "either",
- "move-binary-format",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "rand 0.7.3",
+ "serde",
+]
+
+[[package]]
+name = "aptos-vm-types"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "aptos-aggregator 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-gas-algebra 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-gas-schedule 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "bcs 0.1.4",
+ "bytes 1.8.0",
+ "claims",
+ "either",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "rand 0.7.3",
  "serde",
 ]
@@ -2705,9 +3124,9 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "aptos-vm-logging",
  "fail",
@@ -4084,7 +4503,7 @@ version = "0.0.2"
 dependencies = [
  "alloy",
  "anyhow",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-sdk",
  "dot-movement",
  "godfig",
@@ -4114,11 +4533,11 @@ dependencies = [
  "alloy-network",
  "alloy-sol-types",
  "anyhow",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "aptos-language-e2e-tests",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-sdk",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "bridge-config",
  "bridge-grpc",
@@ -4153,7 +4572,7 @@ dependencies = [
  "aptos-api",
  "aptos-api-types",
  "aptos-sdk",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "async-stream",
  "async-trait",
  "bcs 0.1.4",
@@ -7201,9 +7620,9 @@ version = "0.0.2"
 dependencies = [
  "anyhow",
  "aptos-cached-packages",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "aptos-sdk",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "chrono",
  "futures",
@@ -8580,12 +8999,12 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-config",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-db",
  "aptos-mempool",
  "aptos-proptest-helpers",
  "aptos-sdk",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "async-trait",
  "chrono",
  "futures",
@@ -8604,9 +9023,9 @@ name = "maptos-execution-util"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-sdk",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "godfig",
  "hex",
  "m1-da-light-node-util",
@@ -8628,7 +9047,7 @@ dependencies = [
  "aptos-mempool",
  "aptos-sdk",
  "aptos-storage-interface",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "chrono",
  "futures",
  "maptos-execution-util",
@@ -8646,33 +9065,33 @@ dependencies = [
  "anyhow",
  "aptos-api",
  "aptos-api-types",
- "aptos-bitvec",
+ "aptos-bitvec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-block-executor",
  "aptos-cached-packages",
  "aptos-config",
  "aptos-consensus-types",
- "aptos-crypto",
+ "aptos-crypto 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-db",
  "aptos-executor",
  "aptos-executor-test-helpers",
  "aptos-executor-types",
  "aptos-faucet-core",
- "aptos-framework",
+ "aptos-framework 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "aptos-indexer",
  "aptos-indexer-grpc-fullnode",
  "aptos-indexer-grpc-table-info",
  "aptos-language-e2e-tests",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-mempool",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-sdk",
  "aptos-storage-interface",
  "aptos-temppath",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm",
  "aptos-vm-genesis",
  "aptos-vm-logging",
- "aptos-vm-types",
+ "aptos-vm-types 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-vm-validator",
  "async-trait",
  "bcs 0.1.4",
@@ -9014,11 +9433,28 @@ dependencies = [
  "bcs 0.1.4",
  "heck 0.4.1",
  "log",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-core-types",
- "move-model",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "serde",
+]
+
+[[package]]
+name = "move-abigen"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "heck 0.4.1",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "serde",
 ]
 
@@ -9030,8 +9466,23 @@ dependencies = [
  "anyhow",
  "backtrace",
  "indexmap 1.9.3",
- "move-bytecode-spec",
- "move-core-types",
+ "move-bytecode-spec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "ref-cast",
+ "serde",
+ "variant_count",
+]
+
+[[package]]
+name = "move-binary-format"
+version = "0.0.3"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "backtrace",
+ "indexmap 1.9.3",
+ "move-bytecode-spec 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "ref-cast",
  "serde",
  "variant_count",
@@ -9043,17 +9494,37 @@ version = "0.0.1"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 
 [[package]]
+name = "move-borrow-graph"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+
+[[package]]
 name = "move-bytecode-source-map"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
  "bcs 0.1.4",
- "move-binary-format",
- "move-command-line-common",
- "move-core-types",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "serde",
+]
+
+[[package]]
+name = "move-bytecode-source-map"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "serde",
 ]
 
@@ -9068,13 +9539,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-bytecode-spec"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "once_cell",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "move-bytecode-utils"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "move-binary-format",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "petgraph 0.5.1",
+ "serde-reflection",
+]
+
+[[package]]
+name = "move-bytecode-utils"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "petgraph 0.5.1",
  "serde-reflection",
 ]
@@ -9085,9 +9578,23 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "fail",
- "move-binary-format",
- "move-borrow-graph",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "petgraph 0.5.1",
+ "serde",
+ "typed-arena",
+]
+
+[[package]]
+name = "move-bytecode-verifier"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "fail",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "petgraph 0.5.1",
  "serde",
  "typed-arena",
@@ -9101,9 +9608,24 @@ dependencies = [
  "anyhow",
  "clap 4.5.20",
  "crossterm 0.26.1",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-disassembler",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "regex",
+ "tui",
+]
+
+[[package]]
+name = "move-bytecode-viewer"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "clap 4.5.20",
+ "crossterm 0.26.1",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "regex",
  "tui",
 ]
@@ -9117,23 +9639,53 @@ dependencies = [
  "clap 4.5.20",
  "codespan-reporting",
  "colored",
- "move-binary-format",
- "move-bytecode-viewer",
- "move-command-line-common",
- "move-compiler",
- "move-compiler-v2",
- "move-core-types",
- "move-coverage",
- "move-disassembler",
- "move-docgen",
- "move-errmapgen",
- "move-model",
- "move-package",
- "move-prover",
- "move-stdlib",
- "move-unit-test",
- "move-vm-runtime",
- "move-vm-test-utils",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-unit-test 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "tempfile",
+]
+
+[[package]]
+name = "move-cli"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "clap 4.5.20",
+ "codespan-reporting",
+ "colored",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-package 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-unit-test 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "tempfile",
 ]
@@ -9147,7 +9699,24 @@ dependencies = [
  "difference",
  "dirs-next",
  "hex",
- "move-core-types",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "num-bigint 0.3.3",
+ "once_cell",
+ "serde",
+ "sha2 0.9.9",
+ "walkdir",
+]
+
+[[package]]
+name = "move-command-line-common"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "difference",
+ "dirs-next",
+ "hex",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "num-bigint 0.3.3",
  "once_cell",
  "serde",
@@ -9165,15 +9734,41 @@ dependencies = [
  "clap 4.5.20",
  "codespan-reporting",
  "hex",
- "move-binary-format",
- "move-borrow-graph",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-core-types",
- "move-ir-to-bytecode",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "petgraph 0.5.1",
+ "regex",
+ "sha3",
+ "tempfile",
+]
+
+[[package]]
+name = "move-compiler"
+version = "0.0.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.20",
+ "codespan-reporting",
+ "hex",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-borrow-graph 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "petgraph 0.5.1",
  "regex",
@@ -9186,7 +9781,7 @@ name = "move-compiler-v2"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "abstract-domain-derive",
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.20",
@@ -9196,17 +9791,48 @@ dependencies = [
  "im",
  "itertools 0.12.1",
  "log",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-disassembler",
- "move-ir-types",
- "move-model",
- "move-stackless-bytecode",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "num",
+ "once_cell",
+ "petgraph 0.5.1",
+]
+
+[[package]]
+name = "move-compiler-v2"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.20",
+ "codespan-reporting",
+ "ethnum",
+ "flexi_logger",
+ "im",
+ "itertools 0.12.1",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "num",
  "once_cell",
  "petgraph 0.5.1",
@@ -9238,6 +9864,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-core-types"
+version = "0.0.4"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "bytes 1.8.0",
+ "ethnum",
+ "hashbrown 0.14.5",
+ "hex",
+ "num",
+ "once_cell",
+ "primitive-types 0.10.1",
+ "rand 0.8.5",
+ "ref-cast",
+ "serde",
+ "serde_bytes",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
 name = "move-coverage"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
@@ -9247,11 +9895,30 @@ dependencies = [
  "clap 4.5.20",
  "codespan",
  "colored",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-core-types",
- "move-ir-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "petgraph 0.5.1",
+ "serde",
+]
+
+[[package]]
+name = "move-coverage"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "bcs 0.1.4",
+ "clap 4.5.20",
+ "codespan",
+ "colored",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "petgraph 0.5.1",
  "serde",
 ]
@@ -9264,13 +9931,30 @@ dependencies = [
  "anyhow",
  "clap 4.5.20",
  "colored",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-coverage",
- "move-ir-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+]
+
+[[package]]
+name = "move-disassembler"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "clap 4.5.20",
+ "colored",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-coverage 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
 ]
 
 [[package]]
@@ -9284,9 +9968,28 @@ dependencies = [
  "codespan-reporting",
  "itertools 0.12.1",
  "log",
- "move-compiler",
- "move-core-types",
- "move-model",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "regex",
+ "serde",
+]
+
+[[package]]
+name = "move-docgen"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "clap 4.5.20",
+ "codespan",
+ "codespan-reporting",
+ "itertools 0.12.1",
+ "log",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "regex",
  "serde",
@@ -9298,9 +10001,21 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "anyhow",
- "move-command-line-common",
- "move-core-types",
- "move-model",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "serde",
+]
+
+[[package]]
+name = "move-errmapgen"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "serde",
 ]
 
@@ -9312,11 +10027,11 @@ dependencies = [
  "anyhow",
  "bcs 0.1.4",
  "clap 4.5.20",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-verifier",
- "move-command-line-common",
- "move-ir-to-bytecode",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-to-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "serde_json",
 ]
 
@@ -9328,13 +10043,31 @@ dependencies = [
  "anyhow",
  "codespan-reporting",
  "log",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-core-types",
- "move-ir-to-bytecode-syntax",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-to-bytecode-syntax 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "ouroboros",
+]
+
+[[package]]
+name = "move-ir-to-bytecode"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "codespan-reporting",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-to-bytecode-syntax 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "ouroboros",
 ]
 
@@ -9345,10 +10078,23 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "hex",
- "move-command-line-common",
- "move-core-types",
- "move-ir-types",
- "move-symbol-pool",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+]
+
+[[package]]
+name = "move-ir-to-bytecode-syntax"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "hex",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
 ]
 
 [[package]]
@@ -9357,9 +10103,22 @@ version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "hex",
- "move-command-line-common",
- "move-core-types",
- "move-symbol-pool",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "serde",
+]
+
+[[package]]
+name = "move-ir-types"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "hex",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "serde",
 ]
@@ -9375,14 +10134,40 @@ dependencies = [
  "internment",
  "itertools 0.12.1",
  "log",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-disassembler",
- "move-ir-types",
- "move-symbol-pool",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "num",
+ "num-traits",
+ "once_cell",
+ "regex",
+ "serde",
+]
+
+[[package]]
+name = "move-model"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "codespan",
+ "codespan-reporting",
+ "internment",
+ "itertools 0.12.1",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-disassembler 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "num",
  "num-traits",
  "once_cell",
@@ -9399,17 +10184,51 @@ dependencies = [
  "clap 4.5.20",
  "colored",
  "itertools 0.12.1",
- "move-abigen",
- "move-binary-format",
- "move-bytecode-source-map",
- "move-bytecode-utils",
- "move-command-line-common",
- "move-compiler",
- "move-compiler-v2",
- "move-core-types",
- "move-docgen",
- "move-model",
- "move-symbol-pool",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "named-lock",
+ "once_cell",
+ "petgraph 0.5.1",
+ "regex",
+ "serde",
+ "serde_yaml 0.8.26",
+ "sha2 0.9.9",
+ "tempfile",
+ "termcolor",
+ "toml 0.7.8",
+ "walkdir",
+ "whoami",
+]
+
+[[package]]
+name = "move-package"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "clap 4.5.20",
+ "colored",
+ "itertools 0.12.1",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-source-map 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "named-lock",
  "once_cell",
  "petgraph 0.5.1",
@@ -9435,16 +10254,43 @@ dependencies = [
  "codespan-reporting",
  "itertools 0.12.1",
  "log",
- "move-abigen",
- "move-command-line-common",
- "move-compiler",
- "move-compiler-v2",
- "move-docgen",
- "move-errmapgen",
- "move-model",
- "move-prover-boogie-backend",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "serde",
+ "simplelog",
+ "toml 0.7.8",
+]
+
+[[package]]
+name = "move-prover"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "atty",
+ "clap 4.5.20",
+ "codespan-reporting",
+ "itertools 0.12.1",
+ "log",
+ "move-abigen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler-v2 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover-boogie-backend 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "serde",
  "simplelog",
@@ -9463,13 +10309,42 @@ dependencies = [
  "futures",
  "itertools 0.12.1",
  "log",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-model",
- "move-prover-bytecode-pipeline",
- "move-stackless-bytecode",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "num",
+ "once_cell",
+ "pretty",
+ "rand 0.7.3",
+ "regex",
+ "serde",
+ "tera",
+ "tokio",
+]
+
+[[package]]
+name = "move-prover-boogie-backend"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "codespan",
+ "codespan-reporting",
+ "futures",
+ "itertools 0.12.1",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover-bytecode-pipeline 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "num",
  "once_cell",
  "pretty",
@@ -9485,15 +10360,32 @@ name = "move-prover-bytecode-pipeline"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "abstract-domain-derive",
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "anyhow",
  "codespan-reporting",
  "itertools 0.12.1",
  "log",
- "move-binary-format",
- "move-core-types",
- "move-model",
- "move-stackless-bytecode",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "serde",
+]
+
+[[package]]
+name = "move-prover-bytecode-pipeline"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "anyhow",
+ "codespan-reporting",
+ "itertools 0.12.1",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stackless-bytecode 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "serde",
 ]
 
@@ -9504,9 +10396,22 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "hex",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "serde",
+]
+
+[[package]]
+name = "move-resource-viewer"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "hex",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "serde",
 ]
 
@@ -9529,15 +10434,34 @@ name = "move-stackless-bytecode"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
- "abstract-domain-derive",
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "codespan-reporting",
  "ethnum",
  "im",
  "itertools 0.12.1",
  "log",
- "move-binary-format",
- "move-core-types",
- "move-model",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "num",
+ "paste",
+ "petgraph 0.5.1",
+]
+
+[[package]]
+name = "move-stackless-bytecode"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "abstract-domain-derive 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "codespan-reporting",
+ "ethnum",
+ "im",
+ "itertools 0.12.1",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-model 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "num",
  "paste",
  "petgraph 0.5.1",
@@ -9551,15 +10475,38 @@ dependencies = [
  "anyhow",
  "hex",
  "log",
- "move-binary-format",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-docgen",
- "move-errmapgen",
- "move-prover",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "sha2 0.9.9",
+ "sha3",
+ "smallvec",
+ "walkdir",
+]
+
+[[package]]
+name = "move-stdlib"
+version = "0.1.1"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "hex",
+ "log",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-docgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-errmapgen 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-prover 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "sha2 0.9.9",
  "sha3",
  "smallvec",
@@ -9576,16 +10523,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "move-symbol-pool"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "once_cell",
+ "serde",
+]
+
+[[package]]
 name = "move-table-extension"
 version = "0.1.0"
 source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077#62c33771d78524ddf71dc7308f5dce0588602077"
 dependencies = [
  "better_any",
  "bytes 1.8.0",
- "move-binary-format",
- "move-core-types",
- "move-vm-runtime",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "sha3",
+ "smallvec",
+]
+
+[[package]]
+name = "move-table-extension"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "better_any",
+ "bytes 1.8.0",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "sha3",
  "smallvec",
 ]
@@ -9601,18 +10572,46 @@ dependencies = [
  "codespan-reporting",
  "colored",
  "itertools 0.12.1",
- "move-binary-format",
- "move-bytecode-utils",
- "move-command-line-common",
- "move-compiler",
- "move-core-types",
- "move-ir-types",
- "move-resource-viewer",
- "move-stdlib",
- "move-symbol-pool",
- "move-table-extension",
- "move-vm-runtime",
- "move-vm-test-utils",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "rayon",
+ "regex",
+]
+
+[[package]]
+name = "move-unit-test"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "better_any",
+ "clap 4.5.20",
+ "codespan-reporting",
+ "colored",
+ "itertools 0.12.1",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-command-line-common 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-compiler 0.0.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-ir-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-resource-viewer 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-stdlib 0.1.1 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-symbol-pool 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-table-extension 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-runtime 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-test-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "rayon",
  "regex",
@@ -9629,10 +10628,34 @@ dependencies = [
  "hashbrown 0.14.5",
  "lazy_static",
  "lru 0.7.8",
- "move-binary-format",
- "move-bytecode-verifier",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "parking_lot",
+ "serde",
+ "sha3",
+ "tracing",
+ "triomphe",
+ "typed-arena",
+]
+
+[[package]]
+name = "move-vm-runtime"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "better_any",
+ "bytes 1.8.0",
+ "fail",
+ "hashbrown 0.14.5",
+ "lazy_static",
+ "lru 0.7.8",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-verifier 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "parking_lot",
  "serde",
@@ -9649,10 +10672,25 @@ source = "git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524dd
 dependencies = [
  "anyhow",
  "bytes 1.8.0",
- "move-binary-format",
- "move-bytecode-utils",
- "move-core-types",
- "move-vm-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "once_cell",
+ "serde",
+]
+
+[[package]]
+name = "move-vm-test-utils"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "anyhow",
+ "bytes 1.8.0",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-bytecode-utils 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-vm-types 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "once_cell",
  "serde",
 ]
@@ -9665,8 +10703,24 @@ dependencies = [
  "bcs 0.1.4",
  "derivative",
  "itertools 0.12.1",
- "move-binary-format",
- "move-core-types",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
+ "serde",
+ "smallbitvec",
+ "smallvec",
+ "triomphe",
+]
+
+[[package]]
+name = "move-vm-types"
+version = "0.1.0"
+source = "git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f#d9859a6ac139e70d37e1cb73f29e4a15f55f946f"
+dependencies = [
+ "bcs 0.1.4",
+ "derivative",
+ "itertools 0.12.1",
+ "move-binary-format 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
+ "move-core-types 0.0.4 (git+https://github.com/movementlabsxyz/aptos-core?rev=d9859a6ac139e70d37e1cb73f29e4a15f55f946f)",
  "serde",
  "smallbitvec",
  "smallvec",
@@ -9708,7 +10762,7 @@ name = "movement-types"
 version = "0.0.2"
 dependencies = [
  "anyhow",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "bcs 0.1.4",
  "blake3",
  "rand 0.7.3",
@@ -13298,7 +14352,7 @@ dependencies = [
  "anyhow",
  "aptos-protos 1.3.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-sdk",
- "aptos-types",
+ "aptos-types 0.0.3 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "async-trait",
  "bcs 0.1.4",
  "buildtime-helpers",
@@ -13350,7 +14404,7 @@ dependencies = [
  "anyhow",
  "aptos-config",
  "aptos-faucet-core",
- "aptos-logger",
+ "aptos-logger 0.1.0 (git+https://github.com/movementlabsxyz/aptos-core?rev=62c33771d78524ddf71dc7308f5dce0588602077)",
  "aptos-sdk",
  "clap 4.5.20",
  "dot-movement",
