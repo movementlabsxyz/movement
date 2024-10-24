@@ -27,10 +27,10 @@ use hex::FromHex;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
-use tracing::info;
 use std::{pin::Pin, task::Poll};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tracing::info;
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
 
@@ -244,8 +244,10 @@ async fn pool_initiator_contract(
 	rest_url: &str,
 	pull_state: &MvtPullingState,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let struct_tag =
-	format!("{}::atomic_bridge_initiator::BridgeInitiatorEvents", framework_address.to_string());
+	let struct_tag = format!(
+		"{}::atomic_bridge_initiator::BridgeInitiatorEvents",
+		framework_address.to_string()
+	);
 	// Get initiated events
 	let initiated_events = get_account_events(
 		rest_url,
@@ -343,8 +345,10 @@ async fn pool_counterparty_contract(
 	rest_url: &str,
 	pull_state: &MvtPullingState,
 ) -> BridgeContractResult<Vec<(BridgeContractEvent<MovementAddress>, u64)>> {
-	let struct_tag =
-		format!("{}::atomic_bridge_counterparty::BridgeCounterpartyEvents", FRAMEWORK_ADDRESS.to_string());
+	let struct_tag = format!(
+		"{}::atomic_bridge_counterparty::BridgeCounterpartyEvents",
+		FRAMEWORK_ADDRESS.to_string()
+	);
 
 	// Get locked events
 	let locked_events = get_account_events(
@@ -515,7 +519,7 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 			})?),
 			time_lock: TimeLock(data.time_lock),
 			amount: Amount(AssetType::Moveth(data.amount)),
-			state: 0
+			state: 0,
 		})
 	}
 }
