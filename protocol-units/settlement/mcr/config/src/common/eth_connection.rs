@@ -22,11 +22,6 @@ pub struct Config {
 	#[serde(default = "default_eth_ws_connection_port")]
 	pub eth_ws_connection_port: u16,
 
-	#[serde(default = "default_infura_api_version")]
-	pub infura_api_version: String,
-	#[serde(default = "default_infura_api_key")]
-	pub infura_api_key: String,
-
 	#[serde(default)]
 	pub eth_chain_id: u64,
 }
