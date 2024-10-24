@@ -132,7 +132,7 @@ where
 				.blob_submit(&[blob], GasPrice::default())
 				.await
 				.map_err(|e| {
-					error!(error = %e, "failed to submit the blob");
+					info!(error = %e, "failed to submit the blob");
 					anyhow::anyhow!("Failed submitting the blob: {}", e)
 				})?;
 
@@ -146,7 +146,7 @@ where
 	) -> Result<u64, anyhow::Error> {
 		let height =
 			self.default_client.blob_submit(blobs, GasPrice::default()).await.map_err(|e| {
-				error!(error = %e, "failed to submit the blobs");
+				info!(error = %e, "failed to submit the blobs");
 				anyhow::anyhow!("Failed submitting the blob: {}", e)
 			})?;
 
@@ -168,7 +168,7 @@ where
 		let blobs = self.default_client.blob_get_all(height, &[self.celestia_namespace]).await;
 
 		if let Err(e) = &blobs {
-			error!("Error getting blobs: {:?}", e);
+			info!(error = %e, "failed to get blobs at height {height}");
 		}
 
 		let blobs = blobs.unwrap_or_default();
