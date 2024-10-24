@@ -141,9 +141,8 @@ impl Executor {
 
 	pub async fn rollover_genesis(&self, timestamp: u64) -> Result<(), anyhow::Error> {
 		let (epoch, round) = self.get_next_epoch_and_round()?;
-		let block_id = HashValue::random();
+		let block_id = HashValue::from_hex(self.config().chain.genesis_block_hash_hex.as_str())?;
 
-		// genesis timestamp should always be 0
 		let genesis_timestamp = self.get_last_state_timestamp_micros()?;
 		info!(
 			"Rollover genesis: epoch: {}, round: {}, block_id: {}, genesis timestamp {}",
