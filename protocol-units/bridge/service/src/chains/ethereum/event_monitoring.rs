@@ -28,18 +28,13 @@ impl BridgeContractMonitoring for EthMonitoring {
 
 impl EthMonitoring {
 	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
-		// let rpc_url = config.eth_ws_connection_url();
-		// let ws = WsConnect::new(rpc_url);
-		// let ws = ProviderBuilder::new().on_ws(ws).await?;
-		// let initiator_contract =
-		// 	AtomicBridgeInitiator::new(config.eth_initiator_contract.parse()?, ws.clone());
-
 		let client_config: crate::chains::ethereum::client::Config = config.try_into()?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(client_config.signer_private_key.clone()))
 			.on_builtin(client_config.rpc_url.as_str())
 			.await?;
+
 		let initiator_contract = AtomicBridgeInitiator::new(
 			config.eth_initiator_contract.parse()?,
 			rpc_provider.clone(),

@@ -1,15 +1,18 @@
-services:
+ services:
 
   setup:
     environment:
       ETH_RPC_CONNECTION_PROTOCOL: "https"
-      ETH_RPC_CONNECTION_HOSTNAME: "ethereum-holesky-rpc.publicnode.com"
+      ETH_RPC_CONNECTION_BASE_HOSTNAME: "sepolia.infura.io"
+      INFURA_API_VERSION: "v3"
+      INFURA_API_KEY: "${INFURA_API_KEY}"  
       ETH_RPC_CONNECTION_PORT: 443
 
   bridge-service:
     environment:
       ETH_RPC_CONNECTION_PROTOCOL: "https"
-      ETH_RPC_CONNECTION_HOSTNAME: "ethereum-holesky-rpc.publicnode.com"
+      ETH_RPC_CONNECTION_BASE_HOSTNAME: "sepolia.infura.io"
+      INFURA_API_VERSION: "v3"
+      INFURA_API_KEY: "${INFURA_API_KEY}"  
       ETH_RPC_CONNECTION_PORT: 443
 
-  
