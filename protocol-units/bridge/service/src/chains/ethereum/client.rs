@@ -19,10 +19,7 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
-use bridge_grpc::{
-	bridge_server::{Bridge, BridgeServer},
-	BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest,
-};
+use bridge_grpc::bridge_server::BridgeServer;
 use std::fmt::{self, Debug};
 use std::net::SocketAddr;
 use tonic::transport::Server;

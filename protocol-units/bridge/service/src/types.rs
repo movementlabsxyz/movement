@@ -168,12 +168,12 @@ impl Amount {
 	}
 }
 
-impl From<Uint<256, 4>> for Amount {
-	fn from(value: Uint<256, 4>) -> Self {
-		let asset = value.into();
-		Amount(asset)
-	}
-}
+// impl From<Uint<256, 4>> for Amount {
+// 	fn from(value: Uint<256, 4>) -> Self {
+// 		let asset = value.into();
+// 		Amount(asset)
+// 	}
+// }
 
 /// The type of Asset being used
 #[derive(Clone, Debug, PartialEq, Eq, Copy, Deserialize)]
@@ -184,13 +184,13 @@ pub enum AssetType {
 	Moveth(u64),
 }
 
-impl From<Uint<256, 4>> for AssetType {
-	fn from(value: Uint<256, 4>) -> Self {
-		// Extract the lower 64 bits.
-		let lower_64_bits = value.as_limbs()[0];
-		AssetType::Moveth(lower_64_bits)
-	}
-}
+// impl From<Uint<256, 4>> for AssetType {
+// 	fn from(value: Uint<256, 4>) -> Self {
+// 		// Extract the lower 64 bits.
+// 		let lower_64_bits = value.as_limbs()[0];
+// 		AssetType::Moveth(lower_64_bits)
+// 	}
+// }
 
 #[derive(Error, Debug)]
 pub enum ConversionError {
