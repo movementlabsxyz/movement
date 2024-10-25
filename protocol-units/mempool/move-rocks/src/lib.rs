@@ -20,7 +20,7 @@ pub struct RocksdbMempool {
 	db: Arc<DB>,
 }
 
-fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
+fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> Result<String, Error> {
 	// Pre-allocate a string with the required capacity
 	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 32);
 	// Write key components. The numbers are zero-padded to 32 characters.
@@ -31,14 +31,15 @@ fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String
 		transaction.transaction.sequence_number(),
 		transaction.transaction.id(),
 	))
-	.unwrap();
-	key
+	.map_err(|_| Error::msg("Error writing mempool transaction key"))?;
+	Ok(key)
 }
 
-fn construct_timestamp_threshold_key(timestamp_threshold: u64) -> String {
+fn construct_timestamp_threshold_key(timestamp_threshold: u64) -> Result<String, Error> {
 	let mut key = String::with_capacity(32 + 1);
-	key.write_fmt(format_args!("{:032}:", timestamp_threshold)).unwrap();
-	key
+	key.write_fmt(format_args!("{:032}:", timestamp_threshold))
+		.map_err(|_| Error::msg("Error writing timestamp threshold key"))?;
+	Ok(key)
 }
 
 impl RocksdbMempool {
@@ -140,7 +141,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				}
 
 				let serialized_transaction = bcs::to_bytes(&transaction)?;
-				let key = construct_mempool_transaction_key(&transaction);
+				let key = construct_mempool_transaction_key(&transaction)?;
 				batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
 				batch.put_cf(
 					&transaction_lookups_cf_handle,
@@ -175,7 +176,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 
 			let mut batch = WriteBatch::default();
 
-			let key = construct_mempool_transaction_key(&transaction);
+			let key = construct_mempool_transaction_key(&transaction)?;
 			batch.put_cf(&mempool_transactions_cf_handle, &key, &serialized_transaction);
 			batch.put_cf(
 				&transaction_lookups_cf_handle,
@@ -336,7 +337,7 @@ impl MempoolTransactionOperations for RocksdbMempool {
 				.ok_or_else(|| Error::msg("CF handle not found"))?;
 			let mut read_options = ReadOptions::default();
 			read_options
-				.set_iterate_upper_bound(construct_timestamp_threshold_key(timestamp_threshold));
+				.set_iterate_upper_bound(construct_timestamp_threshold_key(timestamp_threshold)?);
 			let mut iter = db.iterator_cf_opt(&cf_handle, read_options, IteratorMode::Start);
 			let mut transaction_count = 0;
 			let mut batch = WriteBatch::default();
