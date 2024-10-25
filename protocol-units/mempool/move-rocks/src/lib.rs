@@ -585,11 +585,11 @@ pub mod tests {
 		let mempool = RocksdbMempool::try_new(path)?;
 
 		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 1), 0);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 1), 1);
-		let transaction4 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 1);
-		let transaction5 = MempoolTransaction::at_time(Transaction::new(vec![1], 1, 1), 1);
-		let transaction6 = MempoolTransaction::at_time(Transaction::new(vec![1], 1, 2), 1);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 1), 2);
+		let transaction4 = MempoolTransaction::at_time(Transaction::new(vec![4], 1, 1), 2);
+		let transaction5 = MempoolTransaction::at_time(Transaction::new(vec![5], 1, 2), 4);
+		let transaction6 = MempoolTransaction::at_time(Transaction::new(vec![6], 1, 2), 6);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
