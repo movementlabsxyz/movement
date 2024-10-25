@@ -514,31 +514,6 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	}
 	println!("Initialte Event ok. Before lock_bridge_transfer");
 
-	//let bridge_transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
-
-	// let secret = b"secret";
-	// let mut padded_secret = [0u8; 32];
-	// padded_secret[..secret.len()].copy_from_slice(secret);
-
-	// BridgeContract::counterparty_complete_bridge_transfer(
-	// 	&mut eth_client_harness.eth_client,
-	// 	bridge_transfer_id,
-	// 	HashLockPreImage(padded_secret),
-	// )
-	// .await
-	// .expect("Failed to complete bridge transfer");
-
-	// let res = eth_client_harness
-	// 	.eth_client
-	// 	.lock_bridge_transfer(
-	// 		BridgeTransferId([3; 32]),
-	// 		HashLock([1; 32]),
-	// 		BridgeAddress(vec![2; 32]),
-	// 		BridgeAddress(EthAddress(signer_address)),
-	// 		Amount(AssetType::EthAndWeth((0, 42))),
-	// 	)
-	// 	.await;
-	//println!("{res:?}",);
 	loop {
 		let event =
 			tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
@@ -551,10 +526,6 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	let mut reader = std::io::BufReader::new(stdout).lines();
 	while let Some(Ok(line)) = reader.next() {
 		println!(">:{:?}", line);
-		// writer.write_all(line.as_bytes()).await?;
-		// writer.write_all(b"\n").await?;
-		// output.push_str(&line);
-		// output.push('\n');
 	}
 
 	Ok(())
