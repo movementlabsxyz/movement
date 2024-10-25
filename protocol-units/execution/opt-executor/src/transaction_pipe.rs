@@ -215,7 +215,8 @@ impl TransactionPipe {
 		// Re-create the validator for each Tx because it uses a frozen version of the ledger.
 		let vm_validator = VMValidator::new(Arc::clone(&self.db_reader));
 		let tx_result = vm_validator.validate_transaction(transaction.clone())?;
-		let application_priority = tx_result.score();
+		// invert the application priority with the u64 max minus the score from aptos (which is high to low)
+		let application_priority = u64::MAX - tx_result.score();
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
