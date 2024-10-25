@@ -3,7 +3,6 @@ use crate::chains::bridge_contracts::BridgeContractError;
 use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
-use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
 use aptos_sdk::types::AccountKey;
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
@@ -35,7 +34,7 @@ use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
 use tiny_keccak::{Hasher, Keccak};
-use tracing::log::{debug, error, info};
+use tracing::log::{error, info};
 pub type TestRng = StdRng;
 
 pub trait RngSeededClone: Rng + SeedableRng {
@@ -186,7 +185,7 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
-	info!("Signed TX: {:?}", signed_tx);
+	//info!("Signed TX: {:?}", signed_tx);
 
 	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
 		let err_msg = format!("Transaction submission error: {}", e.to_string());
@@ -195,7 +194,7 @@ pub async fn send_and_confirm_aptos_transaction(
 	})?;
 
 	let txn = response.into_inner();
-	info!("Response: {:?}", txn);
+	//info!("Response: {:?}", txn);
 
 	match &txn {
 		Transaction::UserTransaction(user_txn) => {
@@ -385,35 +384,35 @@ pub async fn create_local_account(
 	Ok(local_account)
 }
 fn keccak256(input: &str) -> Vec<u8> {
-        let mut hasher = Keccak::v256();
-        let mut output = [0u8; 32];
-        hasher.update(input.as_bytes());
-        hasher.finalize(&mut output);
-        output.to_vec()
+	let mut hasher = Keccak::v256();
+	let mut output = [0u8; 32];
+	hasher.update(input.as_bytes());
+	hasher.finalize(&mut output);
+	output.to_vec()
 }
 
 pub fn to_eip55(address: &str) -> String {
-        let lowercased_address = address.trim_start_matches("0x").to_lowercase();
-        let hash = keccak256(&lowercased_address);
+	let lowercased_address = address.trim_start_matches("0x").to_lowercase();
+	let hash = keccak256(&lowercased_address);
 
-        lowercased_address
-                .chars()
-                .enumerate()
-                .map(|(i, c)| {
-                        if c.is_digit(10) {
-                                c
-                        } else {
-                                let byte_index = i / 2;
-                                let nibble_index = i % 2;
-                                let hash_byte = hash[byte_index];
-                                let should_uppercase = (hash_byte >> (4 * (1 - nibble_index))) & 0xF >= 8;
+	lowercased_address
+		.chars()
+		.enumerate()
+		.map(|(i, c)| {
+			if c.is_digit(10) {
+				c
+			} else {
+				let byte_index = i / 2;
+				let nibble_index = i % 2;
+				let hash_byte = hash[byte_index];
+				let should_uppercase = (hash_byte >> (4 * (1 - nibble_index))) & 0xF >= 8;
 
-                                if should_uppercase {
-                                        c.to_ascii_uppercase()
-                                } else {
-                                        c.to_ascii_lowercase()
-                                }
-                        }
-                })
-                .collect()
+				if should_uppercase {
+					c.to_ascii_uppercase()
+				} else {
+					c.to_ascii_lowercase()
+				}
+			}
+		})
+		.collect()
 }
