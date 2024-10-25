@@ -345,6 +345,8 @@ where
 		&self,
 		request: tonic::Request<StreamReadFromHeightRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
+		info!("Stream read from height request: {:?}", request);
+
 		let me = Arc::new(self.clone());
 		let height = request.into_inner().height;
 
@@ -359,6 +361,8 @@ where
 				};
 				yield response;
 			}
+
+			info!("Stream read from height closed for height: {}", height);
 
 		};
 

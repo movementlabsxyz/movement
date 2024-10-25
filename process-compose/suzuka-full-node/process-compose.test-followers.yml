@@ -4,7 +4,6 @@ processes:
 
   setup:
     command: |
-      export RUST_LOG=syncador=debug
       export AWS_REGION=us-west-2
       export MOVEMENT_SYNC="leader::follower-test-$MOVEMENT_SHARED_RANDOM_1<=>{maptos,maptos-storage,suzuka-da-db}/**"
       suzuka-full-node-setup

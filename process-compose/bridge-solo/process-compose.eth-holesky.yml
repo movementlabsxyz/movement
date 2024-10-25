@@ -1,0 +1,7 @@
+processes:
+
+  bridge:
+    environment:
+      - ETH_RPC_CONNECTION_PROTOCOL="https"
+      - ETH_RPC_CONNECTION_HOSTNAME="ethereum-holesky-rpc.publicnode.com"
+      - ETH_RPC_CONNECTION_PORT=443
