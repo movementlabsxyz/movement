@@ -22,10 +22,11 @@ pub struct RocksdbMempool {
 
 fn construct_mempool_transaction_key(transaction: &MempoolTransaction) -> String {
 	// Pre-allocate a string with the required capacity
-	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32);
+	let mut key = String::with_capacity(32 + 1 + 32 + 1 + 32 + 1 + 32);
 	// Write key components. The numbers are zero-padded to 32 characters.
 	key.write_fmt(format_args!(
-		"{:032}:{:032}:{}",
+		"{:032}:{:032}:{:032}:{}",
+		transaction.transaction.application_priority(),
 		transaction.timestamp,
 		transaction.transaction.sequence_number(),
 		transaction.transaction.id(),
@@ -469,14 +470,14 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 2);
 		let transaction1_id = transaction1.id();
 		mempool.add_mempool_transaction(transaction1).await?;
 		assert!(mempool.has_transaction(transaction1_id).await?);
 
 		sleep(Duration::from_secs(2)).await;
 
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 0), 64);
 		let transaction2_id = transaction2.id();
 		let transaction2_timestamp = transaction2.timestamp;
 		mempool.add_mempool_transaction(transaction2).await?;
@@ -495,9 +496,9 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0), 64);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 128);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 2);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 0), 64);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 0), 128);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
@@ -517,9 +518,9 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 2);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 2);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0), 64);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 2);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 2);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 0), 64);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
@@ -539,9 +540,9 @@ pub mod tests {
 		let path = temp_dir.path().to_str().unwrap();
 		let mempool = RocksdbMempool::try_new(path)?;
 
-		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0), 0);
-		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1), 0);
-		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2), 0);
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 0, 2), 0);
 
 		mempool.add_mempool_transaction(transaction2.clone()).await?;
 		mempool.add_mempool_transaction(transaction1.clone()).await?;
@@ -551,6 +552,59 @@ pub mod tests {
 		assert_eq!(transactions[0], transaction1);
 		assert_eq!(transactions[1], transaction2);
 		assert_eq!(transactions[2], transaction3);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_application_priority_based_ordering() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![2], 1, 0), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![3], 2, 0), 0);
+
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
+
+		let transactions = mempool.pop_mempool_transactions(3).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_total_ordering() -> Result<(), Error> {
+		let temp_dir = tempdir().unwrap();
+		let path = temp_dir.path().to_str().unwrap();
+		let mempool = RocksdbMempool::try_new(path)?;
+
+		let transaction1 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 0), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 1), 0);
+		let transaction3 = MempoolTransaction::at_time(Transaction::new(vec![1], 0, 1), 1);
+		let transaction4 = MempoolTransaction::at_time(Transaction::new(vec![2], 0, 1), 1);
+		let transaction5 = MempoolTransaction::at_time(Transaction::new(vec![1], 1, 1), 1);
+		let transaction6 = MempoolTransaction::at_time(Transaction::new(vec![1], 1, 2), 1);
+
+		mempool.add_mempool_transaction(transaction2.clone()).await?;
+		mempool.add_mempool_transaction(transaction1.clone()).await?;
+		mempool.add_mempool_transaction(transaction3.clone()).await?;
+		mempool.add_mempool_transaction(transaction5.clone()).await?;
+		mempool.add_mempool_transaction(transaction4.clone()).await?;
+		mempool.add_mempool_transaction(transaction6.clone()).await?;
+
+		let transactions = mempool.pop_mempool_transactions(6).await?;
+		assert_eq!(transactions[0], transaction1);
+		assert_eq!(transactions[1], transaction2);
+		assert_eq!(transactions[2], transaction3);
+		assert_eq!(transactions[3], transaction4);
+		assert_eq!(transactions[4], transaction5);
+		assert_eq!(transactions[5], transaction6);
 
 		Ok(())
 	}
