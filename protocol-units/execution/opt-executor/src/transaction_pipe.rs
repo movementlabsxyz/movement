@@ -470,7 +470,7 @@ mod tests {
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-			let received_transaction = tx_receiver.recv().await.unwrap();
+			let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 			let bcs_received_transaction = bcs::to_bytes(&received_transaction)?;
 			comparison_user_transactions.insert(bcs_received_transaction.clone());
 		}
