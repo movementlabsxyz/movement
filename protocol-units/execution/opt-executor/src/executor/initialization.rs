@@ -8,6 +8,7 @@ use aptos_crypto::PrivateKey;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
+use dot_movement::DotMovement;
 use futures::FutureExt;
 use maptos_execution_util::config::Config;
 
@@ -27,6 +28,10 @@ const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 impl Executor {
 	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+		// get dot movement
+		// todo: this is a slight anti-pattern, but it's fine for now
+		let dot_movement = DotMovement::try_from_env()?;
+
 		// set up the node config
 		let mut node_config = NodeConfig::default();
 
@@ -74,7 +79,7 @@ impl Executor {
 
 		// indexer table info config
 		node_config.indexer_table_info.enabled = true;
-		node_config.storage.dir = "./.movement/maptos-storage".to_string().into();
+		node_config.storage.dir = dot_movement.get_path().join("maptos-storage");
 		node_config.storage.set_data_dir(node_config.storage.dir.clone());
 
 		let (db, signer) = bootstrap::maybe_bootstrap_empty_db(
@@ -132,8 +137,8 @@ impl Executor {
 			&node_config,
 			Arc::clone(&self.transactions_in_flight),
 			maptos_config.load_shedding.max_transactions_in_flight,
-			self.config.mempool.sequence_number_ttl_ms,
-			self.config.mempool.gc_slot_duration_ms,
+			self.config().mempool.sequence_number_ttl_ms,
+			self.config().mempool.gc_slot_duration_ms,
 		);
 
 		let cx = Context::new(

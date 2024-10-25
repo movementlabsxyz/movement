@@ -16,10 +16,9 @@ use aptos_types::{
 	validator_verifier::{ValidatorConsensusInfo, ValidatorVerifier},
 };
 use movement_types::block::{BlockCommitment, Commitment, Id};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 impl Executor {
-	/// Executes a block and commits it to the storage layer.
 	pub async fn execute_block(
 		&self,
 		block: ExecutableBlock,
@@ -65,9 +64,10 @@ impl Executor {
 		})
 		.await??;
 
-		info!("Block execution compute the following state: {:?}", state_compute);
+		warn!("Block execution compute the following state: {:?}", state_compute);
+
 		let version = state_compute.version();
-		info!("Block execution computed the following version: {:?}", version);
+		debug!("Block execution computed the following version: {:?}", version);
 		let (epoch, round) = (block_metadata.epoch(), block_metadata.round());
 
 		let ledger_info_with_sigs = self.ledger_info_with_sigs(
@@ -141,8 +141,9 @@ impl Executor {
 
 	pub async fn rollover_genesis(&self, timestamp: u64) -> Result<(), anyhow::Error> {
 		let (epoch, round) = self.get_next_epoch_and_round()?;
-		let block_id = HashValue::from_hex(self.config().chain.genesis_block_hash_hex.as_str())?;
+		let block_id = HashValue::random();
 
+		// genesis timestamp should always be 0
 		let genesis_timestamp = self.get_last_state_timestamp_micros()?;
 		info!(
 			"Rollover genesis: epoch: {}, round: {}, block_id: {}, genesis timestamp {}",
@@ -365,7 +366,7 @@ mod tests {
 					Transaction::UserTransaction(user_account_creation_tx),
 					Transaction::UserTransaction(mint_tx),
 				]));
-			info!("Number of transactions: {}", transactions.num_transactions());
+			debug!("Number of transactions: {}", transactions.num_transactions());
 			let block = ExecutableBlock::new(block_id.clone(), transactions);
 			let block_commitment = executor.execute_block(block).await?;
 
