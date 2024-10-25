@@ -117,7 +117,7 @@ impl Executor {
 	/// task needs to be running.
 	pub fn background(
 		&self,
-		transaction_sender: mpsc::Sender<SignedTransaction>,
+		transaction_sender: mpsc::Sender<(u64, SignedTransaction)>,
 	) -> anyhow::Result<(Context, TransactionPipe)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();

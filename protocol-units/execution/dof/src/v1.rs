@@ -52,7 +52,7 @@ impl DynOptFinExecutor for Executor {
 
 	fn background(
 		&self,
-		transaction_sender: Sender<SignedTransaction>,
+		transaction_sender: Sender<(u64, SignedTransaction)>,
 		config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
@@ -226,7 +226,7 @@ mod tests {
 
 		services_handle.abort();
 		background_handle.abort();
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		Ok(())
@@ -252,7 +252,7 @@ mod tests {
 		let request = SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 		api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 		assert_eq!(received_transaction, comparison_user_transaction);
 
 		// Now execute the block
@@ -319,7 +319,7 @@ mod tests {
 				SubmitTransactionPost::Bcs(aptos_api::bcs_payload::Bcs(bcs_user_transaction));
 			api.transactions.submit_transaction(AcceptType::Bcs, request).await?;
 
-			let received_transaction = tx_receiver.recv().await.unwrap();
+			let (_application_priority, received_transaction) = tx_receiver.recv().await.unwrap();
 			assert_eq!(received_transaction, comparison_user_transaction);
 
 			// Now execute the block
