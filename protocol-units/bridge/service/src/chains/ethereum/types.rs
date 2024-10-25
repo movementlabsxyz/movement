@@ -32,19 +32,32 @@ pub const COUNTERPARTY_COMPLETED_SELECT: FixedBytes<32> =
 pub const COUNTERPARTY_ABORTED_SELECT: FixedBytes<32> =
 	AtomicBridgeCounterparty::BridgeTransferAborted::SIGNATURE_HASH;
 
-// Codegen from the abis
+// Codegen for the WETH bridge contracts
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeInitiator,
 	"abis/AtomicBridgeInitiator.json"
 );
-
 alloy::sol!(
 	#[allow(missing_docs)]
 	#[sol(rpc)]
 	AtomicBridgeCounterparty,
 	"abis/AtomicBridgeCounterparty.json"
+);
+
+// Codegen for the MOVE bridge contracts
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeInitiatorMOVE,
+	"abis/AtomicBridgeInitiatorMOVE.json"
+);
+alloy::sol!(
+	#[allow(missing_docs)]
+	#[sol(rpc)]
+	AtomicBridgeCounterpartyMOVE,
+	"abis/AtomicBridgeCounterpartyMOVE.json"
 );
 
 alloy::sol!(
@@ -53,6 +66,32 @@ alloy::sol!(
 	WETH9,
 	"abis/WETH9.json"
 );
+
+/// Specifies the kind of asset being transferred,
+/// This will associate the client with its respective ABIs
+#[derive(Debug, Clone)]
+pub enum AssetKind {
+	/// This will initialize the client with the WETH Bridge ABIs
+	Weth,
+	/// This will initialize the client with the MOVE Bridge ABIs
+	Move,
+}
+
+impl From<String> for AssetKind {
+	fn from(asset: String) -> Self {
+		match asset.as_str() {
+			"WETH" => AssetKind::Weth,
+			"MOVE" => AssetKind::Move,
+			_ => panic!("Invalid asset kind"),
+		}
+	}
+}
+
+impl Default for AssetKind {
+	fn default() -> Self {
+	    AssetKind::Move
+	}
+}
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct EthHash(pub [u8; 32]);
@@ -100,10 +139,23 @@ pub fn hash_static_string(pre_image: &'static str) -> [u8; 32] {
 	hash_vec_u32(&fixed_bytes)
 }
 
-pub type InitiatorContract =
-	AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>;
-pub type CounterpartyContract =
-	AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>;
+#[derive(Debug, Clone)]
+pub enum InitiatorContract {
+	Weth(AtomicBridgeInitiator::AtomicBridgeInitiatorInstance<BoxTransport, AlloyProvider>),
+	Move(AtomicBridgeInitiatorMOVE::AtomicBridgeInitiatorMOVEInstance<BoxTransport, AlloyProvider>),
+}
+
+#[derive(Debug, Clone)]
+pub enum CounterpartyContract {
+	Weth(AtomicBridgeCounterparty::AtomicBridgeCounterpartyInstance<BoxTransport, AlloyProvider>),
+	Move(
+		AtomicBridgeCounterpartyMOVE::AtomicBridgeCounterpartyMOVEInstance<
+			BoxTransport,
+			AlloyProvider,
+		>,
+	),
+}
+
 pub type WETH9Contract = WETH9::WETH9Instance<BoxTransport, AlloyProvider>;
 
 pub type AlloyProvider = FillProvider<
@@ -142,16 +194,21 @@ impl std::ops::Deref for EthAddress {
 	}
 }
 
-impl From<String> for EthAddress {
-	fn from(s: String) -> Self {
-		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
-	}
-}
+// impl From<String> for EthAddress {
+// 	fn from(s: String) -> Self {
+// 		EthAddress(Address::parse_checksummed(s, None).expect("Invalid Ethereum address"))
+// 	}
+// }
 
 impl From<Vec<u8>> for EthAddress {
 	fn from(vec: Vec<u8>) -> Self {
 		// Ensure the vector has the correct length
-		assert_eq!(vec.len(), 20);
+		//TODO change to a try_from but need a rewrite of
+		// the address generic management to make try_from compatible.
+		if vec.len() != 20 {
+			tracing::warn!("Bad vec<u8> size forEthAddress conversion:{}", vec.len());
+			return EthAddress(Address([0; 20].into()));
+		}
 
 		let mut bytes = [0u8; 20];
 		bytes.copy_from_slice(&vec);
@@ -317,7 +374,7 @@ where
 	pub fn from_lock_details(lock_details: LockDetails<A>, secret: HashLockPreImage) -> Self {
 		CompletedDetails {
 			bridge_transfer_id: lock_details.bridge_transfer_id,
-			recipient_address: lock_details.recipient_address,
+			recipient_address: lock_details.recipient,
 			hash_lock: lock_details.hash_lock,
 			secret,
 			amount: lock_details.amount,

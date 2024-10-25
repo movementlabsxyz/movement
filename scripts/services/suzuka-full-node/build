@@ -5,17 +5,11 @@ echo "Building m1-da-light-node..."
 cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node --features "sequencer"
 echo "Built m1-da-light-node!"
 
-echo "Building m1-da-light-node-celestia-appd..."
-cargo build $CARGO_PROFILE_FLAGS --bin m1-da-light-node-celestia-appd
-echo "Built m1-da-light-node-celestia-appd!"
-
-echo "Building m1-da-light-node-celestia-bridge..."
-cargo build $CARGO_PROFILE_FLAGS --bin m1-da-light-node-celestia-bridge
-echo "Built m1-da-light-node-celestia-bridge!"
-
-echo "Building suzuka-config..."
-cargo build $CARGO_PROFILE_FLAGS --bin suzuka-full-node-setup
-echo "Built suzuka-config!"
+echo "Building m1-da-light-node-celestia-* runners..."
+cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node-runners \
+    --bin m1-da-light-node-celestia-appd \
+    --bin m1-da-light-node-celestia-bridge
+echo "Built m1-da-light-node-celestia-* runners!"
 
 echo "Building suzuka-full-node..."
 cargo build $CARGO_PROFILE_FLAGS -p suzuka-full-node
@@ -30,5 +24,5 @@ cargo build $CARGO_PROFILE_FLAGS -p suzuka-full-node-setup
 echo "Built suzuka-full-node-setup!"
 
 echo "Building wait-for-celestia-light-node..."
-cargo build $CARGO_PROFILE_FLAGS --bin wait-for-celestia-light-node
+cargo build $CARGO_PROFILE_FLAGS -p m1-da-light-node-util --bin wait-for-celestia-light-node
 echo "Built wait-for-celestia-light-node!"

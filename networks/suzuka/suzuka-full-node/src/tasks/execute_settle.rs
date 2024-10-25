@@ -114,8 +114,9 @@ where
 		};
 
 		info!(
-			block_id = %block_id,
+			block_id = %hex::encode(block_id.clone()),
 			da_height = da_height,
+			time = block_timestamp,
 			"Processing block from DA"
 		);
 
@@ -130,17 +131,11 @@ where
 			anyhow::bail!("Invalid DA height: {:?}", da_height);
 		}
 
-		// decompress the block bytes
-		let block = tokio::task::spawn_blocking(move || {
-			let decompressed_block_bytes = zstd::decode_all(&block_bytes[..])?;
-			let block: Block = bcs::from_bytes(&decompressed_block_bytes)?;
-			Ok::<Block, anyhow::Error>(block)
-		})
-		.await??;
+		let block: Block = bcs::from_bytes(&block_bytes[..])?;
 
 		// get the transactions
 		let transactions_count = block.transactions().len();
-		let span = info_span!(target: "movement_timing", "execute_block", id = %block_id);
+		let span = info_span!(target: "movement_timing", "execute_block", id = ?block_id);
 		let commitment =
 			self.execute_block_with_retries(block, block_timestamp).instrument(span).await?;
 
@@ -152,7 +147,7 @@ where
 		self.da_db.set_synced_height(da_height - 1).await?;
 
 		// set the block as executed
-		self.da_db.add_executed_block(block_id.to_string()).await?;
+		self.da_db.add_executed_block(block_id.clone()).await?;
 
 		// todo: this needs defaults
 		if self.settlement_enabled() {
@@ -164,7 +159,7 @@ where
 				}
 			}
 		} else {
-			info!(block_id = %block_id, "Skipping settlement");
+			info!(block_id = ?block_id, "Skipping settlement");
 		}
 
 		Ok(())

@@ -4,6 +4,7 @@ use crate::types::{BridgeAddress, HashLockPreImage};
 use anyhow::{Context, Result};
 use aptos_sdk::crypto::ed25519::Ed25519PrivateKey;
 use aptos_sdk::crypto::ed25519::Ed25519PublicKey;
+use aptos_sdk::types::AccountKey;
 use aptos_sdk::{
 	crypto::ed25519::Ed25519Signature,
 	move_types::{
@@ -33,8 +34,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
 use thiserror::Error;
+use tiny_keccak::{Hasher, Keccak};
 use tracing::log::{debug, error, info};
-
 pub type TestRng = StdRng;
 
 pub trait RngSeededClone: Rng + SeedableRng {
@@ -103,10 +104,11 @@ impl std::fmt::Display for MovementAddress {
 impl From<Vec<u8>> for MovementAddress {
 	fn from(vec: Vec<u8>) -> Self {
 		// Ensure the vector has the correct length
-		assert_eq!(vec.len(), AccountAddress::LENGTH);
-
-		let account_address =
-			AccountAddress::from_bytes(vec).expect("Invalid byte length for AccountAddress");
+		//TODO change to a try_from but need a rewrite of
+		// the address generic management to make try_from compatible.
+		let account_address = AccountAddress::from_bytes(vec).unwrap_or(
+			AccountAddress::from_bytes([1; AccountAddress::LENGTH]).expect("Never fail"),
+		);
 		MovementAddress(account_address)
 	}
 }
@@ -184,16 +186,16 @@ pub async fn send_and_confirm_aptos_transaction(
 
 	let signed_tx = signer.sign_transaction(raw_tx);
 
-	debug!("Signed TX: {:?}", signed_tx);
+	info!("Signed TX: {:?}", signed_tx);
 
 	let response = rest_client.submit_and_wait(&signed_tx).await.map_err(|e| {
 		let err_msg = format!("Transaction submission error: {}", e.to_string());
-		error!("{}", err_msg); // Log the error in detail
+		error!("Full error: {}", err_msg); // Log the error in detail
 		err_msg
 	})?;
 
 	let txn = response.into_inner();
-	debug!("Response: {:?}", txn);
+	info!("Response: {:?}", txn);
 
 	match &txn {
 		Transaction::UserTransaction(user_txn) => {
@@ -369,17 +371,49 @@ pub async fn create_local_account(
 	client: &RestClient,
 ) -> Result<LocalAccount, anyhow::Error> {
 	// Derive the public key from the private key
-	let public_key = Ed25519PublicKey::from(&private_key);
+	let account_key = AccountKey::from_private_key(private_key);
 
 	// Get the account address from the public key
-	let account_address: AccountAddress =
-		aptos_sdk::types::account_address::from_public_key(&public_key);
+	let account_address = account_key.authentication_key().account_address();
 
 	// Fetch the current sequence number from the blockchain
 	let sequence_number = client.get_account(account_address).await?.inner().sequence_number;
 
 	// Create the LocalAccount
-	let local_account = LocalAccount::new(account_address, private_key, sequence_number);
+	let local_account = LocalAccount::new(account_address, account_key, sequence_number);
 
 	Ok(local_account)
+}
+fn keccak256(input: &str) -> Vec<u8> {
+        let mut hasher = Keccak::v256();
+        let mut output = [0u8; 32];
+        hasher.update(input.as_bytes());
+        hasher.finalize(&mut output);
+        output.to_vec()
+}
+
+pub fn to_eip55(address: &str) -> String {
+        let lowercased_address = address.trim_start_matches("0x").to_lowercase();
+        let hash = keccak256(&lowercased_address);
+
+        lowercased_address
+                .chars()
+                .enumerate()
+                .map(|(i, c)| {
+                        if c.is_digit(10) {
+                                c
+                        } else {
+                                let byte_index = i / 2;
+                                let nibble_index = i % 2;
+                                let hash_byte = hash[byte_index];
+                                let should_uppercase = (hash_byte >> (4 * (1 - nibble_index))) & 0xF >= 8;
+
+                                if should_uppercase {
+                                        c.to_ascii_uppercase()
+                                } else {
+                                        c.to_ascii_lowercase()
+                                }
+                        }
+                })
+                .collect()
 }

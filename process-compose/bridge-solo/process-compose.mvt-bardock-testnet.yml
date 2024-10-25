@@ -1,0 +1,6 @@
+processes:
+  bridge:
+      environment:
+        - MVT_RPC_CONNECTION_PROTOCOL="https"
+        - MVT_RPC_CONNECTION_HOSTNAME="testnet.bardock.movementnetwork.xyz"
+        - MVT_RPC_CONNECTION_PORT="443"

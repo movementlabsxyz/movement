@@ -19,26 +19,31 @@ aptos-types = { workspace = true }
 aptos-sdk = { workspace = true }
 anyhow = { workspace = true }
 bcs = { workspace = true }
+chrono = "0.4"
 hex = { workspace = true }
 alloy = { workspace = true }
 reqwest = { workspace = true }
 alloy-network = { workspace = true }
 alloy-sol-types = { workspace = true }
 alloy-contract = { workspace = true }
+poem = { workspace = true, features = ["test"] }
 rand = { workspace = true }
 serde_json = { workspace = true }
 url = { workspace = true }
 bridge-service = { workspace = true }
 bridge-setup = { workspace = true }
 bridge-config = { workspace = true }
-futures = { workspace = true }
 tokio = { workspace = true }
+tonic = { workspace = true }
+futures = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 dot-movement = { workspace = true }
 godfig = { workspace = true }
+bridge-grpc = { workspace = true, features = ["server", "client"] }
 
 [dev-dependencies]
 tokio = { workspace = true }
 tokio-stream = "0.1.16"
+url = { workspace = true, features = ["serde"] }

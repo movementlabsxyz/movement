@@ -11,6 +11,7 @@ const DEFAULT_ETH_WS_CONNECTION_PORT: u16 = 8545; // same as RPC
 const DEFAULT_ETH_INITIATOR_CONTRACT: &str = "Oxeee";
 const DEFAULT_ETH_COUNTERPARTY_CONTRACT: &str = "0xccc";
 const DEFAULT_ETH_WETH_CONTRACT: &str = "0xe3e3";
+const DEFAULT_ASSET: &str = "MOVE";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EthConfig {
@@ -41,10 +42,16 @@ pub struct EthConfig {
 	#[serde(default = "default_signer_private_key")]
 	pub signer_private_key: String,
 
+	#[serde(default = "default_time_lock_secs")]
+	pub time_lock_secs: u64,
+
 	#[serde(default = "default_gas_limit")]
 	pub gas_limit: u64,
 	#[serde(default = "default_transaction_send_retries")]
 	pub transaction_send_retries: u32,
+
+	#[serde(default = "default_asset")]
+	pub asset: String,
 }
 
 env_default!(
@@ -67,6 +74,10 @@ env_default!(
 	String,
 	DEFAULT_ETH_WETH_CONTRACT.to_string()
 );
+
+env_default!(default_asset, "ASSET", String, DEFAULT_ASSET.to_string());
+
+env_short_default!(default_time_lock_secs, u64, 48 * 60 * 60 as u64); //48h by default
 
 env_short_default!(default_gas_limit, u64, 10_000_000_000_000_000 as u64);
 
@@ -172,9 +183,13 @@ impl Default for EthConfig {
 			eth_counterparty_contract: default_eth_counterparty_contract(),
 			eth_weth_contract: default_eth_weth_contract(),
 
+			time_lock_secs: default_time_lock_secs(),
+
 			signer_private_key: default_signer_private_key(),
 			gas_limit: default_gas_limit(),
 			transaction_send_retries: default_transaction_send_retries(),
+
+			asset: default_asset(),
 		}
 	}
 }

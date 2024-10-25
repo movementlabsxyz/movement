@@ -52,6 +52,14 @@ impl BridgeTransferId {
 	}
 }
 
+impl TryFrom<Vec<u8>> for BridgeTransferId {
+	type Error = Vec<u8>;
+
+	fn try_from(data: Vec<u8>) -> Result<Self, Self::Error> {
+		Ok(BridgeTransferId(data.try_into()?))
+	}
+}
+
 impl fmt::Display for BridgeTransferId {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		write!(f, "Bid: {}", hex::encode(self.0))
@@ -217,10 +225,21 @@ pub struct BridgeTransferDetails<A> {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
-pub struct LockDetails<A> {
+pub struct BridgeTransferDetailsCounterparty<A> {
 	pub bridge_transfer_id: BridgeTransferId,
 	pub initiator_address: BridgeAddress<Vec<u8>>,
 	pub recipient_address: BridgeAddress<A>,
+	pub hash_lock: HashLock,
+	pub time_lock: TimeLock,
+	pub amount: Amount,
+	pub state: u8,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+pub struct LockDetails<A> {
+	pub bridge_transfer_id: BridgeTransferId,
+	pub initiator: BridgeAddress<Vec<u8>>,
+	pub recipient: BridgeAddress<A>,
 	pub hash_lock: HashLock,
 	pub time_lock: TimeLock,
 	pub amount: Amount,
