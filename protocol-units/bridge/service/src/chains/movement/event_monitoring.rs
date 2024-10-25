@@ -590,7 +590,8 @@ async fn get_account_events(
 	let client = reqwest::Client::new();
 
 	// Send the GET request
-	let response: Vec<VersionedEvent> = client
+
+	let response = client
 		.get(&url)
 		.query(&[("start", &start_version.to_string()[..]), ("limit", "10")])
 		.send()
@@ -600,14 +601,25 @@ async fn get_account_events(
 				"MVT get_account_events get request error:{}",
 				e
 			))
-		})?
-		.json()
-		.await
-		.map_err(|e| {
+		})?;
+
+	if response.status().is_success() {
+		let body = response.text().await.map_err(|e| {
 			BridgeContractError::OnChainError(format!(
-				"MVT get_account_events json convertion error:{}",
-				e
+				"MVT get_account_events get response content error:{e}",
 			))
 		})?;
-	Ok(response)
+		let json_result = serde_json::from_str(&body);
+		match json_result {
+			Ok(data) => Ok(data),
+			Err(e) => Err(BridgeContractError::OnChainError(format!(
+				"MVT get_account_events json convertion error:{e} with response body:{body}",
+			))),
+		}
+	} else {
+		Err(BridgeContractError::OnChainError(format!(
+			"MVT get_account_events status error {}",
+			response.status()
+		)))
+	}
 }
