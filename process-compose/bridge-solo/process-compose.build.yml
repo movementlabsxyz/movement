@@ -6,7 +6,7 @@ processes:
 
   build:
     command: |
-      ./scripts/services/bridge/build
+      ./scripts/services/bridge-solo/build
     availability:
       restart: exit_on_failure
 
