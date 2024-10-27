@@ -514,20 +514,6 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	}
 	println!("Before lock_bridge_transfer");
 
-	//let bridge_transfer_id = BridgeTransferId::gen_unique_hash(&mut rand::rngs::OsRng);
-
-	// let secret = b"secret";
-	// let mut padded_secret = [0u8; 32];
-	// padded_secret[..secret.len()].copy_from_slice(secret);
-
-	// BridgeContract::counterparty_complete_bridge_transfer(
-	// 	&mut eth_client_harness.eth_client,
-	// 	bridge_transfer_id,
-	// 	HashLockPreImage(padded_secret),
-	// )
-	// .await
-	// .expect("Failed to complete bridge transfer");
-
 	let res = eth_client_harness
 		.eth_client
 		.lock_bridge_transfer(
@@ -540,14 +526,6 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 		.await;
 	
 	println!("Lock response: {res:?}",);
-
-	// loop {
-	// 	let event =
-	// 		tokio::time::timeout(std::time::Duration::from_secs(30), eth_monitoring.next()).await?;
-	// 	if let Some(Ok(BridgeContractEvent::Locked(detail))) = event {
-	// 		break;
-	// 	}
-	// }
 
 	loop {
 		let event =
