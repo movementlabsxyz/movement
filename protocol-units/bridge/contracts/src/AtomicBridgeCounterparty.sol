@@ -52,8 +52,8 @@ contract AtomicBridgeCounterparty is IAtomicBridgeCounterparty, OwnableUpgradeab
         bytes32 hashLock,
         address recipient,
         uint256 amount
-    ) external returns (bool) {
-        //if (amount == 0) revert ZeroAmount();
+    ) external onlyOwner returns (bool) {
+        if (amount == 0) revert ZeroAmount();
 
         //if (atomicBridgeInitiator.poolBalance() < amount) revert InsufficientWethBalance();
         
