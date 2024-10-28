@@ -16,15 +16,17 @@ use bridge_service::chains::ethereum::types::EthAddress;
 use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
 use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
 use bridge_service::chains::movement::utils::MovementAddress;
-use bridge_service::chains::movement::{client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash};
+use bridge_service::chains::movement::{
+	client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash,
+};
 use bridge_service::types::Amount;
 use bridge_service::types::BridgeTransferId;
 use bridge_service::types::HashLockPreImage;
 use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
 use godfig::{backend::config_file::ConfigFile, Godfig};
+use rand::distributions::Alphanumeric;
 use rand::SeedableRng;
 use rand::{thread_rng, Rng};
-use rand::distributions::Alphanumeric;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
@@ -53,39 +55,36 @@ pub struct MovementToEthCallArgs {
 }
 
 impl Default for EthToMovementCallArgs {
-        fn default() -> Self {
-                // Generate 6 random alphanumeric characters
-                let random_suffix: String = thread_rng()
-                    .sample_iter(&Alphanumeric)
-                    .take(6)
-                    .map(char::from)
-                    .collect();
+	fn default() -> Self {
+		// Generate 6 random alphanumeric characters
+		let random_suffix: String =
+			thread_rng().sample_iter(&Alphanumeric).take(6).map(char::from).collect();
 
-                // Construct the bridge_transfer_id with the random suffix
-                let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
-                bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
+		// Construct the bridge_transfer_id with the random suffix
+		let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
+		bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
 
-                Self {
+		Self {
 			// Dummy valid EIP-55 address used in framework modules
-                        // initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			// initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
 			// Actual Eth address
 			initiator: b"0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc".to_vec(),
 			// All lowercase version:
 			//initiator: b"0x32be343b94f860124dc4fee278fdcbd38c102d88".to_vec(),
 			// Dummy recipient address
-                        recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-                        // Convert to [u8; 32] with explicit type annotation
-                        bridge_transfer_id: MovementHash(
-                            bridge_transfer_id
-                                .as_slice()
-                                .try_into()
-                                .expect("Expected bridge_transfer_id to be 32 bytes"),
-                        ),
-                        hash_lock: MovementHash(*keccak256(b"secret")),
-                        time_lock: 3600,
-                        amount: 100,
-                }
-        }
+			recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
+			// Convert to [u8; 32] with explicit type annotation
+			bridge_transfer_id: MovementHash(
+				bridge_transfer_id
+					.as_slice()
+					.try_into()
+					.expect("Expected bridge_transfer_id to be 32 bytes"),
+			),
+			hash_lock: MovementHash(*keccak256(b"secret")),
+			time_lock: 3600,
+			amount: 100,
+		}
+	}
 }
 
 impl Default for MovementToEthCallArgs {
@@ -165,7 +164,7 @@ impl HarnessEthClient {
 		amount: Amount,
 	) -> BridgeContractResult<()> {
 		self.eth_client
-			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth_value()))
+			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.0))
 			.await
 			.expect("Failed to deposit WETH");
 		Ok(())
@@ -369,9 +368,7 @@ impl TestHarnessFramework {
 		(test_harness, config, movement_process)
 	}
 
-	pub async fn new_with_suzuka(
-		config: Config,
-	) -> (HarnessMvtClientFramework, Config) {
+	pub async fn new_with_suzuka(config: Config) -> (HarnessMvtClientFramework, Config) {
 		let test_harness = HarnessMvtClientFramework::build(&config).await;
 		(test_harness, config)
 	}
