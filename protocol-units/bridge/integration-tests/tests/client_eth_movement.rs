@@ -17,9 +17,7 @@ use bridge_service::chains::movement::utils::MovementAddress;
 use bridge_service::chains::{
 	bridge_contracts::BridgeContract, ethereum::types::EthHash, movement::utils::MovementHash,
 };
-use bridge_service::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage,
-};
+use bridge_service::types::{Amount, BridgeAddress, BridgeTransferId, HashLock, HashLockPreImage};
 use futures::StreamExt;
 use std::io::BufRead;
 use tokio::time::{sleep, Duration};
@@ -102,7 +100,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 				HashLock(args.hash_lock.0),
 				BridgeAddress(args.initiator.clone()),
 				BridgeAddress(args.recipient.clone().into()),
-				Amount(AssetType::Moveth(args.amount)),
+				Amount(args.amount),
 			)
 			.await
 			.expect("Failed to lock bridge transfer");
@@ -125,7 +123,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			"Initiator address does not match"
 		);
 		assert_eq!(details.recipient_address.0, args.recipient);
-		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
 		let secret = b"secret";
@@ -155,7 +153,7 @@ async fn test_movement_client_should_successfully_call_lock_and_complete(
 			"Initiator address does not match"
 		);
 		assert_eq!(details.recipient_address.0, args.recipient);
-		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 2, "Bridge transfer is supposed to be completed but it's not.");
 
 		Ok(())
@@ -210,7 +208,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 				HashLock(args.hash_lock.0),
 				BridgeAddress(args.initiator.clone()),
 				BridgeAddress(args.recipient.clone()),
-				Amount(AssetType::Moveth(args.amount)),
+				Amount(args.amount),
 			)
 			.await
 			.expect("Failed to lock bridge transfer");
@@ -233,7 +231,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			"Initiator address does not match"
 		);
 		assert_eq!(details.recipient_address.0, args.recipient);
-		assert_eq!(details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(details.amount.0, args.amount);
 		assert_eq!(details.state, 1, "Bridge transfer is supposed to be locked but it's not.");
 
 		sleep(Duration::from_secs(5)).await;
@@ -259,7 +257,7 @@ async fn test_movement_client_should_successfully_call_lock_and_abort() -> Resul
 			"Initiator address does not match"
 		);
 		assert_eq!(abort_details.recipient_address.0, args.recipient);
-		assert_eq!(abort_details.amount.0, AssetType::Moveth(args.amount));
+		assert_eq!(abort_details.amount.0, args.amount);
 
 		Ok(())
 	}
@@ -342,7 +340,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((1, 0))), // Eth
+			Amount(1000),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -358,10 +356,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 	eth_client_harness
-		.deposit_weth_and_approve(
-			BridgeAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 1))),
-		)
+		.deposit_weth_and_approve(BridgeAddress(EthAddress(signer_address)), Amount(1000))
 		.await
 		.expect("Failed to deposit WETH");
 
@@ -371,7 +366,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() 
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((0, 1))),
+			Amount(1000),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -387,10 +382,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
 	eth_client_harness
-		.deposit_weth_and_approve(
-			BridgeAddress(EthAddress(signer_address)),
-			Amount(AssetType::EthAndWeth((0, 1))),
-		)
+		.deposit_weth_and_approve(BridgeAddress(EthAddress(signer_address)), Amount(1000))
 		.await
 		.expect("Failed to deposit WETH");
 
@@ -400,7 +392,7 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_eth_and_weth
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((1, 1))),
+			Amount(1000),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -423,7 +415,7 @@ async fn test_client_should_successfully_get_bridge_transfer_id() {
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((1000, 0))), // Eth
+			Amount(1000),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -452,7 +444,7 @@ async fn test_eth_client_should_successfully_complete_transfer() {
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient_bytes),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((42, 0))),
+			Amount(42),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
@@ -471,8 +463,6 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 	let config = Config::default();
 	let (mut eth_client_harness, config, mut anvil) =
 		TestHarness::new_only_eth(config.clone()).await;
-
-	println!("Config :{config:?}",);
 
 	let mut eth_monitoring = EthMonitoring::build(&config.eth).await.unwrap();
 
@@ -494,7 +484,7 @@ async fn test_eth_client_lock_then_complete_transfer() -> Result<(), anyhow::Err
 			BridgeAddress(EthAddress(signer_address)),
 			BridgeAddress(recipient_bytes.clone()),
 			HashLock(EthHash(hash_lock).0),
-			Amount(AssetType::EthAndWeth((42, 0))),
+			Amount(42),
 		)
 		.await
 		.expect("Failed to initiate bridge transfer");
