@@ -13,7 +13,9 @@ use crate::types::BridgeTransferId;
 use crate::types::ChainId;
 use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::select;
+use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 
 mod actions;
@@ -41,6 +43,10 @@ where
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
+
+	//only one client can use at a time.
+	let one_client_lock = Arc::new(Mutex::new(()));
+	let two_client_lock = Arc::new(Mutex::new(()));
 
 	// let mut action_to_exec_futures_one = FuturesUnordered::new();
 	// let mut action_to_exec_futures_two = FuturesUnordered::new();
@@ -70,7 +76,13 @@ where
 									ChainId::ONE => {
 										let fut = process_action(action, one_client.clone());
 										if let Some(fut) = fut {
-											let jh = tokio::spawn(fut);
+											let jh = tokio::spawn({
+												let client_lock_clone = one_client_lock.clone();
+												async move {
+													let _lock = client_lock_clone.lock().await;
+													fut.await
+												}
+											});
 											client_exec_result_futures_one.push(jh);
 										}
 
@@ -78,7 +90,13 @@ where
 									ChainId::TWO => {
 										let fut = process_action(action, two_client.clone());
 										if let Some(fut) = fut {
-											let jh = tokio::spawn(fut);
+											let jh = tokio::spawn({
+												let client_lock_clone = two_client_lock.clone();
+												async move {
+													let _lock = client_lock_clone.lock().await;
+													fut.await
+												}
+											});
 											client_exec_result_futures_two.push(jh);
 										}
 									}
