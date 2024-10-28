@@ -29,12 +29,6 @@ impl BridgeContractMonitoring for EthMonitoring {
 
 impl EthMonitoring {
 	pub async fn build(config: &EthConfig) -> Result<Self, anyhow::Error> {
-		// let rpc_url = config.eth_ws_connection_url();
-		// let ws = WsConnect::new(rpc_url);
-		// let ws = ProviderBuilder::new().on_ws(ws).await?;
-		// let initiator_contract =
-		// 	AtomicBridgeInitiator::new(config.eth_initiator_contract.parse()?, ws.clone());
-
 		let client_config: crate::chains::ethereum::client::Config = config.try_into()?;
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
@@ -63,8 +57,6 @@ impl EthMonitoring {
 					config.eth_counterparty_contract.parse().unwrap(),
 					rpc_provider.clone(),
 				);
-				//We start at the current block.
-				//TODO save the start between restart.
 				let mut last_processed_block = 0;
 				loop {
 					let block_number = rpc_provider.get_block_number().await.unwrap();

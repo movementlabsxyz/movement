@@ -1,4 +1,5 @@
 use alloy::primitives::Uint;
+use alloy::sol_types::sol_data::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::Rng;
@@ -137,6 +138,14 @@ impl From<Uint<256, 4>> for TimeLock {
 
 #[derive(Deref, DerefMut, Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 pub struct Amount(pub u64);
+
+impl From<Uint<256, 4>> for Amount {
+	fn from(value: Uint<256, 4>) -> Self {
+		// Extract the lower 64 bits.
+		let lower_64_bits = value.as_limbs()[0];
+		Amount(lower_64_bits)
+	}
+}
 
 #[derive(Error, Debug)]
 pub enum ConversionError {

@@ -7,7 +7,7 @@ use super::utils::{calculate_storage_slot, send_transaction, send_transaction_ru
 use crate::chains::bridge_contracts::BridgeContractError;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::{
-	Amount, AssetType, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
+	Amount, BridgeAddress, BridgeTransferDetails, BridgeTransferDetailsCounterparty,
 	BridgeTransferId, HashLock, HashLockPreImage, TimeLock,
 };
 use alloy::primitives::{Address, FixedBytes, U256};
@@ -19,10 +19,7 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
-use bridge_grpc::{
-	bridge_server::{Bridge, BridgeServer},
-	BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest,
-};
+use bridge_grpc::bridge_server::BridgeServer;
 use std::fmt::{self, Debug};
 use std::net::SocketAddr;
 use tonic::transport::Server;
@@ -88,11 +85,6 @@ struct EthBridgeTransferDetailsCounterparty {
 	pub state: u8,
 }
 
-// We need to be able to build the client and deploy the contracts
-//  therfore the `initiator_contract` and `counterparty_contract`
-// should be optional, as their values will be unknown at the time of building the client.
-// This is true for the integration tests.
-#[allow(dead_code)]
 #[derive(Clone)]
 pub struct EthClient {
 	rpc_provider: AlloyProvider,
@@ -236,10 +228,6 @@ impl EthClient {
 			.map_err(|e| anyhow::anyhow!("Failed to get block number: {}", e))
 	}
 
-	// pub fn set_signer_address(&mut self, key: SecretKey<Secp256k1>) {
-	// 	self.config.signer_private_key = LocalSigner::from(key);
-	// }
-
 	pub fn get_signer_address(&self) -> Address {
 		self.config.signer_private_key.address()
 	}
@@ -252,10 +240,6 @@ impl EthClient {
 		self.config.initiator_contract
 	}
 
-	// pub fn set_weth_contract(&mut self, contract: WETH9Contract) {
-	// 	self.weth_contract = contract;
-	// }
-
 	pub fn weth_contract_address(&self) -> Address {
 		self.config.weth_contract
 	}
@@ -267,9 +251,6 @@ impl EthClient {
 
 #[async_trait::async_trait]
 impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
-	// `_initiator_address`, or in the contract, `originator` is set
-	// via the `msg.sender`, which is stored in the `rpc_provider`.
-	// So `initiator_address` arg is not used here.
 	async fn initiate_bridge_transfer(
 		&mut self,
 		initiator_address: BridgeAddress<EthAddress>,
@@ -290,11 +271,11 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			InitiatorContract::Weth(weth_contract) => {
 				let call = weth_contract
 					.initiateBridgeTransfer(
-						U256::from(amount.weth_value()),
+						U256::from(amount.0),
 						FixedBytes(recipient_bytes),
 						FixedBytes(hash_lock.0),
 					)
-					.value(U256::from(amount.eth_value()))
+					.value(U256::from(amount.0))
 					.from(*initiator_address.0);
 				let _ = send_transaction(
 					call,
