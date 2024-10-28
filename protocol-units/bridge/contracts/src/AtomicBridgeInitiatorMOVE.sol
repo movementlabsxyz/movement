@@ -24,9 +24,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Mapping of bridge transfer ids to BridgeTransfer structs
     mapping(bytes32 => BridgeTransfer) public bridgeTransfers;
 
-    // Total MOVE token pool balance
-    uint256 public poolBalance;
-
     address public counterpartyAddress;
     ERC20Upgradeable public moveToken;
     uint256 private nonce;
@@ -41,8 +38,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     function initialize(
         address _moveToken,
         address owner,
-        uint256 _timeLockDuration,
-        uint256 _initialPoolBalance
+        uint256 _timeLockDuration
     ) public initializer {
         if (_moveToken == address(0) && owner == address(0)) {
             revert ZeroAddress();
@@ -55,9 +51,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
         // Set the custom time lock duration
         initiatorTimeLockDuration = _timeLockDuration;
-
-        // Set the initial pool balance
-        poolBalance = _initialPoolBalance;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -80,9 +73,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (!moveToken.transferFrom(originator, address(this), moveAmount)) {
             revert MOVETransferFailed();
         }
-
-        // Update the pool balance
-        poolBalance += moveAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
@@ -115,9 +105,7 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         if (bridgeTransfer.state != MessageState.INITIALIZED) revert BridgeTransferStateNotInitialized();
         if (block.timestamp < bridgeTransfer.timeLock) revert TimeLockNotExpired();
         bridgeTransfer.state = MessageState.REFUNDED;
-        
-        // Decrease pool balance and transfer MOVE tokens back to the originator
-        poolBalance -= bridgeTransfer.amount;
+
         if (!moveToken.transfer(bridgeTransfer.originator, bridgeTransfer.amount)) revert MOVETransferFailed();
 
         emit BridgeTransferRefunded(bridgeTransferId);
@@ -125,8 +113,6 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
 
     function withdrawMOVE(address recipient, uint256 amount) external {
         if (msg.sender != counterpartyAddress) revert Unauthorized();
-        if (poolBalance < amount) revert InsufficientMOVEBalance();
-        poolBalance -= amount;
         if (!moveToken.transfer(recipient, amount)) revert MOVETransferFailed();
     }
 }

@@ -21,7 +21,6 @@ contract AtomicBridgeInitiatorWethTest is Test {
     bytes32 public hashLock = keccak256(abi.encodePacked("secret"));
     uint256 public amount = 1 ether;
     uint256 public constant timeLockDuration = 48 * 60 * 60; // 48 hours in seconds
-    uint256 public initialPoolBalance = 0 ether;
 
     function setUp() public {
         // Sepolia WETH9 address
@@ -38,11 +37,10 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)",
+                "initialize(address,address,uint256)",
                 wethAddress,
                 address(this),
-                timeLockDuration,
-                initialPoolBalance
+                timeLockDuration
             )
         );
 

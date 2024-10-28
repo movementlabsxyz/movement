@@ -45,11 +45,10 @@ contract AtomicBridgeCounterpartyTest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)", 
+                "initialize(address,address,uint256)", 
                 wethAddress, 
                 deployer, 
-                initiatorTimeLockDuration, // Set 48-hour time lock for the initiator
-                0 ether // Initial pool balance 
+                initiatorTimeLockDuration // Set 48-hour time lock for the initiator
             )
         );
 

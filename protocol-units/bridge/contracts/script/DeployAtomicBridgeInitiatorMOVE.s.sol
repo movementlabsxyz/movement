@@ -19,7 +19,6 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
     address public moveTokenAddress = address(0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227); 
     address public ownerAddress = address(0x5b97cdf756f6363A88706c376464180E008Bd88b); 
     uint256 public timeLockDuration = 2 days; // 48 hours in seconds
-    uint256 public initialPoolBalance = 1 ether; // Initial pool balance
     uint256 public minDelay = 2 days; // 2-day delay for governance timelock
 
     // Safe addresses (replace these with actual safe addresses)
@@ -62,8 +61,7 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
                 atomicBridgeSignature,
                 moveTokenAddress,  // MOVE token address
                 ownerAddress,      // Owner of the contract
-                timeLockDuration,  // Timelock duration (48 hours)
-                initialPoolBalance // Initial pool balance
+                timeLockDuration  // Timelock duration (48 hours)
             )
         );
 
@@ -86,8 +84,7 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
                     atomicBridgeSignature,
                     moveTokenAddress, 
                     ownerAddress, 
-                    timeLockDuration, 
-                    initialPoolBalance
+                    timeLockDuration
                 )
             ),
             bytes32(0),

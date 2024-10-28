@@ -40,11 +40,10 @@ contract AtomicBridgeInitiatorMOVETest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)",
+                "initialize(address,address,uint256)",
                 address(moveToken),
                 address(this),
-                timeLockDuration,
-                0 ether
+                timeLockDuration
             )
         );
 
