@@ -27,10 +27,14 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
     // Configurable time lock duration
     uint256 public counterpartyTimeLockDuration;
 
-    function initialize(address _atomicBridgeInitiator, address owner, uint256 _timeLockDuration) public initializer {
-        if (_atomicBridgeInitiator == address(0)) revert ZeroAddress();
+    // Prevents initialization of implementation contract exploits
+    constructor(){_disableInitializers();}
+
+    function initialize(address _atomicBridgeInitiator, address _owner, uint256 _timeLockDuration) public initializer {
+        if (_atomicBridgeInitiator == address(0) && _owner == address(0)) revert ZeroAddress();
+        if (_timeLockDuration == 0) revert ZeroValue();
         atomicBridgeInitiatorMOVE = AtomicBridgeInitiatorMOVE(_atomicBridgeInitiator);
-        __Ownable_init(owner);
+        __Ownable_init(_owner);
 
         // Set the configurable time lock duration
         counterpartyTimeLockDuration = _timeLockDuration;

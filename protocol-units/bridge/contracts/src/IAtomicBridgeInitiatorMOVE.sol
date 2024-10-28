@@ -27,6 +27,7 @@ interface IAtomicBridgeInitiatorMOVE {
     error TimelockExpired();
     error ZeroAddress();
     error Unauthorized();
+    error ZeroValue();
 
 
     /**

@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
-import {MockMOVEToken} from "./MockMOVEToken.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {IAtomicBridgeInitiatorMOVE} from "./IAtomicBridgeInitiatorMOVE.sol";
 import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgradeable {
@@ -14,11 +13,11 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     }
 
     struct BridgeTransfer {
-        uint256 amount;
         address originator;
         bytes32 recipient;
+        uint256 amount;
         bytes32 hashLock;
-        uint256 timeLock; // in seconds (timestamp)
+        uint256 timeLock;
         MessageState state;
     }
 
@@ -35,6 +34,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
     // Configurable time lock duration
     uint256 public initiatorTimeLockDuration;
 
+    // Prevents initialization of implementation contract exploits
+    constructor(){_disableInitializers();}
+
     // Initialize the contract with MOVE token address, owner, custom time lock duration, and initial pool balance
     function initialize(
         address _moveToken,
@@ -42,8 +44,11 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         uint256 _timeLockDuration,
         uint256 _initialPoolBalance
     ) public initializer {
-        if (_moveToken == address(0)) {
+        if (_moveToken == address(0) && owner == address(0)) {
             revert ZeroAddress();
+        }
+        if (_timeLockDuration == 0) {
+            revert ZeroValue();
         }
         moveToken = ERC20Upgradeable(_moveToken);
         __Ownable_init(owner);
@@ -83,9 +88,9 @@ contract AtomicBridgeInitiatorMOVE is IAtomicBridgeInitiatorMOVE, OwnableUpgrade
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
-            amount: moveAmount,
             originator: originator,
             recipient: recipient,
+            amount: moveAmount,
             hashLock: hashLock,
             timeLock: block.timestamp + initiatorTimeLockDuration,
             state: MessageState.INITIALIZED

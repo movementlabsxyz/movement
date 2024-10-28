@@ -38,10 +38,10 @@ contract AtomicBridgeInitiatorWethTest is Test {
             address(atomicBridgeInitiatorImplementation),
             address(proxyAdmin),
             abi.encodeWithSignature(
-                "initialize(address,address,uint256,uint256)", 
-                wethAddress, 
-                address(this), 
-                timeLockDuration, 
+                "initialize(address,address,uint256,uint256)",
+                wethAddress,
+                address(this),
+                timeLockDuration,
                 initialPoolBalance
             )
         );
@@ -60,9 +60,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
         );
 
         (
-            uint256 transferAmount,
             address transferOriginator,
             bytes32 transferRecipient,
+            uint256 transferAmount,
             bytes32 transferHashLock,
             uint256 transferTimeLock,
             AtomicBridgeInitiator.MessageState transferState
@@ -95,9 +95,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         atomicBridgeInitiator.completeBridgeTransfer(bridgeTransferId, secret);
         (
-            uint256 completedAmount,
             address completedOriginator,
             bytes32 completedRecipient,
+            uint256 completedAmount,
             bytes32 completedHashLock,
             uint256 completedTimeLock,
             AtomicBridgeInitiator.MessageState completedState
@@ -122,9 +122,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
         bytes32 bridgeTransferId = atomicBridgeInitiator.initiateBridgeTransfer(wethAmount, recipient, hashLock);
 
         (
-            uint256 transferAmount,
             address transferOriginator,
             bytes32 transferRecipient,
+            uint256 transferAmount,
             bytes32 transferHashLock,
             uint256 transferTimeLock,
             AtomicBridgeInitiator.MessageState transferState
@@ -163,9 +163,9 @@ contract AtomicBridgeInitiatorWethTest is Test {
 
         // Fetch the details of the initiated bridge transfer
         (
-            uint256 transferAmount,
             address transferOriginator,
             bytes32 transferRecipient,
+            uint256 transferAmount,
             bytes32 transferHashLock,
             uint256 transferTimeLock,
             AtomicBridgeInitiator.MessageState transferState

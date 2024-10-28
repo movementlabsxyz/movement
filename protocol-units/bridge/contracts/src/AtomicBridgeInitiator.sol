@@ -12,9 +12,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     }
 
     struct BridgeTransfer {
-        uint256 amount;
         address originator;
         bytes32 recipient;
+        uint256 amount;
         bytes32 hashLock;
         uint256 timeLock; // in blocks
         MessageState state;
@@ -82,9 +82,9 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
-            amount: totalAmount,
             originator: originator,
             recipient: recipient,
+            amount: totalAmount,
             hashLock: hashLock,
             timeLock: block.timestamp + initiatorTimeLockDuration,
             state: MessageState.INITIALIZED

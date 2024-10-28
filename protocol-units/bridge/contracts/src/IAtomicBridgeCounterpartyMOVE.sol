@@ -24,6 +24,7 @@ interface IAtomicBridgeCounterpartyMOVE {
     error TimeLockNotExpired();
     error ZeroAddress();
     error Unauthorized();
+    error ZeroValue();
 
     /**
      * @dev Locks the assets for a new atomic bridge transfer
