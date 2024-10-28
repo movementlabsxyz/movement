@@ -72,7 +72,7 @@ contract AtomicBridgeCounterpartyMOVEDeployer is Script {
         AtomicBridgeCounterpartyMOVE newCounterpartyImplementation = new AtomicBridgeCounterpartyMOVE();
 
         timelock.schedule(
-            address(proxyAdmin),
+            proxyAdmin,
             0,
             abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",

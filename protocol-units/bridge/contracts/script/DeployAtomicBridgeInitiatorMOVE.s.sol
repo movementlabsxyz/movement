@@ -76,7 +76,7 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
         AtomicBridgeInitiatorMOVE newBridgeImplementation = new AtomicBridgeInitiatorMOVE();
 
         timelock.schedule(
-            address(proxyAdmin),
+            proxyAdmin,
             0,
             abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",
