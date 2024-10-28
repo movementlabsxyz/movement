@@ -14,7 +14,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "animation_optimizer_retry_count",
@@ -22,6 +22,7 @@
                     "cdn_animation_uri",
                     "cdn_image_uri",
                     "cdn_json_uri",
+                    "inserted_at",
                     "image_optimizer_retry_count",
                     "json_parser_retry_count",
                     "raw_animation_uri",
@@ -134,7 +135,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["account_address", "transaction_version"],
                   "filter": {},
@@ -168,7 +169,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "min_block_height",
@@ -250,7 +251,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["account_address", "transaction_version"],
                   "filter": {},
@@ -329,7 +330,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["address", "transaction_version"],
                   "filter": {},
@@ -346,7 +347,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "block_height",
@@ -356,6 +357,7 @@
                     "previous_block_votes_bitvec",
                     "proposer",
                     "round",
+                    "inserted_at",
                     "timestamp",
                     "version"
                   ],
@@ -406,7 +408,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "activity_type",
@@ -421,6 +423,7 @@
                     "is_gas_fee",
                     "is_transaction_success",
                     "owner_address",
+                    "inserted_at",
                     "storage_refund_amount",
                     "transaction_timestamp",
                     "transaction_version"
@@ -439,7 +442,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
@@ -462,7 +465,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "coin_type",
@@ -473,6 +476,7 @@
                     "supply_aggregator_table_handle",
                     "supply_aggregator_table_key",
                     "symbol",
+                    "inserted_at",
                     "transaction_created_timestamp",
                     "transaction_version_created"
                   ],
@@ -489,12 +493,13 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "coin_type",
                     "coin_type_hash",
                     "supply",
+                    "inserted_at",
                     "transaction_epoch",
                     "transaction_timestamp",
                     "transaction_version"
@@ -512,7 +517,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_data_id_hash",
@@ -520,6 +525,7 @@
                     "creator_address",
                     "description",
                     "description_mutable",
+                    "inserted_at",
                     "maximum",
                     "maximum_mutable",
                     "metadata_uri",
@@ -559,12 +565,13 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "domain",
                     "expiration_timestamp",
                     "is_deleted",
+                    "inserted_at",
                     "last_transaction_version",
                     "registered_address",
                     "subdomain",
@@ -583,11 +590,12 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "domain",
                     "expiration_timestamp",
+                    "inserted_at",
                     "is_deleted",
                     "last_transaction_version",
                     "registered_address",
@@ -627,7 +635,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "domain",
@@ -676,12 +684,13 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
                     "coin_type",
                     "coin_type_hash",
+                    "inserted_at",
                     "last_transaction_timestamp",
                     "last_transaction_version",
                     "owner_address"
@@ -699,7 +708,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_data_id_hash",
@@ -707,6 +716,7 @@
                     "creator_address",
                     "description",
                     "description_mutable",
+                    "inserted_at",
                     "last_transaction_timestamp",
                     "last_transaction_version",
                     "maximum",
@@ -746,7 +756,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "distinct_tokens",
@@ -789,7 +799,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_id",
@@ -800,6 +810,7 @@
                     "last_transaction_timestamp",
                     "last_transaction_version",
                     "max_supply",
+                    "inserted_at",
                     "mutable_description",
                     "mutable_uri",
                     "table_handle_v1",
@@ -820,12 +831,13 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "active_table_handle",
                     "inactive_table_handle",
                     "last_transaction_version",
+                    "inserted_at",
                     "operator_commission_percentage",
                     "staking_pool_address",
                     "total_coins",
@@ -844,11 +856,12 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "delegation_pool_address",
                     "delegator_address",
+                    "inserted_at",
                     "last_transaction_timestamp",
                     "last_transaction_version",
                     "pending_voter",
@@ -901,11 +914,12 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "delegator_address",
                     "last_transaction_version",
+                    "inserted_at",
                     "parent_table_handle",
                     "pool_address",
                     "pool_type",
@@ -942,11 +956,12 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
                     "asset_type",
+                    "inserted_at",
                     "is_frozen",
                     "is_primary",
                     "last_transaction_timestamp",
@@ -969,10 +984,11 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "allow_ungated_transfer",
+                    "inserted_at",
                     "is_deleted",
                     "last_guid_creation_num",
                     "last_transaction_version",
@@ -1010,10 +1026,11 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "last_transaction_version",
+                    "inserted_at",
                     "operator_address",
                     "staking_pool_address",
                     "voter_address"
@@ -1031,12 +1048,13 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "decoded_key",
                     "decoded_value",
                     "is_deleted",
+                    "inserted_at",
                     "key",
                     "key_hash",
                     "last_transaction_version",
@@ -1072,7 +1090,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_data_id_hash",
@@ -1081,6 +1099,7 @@
                     "default_properties",
                     "description",
                     "description_mutable",
+                    "inserted_at",
                     "largest_property_version",
                     "last_transaction_timestamp",
                     "last_transaction_version",
@@ -1174,12 +1193,13 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_id",
                     "decimals",
                     "description",
+                    "inserted_at",
                     "is_deleted_v2",
                     "is_fungible_v2",
                     "largest_property_version_v1",
@@ -1253,13 +1273,14 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
                     "collection_data_id_hash",
                     "collection_name",
                     "creator_address",
+                    "inserted_at",
                     "last_transaction_timestamp",
                     "last_transaction_version",
                     "name",
@@ -1317,7 +1338,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
@@ -1327,6 +1348,7 @@
                     "last_transaction_version",
                     "non_transferrable_by_owner",
                     "owner_address",
+                    "inserted_at",
                     "property_version_v1",
                     "storage_id",
                     "table_type_v1",
@@ -1427,7 +1449,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
@@ -1435,6 +1457,7 @@
                     "collection_id",
                     "collection_name",
                     "creator_address",
+                    "inserted_at",
                     "from_address",
                     "last_transaction_timestamp",
                     "last_transaction_version",
@@ -1458,11 +1481,12 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
                     "delegator_address",
+                    "inserted_at",
                     "event_index",
                     "event_type",
                     "pool_address",
@@ -1481,11 +1505,12 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "active_table_handle",
                     "inactive_table_handle",
+                    "inserted_at",
                     "operator_commission_percentage",
                     "staking_pool_address",
                     "total_coins",
@@ -1524,7 +1549,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "first_transaction_version",
@@ -1575,7 +1600,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["delegator_address", "pool_address"],
                   "filter": {},
@@ -1592,13 +1617,14 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "account_address",
                     "creation_number",
                     "data",
                     "event_index",
+                    "inserted_at",
                     "sequence_number",
                     "transaction_block_height",
                     "transaction_version",
@@ -1652,7 +1678,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
@@ -1661,6 +1687,7 @@
                     "entry_function_id_str",
                     "event_index",
                     "gas_fee_payer_address",
+                    "inserted_at",
                     "is_frozen",
                     "is_gas_fee",
                     "is_transaction_success",
@@ -1685,13 +1712,14 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "asset_type",
                     "creator_address",
                     "decimals",
                     "icon_uri",
+                    "inserted_at",
                     "last_transaction_timestamp",
                     "last_transaction_version",
                     "maximum_v2",
@@ -1716,7 +1744,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["db", "is_indexer_up"],
                   "filter": {},
@@ -1732,7 +1760,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["chain_id"],
                   "filter": {}
@@ -1747,7 +1775,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["address", "transaction_version"],
                   "filter": {},
@@ -1764,7 +1792,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["num_active_delegator", "pool_address"],
                   "filter": {},
@@ -1780,7 +1808,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "last_success_version",
@@ -1801,10 +1829,11 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "num_votes",
+                    "inserted_at",
                     "proposal_id",
                     "should_pass",
                     "staking_pool_address",
@@ -1826,10 +1855,11 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "is_sender_primary",
+                    "inserted_at",
                     "multi_agent_index",
                     "multi_sig_index",
                     "public_key",
@@ -1855,11 +1885,12 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "decoded_key",
                     "decoded_value",
+                    "inserted_at",
                     "key",
                     "table_handle",
                     "transaction_version",
@@ -1878,7 +1909,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": ["handle", "key_type", "value_type"],
                   "filter": {},
@@ -1943,7 +1974,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "coin_amount",
@@ -1956,6 +1987,7 @@
                     "event_index",
                     "event_sequence_number",
                     "from_address",
+                    "inserted_at",
                     "name",
                     "property_version",
                     "to_address",
@@ -2028,7 +2060,7 @@
             ],
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "after_value",
@@ -2036,6 +2068,7 @@
                     "entry_function_id_str",
                     "event_account_address",
                     "event_index",
+                    "inserted_at",
                     "from_address",
                     "is_fungible_v2",
                     "property_version_v1",
@@ -2061,7 +2094,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_data_id_hash",
@@ -2070,6 +2103,7 @@
                     "default_properties",
                     "description",
                     "description_mutable",
+                    "inserted_at",
                     "largest_property_version",
                     "maximum",
                     "maximum_mutable",
@@ -2099,13 +2133,14 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "amount",
                     "collection_data_id_hash",
                     "collection_name",
                     "creator_address",
+                    "inserted_at",
                     "name",
                     "owner_address",
                     "property_version",
@@ -2128,12 +2163,13 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "collection_data_id_hash",
                     "collection_name",
                     "creator_address",
+                    "inserted_at",
                     "name",
                     "property_version",
                     "token_data_id_hash",
@@ -2154,7 +2190,7 @@
             },
             "select_permissions": [
               {
-                "role": "anonymous",
+                "role": "readonly",
                 "permission": {
                   "columns": [
                     "block_height",
@@ -2162,6 +2198,7 @@
                     "epoch",
                     "expiration_timestamp_secs",
                     "gas_unit_price",
+                    "inserted_at",
                     "max_gas_amount",
                     "parent_signature_type",
                     "sender",
@@ -2170,7 +2207,8 @@
                     "version"
                   ],
                   "filter": {},
-                  "limit": 100
+                  "limit": 100,
+                  "allow_aggregations": true
                 }
               }
             ]
