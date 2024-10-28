@@ -1,45 +1,80 @@
-use std::{
-	sync::{atomic::AtomicU64, Arc},
-	time::Duration,
+use block::WrappedBlock;
+use ecdsa::{
+	elliptic_curve::{
+		generic_array::ArrayLength,
+		ops::Invert,
+		point::PointCompression,
+		sec1::{FromEncodedPoint, ModulusSize, ToEncodedPoint},
+		subtle::CtOption,
+		AffinePoint, CurveArithmetic, FieldBytesSize, PrimeCurve, Scalar,
+	},
+	hazmat::{DigestPrimitive, SignPrimitive, VerifyPrimitive},
+	SignatureSize,
+};
+use std::boxed::Box;
+use std::fmt::Debug;
+use std::path::PathBuf;
+use std::pin::Pin;
+use std::sync::{atomic::AtomicU64, Arc};
+use std::time::Duration;
+
+use tokio::{
+	sync::mpsc::{Receiver, Sender},
+	time::timeout,
 };
 use tokio_stream::Stream;
 use tracing::{debug, info};
 
 use celestia_rpc::HeaderClient;
+use m1_da_light_node_grpc as grpc;
+use m1_da_light_node_grpc::blob_response::BlobType;
 use m1_da_light_node_grpc::light_node_service_server::LightNodeService;
 use m1_da_light_node_util::config::Config;
-use std::{fmt::Debug, path::PathBuf};
-// FIXME: glob imports are bad style
-use m1_da_light_node_grpc::*;
 use memseq::{Sequencer, Transaction};
 use movement_algs::grouping_heuristic::{
 	apply::ToApply, binpacking::FirstFitBinpacking, drop_success::DropSuccess, skip::SkipFor,
 	splitting::Splitting, GroupingHeuristicStack, GroupingOutcome,
 };
 use movement_types::block::Block;
-use std::boxed::Box;
-use tokio::{
-	sync::mpsc::{Receiver, Sender},
-	time::timeout,
-};
 
 use crate::v1::{passthrough::LightNodeV1 as LightNodeV1PassThrough, LightNodeV1Operations};
 
 const LOGGING_UID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Clone)]
-pub struct LightNodeV1 {
-	pub pass_through: LightNodeV1PassThrough,
+pub struct LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
+	pub pass_through: LightNodeV1PassThrough<C>,
 	pub memseq: Arc<memseq::Memseq<memseq::RocksdbMempool>>,
 }
 
-impl Debug for LightNodeV1 {
+impl<C> Debug for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("LightNodeV1").field("pass_through", &self.pass_through).finish()
 	}
 }
 
-impl LightNodeV1Operations for LightNodeV1 {
+impl<C> LightNodeV1Operations for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	async fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		info!("Initializing LightNodeV1 in sequencer mode from environment.");
 
@@ -71,7 +106,14 @@ impl LightNodeV1Operations for LightNodeV1 {
 	}
 }
 
-impl LightNodeV1 {
+impl<C> LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	async fn tick_build_blocks(&self, sender: Sender<Block>) -> Result<(), anyhow::Error> {
 		let memseq = self.memseq.clone();
 
@@ -119,12 +161,16 @@ impl LightNodeV1 {
 
 		// wrap the blocks in a struct that can be split and compressed
 		// spawn blocking because the compression is blocking and could be slow
-		let namespace = self.pass_through.celestia_namespace.clone();
+		let pass_through = self.pass_through.clone();
 		let blocks = tokio::task::spawn_blocking(move || {
-			blocks
-				.into_iter()
-				.map(|block| block::WrappedBlock::try_new(block, namespace))
-				.collect::<Result<Vec<_>, anyhow::Error>>()
+			let mut wrapped_blocks = Vec::new();
+			for block in blocks {
+				let block_bytes = bcs::to_bytes(&block)?;
+				let celestia_blob = pass_through.create_new_celestia_blob(block_bytes)?;
+				let wrapped_block = block::WrappedBlock::new(block, celestia_blob);
+				wrapped_blocks.push(wrapped_block);
+			}
+			Ok::<Vec<WrappedBlock>, anyhow::Error>(wrapped_blocks)
 		})
 		.await??;
 
@@ -256,6 +302,12 @@ impl LightNodeV1 {
 		}
 	}
 
+	async fn run_gc(&self) -> Result<(), anyhow::Error> {
+		loop {
+			self.memseq.gc().await?;
+		}
+	}
+
 	pub async fn run_block_proposer(&self) -> Result<(), anyhow::Error> {
 		let (sender, mut receiver) = tokio::sync::mpsc::channel(2 ^ 10);
 
@@ -263,48 +315,47 @@ impl LightNodeV1 {
 			match futures::try_join!(
 				self.run_block_builder(sender.clone()),
 				self.run_block_publisher(&mut receiver),
+				self.run_gc(),
 			) {
 				Ok(_) => {
 					info!("block proposer completed");
 				}
 				Err(e) => {
 					info!("block proposer failed: {:?}", e);
+					return Err(e);
 				}
 			}
 		}
-
-		Ok(())
 	}
 
 	pub fn to_sequenced_blob_block(
-		blob_response: BlobResponse,
-	) -> Result<BlobResponse, anyhow::Error> {
+		blob_response: grpc::BlobResponse,
+	) -> Result<grpc::BlobResponse, anyhow::Error> {
 		let blob_type = blob_response.blob_type.ok_or(anyhow::anyhow!("No blob type"))?;
 
 		let sequenced_block = match blob_type {
-			blob_response::BlobType::PassedThroughBlob(blob) => {
-				blob_response::BlobType::SequencedBlobBlock(blob)
-			}
-			blob_response::BlobType::SequencedBlobBlock(blob) => {
-				blob_response::BlobType::SequencedBlobBlock(blob)
-			}
+			BlobType::PassedThroughBlob(blob) => BlobType::SequencedBlobBlock(blob),
+			BlobType::SequencedBlobBlock(blob) => BlobType::SequencedBlobBlock(blob),
 			_ => {
 				anyhow::bail!("Invalid blob type")
 			}
 		};
 
-		Ok(BlobResponse { blob_type: Some(sequenced_block) })
+		Ok(grpc::BlobResponse { blob_type: Some(sequenced_block) })
 	}
 
 	pub fn make_sequenced_blob_intent(
 		data: Vec<u8>,
 		height: u64,
-	) -> Result<BlobResponse, anyhow::Error> {
-		Ok(BlobResponse {
-			blob_type: Some(blob_response::BlobType::SequencedBlobIntent(Blob {
+	) -> Result<grpc::BlobResponse, anyhow::Error> {
+		Ok(grpc::BlobResponse {
+			blob_type: Some(BlobType::SequencedBlobIntent(grpc::Blob {
 				data,
-				blob_id: "".to_string(),
+				blob_id: vec![],
 				height,
+				// todo: at some point it would be good to sign these intents, as they can then be used as pre-confirmations against which we can slash
+				signature: vec![],
+				signer: vec![],
 				timestamp: 0,
 			})),
 		})
@@ -312,65 +363,82 @@ impl LightNodeV1 {
 }
 
 #[tonic::async_trait]
-impl LightNodeService for LightNodeV1 {
+impl<C> LightNodeService for LightNodeV1<C>
+where
+	C: PrimeCurve + CurveArithmetic + DigestPrimitive + PointCompression,
+	Scalar<C>: Invert<Output = CtOption<Scalar<C>>> + SignPrimitive<C>,
+	SignatureSize<C>: ArrayLength<u8>,
+	AffinePoint<C>: FromEncodedPoint<C> + ToEncodedPoint<C> + VerifyPrimitive<C>,
+	FieldBytesSize<C>: ModulusSize,
+{
 	/// Server streaming response type for the StreamReadFromHeight method.
-	type StreamReadFromHeightStream = std::pin::Pin<
+	type StreamReadFromHeightStream = Pin<
 		Box<
-			dyn Stream<Item = Result<StreamReadFromHeightResponse, tonic::Status>> + Send + 'static,
+			dyn Stream<Item = Result<grpc::StreamReadFromHeightResponse, tonic::Status>>
+				+ Send
+				+ 'static,
 		>,
 	>;
 
 	/// Stream blobs from a specified height or from the latest height.
 	async fn stream_read_from_height(
 		&self,
-		request: tonic::Request<StreamReadFromHeightRequest>,
+		request: tonic::Request<grpc::StreamReadFromHeightRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadFromHeightStream>, tonic::Status> {
 		self.pass_through.stream_read_from_height(request).await
 	}
 
 	/// Server streaming response type for the StreamReadLatest method.
-	type StreamReadLatestStream = std::pin::Pin<
-		Box<dyn Stream<Item = Result<StreamReadLatestResponse, tonic::Status>> + Send + 'static>,
+	type StreamReadLatestStream = Pin<
+		Box<
+			dyn Stream<Item = Result<grpc::StreamReadLatestResponse, tonic::Status>>
+				+ Send
+				+ 'static,
+		>,
 	>;
 
 	/// Stream the latest blobs.
 	async fn stream_read_latest(
 		&self,
-		request: tonic::Request<StreamReadLatestRequest>,
+		request: tonic::Request<grpc::StreamReadLatestRequest>,
 	) -> std::result::Result<tonic::Response<Self::StreamReadLatestStream>, tonic::Status> {
 		self.pass_through.stream_read_latest(request).await
 	}
 	/// Server streaming response type for the StreamWriteCelestiaBlob method.
-	type StreamWriteBlobStream = std::pin::Pin<
-		Box<dyn Stream<Item = Result<StreamWriteBlobResponse, tonic::Status>> + Send + 'static>,
+	type StreamWriteBlobStream = Pin<
+		Box<
+			dyn Stream<Item = Result<grpc::StreamWriteBlobResponse, tonic::Status>>
+				+ Send
+				+ 'static,
+		>,
 	>;
 	/// Stream blobs out, either individually or in batches.
 	async fn stream_write_blob(
 		&self,
-		_request: tonic::Request<tonic::Streaming<StreamWriteBlobRequest>>,
+		_request: tonic::Request<tonic::Streaming<grpc::StreamWriteBlobRequest>>,
 	) -> std::result::Result<tonic::Response<Self::StreamWriteBlobStream>, tonic::Status> {
 		unimplemented!("stream_write_blob")
 	}
 	/// Read blobs at a specified height.
 	async fn read_at_height(
 		&self,
-		request: tonic::Request<ReadAtHeightRequest>,
-	) -> std::result::Result<tonic::Response<ReadAtHeightResponse>, tonic::Status> {
+		request: tonic::Request<grpc::ReadAtHeightRequest>,
+	) -> std::result::Result<tonic::Response<grpc::ReadAtHeightResponse>, tonic::Status> {
 		self.pass_through.read_at_height(request).await
 	}
 	/// Batch read and write operations for efficiency.
 	async fn batch_read(
 		&self,
-		request: tonic::Request<BatchReadRequest>,
-	) -> std::result::Result<tonic::Response<BatchReadResponse>, tonic::Status> {
+		request: tonic::Request<grpc::BatchReadRequest>,
+	) -> std::result::Result<tonic::Response<grpc::BatchReadResponse>, tonic::Status> {
 		self.pass_through.batch_read(request).await
 	}
 
 	/// Batch write blobs.
 	async fn batch_write(
 		&self,
-		request: tonic::Request<BatchWriteRequest>,
-	) -> std::result::Result<tonic::Response<BatchWriteResponse>, tonic::Status> {
+		request: tonic::Request<grpc::BatchWriteRequest>,
+	) -> std::result::Result<tonic::Response<grpc::BatchWriteResponse>, tonic::Status> {
 		let blobs_for_intent = request.into_inner().blobs;
 		let blobs_for_submission = blobs_for_intent.clone();
 		let height: u64 = self
@@ -382,13 +450,13 @@ impl LightNodeService for LightNodeV1 {
 			.height()
 			.into();
 
-		let intents: Vec<BlobResponse> = blobs_for_intent
+		let intents: Vec<grpc::BlobResponse> = blobs_for_intent
 			.into_iter()
 			.map(|blob| {
 				Self::make_sequenced_blob_intent(blob.data, height)
 					.map_err(|e| tonic::Status::internal(e.to_string()))
 			})
-			.collect::<Result<Vec<BlobResponse>, tonic::Status>>()?;
+			.collect::<Result<Vec<grpc::BlobResponse>, tonic::Status>>()?;
 
 		// make transactions from the blobs
 		let mut transactions = Vec::new();
@@ -405,23 +473,17 @@ impl LightNodeService for LightNodeV1 {
 			.await
 			.map_err(|e| tonic::Status::internal(e.to_string()))?;
 
-		Ok(tonic::Response::new(BatchWriteResponse { blobs: intents }))
-	}
-	/// Update and manage verification parameters.
-	async fn update_verification_parameters(
-		&self,
-		request: tonic::Request<UpdateVerificationParametersRequest>,
-	) -> std::result::Result<tonic::Response<UpdateVerificationParametersResponse>, tonic::Status> {
-		self.pass_through.update_verification_parameters(request).await
+		Ok(tonic::Response::new(grpc::BatchWriteResponse { blobs: intents }))
 	}
 }
 
-mod block {
+pub mod block {
 
 	use celestia_types::{nmt::Namespace, Blob};
 	use movement_algs::grouping_heuristic::{binpacking::BinpackingWeighted, splitting::Splitable};
 	use movement_types::block::Block;
 
+	/// A wrapped block that can be used with the binpacking heuristic
 	#[derive(Debug)]
 	pub struct WrappedBlock {
 		pub block: Block,
@@ -429,6 +491,12 @@ mod block {
 	}
 
 	impl WrappedBlock {
+		/// Create a new wrapped block from a blob and block
+		pub fn new(block: Block, blob: Blob) -> Self {
+			Self { block, blob }
+		}
+
+		/// Create a new wrapped block from a block and a namespace
 		pub fn try_new(block: Block, namespace: Namespace) -> Result<Self, anyhow::Error> {
 			// first serialize the block
 			let block_bytes = bcs::to_bytes(&block)?;

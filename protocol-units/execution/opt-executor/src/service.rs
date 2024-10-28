@@ -116,12 +116,12 @@ mod tests {
 	async fn test_pipe_mempool_while_server_running() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let (context, mut transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 		let handle = tokio::spawn(async move { service.run().await });
 
-		let user_transaction = create_signed_transaction(0, &context.config().chain);
+		// this needs to be 1 because the root account should already have a committed genesis transaction
+		let user_transaction = create_signed_transaction(1, &context.config().chain);
 
 		// send transaction to mempool
 		let (req_sender, callback) = oneshot::channel();

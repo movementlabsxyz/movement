@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 import {IAtomicBridgeInitiator} from "./IAtomicBridgeInitiator.sol";
@@ -27,19 +26,26 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
     // Total WETH pool balance
     uint256 public poolBalance;
 
-    address public counterpartyAddress; 
+    address public counterpartyAddress;
     IWETH9 public weth;
     uint256 private nonce;
 
-    // Constant time lock of 48 hours in seconds 
-    uint256 public constant INITIATOR_TIME_LOCK_DURATION = 24 * 60 * 60 * 2;
+    // Configurable time lock duration
+    uint256 public initiatorTimeLockDuration;
 
-    function initialize(address _weth, address owner) public initializer {
+    // Initialize the contract with WETH address, owner, custom time lock duration, and initial pool balance
+    function initialize(address _weth, address owner, uint256 _timeLockDuration, uint256 _initialPoolBalance) public initializer {
         if (_weth == address(0)) {
             revert ZeroAddress();
         }
         weth = IWETH9(_weth);
         __Ownable_init(owner);
+
+        // Set the custom time lock duration
+        initiatorTimeLockDuration = _timeLockDuration;
+
+        // Set the initial pool balance
+        poolBalance = _initialPoolBalance;
     }
 
     function setCounterpartyAddress(address _counterpartyAddress) external onlyOwner {
@@ -73,18 +79,18 @@ contract AtomicBridgeInitiator is IAtomicBridgeInitiator, OwnableUpgradeable {
         poolBalance += totalAmount;
 
         // Generate a unique nonce to prevent replay attacks, and generate a transfer ID
-        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, INITIATOR_TIME_LOCK_DURATION, block.timestamp, nonce++));
+        bridgeTransferId = keccak256(abi.encodePacked(originator, recipient, hashLock, initiatorTimeLockDuration, block.timestamp, nonce++));
 
         bridgeTransfers[bridgeTransferId] = BridgeTransfer({
             amount: totalAmount,
             originator: originator,
             recipient: recipient,
             hashLock: hashLock,
-            timeLock: block.timestamp + INITIATOR_TIME_LOCK_DURATION,
+            timeLock: block.timestamp + initiatorTimeLockDuration,
             state: MessageState.INITIALIZED
         });
 
-        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, INITIATOR_TIME_LOCK_DURATION);
+        emit BridgeTransferInitiated(bridgeTransferId, originator, recipient, totalAmount, hashLock, initiatorTimeLockDuration);
         return bridgeTransferId;
     }
 

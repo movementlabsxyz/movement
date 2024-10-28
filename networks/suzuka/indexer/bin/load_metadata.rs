@@ -1,11 +1,18 @@
 use anyhow::{anyhow, Context, Result};
 use reqwest::Url;
 use tracing::info;
+use tracing_subscriber::EnvFilter;
 
 const HASURA_METADATA: &str = include_str!("../hasura_metadata.json");
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+	tracing_subscriber::fmt()
+		.with_env_filter(
+			EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+		)
+		.init();
+
 	let indexer_api_url =
 		std::env::var("INDEXER_API_URL").unwrap_or("http://127.0.0.1:8085".to_string());
 
@@ -97,7 +104,16 @@ async fn make_hasura_metadata_request(
 	payload.insert("args".to_string(), args);
 
 	// Send the POST request.
-	let response = client.post(url).json(&payload).send().await?;
+	let response = if let Ok(auth_key) = std::env::var("HASURA_ADMIN_AUTH_KEY") {
+		client
+			.post(url)
+			.header("X-Hasura-Admin-Secret", auth_key)
+			.json(&payload)
+			.send()
+			.await?
+	} else {
+		client.post(url).json(&payload).send().await?
+	};
 
 	// Return the response as a JSON value.
 	response.json().await.context("Failed to parse response as JSON")

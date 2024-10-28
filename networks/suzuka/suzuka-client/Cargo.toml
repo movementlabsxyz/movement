@@ -12,7 +12,7 @@ rust-version = { workspace = true }
 ### define here all scenarios execution binaries 
 [[bin]]
 name = "demo_scenario"
-path = "bin/demo_scenario.rs"
+path = "src/bin/e2e/demo_scenario.rs"
 #[[bin]]
 # name = "basic_alice_bob"
 # path = "bin/basic_alice_bob.rs"
@@ -22,6 +22,14 @@ path = "bin/demo_scenario.rs"
 [[bin]]
 name = "suzuka-client-e2e-simple-interaction"
 path = "src/bin/e2e/simple_interaction.rs"
+
+[[bin]]
+name = "suzuka-client-gas-dos"
+path = "src/bin/e2e/gas_dos.rs"
+
+[[bin]]
+name = "suzuka-client-e2e-followers-consistent"
+path = "src/bin/e2e/followers_consistent.rs"
 
 [dependencies]
 aptos-sdk = { workspace = true }
@@ -44,6 +52,7 @@ rayon = { workspace = true }
 serde_json  = { workspace = true }
 thiserror = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
+movement-tracing = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
 reqwest = { workspace = true }

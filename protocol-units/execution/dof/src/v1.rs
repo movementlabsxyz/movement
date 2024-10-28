@@ -58,13 +58,13 @@ impl DynOptFinExecutor for Executor {
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
 	> {
-		let (opt_context, transaction_pipe, indexer_runtime) =
-			self.executor.background(transaction_sender, config)?;
+		let (opt_context, transaction_pipe) = self.executor.background(transaction_sender)?;
 		let fin_service = self.finality_view.service(
 			opt_context.mempool_client_sender(),
 			config,
 			opt_context.node_config().clone(),
 		);
+		let indexer_runtime = opt_context.run_indexer_grpc_service()?;
 		let background = async move {
 			// The indexer runtime should live as long as the Tx pipe.
 			let _indexer_runtime = indexer_runtime;

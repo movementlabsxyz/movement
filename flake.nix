@@ -1,9 +1,9 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/ae0b2bf3fab958fc7d83a7893ee57175fd2609d3";
+    nixpkgs.url = "github:NixOS/nixpkgs/2ac40064487f7dfae54f188705e8ed9173993e79";
     rust-overlay.url = "github:oxalica/rust-overlay/db12d0c6ef002f16998723b5dd619fa7b8997086";
     flake-utils.url = "github:numtide/flake-utils";
-    foundry.url = "github:shazow/foundry.nix/monthly"; 
+    foundry.url = "github:shazow/foundry.nix/f533e2c70e520adb695c9917be21d514c15b1c4d"; 
     crane.url = "github:ipetkov/crane";
     crane.inputs.nixpkgs.follows = "nixpkgs";
     
@@ -18,38 +18,72 @@
         };
 
         toolchain = p: (p.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml).override {
-          extensions = [ "rustfmt" ];
+          extensions = [ "rustfmt" "clippy" ];
         };
         craneLib = (crane.mkLib pkgs).overrideToolchain(toolchain);
 
-        monza-aptos = pkgs.fetchgit {
-          url = "https://github.com/movementlabsxyz/aptos-core";
-          rev = "06443b81f6b8b8742c4aa47eba9e315b5e6502ff";
-          hash = "sha256-W42uBu2A1ctlI07eWEGxtf0T8NgH03SPJkYSBly4zZ4=";
-        };
+        frameworks = pkgs.darwin.apple_sdk.frameworks;
 
-        aptos-faucet-service-common-args = {
-          pname = "aptos-faucet-service";
-          version = "2.0.1";
-          
-          src = monza-aptos;
-          strictDeps = true;
+        buildDependencies = with pkgs; [
+          llvmPackages.bintools
+          openssl
+          openssl.dev
+          libiconv 
+          pkg-config
+          libclang.lib
+          libz
+          clang
+          pkg-config
+          protobuf
+          rustPlatform.bindgenHook
+          lld
+          mold
+          coreutils
+          gcc
+          rust
+          postgresql
+          tesseract4
+          ansible
+          zlib
+        ];
+        
+        sysDependencies = with pkgs; [] 
+        ++ lib.optionals stdenv.isDarwin [
+          frameworks.Security
+          frameworks.CoreServices
+          frameworks.SystemConfiguration
+          frameworks.AppKit
+          libelf
+        ] ++ lib.optionals stdenv.isLinux [
+          udev
+          systemd
+          snappy
+          bzip2
+          elfutils
+        ];
 
-          nativeBuildInputs = with pkgs; [
-            pkg-config
-          ];
-          buildInputs = with pkgs; [
-            openssl
-            systemd
-            rocksdb
-            rustPlatform.bindgenHook
-          ];
+        testDependencies = with pkgs; [
+          python311
+          poetry
+          just
+          foundry-bin
+          process-compose
+          celestia-node
+          celestia-app
+          jq
+          docker
+          solc
+          grpcurl
+          grpcui
+        ];
+
+        # Specific version of toolchain
+        rust = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rust;
+          rustc = rust;
         };
-        aptos-faucet-service-deps = craneLib.buildDepsOnly aptos-faucet-service-common-args;
-        aptos-faucet-service = craneLib.buildPackage (aptos-faucet-service-common-args // {
-          cargoArtifacts = aptos-faucet-service-deps;
-          cargoExtraArgs = "-p aptos-faucet-service";
-        });
 
         celestia-app = pkgs.buildGoModule {
           pname = "celestia-app";
@@ -81,7 +115,7 @@
     
       in {
         packages = {
-          inherit aptos-faucet-service celestia-app celestia-node;
+          inherit celestia-app celestia-node;
         };
         devShells = rec {
           default = docker-build;
@@ -89,7 +123,6 @@
             ROCKSDB = pkgs.rocksdb;
             SNAPPY = if pkgs.stdenv.isLinux then pkgs.snappy else null;
             OPENSSL_DEV = pkgs.openssl.dev;
-            MONZA_APTOS_PATH = monza-aptos;
          
             buildInputs = with pkgs; [
               # rust toolchain
@@ -104,7 +137,6 @@
               python311 poetry just foundry-bin process-compose jq docker solc
               grpcurl grpcui
 
-              monza-aptos
               celestia-app celestia-node
             ] ++ lib.optionals stdenv.isDarwin (with pkgs.darwin.apple_sdk.frameworks; [
               Security CoreServices SystemConfiguration AppKit

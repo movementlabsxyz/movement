@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use aptos_crypto::{ed25519::Ed25519PrivateKey, Uniform, ValidCryptoMaterialStringExt};
+use aptos_crypto::{ed25519::Ed25519PrivateKey, Genesis, ValidCryptoMaterialStringExt};
 use aptos_types::chain_id::ChainId;
 use godfig::env_default;
 
@@ -74,7 +74,7 @@ env_default!(default_maptos_chain_id, "MAPTOS_CHAIN_ID", ChainId, ChainId::from_
 pub fn default_maptos_private_key() -> Ed25519PrivateKey {
 	match std::env::var("MAPTOS_PRIVATE_KEY") {
 		Ok(val) => Ed25519PrivateKey::from_encoded_string(&val).unwrap(),
-		Err(_) => Ed25519PrivateKey::generate(&mut rand::thread_rng()),
+		Err(_) => Ed25519PrivateKey::genesis(),
 	}
 }
 
@@ -129,6 +129,22 @@ env_default!(
 	10
 );
 
+env_default!(default_maptos_ledger_prune_window, "MAPTOS_LEDGER_PRUNING_WINDOW", u64, 50_000_000);
+
+env_default!(
+	default_maptos_state_merkle_prune_window,
+	"MAPTOS_STATE_MERKLE_PRUNING_WINDOW",
+	u64,
+	100_000 // see comment in aptos-core, this essentially needs to exceed TPS
+);
+
+env_default!(
+	default_maptos_epoch_snapshot_prune_window,
+	"MAPTOS_EPOCH_SNAPSHOT_PRUNING_WINDOW",
+	u64,
+	50_000_000
+);
+
 env_default!(
 	default_postgres_connection_string,
 	"INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING",
@@ -144,3 +160,7 @@ env_default!(
 );
 
 env_default!(default_max_transactions_in_flight, "MAPTOS_MAX_TRANSACTIONS_IN_FLIGHT", u64, 12000);
+
+env_default!(default_sequence_number_ttl_ms, "MAPTOS_SEQUENCE_NUMBER_TTL_MS", u64, 1000 * 60 * 3);
+
+env_default!(default_gc_slot_duration_ms, "MAPTOS_GC_SLOT_DURATION_MS", u64, 1000 * 2);

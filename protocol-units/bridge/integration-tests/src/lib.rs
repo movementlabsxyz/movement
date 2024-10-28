@@ -1,54 +1,87 @@
-use alloy::{
-	primitives::{Address, U256, keccak256},
-	providers::WalletProvider,
-	signers::{
-		k256::{elliptic_curve::SecretKey, Secp256k1},
-		local::LocalSigner,
-	},
-};
-use alloy_network::{Ethereum, EthereumWallet, NetworkWallet};
-use anyhow::Result;
+#![allow(dead_code)]
+use alloy::node_bindings::AnvilInstance;
+use alloy::primitives::Address;
+use alloy::primitives::{keccak256, U256};
+use alloy::providers::ProviderBuilder;
+use alloy::signers::local::PrivateKeySigner;
+use alloy_network::EthereumWallet;
+use aptos_sdk::rest_client::aptos_api_types::Transaction as AptosTransaction;
 use aptos_sdk::rest_client::{Client, FaucetClient};
-use aptos_sdk::types::LocalAccount;
 use aptos_sdk::types::account_address::AccountAddress;
-use bridge_shared::bridge_contracts::{BridgeContractInitiator, BridgeContractInitiatorResult};
-use bridge_shared::types::{Amount, HashLock, InitiatorAddress, RecipientAddress, TimeLock};
-use ethereum_bridge::client::{Config as EthConfig, EthClient};
-use ethereum_bridge::types::{AlloyProvider, AtomicBridgeInitiator, EthAddress, WETH9};
-use movement_bridge::{utils::MovementAddress, Config as MovementConfig};
-use movement_bridge::MovementClient;
+use aptos_sdk::types::LocalAccount;
+use bridge_config::Config;
+use bridge_service::chains::bridge_contracts::BridgeContractError;
+use bridge_service::chains::ethereum::types::AlloyProvider;
+use bridge_service::chains::ethereum::types::EthAddress;
+use bridge_service::chains::ethereum::{client::EthClient, types::EthHash};
+use bridge_service::chains::movement::client_framework::FRAMEWORK_ADDRESS;
+use bridge_service::chains::movement::utils::MovementAddress;
+use bridge_service::chains::movement::{client::MovementClient, client_framework::MovementClientFramework, utils::MovementHash};
+use bridge_service::types::Amount;
+use bridge_service::types::BridgeTransferId;
+use bridge_service::types::HashLockPreImage;
+use bridge_service::{chains::bridge_contracts::BridgeContractResult, types::BridgeAddress};
+use godfig::{backend::config_file::ConfigFile, Godfig};
 use rand::SeedableRng;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
+use std::convert::TryInto;
+use std::str::FromStr;
 use std::sync::{Arc, RwLock};
+use url::Url;
 
 pub mod utils;
 
 #[derive(Clone)]
 pub struct EthToMovementCallArgs {
-        pub initiator: Vec<u8>,
-        pub recipient: MovementAddress,
-        pub bridge_transfer_id: [u8; 32],
-        pub hash_lock: [u8; 32],
-        pub time_lock: u64,
-        pub amount: u64,
+	pub initiator: Vec<u8>,
+	pub recipient: MovementAddress,
+	pub bridge_transfer_id: MovementHash,
+	pub hash_lock: MovementHash,
+	pub time_lock: u64,
+	pub amount: u64,
 }
 
 #[derive(Clone)]
 pub struct MovementToEthCallArgs {
-        pub initiator: MovementAddress,
-        pub recipient: Vec<u8>,
-        pub bridge_transfer_id: [u8; 32],
-        pub hash_lock: [u8; 32],
-        pub time_lock: u64,
-        pub amount: u64,
+	pub initiator: MovementAddress,
+	pub recipient: Vec<u8>,
+	pub bridge_transfer_id: EthHash,
+	pub hash_lock: EthHash,
+	pub time_lock: u64,
+	pub amount: u64,
 }
 
 impl Default for EthToMovementCallArgs {
         fn default() -> Self {
+                // Generate 6 random alphanumeric characters
+                let random_suffix: String = thread_rng()
+                    .sample_iter(&Alphanumeric)
+                    .take(6)
+                    .map(char::from)
+                    .collect();
+
+                // Construct the bridge_transfer_id with the random suffix
+                let mut bridge_transfer_id = b"00000000000000000000000tra".to_vec();
+                bridge_transfer_id.extend_from_slice(random_suffix.as_bytes());
+
                 Self {
-                        initiator: b"0x123".to_vec(),
+			// Dummy valid EIP-55 address used in framework modules
+                        // initiator: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			// Actual Eth address
+			initiator: b"0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc".to_vec(),
+			// All lowercase version:
+			//initiator: b"0x32be343b94f860124dc4fee278fdcbd38c102d88".to_vec(),
+			// Dummy recipient address
                         recipient: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-                        bridge_transfer_id: *b"00000000000000000000000transfer1",
-                        hash_lock: *keccak256(b"secret"),
+                        // Convert to [u8; 32] with explicit type annotation
+                        bridge_transfer_id: MovementHash(
+                            bridge_transfer_id
+                                .as_slice()
+                                .try_into()
+                                .expect("Expected bridge_transfer_id to be 32 bytes"),
+                        ),
+                        hash_lock: MovementHash(*keccak256(b"secret")),
                         time_lock: 3600,
                         amount: 100,
                 }
@@ -56,165 +89,298 @@ impl Default for EthToMovementCallArgs {
 }
 
 impl Default for MovementToEthCallArgs {
-        fn default() -> Self {
-
-		let preimage = "secret".to_string();
-		let serialized_preimage = bcs::to_bytes(&preimage).unwrap();  
-		let hash_lock = *keccak256(&serialized_preimage);
-
-                Self {
-                        initiator: MovementAddress(AccountAddress::new(*b"0x00000000000000000000000000face")),
-                        recipient: b"0x123".to_vec(),
-                        bridge_transfer_id: *b"00000000000000000000000transfer1",
-                        hash_lock,
-                        time_lock: 3600,
-                        amount: 100,
-                }
-        }
+	fn default() -> Self {
+		Self {
+			initiator: MovementAddress(AccountAddress::new(*b"0x000000000000000000000000A55018")),
+			recipient: b"32Be343B94f860124dC4fEe278FDCBD38C102D88".to_vec(),
+			bridge_transfer_id: EthHash(*b"00000000000000000000000transfer1"),
+			hash_lock: EthHash(*keccak256(b"secret")),
+			time_lock: 3600,
+			amount: 100,
+		}
+	}
 }
 
-
-pub struct TestHarness {
-	pub eth_client: Option<EthClient>,
-	pub movement_client: Option<MovementClient>,
+pub struct HarnessEthClient {
+	pub eth_rpc_url: String,
+	pub signer_private_key: PrivateKeySigner,
+	pub eth_client: EthClient,
 }
 
-impl TestHarness {
-	pub async fn new_with_movement() -> (Self, tokio::process::Child) {
-		let (movement_client, child) =
-			MovementClient::new_for_test(MovementConfig::build_for_test())
-				.await
-				.expect("Failed to create MovementClient");
-		(Self { eth_client: None, movement_client: Some(movement_client) }, child)
+impl HarnessEthClient {
+	pub async fn build(config: &Config) -> Self {
+		let eth_rpc_url = config.eth.eth_rpc_connection_url().clone();
+
+		let signer_private_key = config
+			.eth
+			.signer_private_key
+			.parse::<PrivateKeySigner>()
+			.expect("Error during parsing signer private key?");
+
+		let eth_client = EthClient::new(&config.eth).await.expect("Failed to create EthClient");
+		HarnessEthClient { eth_client, eth_rpc_url, signer_private_key }
 	}
 
-	pub fn movement_rest_client(&self) -> &Client {
-		self.movement_client().expect("Could not fetch Movement client").rest_client()
-	}
-
-	pub fn movement_faucet_client(&self) -> &Arc<RwLock<FaucetClient>> {
-		self.movement_client()
-			.expect("Could not fetch Movement client")
-			.faucet_client()
-			.expect("Faucet client not initialized")
-	}
-
-	pub fn movement_client(&self) -> Result<&MovementClient> {
-		self.movement_client
-			.as_ref()
-			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
-	}
-
-	pub fn movement_client_mut(&mut self) -> Result<&mut MovementClient> {
-		self.movement_client
-			.as_mut()
-			.ok_or(anyhow::Error::msg("MovementClient not initialized"))
-	}
-
-	pub async fn new_only_eth() -> Self {
-		let eth_client = EthClient::new(EthConfig::build_for_test())
+	pub async fn rpc_provider(&self) -> AlloyProvider {
+		let rpc_provider = ProviderBuilder::new()
+			.with_recommended_fillers()
+			.wallet(EthereumWallet::from(self.signer_private_key.clone()))
+			.on_builtin(&self.eth_rpc_url)
 			.await
-			.expect("Failed to create EthClient");
-		Self { eth_client: Some(eth_client), movement_client: None }
+			.expect("Error during provider creation");
+		rpc_provider
 	}
 
-	pub fn eth_client(&self) -> Result<&EthClient> {
-		self.eth_client.as_ref().ok_or(anyhow::Error::msg("EthClient not initialized"))
+	pub fn signer_address(&self) -> Address {
+		self.signer_private_key.address()
 	}
 
-	pub fn eth_client_mut(&mut self) -> Result<&mut EthClient> {
-		self.eth_client.as_mut().ok_or(anyhow::Error::msg("EthClient not initialized"))
+	pub fn get_initiator_private_key(config: &Config) -> PrivateKeySigner {
+		let signer_private_key = config.testing.eth_well_known_account_private_keys[2]
+			.clone()
+			.parse::<PrivateKeySigner>()
+			.unwrap();
+		signer_private_key
 	}
 
-	pub fn set_eth_signer(&mut self, signer: SecretKey<Secp256k1>) -> Address {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		let wallet: &mut EthereumWallet = eth_client.rpc_provider_mut().wallet_mut();
-		let clone_signer = signer.clone();
-		wallet.register_default_signer(LocalSigner::from(signer));
-		eth_client.set_signer_address(clone_signer);
-		eth_client.get_signer_address()
+	pub fn get_initiator_address(config: &Config) -> Address {
+		HarnessEthClient::get_initiator_private_key(config).address()
 	}
 
-	pub fn eth_signer_address(&self) -> Address {
-		let eth_client = self.eth_client().expect("EthClient not initialized");
-		let wallet: &EthereumWallet = eth_client.rpc_provider().wallet();
-		<EthereumWallet as NetworkWallet<Ethereum>>::default_signer_address(wallet)
+	pub fn get_recipient_private_key(config: &Config) -> PrivateKeySigner {
+		let signer_private_key = config.testing.eth_well_known_account_private_keys[3]
+			.clone()
+			.parse::<PrivateKeySigner>()
+			.unwrap();
+		signer_private_key
 	}
 
-	pub fn provider(&self) -> &AlloyProvider {
-		self.eth_client().expect("Could not fetch eth client").rpc_provider()
-	}
-
-	/// The port that Anvil will listen on.
-	pub fn rpc_port(&self) -> u16 {
-		self.eth_client().expect("Could not fetch eth client").rpc_port()
-	}
-
-	pub async fn deploy_initiator_contract(&mut self) -> Address {
-		let eth_client: &mut EthClient = self.eth_client_mut().expect("EthClient not initialized");
-		let contract = AtomicBridgeInitiator::deploy(eth_client.rpc_provider())
-			.await
-			.expect("Failed to deploy AtomicBridgeInitiator");
-		eth_client.set_initiator_contract(contract.with_cloned_provider());
-		eth_client.initiator_contract_address().expect("Initiator contract not set")
-	}
-
-	pub async fn deploy_weth_contract(&mut self) -> Address {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		let weth = WETH9::deploy(eth_client.rpc_provider()).await.expect("Failed to deploy WETH9");
-		eth_client.set_weth_contract(weth.with_cloned_provider());
-		eth_client.weth_contract_address().expect("WETH contract not set")
-	}
-
-	pub async fn deploy_init_contracts(&mut self) {
-		let _ = self.deploy_initiator_contract().await;
-		let weth_address = self.deploy_weth_contract().await;
-		self.eth_client()
-			.expect("Failed to get EthClient")
-			.initialize_initiator_contract(
-				EthAddress(weth_address),
-				EthAddress(self.eth_signer_address()),
-			)
-			.await
-			.expect("Failed to initialize contract");
-	}
-
-	pub async fn initiate_bridge_transfer(
-		&mut self,
-		initiator_address: InitiatorAddress<EthAddress>,
-		recipient_address: RecipientAddress<Vec<u8>>,
-		hash_lock: HashLock<[u8; 32]>,
-		time_lock: TimeLock,
-		amount: Amount, // the amount
-	) -> BridgeContractInitiatorResult<()> {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client
-			.initiate_bridge_transfer(
-				initiator_address,
-				recipient_address,
-				hash_lock,
-				time_lock,
-				amount,
-			)
-			.await
+	pub fn get_recipeint_address(config: &Config) -> Address {
+		HarnessEthClient::get_recipient_private_key(config).address()
 	}
 
 	pub async fn deposit_weth_and_approve(
 		&mut self,
-		initiator_address: InitiatorAddress<EthAddress>,
+		initiator_address: BridgeAddress<EthAddress>,
 		amount: Amount,
-	) -> BridgeContractInitiatorResult<()> {
-		let eth_client = self.eth_client_mut().expect("EthClient not initialized");
-		eth_client
-			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth()))
+	) -> BridgeContractResult<()> {
+		self.eth_client
+			.deposit_weth_and_approve(initiator_address.0 .0, U256::from(amount.weth_value()))
 			.await
 			.expect("Failed to deposit WETH");
 		Ok(())
 	}
+}
 
-	pub fn gen_aptos_account(&self) -> Vec<u8> {
+pub struct HarnessMvtClient {
+	pub movement_client: MovementClient,
+	///The Apotos Rest Client
+	pub rest_client: Client,
+	///The Apotos Rest Client
+	pub faucet_client: Arc<RwLock<FaucetClient>>,
+}
+
+impl HarnessMvtClient {
+	pub fn gen_aptos_account() -> Vec<u8> {
 		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
 		let movement_recipient = LocalAccount::generate(&mut rng);
 		movement_recipient.public_key().to_bytes().to_vec()
+	}
+
+	pub async fn build(config: &Config) -> Self {
+		let movement_client = MovementClient::new(&config.movement)
+			.await
+			.expect("Failed to create MovementClient");
+
+		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
+			.expect("Bad movement rpc url in config");
+		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = Url::from_str(&config.movement.mvt_faucet_connection_url())
+			.expect("Bad movement faucet url in config");
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_url.clone(),
+			node_connection_url.clone(),
+		)));
+
+		HarnessMvtClient { movement_client, rest_client, faucet_client }
+	}
+
+	pub async fn fund_account(&self) -> LocalAccount {
+		let account = LocalAccount::generate(&mut rand::rngs::OsRng);
+		self.faucet_client
+			.write()
+			.unwrap()
+			.fund(account.address(), 100_000_000)
+			.await
+			.expect("Failed to fund account");
+		account
+	}
+
+	pub async fn counterparty_complete_bridge_transfer(
+		&mut self,
+		recipient_privatekey: LocalAccount,
+		bridge_transfer_id: BridgeTransferId,
+		preimage: HashLockPreImage,
+	) -> BridgeContractResult<AptosTransaction> {
+		let unpadded_preimage = {
+			let mut end = preimage.0.len();
+			while end > 0 && preimage.0[end - 1] == 0 {
+				end -= 1;
+			}
+			&preimage.0[..end]
+		};
+		let args2 = vec![
+			bridge_service::chains::movement::utils::serialize_vec(&bridge_transfer_id.0[..])?,
+			bridge_service::chains::movement::utils::serialize_vec(&unpadded_preimage)?,
+		];
+
+		let payload = bridge_service::chains::movement::utils::make_aptos_payload(
+			FRAMEWORK_ADDRESS,
+			bridge_service::chains::movement::client::COUNTERPARTY_MODULE_NAME,
+			"complete_bridge_transfer",
+			Vec::new(),
+			args2,
+		);
+
+		bridge_service::chains::movement::utils::send_and_confirm_aptos_transaction(
+			&self.rest_client,
+			&recipient_privatekey,
+			payload,
+		)
+		.await
+		.map_err(|_| BridgeContractError::CompleteTransferError)
+	}
+}
+
+pub struct TestHarness;
+impl TestHarness {
+	pub async fn read_bridge_config() -> Result<Config, anyhow::Error> {
+		let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let pathbuff = bridge_config::get_config_path(&dot_movement);
+		dot_movement.set_path(pathbuff);
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+		// get a matching godfig object
+		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
+		let bridge_config: Config = godfig.try_wait_for_ready().await?;
+		Ok(bridge_config)
+	}
+
+	pub async fn new_with_eth_and_movement(
+	) -> Result<(HarnessEthClient, HarnessMvtClient, Config), anyhow::Error> {
+		let config = TestHarness::read_bridge_config().await?;
+
+		let test_mvt_harness = HarnessMvtClient::build(&config).await;
+		let test_eth_harness = HarnessEthClient::build(&config).await;
+
+		Ok((test_eth_harness, test_mvt_harness, config))
+	}
+
+	pub async fn new_with_movement(
+		config: Config,
+	) -> (HarnessMvtClient, Config, tokio::process::Child) {
+		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
+			.await
+			.expect("Failed to setup Movement config");
+
+		let test_harness = HarnessMvtClient::build(&config).await;
+
+		(test_harness, config, movement_process)
+	}
+
+	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {
+		let (config, anvil) = bridge_setup::test_eth_setup(config)
+			.await
+			.expect("Test eth config setup failed.");
+		let test_hadness = HarnessEthClient::build(&config).await;
+		(test_hadness, config, anvil)
+	}
+}
+
+pub struct HarnessMvtClientFramework {
+	pub movement_client: MovementClientFramework,
+	///The Apotos Rest Client
+	pub rest_client: Client,
+	///The Apotos Rest Client
+	pub faucet_client: Arc<RwLock<FaucetClient>>,
+}
+
+impl HarnessMvtClientFramework {
+	pub fn gen_aptos_account() -> Vec<u8> {
+		let mut rng = ::rand::rngs::StdRng::from_seed([3u8; 32]);
+		let movement_recipient = LocalAccount::generate(&mut rng);
+		movement_recipient.public_key().to_bytes().to_vec()
+	}
+
+	pub async fn build(config: &Config) -> Self {
+		let movement_client = MovementClientFramework::new(&config.movement)
+			.await
+			.expect("Failed to create MovementClient");
+
+		let node_connection_url = Url::from_str(&config.movement.mvt_rpc_connection_url())
+			.expect("Bad movement rpc url in config");
+		let rest_client = Client::new(node_connection_url.clone());
+
+		let faucet_url = Url::from_str(&config.movement.mvt_faucet_connection_url())
+			.expect("Bad movement faucet url in config");
+		let faucet_client = Arc::new(RwLock::new(FaucetClient::new(
+			faucet_url.clone(),
+			node_connection_url.clone(),
+		)));
+
+		HarnessMvtClientFramework { movement_client, rest_client, faucet_client }
+	}
+}
+
+pub struct TestHarnessFramework;
+impl TestHarnessFramework {
+	pub async fn read_bridge_config() -> Result<Config, anyhow::Error> {
+		let mut dot_movement = dot_movement::DotMovement::try_from_env()?;
+		let pathbuff = bridge_config::get_config_path(&dot_movement);
+		dot_movement.set_path(pathbuff);
+		let config_file = dot_movement.try_get_or_create_config_file().await?;
+
+		// get a matching godfig object
+		let godfig: Godfig<Config, ConfigFile> = Godfig::new(ConfigFile::new(config_file), vec![]);
+		let bridge_config: Config = godfig.try_wait_for_ready().await?;
+		Ok(bridge_config)
+	}
+
+	pub async fn new_with_eth_and_movement(
+	) -> Result<(HarnessEthClient, HarnessMvtClientFramework, Config), anyhow::Error> {
+		let config = TestHarnessFramework::read_bridge_config().await?;
+
+		let test_mvt_harness = HarnessMvtClientFramework::build(&config).await;
+		let test_eth_harness = HarnessEthClient::build(&config).await;
+
+		Ok((test_eth_harness, test_mvt_harness, config))
+	}
+
+	pub async fn new_with_movement(
+		config: Config,
+	) -> (HarnessMvtClientFramework, Config, tokio::process::Child) {
+		let (config, movement_process) = bridge_setup::test_mvt_setup(config)
+			.await
+			.expect("Failed to setup Movement config");
+
+		let test_harness = HarnessMvtClientFramework::build(&config).await;
+
+		(test_harness, config, movement_process)
+	}
+
+	pub async fn new_with_suzuka(
+		config: Config,
+	) -> (HarnessMvtClientFramework, Config) {
+		let test_harness = HarnessMvtClientFramework::build(&config).await;
+		(test_harness, config)
+	}
+
+	pub async fn new_only_eth(config: Config) -> (HarnessEthClient, Config, AnvilInstance) {
+		let (config, anvil) = bridge_setup::test_eth_setup(config)
+			.await
+			.expect("Test eth config setup failed.");
+		let test_harness = HarnessEthClient::build(&config).await;
+		(test_harness, config, anvil)
 	}
 }

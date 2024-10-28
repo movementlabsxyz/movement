@@ -17,7 +17,7 @@ services:
     restart: on-failure:3
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
-      interval: 1s
+      interval: 30s
       timeout: 5s
       retries: 10
 
@@ -49,10 +49,10 @@ services:
     environment:
       HASURA_GRAPHQL_SERVER_PORT: 8085
       ## postgres database to store Hasura metadata
-      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgresql://postgres:password@${POSTGRES_DB_HOST}:5432/postgres
-      HASURA_GRAPHQL_DATABASE_URL: postgresql://postgres:password@${POSTGRES_DB_HOST}:5432/postgres
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}/postgres
+      HASURA_GRAPHQL_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}/postgres
       ## this env var can be used to add the above postgres database to Hasura as a data source. this can be removed/updated based on your needs
-      PG_DATABASE_URL: postgres://postgres:postgres:password@${POSTGRES_DB_HOST}:5432/postgres
+      PG_DATABASE_URL: ${INDEXER_PROCESSOR_POSTGRES_CONNECTION_STRING}/postgres
       ## enable the console served by server
       HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
       ## enable debugging mode. It is recommended to disable this in production
@@ -61,8 +61,11 @@ services:
       ## uncomment next line to run console offline (i.e load console assets from server instead of CDN)
       # HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
       ## uncomment next line to set an admin secret
-      # HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
+      HASURA_GRAPHQL_ADMIN_SECRET: ${HASURA_GRAPHQL_ADMIN_SECRET}
+      HASURA_GRAPHQL_JWT_SECRET: ${HASURA_GRAPHQL_JWT_SECRET}
       HASURA_GRAPHQL_METADATA_DEFAULTS: '{"backend_configs":{"dataconnector":{"athena":{"uri":"http://data-connector-agent:8081/api/v1/athena"},"mariadb":{"uri":"http://data-connector-agent:8081/api/v1/mariadb"},"mysql8":{"uri":"http://data-connector-agent:8081/api/v1/mysql"},"oracle":{"uri":"http://data-connector-agent:8081/api/v1/oracle"},"snowflake":{"uri":"http://data-connector-agent:8081/api/v1/snowflake"}}}}'
+      # https://hasura.io/docs/2.0/auth/authorization/permissions/common-roles-auth-examples/#unauthorized-users-example
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: readonly
     depends_on:
       data-connector-agent:
         condition: service_healthy
@@ -89,5 +92,4 @@ services:
 volumes:
   postgres_data:
     driver: local
-
 

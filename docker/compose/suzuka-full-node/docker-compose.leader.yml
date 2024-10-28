@@ -1,0 +1,10 @@
+services:
+  setup:
+    environment:
+      MOVEMENT_SYNC: ${MOVEMENT_SYNC:?MOVEMENT_SYNC is not set}
+      AWS_REGION: ${AWS_REGION:?AWS_REGION is not set}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      # mount if exists
+      - ~/.aws/:/root/.aws:ro

@@ -4,22 +4,23 @@ use aptos_config::config::NodeConfig;
 use aptos_mempool::core_mempool::CoreMempool;
 use aptos_mempool::SubmissionStatus;
 use aptos_mempool::{core_mempool::TimelineState, MempoolClientRequest};
-use aptos_sdk::types::mempool_status::{MempoolStatus, MempoolStatusCode};
-use aptos_storage_interface::DbReader;
+use aptos_storage_interface::{state_view::LatestDbStateCheckpointView as _, DbReader};
+use aptos_types::mempool_status::{MempoolStatus, MempoolStatusCode};
 use aptos_types::transaction::SignedTransaction;
-use aptos_vm_validator::vm_validator::TransactionValidation;
-use aptos_vm_validator::vm_validator::VMValidator;
+use aptos_types::vm_status::DiscardedVMStatus;
+use aptos_vm_validator::vm_validator::{self, TransactionValidation, VMValidator};
 
+use crate::gc_account_sequence_number::UsedSequenceNumberPool;
 use futures::channel::mpsc as futures_mpsc;
 use futures::StreamExt;
+use std::sync::{atomic::AtomicU64, Arc};
+use std::time::{Duration, Instant};
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tracing::{debug, info, info_span, warn, Instrument};
 
-use std::sync::{atomic::AtomicU64, Arc};
-use std::time::{Duration, Instant};
-
 const GC_INTERVAL: Duration = Duration::from_secs(30);
+const TOO_NEW_TOLERANCE: u64 = 32;
 
 /// Domain error for the transaction pipe task
 #[derive(Debug, Clone, Error)]
@@ -53,6 +54,13 @@ pub struct TransactionPipe {
 	in_flight_limit: u64,
 	// Timestamp of the last garbage collection
 	last_gc: Instant,
+	// The pool of used sequence numbers
+	used_sequence_number_pool: UsedSequenceNumberPool,
+}
+
+enum SequenceNumberValidity {
+	Valid(u64),
+	Invalid(SubmissionStatus),
 }
 
 impl TransactionPipe {
@@ -63,6 +71,8 @@ impl TransactionPipe {
 		node_config: &NodeConfig,
 		transactions_in_flight: Arc<AtomicU64>,
 		transactions_in_flight_limit: u64,
+		sequence_number_ttl_ms: u64,
+		gc_slot_duration_ms: u64,
 	) -> Self {
 		TransactionPipe {
 			mempool_client_receiver,
@@ -72,6 +82,10 @@ impl TransactionPipe {
 			transactions_in_flight,
 			in_flight_limit: transactions_in_flight_limit,
 			last_gc: Instant::now(),
+			used_sequence_number_pool: UsedSequenceNumberPool::new(
+				sequence_number_ttl_ms,
+				gc_slot_duration_ms,
+			),
 		}
 	}
 
@@ -110,11 +124,71 @@ impl TransactionPipe {
 		}
 
 		if self.last_gc.elapsed() >= GC_INTERVAL {
+			// todo: these will be slightly off, but gc does not need to be exact
+			let now = Instant::now();
+			let epoch_ms_now = chrono::Utc::now().timestamp_millis() as u64;
+			self.used_sequence_number_pool.gc(epoch_ms_now);
 			self.core_mempool.gc();
-			self.last_gc = Instant::now();
+			self.last_gc = now;
 		}
 
 		Ok(())
+	}
+
+	fn has_invalid_sequence_number(
+		&self,
+		transaction: &SignedTransaction,
+	) -> Result<SequenceNumberValidity, Error> {
+		// check against the used sequence number pool
+		let used_sequence_number = self
+			.used_sequence_number_pool
+			.get_sequence_number(&transaction.sender())
+			.unwrap_or(0);
+
+		// validate against the state view
+		let state_view = self.db_reader.latest_state_checkpoint_view().map_err(|e| {
+			Error::InternalError(format!("Failed to get latest state view: {:?}", e))
+		})?;
+
+		// this checks that the sequence number is too old or too new
+		let committed_sequence_number =
+			vm_validator::get_account_sequence_number(&state_view, transaction.sender())?;
+
+		debug!(
+			"Used sequence number: {:?} Committed sequence number: {:?}",
+			used_sequence_number, committed_sequence_number
+		);
+		let min_used_sequence_number =
+			if used_sequence_number > 0 { used_sequence_number + 1 } else { 0 };
+
+		let min_sequence_number = (min_used_sequence_number).max(committed_sequence_number);
+
+		let max_sequence_number = committed_sequence_number + TOO_NEW_TOLERANCE;
+
+		info!(
+			"min_sequence_number: {:?} max_sequence_number: {:?} transaction_sequence_number {:?}",
+			min_sequence_number,
+			max_sequence_number,
+			transaction.sequence_number()
+		);
+
+		if transaction.sequence_number() < min_sequence_number {
+			info!("Transaction sequence number too old: {:?}", transaction.sequence_number());
+			return Ok(SequenceNumberValidity::Invalid((
+				MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber),
+				Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD),
+			)));
+		}
+
+		if transaction.sequence_number() > max_sequence_number {
+			info!("Transaction sequence number too new: {:?}", transaction.sequence_number());
+			return Ok(SequenceNumberValidity::Invalid((
+				MempoolStatus::new(MempoolStatusCode::InvalidSeqNumber),
+				Some(DiscardedVMStatus::SEQUENCE_NUMBER_TOO_NEW),
+			)));
+		}
+
+		Ok(SequenceNumberValidity::Valid(committed_sequence_number))
 	}
 
 	async fn submit_transaction(
@@ -144,12 +218,22 @@ impl TransactionPipe {
 		match tx_result.status() {
 			Some(_) => {
 				let ms = MempoolStatus::new(MempoolStatusCode::VmError);
+				debug!("Transaction not accepted: {:?}", tx_result.status());
 				return Ok((ms, tx_result.status()));
 			}
-			None => {}
+			None => {
+				debug!("Transaction accepted by VM: {:?}", transaction);
+			}
 		}
 
-		let sequence_number = transaction.sequence_number();
+		let sequence_number = match self.has_invalid_sequence_number(&transaction)? {
+			SequenceNumberValidity::Valid(sequence_number) => sequence_number,
+			SequenceNumberValidity::Invalid(status) => {
+				return Ok(status);
+			}
+		};
+
+		// Add the txn for future validation
 		debug!("Adding transaction to mempool: {:?} {:?}", transaction, sequence_number);
 		let status = self.core_mempool.add_txn(
 			transaction.clone(),
@@ -163,6 +247,7 @@ impl TransactionPipe {
 			MempoolStatusCode::Accepted => {
 				debug!("Transaction accepted: {:?}", transaction);
 				let sender = transaction.sender();
+				let transaction_sequence_number = transaction.sequence_number();
 				self.transaction_sender
 					.send(transaction)
 					.await
@@ -170,6 +255,17 @@ impl TransactionPipe {
 				// increment transactions in flight
 				self.transactions_in_flight.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 				self.core_mempool.commit_transaction(&sender, sequence_number);
+
+				// update the used sequence number pool
+				info!(
+					"Setting used sequence number for {:?} to {:?}",
+					sender, transaction_sequence_number
+				);
+				self.used_sequence_number_pool.set_sequence_number(
+					&sender,
+					transaction_sequence_number,
+					chrono::Utc::now().timestamp_millis() as u64,
+				);
 			}
 			_ => {
 				warn!("Transaction not accepted: {:?}", status);
@@ -189,9 +285,17 @@ mod tests {
 	use super::*;
 	use crate::{Executor, Service};
 	use aptos_api::{accept_type::AcceptType, transactions::SubmitTransactionPost};
+	use aptos_crypto::HashValue;
 	use aptos_mempool::MempoolClientSender;
 	use aptos_types::{
-		account_config, test_helpers::transaction_test_helpers, transaction::SignedTransaction,
+		account_config,
+		block_executor::partitioner::{ExecutableBlock, ExecutableTransactions},
+		block_metadata::BlockMetadata,
+		test_helpers::transaction_test_helpers,
+		transaction::{
+			signature_verified_transaction::SignatureVerifiedTransaction, SignedTransaction,
+			Transaction,
+		},
 	};
 	use aptos_vm_genesis::GENESIS_KEYPAIR;
 	use futures::channel::oneshot;
@@ -202,8 +306,7 @@ mod tests {
 		let (tx_sender, tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) =
 			Executor::try_test_default(GENESIS_KEYPAIR.0.clone()).unwrap();
-		let (context, transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config).unwrap();
+		let (context, transaction_pipe) = executor.background(tx_sender).unwrap();
 		(transaction_pipe, context.mempool_client_sender(), tx_receiver)
 	}
 
@@ -288,7 +391,8 @@ mod tests {
 		assert_eq!(status.code, MempoolStatusCode::Accepted);
 
 		// receive the transaction
-		let received_transaction = tx_receiver.recv().await.unwrap();
+		let received_transaction =
+			tx_receiver.recv().await.ok_or(anyhow::anyhow!("No transaction received"))?;
 		assert_eq!(received_transaction, user_transaction);
 
 		// send the same transaction again
@@ -302,8 +406,8 @@ mod tests {
 
 		callback.await??;
 
-		let received_transaction = tx_receiver.recv().await.unwrap();
-		assert_eq!(received_transaction, user_transaction);
+		// assert that there is no new transaction
+		assert!(tx_receiver.try_recv().is_err());
 
 		Ok(())
 	}
@@ -312,8 +416,7 @@ mod tests {
 	async fn test_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
 		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let (context, mut transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -341,9 +444,8 @@ mod tests {
 	#[tokio::test]
 	async fn test_repeated_pipe_mempool_from_api() -> Result<(), anyhow::Error> {
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let (executor, config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
-		let (context, mut transaction_pipe, _indexer_runtime) =
-			executor.background(tx_sender, &config)?;
+		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
 		let service = Service::new(&context);
 
 		#[allow(unreachable_code)]
@@ -373,6 +475,103 @@ mod tests {
 
 		assert_eq!(user_transactions.len(), comparison_user_transactions.len());
 		assert_eq!(user_transactions, comparison_user_transactions);
+
+		mempool_handle.abort();
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_cannot_submit_too_new() -> Result<(), anyhow::Error> {
+		// set up
+		let maptos_config = Config::default();
+		let (mut transaction_pipe, mut _mempool_client_sender, _tx_receiver) = setup();
+
+		// submit a transaction with a valid sequence number
+		let user_transaction = create_signed_transaction(0, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		// submit a transaction with a sequence number that is too new
+		let user_transaction = create_signed_transaction(34, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+
+		// submit one signed transaction with a sequence number that is too new for the vm but not for the mempool
+		let user_transaction = create_signed_transaction(5, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::Accepted);
+
+		// submit a transaction with the same sequence number as the previous one
+		let user_transaction = create_signed_transaction(5, &maptos_config);
+		let (mempool_status, _) = transaction_pipe.submit_transaction(user_transaction).await?;
+		assert_eq!(mempool_status.code, MempoolStatusCode::InvalidSeqNumber);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_sequence_number_too_old() -> Result<(), anyhow::Error> {
+		let (tx_sender, _tx_receiver) = mpsc::channel(16);
+		let (executor, _config, _tempdir) = Executor::try_test_default(GENESIS_KEYPAIR.0.clone())?;
+		let (context, mut transaction_pipe) = executor.background(tx_sender)?;
+
+		#[allow(unreachable_code)]
+		let mempool_handle = tokio::spawn(async move {
+			loop {
+				transaction_pipe.tick().await?;
+			}
+			Ok(()) as Result<(), anyhow::Error>
+		});
+
+		let tx = create_signed_transaction(0, &context.config().chain);
+
+		// Commit the first transaction to a block
+		let block_id = HashValue::random();
+		let block_metadata = Transaction::BlockMetadata(BlockMetadata::new(
+			block_id,
+			0,
+			0,
+			executor.signer.author(),
+			vec![],
+			vec![],
+			chrono::Utc::now().timestamp_micros() as u64,
+		));
+		let txs = ExecutableTransactions::Unsharded(
+			[block_metadata, Transaction::UserTransaction(tx)]
+				.into_iter()
+				.map(SignatureVerifiedTransaction::Valid)
+				.collect(),
+		);
+		let block = ExecutableBlock::new(block_id.clone(), txs);
+		executor.execute_block(block).await?;
+
+		{
+			let state_view = executor
+				.db_reader()
+				.latest_state_checkpoint_view()
+				.expect("Failed to get latest state checkpoint view.");
+			let account_address = account_config::aptos_test_root_address();
+			let sequence_number =
+				vm_validator::get_account_sequence_number(&state_view, account_address)?;
+			assert_eq!(sequence_number, 1);
+		}
+
+		// Create another transaction using the already used sequence number
+		let tx = create_signed_transaction(0, &context.config().chain);
+
+		// send the transaction to mempool
+		let (req_sender, callback) = oneshot::channel();
+		context
+			.mempool_client_sender()
+			.send(MempoolClientRequest::SubmitTransaction(tx, req_sender))
+			.await?;
+
+		let status = callback.await??;
+
+		assert_eq!(status.0.code, MempoolStatusCode::VmError);
+		let vm_status = status.1.unwrap();
+		assert_eq!(vm_status, DiscardedVMStatus::SEQUENCE_NUMBER_TOO_OLD);
 
 		mempool_handle.abort();
 

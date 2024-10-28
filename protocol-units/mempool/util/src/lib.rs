@@ -4,7 +4,9 @@ use movement_types::{
 	block::{self, Block},
 	transaction::{self, Transaction},
 };
+
 use std::cmp::Ordering;
+use std::future::Future;
 
 pub trait MempoolTransactionOperations {
 	// todo: move mempool_transaction methods into separate trait
@@ -56,6 +58,15 @@ pub trait MempoolTransactionOperations {
 		}
 		Ok(mempool_transactions)
 	}
+
+	/// Garbage-collects transactions that have been submitted before the
+	/// given timestamp.
+	///
+	/// Returns the number of removed transaction.
+	fn gc_mempool_transactions(
+		&self,
+		timestamp_threshold: u64,
+	) -> impl Future<Output = Result<u64, anyhow::Error>> + Send + '_;
 
 	/// Checks whether the mempool has the transaction.
 	async fn has_transaction(
@@ -132,6 +143,7 @@ pub trait MempoolBlockOperations {
 #[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MempoolTransaction {
 	pub transaction: Transaction,
+	/// Transaction's timestamp, in seconds since the Unix epoch.
 	pub timestamp: u64,
 	pub slot_seconds: u64,
 }
@@ -146,13 +158,13 @@ impl PartialOrd for MempoolTransaction {
 /// This allows us to use a BTreeSet to order transactions by slot_seconds, and then by transaction and pop them off in order.
 impl Ord for MempoolTransaction {
 	fn cmp(&self, other: &Self) -> Ordering {
-		// First, compare by slot_seconds
-		match self.slot_seconds.cmp(&other.slot_seconds) {
+		// First, compare by timestamps
+		match self.timestamp.cmp(&other.timestamp) {
 			Ordering::Equal => {}
 			non_equal => return non_equal,
 		}
 
-		// If slots seconds are equal, then compare by transaction on the whole
+		// If timestamps are equal, then compare by transaction on the whole
 		self.transaction.cmp(&other.transaction)
 	}
 }
@@ -187,5 +199,22 @@ impl MempoolTransaction {
 
 	pub fn id(&self) -> transaction::Id {
 		self.transaction.id()
+	}
+}
+
+#[cfg(test)]
+pub mod test {
+
+	use super::*;
+
+	#[test]
+	fn test_mempool_transaction_cmp() {
+		let transaction1 = MempoolTransaction::at_time(Transaction::test(), 0);
+		let transaction2 = MempoolTransaction::at_time(Transaction::test(), 2);
+		let transaction3 = MempoolTransaction::at_time(Transaction::test(), 4);
+
+		assert!(transaction1 < transaction2);
+		assert!(transaction2 < transaction3);
+		assert!(transaction1 < transaction3);
 	}
 }
