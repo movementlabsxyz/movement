@@ -12,16 +12,15 @@ use bridge_service::{
 		bridge_contracts::{BridgeContractError, BridgeContractEvent},
 		ethereum::{
 			event_monitoring::EthMonitoring,
-			types::{EthAddress, AtomicBridgeInitiator},
+			types::{AtomicBridgeInitiator, EthAddress},
 			utils::{send_transaction, send_transaction_rules},
 		},
 		movement::{
-			client_framework::MovementClientFramework, 
-			event_monitoring::MovementMonitoring, 
+			client_framework::MovementClientFramework, event_monitoring::MovementMonitoring,
 			utils::MovementAddress,
 		},
 	},
-	types::{Amount, AssetType, BridgeAddress, HashLock, HashLockPreImage}
+	types::{Amount, BridgeAddress, HashLock, HashLockPreImage},
 };
 use futures::StreamExt;
 use tracing_subscriber::EnvFilter;
@@ -55,7 +54,7 @@ async fn initiate_eth_bridge_transfer(
 			FixedBytes(recipient_bytes),
 			FixedBytes(hash_lock.0),
 		)
-		.value(U256::from(amount.eth_value()))
+		.value(U256::from(amount.0))
 		.from(*initiator_address.0);
 	let _ = send_transaction(
 		call,
@@ -70,9 +69,7 @@ async fn initiate_eth_bridge_transfer(
 
 #[tokio::test]
 async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Error> {
-	tracing_subscriber::fmt()
-	.with_env_filter(EnvFilter::new("info"))
-	.init();
+	tracing_subscriber::fmt().with_env_filter(EnvFilter::new("info")).init();
 
 	let (_eth_client_harness, mut mvt_client_harness, config) =
 		TestHarness::new_with_eth_and_movement().await?;
@@ -170,7 +167,7 @@ async fn test_movement_event() -> Result<(), anyhow::Error> {
 		args.initiator.0,
 		args.recipient.clone(),
 		args.hash_lock.0,
-		args.amount
+		args.amount,
 	)
 	.await
 	.expect("Failed to initiate bridge transfer");
