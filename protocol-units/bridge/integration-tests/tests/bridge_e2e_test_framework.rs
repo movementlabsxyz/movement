@@ -94,7 +94,7 @@ async fn test_bridge_transfer_eth_movement_happy_path() -> Result<(), anyhow::Er
 	tracing::info!("Call initiate_transfer on Eth");
 	let hash_lock_pre_image = HashLockPreImage::random();
 	let hash_lock = HashLock(From::from(keccak256(hash_lock_pre_image)));
-	let amount = Amount(1000);
+	let amount = Amount(1);
 	initiate_eth_bridge_transfer(
 		&config,
 		HarnessEthClient::get_initiator_private_key(&config),
