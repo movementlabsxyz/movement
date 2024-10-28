@@ -13,6 +13,7 @@ contract AtomicBridgeCounterpartyMOVEDeployer is Script {
     TransparentUpgradeableProxy public atomicBridgeCounterpartyProxy;
     TimelockController public timelock;
     string public atomicBridgeCounterpartySignature = "initialize(address,address,uint256)";
+    address public proxyAdmin; // TODO: this has to be specified for upgrades
 
     address public atomicBridgeInitiatorAddress = address(0x5FbDB2315678afecb367f032d93F642f64180aa3);     
     address public ownerAddress = address(0x5b97cdf756f6363A88706c376464180E008Bd88b); 
@@ -71,7 +72,7 @@ contract AtomicBridgeCounterpartyMOVEDeployer is Script {
         AtomicBridgeCounterpartyMOVE newCounterpartyImplementation = new AtomicBridgeCounterpartyMOVE();
 
         timelock.schedule(
-            address(moveAdmin),
+            address(proxyAdmin),
             0,
             abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",

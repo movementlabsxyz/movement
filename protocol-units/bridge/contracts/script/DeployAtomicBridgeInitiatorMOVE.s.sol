@@ -13,6 +13,7 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
     TransparentUpgradeableProxy public atomicBridgeProxy;
     TimelockController public timelock;
     string public atomicBridgeSignature = "initialize(address,address,uint256,uint256)";
+    address public proxyAdmin; // TODO: this has to be specified for upgrades
 
     // Parameters
     address public moveTokenAddress = address(0xC36ba8B8fD9EcbF36288b9B9B0ae9FC3E0645227); 
@@ -75,7 +76,7 @@ contract AtomicBridgeInitiatorMOVEDeployer is Script {
         AtomicBridgeInitiatorMOVE newBridgeImplementation = new AtomicBridgeInitiatorMOVE();
 
         timelock.schedule(
-            address(moveAdmin),
+            address(proxyAdmin),
             0,
             abi.encodeWithSignature(
                 "upgradeAndCall(address,address,bytes)",
