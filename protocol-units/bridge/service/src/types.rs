@@ -1,5 +1,4 @@
 use alloy::primitives::Uint;
-use alloy::sol_types::sol_data::Uint;
 use derive_more::{Deref, DerefMut};
 use hex::{self, FromHexError};
 use rand::Rng;

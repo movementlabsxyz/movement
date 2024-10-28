@@ -7,7 +7,6 @@ use crate::chains::bridge_contracts::BridgeContractEventType;
 use crate::chains::bridge_contracts::BridgeContractMonitoring;
 use crate::chains::bridge_contracts::BridgeContractResult;
 use crate::types::Amount;
-use crate::types::AssetType;
 use crate::types::BridgeAddress;
 use crate::types::BridgeTransferDetails;
 use crate::types::BridgeTransferId;
@@ -30,7 +29,6 @@ use serde::Serialize;
 use std::{pin::Pin, task::Poll};
 use tokio::fs::{self, File};
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
-use tracing::info;
 
 const PULL_STATE_FILE_NAME: &str = "pullstate.store";
 
@@ -158,7 +156,7 @@ impl MovementMonitoring {
 		tokio::spawn({
 			let config = config.clone();
 			async move {
-				let mvt_client = MovementClient::new(&config).await.unwrap();
+				let _mvt_client = MovementClient::new(&config).await.unwrap();
 				loop {
 					let mut init_event_list = match pool_initiator_contract(
 						FRAMEWORK_ADDRESS,
@@ -518,7 +516,7 @@ impl TryFrom<BridgeInitEventData> for BridgeTransferDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			amount: Amount(data.amount),
 			state: 0,
 		})
 	}
@@ -546,34 +544,42 @@ impl TryFrom<BridgeInitEventData> for LockDetails<MovementAddress> {
 				))
 			})?),
 			time_lock: TimeLock(data.time_lock),
-			amount: Amount(AssetType::Moveth(data.amount)),
+			amount: Amount(data.amount),
 		})
 	}
 }
 
-// Example of return string.
-// [
-//     {
-//         "version": "25",
-//         "guid":
-//         {
-//             "creation_number": "5",
-//             "account_address": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6"
-//         },
-//         "sequence_number": "0",
-//         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::atomic_bridge_initiator::BridgeTransferInitiatedEvent",
-//         "data":
-//         {
-//             "amount": "100",
-//             "bridge_transfer_id": "0xeaefd189df98d57b8f4619584cff1fd67f2787c664ac8e9761ecfd7a6ae1fa2b",
-//             "hash_lock": "0xfb54fb738082d0214980feb4055e779d7d4722cb0809d5fbe79df8117801c3bb",
-//             "originator": "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
-//             "recipient": "0x3078313233",
-//             "time_lock": "1",
-//			   "state": 1
-//         }
-//     }
-// ]
+/// Asynchronously fetches events for a specified account from a blockchain REST API endpoint.
+///
+/// This function retrieves a list of events related to a specific `account_address`, starting from the
+/// specified `start_version`. The function takes parameters to customize the REST URL, event type,
+/// and field name, allowing it to query a variety of event types.
+///
+/// # Example of Returned JSON Structure
+///
+/// The response JSON is deserialized into a `Vec<VersionedEvent>` with each event having a structure like the following:
+///
+/// ```json
+/// [
+///     {
+///         "version": "25",
+///         "guid": {
+///             "creation_number": "5",
+///             "account_address": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6"
+///         },
+///         "sequence_number": "0",
+///         "type": "0xb07a6a200d595dd4ed39d9b91e3132e6c15735549e9920c585b2beec0ae659b6::atomic_bridge_initiator::BridgeTransferInitiatedEvent",
+///         "data": {
+///             "amount": "100",
+///             "bridge_transfer_id": "0xeaefd189df98d57b8f4619584cff1fd67f2787c664ac8e9761ecfd7a6ae1fa2b",
+///             "hash_lock": "0xfb54fb738082d0214980feb4055e779d7d4722cb0809d5fbe79df8117801c3bb",
+///             "originator": "0xf90391c81027f03cdea491ed8b36ffaced26b6df208a9b569e5baf2590eb9b16",
+///             "recipient": "0x3078313233",
+///             "time_lock": "1",
+///             "state": 1
+///         }
+///     }
+/// ]
 async fn get_account_events(
 	rest_url: &str,
 	account_address: &str,

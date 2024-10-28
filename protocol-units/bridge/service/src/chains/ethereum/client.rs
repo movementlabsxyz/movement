@@ -291,11 +291,11 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			InitiatorContract::Move(move_contract) => {
 				let call = move_contract
 					.initiateBridgeTransfer(
-						U256::from(amount.weth_value()),
+						U256::from(amount.0),
 						FixedBytes(recipient_bytes),
 						FixedBytes(hash_lock.0),
 					)
-					.value(U256::from(amount.eth_value()))
+					.value(U256::from(amount.0))
 					.from(*initiator_address.0);
 				let _ = send_transaction(
 					call,
@@ -571,9 +571,8 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			initiator_address: BridgeAddress(eth_details.originator),
 			recipient_address: BridgeAddress(eth_details.recipient.to_vec()),
 			hash_lock: HashLock(eth_details.hash_lock),
-			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			amount: eth_details.amount.into(),
 			state: eth_details.state,
 		}))
 	}
@@ -604,9 +603,8 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 			initiator_address: BridgeAddress(eth_details.originator.to_vec()),
 			recipient_address: BridgeAddress(eth_details.recipient),
 			hash_lock: HashLock(eth_details.hash_lock),
-			//@TODO unit test these wrapping to check for any nasty side effects.
 			time_lock: TimeLock(eth_details.time_lock.wrapping_to::<u64>()),
-			amount: Amount(AssetType::EthAndWeth((0, eth_details.amount.wrapping_to::<u64>()))),
+			amount: eth_details.amount.into(),
 			state: eth_details.state,
 		}))
 	}
