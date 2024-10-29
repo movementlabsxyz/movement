@@ -148,5 +148,5 @@ To update the Hasura metadata use this command in the movement root folder:
 
 
 ```bash
-INDEXER_API_URL=https://indexer.testnet.porto.movementnetwork.xyz HASURA_ADMIN_AUTH_KEY=<admin key> POSTGRES_DB_HOST=postgres cargo run -p suzuka-indexer-service --bin load_metadata
+INDEXER_API_URL=https://indexer.testnet.porto.movementnetwork.xyz HASURA_ADMIN_AUTH_KEY=<auth key> POSTGRES_DB_URL=postgres://<login>:<password>@<host>:5432/postgres cargo run -p suzuka-indexer-service --bin load_metadata
 ```
