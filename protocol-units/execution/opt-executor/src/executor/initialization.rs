@@ -120,29 +120,35 @@ impl Executor {
 	}
 
 	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]
-	/// task to process transactions.
+	/// task to process transactions. If the configuration is for a read-only node,
+	/// `None` is returned instead of the transaction pipe task.
 	/// The `Context` must be kept around for as long as the `TransactionPipe`
 	/// task needs to be running.
 	pub fn background(
 		&self,
 		transaction_sender: mpsc::Sender<SignedTransaction>,
-	) -> anyhow::Result<(Context, TransactionPipe)> {
+	) -> anyhow::Result<(Context, Option<TransactionPipe>)> {
 		let node_config = self.node_config.clone();
 		let maptos_config = self.config.clone();
 
 		// use the default signer, block executor, and mempool
 		let (mempool_client_sender, mempool_client_receiver) =
 			futures_mpsc::channel::<MempoolClientRequest>(EXECUTOR_CHANNEL_SIZE);
-		let transaction_pipe = TransactionPipe::new(
-			mempool_client_receiver,
-			transaction_sender,
-			self.db().reader.clone(),
-			&node_config,
-			Arc::clone(&self.transactions_in_flight),
-			maptos_config.load_shedding.max_transactions_in_flight,
-			self.config.mempool.sequence_number_ttl_ms,
-			self.config.mempool.gc_slot_duration_ms,
-		);
+
+		let transaction_pipe = if maptos_config.chain.read_only {
+			None
+		} else {
+			Some(TransactionPipe::new(
+				mempool_client_receiver,
+				transaction_sender,
+				self.db().reader.clone(),
+				&node_config,
+				Arc::clone(&self.transactions_in_flight),
+				maptos_config.load_shedding.max_transactions_in_flight,
+				self.config.mempool.sequence_number_ttl_ms,
+				self.config.mempool.gc_slot_duration_ms,
+			))
+		};
 
 		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);
 
