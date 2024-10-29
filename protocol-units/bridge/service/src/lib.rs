@@ -13,12 +13,16 @@ use crate::types::BridgeTransferId;
 use crate::types::ChainId;
 use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::select;
+use tokio::sync::Mutex;
 use tokio_stream::StreamExt;
 
 mod actions;
 pub mod chains;
 mod events;
+pub mod grpc;
+pub mod rest;
 mod states;
 pub mod types;
 
@@ -39,6 +43,10 @@ where
 
 	let mut client_exec_result_futures_one = FuturesUnordered::new();
 	let mut client_exec_result_futures_two = FuturesUnordered::new();
+
+	//only one client can use at a time.
+	let one_client_lock = Arc::new(Mutex::new(()));
+	let two_client_lock = Arc::new(Mutex::new(()));
 
 	// let mut action_to_exec_futures_one = FuturesUnordered::new();
 	// let mut action_to_exec_futures_two = FuturesUnordered::new();
@@ -68,7 +76,13 @@ where
 									ChainId::ONE => {
 										let fut = process_action(action, one_client.clone());
 										if let Some(fut) = fut {
-											let jh = tokio::spawn(fut);
+											let jh = tokio::spawn({
+												let client_lock_clone = one_client_lock.clone();
+												async move {
+													let _lock = client_lock_clone.lock().await;
+													fut.await
+												}
+											});
 											client_exec_result_futures_one.push(jh);
 										}
 
@@ -76,7 +90,13 @@ where
 									ChainId::TWO => {
 										let fut = process_action(action, two_client.clone());
 										if let Some(fut) = fut {
-											let jh = tokio::spawn(fut);
+											let jh = tokio::spawn({
+												let client_lock_clone = two_client_lock.clone();
+												async move {
+													let _lock = client_lock_clone.lock().await;
+													fut.await
+												}
+											});
 											client_exec_result_futures_two.push(jh);
 										}
 									}
@@ -213,25 +233,29 @@ impl Runtime {
 				let (new_state, action_kind) =
 					state.transition_from_initiator_completed(event_transfer_id);
 				state = new_state;
-				//transfer done remove the state.
-				if state.state == TransferStateType::Done {
-					self.swap_state_map.remove(&event_transfer_id);
-				}
+
 				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Cancelled(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_cancelled(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 			BridgeContractEvent::Refunded(_) => {
-				todo!()
+				let (new_state, action_kind) = state.transition_from_refunded(event_transfer_id);
+				state = new_state;
+
+				(action_kind, state.init_chain)
 			}
 		};
 
 		let action =
 			TransferAction { chain: chain_id, transfer_id: state.transfer_id, kind: action_kind };
 
-		self.swap_state_map.insert(state.transfer_id, state);
-
+		if state.state != TransferStateType::Done {
+			self.swap_state_map.insert(state.transfer_id, state);
+		}
 		Ok(action)
 	}
 

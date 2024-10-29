@@ -5,28 +5,28 @@
 protocol-units/execution/* @l-monninger @0xmovses @musitdev @mzabaluev
 
 # m1-da
-protocol-units/da/m1/* @l-monninger
+protocol-units/da/m1/* @l-monninger @mzabaluev
 
 # mempool
-protocol-units/mempool/* @l-monninger @cde8
+protocol-units/mempool/* @l-monninger @mzabaluev
 
 # sequencing
-protocol-units/sequencing/* @l-monninger @cde8
+protocol-units/sequencing/* @l-monninger @mzabaluev
 
 # movement-rest
-protocol-units/movement-rest/* @0xmovses
+protocol-units/movement-rest/* @0xmovses @mzabaluev
 
 # bridge-cli
-protocol-units/bridge-cli/* @0xmovses @andygolay @cde8
+protocol-units/bridge-cli/* @0xmovses @andygolay
 
 # bridge contracts
-protocol-units/bridge/contracts/* @0xmovses @andygolay @cde8 @0xPrimata
+protocol-units/bridge/contracts/* @0xmovses @andygolay @0xPrimata
 
 # bridge service 
-protocol-units/bridge/bridge-service/* @0xmovses @andygolay @cde8
+protocol-units/bridge/bridge-service/* @0xmovses @andygolay
 
 # bridge
-protocol-units/bridge/* @0xmovses @andygolay @cde8
+protocol-units/bridge/* @0xmovses @andygolay
 
 # bridge move modules
 protocol-units/bridge/move-modules/* @0xmovses @andygolay
