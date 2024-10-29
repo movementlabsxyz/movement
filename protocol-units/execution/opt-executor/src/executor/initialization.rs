@@ -8,7 +8,6 @@ use aptos_crypto::PrivateKey;
 use aptos_executor::block_executor::BlockExecutor;
 use aptos_mempool::MempoolClientRequest;
 use aptos_types::transaction::SignedTransaction;
-use futures::FutureExt;
 use maptos_execution_util::config::Config;
 
 use anyhow::Context as _;
@@ -29,6 +28,15 @@ impl Executor {
 	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
 		// set up the node config
 		let mut node_config = NodeConfig::default();
+
+		// read-only settings
+		if maptos_config.chain.read_only {
+			node_config.api.transaction_submission_enabled = false;
+			node_config.api.encode_submission_enabled = false;
+			node_config.api.transaction_simulation_enabled = false;
+			node_config.api.gas_estimation.enabled = false;
+			node_config.api.periodic_gas_estimation_ms = None;
+		}
 
 		// pruning config
 		node_config.storage.storage_pruner_config.ledger_pruner_config.prune_window =
@@ -136,12 +144,7 @@ impl Executor {
 			self.config.mempool.gc_slot_duration_ms,
 		);
 
-		let cx = Context::new(
-			self.db().clone(),
-			mempool_client_sender,
-			maptos_config.clone(),
-			node_config.clone(),
-		);
+		let cx = Context::new(self.db().clone(), mempool_client_sender, maptos_config, node_config);
 
 		Ok((cx, transaction_pipe))
 	}
