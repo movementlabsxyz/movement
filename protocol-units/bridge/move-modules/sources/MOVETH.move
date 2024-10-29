@@ -174,8 +174,6 @@ module atomic_bridge::moveth {
         );
     }
 
-    
-
     /// Deposit function override to ensure that the account is not denylisted and the moveth is not paused.
     public fun deposit<T: key>(
         store: Object<T>,
