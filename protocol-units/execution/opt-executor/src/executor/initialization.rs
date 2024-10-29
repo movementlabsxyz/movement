@@ -25,7 +25,7 @@ use std::sync::{atomic::AtomicU64, Arc};
 const EXECUTOR_CHANNEL_SIZE: usize = 2_usize.pow(16);
 
 impl Executor {
-	pub fn bootstrap(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn bootstrap(maptos_config: Config) -> Result<Self, anyhow::Error> {
 		// set up the node config
 		let mut node_config = NodeConfig::default();
 
@@ -100,14 +100,14 @@ impl Executor {
 		})
 	}
 
-	pub fn try_from_config(maptos_config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(maptos_config: Config) -> Result<Self, anyhow::Error> {
 		Self::bootstrap(maptos_config)
 	}
 
 	#[cfg(test)]
 	pub fn try_test_default(
 		private_key: Ed25519PrivateKey,
-	) -> Result<(Self, Config, TempDir), anyhow::Error> {
+	) -> Result<(Self, TempDir), anyhow::Error> {
 		let tempdir = tempfile::tempdir()?;
 
 		let mut maptos_config = Config::default();
@@ -115,8 +115,8 @@ impl Executor {
 
 		// replace the db path with the temporary directory
 		maptos_config.chain.maptos_db_path.replace(tempdir.path().to_path_buf());
-		let executor = Self::try_from_config(&maptos_config)?;
-		Ok((executor, maptos_config, tempdir))
+		let executor = Self::try_from_config(maptos_config)?;
+		Ok((executor, tempdir))
 	}
 
 	/// Creates an instance of [`Context`] and the background [`TransactionPipe`]

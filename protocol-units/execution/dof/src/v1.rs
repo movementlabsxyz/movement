@@ -32,7 +32,7 @@ impl Executor {
 		Self { executor, finality_view }
 	}
 
-	pub fn try_from_config(config: &Config) -> Result<Self, anyhow::Error> {
+	pub fn try_from_config(config: Config) -> Result<Self, anyhow::Error> {
 		let executor = OptExecutor::try_from_config(config)?;
 		Ok(Self::new(executor))
 	}
@@ -53,7 +53,6 @@ impl DynOptFinExecutor for Executor {
 	fn background(
 		&self,
 		transaction_sender: Sender<SignedTransaction>,
-		config: &Config,
 	) -> Result<
 		(Context, impl Future<Output = Result<(), anyhow::Error>> + Send + 'static),
 		anyhow::Error,
@@ -61,7 +60,7 @@ impl DynOptFinExecutor for Executor {
 		let (opt_context, transaction_pipe) = self.executor.background(transaction_sender)?;
 		let fin_service = self.finality_view.service(
 			opt_context.mempool_client_sender(),
-			config,
+			self.config(),
 			opt_context.node_config().clone(),
 		);
 		let indexer_runtime = opt_context.run_indexer_grpc_service()?;
@@ -185,7 +184,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_execute_opt_block() -> Result<(), anyhow::Error> {
 		let config = Config::default();
-		let executor = Executor::try_from_config(&config)?;
+		let executor = Executor::try_from_config(config)?;
 		let block_id = HashValue::random();
 		let block_metadata = executor
 			.build_block_metadata(block_id.clone(), chrono::Utc::now().timestamp_micros() as u64)
@@ -208,8 +207,8 @@ mod tests {
 	async fn test_pipe_transactions_from_api() -> Result<(), anyhow::Error> {
 		let config = Config::default();
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let executor = Executor::try_from_config(config)?;
+		let (context, background) = executor.background(tx_sender)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -236,8 +235,8 @@ mod tests {
 	async fn test_pipe_transactions_from_api_and_execute() -> Result<(), anyhow::Error> {
 		let config = Config::default();
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let executor = Executor::try_from_config(config)?;
+		let (context, background) = executor.background(tx_sender)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -293,8 +292,8 @@ mod tests {
 
 		let config = Config::default();
 		let (tx_sender, mut tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let executor = Executor::try_from_config(config)?;
+		let (context, background) = executor.background(tx_sender)?;
 		let services = context.services();
 		let api = services.get_opt_apis();
 
@@ -374,8 +373,9 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let executor = Executor::try_from_config(config)?;
+		let (context, background) = executor.background(tx_sender)?;
+		let config = executor.config();
 		let services = context.services();
 		let apis = services.get_opt_apis();
 
@@ -384,7 +384,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.chain.maptos_private_key),
+			AccountKey::from_private_key(config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -446,8 +446,9 @@ mod tests {
 		// Create an executor instance from the environment configuration.
 		let config = Config::default();
 		let (tx_sender, _tx_receiver) = mpsc::channel(16);
-		let executor = Executor::try_from_config(&config)?;
-		let (context, background) = executor.background(tx_sender, &config)?;
+		let executor = Executor::try_from_config(config)?;
+		let (context, background) = executor.background(tx_sender)?;
+		let config = executor.config();
 		let services = context.services();
 
 		// Retrieve the executor's fin API instance
@@ -458,7 +459,7 @@ mod tests {
 		// Initialize a root account using a predefined keypair and the test root address.
 		let root_account = LocalAccount::new(
 			aptos_test_root_address(),
-			AccountKey::from_private_key(config.chain.maptos_private_key),
+			AccountKey::from_private_key(config.chain.maptos_private_key.clone()),
 			0,
 		);
 
@@ -467,7 +468,7 @@ mod tests {
 		let mut rng = ::rand::rngs::StdRng::from_seed(seed);
 
 		// Create a transaction factory with the chain ID of the executor.
-		let tx_factory = TransactionFactory::new(config.chain.maptos_chain_id);
+		let tx_factory = TransactionFactory::new(config.chain.maptos_chain_id.clone());
 		let mut transaction_hashes = Vec::new();
 
 		// Simulate the execution of multiple blocks.
