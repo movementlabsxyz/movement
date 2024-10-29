@@ -32,12 +32,12 @@ pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::
 	let signer_private_key = config.signer_private_key.parse::<PrivateKeySigner>()?;
 	let rpc_url = config.eth_rpc_connection_url();
 
-	tracing::info!("Bridge deploy setup_local_ethereum");
+	println!("Bridge deploy setup_local_ethereum");
 	config.eth_initiator_contract =
 		deploy_eth_initiator_contract(signer_private_key.clone(), &rpc_url)
 			.await
 			.to_string();
-	tracing::info!("Bridge deploy after intiator");
+	println!("Bridge deploy after intiator");
 	config.eth_counterparty_contract =
 		deploy_counterpart_contract(signer_private_key.clone(), &rpc_url)
 			.await
@@ -45,6 +45,7 @@ pub async fn setup_local_ethereum(config: &mut EthConfig) -> Result<(), anyhow::
 	let eth_weth_contract = deploy_weth_contract(signer_private_key.clone(), &rpc_url).await;
 	config.eth_weth_contract = eth_weth_contract.to_string();
 
+	tracing::info!("Signer address before initializing initiator contract: {:?}", signer_private_key.address());
 	initialize_initiator_contract(
 		signer_private_key.clone(),
 		&rpc_url,

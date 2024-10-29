@@ -206,6 +206,7 @@ impl EthClient {
 	) -> Result<(), anyhow::Error> {
 		let deposit_weth_signer = self.get_signer_address();
 		let call = self.weth_contract.deposit().value(amount);
+		info!("Signer address: {:?}", self.get_signer_address());
 		send_transaction(
 			call,
 			&send_transaction_rules(),
@@ -216,6 +217,16 @@ impl EthClient {
 
 		let approve_call: alloy::contract::CallBuilder<_, &_, _> =
 			self.weth_contract.approve(self.initiator_contract_address(), amount);
+			info!("Initiator contract address: {:?}", self.initiator_contract_address());
+			let contract_instance = match &self.initiator_contract {
+				InitiatorContract::Move(instance) => instance,
+				_ => unreachable!("Expected Move variant, found other"),
+			    };
+			    
+			    // Call the `owner` function on the WETH contract instance
+			    let owner_address = contract_instance.owner().call().await?;
+			    info!("Initiator Contract Owner Address: {:?}", owner_address._0);
+
 		let WETH9::balanceOfReturn { _0: _balance } =
 			self.weth_contract.balanceOf(deposit_weth_signer).call().await?;
 
@@ -481,6 +492,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 		recipient: BridgeAddress<EthAddress>,
 		amount: Amount,
 	) -> BridgeContractResult<()> {
+		println!{"Counterparty contract asset: {:?}", self.counterparty_contract};
 		let initiator: [u8; 32] = initiator.0.try_into().unwrap();
 		match &self.counterparty_contract {
 			CounterpartyContract::Weth(weth_contract) => {

@@ -350,10 +350,21 @@ async fn test_eth_client_should_successfully_call_initiate_transfer_only_eth() {
 
 #[tokio::test]
 async fn test_eth_client_should_successfully_call_initiate_transfer_only_weth() {
+
+	tracing_subscriber::fmt()
+	.with_env_filter(
+		EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+	)
+	.init();
+
 	let config = Config::default();
+	
 	let (mut eth_client_harness, _config, _anvil) = TestHarness::new_only_eth(config).await;
 
 	let signer_address: alloy::primitives::Address = eth_client_harness.signer_address();
+
+	tracing::info!("Signer address after getting from harness: {:?}", eth_client_harness.signer_address());
+
 
 	let recipient = HarnessMvtClient::gen_aptos_account();
 	let hash_lock: [u8; 32] = keccak256("secret".to_string().as_bytes()).into();
