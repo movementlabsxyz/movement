@@ -1,3 +1,4 @@
+use alloy_primitives::Address;
 use std::str::FromStr;
 
 use crate::chains::ethereum::types::EthAddress;
@@ -73,12 +74,17 @@ pub async fn send_transaction<
 	D: CallDecoder + Clone,
 >(
 	base_call_builder: CallBuilder<T, &P, D, Ethereum>,
+	signer_address: Address,
 	send_transaction_error_rules: &[Box<dyn VerifyRule>],
 	number_retry: u32,
 	gas_limit: u128,
 ) -> Result<TransactionReceipt, anyhow::Error> {
 	println!("base_call_builder: {:?}", base_call_builder);
 	println!("Sending transaction with gas limit: {}", gas_limit);
+
+	// set signer address as from for gas_estimation.
+	// The gas estimate need to set teh from before calling.
+	let base_call_builder = base_call_builder.from(signer_address);
 	//validate gas price.
 	let mut estimate_gas = base_call_builder.estimate_gas().await?;
 	// Add 20% because initial gas estimate are too low.

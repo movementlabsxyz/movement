@@ -19,10 +19,7 @@ use alloy::{
 };
 use alloy_rlp::Decodable;
 use bridge_config::common::eth::EthConfig;
-use bridge_grpc::{
-	bridge_server::{Bridge, BridgeServer},
-	BridgeTransferDetailsResponse, GetBridgeTransferDetailsRequest,
-};
+use bridge_grpc::bridge_server::BridgeServer;
 use std::fmt::{self, Debug};
 use std::net::SocketAddr;
 use tonic::transport::Server;
@@ -100,11 +97,13 @@ pub struct EthClient {
 	counterparty_contract: CounterpartyContract,
 	weth_contract: WETH9Contract,
 	pub config: Config,
+	signer_address: Address,
 }
 
 impl EthClient {
 	pub async fn new(config: &EthConfig) -> Result<Self, anyhow::Error> {
 		let config: Config = config.try_into()?;
+		let signer_address = config.signer_private_key.address();
 		let rpc_provider = ProviderBuilder::new()
 			.with_recommended_fillers()
 			.wallet(EthereumWallet::from(config.signer_private_key.clone()))
@@ -147,6 +146,7 @@ impl EthClient {
 			counterparty_contract,
 			weth_contract,
 			config: config.clone(),
+			signer_address,
 		})
 	}
 
@@ -177,6 +177,7 @@ impl EthClient {
 					contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
 				send_transaction(
 					call.to_owned(),
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -188,6 +189,7 @@ impl EthClient {
 					contract.initialize(weth.0, owner.0, U256::from(timelock.0), U256::from(100));
 				send_transaction(
 					call.to_owned(),
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -208,6 +210,7 @@ impl EthClient {
 		let call = self.weth_contract.deposit().value(amount);
 		send_transaction(
 			call,
+			self.signer_address,
 			&send_transaction_rules(),
 			self.config.transaction_send_retries,
 			self.config.gas_limit,
@@ -221,6 +224,7 @@ impl EthClient {
 
 		send_transaction(
 			approve_call,
+			self.signer_address,
 			&send_transaction_rules(),
 			self.config.transaction_send_retries,
 			self.config.gas_limit,
@@ -298,6 +302,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 					.from(*initiator_address.0);
 				let _ = send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -318,6 +323,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 					.from(*initiator_address.0);
 				let _ = send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -354,6 +360,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				);
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -370,6 +377,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				);
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -407,6 +415,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				);
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -423,6 +432,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				);
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -446,6 +456,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				let call = weth_contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -459,6 +470,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				let call = move_contract.refundBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -494,6 +506,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				);
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -514,6 +527,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				);
 				let receipt = send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -539,6 +553,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				let call = weth_contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
@@ -552,6 +567,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				let call = move_contract.abortBridgeTransfer(FixedBytes(bridge_transfer_id.0));
 				send_transaction(
 					call,
+					self.signer_address,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
 					self.config.gas_limit,
