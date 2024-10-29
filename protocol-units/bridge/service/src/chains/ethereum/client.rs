@@ -512,7 +512,7 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 					U256::try_from(amount.0)
 						.map_err(|_| BridgeContractError::ConversionFailed("U256".to_string()))?,
 				);
-				send_transaction(
+				let receipt = send_transaction(
 					call,
 					&send_transaction_rules(),
 					self.config.transaction_send_retries,
@@ -522,6 +522,8 @@ impl crate::chains::bridge_contracts::BridgeContract<EthAddress> for EthClient {
 				.map_err(|e| {
 					BridgeContractError::GenericError(format!("Failed to send transaction: {}", e))
 				})?;
+
+				tracing::info!("LockBridgeTransfer receipt: {:?}", receipt);
 			}
 		}
 
