@@ -55,7 +55,7 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         bytes32 hashLock,
         address recipient,
         uint256 amount
-    ) external onlyOwner returns (bool) {
+    ) external onlyOwner {
         if (amount == 0) revert ZeroAmount();
         // The time lock is now based on the configurable duration
         uint256 timeLock = block.timestamp + counterpartyTimeLockDuration;
@@ -70,7 +70,6 @@ contract AtomicBridgeCounterpartyMOVE is IAtomicBridgeCounterpartyMOVE, OwnableU
         });
 
         emit BridgeTransferLocked(bridgeTransferId, recipient, amount, hashLock, counterpartyTimeLockDuration);
-        return true;
     }
 
     function completeBridgeTransfer(bytes32 bridgeTransferId, bytes32 preImage) external {
