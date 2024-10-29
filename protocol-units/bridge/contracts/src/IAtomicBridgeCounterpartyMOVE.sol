@@ -33,7 +33,6 @@ interface IAtomicBridgeCounterpartyMOVE {
      * @param hashLock The hash of the secret (HASH) that will unlock the funds
      * @param recipient The address to which to transfer the funds
      * @param amount The amount of WETH to lock
-     * @return bool indicating successful lock
      *
      */
     function lockBridgeTransfer(
@@ -42,7 +41,7 @@ interface IAtomicBridgeCounterpartyMOVE {
         bytes32 hashLock,
         address recipient,
         uint256 amount
-    ) external returns (bool);
+    ) external;
 
     /**
      * @dev Completes the bridge transfer and withdraws WETH to the recipient
